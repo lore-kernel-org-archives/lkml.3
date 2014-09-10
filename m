@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaIJLAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:00:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60816 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659AbaIJLAr (ORCPT
+	id S1752711AbaIJLAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:00:41 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58765 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244AbaIJK6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:00:47 -0400
-Date: Wed, 10 Sep 2014 12:00:35 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <philipp.zabel@gmail.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linaro-kernel@lists.linaro.org
-Message-ID: <20140910110035.GC7960@sirena.org.uk>
-References: <1410003731-32276-1-git-send-email-broonie@kernel.org>
- <CA+gwMceBMs2hpiPhjJoj6N+BFgDN_26YeB6CXqFeY6OMQ4jmoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eHhjakXzOLJAF9wJ"
-Content-Disposition: inline
-In-Reply-To: <CA+gwMceBMs2hpiPhjJoj6N+BFgDN_26YeB6CXqFeY6OMQ4jmoQ@mail.gmail.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.132.226.177
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: isl9305: Add Intersil ISL9305/H driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 10 Sep 2014 06:58:34 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2 8/8] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_parse_of
+Date: Wed, 10 Sep 2014 12:58:28 +0200
+Message-Id: <1410346708-5125-9-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
+References: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Using the for_each_... macro should make the code bit shorter and
+easier to read.
 
---eHhjakXzOLJAF9wJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/staging/imx-drm/imx-drm-core.c | 17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
 
-On Wed, Sep 10, 2014 at 12:56:12AM +0200, Philipp Zabel wrote:
-> On Sat, Sep 6, 2014 at 1:42 PM, Mark Brown <broonie@kernel.org> wrote:
+diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+index 9b5222c..460d785 100644
+--- a/drivers/staging/imx-drm/imx-drm-core.c
++++ b/drivers/staging/imx-drm/imx-drm-core.c
+@@ -438,17 +438,13 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
+ 	struct drm_encoder *encoder, struct device_node *np)
+ {
+ 	struct imx_drm_device *imxdrm = drm->dev_private;
+-	struct device_node *ep = NULL;
++	struct device_node *ep;
+ 	uint32_t crtc_mask = 0;
+-	int i;
++	int i = 0;
+ 
+-	for (i = 0; ; i++) {
++	for_each_endpoint_of_node(np, ep) {
+ 		u32 mask;
+ 
+-		ep = of_graph_get_next_endpoint(np, ep);
+-		if (!ep)
+-			break;
+-
+ 		mask = imx_drm_find_crtc_mask(imxdrm, ep);
+ 
+ 		/*
+@@ -457,14 +453,15 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
+ 		 * not been registered yet.  Defer probing, and hope that
+ 		 * the required CRTC is added later.
+ 		 */
+-		if (mask == 0)
++		if (mask == 0) {
++			of_node_put(ep);
+ 			return -EPROBE_DEFER;
++		}
+ 
+ 		crtc_mask |= mask;
++		i++;
+ 	}
+ 
+-	if (ep)
+-		of_node_put(ep);
+ 	if (i == 0)
+ 		return -ENOENT;
+ 
+-- 
+2.1.0
 
-> > +Required properties:
-
-> > +- compatible: "isl,isl9305" or "isl,isl9305h"
-
-> I have suggested to change the Intersil vendor prefix to 'isil':
-> http://www.mail-archive.com/devicetree@vger.kernel.org/msg40842.html
-
-I'm really not sure it's worth the bother but whatever...  please send a
-patch if that goes through.
-
---eHhjakXzOLJAF9wJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUEC9SAAoJECTWi3JdVIfQx0wH/jgv8nVkIHFSsaOgdwJ8DBXA
-Oj1i7pnzlFP5r8B9B3NcKJknqAH7DRRGMpppuEux/xMCP2hUSA7aK5eAQv1RijBi
-3AOOjpccUHJml9OPy3lWvprgvgmXngLWMp/PtTttSXoe9OBqQnXAsDqbw4vKKz8h
-eyUnD1Oz16MxJSP0FTfcSf9ew1tx1LsrEhoMn8Y83uvYqmlTQvjskgAYB7uqhEbp
-NnAvvMLnn3O2Z2Dk3F7hN4/n4SwoQxIX7FQFZHaELWk6GEoYpypVNcxUl6iWt3iq
-eUd+ci/sbo4ouF6RT40MwbJXlNaqDQAcx3OjxUlDF0odDqa16sMwtDK5E4lPbps=
-=NpWg
------END PGP SIGNATURE-----
-
---eHhjakXzOLJAF9wJ--
