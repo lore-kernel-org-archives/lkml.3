@@ -1,372 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaIJPoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:44:03 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:52526 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaIJPn5 (ORCPT
+	id S1752018AbaIJPoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:44:22 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:42639 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaIJPoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:43:57 -0400
-From: Alban Bedel <alban.bedel@avionic-design.de>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-pwm@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH V4] pwm: lpc32xx - Add a driver for the motor PWM
-Date: Wed, 10 Sep 2014 17:43:42 +0200
-Message-Id: <1410363822-22151-1-git-send-email-alban.bedel@avionic-design.de>
-X-Mailer: git-send-email 2.1.0
-X-Provags-ID: V02:K0:A3E6OgDScgybY0bHtQ1CuzfcFyt9q6vaLqHy3TQUVYm
- hKuv1/bcwh2Wy/gnphgFtA+AUi0ok5/YomaFx8lMydu+AoCl0z
- J1pSc1lMroSYP0JvhSa5eu6os9FrPhNGurWF/rDyLgtUhhGg6d
- t5/ewMvjYABOy2nfM7GP32HSb/gSP4af3LzVY6kidfBQD27d3R
- npyD+SiAP15oEY8LZcSnV7JbcJVhx5KCVrUE3VL18D40+FTLhG
- GeDRpmS6NbvinP3D8pfJROjwdMeeuMViGnTCPmIA+bBRJ2Fnt5
- 74DLKd78bdzxDxDIkWT0RJLxo48pwGZe04RgxoykBbvs1GKEO8
- Y8UaZjLmcR7y430J7teUsM0+fyspe3ymMz7kTXpYHzs1M/ZZl2
- bEhP3i9gHOYOOL8Fu6Fp66ULL0aa3Laexp8GekvBuMqkyKqSSf
- MGu++
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 10 Sep 2014 11:44:19 -0400
+Message-ID: <541071CF.9030901@gmail.com>
+Date: Wed, 10 Sep 2014 08:44:15 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+CC: dirk.brandewie@gmail.com, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [RFC v1 0/6] CPPC as a PID backend
+References: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
+In-Reply-To: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LPC32xx motor PWMs have 3 channels that each drives a pair of
-pins A and B, with B = !A. The polarity configuration is from the
-point of view of pin A, so when using pin B the polarity is inverted.
+Hi Ashwin,
 
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
----
-V4: * Fixed the Kconfig dependencies
-    * Replaced __raw_writel() with writel()
-    * Implemented .set_polarity()
-    * Replaced the linux,polarity property with flags in the
-      pwm-cell using the common of_pwm_xlate_with_flags()
-    * Tried to clarify the device description in the DT binding
-    * Added optional clock properties to the binding definition
-    * Fixed the number of pwm cells in the LPC32xx DTSi
-V3: * Updated to current mainline API
-    * Fixed LPC32xx vs. LPC32XX
-    * Various coding style fix
-V2: * Splitted the DTS to its own patch
----
- .../devicetree/bindings/pwm/lpc32xx-motor-pwm.txt  |  30 +++
- arch/arm/boot/dts/lpc32xx.dtsi                     |   2 +-
- drivers/pwm/Kconfig                                |  11 ++
- drivers/pwm/Makefile                               |   1 +
- drivers/pwm/pwm-lpc32xx-motor.c                    | 215 +++++++++++++++++++++
- 5 files changed, 258 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
- create mode 100644 drivers/pwm/pwm-lpc32xx-motor.c
+I think the CPPC based driver should be a separate driver.
 
-diff --git a/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt b/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
-new file mode 100644
-index 0000000..76a086d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/lpc32xx-motor-pwm.txt
-@@ -0,0 +1,30 @@
-+LPC32xx Motor PWM controller
-+
-+The LPC32xx motor PWMs have 3 channels that each drives a pair of
-+pins A and B, with B = !A. The polarity configuration is from the
-+point of view of pin A, so when using pin B the polarity is inverted.
-+
-+Required properties:
-+- compatible: should be "nxp,lpc3220-motor-pwm"
-+- reg: physical base address and length of the controller's registers
-+- #pwm-cells: should be 3. See pwm.txt in this directory for a description of
-+  the cells format. The only third cell flag supported by this binding is
-+  PWM_POLARITY_INVERTED.
-+
-+Optional properties:
-+- clock-names: Set to "mpwm"
-+- clocks: phandle of the clock used by the PWM module.
-+  See ../clocks/clock-bindings.txt for details.
-+
-+Note: The clock properties are currently optional because the LPC32xx
-+  architecture doesn't have a DT-aware clocksource driver yet.
-+
-+Examples:
-+
-+mpwm@400e8000 {
-+	compatible = "nxp,lpc3220-motor-pwm";
-+	reg = <0x400E8000 0x78>;
-+	#pwm-cells = <3>;
-+	clock-names = "mpwm";
-+	clocks = <&clk_mpwm>;
-+};
-diff --git a/arch/arm/boot/dts/lpc32xx.dtsi b/arch/arm/boot/dts/lpc32xx.dtsi
-index 3abebb7..bde722e 100644
---- a/arch/arm/boot/dts/lpc32xx.dtsi
-+++ b/arch/arm/boot/dts/lpc32xx.dtsi
-@@ -190,7 +190,7 @@
- 				compatible = "nxp,lpc3220-motor-pwm";
- 				reg = <0x400E8000 0x78>;
- 				status = "disabled";
--				#pwm-cells = <2>;
-+				#pwm-cells = <3>; /* pwm, period, flags */
- 			};
- 
- 			i2cusb: i2c@31020300 {
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index b800783..a2f5f98 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -147,6 +147,17 @@ config PWM_LPC32XX
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-lpc32xx.
- 
-+config PWM_LPC32XX_MOTOR
-+	tristate "LPC32xx Motor PWM support"
-+	depends on ARCH_LPC32XX || COMPILE_TEST
-+	depends on CLKDEV_LOOKUP
-+	help
-+	  Generic PWM framework driver for LPC32xx motor PWM. The LPC32xx SOC
-+	  has one motor PWM controllers.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-lpc32xx-motor.
-+
- config PWM_LPSS
- 	tristate "Intel LPSS PWM support"
- 	depends on ACPI
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index f8c577d..3eb5dd9 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
- obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
- obj-$(CONFIG_PWM_LP3943)	+= pwm-lp3943.o
- obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
-+obj-$(CONFIG_PWM_LPC32XX_MOTOR)	+= pwm-lpc32xx-motor.o
- obj-$(CONFIG_PWM_LPSS)		+= pwm-lpss.o
- obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
- obj-$(CONFIG_PWM_PCA9685)	+= pwm-pca9685.o
-diff --git a/drivers/pwm/pwm-lpc32xx-motor.c b/drivers/pwm/pwm-lpc32xx-motor.c
-new file mode 100644
-index 0000000..866adb6
---- /dev/null
-+++ b/drivers/pwm/pwm-lpc32xx-motor.c
-@@ -0,0 +1,215 @@
-+/*
-+ * Copyright 2012-2014 Alban Bedel <alban.bedel@avionic-design.de>
-+ *
-+ * Based on pwm-lpc32xx.c from Alexandre Pereira da Silva
-+ * <aletes.xgr@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ *
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+
-+struct lpc32xx_motor_pwm_chip {
-+	struct pwm_chip chip;
-+	struct clk *clk;
-+	unsigned int pins;
-+	void __iomem *base;
-+};
-+
-+#define to_motor_pwm_chip(_chip) \
-+	container_of(_chip, struct lpc32xx_motor_pwm_chip, chip)
-+
-+/* Register mapping for MCPWM modules */
-+#define LPC32XX_MCPWM_MCCON		0x00
-+#define LPC32XX_MCPWM_MCCON_SET		0x04
-+#define LPC32XX_MCPWM_MCCON_CLR		0x08
-+#define LPC32XX_MCPWM_MCCAPCON		0x0C
-+#define LPC32XX_MCPWM_MCCAPCON_SET	0x10
-+#define LPC32XX_MCPWM_MCCAPCON_CLR	0x14
-+#define LPC32XX_MCPWM_MCLIM0		0x24
-+#define LPC32XX_MCPWM_MCLIM1		0x28
-+#define LPC32XX_MCPWM_MCLIM2		0x2C
-+#define LPC32XX_MCPWM_MCMAT0		0x30
-+#define LPC32XX_MCPWM_MCMAT1		0x34
-+#define LPC32XX_MCPWM_MCMAT2		0x38
-+#define LPC32XX_MCPWM_MCINTEN_CLR	0x58
-+
-+#define LPC32XX_MCPWM_COUNT		3
-+
-+#define PWM_EN_MASK(pwm)	BIT(0 + (pwm)->hwpwm * 8)
-+#define PWM_POL_MASK(pwm)	BIT(2 + (pwm)->hwpwm * 8)
-+#define MCLIM_REG_OFFSET(pwm)	(LPC32XX_MCPWM_MCLIM0 + (pwm)->hwpwm * 4)
-+#define MCMAT_REG_OFFSET(pwm)	(LPC32XX_MCPWM_MCMAT0 + (pwm)->hwpwm * 4)
-+
-+static int lpc32xx_motor_pwm_config(struct pwm_chip *chip,
-+				    struct pwm_device *pwm,
-+				    int duty_ns, int period_ns)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx = to_motor_pwm_chip(chip);
-+	u64 rate, period, duty;
-+	int err;
-+
-+	/* The clock is needed to access the registers */
-+	err = clk_enable(lpc32xx->clk);
-+	if (err)
-+		return err;
-+
-+	/* Calculate period */
-+	rate = clk_get_rate(lpc32xx->clk);
-+	period  = (u64)period_ns * rate;
-+	duty = (u64)duty_ns * rate;
-+	do_div(period,  1000000000);
-+	do_div(duty, 1000000000);
-+
-+	/* Write to limit register -> period */
-+	writel(period, lpc32xx->base + MCLIM_REG_OFFSET(pwm));
-+
-+	/* Write to match register -> duty */
-+	writel(period - duty, lpc32xx->base + MCMAT_REG_OFFSET(pwm));
-+
-+	/* Disable the clock now that we are done */
-+	clk_disable(lpc32xx->clk);
-+	return 0;
-+}
-+
-+static int lpc32xx_motor_pwm_set_polarity(struct pwm_chip *chip,
-+					  struct pwm_device *pwm,
-+					  enum pwm_polarity polarity)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx = to_motor_pwm_chip(chip);
-+	int err = 0;
-+
-+	/* The clock is needed to access the registers */
-+	err = clk_enable(lpc32xx->clk);
-+	if (err)
-+		return err;
-+
-+	if (polarity == PWM_POLARITY_NORMAL)
-+		writel(PWM_POL_MASK(pwm),
-+		       lpc32xx->base + LPC32XX_MCPWM_MCCON_CLR);
-+	else
-+		writel(PWM_POL_MASK(pwm),
-+		       lpc32xx->base + LPC32XX_MCPWM_MCCON_SET);
-+
-+	/* Disable the clock now that we are done */
-+	clk_disable(lpc32xx->clk);
-+	return 0;
-+}
-+
-+static int lpc32xx_motor_pwm_enable(struct pwm_chip *chip,
-+				    struct pwm_device *pwm)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx = to_motor_pwm_chip(chip);
-+	int err;
-+
-+	err = clk_enable(lpc32xx->clk);
-+	if (err)
-+		return err;
-+
-+	writel(PWM_EN_MASK(pwm), lpc32xx->base + LPC32XX_MCPWM_MCCON_SET);
-+
-+	return 0;
-+}
-+
-+static void lpc32xx_motor_pwm_disable(struct pwm_chip *chip,
-+				      struct pwm_device *pwm)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx = to_motor_pwm_chip(chip);
-+
-+	writel(PWM_EN_MASK(pwm), lpc32xx->base + LPC32XX_MCPWM_MCCON_CLR);
-+
-+	clk_disable(lpc32xx->clk);
-+}
-+
-+static const struct pwm_ops lpc32xx_motor_pwm_ops = {
-+	.config = lpc32xx_motor_pwm_config,
-+	.set_polarity = lpc32xx_motor_pwm_set_polarity,
-+	.enable = lpc32xx_motor_pwm_enable,
-+	.disable = lpc32xx_motor_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int lpc32xx_motor_pwm_probe(struct platform_device *pdev)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx;
-+	struct resource *res;
-+	int ret;
-+
-+	lpc32xx = devm_kzalloc(&pdev->dev, sizeof(*lpc32xx), GFP_KERNEL);
-+	if (!lpc32xx)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -EINVAL;
-+
-+	lpc32xx->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (!lpc32xx->base)
-+		return -EADDRNOTAVAIL;
-+
-+	lpc32xx->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(lpc32xx->clk))
-+		return PTR_ERR(lpc32xx->clk);
-+
-+	lpc32xx->chip.dev = &pdev->dev;
-+	lpc32xx->chip.ops = &lpc32xx_motor_pwm_ops;
-+	lpc32xx->chip.of_xlate = of_pwm_xlate_with_flags;
-+	lpc32xx->chip.of_pwm_n_cells = 3;
-+	lpc32xx->chip.npwm = LPC32XX_MCPWM_COUNT;
-+	lpc32xx->chip.base = -1;
-+
-+	ret = pwmchip_add(&lpc32xx->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add PWM chip, error %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, lpc32xx);
-+
-+	return 0;
-+}
-+
-+static int lpc32xx_motor_pwm_remove(struct platform_device *pdev)
-+{
-+	struct lpc32xx_motor_pwm_chip *lpc32xx = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = 0; i < lpc32xx->chip.npwm; i++)
-+		pwm_disable(&lpc32xx->chip.pwms[i]);
-+
-+	return pwmchip_remove(&lpc32xx->chip);
-+}
-+
-+static const struct of_device_id lpc32xx_motor_pwm_dt_ids[] = {
-+	{ .compatible = "nxp,lpc3220-motor-pwm", },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, lpc32xx_motor_pwm_dt_ids);
-+
-+static struct platform_driver lpc32xx_motor_pwm_driver = {
-+	.driver = {
-+		.name = "lpc32xx-motor-pwm",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(lpc32xx_motor_pwm_dt_ids),
-+	},
-+	.probe = lpc32xx_motor_pwm_probe,
-+	.remove = lpc32xx_motor_pwm_remove,
-+};
-+module_platform_driver(lpc32xx_motor_pwm_driver);
-+
-+MODULE_ALIAS("platform:lpc32xx-motor-pwm");
-+MODULE_AUTHOR("Alban Bedel <alban.bedel@avionic-design.de>");
-+MODULE_DESCRIPTION("LPC32xx Motor PWM Driver");
-+MODULE_LICENSE("GPL v2");
--- 
-2.1.0
+We made the conscious decision to not use any of the ACPI mechanisms
+to enumerate or control P state selection.  Experience over the years
+has shown that the quality/accuracy of the BIOS/ACPI implementations
+vary widely across OEM's and platform types from a single OEM. Features
+that always work on a server platform from a given OEM may not work or
+provide bad information on client platforms for example.
+
+Another reason for doing intel_pstate was to be able to land intel specific
+features and fixes without breaking other architectures as the power
+management capabilities of the platform evolve. As processors that support
+Hardware P states (HWP) as described in section 14.4 of the current SDM
+come into the market intel_pstate will change to not doing much other
+than enabling HWP and providing an interface to forward user configuration
+requests to the processor if the user chooses to enable HWP otherwise the
+current mechanisms will be used.  This is why the intel_pstate sysfs
+interface is the way it is to be able to map cleanly to HWP and provide
+an abstract interface going forward.
+
+Having separate drivers allows the system integrator/user to select the
+most appropriate mechanism for their system.
+
+--Dirk
+
+On 09/09/2014 03:12 PM, Ashwin Chaugule wrote:
+> This patchset introduces CPPC(Collaborative Processor Performance Control) as a backend
+> to the PID governor. The PID governor from intel_pstate.c maps cleanly onto some CPPC
+> interfaces.
+> e.g. The CPU performance requests are made on a continuous scale as against discrete pstate
+> levels. The CPU performance feedback over an interval is gauged using platform specific
+> counters which are also described by CPPC.
+>
+> Although CPPC describes several other registers to provide more hints to the platform,
+> Linux as of today does not have the infrastructure to make use of those registers.
+> Some of the CPPC specific information could be made available from the scheduler as
+> part of the CPUfreq and Scheduler intergration work. Until then PID can be used as the
+> front end for CPPC.
+>
+> Beyond code restructuring and renaming, this patchset does not change the logic from the
+> intel_pstate.c driver. Kernel compilation times were compared with the original intel_pstate.c,
+> intel backend(intel_pid_ctrl.c) and the CPPC backend and no significant overheads were noticed.
+>
+> Testing was performed on a Thinkpad X240 laptop.
+>
+> PID_CTRL + INTEL_PSTATE:
+> =======================
+> real	5m37.742s
+> user	18m42.575s
+> sys	1m0.521s
+>
+>
+> PID_CTRL + CPPC_PID_CTRL:
+> ========================
+> real	5m48.321s
+> user	18m24.487s
+> sys	0m59.327s
+>
+>
+> ORIGINAL INTEL_PSTATE:
+> ======================
+> real	5m40.642s
+> user	18m37.411s
+> sys	1m0.185s
+>
+>
+> The complete patchset including the PCC hacks used for testing is available in [4].
+>
+>
+> Changes since V0: [1]
+> -	Split intel_pstate.c into a generic PID governor and platform specific backend.
+> -	Add CPPC accessors as PID backend.
+>
+>
+> CPPC:
+> ====
+>
+> CPPC (Collaborative Processor Performance Control) is a new way to control CPU
+> performance using an abstract continous scale as against a discretized P-state scale
+> which is tied to CPU frequency only. It is defined in the ACPI 5.0+ spec. In brief,
+> the basic operation involves:
+> - OS makes a CPU performance request. (Can provide min and max tolerable bounds)
+>
+> - Platform (such as BMC) is free to optimize request within requested bounds depending
+> on power/thermal budgets etc.
+>
+> - Platform conveys its decision back to OS
+>
+> The communication between OS and platform occurs through another medium called (PCC)
+> Platform communication Channel. This is a generic mailbox like mechanism which includes
+> doorbell semantics to indicate register updates. The PCC driver is being discussed in a
+> separate patchset [3] and is not included here, since CPPC is only one client of PCC.
+>
+> Finer details about the PCC and CPPC spec are available in the latest ACPI 5.1
+> specification.[2]
+>
+> [1] - http://lwn.net/Articles/608715/
+> [2] - http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
+> [3] - http://comments.gmane.org/gmane.linux.acpi.devel/70299
+> [4] - http://git.linaro.org/people/ashwin.chaugule/leg-kernel.git/shortlog/refs/heads/cppc-pid-no_freq_domain
+>
+>
+>
+> Ashwin Chaugule (6):
+>    PID Controller governor
+>    PID: Move Turbo detection into backend driver
+>    PID: Move Baytrail specific accessors into backend driver
+>    PID: Add new function pointers to read multiple registers
+>    PID: Rename counters to make them more generic
+>    PID: Add CPPC (Collaborative Processor Performance) backend driver
+>
+>   Documentation/cpu-freq/intel-pstate.txt |   43 --
+>   Documentation/cpu-freq/pid_ctrl.txt     |   41 ++
+>   drivers/cpufreq/Kconfig                 |   19 +
+>   drivers/cpufreq/Kconfig.x86             |    2 +-
+>   drivers/cpufreq/Makefile                |    4 +-
+>   drivers/cpufreq/cppc_pid_ctrl.c         |  406 +++++++++++++
+>   drivers/cpufreq/intel_pid_ctrl.c        |  408 +++++++++++++
+>   drivers/cpufreq/intel_pstate.c          | 1012 -------------------------------
+>   drivers/cpufreq/pid_ctrl.c              |  615 +++++++++++++++++++
+>   drivers/cpufreq/pid_ctrl.h              |  113 ++++
+>   10 files changed, 1606 insertions(+), 1057 deletions(-)
+>   delete mode 100644 Documentation/cpu-freq/intel-pstate.txt
+>   create mode 100644 Documentation/cpu-freq/pid_ctrl.txt
+>   create mode 100644 drivers/cpufreq/cppc_pid_ctrl.c
+>   create mode 100644 drivers/cpufreq/intel_pid_ctrl.c
+>   delete mode 100644 drivers/cpufreq/intel_pstate.c
+>   create mode 100644 drivers/cpufreq/pid_ctrl.c
+>   create mode 100644 drivers/cpufreq/pid_ctrl.h
+>
 
