@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaIJVfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:35:33 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:40460 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871AbaIJVfb (ORCPT
+	id S1754115AbaIJVfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:35:51 -0400
+Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:13970 "EHLO
+	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770AbaIJVft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:35:31 -0400
-Date: Wed, 10 Sep 2014 17:35:27 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] sched/idle : find the best idle CPU with cpuidle
- info
-In-Reply-To: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
-Message-ID: <alpine.LFD.2.11.1409101734470.16533@knanqh.ubzr>
-References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Sep 2014 17:35:49 -0400
+Message-ID: <1410384315.28990.308.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
+ WT
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Wed, 10 Sep 2014 15:25:15 -0600
+In-Reply-To: <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+	 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>
+	 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
+	 <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>
+	 <1410381050.28990.295.camel@misato.fc.hp.com>
+	 <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com>
+	 <1410383484.28990.303.camel@misato.fc.hp.com>
+	 <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-09-10 at 14:27 -0700, Andy Lutomirski wrote:
+> On Wed, Sep 10, 2014 at 2:11 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > On Wed, 2014-09-10 at 14:06 -0700, Andy Lutomirski wrote:
+> >> On Wed, Sep 10, 2014 at 1:30 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> >> > On Wed, 2014-09-10 at 13:14 -0700, H. Peter Anvin wrote:
+> >> >> On 09/10/2014 12:30 PM, Toshi Kani wrote:
+> >> >> >
+> >> >> > When WT is unavailable due to the PAT errata, it does not fail but gets
+> >> >> > redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
+> >> >> > to UC- as well.
+> >> >> >
+> >> >>
+> >> >> But on pre-PAT hardware you can still do WT.
+> >> >
+> >> > Yes, if we manipulates the bits directly, but such code is no longer
+> >> > allowed for PAT systems.  The PAT-based kernel interfaces won't work for
+> >> > pre-PAT systems, and therefore requests are redirected to UC- on such
+> >> > systems.
+> >> >
+> >>
+> >> Right, the PWT bit.  Forgot about that.
+> >>
+> >> I wonder whether it would make sense to do some followup patches to
+> >> replace the current support for non-PAT machines with a "PAT" and
+> >> corresponding reverse map that exactly matches the mapping when PAT is
+> >> disabled.  These patches are almost there.
+> >
+> > That's possible, but the only benefit is that we can enable WT on
+> > pre-PAT systems, which I do not think anyone cares now...  WB & UC work
+> > on pre-PAT systems.  WC & WT need PAT.  I think this requirement is
+> > reasonable.
+> 
+> It might end up being a cleanup, though.  A whole bunch of
+> rarely-exercised if (!pat_enabled) things would go away.
 
-Ping.
+Good point.  I will work on it. 
 
+Thanks,
+-Toshi
 
-On Thu, 4 Sep 2014, Nicolas Pitre wrote:
-
-> This is a rework of the series initially posted by Daniel Lezcano here:
-> 
-> http://news.gmane.org/group/gmane.linux.power-management.general/thread=44161
-> 
-> Those patches were straightened up, commit logs are more comprehensive,
-> bugs were fixed, etc.
-> 
-> 
->  drivers/cpuidle/cpuidle.c |  6 ++++++
->  kernel/sched/fair.c       | 43 ++++++++++++++++++++++++++++++++++-------
->  kernel/sched/idle.c       |  6 ++++++
->  kernel/sched/sched.h      | 39 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 87 insertions(+), 7 deletions(-)
-> 
-> 
-> Nicolas
-> 
-> 
-> _______________________________________________
-> linaro-kernel mailing list
-> linaro-kernel@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-kernel
-> 
-> 
