@@ -1,113 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbaIJOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:30:27 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:34481 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaIJO3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:29:12 -0400
-From: Jeff Layton <jlayton@primarydata.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, bfields@fieldses.org
-Subject: [RFC PATCH 09/12] cifs: convert it to use file_lock_context
-Date: Wed, 10 Sep 2014 10:28:47 -0400
-Message-Id: <1410359330-27564-10-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
-References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+	id S1752983AbaIJOae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:30:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17321 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751673AbaIJOaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:30:30 -0400
+Date: Wed, 10 Sep 2014 10:30:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
+ relocations
+Message-ID: <20140910143019.GA3771@redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+ <1409926097-2101-2-git-send-email-bhe@redhat.com>
+ <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+ <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+ <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+ <20140909192813.GB9435@redhat.com>
+ <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- fs/cifs/file.c | 34 ++++++++++++++--------------------
- 1 file changed, 14 insertions(+), 20 deletions(-)
+On Wed, Sep 10, 2014 at 03:21:15PM +0800, Baoquan He wrote:
+> On 09/09/14 at 03:28pm, Vivek Goyal wrote:
+> > On Tue, Sep 09, 2014 at 08:53:29AM -0700, Kees Cook wrote:
+>  
+> > > I still think this needs a test for the 32-bit case, since IUIC, it
+> > > requires relocations unconditionally.
+> > 
+> > [ CC hpa ]
+> > 
+> > Bao, for modifications in this area, I would recommend CC hpa too.
+> > 
+> > I also think that i386 will always require relocation handling. That's
+> > how Eric had designed it. There was no separate kernel text mapping
+> > region so PAGE_OFFSET was constant. Hence if you shift kernel in physical
+> > address space, you had to shift mappings in virtual address space by
+> > equal amount.
+> > 
+> > But in x86_64, we have kernel text mapped in a separate virtual region, and 
+> > that allowed us wiggling room and we could load kernel anywhere
+> > in physical address space and just change mappings of kernel text
+> > virtual address region accordingly.
+> > 
+> > So I agree that on i386, we will most likely require relocations all
+> > the time. Having said that, it is interesting that one can disable
+> > X86_NEED_RELOCS on i386 while RELOCATBALE=y.
+> > 
+> > # Relocation on x86 needs some additional build support
+> > config X86_NEED_RELOCS
+> >         def_bool y
+> >         depends on RANDOMIZE_BASE || (X86_32 && RELOCATABLE)
+> > 
+> > I am not sure how i386 RELOCATABLE kernel will work if X86_NEED_RELOCS=n.
+> > 
+> > 
+> > Secondly, IIUC, kernel has 32bit signed relocations. That means
+> > relocations can be processed successfully only if kernel is loaded
+> > in first 2G or -2G. If that's the case, then aslr mechanism should
+> > see that where kernel is loaded physically and if it is loaded outside
+> > the range where relocations can be processed successfully, it should
+> > disable itself and output a message.
+> 
+> Yes, kernel only handle 2G or -2G relocation since 32 bit signed
+> relocations. But for aslr, since the kernel text mapping shares 2G
+> virtual address space with modules, only 1G relocation can be done. I
+> took a test, when load kernel at 1G, if not checking if output_orig
+> and output are equal, it will trigger a BIOS reboot. And with the
+> restriction checking in process_e820_entry(), the kaslr relocations only
+> happens inside 1G.
+> 
+> If max_addr is outside 1G, namely CONFIG_RANDOMIZE_BASE_MAX_OFFSET, the
+> kaslr random kernel location choosing won't happen, then checking if
+> output_orig is equal to outout in handle_relocations(), if equal nothing
+> happened. This truly don't need to specify "nokaslr". 
+> 
+> In fact, I think below checking will be clearer and works too.
+> 
+> 
+> static void handle_relocations(void *output, unsigned long output_len)
+> {
+> 
+> ...
+> 
+> #if CONFIG_X86_64
+> 
+> or
+> 
+> #if CONFIG_RANDOMIZE_BASE
+> #ifdef CONFIG_HIBERNATION
+> 	if (!cmdline_find_option_bool("kaslr")) {
+>                debug_putstr("No relocation needed... ");
+>                return;
+> 	}
+> #else
+> 	if (cmdline_find_option_bool("nokaslr")) {
+>                debug_putstr("No relocation needed... ");
+>                return;
+> 	}
+> #endif
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index d5fec92e0360..dadfbc9fb5a5 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -1101,11 +1101,6 @@ cifs_push_mandatory_locks(struct cifsFileInfo *cfile)
- 	return rc;
- }
- 
--/* copied from fs/locks.c with a name change */
--#define cifs_for_each_lock(inode, lockp) \
--	for (lockp = &inode->i_flock; *lockp != NULL; \
--	     lockp = &(*lockp)->fl_next)
--
- struct lock_to_push {
- 	struct list_head llist;
- 	__u64 offset;
-@@ -1120,8 +1115,9 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
- {
- 	struct inode *inode = cfile->dentry->d_inode;
- 	struct cifs_tcon *tcon = tlink_tcon(cfile->tlink);
--	struct file_lock *flock, **before;
--	unsigned int count = 0, i = 0;
-+	struct file_lock *flock;
-+	struct file_lock_context *flctx = inode->i_flctx;
-+	unsigned int count = 0, i;
- 	int rc = 0, xid, type;
- 	struct list_head locks_to_send, *el;
- 	struct lock_to_push *lck, *tmp;
-@@ -1129,12 +1125,14 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
- 
- 	xid = get_xid();
- 
--	spin_lock(&inode->i_lock);
--	cifs_for_each_lock(inode, before) {
--		if ((*before)->fl_flags & FL_POSIX)
--			count++;
-+	if (!flctx)
-+		goto out;
-+
-+	spin_lock(&flctx->flc_lock);
-+	list_for_each(el, &flctx->flc_posix) {
-+		count++;
- 	}
--	spin_unlock(&inode->i_lock);
-+	spin_unlock(&flctx->flc_lock);
- 
- 	INIT_LIST_HEAD(&locks_to_send);
- 
-@@ -1143,7 +1141,7 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
- 	 * added to the list while we are holding cinode->lock_sem that
- 	 * protects locking operations of this inode.
- 	 */
--	for (; i < count; i++) {
-+	for (i = 0; i < count; i++) {
- 		lck = kmalloc(sizeof(struct lock_to_push), GFP_KERNEL);
- 		if (!lck) {
- 			rc = -ENOMEM;
-@@ -1153,11 +1151,8 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
- 	}
- 
- 	el = locks_to_send.next;
--	spin_lock(&inode->i_lock);
--	cifs_for_each_lock(inode, before) {
--		flock = *before;
--		if ((flock->fl_flags & FL_POSIX) == 0)
--			continue;
-+	spin_lock(&flctx->flc_lock);
-+	list_for_each_entry(flock, &flctx->flc_posix, fl_list) {
- 		if (el == &locks_to_send) {
- 			/*
- 			 * The list ended. We don't have enough allocated
-@@ -1177,9 +1172,8 @@ cifs_push_posix_locks(struct cifsFileInfo *cfile)
- 		lck->length = length;
- 		lck->type = type;
- 		lck->offset = flock->fl_start;
--		el = el->next;
- 	}
--	spin_unlock(&inode->i_lock);
-+	spin_unlock(&flctx->flc_lock);
- 
- 	list_for_each_entry_safe(lck, tmp, &locks_to_send, llist) {
- 		int stored_rc;
--- 
-1.9.3
+> 
+> 	if (max_addr > CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
+>                 debug_putstr("Random addr is not allowed. No relocation
+> needed... \n");
+>                 return;
 
+Hi Bao,
+
+I dont think that this is required or this is correct. kaslr will not
+choose a physical location which is beyond CONFIG_RANDOMIZE_BASE_MAX_OFFSET,
+So not sure what will this do.
+
+Just the other check of output_orig == output should fix issue for us.
+
+If one is not passing nokaslr in case of kexec, and kernel is loaded
+high (say 64G), I think kaslr will automatically move kernel below 1G
+and handle_relocations() should succeed.
+
+In case of kdump we will have to pass nokaslr, as we don't want kernel
+to move as it could stomp over other things we have loaded.
+
+So I would suggest that test and repost the other patch with proper changelog
+and that might be sufficient for now. Only other thing we will need is
+Kees's patch for avoiding setup data regions in kaslr.
+
+Thanks
+Vivek
