@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254AbaIJXxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:53:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48229 "EHLO
+	id S1752559AbaIJX6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:58:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48253 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaIJXxM (ORCPT
+	with ESMTP id S1752463AbaIJX63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:53:12 -0400
+	Wed, 10 Sep 2014 19:58:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140910190247.GA28821@infradead.org>
-References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
-	<1410267949-21904-9-git-send-email-ming.lei@canonical.com>
-	<20140909184856.GG16750@infradead.org>
-	<CACVXFVNhmvy+aSgbJX8zgRVJQS0q6PWJLhmy_XVN_9YvSFdwag@mail.gmail.com>
-	<20140910190247.GA28821@infradead.org>
-Date: Thu, 11 Sep 2014 07:53:09 +0800
-Message-ID: <CACVXFVNMfe1bGRmeQf-xKxA=YnD8e=dXwBQmoJzx_HNiPFJYHQ@mail.gmail.com>
-Subject: Re: [PATCH 8/8] blk-mq: support per-distpatch_queue flush machinery
+In-Reply-To: <87y4trhwqr.fsf@rustcorp.com.au>
+References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com>
+	<20140902162146.GA28741@infradead.org>
+	<5405EF38.60007@kernel.dk>
+	<20140903121902.7a9f5a5a@tom-ThinkPad-T410>
+	<87bnquk4fe.fsf@rustcorp.com.au>
+	<878ulyjn23.fsf@rustcorp.com.au>
+	<87y4trhwqr.fsf@rustcorp.com.au>
+Date: Thu, 11 Sep 2014 07:58:27 +0800
+Message-ID: <CACVXFVOX=Tcc9fN_C0FuEHsF22dave9vXtoVct5sx1iK1AWRXg@mail.gmail.com>
+Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
 From: Ming Lei <ming.lei@canonical.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>
+        Kick In <pierre-andre.morey@canonical.com>,
+        Chris J Arges <chris.j.arges@canonical.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 3:02 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Sep 10, 2014 at 09:40:11AM +0800, Ming Lei wrote:
->> I am wondering we can do that because lifetime is totally different
->> between flush requests and tag_set requests which are initialized
->> before request queue is created.
+On Thu, Sep 11, 2014 at 7:38 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Rusty Russell <rusty@rustcorp.com.au> writes:
+>> Rusty Russell <rusty@rustcorp.com.au> writes:
+>> Here's what I have.  It seems to work as expected, but I haven't
+>> benchmarked it.
 >
-> We shouldn't do it in the tag sets, but where we allocate and free
-> each hctx: blk_mq_init_queue and blk_mq_free_hw_queues.
+> Hi Ming,
+>
+>         Any chance you can run your benchmarks against this patch?
 
-That should work, but both flush queue's allocation and .init_request()
-have to move to the function because hctx->numa_node is basically
-ready in blk_mq_init_queue().  Then blk_init_flush() only need to allocate
-the data for legacy case.
+I can run the previous benchmark against this patch, but I am wondering
+if it is enough since the change need lots of test cases to verify.
 
+BTW, looks your patch doesn't against upstream kernel, since I can't
+find alloc_indirect() in drivers/virtio/virtio_ring.c
 
 Thanks,
