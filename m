@@ -1,150 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaIJTPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:15:47 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:59454 "EHLO gloria.sntech.de"
+	id S1753249AbaIJTRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:17:37 -0400
+Received: from fieldses.org ([174.143.236.118]:39424 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754AbaIJTPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:15:46 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
-        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
-        huangtao@rock-chips.com, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: rockchip: add basic smp support for rk3288
-Date: Wed, 10 Sep 2014 21:17:50 +0200
-Message-ID: <10859079.lGoHcm2S7H@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1410343554-8383-2-git-send-email-kever.yang@rock-chips.com>
-References: <1410343554-8383-1-git-send-email-kever.yang@rock-chips.com> <1410343554-8383-2-git-send-email-kever.yang@rock-chips.com>
+	id S1750967AbaIJTRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 15:17:35 -0400
+Date: Wed, 10 Sep 2014 15:17:34 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH 08/12] nfs: convert lock handling to use
+ file_lock_context
+Message-ID: <20140910191734.GD4210@fieldses.org>
+References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+ <1410359330-27564-9-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410359330-27564-9-git-send-email-jlayton@primarydata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kever,
-
-Am Mittwoch, 10. September 2014, 18:05:53 schrieb Kever Yang:
-> basic rk3288 smp support
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+On Wed, Sep 10, 2014 at 10:28:46AM -0400, Jeff Layton wrote:
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 > ---
+>  fs/nfs/delegation.c | 37 +++++++++++++++++++++----------------
+>  fs/nfs/nfs4state.c  | 24 +++++++++++++++---------
+>  fs/nfs/pagelist.c   |  3 ++-
+>  fs/nfs/write.c      | 39 +++++++++++++++++++++++++++++++++------
+>  4 files changed, 71 insertions(+), 32 deletions(-)
 > 
->  arch/arm/mach-rockchip/core.h    |  1 +
->  arch/arm/mach-rockchip/platsmp.c | 60
-> +++++++++++++++++++++++++++++++++++++--- 2 files changed, 57 insertions(+),
-> 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
-> index 39bca96..b2ade69 100644
-> --- a/arch/arm/mach-rockchip/core.h
-> +++ b/arch/arm/mach-rockchip/core.h
-> @@ -18,3 +18,4 @@ extern char rockchip_secondary_trampoline_end;
-> 
->  extern unsigned long rockchip_boot_fn;
->  extern void rockchip_secondary_startup(void);
-> +extern void secondary_startup(void);
-> diff --git a/arch/arm/mach-rockchip/platsmp.c
-> b/arch/arm/mach-rockchip/platsmp.c index 189684f..fcd33fd 100644
-> --- a/arch/arm/mach-rockchip/platsmp.c
-> +++ b/arch/arm/mach-rockchip/platsmp.c
-> @@ -77,6 +77,12 @@ static int __cpuinit rockchip_boot_secondary(unsigned int
-> cpu, /* start the core */
->  	pmu_set_power_domain(0 + cpu, true);
-> 
-> +	/* wait for cpu 1~3 bootup and run into wfe state */
-> +	udelay(10);
-> +	writel(virt_to_phys(secondary_startup), sram_base_addr + 8);
-> +	writel(0xDEADBEAF, sram_base_addr + 4);
-> +	dsb_sev();
-> +
-
-Are you sure this also works on the Cortex-A9, which do share the 
-rockchip_boot_secondary function here?
-
-This is also the area where the rk3066/rk3188 put their bringup trampoline, so 
-writing new values there might break the code fragment for them.
-
-
-
->  	return 0;
->  }
-> 
-> @@ -125,7 +131,7 @@ static int __init rockchip_smp_prepare_sram(struct
-> device_node *node) return 0;
->  }
-> 
-> -static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
-> +static void __init rk3066_smp_prepare_cpus(unsigned int max_cpus)
+> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> index 5853f53db732..22c6eed9bb5b 100644
+> --- a/fs/nfs/delegation.c
+> +++ b/fs/nfs/delegation.c
+> @@ -85,25 +85,30 @@ static int nfs_delegation_claim_locks(struct nfs_open_context *ctx, struct nfs4_
 >  {
->  	struct device_node *node;
->  	unsigned int i;
-> @@ -194,12 +200,58 @@ static void rockchip_cpu_die(unsigned int cpu)
+>  	struct inode *inode = state->inode;
+>  	struct file_lock *fl;
+> +	struct file_lock_context *flctx = inode->i_flctx;
+> +	struct list_head *list;
+>  	int status = 0;
+>  
+> -	if (inode->i_flock == NULL)
+> -		goto out;
+> -
+> -	/* Protect inode->i_flock using the i_lock */
+> -	spin_lock(&inode->i_lock);
+> -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+> -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+> -			continue;
+> -		if (nfs_file_open_context(fl->fl_file) != ctx)
+> -			continue;
+> -		spin_unlock(&inode->i_lock);
+> -		status = nfs4_lock_delegation_recall(fl, state, stateid);
+> -		if (status < 0)
+> -			goto out;
+> -		spin_lock(&inode->i_lock);
+> +	flctx = inode->i_flctx;
+> +	if (flctx) {
+> +		list = &flctx->flc_posix;
+> +		spin_lock(&flctx->flc_lock);
+> +restart:
+> +		list_for_each_entry(fl, list, fl_list) {
+> +			if (nfs_file_open_context(fl->fl_file) != ctx)
+> +				continue;
+> +			spin_unlock(&flctx->flc_lock);
+> +			status = nfs4_lock_delegation_recall(fl, state, stateid);
+> +			if (status < 0)
+> +				goto out;
+> +			spin_lock(&flctx->flc_lock);
+> +		}
+> +		if (list == &flctx->flc_posix) {
+> +			list = &flctx->flc_flock;
+> +			goto restart;
+> +		}
+> +		spin_unlock(&flctx->flc_lock);
+>  	}
+> -	spin_unlock(&inode->i_lock);
+>  out:
+>  	return status;
 >  }
->  #endif
-> 
-> -static struct smp_operations rockchip_smp_ops __initdata = {
-> -	.smp_prepare_cpus	= rockchip_smp_prepare_cpus,
-> +static void __init rk3288_smp_prepare_cpus(unsigned int max_cpus)
+> diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+> index a043f618cd5a..2899a0f26293 100644
+> --- a/fs/nfs/nfs4state.c
+> +++ b/fs/nfs/nfs4state.c
+> @@ -1377,21 +1377,23 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+>  	struct inode *inode = state->inode;
+>  	struct nfs_inode *nfsi = NFS_I(inode);
+>  	struct file_lock *fl;
+> +	struct file_lock_context *flctx = inode->i_flctx;
+> +	struct list_head *list;
+>  	int status = 0;
+>  
+> -	if (inode->i_flock == NULL)
+> +	if (!flctx)
+>  		return 0;
+>  
+> +	list = &flctx->flc_posix;
+> +
+>  	/* Guard against delegation returns and new lock/unlock calls */
+>  	down_write(&nfsi->rwsem);
+> -	/* Protect inode->i_flock using the BKL */
+> -	spin_lock(&inode->i_lock);
+> -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+> -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+> -			continue;
+> +	spin_lock(&flctx->flc_lock);
+> +restart:
+> +	list_for_each_entry(fl, list, fl_list) {
+>  		if (nfs_file_open_context(fl->fl_file)->state != state)
+>  			continue;
+> -		spin_unlock(&inode->i_lock);
+> +		spin_unlock(&flctx->flc_lock);
+>  		status = ops->recover_lock(state, fl);
+>  		switch (status) {
+>  			case 0:
+> @@ -1418,9 +1420,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+>  				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+>  				status = 0;
+>  		}
+> -		spin_lock(&inode->i_lock);
+> +		spin_lock(&flctx->flc_lock);
+>  	}
+> -	spin_unlock(&inode->i_lock);
+> +	if (list == &flctx->flc_posix) {
+> +		list = &flctx->flc_flock;
+> +		goto restart;
+> +	}
+> +	spin_unlock(&flctx->flc_lock);
+>  out:
+>  	up_write(&nfsi->rwsem);
+>  	return status;
+> diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+> index ba491926df5f..4df8d8755026 100644
+> --- a/fs/nfs/pagelist.c
+> +++ b/fs/nfs/pagelist.c
+> @@ -782,7 +782,8 @@ static bool nfs_can_coalesce_requests(struct nfs_page *prev,
+>  	if (prev) {
+>  		if (!nfs_match_open_context(req->wb_context, prev->wb_context))
+>  			return false;
+> -		if (req->wb_context->dentry->d_inode->i_flock != NULL &&
+> +		if (req->wb_context->dentry->d_inode->i_flctx != NULL &&
+> +		    !list_empty(&req->wb_context->dentry->d_inode->i_flctx->flc_posix) &&
+>  		    !nfs_match_lock_context(req->wb_lock_context,
+>  					    prev->wb_lock_context))
+>  			return false;
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index e3b5cf28bdc5..02b8777f8f2f 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -1128,7 +1128,8 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
+>  		do_flush = req->wb_page != page || req->wb_context != ctx;
+>  		/* for now, flush if more than 1 request in page_group */
+>  		do_flush |= req->wb_this_page != req;
+> -		if (l_ctx && ctx->dentry->d_inode->i_flock != NULL) {
+> +		if (l_ctx && ctx->dentry->d_inode->i_flctx &&
+> +		    !list_empty(&ctx->dentry->d_inode->i_flctx->flc_posix)) {
+>  			do_flush |= l_ctx->lockowner.l_owner != current->files
+>  				|| l_ctx->lockowner.l_pid != current->tgid;
+>  		}
+> @@ -1189,6 +1190,12 @@ out:
+>  	return PageUptodate(page) != 0;
+>  }
+>  
+> +static bool
+> +is_whole_file_wrlock(struct file_lock *fl)
 > +{
-> +	struct device_node *node;
-> +	unsigned int i;
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-smp-sram");
-> +	if (!node) {
-> +		pr_err("%s: could not find sram dt node\n", __func__);
-> +		return;
-> +	}
-> +
-> +	sram_base_addr = of_iomap(node, 0);
-> +	if (!sram_base_addr) {
-> +		pr_err("%s: could not map pmu registers\n", __func__);
-> +		return;
-> +	}
-> +
-> +	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3288-pmu");
-> +	if (!node) {
-> +		pr_err("%s: could not find pmu dt node\n", __func__);
-> +		return;
-> +	}
-> +
-> +	pmu_base_addr = of_iomap(node, 0);
-> +	if (!pmu_base_addr) {
-> +		pr_err("%s: could not map pmu registers\n", __func__);
-> +		return;
-> +	}
-> +
-> +	ncores = 4;
-> +
-> +	/* Make sure that all cores except the first are really off */
-> +	for (i = 1; i < ncores; i++)
-> +		pmu_set_power_domain(0 + i, false);
+> +	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
 > +}
 > +
-> +static struct smp_operations rockchip3066_smp_ops __initdata = {
-> +	.smp_prepare_cpus	= rk3066_smp_prepare_cpus,
-> +	.smp_boot_secondary	= rockchip_boot_secondary,
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +	.cpu_kill		= rockchip_cpu_kill,
-> +	.cpu_die		= rockchip_cpu_die,
-> +#endif
-> +};
-> +CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp",
-> &rockchip3066_smp_ops); +
-> +static struct smp_operations rockchip3288_smp_ops __initdata = {
-> +	.smp_prepare_cpus	= rk3288_smp_prepare_cpus,
->  	.smp_boot_secondary	= rockchip_boot_secondary,
->  #ifdef CONFIG_HOTPLUG_CPU
->  	.cpu_kill		= rockchip_cpu_kill,
->  	.cpu_die		= rockchip_cpu_die,
->  #endif
->  };
-> -CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp",
-> &rockchip_smp_ops); +CPU_METHOD_OF_DECLARE(rk3288_smp,
-> "rockchip,rk3288-smp", &rockchip3288_smp_ops);
+>  /* If we know the page is up to date, and we're not using byte range locks (or
+>   * if we have the whole file locked for writing), it may be more efficient to
+>   * extend the write to cover the entire page in order to avoid fragmentation
+> @@ -1199,17 +1206,37 @@ out:
+>   */
+>  static int nfs_can_extend_write(struct file *file, struct page *page, struct inode *inode)
+>  {
+> +	int ret;
+> +	struct file_lock_context *flctx = inode->i_flctx;
+> +	struct file_lock *fl;
+> +
+>  	if (file->f_flags & O_DSYNC)
+>  		return 0;
+>  	if (!nfs_write_pageuptodate(page, inode))
+>  		return 0;
+>  	if (NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
+>  		return 1;
+> -	if (inode->i_flock == NULL || (inode->i_flock->fl_start == 0 &&
+> -			inode->i_flock->fl_end == OFFSET_MAX &&
+> -			inode->i_flock->fl_type != F_RDLCK))
 
+Doesn't the existing code already have a bug?  Without the i_lock
+inode->i_flock could turn NULL partyway through 
+
+There's a bug in the existing code, isn't there?  Without holding the
+i_lock, couldn't inode->i_flock turn NULL partway through this
+conditional and cause NULL dereferences?  (Or, more bizarrely, the
+checks of those various fields could end up being for different locks.)
+
+> -		return 1;
+> -	return 0;
+> +	/* no lock context == no locks */
+> +	if (!flctx)
+> +		return 0;
+> +
+> +	/* if lists are empty then there are no locks */
+> +	if (list_empty(&flctx->flc_posix) && list_empty(&flctx->flc_flock))
+> +		return 0;
+> +
+> +	ret = 0;
+> +	/* Check to see if there are whole file write locks */
+> +	spin_lock(&flctx->flc_lock);
+> +	fl = list_first_entry(&flctx->flc_posix, struct file_lock, fl_list);
+> +	if (is_whole_file_wrlock(fl)) {
+> +		ret = 1;
+> +	} else {
+> +		fl = list_first_entry(&flctx->flc_flock, struct file_lock, fl_list);
+> +		if (is_whole_file_wrlock(fl))
+> +			ret = 1;
+> +	}
+> +	spin_unlock(&flctx->flc_lock);
+> +	return ret;
+
+Kind of pity we're turning 5 lines of code into 20 in the name of
+simplification.  Could be slightly pithier:
+
+	ret = is_whole_file_wrlock(fl);
+	if (!ret) {
+		fl = ...
+		ret = is_whole_file_wrlock(fl);
+	}
+
+But, whatever, looks OK to me.
+
+--b.
+
+>  }
+>  
+>  /*
+> -- 
+> 1.9.3
+> 
