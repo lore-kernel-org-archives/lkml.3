@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058AbaIJSTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:19:13 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63975 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaIJSTK (ORCPT
+	id S1753174AbaIJSUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:20:40 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:60820 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaIJSUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:19:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <541071DB.3010704@numascale.com>
-References: <541071DB.3010704@numascale.com>
-Date: Wed, 10 Sep 2014 11:19:09 -0700
-X-Google-Sender-Auth: mcSFjX7T4ceHk1tGiKqzqeg3l5c
-Message-ID: <CAE9FiQU-9LnfMfHSrtrHMyixJ8De+4MnFzNWBfHwtfFpLHNjVg@mail.gmail.com>
-Subject: Re: 3.14 x86 ACPI handover regression
-From: Yinghai Lu <yinghai@kernel.org>
-To: Daniel J Blueman <daniel@numascale.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Dave Hansen <dave.hansen@intel.com>,
+	Wed, 10 Sep 2014 14:20:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Yijing Wang <wangyijing@huawei.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Will Deacon <Will.Deacon@arm.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>
-Content-Type: text/plain; charset=UTF-8
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI domain_nr
+Date: Wed, 10 Sep 2014 20:19:52 +0200
+Message-ID: <2908259.jgJNuDxCCa@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140909112054.GD29639@arm.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <3780051.0eHpCN6UC9@wuerfel> <20140909112054.GD29639@arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:5fygzCF5yGkE2WD4BAxybm6UA3NUMs4m5dxP5oa+saT
+ HjWyH9gFkyyhjWlZUf2B7B/FHtkfv8C4BujoW+BToUiwwDuH8/
+ 9VE5lFCxjaRB/fTWppEjih4T/bAF3pKLgnGuW6Ev5ybb2aSK9/
+ h7YUqGbD95EGXBWoYy+LcLItgqyhzSUH8d6YsDAd7a0iA2h08A
+ B2IZ29gx/Njpey0UFGgb2S8STIZ55XlukU17zgnpYxVVW6ZZbQ
+ 8USfdKyoOMNzt3TuIMm5IeMr1tfWQiGwF2N3v0iWGIS8SwE6tV
+ rxRCGrg/RxMlO3GaA78oBb88BjhdAF0Fah3QwkSiuqYP5+l/VY
+ GtwK3n+xd53ILqpAcPiA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+ linux acpi]
+On Tuesday 09 September 2014 12:20:54 Catalin Marinas wrote:
+> 
+> We can assume that if a domain is not specified and there is a single
+> top level PCIe node, the domain defaults to 0. Are there any arm32
+> platforms that require multiple domains (and do not specify a number in
+> the DT)?
 
-could be other problems ...that is caused by wrong
-use memblock_alloc replace memblock_find....
+In theory, I think all of them could work with a single domain, but then
+you need to partition the bus number space between the host controllers,
+so you have the exact same situation that you either need to make up
+random bus numbers or put them in DT.
 
-On Wed, Sep 10, 2014 at 8:44 AM, Daniel J Blueman <daniel@numascale.com> wrote:
-> Kernels 3.14 and newer fail ACPI handover [1] on Supermicro H8QGL servers,
-> invariant of BIOS version or settings, causing boot failure, confirmed
-> across a bunch of servers.
->
-> Doing some bisect-fu, it turns out that reverting Yinghai's patch fixes the
-> behaviour. Booting with Santosh's patch (5b6e529521d3, which Yinghai
-> reverts) succeeds, but interestingly booting with the patch before Santosh's
-> patch also succeeds, suggesting there's other interaction. Behaviour is
-> stable at all places tested.
->
-> Any tips on how to proceed?
->
-> Thanks,
->   Daniel
->
-> -- [1]
->
-> ACPI Error: Hardware did not enter ACPI mode (20131218/evxfevnt-113)
-> ACPI Warning: AcpiEnable failed (20131218/utxfinit-169)
-> ACPI: Unable to enable ACPI
->
-> -- [2]
->
-> commit 4ce7a8697cb795fda6bdf082c14743b4bcd551c3
-> Author: Yinghai Lu <yinghai@kernel.org>
-> Date:   Mon Jan 27 17:06:50 2014 -0800
->
->     x86: revert wrong memblock current limit setting
->
->     Dave reported big numa system booting is broken.
->
->     It turns out that commit 5b6e529521d3 ("x86: memblock: set current limit
->     to max low memory address") sets the limit to low wrongly.
->
->     max_low_pfn_mapped is different from max_pfn_mapped.
->     max_low_pfn_mapped is always under 4G.
->
->     That will memblock_alloc_nid all go under 4G.
->
->     Revert 5b6e529521d3 to fix a no-boot regression which was triggered by
->     457ff1de2d24 ("lib/swiotlb.c: use memblock apis for early memory
->     allocations").
->
->     Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->     Reported-by: Dave Hansen <dave.hansen@intel.com>
->     Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->     Cc: Russell King <linux@arm.linux.org.uk>
->     Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Cc: Ingo Molnar <mingo@elte.hu>
->     Cc: "H. Peter Anvin" <hpa@zytor.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> diff --git a/arch/x86/include/asm/page_types.h
-> b/arch/x86/include/asm/page_types.h
-> index 2f59cce..f97fbe3 100644
-> --- a/arch/x86/include/asm/page_types.h
-> +++ b/arch/x86/include/asm/page_types.h
-> @@ -51,9 +51,9 @@ extern int devmem_is_allowed(unsigned long pagenr);
->  extern unsigned long max_low_pfn_mapped;
->  extern unsigned long max_pfn_mapped;
->
-> -static inline phys_addr_t get_max_low_mapped(void)
-> +static inline phys_addr_t get_max_mapped(void)
->  {
-> -       return (phys_addr_t)max_low_pfn_mapped << PAGE_SHIFT;
-> +       return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
->  }
->
->  bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index c967559..06853e6 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1119,7 +1119,7 @@ void __init setup_arch(char **cmdline_p)
->
->         setup_real_mode();
->
-> -       memblock_set_current_limit(get_max_low_mapped());
-> +       memblock_set_current_limit(get_max_mapped());
->         dma_contiguous_reserve(0);
->
->         /*
-> --
-> Daniel J Blueman
-> Principal Software Engineer, Numascale
+Using multiple domains is way cleaner for this, even if we have to
+make up the numbers.
+
+	Arnd
