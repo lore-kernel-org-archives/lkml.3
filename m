@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbaIJGKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 02:10:14 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.140]:34551 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750978AbaIJGKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 02:10:10 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 02:10:10 EDT
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-6.tower-180.messagelabs.com!1410329022!37883013!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 10 Sep 2014 08:03:43 +0200
-Date: Wed, 10 Sep 2014 08:07:24 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in
- hardware
-Message-ID: <20140910060723.GA3525@jtlinux>
-References: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
- <20140908231733.GB23907@kroah.com>
- <20140909055615.GA10306@jtlinux>
- <20140910002635.GA2189@kroah.com>
+	id S1751452AbaIJGKx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 02:10:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38501 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978AbaIJGKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 02:10:52 -0400
+Date: Wed, 10 Sep 2014 14:10:35 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Deutschmann <whissi@whissi.de>,
+        Dave Young <dyoung@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Vivek Goyal <vgoyal@redhat.com>, WANG Chao <chaowang@redhat.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
+ relocations
+Message-ID: <20140910061035.GC25867@dhcp-16-116.nay.redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+ <1409926097-2101-2-git-send-email-bhe@redhat.com>
+ <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+ <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+ <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140910002635.GA2189@kroah.com>
+In-Reply-To: <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 05:26:35PM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Sep 09, 2014 at 07:56:15AM +0200, Johannes Thumshirn wrote:
-> > On Mon, Sep 08, 2014 at 04:17:33PM -0700, Greg Kroah-Hartman wrote:
-> > > >
-> > > > @@ -118,6 +117,10 @@ static int align;
-> > > >  module_param(align, int, S_IRUGO);
-> > > >  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
-> > > >
-> > > > +static int rx_timeout;
-> > > > +module_param(rx_timeout, uint, S_IRUGO);
-> > > > +MODULE_PARM_DESC(rx_timeout, "RX timeout");
-> > >
-> > > Why add a module parameter?  Who will know to set this?  And to what
-> > > value?
-> > >
+On 09/09/14 at 08:53am, Kees Cook wrote:
+ >
+> > Hi Kees,
 > >
-> > There will be a user manual describing the parameter. It's like the rxlvl and
-> > txlvl parameters, you'll have to read the manual if you need other values than
-> > the default ones.
->
-> Ugh, but module parameters are for all devices in the system of this
-> type, which is why we try not to have them at all anymore.
->
-> And I don't like the other module parameters either :(
->
-> But it's an odd-one-off driver, I guess we can live...
-
-Just for my information, what would be the correct way to do these kinds of
-hardware specific settings? Sysfs? Debugfs? Custom ioctl()s (no struct file_operations,
-so probably not)?
-
-I guess we (and others) have a lot hardware that can be tweaked some way other
-than what the framework supports and if module parameters aren't the way to go I
-there must be some other way to configure this.
-
->
-> > > And what about this driver working on old hardware, didn't you just
-> > > break this?
-> > >
+> > Checking handle_relocations() again, I just didn't notice it's mandatory
+> > to do the relocations handling in i386. So in this function delta is
+> > checked to see if it's a kaslr relocation handling. This might be a
+> > little confusing. But I am fine with it.
 > >
-> > No. Currently the hardware is in a testing stage at only one customer and it is
-> > an IP-Core inside a FPGA, so it can be (and already is) updated. So we can be
-> > save to assume this is O.K.
->
-> Ok, can you please resend this, it's gone from my queue now.
+> > Per your comment, you prefer to compare the output before and after
+> > choose_kernel_location(). That's also good, Lu Yinghai posted a draft
+> > patch in this way before, however the checking and the delta calculation
+> > are not correct. I changed that and test all cases, it works well. So
+> > do you like this it? If yes  I will repost it.
+> >
+> > From 13471bd838c52a0e143c2aee81e3863cfff585bd Mon Sep 17 00:00:00 2001
+> > From: Baoquan He <bhe@redhat.com>
+> > Date: Mon, 25 Aug 2014 14:57:43 +0800
+> > Subject: [PATCH] kaslr: check if kernel location is changed
+> >
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  arch/x86/boot/compressed/misc.c | 15 +++++++++++----
+> >  1 file changed, 11 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> > index 57ab74d..887f404 100644
+> > --- a/arch/x86/boot/compressed/misc.c
+> > +++ b/arch/x86/boot/compressed/misc.c
+> > @@ -230,8 +230,9 @@ static void error(char *x)
+> >                 asm("hlt");
+> >  }
+> >
+> > -#if CONFIG_X86_NEED_RELOCS
+> > -static void handle_relocations(void *output, unsigned long output_len)
+> > +#ifdef CONFIG_X86_NEED_RELOCS
+> > +static void handle_relocations(void *output_orig, void *output,
+> > +                              unsigned long output_len)
+> >  {
+> >         int *reloc;
+> >         unsigned long delta, map, ptr;
+> > @@ -242,6 +243,9 @@ static void handle_relocations(void *output, unsigned long output_len)
+> >          * Calculate the delta between where vmlinux was linked to load
+> >          * and where it was actually loaded.
+> >          */
+> > +       if (output_orig == output)
+> > +               return;
+> > +
+> 
+> I still think this needs a test for the 32-bit case, since IUIC, it
+> requires relocations unconditionally.
 
-O.K. On the way.
+Oops, just understood that 32 bit kernel alwasy need relocations, but
+only focus on x86_64 and kaslr again when I was doing it. You are right,
+this is not correct for 32 bit kernel.
 
-Thanks,
-Johannes
+I am thinking if I can add a compiling condition check like below. This
+only works only when x86_64 or when kaslr is compiled in. Otherwise it
+wokrs as before.
+
+#if CONFIG_X86_64
+	if (output_orig == output)
+		return;
+#endif
+
+or
+#if CONFIG_RANDOMIZE_BASE
+	if (output_orig == output)
+		return;
+#endif
+
+
+
+> 
+> -Kees
+> 
