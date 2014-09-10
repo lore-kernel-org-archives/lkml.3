@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238AbaIJF4X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:56:23 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:60922 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaIJF4V (ORCPT
+	id S1751250AbaIJGAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 02:00:41 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:51779 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaIJGAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:56:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140909235534.GH24649@awork2.anarazel.de>
-References: <20140907.164109.1944849896872238507.davem@davemloft.net>
-	<20140908212514.GA2348@awork2.anarazel.de>
-	<CAHA+R7NCwhMaWX0Mhr7AqHH4x5RZ6TEEiJB7906yVzQouXD3Lg@mail.gmail.com>
-	<20140909234806.GG24649@awork2.anarazel.de>
-	<20140909235534.GH24649@awork2.anarazel.de>
-Date: Wed, 10 Sep 2014 09:56:19 +0400
-Message-ID: <CAChDUfS5G8j8Td2QaNqcFvPwaO9FMcv=Sjd1jnCfP=h5ccZyGg@mail.gmail.com>
-Subject: Re: Macvlan WARNiNGS about duplicate sysfs filenames (Was [GIT] Networking)
-From: "Alexander Y. Fomichev" <git.user@gmail.com>
-To: Andres Freund <andres@anarazel.de>
-Cc: Cong Wang <cwang@twopensource.com>, David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Sep 2014 02:00:39 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-f6-540fe90592fd
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
+        mturquette@linaro.org, Chander Kashyap <k.chander@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: [PATCH] clk: samsung: exynos5260: fix typo in clock name
+Date: Wed, 10 Sep 2014 11:26:05 +0530
+Message-id: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsWyRsSkTpf1JX+IwbrpQhaP1yxmsli1YQmL
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLJ5OuMhmcfhNO6vFql1/GB04PXbOusvucefaHjaPzUvq
+	Pfq2rGL0+LxJLoA1issmJTUnsyy1SN8ugSvjzJGdrAWXOSp+PlnO2MB4kL2LkYNDQsBEouNn
+	ahcjJ5ApJnHh3no2EFtIYCmjxPcuBYi4iUT/0TdA5VxA8emMEjMPbGWDcCYwSezf+JgdpIpN
+	QFfiyfu5zCC2iEC2RP/t1SwgRcwC24AmbW8CKxIWcJTY8rCLCcRmEVCV+NfaANbAK+AhcbVh
+	KRvERQoScybZgPRKCHSzS5z4MJcdol5A4tvkQywQNbISmw4wQ1wnKXFwxQ2WCYyCCxgZVjGK
+	phYkFxQnpRcZ6RUn5haX5qXrJefnbmIEhvHpf8/6djDePGB9iFGAg1GJh1eglj9EiDWxrLgy
+	9xCjKdCGicxSosn5wGjJK4k3NDYzsjA1MTU2Mrc0UxLnTZD6GSwkkJ5YkpqdmlqQWhRfVJqT
+	WnyIkYmDU6qB0X/Tlyv3OLJP9L2IqTSdcePfw3+sJz+xadb++6Ro5X8uqtgpqpYjuujCSa7G
+	Ry6nQvfnJq47+/SG4U39/RfrzudELiq0mcGfwnNK+qQT/1adbZpzrrwKsJhxPXTiwx42lU5b
+	FenoI4fu9b3mtMgIfl2/mLPog8Fv2U/Ox1Z37lbyCophe2T5WImlOCPRUIu5qDgRANyrable	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t9jQV3Wl/whBgves1s8XrOYyWLVhiUs
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsng64SKbxeE37awWq3b9YXTg9Ng56y67x51re9g8Ni+p
+	9+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGWeO7GQt
+	uMxR8fPJcsYGxoPsXYycHBICJhL9R99A2WISF+6tZ+ti5OIQEpjOKDHzwFYoZwKTxP6Nj8Gq
+	2AR0JZ68n8sMYosIZEv0317NAlLELLCNUeL79iawImEBR4ktD7uYQGwWAVWJf60NYA28Ah4S
+	VxuWAk3lAFqnIDFnks0ERu4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYIj5Zn0DsZV
+	DRaHGAU4GJV4eAVq+UOEWBPLiitzDzFKcDArifBav+ALEeJNSaysSi3Kjy8qzUktPsRoCrR8
+	IrOUaHI+MIrzSuINjU3MTY1NLU0sTMwslcR5D7ZaBwoJpCeWpGanphakFsH0MXFwSjUwSgSU
+	sazhXFLwXrVijpyvbsOTxQnM3Mr2Dy8sCtrCfeF4+DUTjbM3hKJ2Tfu3RnXfdm3B0jAdv/bf
+	zxR4L7+4e2uucOV5g0Uf7zg8V9/XxtCqYyqz66LX5F2CbzTLKy0P2Sls/mDxLjw0jN+ouUf3
+	h4unwZzkKUamz1waU12+CXmyrn9c9G+aEktxRqKhFnNRcSIAluyMWaoCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 3:55 AM, Andres Freund <andres@anarazel.de> wrote:
-> On 2014-09-10 01:48:06 +0200, Andres Freund wrote:
->> On 2014-09-09 15:43:55 -0700, Cong Wang wrote:
->> > On Mon, Sep 8, 2014 at 2:25 PM, Andres Freund <andres@anarazel.de> wrote:
->> > > Hi,
->> > >
->> > > (don't have netdev archived, thus answering here, sorry)
->> > >
->> > > On 2014-09-07 16:41:09 -0700, David Miller wrote:
->> > >> Alexander Y. Fomichev (1):
->> > >>       net: prevent of emerging cross-namespace symlinks
->> > >
->> >
->> > Since you are quoting this change, are you saying it causes
->> > the following kernel warning?
->>
->> I thought it might be a likely candidate; but I'm not sure at all. I'll
->> verify it as soon as I can reboot the machine a couple of times (end of
->> week-ish).
->>
->> > > I'm seeing WARNINGs like:
->> > > [ 1005.269134] ------------[ cut here ]------------
->> > > [ 1005.269148] WARNING: CPU: 6 PID: 4213 at fs/sysfs/dir.c:31 sysfs_warn_dup+0x64/0x80()
->> > > [ 1005.269150] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0'
->> >
->> >
->> > Is there a network device named upper_mv-eth0 existed in your system
->> > before you created macvlan?
->>
->> No, there wasn't any. Afaics, the sequence is:
->> 1) macvlan mv-eth0 is created in global namespace
->> 2) mv-eth0 is moved (by systemd-nsspawn) into a new network
->>    namespace. Leaving a dangling symlink in the host namespace
->> /devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0/upper_mv-eth0 pointing toward
->> ../mv-eth0
->> which doesn't exist in the external namespace. The new namespace seems
->> to have broken 'lower_bond0' symlink as well
->>
->> This seems to be the case (and probably the actual root cause) in
->> slightly earlier kernels as well.
->> What changed seems to be that:
->> 3) macvlan mv-eth0 is destroyed in the namespace (potentially while
->>    tearing it down)
->> 4) Now there's a broken symlink that doesn't make sense in any namespace
->> 5) mv-eth0 can't be created anew
->>
->> It seems that 3-5 didn't happen that way on older kernels. The most
->> recent where it's not persistently broken is 3.16.0-rc7-00007 -
->> 31dab719f. The oldest where I know it's reproducible is
->> 3.17.0-rc4-andres-00135-g35af256.
->
-> I've reproduced the problem on another machine where it's perfectly
-> reproducible (except being about mv-bond0). After reverting only the
-> aforementioned 4c75431ac352063 it works again.
-> As I said above, I'm not sure whether 4c75431ac352063 is the actual
-> culprit, but it certainly made the problem visible. How are these
-> upper_$if/lower_$if supposed to behave when the macvlan and the
-> underlying device are in differing namespaces?
+From: Chander Kashyap <k.chander@samsung.com>
 
-supposed to be destroyed before moving device into new net_ns
-and created just after but only if both lower/upper devices has the same netns.
-whether i understood you correctly that you see lowar_/upper_ links
-just after new
-container is up?
+The parent name added in parent list as
+mout_phyclk_mipi_dphy_4l_m_txbyte_clkhs_p, is different
+than the defined parent due to typo.
 
-> Greetings,
->
-> Andres Freund
+Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+---
+ drivers/clk/samsung/clk-exynos5260.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-
+diff --git a/drivers/clk/samsung/clk-exynos5260.c b/drivers/clk/samsung/clk-exynos5260.c
+index 64596ba..4db4e8d 100644
+--- a/drivers/clk/samsung/clk-exynos5260.c
++++ b/drivers/clk/samsung/clk-exynos5260.c
+@@ -1579,7 +1579,7 @@ struct samsung_fixed_rate_clock fixed_rate_clks[] __initdata = {
+ 	FRATE(PHYCLK_HDMI_LINK_O_TMDS_CLKHI, "phyclk_hdmi_link_o_tmds_clkhi",
+ 			NULL, CLK_IS_ROOT, 125000000),
+ 	FRATE(PHYCLK_MIPI_DPHY_4L_M_TXBYTECLKHS,
+-			"phyclk_mipi_dphy_4l_m_txbyteclkhs" , NULL,
++			"phyclk_mipi_dphy_4l_m_txbyte_clkhs" , NULL,
+ 			CLK_IS_ROOT, 187500000),
+ 	FRATE(PHYCLK_DPTX_PHY_O_REF_CLK_24M, "phyclk_dptx_phy_o_ref_clk_24m",
+ 			NULL, CLK_IS_ROOT, 24000000),
 -- 
-Best regards.
-       Alexander Y. Fomichev <git.user@gmail.com>
+1.7.9.5
+
