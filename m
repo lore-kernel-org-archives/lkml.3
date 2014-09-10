@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaIJKvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:51:16 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:62702 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaIJKvO (ORCPT
+	id S1752453AbaIJKwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:52:33 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60780 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaIJKwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:51:14 -0400
+	Wed, 10 Sep 2014 06:52:31 -0400
+Date: Wed, 10 Sep 2014 11:51:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: dianders@chromium.org, heiko@sntech.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
+        a.zummo@towertech.it, mturquette@linaro.org, akpm@linux-foundation.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, grant.likely@linaro.org, hl@rock-chips.com,
+        huangtao@rock-chips.com, cf@rock-chips.com, zhangqing@rock-chips.com,
+        xxx@rock-chips.com, olof@lixom.net, sonnyrao@chromium.org,
+        dtor@chromium.org, javier.martinez@collabora.co.uk,
+        kever.yang@rock-chips.com
+Message-ID: <20140910105131.GT2601@sirena.org.uk>
+References: <1410311886-4579-1-git-send-email-zyw@rock-chips.com>
+ <1410311886-4579-4-git-send-email-zyw@rock-chips.com>
 MIME-Version: 1.0
-In-Reply-To: <541014C8.7050303@linaro.org>
-References: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1408683272-7984-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<CAPDyKFqJw0Dc8ac2i0tebJpuHVhUVd=YUnGHZDTHNd2AAJqOtg@mail.gmail.com>
-	<541014C8.7050303@linaro.org>
-Date: Wed, 10 Sep 2014 12:51:13 +0200
-Message-ID: <CAPDyKFrObvDf6rCWrEt8S2OydLJx0iz9bT0O0-danUuLs-PQvQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] mmc: mmci: Support any block sizes for ux500v2 and
- qcom variant
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <chris@printf.net>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+xp03240ql3JIIXA"
+Content-Disposition: inline
+In-Reply-To: <1410311886-4579-4-git-send-email-zyw@rock-chips.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.132.226.177
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v10 3/3] regulator: RK808: Remove pdata from the regulator
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 September 2014 11:07, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> Hi Ulf,
->
-> On 10/09/14 08:58, Ulf Hansson wrote:
->>
->> On 22 August 2014 06:54, Srinivas Kandagatla
->> <srinivas.kandagatla@linaro.org> wrote:
->>>
->>> From: Ulf Hansson <ulf.hansson@linaro.org>
->>>
->>> For the ux500v2 variant of the PL18x block, any block sizes are
->>> supported. This will make it possible to decrease data overhead
->>> for SDIO transfers.
->>>
->>> This patch is based on Ulf Hansson patch
->>> http://www.spinics.net/lists/linux-mmc/msg12160.html
->>>
->>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->>>          enabled this support on qcom variant.
->>>
->>> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
->>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->>
->>
->> I am not sure how to handle this patch.
->>
->> It will as you say in the cover letter for this patchset, improve
->> situations for the ath6kl driver when it's issuing 12 bytes and 24
->> bytes reads and solve those issues.
->>
->> On the other hand, as stated earlier mmci_pio_write need to be fixed
->> to have full support for any block size. That applies to the qcom
->> variant as well.
->
-> looking at current mmci_pio_write, I see it can support any block sizes as
-> it is. Unless Am missing something obvious.
->
-> block size aligned to 4 is taken care in the code and is straight forward.
-> block sizes not aligned to 4 are also partly taken care in pio_write and
-> partly by programming blksz in datactrl register. However Am not sure if it
-> was safe to handle the buffer pointer out of its boundary.
 
-There are some prerequisites of the data buffers to supports any block
-size. Make sure you read up on this discussion to really understand the problem.
+--+xp03240ql3JIIXA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-http://marc.info/?t=135005062400002&r=2&w=2
+On Wed, Sep 10, 2014 at 09:18:06AM +0800, Chris Zhong wrote:
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>=20
+> Tested-by: Heiko Stuebner <heiko@sntech.de>
 
->>
->>
->> For ux500, I am sure this won't cause any regressions since the cw1200
->> isn't probed. Also, I am not sure the "any block size" support is even
->> enabled for that driver.
->>
->> How about, that we add a comment in the pio_write function describing
->> that we need to fix it for "SDIO any block size" support? And leave
->> that as a future improvement?
->
->
-> Is below patch any good?
-> With the below patch It should be possible to address the case where buffer
-> passed the length is handled safely. If you ok with the approach I can send
-> a patch as RFC.
+Applied, thanks.  You shouldn't have spaces like the above in your list
+of tags and as Doug says e-mail addresses should have a space between
+the name and the <.
 
-Please go ahead an send a patch :-) This has been on my todo list
-forever, I would happily like to remove it from there.
+--+xp03240ql3JIIXA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Kind regards
-Uffe
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUEC0zAAoJECTWi3JdVIfQp24H/AmSKVhbb+ZxBcBCAvpGU0gg
+NbuXBoN4wVYBiRnUD+HHHJaCXmtYI9SWv9aGq57Fkbu2UCH/VBfmn5Q46+Atf51m
+ORX3Nv0q5D2fLt0O5D42gtCGnIB9hjGdDeTYGzsYqpJATv3FwD/cJX3jvpaeVobi
+ujK8bFjpmU/8mvrSaobnbXu7c2TGa4tPC+MvQ76HCERhGi6DgF7AP+PsKB72SzUm
+dXQUCsqfIuBM7mmlBr6A0+RjjYyMsOSlgCdaARpRycMMEnO/V8kwXjFYZN32j4XE
+nLzIvj0P++Wdtow1Mq3IE4WDO/ItrKWJVIGbYO1Qu6B7PIOjPvbppUzxy79pw58=
+=LEK2
+-----END PGP SIGNATURE-----
+
+--+xp03240ql3JIIXA--
