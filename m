@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbaIJSws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:52:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38282 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaIJSwr (ORCPT
+	id S1753307AbaIJSyv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:54:51 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:64399 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275AbaIJSyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:52:47 -0400
-Date: Wed, 10 Sep 2014 20:52:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, eranian@google.com, tglx@linutronix.de
-Subject: Re: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
-Message-ID: <20140910185238.GS6758@twins.programming.kicks-ass.net>
-References: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
- <20140910075722.GL6758@twins.programming.kicks-ass.net>
- <20140910144012.GI4120@two.firstfloor.org>
- <20140910163556.GE4783@worktop.ger.corp.intel.com>
- <20140910165848.GA11901@worktop.ger.corp.intel.com>
- <20140910182744.GJ5387@tassilo.jf.intel.com>
+	Wed, 10 Sep 2014 14:54:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910182744.GJ5387@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54108B34.6010701@lategoodbye.de>
+References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
+	<1410089869-6611-3-git-send-email-info@lategoodbye.de>
+	<20140909182211.GG3896@leverpostej>
+	<540F523D.4010904@lategoodbye.de>
+	<20140910141853.GA4994@leverpostej>
+	<20140910151316.GG7960@sirena.org.uk>
+	<54108B34.6010701@lategoodbye.de>
+Date: Wed, 10 Sep 2014 15:54:45 -0300
+Message-ID: <CAOMZO5BEN_DQOyhrx5ZB7y6DoDvqbLvDyJfAabOvtUvKOiGHOA@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/3] ARM: regulator: add Freescale MXS regulator driver
+From: Fabio Estevam <festevam@gmail.com>
+To: Stefan Wahren <info@lategoodbye.de>
+Cc: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:27:44AM -0700, Andi Kleen wrote:
-> > Note that since then we have actually fixed the 'cannot fault from NMI
-> > context' thing, so we should be able to actually take those faults. I
-> > suspect we can simply remove those WARNs from the vmalloc fault path,
-> > but it would need double checking to see if there's no other reasons.
-> 
-> I think we actually need to use vmalloc_sync_all, because the PEBS/DS
-> microcode may do the first access, and those lose events when
-> the page is not present.
+Hi Stefan,
 
-You'll need to convince Linus: https://lkml.org/lkml/2010/7/14/478
+On Wed, Sep 10, 2014 at 2:32 PM, Stefan Wahren <info@lategoodbye.de> wrote:
+> Hi Mark,
+>
+> Am 10.09.2014 17:13, schrieb Mark Brown:
+>>
+>> On Wed, Sep 10, 2014 at 03:18:53PM +0100, Mark Rutland wrote:
+>>>
+>>> On Tue, Sep 09, 2014 at 08:17:17PM +0100, Stefan Wahren wrote:
+>>
+>>
+>> Ugh, this looks like it might be a regulator driver but since the
+>> subject line was "ARM: " I deleted it unread - if your changelog looks
+>> different to all the other changelogs in the subsystem it probably needs
+>> changing.
+>
+>
+> sorry about the confusion, i will remove ARM in the next version.
+>
+> Changelog? I didn't send a changelog because it was my first version.
+>
+> Should i resend this version only to you?
+
+In the cover letter of this RFC series you mentioned that this has not
+been tested on real hardware.
+
+What about sending a new version of this series (with the RFC prefix
+removed and with Mark Rutland's suggestion implemented) tested on a
+mx28 board and also with the Subject of the regulator patch changed to
+'regulator: add support for mxs regulator" with Mark Brown on Cc?
