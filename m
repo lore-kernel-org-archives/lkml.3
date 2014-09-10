@@ -1,141 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaIJJv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 05:51:27 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:42568 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343AbaIJJvY (ORCPT
+	id S1752413AbaIJJva (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 05:51:30 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:33210 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362AbaIJJv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 05:51:24 -0400
-Date: Wed, 10 Sep 2014 11:51:15 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: viro@zeniv.linux.org.uk, fuse-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, werner.baumann@onlinehome.de
-Subject: Re: [PATCH 0/2] fuse: fix regression in fuse_get_user_pages()
-Message-ID: <20140910095115.GA7441@tucsk.piliscsaba.szeredi.hu>
-References: <20140903100826.23218.95122.stgit@localhost.localdomain>
+	Wed, 10 Sep 2014 05:51:26 -0400
+Date: Wed, 10 Sep 2014 10:51:19 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+Cc: Varka Bhadram <varkabhadram@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: Re: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
+ fuel-gauge device
+Message-ID: <20140910095119.GO30307@lee--X1>
+References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+ <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+ <53FF16BC.9050701@gmail.com>
+ <2E89032DDAA8B9408CB92943514A0337AB5144B5@SW-EX-MBX01.diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140903100826.23218.95122.stgit@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB5144B5@SW-EX-MBX01.diasemi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 02:10:23PM +0400, Maxim Patlasov wrote:
-> Hi,
+On Tue, 09 Sep 2014, Opensource [Adam Thomson] wrote:
+> On August 28, 2014 12:47, Varka Bhadram wrote:
 > 
-> The patchset fixes a regression introduced by the following commits:
+> > On 08/28/2014 04:18 PM, Adam Thomson wrote:
+> > 
+> > (...)
+> > 
+> > > +static int da9150_probe(struct i2c_client *client,
+> > > +			const struct i2c_device_id *id)
+> > > +{
+> > > +	struct da9150 *da9150;
+> > > +	int ret;
+> > > +
+> > > +	da9150 = devm_kzalloc(&client->dev, sizeof(struct da9150), GFP_KERNEL);
+> > > +	if (da9150 == NULL)
+> > > +		return -ENOMEM;
+> > 
+> > da9150 = devm_kzalloc(&client->dev, sizeof(*da9150), GFP_KERNEL);
+> > if (!da9150)
+> > 	return -ENOMEM;
 > 
-> c7f3888ad7f0 ("switch iov_iter_get_pages() to passing maximal number of pages")
-> c9c37e2e6378 ("fuse: switch to iov_iter_get_pages()")
-> 
+> Ok, no real difference, but can change it.
 
-Hmm, instead of reverting to passing maxbytes *instead* of maxpages, I think the
-right fix is to *add* the maxbytes argument.
+Not functionally, but we like to do things as succinctly as possible.
 
-Just maxbytes alone doesn't have enough information in it.  E.g. 4096 contiguous
-bytes could occupy 1 or 2 pages, depending on the starting offset.
-
-So how about the following (untested) patch?
-
-Thanks,
-Miklos
-
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index c3116404ab49..e181b6b2e297 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -158,7 +158,7 @@ static inline int dio_refill_pages(struct dio *dio, struct dio_submit *sdio)
- {
- 	ssize_t ret;
- 
--	ret = iov_iter_get_pages(sdio->iter, dio->pages, DIO_PAGES,
-+	ret = iov_iter_get_pages(sdio->iter, dio->pages, LONG_MAX, DIO_PAGES,
- 				&sdio->from);
- 
- 	if (ret < 0 && sdio->blocks_available && (dio->rw & WRITE)) {
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 912061ac4baf..caa8d95b24e8 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -1305,6 +1305,7 @@ static int fuse_get_user_pages(struct fuse_req *req, struct iov_iter *ii,
- 		size_t start;
- 		ssize_t ret = iov_iter_get_pages(ii,
- 					&req->pages[req->num_pages],
-+					*nbytesp - nbytes,
- 					req->max_pages - req->num_pages,
- 					&start);
- 		if (ret < 0)
-diff --git a/include/linux/uio.h b/include/linux/uio.h
-index 48d64e6ab292..290fbf0b6b8a 100644
---- a/include/linux/uio.h
-+++ b/include/linux/uio.h
-@@ -84,7 +84,7 @@ unsigned long iov_iter_alignment(const struct iov_iter *i);
- void iov_iter_init(struct iov_iter *i, int direction, const struct iovec *iov,
- 			unsigned long nr_segs, size_t count);
- ssize_t iov_iter_get_pages(struct iov_iter *i, struct page **pages,
--			unsigned maxpages, size_t *start);
-+			size_t maxsize, unsigned maxpages, size_t *start);
- ssize_t iov_iter_get_pages_alloc(struct iov_iter *i, struct page ***pages,
- 			size_t maxsize, size_t *start);
- int iov_iter_npages(const struct iov_iter *i, int maxpages);
-diff --git a/mm/iov_iter.c b/mm/iov_iter.c
-index ab88dc0ea1d3..9a09f2034fcc 100644
---- a/mm/iov_iter.c
-+++ b/mm/iov_iter.c
-@@ -310,7 +310,7 @@ void iov_iter_init(struct iov_iter *i, int direction,
- EXPORT_SYMBOL(iov_iter_init);
- 
- static ssize_t get_pages_iovec(struct iov_iter *i,
--		   struct page **pages, unsigned maxpages,
-+		   struct page **pages, size_t maxsize, unsigned maxpages,
- 		   size_t *start)
- {
- 	size_t offset = i->iov_offset;
-@@ -323,6 +323,8 @@ static ssize_t get_pages_iovec(struct iov_iter *i,
- 	len = iov->iov_len - offset;
- 	if (len > i->count)
- 		len = i->count;
-+	if (len > maxsize)
-+		len = maxsize;
- 	addr = (unsigned long)iov->iov_base + offset;
- 	len += *start = addr & (PAGE_SIZE - 1);
- 	if (len > maxpages * PAGE_SIZE)
-@@ -588,13 +590,15 @@ static unsigned long alignment_bvec(const struct iov_iter *i)
- }
- 
- static ssize_t get_pages_bvec(struct iov_iter *i,
--		   struct page **pages, unsigned maxpages,
-+		   struct page **pages, size_t maxsize, unsigned maxpages,
- 		   size_t *start)
- {
- 	const struct bio_vec *bvec = i->bvec;
- 	size_t len = bvec->bv_len - i->iov_offset;
- 	if (len > i->count)
- 		len = i->count;
-+	if (len > maxsize)
-+		len = maxsize;
- 	/* can't be more than PAGE_SIZE */
- 	*start = bvec->bv_offset + i->iov_offset;
- 
-@@ -711,13 +715,13 @@ unsigned long iov_iter_alignment(const struct iov_iter *i)
- EXPORT_SYMBOL(iov_iter_alignment);
- 
- ssize_t iov_iter_get_pages(struct iov_iter *i,
--		   struct page **pages, unsigned maxpages,
-+		   struct page **pages, size_t maxsize, unsigned maxpages,
- 		   size_t *start)
- {
- 	if (i->type & ITER_BVEC)
--		return get_pages_bvec(i, pages, maxpages, start);
-+		return get_pages_bvec(i, pages, maxsize, maxpages, start);
- 	else
--		return get_pages_iovec(i, pages, maxpages, start);
-+		return get_pages_iovec(i, pages, maxsize, maxpages, start);
- }
- EXPORT_SYMBOL(iov_iter_get_pages);
- 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
