@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaIJQ5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:57:07 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61791 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411AbaIJQ5F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:57:05 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1752527AbaIJQ6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:58:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43888 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751688AbaIJQ6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:58:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,500,1406617200"; 
+   d="scan'208";a="600953121"
+Message-ID: <54108314.80400@intel.com>
+Date: Wed, 10 Sep 2014 09:57:56 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Simon Horman" <horms@verge.net.au>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20140910173335.594bf533@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Ulrich Hecht" <ulrich.hecht+renesas@gmail.com>
-References: <20140910173335.594bf533@canb.auug.org.au>
-Message-ID: <20140910165649.19023.66202@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: linux-next: manual merge of the clk tree with the renesas tree
-Date: Wed, 10 Sep 2014 09:56:49 -0700
+To: Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@sr71.net>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: regression caused by cgroups optimization in 3.17-rc2
+References: <54061505.8020500@sr71.net> <5406262F.4050705@intel.com> <54062F32.5070504@sr71.net> <20140904142721.GB14548@dhcp22.suse.cz> <5408CB2E.3080101@sr71.net> <20140905092537.GC26243@dhcp22.suse.cz> <20140910162936.GI25219@dhcp22.suse.cz>
+In-Reply-To: <20140910162936.GI25219@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Rothwell (2014-09-10 00:33:35)
-> Hi Mike,
-> 
-> Today's linux-next merge of the clk tree got a conflict in
-> Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-> between commit b32c44b93af3 ("clk: shmobile: Add r8a7740, sh73a0 SoCs
-> to MSTP bindings") from the renesas tree and commit 5acb7bbbab7c ("ARM:
-> shmobile: r8a7794: document MSTP clock support") from the clk tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On 09/10/2014 09:29 AM, Michal Hocko wrote:
+> I do not have a bigger machine to play with unfortunately. I think the
+> patch makes sense on its own. I would really appreciate if you could
+> give it a try on your machine with !root memcg case to see how much it
+> helped. I would expect similar results to your previous testing without
+> the revert and Johannes' patch.
 
-We expected this, since the r8a7794 clock stuff is going through the
-renesas tree. Looks good to me.
+So you want to see before/after this patch:
 
-Thanks,
-Mike
+Subject: [PATCH] mm, memcg: Do not kill release batching in
+ free_pages_and_swap_cache
 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-> index 8f1424f0fa43,a03c8c029a94..000000000000
-> --- a/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-> +++ b/Documentation/devicetree/bindings/clock/renesas,cpg-mstp-clocks.txt
-> @@@ -15,7 -14,7 +15,8 @@@ Required Properties
->       - "renesas,r8a7779-mstp-clocks" for R8A7779 (R-Car H1) MSTP gate clocks
->       - "renesas,r8a7790-mstp-clocks" for R8A7790 (R-Car H2) MSTP gate clocks
->       - "renesas,r8a7791-mstp-clocks" for R8A7791 (R-Car M2) MSTP gate clocks
-> +     - "renesas,r8a7794-mstp-clocks" for R8A7794 (R-Car E2) MSTP gate clocks
->  +    - "renesas,sh73a0-mstp-clocks" for SH73A0 (SH-MobileAG5) MSTP gate clocks
->       - "renesas,cpg-mstp-clock" for generic MSTP gate clocks
->     - reg: Base address and length of the I/O mapped registers used by the MSTP
->       clocks. The first register is the clock control register and is mandatory.
+And you want it on top of a kernel with the revert or without?
