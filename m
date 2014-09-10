@@ -1,64 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471AbaIJGs1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 02:48:27 -0400
-Received: from mail-bn1bon0119.outbound.protection.outlook.com ([157.56.111.119]:16205
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750789AbaIJGs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 02:48:26 -0400
-X-Greylist: delayed 948 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 02:48:25 EDT
-From: Fancy Fang <chen.fang@freescale.com>
-To: <m.chehab@samsung.com>, <hverkuil@xs4all.nl>, <viro@ZenIV.linux.org.uk>
-CC: <shawn.guo@freescale.com>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Fancy Fang <chen.fang@freescale.com>
-Subject: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory() with remap_pfn_range().
-Date: Wed, 10 Sep 2014 13:28:57 +0800
-Message-ID: <1410326937-31140-1-git-send-email-chen.fang@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(189002)(199003)(50466002)(77982001)(76482001)(79102001)(229853001)(107046002)(97736003)(62966002)(33646002)(104016003)(106466001)(46102001)(77156001)(90102001)(85306004)(48376002)(230783001)(6806004)(83322001)(19580395003)(19580405001)(44976005)(81542001)(68736004)(47776003)(20776003)(64706001)(81342001)(80022001)(74662001)(74502001)(31966008)(99396002)(50986999)(83072002)(85852003)(92566001)(92726001)(2201001)(4396001)(87936001)(89996001)(88136002)(86362001)(93916002)(21056001)(575784001)(50226001)(102836001)(104166001)(87286001)(26826002)(105606002)(95666004)(84676001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB344;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1751490AbaIJGtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 02:49:35 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:51512 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaIJGtd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 02:49:33 -0400
+Message-ID: <540FF470.5020205@linux.vnet.ibm.com>
+Date: Wed, 10 Sep 2014 14:49:20 +0800
+From: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=chen.fang@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: james.smart@emulex.com
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        JBottomley@parallels.com
+Subject: Re: [PATCH] lpfc: Avoid to disable pci_dev twice
+References: <1405578751-14164-1-git-send-email-qiudayu@linux.vnet.ibm.com> <53DAF88C.50008@linux.vnet.ibm.com> <53FE24C3.6080708@emulex.com>
+In-Reply-To: <53FE24C3.6080708@emulex.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091006-0017-0000-0000-00000128E544
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
-will assign the corresponding offset to the 'boff' field of the
-videobuf_buffer for each requested buffer sequentially. Later, user
-may call mmap() to map one or all of the buffers with the 'offset'
-parameter which is equal to its 'boff' value. Obviously, the 'offset'
-value is only used to find the matched buffer instead of to be the
-real offset from the buffer's physical start address as used by
-vm_iomap_memory(). So, in some case that if the offset is not zero,
-vm_iomap_memory() will fail.
+On 08/28/2014 02:34 AM, James Smart wrote:
+> Mike,
+>
+> Can you confirm - the "nulls" this patch correct are because the 
+> probe_one and error_detect threads are running concurrently, thus 
+> battling ?
+>
+> If so - this fix looks insufficient and we should rework it.
 
-Signed-off-by: Fancy Fang <chen.fang@freescale.com>
----
- drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Yes, it is. My patch is just a workaround for this bug.
 
-diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
-index bf80f0f..8bd9889 100644
---- a/drivers/media/v4l2-core/videobuf-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
-@@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 	/* Try to remap memory */
- 	size = vma->vm_end - vma->vm_start;
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
--	retval = vm_iomap_memory(vma, mem->dma_handle, size);
-+	retval = remap_pfn_range(vma, vma->vm_start,
-+				 mem->dma_handle >> PAGE_SHIFT,
-+				 size, vma->vm_page_prot);
- 	if (retval) {
- 		dev_err(q->dev, "mmap: remap failed with error %d. ",
- 			retval);
--- 
-1.9.1
+>
+> Q: why are they allowed to run concurrently ?  I could see this solved 
+> at the platform level to let probe_one finish before error_detect is 
+> called (and therefore stating error_detect only makes sense to call if 
+> probe_one was successful). It's also a much driver-friendly solution. 
+> I could see other drivers have much the same issue with concurrency 
+> and data structure teardown - and if locks aren't allowed in the 
+> error-detect path... it's not good.
+>
+
+I agree with you on this point, platform solution is much better. So 
+maybe use a lock or a flag to show it is in such stat, this maybe  also 
+happens when driver is in  remove stat.
+
+Thanks,
+Mike
+> -- james s
+>
+>
+>
+> On 7/31/2014 10:16 PM, Mike Qiu wrote:
+>> On 07/17/2014 02:32 PM, Mike Qiu wrote:
+>>
+>>
+>> Hi, all
+>>
+>> How about this patch ?
+>>
+>> Any idea ?
+>>
+>>> In IBM Power servers, when hardware error occurs during probe
+>>> state, EEH subsystem will call driver's error_detected interface,
+>>> which will call pci_disable_device(). But driver's probe function also
+>>> call pci_disable_device() in this situation.
+>>>
+>>> So pci_dev will be disabled twice:
+>>>
+>>> Device lpfc disabling already-disabled device
+>>> ------------[ cut here ]------------
+>>> WARNING: at drivers/pci/pci.c:1407
+>>> CPU: 0 PID: 8744 Comm: kworker/0:0 Tainted: G        W 
+>>> 3.10.42-2002.pkvm2_1_1.6.ppc64 #1
+>>> Workqueue: events .work_for_cpu_fn
+>>> task: c00000274e3f5400 ti: c0000027d3958000 task.ti: c0000027d3958000
+>>> NIP: c000000000471b8c LR: c000000000471b88 CTR: c00000000043ebe0
+>>> REGS: c0000027d395b650 TRAP: 0700   Tainted: G        W 
+>>> (3.10.42-2002.pkvm2_1_1.6.ppc64)
+>>> MSR: 9000000100029032 <SF,HV,EE,ME,IR,DR,RI>  CR: 28b52b44  XER: 
+>>> 20000000
+>>> CFAR: c000000000879ab8 SOFTE: 1
+>>> ...
+>>> NIP .pci_disable_device+0xcc/0xe0
+>>> LR  .pci_disable_device+0xc8/0xe0
+>>> Call Trace:
+>>> .pci_disable_device+0xc8/0xe0 (unreliable)
+>>> .lpfc_disable_pci_dev+0x50/0x80 [lpfc]
+>>> .lpfc_pci_probe_one+0x870/0x21a0 [lpfc]
+>>> .local_pci_probe+0x68/0xb0
+>>> .work_for_cpu_fn+0x38/0x60
+>>> .process_one_work+0x1a4/0x4d0
+>>> .worker_thread+0x37c/0x490
+>>> .kthread+0xf0/0x100
+>>> .ret_from_kernel_thread+0x5c/0x80
+>>>
+>>> Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+>>> ---
+>>>   drivers/scsi/lpfc/lpfc.h      |  1 +
+>>>   drivers/scsi/lpfc/lpfc_init.c | 59 
+>>> +++++++++++++++++++++++++++++++++++++++----
+>>>   2 files changed, 55 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/lpfc/lpfc.h b/drivers/scsi/lpfc/lpfc.h
+>>> index 434e903..0c7bad9 100644
+>>> --- a/drivers/scsi/lpfc/lpfc.h
+>>> +++ b/drivers/scsi/lpfc/lpfc.h
+>>> @@ -813,6 +813,7 @@ struct lpfc_hba {
+>>>   #define VPD_MASK            0xf         /* mask for any vpd data */
+>>>
+>>>       uint8_t soft_wwn_enable;
+>>> +    uint8_t probe_done;
+>>>
+>>>       struct timer_list fcp_poll_timer;
+>>>       struct timer_list eratt_poll;
+>>> diff --git a/drivers/scsi/lpfc/lpfc_init.c 
+>>> b/drivers/scsi/lpfc/lpfc_init.c
+>>> index 06f9a5b..c2e67ae 100644
+>>> --- a/drivers/scsi/lpfc/lpfc_init.c
+>>> +++ b/drivers/scsi/lpfc/lpfc_init.c
+>>> @@ -9519,6 +9519,9 @@ lpfc_pci_probe_one_s3(struct pci_dev *pdev, 
+>>> const struct pci_device_id *pid)
+>>>           }
+>>>       }
+>>>
+>>> +    /* Set the probe flag */
+>>> +    phba->probe_done = 1;
+>>> +
+>>>       /* Perform post initialization setup */
+>>>       lpfc_post_init_setup(phba);
+>>>
+>>> @@ -9795,6 +9798,9 @@ lpfc_sli_prep_dev_for_recover(struct lpfc_hba 
+>>> *phba)
+>>>   static void
+>>>   lpfc_sli_prep_dev_for_reset(struct lpfc_hba *phba)
+>>>   {
+>>> +    if (phba)
+>>> +        return;
+>>> +
+>>>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>>>               "2710 PCI channel disable preparing for reset\n");
+>>>
+>>> @@ -9812,7 +9818,8 @@ lpfc_sli_prep_dev_for_reset(struct lpfc_hba 
+>>> *phba)
+>>>
+>>>       /* Disable interrupt and pci device */
+>>>       lpfc_sli_disable_intr(phba);
+>>> -    pci_disable_device(phba->pcidev);
+>>> +    if (phba->probe_done && phba->pcidev)
+>>> +        pci_disable_device(phba->pcidev);
+>>>   }
+>>>
+>>>   /**
+>>> @@ -10282,6 +10289,9 @@ lpfc_pci_probe_one_s4(struct pci_dev *pdev, 
+>>> const struct pci_device_id *pid)
+>>>           goto out_disable_intr;
+>>>       }
+>>>
+>>> +    /* Set probe_done flag */
+>>> +    phba->probe_done = 1;
+>>> +
+>>>       /* Log the current active interrupt mode */
+>>>       phba->intr_mode = intr_mode;
+>>>       lpfc_log_intr_mode(phba, intr_mode);
+>>> @@ -10544,6 +10554,9 @@ lpfc_sli4_prep_dev_for_recover(struct 
+>>> lpfc_hba *phba)
+>>>   static void
+>>>   lpfc_sli4_prep_dev_for_reset(struct lpfc_hba *phba)
+>>>   {
+>>> +    if (!phba)
+>>> +        return;
+>>> +
+>>>       lpfc_printf_log(phba, KERN_ERR, LOG_INIT,
+>>>               "2826 PCI channel disable preparing for reset\n");
+>>>
+>>> @@ -10562,7 +10575,9 @@ lpfc_sli4_prep_dev_for_reset(struct lpfc_hba 
+>>> *phba)
+>>>       /* Disable interrupt and pci device */
+>>>       lpfc_sli4_disable_intr(phba);
+>>>       lpfc_sli4_queue_destroy(phba);
+>>> -    pci_disable_device(phba->pcidev);
+>>> +
+>>> +    if (phba->probe_done && phba->pcidev)
+>>> +        pci_disable_device(phba->pcidev);
+>>>   }
+>>>
+>>>   /**
+>>> @@ -10893,9 +10908,21 @@ static pci_ers_result_t
+>>>   lpfc_io_error_detected(struct pci_dev *pdev, pci_channel_state_t 
+>>> state)
+>>>   {
+>>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>>> *)shost->hostdata)->phba;
+>>> +    struct lpfc_hba *phba;
+>>>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>>>
+>>> +    if (!shost)
+>>> +        /* Run here means it may during probe state and
+>>> +         * Scsi_Host has not been created and We can do nothing
+>>> +         * in this state so call for hotplug*/
+>>> +        return PCI_ERS_RESULT_NONE;
+>>> +
+>>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>>> +
+>>> +    if (!phba || !phba->probe_done)
+>>> +        /* Run here means it may during probe state */
+>>> +        return PCI_ERS_RESULT_NONE;
+>>> +
+>>>       switch (phba->pci_dev_grp) {
+>>>       case LPFC_PCI_DEV_LP:
+>>>           rc = lpfc_io_error_detected_s3(pdev, state);
+>>> @@ -10930,9 +10957,20 @@ static pci_ers_result_t
+>>>   lpfc_io_slot_reset(struct pci_dev *pdev)
+>>>   {
+>>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>>> *)shost->hostdata)->phba;
+>>> +    struct lpfc_hba *phba;
+>>>       pci_ers_result_t rc = PCI_ERS_RESULT_DISCONNECT;
+>>>
+>>> +    if (!shost)
+>>> +        /* Run here means it may during probe state and
+>>> +         * Scsi_Host has not been created */
+>>> +        return PCI_ERS_RESULT_NONE;
+>>> +
+>>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>>> +
+>>> +    if (!phba || !phba->probe_done)
+>>> +        /* Run here means it may during probe state */
+>>> +        return PCI_ERS_RESULT_NONE;
+>>> +
+>>>       switch (phba->pci_dev_grp) {
+>>>       case LPFC_PCI_DEV_LP:
+>>>           rc = lpfc_io_slot_reset_s3(pdev);
+>>> @@ -10963,7 +11001,18 @@ static void
+>>>   lpfc_io_resume(struct pci_dev *pdev)
+>>>   {
+>>>       struct Scsi_Host *shost = pci_get_drvdata(pdev);
+>>> -    struct lpfc_hba *phba = ((struct lpfc_vport 
+>>> *)shost->hostdata)->phba;
+>>> +    struct lpfc_hba *phba;
+>>> +
+>>> +    if (!shost)
+>>> +        /* Run here means it may during probe state and
+>>> +         * Scsi_Host has not been created */
+>>> +        return;
+>>> +
+>>> +    phba = ((struct lpfc_vport *)shost->hostdata)->phba;
+>>> +
+>>> +    if (!phba || !phba->probe_done)
+>>> +        /* Run here means it may during probe state */
+>>> +        return;
+>>>
+>>>       switch (phba->pci_dev_grp) {
+>>>       case LPFC_PCI_DEV_LP:
+>>
+>>
+>
 
