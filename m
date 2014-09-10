@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaIJKHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:07:32 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:47700 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaIJKHa (ORCPT
+	id S1752320AbaIJKIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:08:06 -0400
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:33311 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaIJKID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:07:30 -0400
-Message-ID: <541022DB.9090000@plexistor.com>
-Date: Wed, 10 Sep 2014 13:07:23 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 10 Sep 2014 06:08:03 -0400
+X-Originating-IP: 82.169.106.120
+Message-ID: <541022F4.4020501@crashplan.pro>
+Date: Wed, 10 Sep 2014 12:07:48 +0200
+From: Ceriel Jacobs <linux-scsi@crashplan.pro>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org, Toshi Kani <toshi.kani@hp.com>,
-        linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] mm: Let sparse_{add,remove}_one_section receive a
- node_id
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <540F1EC6.4000504@plexistor.com> <540F20AB.4000404@plexistor.com> <540F48BA.2090304@intel.com>
-In-Reply-To: <540F48BA.2090304@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tom Gundersen <teg@jklm.no>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        hare <hare@suse.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Wu Zhangjin <falcon@meizu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if
+ not OOM
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com> <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net> <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com> <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com> <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan> <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com> <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com> <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+In-Reply-To: <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 09:36 PM, Dave Hansen wrote:
-> On 09/09/2014 08:45 AM, Boaz Harrosh wrote:
->> This is for add_persistent_memory that will want a section of pages
->> allocated but without any zone associated. This is because belonging
->> to a zone will give the memory to the page allocators, but
->> persistent_memory belongs to a block device, and is not available for
->> regular volatile usage.
-> 
-> I don't think we should be taking patches like this in to the kernel
-> until we've seen the other side of it.  Where is the page allocator code
-> which will see a page belonging to no zone?  Am I missing it in this set?
-> 
+Tom Gundersen schreef op 10-09-14 om 08:46:
+>> >Indeed. What I proposed with a multiplier for the timeout for the
+>> >different types of built in commands was deemed complex but saw no
+>> >alternatives proposed despite my interest to work on one and
+>> >clarifications noted that this was a design regression. Not quite sure
+>> >what else I could have done here. I'm interested in learning what the
+>> >better approach is for the future as if we want to marry init + kernel
+>> >we need a smooth way for us to discuss design without getting worked
+>> >up about it, or taking it personal. I really want this to work as I
+>> >personally like systemd so far.
+> How about this: keep the timeout global, but also introduce a
+> (relatively short, say 10 or 15 seconds) timeout after which a warning
+> is printed. Even if nothing is actually killed, having workers (be it
+> insmod or something else) take longer than a couple of seconds is
+> likely a sign that something is seriously off somewhere.
 
-It is not missing. It will never be.
+I don't agree with the statement that something is seriously off when it 
+takes more then 10 to 15 seconds.
 
-These pages do not belong to any allocator. They are not allocate-able
-pages. In fact they are not "memory" they are "storage"
+When probing only one hard disk drive, then I do agree that something is 
+seriously off after 10 to 15 seconds.
 
-These pages belong wholesomely to a block-device. In turn the block
-device grants ownership of a partition of this pages to an FS.
-The FS loaded has its own block allocation schema. Which internally
-circulate each pages usage around. But the page never goes beyond its
-FS.
-
-> I see about 80 or so calls to page_zone() in the kernel.  How will a
-> zone-less page look to all of these sites?
-> 
-
-None of these 80 call site will be reached! the pages are always used
-below the FS, like send them on the network, or send them to a slower
-block device via a BIO. I have a full fledge FS on top of this code
-and it all works very smoothly, and stable. (And fast ;))
-
-It is up to the pMem-based FS to manage its pages's ref count so they are
-never released outside of its own block allocator.
-
-at the end of the day, struct pages has nothing to do with zones
-and allocators and "memory", as it says in Documentation struct
-page is a facility to track the state of a physical page in the
-system. All the other structures are higher in the stack above
-the physical layer, struct-pages for me are the upper API of the
-memory physical layer. Which are in common with pmem, higher
-on the stack where with memory we have a zone, pmem has a block-device.
-Higher where we have page allocators, pmem has an FS block allocator,
-higher where we have a slab, pmem has files for user consumption.
-
-pmem is storage, which shares the physical layer with memory, and
-this is what this patch describes. There will be no more mm interaction
-at all for pmem. The rest of the picture is all there in plain site as
-part of this patchset, the pmem.c driver then an FS on top of that. What
-else do you need to see?
-
-Thanks
-Boaz
-
+When probing a SAS bus with one hundred hard disk drives in standby 
+mode, then I do expect that to take longer then 10 to 15 seconds.
