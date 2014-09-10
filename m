@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaIJWq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 18:46:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25802 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453AbaIJWq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 18:46:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,501,1406617200"; 
-   d="scan'208";a="601114814"
-Message-ID: <5410D486.4060200@intel.com>
-Date: Wed, 10 Sep 2014 15:45:26 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-CC: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>	<1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>	<5410724B.8000803@intel.com> <CAPAsAGzm29VWz8ZvOu+fVGn4Vbj7bQZAnB11M5ZZXRTQTchj0w@mail.gmail.com>
-In-Reply-To: <CAPAsAGzm29VWz8ZvOu+fVGn4Vbj7bQZAnB11M5ZZXRTQTchj0w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753132AbaIJWwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 18:52:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58629 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752299AbaIJWwU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 18:52:20 -0400
+Date: Wed, 10 Sep 2014 15:52:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
+        Joe Perches <joe@perches.com>, Masanari Iida <standby24x7@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+Message-Id: <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+In-Reply-To: <20140908181524.GA11839@www.outflux.net>
+References: <20140908181524.GA11839@www.outflux.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 01:30 PM, Andrey Ryabinin wrote:
-> Yes, there is a reason for this. For inline instrumentation we need to
-> catch access to userspace without any additional check.
-> This means that we need shadow of 1 << 61 bytes and we don't have so
-> many addresses available.
+On Mon, 8 Sep 2014 11:15:24 -0700 Kees Cook <keescook@chromium.org> wrote:
 
-That sounds reasonable.
+> Check for misspellings, based on Debian's lintian list. Several false
+> positives were removed, and several additional words added that were
+> common in the kernel:
+> 
+> 	backword backwords
+> 	invalide valide
+> 	recieves
+> 	singed unsinged
+> 
+> While going back and fixing existing spelling mistakes isn't a high
+> priority, it'd be nice to try to catch them before they hit the tree.
+
+I have a feeling this is going to be a rat hole and that
+scripts/spelling.txt will grow to consume the planet.  Oh well, whatev.
+
+Have a kernel joke:
+
+--- a/scripts/spelling.txt~checkpatch-look-for-common-misspellings-fix
++++ a/scripts/spelling.txt
+@@ -553,6 +553,7 @@ jeffies||jiffies
+ juse||just
+ jus||just
+ kown||known
++kubys|linus
+ langage||language
+ langauage||language
+ langauge||language
+_
+
