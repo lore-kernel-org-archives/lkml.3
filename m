@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395AbaIJLg4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:36:56 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35310 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaIJLgy (ORCPT
+	id S1751109AbaIJLqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:46:07 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60887 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaIJLqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:36:54 -0400
-Message-ID: <541037D2.7060007@gmail.com>
-Date: Wed, 10 Sep 2014 13:36:50 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 10 Sep 2014 07:46:04 -0400
+Date: Wed, 10 Sep 2014 12:45:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marex@denx.de, shawn.guo@linaro.org,
+        Frank.Li@freescale.com
+Message-ID: <20140910114530.GD7960@sirena.org.uk>
+References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+ <20140910102105.GR2601@sirena.org.uk>
+ <20140910112258.GA30794@Robin-OptiPlex-780>
 MIME-Version: 1.0
-To: Sergey Ryazanov <ryazanov.s.a@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-CC: Paul Bolle <pebolle@tiscali.nl>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
-        open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-References: <20140213201421.GJ22203@tuxdriver.com>	<1397581703.8212.5.camel@x220>	<CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>	<1403087119.1984.93.camel@x220>	<CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>	<1403091974.1984.102.camel@x220>	<1409911856.7832.9.camel@x220>	<CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>	<1409916824.7832.20.camel@x220>	<CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>	<20140909182734.GJ29412@tuxdriver.com> <CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
-In-Reply-To: <CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+KJYzRxRHjYqLGl5"
+Content-Disposition: inline
+In-Reply-To: <20140910112258.GA30794@Robin-OptiPlex-780>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.132.226.177
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014, 12:33 PM, Sergey Ryazanov wrote:
-> 2014-09-09 22:27 GMT+04:00, John W. Linville <linville@tuxdriver.com>:
->> On Fri, Sep 05, 2014 at 04:02:10PM +0400, Sergey Ryazanov wrote:
->>> 2014-09-05 15:33 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
->>>> Hi Sergey,
->>>>
->>>> On Fri, 2014-09-05 at 15:12 +0400, Sergey Ryazanov wrote:
->>>>> 2014-09-05 14:10 GMT+04:00, Paul Bolle <pebolle@tiscali.nl>:
->>>>>> On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
->>>>>>> Having this conversation every rc1 is getting a bit silly. Could
->>>>>>> Jiri
->>>>>>> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
->>>>>>> submitted?
->>>>>>
->>>>>> I waited until rc3. Have you seen any activity on this front? If
->>>>>> not,
->>>>>> should I resend the patch that removes the code in mainline that
->>>>>> depends
->>>>>> on ATHEROS_AR231X (ie, AHB bus support)?
->>>>>>
->>>>> Recent activity always could be found in [1]. Now I finish another one
->>>>> round of cleanups and have a plan to fix several things (you can
->>>>> always find something that you really want to improve). But if you
->>>>> insist I could immediately switch to "send upstream" mode. And seems
->>>>> that this would be better approach.
->>>>>
->>>>> 1. https://dev.openwrt.org/log/trunk/target/linux/atheros
->>>>
->>>> And where can the related PULL requests or patch submissions be found?
->>>>
->>> I have not sent patches yet, since I thought that it would be easier
->>> to cleanup them in openwrt tree and then send them upstream.
->>
->> That excuse has worn a bit thin.  Perhaps Paul should repost his
->> removal and you can add a revert to the start of your patch series?
->>
-> As for me, I do not like such flapping
 
-Agreed in case what you have is in a good enough shape. You (and also
-others) can still clean up the code in upstream too. So, if it is
-mergeable, send it for upstream inclusion now, otherwise I am all for
-John to apply the Paul's patch. The unused code has been a way too long
-in the tree now.
+--+KJYzRxRHjYqLGl5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks,
--- 
-js
+On Wed, Sep 10, 2014 at 07:22:59PM +0800, Robin Gong wrote:
+> On Wed, Sep 10, 2014 at 11:21:05AM +0100, Mark Brown wrote:
+
+> > This isn't going to work, anything that looks at the usedma flag will
+> > see the result of the last thing that was checked which may or may not
+> > be the transfer that it's handling.  The driver should check to see if
+> > the core mapped the transfer for DMA.
+
+> Yes, you're right. I should use "transfer->tx_sg->sgl == NULL" or
+> "transfer->rx_sg->sgl == NULL" instead of usedma flag in driver, right?
+
+Right.
+
+--+KJYzRxRHjYqLGl5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUEDnZAAoJECTWi3JdVIfQUScH/387Cp1Y8r1kKvVGGJamy69G
+GMXCh0iSsSkU0/gCJ9MxRE43cuzxwaknjUupiOTPqlnXYlOwuruljboxe+a+2jfG
+UojB7690yUYs1BSNauj3x9N9KEQcOXP5cZ9vYarjqdIW1i+LT8c3wiSQ70rBfHBC
+QpHEWYju9gJrYdVLGVTp5V3wpD9CvGSS8I7MnV6WRAdM4dccj4tIbC3Ule3q5yKy
+ShNgVfzS+wPMDXAsTcyH+MEMxDj7FZe0WZgZszH/S4zcRxggExbwI9PYhXbM/tC3
+rRtSlzgB7YdvCENs4T+TNeCHqj/z8z8dSIn+z9d0tBXOhdWZ6SV6tcUoE4o9IDI=
+=RYuO
+-----END PGP SIGNATURE-----
+
+--+KJYzRxRHjYqLGl5--
