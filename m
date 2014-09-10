@@ -1,162 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaIJLPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:15:36 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:49326 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaIJLPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:15:32 -0400
-Message-ID: <5410326F.8080104@huawei.com>
-Date: Wed, 10 Sep 2014 19:13:51 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1752197AbaIJLQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:16:29 -0400
+Received: from mail-bn1bn0108.outbound.protection.outlook.com ([157.56.110.108]:58647
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751973AbaIJLQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 07:16:27 -0400
+Date: Wed, 10 Sep 2014 19:22:59 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-spi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <marex@denx.de>,
+        <shawn.guo@linaro.org>, <Frank.Li@freescale.com>
+Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
+Message-ID: <20140910112258.GA30794@Robin-OptiPlex-780>
+References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+ <20140910102105.GR2601@sirena.org.uk>
 MIME-Version: 1.0
-To: Jon Masters <jcm@redhat.com>, Sudeep Holla <sudeep.holla@arm.com>,
-        "Lorenzo Pieralisi" <Lorenzo.Pieralisi@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Olof Johansson" <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Charles Garcia-Tobin" <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org> <20140909162648.GE2910@arm.com> <540F2DCF.1010104@redhat.com> <20140909171541.GD3896@leverpostej> <20140909175010.GF4948@e102568-lin.cambridge.arm.com> <540F4155.4090200@arm.com> <540F4FCF.1090508@redhat.com>
-In-Reply-To: <540F4FCF.1090508@redhat.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.17.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140910102105.GR2601@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(24454002)(51704005)(189002)(199003)(54356999)(26826002)(31966008)(21056001)(50466002)(102836001)(81542001)(74502001)(76176999)(77982001)(83072002)(20776003)(83322001)(99396002)(64706001)(33656002)(107046002)(85306004)(81156004)(50986999)(87936001)(47776003)(80022001)(110136001)(106466001)(85852003)(79102001)(33716001)(4396001)(6806004)(84676001)(23726002)(95666004)(104016003)(69596002)(92726001)(44976005)(97756001)(46102001)(81342001)(97736003)(74662001)(90102001)(105606002)(92566001)(76482001)(83506001)(46406003)(68736004)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB491;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 033054F29A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/10 3:06, Jon Masters wrote:
-> On 09/09/2014 02:05 PM, Sudeep Holla wrote:
->>
->>
->> On 09/09/14 18:50, Lorenzo Pieralisi wrote:
->>> On Tue, Sep 09, 2014 at 06:15:41PM +0100, Mark Rutland wrote:
->>>> On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
->>>>> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
->>>>>> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
->>>>>>> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
->>>>>>> new file mode 100644
->>>>>>> index 0000000..3899ee6
->>>>>>> --- /dev/null
->>>>>>> +++ b/arch/arm64/include/asm/acenv.h
->>>>>>> @@ -0,0 +1,18 @@
->>>>>>> +/*
->>>>>>> + * ARM64 specific ACPICA environments and implementation
->>>>>>> + *
->>>>>>> + * Copyright (C) 2014, Linaro Ltd.
->>>>>>> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
->>>>>>> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
->>>>>>> + *
->>>>>>> + * This program is free software; you can redistribute it and/or modify
->>>>>>> + * it under the terms of the GNU General Public License version 2 as
->>>>>>> + * published by the Free Software Foundation.
->>>>>>> + */
->>>>>>> +
->>>>>>> +#ifndef _ASM_ACENV_H
->>>>>>> +#define _ASM_ACENV_H
->>>>>>> +
->>>>>>> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
->>>>>>
->>>>>> Does this mean that it will be supported at some point? Looking at the
->>>>>> places where this function is called, I don't really see how this would
->>>>>> ever work on ARM. Which means that we add such macro just to be able to
->>>>>> compile code that would never be used on arm64. I would rather see the
->>>>>> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
->>>>>
->>>>> That specific cache behavior is a part of e.g. ACPI C3 state support
->>>>> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
->>>>
->>>> Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
->>>> we don't get S1, S2, or S3 states either.
->>>>
->>>>> As you note, it's not going to work on 64-bit ARM as it does on x86,
->>>>> but it's optional to implement C3 and early 64-bit ARM systems should
->>>>> not report Wbindv flags in the FADT anyway.
->>>>
->>>> Unless the arm cache architecture changes, I wouldn't expect any 64-bit
->>>> ARM system to set either of the WBINVD flags.
->>>>
->>>>> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
->>>>> disabling C3 support, while also allowing for use of _CST objects to
->>>>> define more flexible C-States later on.
->>>>
->>>> It sounds like we should be sanity checking these in the arm64 ACPI code
->>>> for the moment. I don't want us to discover that current platforms
->>>> report the wrong thing only when new platforms come out that might
->>>> actually report things correctly.
->>>
->>> I think that the kernel must ignore most of the stuff mentioned above
->>> in HW_REDUCED_ACPI mode. And to be frank I still think that the problem
->>> is not even there. The problem is trying to compile code that basically
->>> has no defined behaviour - ie it is unspecified - on ARM64, that's what
->>> Catalin pointed out.
->>>
->>> I understand it is compiled in by default on x86, but that's not a reason
->>> why we should add empty hooks all over the place to compile code that
->>> does not stand a chance to be doing anything sensible apart from
->>> returning an error code, in the best case scenario.
->>>
->>
->> I had pointed out this earlier, even if we make it compile there's
->> every possibility that it can blow up if some vendor adds S- states
->> to their ACPI tables. One clear reason why it could blow up is:
->>
->> "
->>       /* This violates the spec but is required for bug compatibility. */
->>       acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
->> "
->>
->> I don't think this can ever work on ARM platforms. So better to fix it
->> properly.
+On Wed, Sep 10, 2014 at 11:21:05AM +0100, Mark Brown wrote:
+> On Wed, Sep 10, 2014 at 09:30:04AM +0800, Robin Gong wrote:
 > 
-> Hanjun,
+> > +static bool spi_imx_can_dma(struct spi_master *master, struct spi_device *spi,
+> > +			 struct spi_transfer *transfer)
+> > +{
+> > +	struct spi_imx_data *spi_imx = spi_master_get_devdata(master);
+> > +
+> > +	if (spi_imx->dma_is_inited && (transfer->len > spi_imx->rx_wml)
+> > +	    && (transfer->len > spi_imx->tx_wml))
+> > +		spi_imx->usedma = true;
+> > +	else
+> > +		spi_imx->usedma = false;
+> > +
+> > +	return spi_imx->usedma;
+> > +}
 > 
-> How do you want to proceed? I'm not sure it should be !HW_REDUCED_MODE
-> for the cache behavior, because an embedded x86 box would still probably
-> define those, but removing the hooks on ARM may make sense.
-
-As Graeme said in the reply, for sleep we are doing the same thing as
-ia64 in stubbing out the functions, and before that we are trying to remove
-the hooks on ARM by introducing more stubs and making things more complicated.
-
-I agree that we should rework the ACPI core to make sleep/cache related
-stuff compatible with ARM, but I think we may not do this in one go, it will
-need incremental changes over the next couple of years as real hardware
-starts to appear and we finalise the standards to support this.
-
-Now, as we list in the arm-acpi.txt doc, power management of sleep states
-and CPU power/frequency control are not well defined in ACPI spec for ARM,
-we need some time to finalize the standard and then we know how to implement
-that in a good shape.
-
-ACPI 5.1 already fixed lots missing features for ARM64 and provide the
-fundamental needs to bring up the basic system for ARM server, power
-management is not critical at now, so why not fix/implement it later?
-
-Thanks
-Hanjun
-
-
+> This isn't going to work, anything that looks at the usedma flag will
+> see the result of the last thing that was checked which may or may not
+> be the transfer that it's handling.  The driver should check to see if
+> the core mapped the transfer for DMA.
+Yes, you're right. I should use "transfer->tx_sg->sgl == NULL" or
+"transfer->rx_sg->sgl == NULL" instead of usedma flag in driver, right?
 
