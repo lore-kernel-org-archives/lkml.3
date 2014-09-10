@@ -1,92 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382AbaIJTvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:51:33 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33669 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIJTvb (ORCPT
+	id S1753461AbaIJTvn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:51:43 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:61921 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaIJTvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:51:31 -0400
-Date: Wed, 10 Sep 2014 20:50:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stefan Wahren <info@lategoodbye.de>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "festevam@gmail.com" <festevam@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20140910195052.GN7960@sirena.org.uk>
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
- <1410089869-6611-3-git-send-email-info@lategoodbye.de>
- <20140909182211.GG3896@leverpostej>
- <540F523D.4010904@lategoodbye.de>
- <20140910141853.GA4994@leverpostej>
- <20140910151316.GG7960@sirena.org.uk>
- <54108B34.6010701@lategoodbye.de>
+	Wed, 10 Sep 2014 15:51:41 -0400
+Message-ID: <5410ABD5.9060106@kernel.dk>
+Date: Wed, 10 Sep 2014 13:51:49 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aIbcA3MSwnGacr4f"
-Content-Disposition: inline
-In-Reply-To: <54108B34.6010701@lategoodbye.de>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.132.226.177
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFC 2/3] ARM: regulator: add Freescale MXS regulator
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
+        Robert Elliott <relliott@beardog.cce.hp.com>,
+        "hch@lst.de" <hch@lst.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+References: <20140910001417.9294.40414.stgit@beardog.cce.hp.com> <20140910001801.9294.79720.stgit@beardog.cce.hp.com> <54109514.4090901@kernel.dk> <94D0CD8314A33A4D9D801C0FE68B402958C71B00@G9W0745.americas.hpqcorp.net>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C71B00@G9W0745.americas.hpqcorp.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/10/2014 01:35 PM, Elliott, Robert (Server Storage) wrote:
+> 
+> 
+>> -----Original Message-----
+>> From: Jens Axboe [mailto:axboe@kernel.dk]
+>> Sent: Wednesday, 10 September, 2014 1:15 PM
+>> To: Robert Elliott; Elliott, Robert (Server Storage); hch@lst.de;
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: [PATCH 1/2] block: default to rq_affinity=2 for blk-mq
+>>
+>> On 09/09/2014 06:18 PM, Robert Elliott wrote:
+>>> From: Robert Elliott <elliott@hp.com>
+>>>
+>>> One change introduced by blk-mq is that it does all
+>>> the completion work in hard irq context rather than
+>>> soft irq context.
+>>>
+>>> On a 6 core system, if all interrupts are routed to
+>>> one CPU, then you can easily run into this:
+>>> * 5 CPUs submitting IOs
+>>> * 1 CPU spending 100% of its time in hard irq context
+>>> processing IO completions, not able to submit anything
+>>> itself
+>>>
+>>> Example with CPU5 receiving all interrupts:
+>>>    CPU usage:   CPU0   CPU1   CPU2   CPU3   CPU4   CPU5
+>>>         %usr:   0.00   3.03   1.01   2.02   2.00   0.00
+>>>         %sys:  14.58  75.76  14.14   4.04  78.00   0.00
+>>>         %irq:   0.00   0.00   0.00   1.01   0.00 100.00
+>>>        %soft:   0.00   0.00   0.00   0.00   0.00   0.00
+>>> %iowait idle:  85.42  21.21  84.85  92.93  20.00   0.00
+>>>        %idle:   0.00   0.00   0.00   0.00   0.00   0.00
+>>>
+>>> When the submitting CPUs are forced to process their own
+>>> completion interrupts, this steals time from new
+>>> submissions and self-throttles them.
+>>>
+>>> Without that, there is no direct feedback to the
+>>> submitters to slow down.  The only feedback is:
+>>> * reaching max queue depth
+>>> * lots of timeouts, resulting in aborts, resets, soft
+>>>   lockups and self-detected stalls on CPU5, bogus
+>>>   clocksource tsc unstable reports, network
+>>>   drop-offs, etc.
+>>>
+>>> The SCSI LLD can set affinity_hint for each of its
+>>> interrupts to request that a program like irqbalance
+>>> route the interrupts back to the submitting CPU.
+>>> The latest version of irqbalance ignores those hints,
+>>> though, instead offering an option to run a policy
+>>> script that could honor them. Otherwise, it balances
+>>> them based on its own algorithms. So, we cannot rely
+>>> on this.
+>>>
+>>> Hardware might perform interrupt coalescing to help,
+>>> but it cannot help 1 CPU keep up with the work
+>>> generated by many other CPUs.
+>>>
+>>> rq_affinity=2 helps by pushing most of the block layer
+>>> and SCSI midlayer completion work back to the submitting
+>>> CPU (via an IPI).
+>>>
+>>> Change the default rq_affinity=2 under blk-mq
+>>> so there's at least some feedback to slow down the
+>>> submitters.
+>>
+>> I don't think we should do this generically. For "sane" devices with
+>> multiple completion queues, and with proper affinity setting in the
+>> driver, this is going to be a loss.
+>>
+>> So lets not add it to QUEUE_FLAG_MQ_DEFAULT, but we can make it
+>> default
+>> for nr_hw_queues == 1. I think that would be way saner.
+>>
+>> --
+>> Jens Axboe
+> 
+> If the interrupt does arrive on the submitting CPU, then it 
+> meets the criteria for all the cases:
+> * 1: complete on any CPU
+> * 2: complete on submitting CPU's node (QUEUE_FLAG_SAME_COMP)
+> * 3: complete on submitting CPU (QUEUE_FLAG_SAME_FORCE)
+> 
+> and _blk_complete_request handles it locally rather
+> than sending an IPI.
+> 
+>         if (req->cpu != -1) {
+>                 ccpu = req->cpu;
+>                 if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
+>                         shared = cpus_share_cache(cpu, ccpu);
+>         } else
+>                 ccpu = cpu;
+>         ...
+>         if (ccpu == cpu || shared) {
+>                 struct list_head *list;
+> do_local:
+>         ...
+>         } else if (raise_blk_irq(ccpu, req))
+>                 goto do_local;
 
---aIbcA3MSwnGacr4f
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I forgot about the shared case being handled appropriately, so that
+should probably be fine to do. My primary concern here is a performance
+penalty on sync IO, I'll run a few test on a single IRQ case (like the
+mtip32xx) and see how that performs. But you are right, it might not be
+a bad thing to do by default.
 
-On Wed, Sep 10, 2014 at 07:32:36PM +0200, Stefan Wahren wrote:
-> Am 10.09.2014 17:13, schrieb Mark Brown:
+> Are you saying you want the blk_queue_bio submission to 
+> not even set the req->cpu field (which defaulted to -1):
+>         if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags))
+>                 req->cpu = raw_smp_processor_id();
+> 
+> when you expect the interrupt routing is good so that
+> _blk_complete_request can avoid the test_bit and 
+> cpus_share_cache calls?
 
-> >Ugh, this looks like it might be a regulator driver but since the
-> >subject line was "ARM: " I deleted it unread - if your changelog looks
-> >different to all the other changelogs in the subsystem it probably needs
-> >changing.
+No, and since those are non-serializing tests, I suspect if we start
+adding a branch to avoid that we will negate any potential win on that.
+The flags should basically never get dirtied. Well I guess they could
+for heavy uses of start/stop queue, but that might be something that's
+worthwhile to tackle separately.
 
-> sorry about the confusion, i will remove ARM in the next version.
+> With irqbalance no longer honoring affinity_hint
+> by default, I'm worried that most LLDs will not find
+> their interrupts routed that way anymore.  That's
+> how we ran into this; scsi-mq + kernel-3.17 on an
+> up-to-date RHEL 6.5 distro (which now carries the
+> new irqbalance).
+> 
+> We plan to create a policyscript for the new irqbalance
+> for hpsa devices, but other high-IOPS drivers will hit
+> the same problem.
 
-> Changelog? I didn't send a changelog because it was my first version.
+irqbalance has _always_ been a pain in the butt... Suboptimal or
+changing behaviour from release to release, it's been one of the most
+annoying parts of performance tuning.
 
-The changelog is the text describing the change you are making, not
-something describing differences between revisions of the patch set.
+-- 
+Jens Axboe
 
-> Should i resend this version only to you?
-
-It sounds like this needs a new version anyway so may as well just wait
-for that.
-
---aIbcA3MSwnGacr4f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUEKubAAoJECTWi3JdVIfQ0DMH/1n5R03w2Rfis1ldaJ8pZWU0
-uWxgCQI5HR+nRhBTQgenNAr12EMh2q+dgcM3+IAjgJssYgsEfWgLT6LNIE4kOeaO
-fpP41wGGMaMCDKtdvgncVHcusM+8jW3ChLjMEKQ3KPMJh6q6EpgfW0DKrcTIfQ7k
-5OyeB/GdwXzicb//+E+Kn8xyG/xQcKIU5bJVN9nxeQEkokO2HpunA3b1MpmY3S2K
-6As4vMxcg/+XurgFZiIU72lkA0Y7ZrUxJpDGGfTd732DCKkeHwSOL2PJn4NZ2MqV
-ZIBQtTAC5tb7F2tJmxRBkinHot52PJckchBAVO291JSESCu55buyrbjqktTp5i8=
-=yAhr
------END PGP SIGNATURE-----
-
---aIbcA3MSwnGacr4f--
