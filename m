@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaIJNte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:49:34 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:57621 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935AbaIJNtd (ORCPT
+	id S1751771AbaIJNup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:50:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50523 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706AbaIJNuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:49:33 -0400
+	Wed, 10 Sep 2014 09:50:44 -0400
+Date: Wed, 10 Sep 2014 15:50:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, riel@redhat.com,
+        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        dietmar.eggemann@arm.com
+Subject: Re: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
+Message-ID: <20140910135039.GP3190@worktop.ger.corp.intel.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org>
+ <540204DC.5090204@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140908152206.GH6758@twins.programming.kicks-ass.net>
-References: <CABPqkBRREcix0TtLLUgiq8uabUqG=m2un79WKLqPXF=LccSQbw@mail.gmail.com>
-	<20140908124945.GD17728@krava.brq.redhat.com>
-	<CABPqkBRPWh+=CfXBYaYW=P6FJke3KB-7y-U1ky8JAKjDY3JaEg@mail.gmail.com>
-	<20140908143107.GG17728@krava.brq.redhat.com>
-	<20140908152206.GH6758@twins.programming.kicks-ass.net>
-Date: Wed, 10 Sep 2014 15:49:32 +0200
-Message-ID: <CABPqkBTp2Sh788hmgC-w74MzTJZ-ySzEM-Su2M4oMO4OgDMsJA@mail.gmail.com>
-Subject: Re: [PATCH] perf: Do not check PERF_EVENT_STATE_EXIT on syscall read path
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540204DC.5090204@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On Sat, Aug 30, 2014 at 10:37:40PM +0530, Preeti U Murthy wrote:
+> > -	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
+> > -		if (sched_feat(ARCH_CAPACITY))
+> 
+> Aren't you missing this check above? I understand that it is not
+> crucial, but that would also mean removing ARCH_CAPACITY sched_feat
+> altogether, wouldn't it?
 
+Yes he's missing that, I added the below bit on top.
 
+So the argument last time:
+lkml.kernel.org/r/20140709105721.GT19379@twins.programming.kicks-ass.net
+was that you cannot put sched_feat(ARCH_CAPACITY) inside a weak arch_*
+function. The test has to be outside, seeing how it needs to decide to
+call the arch function at all (or revert to the default implementation).
 
-On Mon, Sep 8, 2014 at 5:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Sep 08, 2014 at 04:31:07PM +0200, Jiri Olsa wrote:
->> Revert PERF_EVENT_STATE_EXIT check on read syscall path.
->> It breaks standard way to read counter, which is to open
->> the counter, wait for the monitored process to die and
->> read the counter.
->>
->> Reported-by: Stephane Eranian <eranian@google.com>
->> Acked-by: Stephane Eranian <eranian@google.com>
->> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@kernel.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Stephane Eranian <eranian@google.com>
->> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
->
-> Thanks!
-Still don't see this fix in tip.git.
-
->> ---
->>  kernel/events/core.c | 3 +--
->>  1 file changed, 1 insertion(+), 2 deletions(-)
->>
->> diff --git a/kernel/events/core.c b/kernel/events/core.c
->> index d8cb4d21a346..6d1c9ce1643e 100644
->> --- a/kernel/events/core.c
->> +++ b/kernel/events/core.c
->> @@ -3600,8 +3600,7 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
->>        * error state (i.e. because it was pinned but it couldn't be
->>        * scheduled on to the CPU at some point).
->>        */
->> -     if ((event->state == PERF_EVENT_STATE_ERROR) ||
->> -         (event->state == PERF_EVENT_STATE_EXIT))
->> +     if (event->state == PERF_EVENT_STATE_ERROR)
->>               return 0;
->>
->>       if (count < event->read_size)
->> --
->> 1.8.3.1
->>
+---
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5700,7 +5700,7 @@ unsigned long __weak arch_scale_freq_cap
+ 	return default_scale_capacity(sd, cpu);
+ }
+ 
+-unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
++static unsigned long default_scale_cpu_capacity(struct sched_domain *sd, int cpu)
+ {
+ 	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
+ 		return sd->smt_gain / sd->span_weight;
+@@ -5708,6 +5708,11 @@ unsigned long __weak arch_scale_cpu_capa
+ 	return SCHED_CAPACITY_SCALE;
+ }
+ 
++unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
++{
++	return default_scale_cpu_capacity(sd, cpu);
++}
++
+ static unsigned long scale_rt_capacity(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+@@ -5747,7 +5752,10 @@ static void update_cpu_capacity(struct s
+ 	unsigned long capacity = SCHED_CAPACITY_SCALE;
+ 	struct sched_group *sdg = sd->groups;
+ 
+-	capacity *= arch_scale_cpu_capacity(sd, cpu);
++	if (sched_feat(ARCH_CAPACITY))
++		capacity *= arch_scale_cpu_capacity(sd, cpu);
++	else
++		capacity *= default_scale_cpu_capacity(sd, cpu);
+ 
+ 	capacity >>= SCHED_CAPACITY_SHIFT;
+ 
