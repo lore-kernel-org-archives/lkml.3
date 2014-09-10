@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaIJNzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:55:15 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:33988 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaIJNzM (ORCPT
+	id S1752124AbaIJNzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:55:19 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:36619 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaIJNzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:55:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140821140040.GE9608@saruman.home>
-References: <1406020130-20467-1-git-send-email-sbhatta@xilinx.com>
-	<31c3ad1a-370a-4d0d-b392-8e7bb292f6aa@BN1AFFO11FD050.protection.gbl>
-	<53F31F52.8060904@zonque.org>
-	<CALHRZur5BC8Q2WFghU8jAtXzt1=tm=8swxp2xEz3MV4z5CCE9A@mail.gmail.com>
-	<20140821140040.GE9608@saruman.home>
-Date: Wed, 10 Sep 2014 19:25:11 +0530
-Message-ID: <CALHRZuqt-XJ5mPczzGJtSN=iq7TPut0=54r90QHWR+w-Lwwtyg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] usb: gadget: Add xilinx usb2 device support
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: "balbi@ti.com" <balbi@ti.com>
-Cc: Daniel Mack <daniel@zonque.org>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 10 Sep 2014 09:55:16 -0400
+Date: Wed, 10 Sep 2014 19:25:05 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+Cc: "Kershner, David A" <David.Kershner@unisys.com>,
+        *S-Par-Maintainer <SParMaintainer@unisys.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        svemula@xilinx.com, anirudh@xilinx.com,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+Message-ID: <20140910135505.GA30082@sudip-PC>
+References: <1410259269-27397-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <C97001BC43954D438ACB059713BA5CDFC97127E0E7@USEA-EXCH7.na.uis.unisys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C97001BC43954D438ACB059713BA5CDFC97127E0E7@USEA-EXCH7.na.uis.unisys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On Wed, Sep 10, 2014 at 08:29:26AM -0500, Romer, Benjamin M wrote:
+> On Tue, 2014-09-09 at 16:11 +0530, Sudip Mukherjee wrote:
+> > fixed sparse warning : context imbalance in 'resume_device'
+> >                         unexpected unlock
+> > this patch will generate warning from checkpatch for
+> > lines over 80 character , but since those are user-visible strings
+> > so it was not modified.
+> > 
+> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+> 
+> I tested your changes, and this patch works fine. Thanks!
+> 
+> -- Ben
+> 
+> Acked-by: Benjamin Romer <benjamin.romer@unisys.com>
+> Tested-by: Benjamin Romer <benjamin.romer@unisys.com>
 
-On Thu, Aug 21, 2014 at 7:30 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Aug 21, 2014 at 12:19:03PM +0530, sundeep subbaraya wrote:
->> Hi Daniel,
->>
->> On Tue, Aug 19, 2014 at 3:26 PM, Daniel Mack <daniel@zonque.org> wrote:
->> > Hi,
->> >
->> > On 07/22/2014 11:08 AM, Subbaraya Sundeep Bhatta wrote:
->> >> This patch adds xilinx usb2 device driver support
->> >
->> > Add some more information here, please. Copying the text from the
->> > Kconfig option is already a good start.
->> >
->> >>  drivers/usb/gadget/Kconfig      |   14 +
->> >>  drivers/usb/gadget/Makefile     |    1 +
->> >>  drivers/usb/gadget/udc-xilinx.c | 2261 +++++++++++++++++++++++++++++++++++++++
->> >>  3 files changed, 2276 insertions(+), 0 deletions(-)
->> >>  create mode 100644 drivers/usb/gadget/udc-xilinx.c
->> >
->> > As your driver has a DT binding, you have to describe it in
->> > Documentation/devicetree/bindings.
->> >
->> >> --- a/drivers/usb/gadget/Kconfig
->> >> +++ b/drivers/usb/gadget/Kconfig
->> >> @@ -459,6 +459,20 @@ config USB_EG20T
->> >>         ML7213/ML7831 is companion chip for Intel Atom E6xx series.
->> >>         ML7213/ML7831 is completely compatible for Intel EG20T PCH.
->> >>
->> >> +config USB_GADGET_XILINX
->> >> +     tristate "Xilinx USB Driver"
->> >> +     depends on COMPILE_TEST
->> >
->> > Why would you depend on that?
->>
->> Felipe asked to make this since this is USB soft IP driver and its
->> dependencies have tendency to grow.
->
-> that's not exactly what I asked :-) Usually you only add COMPILE_TEST
-> when you have an ARCH dependency. So something like:
->
->         depends on ARCH_ARM || COMPILE_TEST
->
-> would make it clear that this driver is only available on ARM, but when
-> doing my build tests, I'd still be able to compile it on x86.
+thanks,
+so after Greg K-H applies it then the patch to remove the last warning from this file.
 
-Ok got it :)
->
->> > Also, your code uses device tree functions unconditionally, which is
->> > fine, but it must hence depend on 'OF'.
->>
->> Ok will add OF along with COMPILE_TEST
->
-> so this would be:
->
->         depends on OF || COMPILE_TEST
-Ok
-
-Thanks,
-Sundeep
-
->
-> --
-> balbi
+thanks
+sudip
