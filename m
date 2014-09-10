@@ -1,57 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaIJDJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 23:09:42 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:56787 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaIJDJl (ORCPT
+	id S1752245AbaIJDLf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 23:11:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35413 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700AbaIJDLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 23:09:41 -0400
-From: Nitin Kuppelur <nitinkuppelur@gmail.com>
-To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nitin Kuppelur <nitinkuppelur@gmail.com>
-Subject: [PATCH V2] Staging: octeon-hcd: removed dummy label
-Date: Wed, 10 Sep 2014 03:36:24 +0200
-Message-Id: <1410312984-7798-1-git-send-email-nitinkuppelur@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <540FA96D.7040903@gmail.com>
-References: <540FA96D.7040903@gmail.com>
+	Tue, 9 Sep 2014 23:11:33 -0400
+Date: Tue, 09 Sep 2014 20:11:29 -0700 (PDT)
+Message-Id: <20140909.201129.274222387243042834.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: use usleep_range
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-35-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-35-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 09 Sep 2014 20:11:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the octeon-hcd.c file that fixes
-removes dummy label i.e. label followed by return of
-void function
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Tue, 9 Sep 2014 11:40:28 +0800
 
-Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
----
- drivers/staging/octeon-usb/octeon-hcd.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> Replace mdelay with usleep_range to avoid busy loop.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
-index 8a80982..5f9db4c 100644
---- a/drivers/staging/octeon-usb/octeon-hcd.c
-+++ b/drivers/staging/octeon-usb/octeon-hcd.c
-@@ -2253,7 +2253,7 @@ static void __cvmx_usb_perform_complete(
- 			/* Increment to the next location in our packet array */
- 			transaction->iso_packets++;
- 			transaction->stage = CVMX_USB_STAGE_NON_CONTROL;
--			goto done;
-+			return;
- 		}
- 	}
- 
-@@ -2266,8 +2266,6 @@ static void __cvmx_usb_perform_complete(
- 					 transaction->actual_bytes,
- 					 transaction->urb);
- 	kfree(transaction);
--done:
--	return;
- }
- 
- 
--- 
-1.9.1
-
+Applied.
