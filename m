@@ -1,105 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaIJOlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:41:17 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:53048 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613AbaIJOlO (ORCPT
+	id S1753274AbaIJOlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:41:36 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:48365 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019AbaIJOle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:41:14 -0400
+	Wed, 10 Sep 2014 10:41:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAG-aW05r2B-3JM8P4JrXYb5rMSt=HFkdhXAi=bkSfPn4xjcuHg@mail.gmail.com>
-References: <CAG-aW05r2B-3JM8P4JrXYb5rMSt=HFkdhXAi=bkSfPn4xjcuHg@mail.gmail.com>
-Date: Wed, 10 Sep 2014 16:41:13 +0200
-Message-ID: <CAG-aW05QCTd+0Gq7RfYto5RXY50icvTgrqJXrhm+f_tc7e4qsw@mail.gmail.com>
-Subject: Re: slab kmalloc guard patch uncovers potential issue with crypto,
- triggered by cryptomgr_test
-From: Matt <jackdachef@gmail.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CALFYKtBsETt-PPmENUtKZuypqMH0rF2+ZOm0Dv0jWn1_yutFhA@mail.gmail.com>
+References: <cover.1410322181.git.joe@perches.com>
+	<714b7551f5a6ea5e721fed705568a39eeae4623b.1410322181.git.joe@perches.com>
+	<CALFYKtBsETt-PPmENUtKZuypqMH0rF2+ZOm0Dv0jWn1_yutFhA@mail.gmail.com>
+Date: Wed, 10 Sep 2014 18:41:33 +0400
+Message-ID: <CALFYKtBLuBVia+ykc4mvSvxPQHb+o5t4t3L_sAOAfUTfQcCang@mail.gmail.com>
+Subject: Re: [PATCH net-next 2/5] ceph: Convert pr_warning to pr_warn
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, Sage Weil <sage@inktank.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ceph Development <ceph-devel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 4:35 PM, Matt <jackdachef@gmail.com> wrote:
-> Hi Herbert,
-> Hi David,
+On Wed, Sep 10, 2014 at 4:30 PM, Ilya Dryomov <ilya.dryomov@inktank.com> wrote:
+> On Wed, Sep 10, 2014 at 8:17 AM, Joe Perches <joe@perches.com> wrote:
+>> Use the more common pr_warn.
+>>
+>> Other miscellanea:
+>>
+>> o Coalesce formats
+>> o Realign arguments
+>>
+>> Signed-off-by: Joe Perches <joe@perches.com>
+>> ---
+>>  net/ceph/ceph_common.c | 15 +++++++++------
+>>  net/ceph/messenger.c   | 19 ++++++++++---------
+>>  net/ceph/osd_client.c  | 15 +++++++--------
+>>  net/ceph/osdmap.c      | 20 ++++++++++----------
+>>  4 files changed, 36 insertions(+), 33 deletions(-)
+>>
+>> diff --git a/net/ceph/ceph_common.c b/net/ceph/ceph_common.c
+>> index 1675021..58fbfe1 100644
+>> --- a/net/ceph/ceph_common.c
+>> +++ b/net/ceph/ceph_common.c
+>> @@ -293,17 +293,20 @@ static int get_secret(struct ceph_crypto_key *dst, const char *name) {
+>>                 key_err = PTR_ERR(ukey);
+>>                 switch (key_err) {
+>>                 case -ENOKEY:
+>> -                       pr_warning("ceph: Mount failed due to key not found: %s\n", name);
+>> +                       pr_warn("ceph: Mount failed due to key not found: %s\n",
+>> +                               name);
+>>                         break;
+>>                 case -EKEYEXPIRED:
+>> -                       pr_warning("ceph: Mount failed due to expired key: %s\n", name);
+>> +                       pr_warn("ceph: Mount failed due to expired key: %s\n",
+>> +                               name);
+>>                         break;
+>>                 case -EKEYREVOKED:
+>> -                       pr_warning("ceph: Mount failed due to revoked key: %s\n", name);
+>> +                       pr_warn("ceph: Mount failed due to revoked key: %s\n",
+>> +                               name);
+>>                         break;
+>>                 default:
+>> -                       pr_warning("ceph: Mount failed due to unknown key error"
+>> -                              " %d: %s\n", key_err, name);
+>> +                       pr_warn("ceph: Mount failed due to unknown key error %d: %s\n",
+>> +                               key_err, name);
+>>                 }
+>>                 err = -EPERM;
+>>                 goto out;
+>> @@ -433,7 +436,7 @@ ceph_parse_options(char *options, const char *dev_name,
+>>
+>>                         /* misc */
+>>                 case Opt_osdtimeout:
+>> -                       pr_warning("ignoring deprecated osdtimeout option\n");
+>> +                       pr_warn("ignoring deprecated osdtimeout option\n");
+>>                         break;
+>>                 case Opt_osdkeepalivetimeout:
+>>                         opt->osd_keepalive_timeout = intval;
+>> diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+>> index b2f571d..a7203be 100644
+>> --- a/net/ceph/messenger.c
+>> +++ b/net/ceph/messenger.c
+>> @@ -1937,11 +1937,11 @@ static int process_banner(struct ceph_connection *con)
+>>                    sizeof(con->peer_addr)) != 0 &&
+>>             !(addr_is_blank(&con->actual_peer_addr.in_addr) &&
+>>               con->actual_peer_addr.nonce == con->peer_addr.nonce)) {
+>> -               pr_warning("wrong peer, want %s/%d, got %s/%d\n",
+>> -                          ceph_pr_addr(&con->peer_addr.in_addr),
+>> -                          (int)le32_to_cpu(con->peer_addr.nonce),
+>> -                          ceph_pr_addr(&con->actual_peer_addr.in_addr),
+>> -                          (int)le32_to_cpu(con->actual_peer_addr.nonce));
+>> +               pr_warn("wrong peer, want %s/%d, got %s/%d\n",
+>> +                       ceph_pr_addr(&con->peer_addr.in_addr),
+>> +                       (int)le32_to_cpu(con->peer_addr.nonce),
+>> +                       ceph_pr_addr(&con->actual_peer_addr.in_addr),
+>> +                       (int)le32_to_cpu(con->actual_peer_addr.nonce));
+>>                 con->error_msg = "wrong peer at address";
+>>                 return -1;
+>>         }
+>> @@ -2302,7 +2302,7 @@ static int read_partial_message(struct ceph_connection *con)
+>>
+>>                 BUG_ON(!con->in_msg ^ skip);
+>>                 if (con->in_msg && data_len > con->in_msg->data_length) {
+>> -                       pr_warning("%s skipping long message (%u > %zd)\n",
+>> +                       pr_warn("%s skipping long message (%u > %zd)\n",
+>>                                 __func__, data_len, con->in_msg->data_length);
+>>                         ceph_msg_put(con->in_msg);
+>>                         con->in_msg = NULL;
+>> @@ -2712,7 +2712,7 @@ static bool con_sock_closed(struct ceph_connection *con)
+>>         CASE(OPEN);
+>>         CASE(STANDBY);
+>>         default:
+>> -               pr_warning("%s con %p unrecognized state %lu\n",
+>> +               pr_warn("%s con %p unrecognized state %lu\n",
+>>                         __func__, con, con->state);
+>>                 con->error_msg = "unrecognized con state";
+>>                 BUG();
+>> @@ -2828,8 +2828,9 @@ static void con_work(struct work_struct *work)
+>>   */
+>>  static void con_fault(struct ceph_connection *con)
+>>  {
+>> -       pr_warning("%s%lld %s %s\n", ENTITY_NAME(con->peer_name),
+>> -              ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
+>> +       pr_warn("%s%lld %s %s\n",
+>> +               ENTITY_NAME(con->peer_name),
+>> +               ceph_pr_addr(&con->peer_addr.in_addr), con->error_msg);
+>>         dout("fault %p state %lu to peer %s\n",
+>>              con, con->state, ceph_pr_addr(&con->peer_addr.in_addr));
+>>
+>> diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+>> index 30f6faf..8ebb748 100644
+>> --- a/net/ceph/osd_client.c
+>> +++ b/net/ceph/osd_client.c
+>> @@ -1774,8 +1774,8 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+>>         }
+>>         bytes = le32_to_cpu(msg->hdr.data_len);
+>>         if (payload_len != bytes) {
+>> -               pr_warning("sum of op payload lens %d != data_len %d",
+>> -                          payload_len, bytes);
+>> +               pr_warn("sum of op payload lens %d != data_len %d\n",
+>> +                       payload_len, bytes);
+>>                 goto bad_put;
+>>         }
+>>
+>> @@ -2797,10 +2797,10 @@ static struct ceph_msg *get_reply(struct ceph_connection *con,
+>>         ceph_msg_revoke_incoming(req->r_reply);
+>>
+>>         if (front_len > req->r_reply->front_alloc_len) {
+>> -               pr_warning("get_reply front %d > preallocated %d (%u#%llu)\n",
+>> -                          front_len, req->r_reply->front_alloc_len,
+>> -                          (unsigned int)con->peer_name.type,
+>> -                          le64_to_cpu(con->peer_name.num));
+>> +               pr_warn("get_reply front %d > preallocated %d (%u#%llu)\n",
+>> +                       front_len, req->r_reply->front_alloc_len,
+>> +                       (unsigned int)con->peer_name.type,
+>> +                       le64_to_cpu(con->peer_name.num));
+>>                 m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front_len, GFP_NOFS,
+>>                                  false);
+>>                 if (!m)
+>> @@ -2823,8 +2823,7 @@ static struct ceph_msg *get_reply(struct ceph_connection *con,
+>>                         if (osd_data->pages &&
+>>                                 unlikely(osd_data->length < data_len)) {
+>>
+>> -                               pr_warning("tid %lld reply has %d bytes "
+>> -                                       "we had only %llu bytes ready\n",
+>> +                               pr_warn("tid %lld reply has %d bytes we had only %llu bytes ready\n",
+>>                                         tid, data_len, osd_data->length);
+>>                                 *skip = 1;
+>>                                 ceph_msg_put(m);
+>> diff --git a/net/ceph/osdmap.c b/net/ceph/osdmap.c
+>> index c547e46..ae5a507 100644
+>> --- a/net/ceph/osdmap.c
+>> +++ b/net/ceph/osdmap.c
+>> @@ -521,11 +521,11 @@ static int decode_pool(void **p, void *end, struct ceph_pg_pool_info *pi)
+>>         ev = ceph_decode_8(p);  /* encoding version */
+>>         cv = ceph_decode_8(p); /* compat version */
+>>         if (ev < 5) {
+>> -               pr_warning("got v %d < 5 cv %d of ceph_pg_pool\n", ev, cv);
+>> +               pr_warn("got v %d < 5 cv %d of ceph_pg_pool\n", ev, cv);
+>>                 return -EINVAL;
+>>         }
+>>         if (cv > 9) {
+>> -               pr_warning("got v %d cv %d > 9 of ceph_pg_pool\n", ev, cv);
+>> +               pr_warn("got v %d cv %d > 9 of ceph_pg_pool\n", ev, cv);
+>>                 return -EINVAL;
+>>         }
+>>         len = ceph_decode_32(p);
+>> @@ -729,9 +729,9 @@ static int get_osdmap_client_data_v(void **p, void *end,
+>>
+>>                 ceph_decode_8_safe(p, end, struct_compat, e_inval);
+>>                 if (struct_compat > OSDMAP_WRAPPER_COMPAT_VER) {
+>> -                       pr_warning("got v %d cv %d > %d of %s ceph_osdmap\n",
+>> -                                  struct_v, struct_compat,
+>> -                                  OSDMAP_WRAPPER_COMPAT_VER, prefix);
+>> +                       pr_warn("got v %d cv %d > %d of %s ceph_osdmap\n",
+>> +                               struct_v, struct_compat,
+>> +                               OSDMAP_WRAPPER_COMPAT_VER, prefix);
+>>                         return -EINVAL;
+>>                 }
+>>                 *p += 4; /* ignore wrapper struct_len */
+>> @@ -739,9 +739,9 @@ static int get_osdmap_client_data_v(void **p, void *end,
+>>                 ceph_decode_8_safe(p, end, struct_v, e_inval);
+>>                 ceph_decode_8_safe(p, end, struct_compat, e_inval);
+>>                 if (struct_compat > OSDMAP_CLIENT_DATA_COMPAT_VER) {
+>> -                       pr_warning("got v %d cv %d > %d of %s ceph_osdmap client data\n",
+>> -                                  struct_v, struct_compat,
+>> -                                  OSDMAP_CLIENT_DATA_COMPAT_VER, prefix);
+>> +                       pr_warn("got v %d cv %d > %d of %s ceph_osdmap client data\n",
+>> +                               struct_v, struct_compat,
+>> +                               OSDMAP_CLIENT_DATA_COMPAT_VER, prefix);
+>>                         return -EINVAL;
+>>                 }
+>>                 *p += 4; /* ignore client data struct_len */
+>> @@ -751,8 +751,8 @@ static int get_osdmap_client_data_v(void **p, void *end,
+>>                 *p -= 1;
+>>                 ceph_decode_16_safe(p, end, version, e_inval);
+>>                 if (version < 6) {
+>> -                       pr_warning("got v %d < 6 of %s ceph_osdmap\n", version,
+>> -                                  prefix);
+>> +                       pr_warn("got v %d < 6 of %s ceph_osdmap\n",
+>> +                               version, prefix);
+>>                         return -EINVAL;
+>>                 }
+>>
+>> --
+>> 1.8.1.2.459.gbcd45b4.dirty
 >
-> (added maintainers according to https://www.kernel.org/doc/linux/MAINTAINERS)
->
-> Hi crypto ML,
->
->
-> running a kernel with Mikulas Patocka's kmalloc guard patch for slab
-> the following message appears during boot:
->
-> [    1.439704] AVX2 version of gcm_enc/dec engaged.
-> [    1.444420] alg: No test for __gcm-aes-aesni (__driver-gcm-aes-aesni)
-> [    1.449029] kmalloc: red zone damaged, pointer ffff8807fa48bcc0,
-> real_size 192, size 160, red zone ffff8807fa4fccc0
-> [    1.449033] CPU: 1 PID: 127 Comm: cryptomgr_test Not tainted 3.16.2-test+ #1
-> [    1.449034] Hardware name: ASUS All Series/P9D WS, BIOS 1804 04/17/2014
-> [    1.449036]  0000000000000000 ffffffff829ef90e ffff8807fa48bcc0
-> ffffffff8218c799
-> [    1.449039]  ffff8807fa48bcc0 ffffffff82186d9f ffff8807fa48bcc0
-> ffffffff824a22aa
-> [    1.449042]  ffffffffffffffff 0000000000000069 000000000000008a
-> ffffffff824a18c3
-> [    1.449044] Call Trace:
-> [    1.449048]  [<ffffffff829ef90e>] ? dump_stack+0x4a/0x75
-> [    1.449052]  [<ffffffff8218c799>] ? ksize+0x9/0x30
-> [    1.449054]  [<ffffffff82186d9f>] ? kzfree+0xf/0x30
-> [    1.449057]  [<ffffffff824a22aa>] ? alg_test_hash+0x4a/0x90
-> [    1.449059]  [<ffffffff824a18c3>] ? alg_test+0x113/0x2b0
-> [    1.449062]  [<ffffffff8249e4d0>] ? crypto_unregister_pcomp+0x10/0x10
-> [    1.449064]  [<ffffffff8249e508>] ? cryptomgr_test+0x38/0x40
-> [    1.449066]  [<ffffffff820e864a>] ? kthread+0xca/0xe0
-> [    1.449068]  [<ffffffff820e8580>] ? kthread_create_on_node+0x180/0x180
-> [    1.449071]  [<ffffffff829f752c>] ? ret_from_fork+0x7c/0xb0
-> [    1.449072]  [<ffffffff820e8580>] ? kthread_create_on_node+0x180/0x180
-> [    1.449074] kmalloc: red zone damaged, pointer ffff8807fa48bcc0,
-> real_size 192, size 160, red zone ffff8807fa4fccc0
-> [    1.449077] CPU: 1 PID: 127 Comm: cryptomgr_test Not tainted 3.16.2-test+ #1
-> [    1.449078] Hardware name: ASUS All Series/P9D WS, BIOS 1804 04/17/2014
-> [    1.449079]  0000000000000000 ffffffff829ef90e ffff8807fa48bcc0
-> ffffffff821b5d7f
-> [    1.449082]  ffff8807fa48bcc0 0000000000000000 ffffffff82ac18b8
-> ffff8807fa48bc00
-> [    1.449084]  0000000000000000 ffff8807fa48bc40 ffffffff824a22aa
-> ffffffffffffffff
-> [    1.449087] Call Trace:
-> [    1.449088]  [<ffffffff829ef90e>] ? dump_stack+0x4a/0x75
-> [    1.449091]  [<ffffffff821b5d7f>] ? kfree+0x1f/0x1d0
-> [    1.449093]  [<ffffffff824a22aa>] ? alg_test_hash+0x4a/0x90
-> [    1.449095]  [<ffffffff824a18c3>] ? alg_test+0x113/0x2b0
-> [    1.449097]  [<ffffffff8249e4d0>] ? crypto_unregister_pcomp+0x10/0x10
-> [    1.449099]  [<ffffffff8249e508>] ? cryptomgr_test+0x38/0x40
-> [    1.449101]  [<ffffffff820e864a>] ? kthread+0xca/0xe0
-> [    1.449102]  [<ffffffff820e8580>] ? kthread_create_on_node+0x180/0x180
-> [    1.449104]  [<ffffffff829f752c>] ? ret_from_fork+0x7c/0xb0
-> [    1.449106]  [<ffffffff820e8580>] ? kthread_create_on_node+0x180/0x180
-> [    1.449138] sha1_ssse3: Using AVX2 optimized SHA-1 implementation
-> [    1.449182] alg: No test for crc32 (crc32-pclmul)
-> [    1.449188] sha256_ssse3: Using AVX2 optimized SHA-256 implementation
-> [    1.449262] sha512_ssse3: Using AVX2 optimized SHA-512 implementation
->
-> link to the patch: http://marc.info/?l=linux-kernel&m=140995770121230&w=2
->
->
-> The kernel this appears on only has 2 reiserfs fixes, BFQ, BFS and
-> this patch added on top:
-> https://github.com/kernelOfTruth/linux/commits/linux-3.16.2-test
->
->
-> Kernel config is attached
->
->
-> Kind Regards
->
-> Matt
+> Looks good.  I'll take it though ceph tree to avoid possible conflicts?
 
+Applied.
 
-Adding the main Linux Kernel Mailing List for good measure
+Thanks,
+
+                Ilya
