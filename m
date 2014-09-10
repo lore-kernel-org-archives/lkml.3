@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaIJOBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:01:08 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57967 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaIJOBG (ORCPT
+	id S1751986AbaIJOB3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:01:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44598 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaIJOB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:01:06 -0400
-Date: Wed, 10 Sep 2014 17:01:01 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: tangchen <tangchen@cn.fujitsu.com>
-Cc: mtosatti@redhat.com, nadav.amit@gmail.com, jan.kiszka@web.de,
-        kvm@vger.kernel.org, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, guz.fnst@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH v4 4/6] kvm, mem-hotplug: Reload L1' apic access page on
- migration in vcpu_enter_guest().
-Message-ID: <20140910140100.GE25317@minantech.com>
-References: <1409134661-27916-1-git-send-email-tangchen@cn.fujitsu.com>
- <1409134661-27916-5-git-send-email-tangchen@cn.fujitsu.com>
- <20140902160005.GA26540@minantech.com>
- <54067206.7050303@cn.fujitsu.com>
- <20140903150448.GJ18167@minantech.com>
- <540EA883.9060206@cn.fujitsu.com>
+	Wed, 10 Sep 2014 10:01:27 -0400
+Message-ID: <541059B4.50205@ti.com>
+Date: Wed, 10 Sep 2014 09:01:24 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540EA883.9060206@cn.fujitsu.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>, <bcousson@baylibre.com>,
+        <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] Add DRA7xx CPSW Ethernet support in Device Tree
+References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com>
+In-Reply-To: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 03:13:07PM +0800, tangchen wrote:
-> Hi Gleb,
+On 09/10/2014 08:37 AM, Mugunthan V N wrote:
+> Adding device tree entry for CPSW to make it work in Dual EMAC mode.
+> These patches were tested with DRA7 hwmod patches on top of linux-next.
+> Patches are tested on top of Nishanth's PM tree for v3.17 [1] and pushed
+> my tree to [2].
 > 
-> On 09/03/2014 11:04 PM, Gleb Natapov wrote:
-> >On Wed, Sep 03, 2014 at 09:42:30AM +0800, tangchen wrote:
-> >>Hi Gleb,
-> >>
-> >>On 09/03/2014 12:00 AM, Gleb Natapov wrote:
-> >>>......
-> >>>+static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
-> >>>+{
-> >>>+	/*
-> >>>+	 * apic access page could be migrated. When the page is being migrated,
-> >>>+	 * GUP will wait till the migrate entry is replaced with the new pte
-> >>>+	 * entry pointing to the new page.
-> >>>+	 */
-> >>>+	vcpu->kvm->arch.apic_access_page = gfn_to_page(vcpu->kvm,
-> >>>+				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
-> >>>+	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm,
-> >>>+				page_to_phys(vcpu->kvm->arch.apic_access_page));
-> >>>I am a little bit worried that here all vcpus write to vcpu->kvm->arch.apic_access_page
-> >>>without any locking. It is probably benign since pointer write is atomic on x86. Paolo?
-> >>>
-> >>>Do we even need apic_access_page? Why not call
-> >>>  gfn_to_page(APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT)
-> >>>  put_page()
-> >>>on rare occasions we need to know its address?
-> >>Isn't it a necessary item defined in hardware spec ?
-> >>
-> >vcpu->kvm->arch.apic_access_page? No. This is internal kvm data structure.
-> >
-> >>I didn't read intel spec deeply, but according to the code, the page's
-> >>address is
-> >>written into vmcs. And it made me think that we cannnot remove it.
-> >>
-> >We cannot remove writing of apic page address into vmcs, but this is not done by
-> >assigning to vcpu->kvm->arch.apic_access_page, but by vmwrite in set_apic_access_page_addr().
+> Did a boot test with CPSW and ping test with suspend/resume, the boot logs
+> on DRA7xx EVM are posted at [3]
 > 
-> OK, I'll try to remove kvm->arch.apic_access_page and send a patch for it
-> soon.
+> [1] git://github.com/nmenon/linux-2.6-playground.git testing/v3.17/cpu-idle-suspend-dra7-omap5-framework
+> [2] git://git.ti.com/~mugunthanvnm/ti-linux-kernel/linux.git v3.17/dra7-evm-cpsw
+> [3] http://pastebin.ubuntu.com/8309289/
 > 
-> BTW, if you don't have objection to the first two patches, would you please
-> help to
-> commit them first ?
+> Changes from initial version:
+> * Dropped patch for pinoff states
+> * Changed pinoff state to mode15
 > 
-I acked them and CCed Paolo to this reply. I hope he will look at the series too.
+> Mugunthan V N (2):
+>   ARM: dts: dra7: Add CPSW and MDIO module nodes for dra7
+>   ARM: dts: dra7-evm: Enable CPSW and MDIO for dra7xx EVM
+> 
+>  arch/arm/boot/dts/dra7-evm.dts | 107 +++++++++++++++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/dra7.dtsi    |  59 +++++++++++++++++++++++
+>  2 files changed, 166 insertions(+)
+> 
+I did apply these on Tony's
+"omap-for-v3.18/dt 6e55426 Merge branch .."
+they do apply.
 
---
-			Gleb.
+However: why are we not sending dra72-evm.dts changes in the same
+series since we claim it to be dra7xx support?
+
+Also, in your tests (http://pastebin.ubuntu.com/8309289/)
+echo -n "20">/sys/kernel/debug/pm_debug/wakeup_timer_seconds
+ping 172.24.188.1  & (or even better do a transfer of large file in
+background)
+echo mem > /sys/power/state
+
+transfer/ping should resume seamlessly. (only thing you should be
+careful is that the server should not timeout for 20 second inactivity)..
+
+It is a valid test to verify peripheral activity after resume, BUT,
+equally important is to verify suspend-resume in the middle of activity.
+
+-- 
+Regards,
+Nishanth Menon
