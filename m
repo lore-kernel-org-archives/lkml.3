@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaIJOG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:06:58 -0400
-Received: from smtprelay0209.hostedemail.com ([216.40.44.209]:33183 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751717AbaIJOG4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:06:56 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:1801:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3868:3870:3873:3874:4321:4605:5007:7652:7903:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: yard73_1def7715522e
-X-Filterd-Recvd-Size: 1603
-Message-ID: <1410358011.24028.43.camel@joe-AO725>
-Subject: Re: [PATCH] tracing: fix typo in pr_warning() message
-From: Joe Perches <joe@perches.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Sep 2014 07:06:51 -0700
-In-Reply-To: <20140910090521.GA7766@hercules>
-References: <1410299369-20029-1-git-send-email-luis.henriques@canonical.com>
-	 <1410301213.22675.4.camel@joe-AO725> <20140910090521.GA7766@hercules>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751865AbaIJOIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:08:10 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48330 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751355AbaIJOII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:08:08 -0400
+Date: Wed, 10 Sep 2014 10:07:59 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+Message-ID: <20140910140759.GC31903@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jiri Kosina <jkosina@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+	David Rientjes <rientjes@google.com>,
+	Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+ <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+ <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 10:05 +0100, Luis Henriques wrote:
-> On Tue, Sep 09, 2014 at 03:20:13PM -0700, Joe Perches wrote:
-> > On Tue, 2014-09-09 at 22:49 +0100, Luis Henriques wrote:
-> > > Replace 'produciton' by 'production'
-[]
-> > > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-[]
-> > > @@ -2028,7 +2028,7 @@ void trace_printk_init_buffers(void)
-> > > -	pr_warning("** unsafe for produciton use.                           **\n");
-> > > +	pr_warning("** unsafe for production use.                           **\n");
-[]
-> > Perhaps s/pr_warning/pr_warn/ too?
+On Wed, Sep 10, 2014 at 07:05:40AM +0200, Jiri Kosina wrote:
+> > kfree() is quite a hot path to which this will add overhead.  And we
+> > have (as far as we know) no code which will actually use this at
+> > present.
 > 
-> If you (and the maintainers) agree, I would rather do that in a
-> separate commit.
+> We obviously don't, as such code will be causing explosions. This is meant 
+> as a prevention of problems such as the one that has just been fixed in 
+> ext4.
 
-Of course.
+These sorts of things can happen a lot, unfortunately.  We had a
+number of bugs in ext4 where ext4 would explode if a GFP_NOFS kmalloc
+would fail.  These bugs have been around for a long time, and
+apparently *none* of the RHEL/SLES/OUL enterprise linux
+certification/QA efforts found them.
+
+I only found them when an a Google-internal-only patch introduced an
+mm behavioural change that caused GFP_NOFS allocations to fail under
+extreme memory pressure.  And that's exactly the sort of thing that
+would cause disasgters when you might have some function such as:
+
+	ptr = function_that_does_an_kmalloc(...)
+	if (IS_ERR(ptr)) {
+		ret = PTR_ERR(ptr);
+		goto cleanup);
+	}
+	bh = function_that_does_a_getblk(...)
+	if (IS_ERR(bh)) {
+		ret = PTR_ERR(bh);
+		goto cleanup);
+	}
+	....
+
+cleanup:
+	if (bh)
+		brelse(bh);
+	if (ptr)
+		kfree(ptr);
 
 
+Normally, kfree and bh would be allocated, and so kfree() and brelse()
+does the right thing.  But if something changes that causes functions
+that in practice, never returned an allocation failure, suddenly
+*does* start failing, then you get an explosion.  And/or, previous to
+recent mainline patches, the kernel might BUG, and/or declare the file
+system corrupt, forcing an fsck --- and when *large* number of systems
+get stuck in an fsck at the same time, it tends to distress the system
+administrators, far worse than if the kernel had merely exploded.  :-/
+
+So I wouldn't be so sure that we don't have these sorts of bugs hiding
+somewhere; and it's extremely easy for them to sneak in.  That being
+said, I'm not in favor of making changes to kfree; I'd much rather
+depending on better testing and static checkers to fix them, since
+kfree *is* a hot path.
+
+Cheers,
+
+					- Ted
