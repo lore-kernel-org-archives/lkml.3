@@ -1,83 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaIJC4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:56:44 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:44463 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532AbaIJC4i (ORCPT
+	id S1752929AbaIJC4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:56:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37389 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744AbaIJC4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:56:38 -0400
-Message-ID: <540FBDDC.5040602@huawei.com>
-Date: Wed, 10 Sep 2014 10:56:28 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel.org PATCH] Li Zefan is now the 3.4 stable maintainer
-References: <20140826230858.GA29970@kroah.com> <20140827045938.GA28282@roeck-us.net> <540813A5.7020704@huawei.com> <20140904183953.GA28599@roeck-us.net> <54096C8D.8000008@huawei.com> <5409C19C.4030901@roeck-us.net>
-In-Reply-To: <5409C19C.4030901@roeck-us.net>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.540FBDE3.0023,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 0ca596a5fc86cfff7becc740545ba4ff
+	Tue, 9 Sep 2014 22:56:39 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        gouji.masayuki@jp.fujitsu.com
+Subject: [PATCH v2] ipmi: Clear drvdata when interface is removed
+Date: Wed, 10 Sep 2014 11:56:10 +0900
+Message-Id: <1410317770-4856-1-git-send-email-indou.takao@jp.fujitsu.com>
+X-Mailer: git-send-email 2.1.0
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/5 21:58, Guenter Roeck wrote:
-> On 09/05/2014 12:55 AM, Li Zefan wrote:
->>>>> Li,
->>>>>
->>>>> it would be great if you can send me information about your -stable queue,
->>>>> ie how you maintain it and where it is located. This will enable me to
->>>>> continue testing the stable queue for the 3.4 kernel.
->>>>>
->>>>
->>>> Thanks for testing LTS kernels!
->>>>
->>>> This is my 3.4.y git tree:
->>>>
->>>> https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y.git/
->>>>
->>>> And this is the patch queue:
->>>>
->>>> https://git.kernel.org/cgit/linux/kernel/git/lizf/linux-3.4.y-queue.git/
->>>>
->>>> I use quilt. When I've added some patches to 3.4.y, I'll update this
->>>> queue. The patches and series file are under /patches. Currently there's
->>>> already a patch in the queue.
->>>>
->>>> When I release a new version, I'll clean up the queue by removing all
->>>> the files under /patches.
->>>>
->>>> Hope this is all the information you need. Please tell me if you need
->>>> me to slightly adjust my workflow so it's easier for you.
->>>
->>> It almost works.
->>>
->>> Problem is that the pending patch got converted to use <cr><lf> instead of
->>> just <lf> as common in Linux. When I try to apply it with "git quiltimport",
->>> it bails out with "trailing whitespace" errors. "git am" with the individual
->>> patch works fine for some reason, though.
->>>
->>> I can try to find a workaround, but it would be better to have the file in
->>> linux file format to start with. Would that be possible ?
->>>
->>
->> Yeah, I've fixed it. I'll run dos2unix for every patch file.
->>
-> 
-> Yes, it now works. Wonder how it comes that the patch in Greg's patch tree
-> didn't have the problem. Any idea ?
-> 
+This patch fixes a bug on hotmod removing.
 
-I saved the patch from my email client, and turned out the lines ended
-with CRLF.
+After ipmi interface is removed using hotmod, kernel panic occurs when
+rmmod impi_si. For example, try this:
+
+ # echo "remove,"`cat /proc/ipmi/0/params` > \
+ /sys/module/ipmi_si/parameters/hotmod
+ # rmmod ipmi_si
+
+Then, rmmod fails with the following messages.
+
+------------[ cut here ]------------
+WARNING: CPU: 12 PID: 10819 at /mnt/repos/linux/lib/list_debug.c:53
+__list_del_entry+0x63/0xd0()
+(snip)
+CPU: 12 PID: 10819 Comm: rmmod Not tainted 3.17.0-rc1 #19
+Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015
+Rev.3D81.3030 02/10/2012
+ 0000000000000009 ffff88022d547d40 ffffffff81575778 ffff88022d547d88
+ ffff88022d547d78 ffffffff8104ec5d ffff88023908cdb0 ffffffffa06fa4e0
+ ffff8800bac20860 0000000000000000 0000000002046090 ffff88022d547dd8
+Call Trace:
+ [<ffffffff81575778>] dump_stack+0x45/0x56
+ [<ffffffff8104ec5d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff8104eccc>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff811f60bf>] ? __kernfs_remove+0xdf/0x220
+ [<ffffffff81291213>] __list_del_entry+0x63/0xd0
+ [<ffffffff8129128d>] list_del+0xd/0x30
+ [<ffffffffa06f285a>] cleanup_one_si+0x2a/0x230 [ipmi_si]
+ [<ffffffffa06f2f05>] ipmi_pnp_remove+0x15/0x20 [ipmi_si]
+ [<ffffffff8131c7d4>] pnp_device_remove+0x24/0x40
+ [<ffffffff8137175f>] __device_release_driver+0x7f/0xf0
+ [<ffffffff81372100>] driver_detach+0xb0/0xc0
+ [<ffffffff81371415>] bus_remove_driver+0x55/0xd0
+ [<ffffffff8137283c>] driver_unregister+0x2c/0x50
+ [<ffffffff8131ca02>] pnp_unregister_driver+0x12/0x20
+ [<ffffffffa06f347c>] cleanup_ipmi_si+0xbc/0xf0 [ipmi_si]
+ [<ffffffff810c33f2>] SyS_delete_module+0x132/0x1c0
+ [<ffffffff81002ab9>] ? do_notify_resume+0x59/0x80
+ [<ffffffff8157c45a>] ? int_signal+0x12/0x17
+ [<ffffffff8157c1d2>] system_call_fastpath+0x16/0x1b
+---[ end trace 70b4377268f85c23 ]---
+
+list_del in cleanup_one_si() fails because the smi_info is already
+removed when hotmod removing.
+
+When ipmi interface is removed by hotmod, smi_info is removed by
+cleanup_one_si(), but is is still set in drvdata. Therefore when rmmod
+ipmi_si, ipmi_pnp_remove tries to remove it again and fails.
+
+By this patch, a pointer to smi_info in drvdata is cleared when hotmod
+removing so that it will be not accessed when rmmod.
+
+changelog:
+v2:
+- Clear drvdata in cleanup_one_si
+- Change subject
+
+v1:
+https://lkml.org/lkml/2014/9/8/741
+
+
+Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+---
+ drivers/char/ipmi/ipmi_si_intf.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 5d66568..01dcbdb 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -3655,6 +3655,9 @@ static void cleanup_one_si(struct smi_info *to_clean)
+ 	if (!to_clean)
+ 		return;
+ 
++	if (to_clean->dev)
++		dev_set_drvdata(to_clean->dev, NULL);
++
+ 	list_del(&to_clean->link);
+ 
+ 	/* Tell the driver that we are shutting down. */
+-- 
+1.8.3.1
+
 
