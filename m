@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaIJG4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 02:56:33 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:47046 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaIJG4c (ORCPT
+	id S1751452AbaIJG6S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 02:58:18 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47416 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937AbaIJG6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 02:56:32 -0400
-Message-ID: <540FF614.8000003@siemens.com>
-Date: Wed, 10 Sep 2014 08:56:20 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Wed, 10 Sep 2014 02:58:16 -0400
+Message-ID: <540FF649.2090901@linux.vnet.ibm.com>
+Date: Wed, 10 Sep 2014 12:27:13 +0530
+From: shilpa <shilpa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>, jroedel@suse.de
-CC: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Gary Kroening <gfk@sgi.com>
-Subject: Re: [RFC] iommu/vt-d: Use the SIRTP when enabling remapping
-References: <1410297096-54096-1-git-send-email-nzimmer@sgi.com>
-In-Reply-To: <1410297096-54096-1-git-send-email-nzimmer@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: David Laight <David.Laight@ACULAB.COM>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH v2] cpufreq: powernv: Set the cpus to nominal frequency
+ during reboot/kexec
+References: <1409234816-10802-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com> <CAKohpokbYkL=cYQ+9-59vPhBmbAWqhrEz7RBPj5-edDB25DPgw@mail.gmail.com> <1409548719.13507.13.camel@localhost.localdomain> <063D6719AE5E284EB5DD2968C1650D6D174849AD@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174849AD@AcuExch.aculab.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091006-7014-0000-0000-0000002E12AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-09 23:11, Nathan Zimmer wrote:
-> The previous change (iommu/vt-d: Don't store SIRTP request) to this area
-> caused a crash in our simulator. In particular is seems that by the time a
-> UART interrupt is sent through the system, we don't see interrupt remapping
-> to be enabled.  So the interrupt does not get translated to a logical
-> interrupt and crashes.
+On 09/01/2014 02:42 PM, David Laight wrote:
+>> Yes unlikely() should cover the whole if statement...
 > 
-> OR'ing the SIRTP request to make sure it is seen but hopefully not sticky.
-> This seems like a clean fix, at least on our simulator; if you don't agree,
-> our simulator guy will take a closer look at our iommu model.
-
-Check the VT-d spec (6.7, Set Interrupt Remapping Table Pointer
-Operation): "Software must always follow the interrupt-remapping table
-pointer set operation with a global invalidate of the IEC to ensure
-hardware references the new structures *before* enabling interrupt
-remapping." There is also (command register description): "If multiple
-control fields in this register need to be modified, software must
-serialize the modifications through multiple writes to this register."
-This, in combination with the command registers description of bits 24
-and 25 strongly suggests that your model is broken.
-
+> Actually it probably shouldn't.
+> You need to look at the generated code with each different set of 'unlikely()'
+> to see how gcc processes them.
+> In this case, if 'rebooting' is false you want to 'fall through' on a statically
+> predicted 'not taken' branch. You don't ever care about the second clause.
+> With an 'unlikely' covering the entire statement gcc could easily add a
+> forwards conditional branch (that will be mis-predicted) for the 'rebooting' test.
 > 
-> Found testing on our simulator, not real hardware.
+> (Yes, I spent a lot of time getting gcc to generate branches that were
+> correctly statically predicted for some code where every cycle mattered.)
+> 
+> 	David
+> 
+Hi David,
 
-Funnily, the original issue was found by the QEMU model of VT-d that
-used to take the last cited sentence very strictly (I asked to remove it
-due to the preexisting Linux versions).
+The objdup with an 'unlikely()' covering the entire if statement is as follows:
 
-Jan
+ if (unlikely(rebooting && new_index != get_nominal_index()))
+	return -EBUSY;
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+ 1ac:   2f 89 00 00     cmpwi   cr7,r9,0   /* compare rebooting,0 */
+ 1b0:   40 de 00 4c     bne-    cr7,1fc <.powernv_cpufreq_target_index+0x7c>
+
+ The '-' in the instruction bne- specifies an unlikely branch. So gcc has
+ processed the first clause to be identified as an unlikely branch i.e,
+ branch to <1fc> (to test the second clause) is unlikely on 'rebooting' not
+ equal to 0.
+
+
+ 1b4:   1f ff 00 0c     mulli   r31,r31,12
+ .
+ . <--- Set the frequency and return --->
+ .
+ .
+ 1fc:   3d 22 00 00     addis   r9,r2,0  /* test the second clause */
+ 200:   3d 02 00 00     addis   r8,r2,0
+ 204:   81 49 00 00     lwz     r10,0(r9)
+ 208:   81 28 00 00     lwz     r9,0(r8)
+ 20c:   7d 29 50 50     subf    r9,r9,r10
+ 210:   7f 89 f8 00     cmpw    cr7,r9,r31 /* compare new_index,nominal_index */
+ 214:   41 9e ff a0     beq+     cr7,1b4 <.powernv_cpufreq_target_index+0x34>
+
+ The '+' in the instruction beq+ specifies a likely branch. The second clause
+ unlikely(new_index != get_nominal_index()) is processed to
+ likely(new_index == get_nominal_index()).
+
+ 218:   38 60 ff f0     li      r3,-16  /* return -EBUSY */
+ 21c:   4b ff ff cc     b       1e8 <.powernv_cpufreq_target_index+0x68>
+
+So unlikely() covering the entire statement will not lead to a branch mis-prediction
+for the 'rebooting' test. Having unlikely to cover both 'rebooting' and  the second
+clause we can avoid the branch miss prediction for the second clause. This is
+advantageous for the code path powernv_cpufreq_target_index(policy,nominal_index)
+which will be invoked by the reboot_notifier.
+
+Thanks and Regards,
+Shilpa
+
