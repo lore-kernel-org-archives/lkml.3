@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaIJOLc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:11:32 -0400
+	id S1752529AbaIJOLs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:11:48 -0400
 Received: from mga01.intel.com ([192.55.52.88]:28748 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903AbaIJOLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:11:30 -0400
+	id S1752469AbaIJOLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:11:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
-   d="scan'208";a="589215304"
+   d="scan'208";a="589215330"
 From: kan.liang@intel.com
 To: a.p.zijlstra@chello.nl, eranian@google.com
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
         acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V5 14/16] perf, x86: enable LBR callstack when recording callchain
-Date: Wed, 10 Sep 2014 10:09:11 -0400
-Message-Id: <1410358153-421-15-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V5 16/16] perf, x86: Discard zero length call entries in LBR call stack
+Date: Wed, 10 Sep 2014 10:09:13 -0400
+Message-Id: <1410358153-421-17-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1410358153-421-1-git-send-email-kan.liang@intel.com>
 References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
@@ -26,49 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-If a task specific event wants user space callchain but does not want
-branch stack sampling, enable the LBR call stack facility implicitly.
-The LBR call stack facility can help perf to get user space callchain
-in case of there is no frame pointer.
+"Zero length call" uses the attribute of the call instruction to push
+the immediate instruction pointer on to the stack and then pops off
+that address into a register. This is accomplished without any matching
+return instruction. It confuses the hardware and make the recorded call
+stack incorrect.
 
-Note: this feature only affects how to get user callchain. The kernel
-callchain is always got by frame pointers.
+We can partially resolve this issue by: decode call instructions and
+discard any zero length call entry in the LBR stack.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 418e953..186f909 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -423,10 +423,23 @@ int x86_pmu_hw_config(struct perf_event *event)
- 			if (!event->attr.exclude_kernel)
- 				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
- 		}
--	}
-+	} else if (x86_pmu_has_lbr_callstack() &&
-+		   (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !has_branch_stack(event) &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
-+		/*
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
-+		 */
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index fd8fdfa..0bd4f5c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -94,7 +94,8 @@ enum {
+ 	X86_BR_ABORT		= 1 << 12,/* transaction abort */
+ 	X86_BR_IN_TX		= 1 << 13,/* in transaction */
+ 	X86_BR_NO_TX		= 1 << 14,/* not in transaction */
+-	X86_BR_CALL_STACK	= 1 << 15,/* call stack */
++	X86_BR_ZERO_CALL	= 1 << 15,/* zero length call */
++	X86_BR_CALL_STACK	= 1 << 16,/* call stack */
+ };
  
--	if (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK)
-+		/* needs PMU specific data to save LBR stack */
- 		event->attach_state |= PERF_ATTACH_TASK_DATA;
-+	}
+ #define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
+@@ -111,13 +112,15 @@ enum {
+ 	 X86_BR_JMP	 |\
+ 	 X86_BR_IRQ	 |\
+ 	 X86_BR_ABORT	 |\
+-	 X86_BR_IND_CALL)
++	 X86_BR_IND_CALL |\
++	 X86_BR_ZERO_CALL)
  
- 	/*
- 	 * Generate PMC IRQs:
+ #define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
+ 
+ #define X86_BR_ANY_CALL		 \
+ 	(X86_BR_CALL		|\
+ 	 X86_BR_IND_CALL	|\
++	 X86_BR_ZERO_CALL	|\
+ 	 X86_BR_SYSCALL		|\
+ 	 X86_BR_IRQ		|\
+ 	 X86_BR_INT)
+@@ -686,6 +689,12 @@ static int branch_type(unsigned long from, unsigned long to, int abort)
+ 		ret = X86_BR_INT;
+ 		break;
+ 	case 0xe8: /* call near rel */
++		insn_get_immediate(&insn);
++		if (insn.immediate1.value == 0) {
++			/* zero length call */
++			ret = X86_BR_ZERO_CALL;
++			break;
++		}
+ 	case 0x9a: /* call far absolute */
+ 		ret = X86_BR_CALL;
+ 		break;
 -- 
 1.8.3.2
 
