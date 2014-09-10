@@ -1,116 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718AbaIJI1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:27:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:44845 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaIJI1e (ORCPT
+	id S1751653AbaIJIaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:30:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35358 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750803AbaIJIaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:27:34 -0400
-Date: Wed, 10 Sep 2014 10:27:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Chintan Pandya <cpandya@codeaurora.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers for
- scanner thread
-Message-ID: <20140910082726.GO6758@twins.programming.kicks-ass.net>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
- <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
- <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
- <20140903095815.GK4783@worktop.ger.corp.intel.com>
- <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
- <20140908093949.GZ6758@twins.programming.kicks-ass.net>
- <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
+	Wed, 10 Sep 2014 04:30:05 -0400
+Date: Wed, 10 Sep 2014 10:25:37 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH v2 2/4] mfd/axp2xx: extend axp20x to support axp288 pmic
+Message-ID: <20140910082537.GC31276@lukather>
+References: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410267775-4683-3-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9JPMzx+I1AXX4lYP"
+	protocol="application/pgp-signature"; boundary="xesSdrSSBC0PokLI"
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1410267775-4683-3-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9JPMzx+I1AXX4lYP
+--xesSdrSSBC0PokLI
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Sep 09, 2014 at 01:14:50PM -0700, Hugh Dickins wrote:
-> > Quite horrible for sure. I really hate seeing KSM cruft all the way down
+On Tue, Sep 09, 2014 at 06:02:53AM -0700, Jacob Pan wrote:
+> XPower AXP288 is a customized PMIC for Intel Baytrail-CR platforms. Simil=
+ar
+> to AXP202/209, AXP288 comes with USB charger, more LDO and BUCK channels,=
+ and
+> AD converter. It also provides extended status and interrupt reporting
+> capabilities than the devices supported in axp20x.c.
 >=20
-> Yes, I expected that, and I would certainly feel the same way.
+> In addition to feature extension, this patch also adds ACPI binding for
+> enumeration and hooks for ACPI custom operational region handlers.
 >=20
-> And even worse, imagine if this were successful, we might come along
-> and ask to do something similar for khugepaged.  Though if it comes to
-> that, I'm sure we would generalize into one hook which does not say
-> "ksm" or "khugepaged" on it, but would still a present a single unlikely
-> flag to be tested at this level.  Maybe you would even prefer the
-> generalized version, but I don't want to complicate the prototype yet.
->=20
-> If it weren't for the "we already have the mm cachelines here" argument,
-> I by now feel fairly sure that I would be going for hooking into timer
-> tick instead (where Thomas could then express his horror!).
->=20
-> Do you think I should just forget about cacheline micro-optimizations
-> and go in that direction instead?
+> Files and common data structures have been renamed from axp20x to axp2xx
+> in order to suit the extended scope of devices.
 
-Not really either I'm afraid. Slimming down the tick has been on my todo
-list like forever. There's a lot of low hanging fruit there.
+I still feel like this renaming should be in the first patch that is
+already advertised at doing it.
 
-> > here. Can't we create a new (timer) infrastructure that does the right
-> > thing? Surely this isn't the only such case.
->=20
-> A sleep-walking timer, that goes to sleep in one bed, but may wake in
-> another; and defers while beds are empty?  I'd be happy to try using
-> that for KSM if it already existed, and no doubt Chintan would too
->=20
-> But I don't think KSM presents a very good case for developing it.
-> I think KSM's use of a sleep_millisecs timer is really just an apology
-> for the amount of often wasted work that it does, and dates from before
-> we niced it down 5.  I prefer the idea of a KSM which waits on activity
-> amongst the restricted set of tasks it is tracking: as this patch tries.
->=20
-> But my preference may be naive: doing lots of unnecessary work doesn't
-> matter as much as waking cpus from deep sleep.
+This is quite hard to tell what you are actually doing in this patch,
+besides the renaming that is.
 
-Ah yes, I see your point. So far the mentioned goal has been to not
-unduly wake CPUs and waste energy, but your goal is better still. And
-would indeed not be met by a globally deferred timer.
+Maxime
 
-Does it make sense to drive both KSM and khugepage the same way we drive
-the numa scanning? It has the benefit of getting rid of these threads,
-which pushes the work into the right accountable context (the task its
-doing the scanning for) and makes the scanning frequency depend on the
-actual task activity.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-
-
---9JPMzx+I1AXX4lYP
-Content-Type: application/pgp-signature
+--xesSdrSSBC0PokLI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUEAtuAAoJEHZH4aRLwOS6begP/3j52bsmXzLcJJX5PEL3m7+X
-dAp0iKHgwB/ou0QnDrg719UUzkf+dQDs+xQu7nwNi+FUaQ8nh9S7CsZQiAWFuAlf
-lsgSH+OIcRKuz9j+jRfc5nzOSSz96mTVcty1BM5YQlpOWBr/mXfY8yCYbMYHsVWu
-rRjYrwb8ZKn4Ry2DD5/5pzXRuS04xRgBgUh6oj0z6WO7RYn02VOlt0UAUDRXMkFJ
-8+sbG5xHkVlHbxb8z4RuCBpK0kfknxyJKFhZ4M7kGkHiYuLgB/RUx5vx+VSuq0kC
-S7Kd/MvpgV8z23nK9Zo64fo4OgIIVq0oR9v4OzN26EPqsAJTn1vyVjukBIn0XSy7
-30ArG85kvF4mCXv1kenRoj/uDGwbL2nJ49Jf7Iu0Q6D8ByuiAW5snjNlJjg/rpLf
-LEq8MICIrqg51pDsw4w0dXwuYr1q7OjLiUK3s72I1IG18Rmff631+XxETusqU+M8
-zfyOgjLYB3kxgDg9Kv9xgEpQNAUMDdCH9Z1mpXZRf1u/QghpQegA8W3uf9/KEVTi
-e+Tc0mBy71t/Q6vIP4L3h/1FyXi66L8VDshjHAl/yrqCdfihc+ptW/NJJpqGTz5M
-USovWHNua/kprAXSjsD1oVGUHMpbzU+zlUT8HX6sJJYbhXE49aZKycAQY4lnmyRd
-2WkpsZPiQzLQljYwoU/t
-=nh8f
+iQIcBAEBAgAGBQJUEAsBAAoJEBx+YmzsjxAgHg8QALLFLYzyhPCN5S8rUj6NA9ll
+9JjSqPmyjAyDZT5PUupjG4hOOiYVEekCxecOmJmmADTtK3BkziCnYNLI8CgjO0GP
+yuD2jmOnMEeyjr0Ig+9MVoaI1vC/ouWsY/GDpPXcwbHJLizYoq1xvb4NRT6/Yal8
+kr6ISFLqS3SAxIC4HoGRP3LxiZwOXgQavIrJ16fcvlMBbO/WLGZ7Gcl9EKmi4Hlk
+tmVIjUaEMEEGbhB0c0/Pp11f/SvLFOf8cSMLlmTGZX96RRCDfrho8wPf7jYPKj6a
+fHGxmUe/dlTm34yZ/VgfO7veE2W5E+w2RZIb9KkdmQtQjsCoAPJDaHioeAxOkyUJ
+T5X7KuZqaaMieT6hGMvSVaE9ZLdDmxmrhPwqXpYcZGX9WOjZ7vEDAmWK5IYTXtEE
+et8etzxA3KpS0ZwZbPtE8WciG9hSpBcXxfrbqRTjKcBD73tTJYl6vgq1N5k3B8dm
+NOGn8uY9H205+IpbfCE6ElwqS+TTmwWElAZPOoxh8hIAuP24pKii/S7fkOFPVPA0
+UaENXebSANCetlg4qMaYrNvx7PQaTC9BmcTF6IMIvSaMG6tADYgHc24BkTS+HK4W
+wDYB0TDFjsJXAw3WtR/4tmfS1Z6/IqfkHUc8LfOKUAZSmeylENuk8BedMr09cFkA
+4O6Mj+Zrrz1/hRkf1ORn
+=cFLd
 -----END PGP SIGNATURE-----
 
---9JPMzx+I1AXX4lYP--
+--xesSdrSSBC0PokLI--
