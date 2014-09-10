@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaIJADa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 20:03:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65346 "EHLO mga11.intel.com"
+	id S1752744AbaIJAEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 20:04:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14829 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751437AbaIJAD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 20:03:29 -0400
+	id S1751413AbaIJAD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 20:03:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,494,1406617200"; 
-   d="scan'208";a="588890337"
+   d="scan'208";a="570859704"
 From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
-Date: Tue,  9 Sep 2014 17:03:21 -0700
-Message-Id: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Add PERF_PID
+Date: Tue,  9 Sep 2014 17:03:53 -0700
+Message-Id: <1410307433-12475-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,45 +24,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-On my workstation the order 4 BTS buffer allocation fails regularly
-after the system has been up for some time due to memory
-fragmentation.
+It's currently difficult to filter out perf itself using a filter.
+This can give cascading effects during IO tracing when the IO
+perf does itself causes more trace output.
 
-BTS is virtual memory, so we can just fall back to vmalloc
-instead of failing.
+The best way to filter is to use the pid. But it's difficult to get the pid
+of perf without using hacks.
 
-Do this here.
+Add a PERF_PID meta variable to the perf filter that contains the current pid.
 
+With this patch the following works
+
+% perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
+
+This won't work for more complex perf pipe lines with multiple processes,
+but at least solves the problem nicely for a single perf.
+
+v2: Remove debug code. Don't use zero padding (Namhyung)
+v3: Correct patch.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ tools/perf/Documentation/perf-record.txt | 2 +-
+ tools/perf/util/parse-events.c           | 8 ++++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9dc4199..3cf5b74 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -312,8 +312,11 @@ static int alloc_bts_buffer(int cpu)
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..b6c5e51 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -41,7 +41,7 @@ OPTIONS
+           'mem:0x1000:rw'.
  
- 	buffer = kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, node);
- 	if (unlikely(!buffer)) {
--		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
--		return -ENOMEM;
-+		buffer = vmalloc_node(BTS_BUFFER_SIZE, node);
-+		if (!buffer) {
-+			WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
-+			return -ENOMEM;
-+		}
+ --filter=<filter>::
+-        Event filter.
++        Event filter. PERF_PID represents the perf pid.
+ 
+ -a::
+ --all-cpus::
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1e15df1..def8651 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -967,6 +967,7 @@ int parse_filter(const struct option *opt, const char *str,
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+ 	struct perf_evsel *last = NULL;
++	char *pid;
+ 
+ 	if (evlist->nr_entries > 0)
+ 		last = perf_evlist__last(evlist);
+@@ -983,6 +984,13 @@ int parse_filter(const struct option *opt, const char *str,
+ 		return -1;
  	}
  
- 	max = BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
-@@ -336,7 +339,7 @@ static void release_bts_buffer(int cpu)
- 	if (!ds || !x86_pmu.bts)
- 		return;
- 
--	kfree((void *)(unsigned long)ds->bts_buffer_base);
-+	kvfree((void *)(unsigned long)ds->bts_buffer_base);
- 	ds->bts_buffer_base = 0;
++	/* Assume a pid has not more than 8 characters */
++	pid = strstr(last->filter, "PERF_PID");
++	if (pid) {
++		char buf[9];
++		snprintf(buf, 9, "%8d", getpid());
++		memcpy(pid, buf, 8);
++	}
+ 	return 0;
  }
  
 -- 
