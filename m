@@ -1,199 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaIJUVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:21:34 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:37301 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaIJUVb (ORCPT
+	id S1753507AbaIJUWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:22:47 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:54174 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaIJUWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:21:31 -0400
+	Wed, 10 Sep 2014 16:22:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrVBb_uQZpodv67XSTGVU40y6+9Ktw=3zAJgGV2mNJ=_0A@mail.gmail.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-	<CALCETrVBb_uQZpodv67XSTGVU40y6+9Ktw=3zAJgGV2mNJ=_0A@mail.gmail.com>
-Date: Wed, 10 Sep 2014 13:21:29 -0700
-Message-ID: <CAMEtUuyY0L2=tz5mSvQqR_=_oN18nA6V9fdbR8OiYTPbQth8AQ@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAFp+6iErXKpXgE0tRPB=tEqXxcXgQAeFJP1TpSwRN6fNu9a-qw@mail.gmail.com>
+References: <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
+	<20140903144225.GD31855@saruman.home>
+	<CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
+	<20140905175651.GK24449@saruman.home>
+	<CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+	<20140908134454.GK22409@saruman.home>
+	<CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+	<20140909144225.GF6151@saruman.home>
+	<CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
+	<CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
+	<20140910045328.GA32475@saruman.home>
+	<CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
+	<CAFp+6iErXKpXgE0tRPB=tEqXxcXgQAeFJP1TpSwRN6fNu9a-qw@mail.gmail.com>
+Date: Wed, 10 Sep 2014 13:22:44 -0700
+Message-ID: <CAODwPW9QOD-7Wyc1Bh8QKfArSmsdqzYTOx6-gc8V5ace9-oPFQ@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+From: Julius Werner <jwerner@google.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Felipe Balbi <balbi@ti.com>, Julius Werner <jwerner@chromium.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "Andrew Bresticker (abrestic@chromium.org)" <abrestic@chromium.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->>        attr   is a pointer to a union of type bpf_attr as defined below.
->>
->>        size   is the size of the union.
->
-> I find this strange.  Why not just make attr be a pointer to the
-> relevant struct for the operation being invoked?
+>> right, use that to call phy_init() at the right time, then you need to
+>> add a new ->calibrate() method which, likely, will only be used by you
+>> ;-)
 
-you mean change attr to be 'void *' and type cast it to particular
-struct type based on cmd ? Possible, but I tried to avoid all
-typecasts as Dave doesn't like them.
+> so you mean, the xhci should itself call phy_init() at a time suitable,
+> so that ->calibrate() is not required at all ?
 
->>        union bpf_attr {
->>            struct { /* anonymous struct used by BPF_MAP_CREATE command */
->>                enum bpf_map_type map_type;
->
-> Does this reliably generate the same type on compat systems?  C++11
-> has a fix for enum ABI compatibility, but this is plain C :(
+I'm not sure if that's a good idea because it would require phy_init()
+and calibrate() to always mean the same thing. The calibrate() for
+Exynos5420 needs to be called both during boot and after system
+resume, but there might be other platforms that don't want to
+completely shutdown and reinit their PHYs during suspend/resume with
+the same functions used for boot. For example, Tegra5 (proposed driver
+at http://www.spinics.net/lists/linux-usb/msg113093.html) can
+power-gate the PHY during suspend, but that's not running the same
+code as in the phy_init()/phy_shutdown() methods (the posted patch
+doesn't contain all power-gating code yet, but you can get an idea
+about how it has to work from
+https://chromium.googlesource.com/chromiumos/third_party/kernel-next/+/chromeos-3.10/drivers/usb/host/xhci-tegra.c).
+It would also mean that the initial phy_init() call must always come
+after the XHCI reset, and I am not sure if that would fit nicely with
+all platforms.
 
-enum is int on both 32 and 64-bit. What was the concern?
-anonymous struct ?
-I've checked that with gcc 4.2 - 4.9 and clang. All was fine
-and it's part of C standard now.
+> right, and what's more generic than adding the support for PHYs straight into xHCI ?
 
->>            struct { /* anonymous struct used by BPF_PROG_LOAD command */
->>                enum bpf_prog_type    prog_type;
->>                __u32                 insn_cnt;
->>                const struct bpf_insn *insns;
->>                const char            *license;
->>                __u32                 log_level; /* verbosity level of eBPF verifier */
->>                __u32                 log_size;  /* size of user buffer */
->>                void                  *log_buf;  /* user supplied buffer */
->>            };
->>        };
->
-> It might be a bit nicer to have separate in and out arguments.
-
-would do you mean specifically?
-const pointer is obviously 'in' argument.
-'void *' is 'out'.
-
->>               int bpf_create_map(enum bpf_map_type map_type, int key_size,
->>                                  int value_size, int max_entries)
->>               {
->>                   union bpf_attr attr = {
->>                       .map_type = map_type,
->>                       .key_size = key_size,
->>                       .value_size = value_size,
->>                       .max_entries = max_entries
->>                   };
->
-> I feel like this is asking for trouble, or at least bizarre namespace
-> collisions in the anonymous struct members.  At least please give the
-> structs names.  (Also, the first time I read this, I assumed that
-> those were union members, which would have made the code be nonsense.)
-
-if inner struct types had names they would need to
-have field names as well, so the syscall wrapper above
-would become much more verbose and uglier.
-Also naming structs may give wrong ideas to some users,
-since they might think it's ok to init struct only and type cast
-it to pass into syscall. When inner structs don't have names,
-the user space is forced to always use 'union bpf_attr' and
-initialize relevant fields.
-
->>               char bpf_log_buf[LOG_BUF_SIZE];
->
-> What happens if the size isn't LOG_BUF_SIZE?
-
-would do you mean?
-LOG_BUF_SIZE is just a user defined macro.
-Can be anything.
-it's passed along with pointer:
-                       .log_buf = bpf_log_buf,
-                       .log_size = LOG_BUF_SIZE,
-                       .log_level = 1,
-
->>               enum bpf_prog_type {
->>                       BPF_PROG_TYPE_UNSPEC,
->>                       BPF_PROG_TYPE_SOCKET_FILTER,
->>                       BPF_PROG_TYPE_TRACING_FILTER,
->>               };
->
-> Why does the type matter?
-
-type is way to tell eBPF infra what this type of programs
-is allowed to do. Different kernel subsystems
-configure different types.
-Like patch 12 configures TYPE_UNSPEC for testing.
-This type allows one dummy function call and
-bpf_context of two u64 fields.
-tracing subsystem will configure TYPE_TRACING
-to do different set of helper functions and different
-body of 'bpf_context'.
-PROG_TYPE and MAP_TYPE are two main ways
-to configure eBPF infra for different use cases.
-
-> This (the .imm thing) is sufficiently weird that I think it needs to
-> be mentioned in the main docs, not just in an example.  It's
-> especially odd since AFAIK essentially every other object format in
-> the world uses a separate relocation table instead of inline magic
-> opcodes like this.
-
-we discussed relocations before, right? ;)
-I believe relocations are ugly. elf has no other way to deal
-with it, since .text has valid cpu instructions and generic
-loader has to adjust them without knowing hw encoding.
-Here we have pseudo instructions that are much easier
-to check/track in verifier than relocations.
-As you remember in previous series I've tried relocation
-style and it was ugly. Both as user interface and as extra
-complexity for verifier.
-Does commit log of patch 8 explain map_fd conversion
-well enough or not?
-If not, I'll add more info, but please read it first.
-
->>        ENOENT For  BPF_MAP_LOOKUP_ELEM  or BPF_MAP_DELETE_ELEM, indicates that
->>               element with given key was not found.
->
-> What does it return?  (The same question goes for a bunch of the map ops.)
-...
-> Shouldn't delete return different values depending on whether anything
-> was deleted?
-...
-> Ah, here it is.  Please document this with the ops.
-
-I believe it's a standard manpage style to document
-return values at the end in 'return value' section.
-I can duplicate it with ops, but is it really necessary?
-
->>        These commands may be used only by a privileged process (one having the
->>        CAP_SYS_ADMIN capability).
->
-> I hope this goes away :)
-
-hehe.
-I think folks obsessed with security will say it should stay
-this way for looooong time :)
-My immediate goal is tracing and there this restriction is
-necessary anyway.
-
-> I can't shake the feeling that the whole syscall map API is wrong and
-> that, instead, there should be a more general concept of objects
-> provided by the eBPF runtime.  Those objects could have methods that
-> are callable by the syscall and callable from eBPF code.
-
-'concept of objects'... sounds abstractly good :)
-Something concrete you have in mind?
-
-Theoretically I can see how we can add a 'stream' object
-which user space can read and programs feed stuff to.
-In other words an 'abstract' trace buffer, but imo it's
-overdesign. When we need a trace buffer, we'll just
-add a helper function that pushes stuff to it.
-That will be the time when you see how handy pseudo
-instructions are. In this patch the only '.imm thing', as you
-say, is map_fd. I'm working on per-cpu local buffer via
-the same pseudo stuff. Seem to work quite nicely.
-Let's not get carried on with future cool stuff, basics first :)
-
-Thanks for the feedback!
+Well, if we are going to have a calibrate() method (as in "stuff the
+PHY does after every controller reset if it needs to"), we have to add
+it either to the XHCI stack or the USB core. I thought the USB core
+would be more generic, because in theory it's possible that e.g. an
+EHCI controller might have a similar requirement. (Also, we have the
+gen_phy pointer in a USB core structure (struct usb_hcd), so I thought
+making this feature generic to the USB core and thus available to all
+kinds of host controllers would be more natural.)
