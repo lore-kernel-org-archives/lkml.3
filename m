@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaIJSfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:35:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57125 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaIJSfr (ORCPT
+	id S1753233AbaIJSgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:36:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42209 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaIJSgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:35:47 -0400
-Date: Wed, 10 Sep 2014 11:33:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: men_z135_uart: Fix driver for changes in
- hardware
-Message-ID: <20140910183341.GB15117@kroah.com>
-References: <1409229140-14407-1-git-send-email-johannes.thumshirn@men.de>
- <20140908231733.GB23907@kroah.com>
- <20140909055615.GA10306@jtlinux>
- <20140910002635.GA2189@kroah.com>
- <20140910060723.GA3525@jtlinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910060723.GA3525@jtlinux>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 10 Sep 2014 14:36:47 -0400
+Date: Wed, 10 Sep 2014 11:36:44 -0700 (PDT)
+Message-Id: <20140910.113644.1584484249146625844.davem@davemloft.net>
+To: Markos.Chandras@imgtec.com
+Cc: dborkman@redhat.com, linux-kernel@vger.kernel.org, rdunlap@infradead.org,
+        ast@plumgrid.com, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Documentation: filter: Add MIPS to architectures with
+ BPF JIT
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <541050D0.1020302@imgtec.com>
+References: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com>
+	<54009D34.3010800@redhat.com>
+	<541050D0.1020302@imgtec.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 10 Sep 2014 11:36:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 08:07:24AM +0200, Johannes Thumshirn wrote:
-> On Tue, Sep 09, 2014 at 05:26:35PM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Sep 09, 2014 at 07:56:15AM +0200, Johannes Thumshirn wrote:
-> > > On Mon, Sep 08, 2014 at 04:17:33PM -0700, Greg Kroah-Hartman wrote:
-> > > > >
-> > > > > @@ -118,6 +117,10 @@ static int align;
-> > > > >  module_param(align, int, S_IRUGO);
-> > > > >  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
-> > > > >
-> > > > > +static int rx_timeout;
-> > > > > +module_param(rx_timeout, uint, S_IRUGO);
-> > > > > +MODULE_PARM_DESC(rx_timeout, "RX timeout");
-> > > >
-> > > > Why add a module parameter?  Who will know to set this?  And to what
-> > > > value?
-> > > >
-> > >
-> > > There will be a user manual describing the parameter. It's like the rxlvl and
-> > > txlvl parameters, you'll have to read the manual if you need other values than
-> > > the default ones.
-> >
-> > Ugh, but module parameters are for all devices in the system of this
-> > type, which is why we try not to have them at all anymore.
-> >
-> > And I don't like the other module parameters either :(
-> >
-> > But it's an odd-one-off driver, I guess we can live...
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+Date: Wed, 10 Sep 2014 14:23:28 +0100
+
+> On 08/29/2014 04:33 PM, Daniel Borkmann wrote:
+>> On 08/29/2014 04:23 PM, Markos Chandras wrote:
+>>> MIPS supports BPF JIT since v3.16-rc1
+>>>
+>>> Cc: Randy Dunlap <rdunlap@infradead.org>
+>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>> Cc: Daniel Borkmann <dborkman@redhat.com>
+>>> Cc: Alexei Starovoitov <ast@plumgrid.com>
+>>> Cc: linux-doc@vger.kernel.org
+>>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>> 
+>> Acked-by: Daniel Borkmann <dborkman@redhat.com>
+> Hi,
 > 
-> Just for my information, what would be the correct way to do these kinds of
-> hardware specific settings? Sysfs? Debugfs? Custom ioctl()s (no struct file_operations,
-> so probably not)?
+> I think this hasn't been merged yet (I can't see it in mainline or
+> linux-next). Do I need to ping someone or does it have to go via the
+> MIPS tree?
 
-For serial ports, odds are there is already some other way to do this
-through a common interface...
-
-But sysfs is a good way to go if you really need it, just document it
-properly in Documentation/ABI/
-
-thanks,
-
-greg k-h
+Well, patches not even CC:'d to netdev won't be going into the networking
+tree if that is what you expected.
