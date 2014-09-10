@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaIJU5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:57:06 -0400
-Received: from mout.perfora.net ([74.208.4.196]:51961 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753244AbaIJU5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:57:04 -0400
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: alsa-devel@alsa-project.org
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch, Marcel Ziswiler <marcel@ziswiler.com>,
-        Fabio Estevam <festevam@gmail.com>
-Subject: [PATCH v2 2/2] ARM: tegra: enable sgtl5000 audio
-Date: Wed, 10 Sep 2014 22:54:56 +0200
-Message-Id: <28ee136406ef0a760bfc99c3dba089a6cffb0376.1410362950.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1410362950.git.marcel@ziswiler.com>
-References: <cover.1410362950.git.marcel@ziswiler.com>
-X-Provags-ID: V02:K0:LwJiIg7Mbz9ZJOCzoUKGUKlZy1zPE7bMPMo5fxentCi
- ls+VjxOrdetCD1KAyZAGjIrDzr9/NURiomZUlquuA8TQSS0Z4F
- JPN3YBitovhQdi0o4Quhtv8QJjoVw474OHoA/Z4GkCpQ/nolq5
- c40XE5aVbI+30blOJrHCojvw/jV60CoGDR/TyVjFzMydi8H/Oq
- YXuBZyy2lFqBKGFKYtyljcB+IkQk3JUJELGImKRuA/5wlD8HsS
- 5MW/E9aV/wIBwXWcBDeemvSdfMQXieqv07aTZ4kLr9U0buE1W7
- BviJDjtf25/kC3bvWmKJbKqjA7mDXIXyD3deH+w/jO8/S+n34q
- wDgpJaKvptQwYrBNqRaqQhP5s7LPODkEoYlnF3WmM4bTSy4Ve5
- ZlPBDeNeOpkkAF42BWu94PXxgfevy0GunOQ/JunnxLgClCIxr8
- gtIyU
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753482AbaIJVET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:04:19 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:64746 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaIJVER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 17:04:17 -0400
+Date: Wed, 10 Sep 2014 14:04:14 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 3.17-rc4
+Message-ID: <20140910210414.GA24104@core.coreip.homeip.net>
+References: <20140815061242.GA23913@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140815061242.GA23913@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NVIDIA Tegra 3 based Apalis T30 and Colibri T30 modules contain a Freescale SGTL5000 analogue audio codec.
+Hi Linus,
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
-Changes in v2:
-- Using simple-audio-card as suggested by Fabio.
+Please pull from:
 
- arch/arm/configs/tegra_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 77d6e94..568b6a9 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -210,6 +210,8 @@ CONFIG_SND_SOC_TEGRA_WM8903=y
- CONFIG_SND_SOC_TEGRA_TRIMSLICE=y
- CONFIG_SND_SOC_TEGRA_ALC5632=y
- CONFIG_SND_SOC_TEGRA_MAX98090=y
-+CONFIG_SND_SOC_SGTL5000=y
-+CONFIG_SND_SIMPLE_CARD=y
- CONFIG_USB=y
- CONFIG_USB_XHCI_HCD=y
- CONFIG_USB_EHCI_HCD=y
+to receive updates for the input subsystem. You will get an update to
+Synaptics PS/2 driver to handle "ForcePads" (currently found in HP
+EliteBook 1040 laptops), a change for Elan PS/2 driver to detect newer
+touchpads, bunch of devices get annotated as Trackpoint and/or Pointer
+to help userspace classify and handle them, plus assorted driver fixes.
+
+Changelog:
+---------
+
+Dmitry Torokhov (1):
+      Input: synaptics - add support for ForcePads
+
+Hans de Goede (3):
+      Input: elantech - fix detection of touchpad on ASUS s301l
+      Input: add INPUT_PROP_POINTING_STICK property
+      Input: add missing POINTER / DIRECT properties to a bunch of drivers
+
+John Sung (1):
+      Input: serport - add compat handling for SPIOCSTYPE ioctl
+
+Klaus Goger (1):
+      Input: cap1106 - fix register definition
+
+Lothar Waﬂmann (1):
+      Input: matrix_keypad - use request_any_context_irq()
+
+Masanari Iida (1):
+      Input: wm971x - fix typo in module parameter description
+
+Nick Dyer (1):
+      Input: atmel_mxt_ts - downgrade warning about empty interrupts
+
+Stephen Warren (1):
+      Input: atmel_mxt_ts - fix double free of input device
+
+
+Diffstat:
+--------
+
+ drivers/input/keyboard/cap1106.c         |  4 +-
+ drivers/input/keyboard/matrix_keypad.c   |  9 +++--
+ drivers/input/mouse/alps.c               |  4 ++
+ drivers/input/mouse/elantech.c           | 11 ++++++
+ drivers/input/mouse/psmouse-base.c       |  2 +
+ drivers/input/mouse/synaptics.c          | 68 ++++++++++++++++++++++++--------
+ drivers/input/mouse/synaptics.h          | 11 ++++++
+ drivers/input/mouse/synaptics_usb.c      |  6 +++
+ drivers/input/mouse/trackpoint.c         |  3 ++
+ drivers/input/serio/serport.c            | 45 +++++++++++++++++----
+ drivers/input/touchscreen/atmel_mxt_ts.c | 25 +++++++++---
+ drivers/input/touchscreen/wm9712.c       |  2 +-
+ drivers/input/touchscreen/wm9713.c       |  2 +-
+ include/uapi/linux/input.h               |  1 +
+ 14 files changed, 156 insertions(+), 37 deletions(-)
+
 -- 
-1.9.3
-
+Dmitry
