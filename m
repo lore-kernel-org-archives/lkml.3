@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaIJLAl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:00:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58765 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244AbaIJK6e (ORCPT
+	id S1752773AbaIJLC0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:02:26 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40804 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751817AbaIJLCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:58:34 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v2 8/8] imx-drm: use for_each_endpoint_of_node macro in imx_drm_encoder_parse_of
-Date: Wed, 10 Sep 2014 12:58:28 +0200
-Message-Id: <1410346708-5125-9-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
-References: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 10 Sep 2014 07:02:24 -0400
+Message-ID: <54102FB2.1020808@hurleysoftware.com>
+Date: Wed, 10 Sep 2014 07:02:10 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 13/26] locking: Add non-fatal spin lock assert
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-14-git-send-email-peter@hurleysoftware.com> <20140903092723.GA4783@worktop.ger.corp.intel.com> <5406F964.6060900@hurleysoftware.com> <20140903144029.GA7083@twins.programming.kicks-ass.net> <54072A99.1080306@hurleysoftware.com> <20140903150729.GA7436@twins.programming.kicks-ass.net> <20140904051411.GA27350@gmail.com>
+In-Reply-To: <20140904051411.GA27350@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the for_each_... macro should make the code bit shorter and
-easier to read.
+On 09/04/2014 01:14 AM, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+>> On Wed, Sep 03, 2014 at 10:50:01AM -0400, Peter Hurley wrote:
+>>> So a lockdep-only assert is unlikely to draw attention to existing bugs,
+>>> especially in established drivers.
+>>
+>> By the same logic lockdep will not find locking errors in established
+>> drivers.
+> 
+> Indeed, this patch is ill-advised in several ways:
+> 
+>   - it extends an API variant that we want to phase
+> 
+>   - emits a warning even if say lockdep has already emitted a
+>     warning and locking state is not guaranteed to be consistent. 
+> 
+>   - makes the kernel more expensive once fully debugged, in that
+>     non-fatal checks are unconditional.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/staging/imx-drm/imx-drm-core.c | 17 +++++++----------
- 1 file changed, 7 insertions(+), 10 deletions(-)
+Ok.
 
-diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-index 9b5222c..460d785 100644
---- a/drivers/staging/imx-drm/imx-drm-core.c
-+++ b/drivers/staging/imx-drm/imx-drm-core.c
-@@ -438,17 +438,13 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
- 	struct drm_encoder *encoder, struct device_node *np)
- {
- 	struct imx_drm_device *imxdrm = drm->dev_private;
--	struct device_node *ep = NULL;
-+	struct device_node *ep;
- 	uint32_t crtc_mask = 0;
--	int i;
-+	int i = 0;
- 
--	for (i = 0; ; i++) {
-+	for_each_endpoint_of_node(np, ep) {
- 		u32 mask;
- 
--		ep = of_graph_get_next_endpoint(np, ep);
--		if (!ep)
--			break;
--
- 		mask = imx_drm_find_crtc_mask(imxdrm, ep);
- 
- 		/*
-@@ -457,14 +453,15 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
- 		 * not been registered yet.  Defer probing, and hope that
- 		 * the required CRTC is added later.
- 		 */
--		if (mask == 0)
-+		if (mask == 0) {
-+			of_node_put(ep);
- 			return -EPROBE_DEFER;
-+		}
- 
- 		crtc_mask |= mask;
-+		i++;
- 	}
- 
--	if (ep)
--		of_node_put(ep);
- 	if (i == 0)
- 		return -ENOENT;
- 
--- 
-2.1.0
+One thing: I'm not seeing how lockdep_assert_held() switches off once
+the warning has been emitted? Is the caller expected to construct their
+own _ONCE tags?
 
+Regards,
+Peter Hurley
