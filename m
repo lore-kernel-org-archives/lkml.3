@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaIJOo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:44:57 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:38653 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaIJOoz (ORCPT
+	id S1752352AbaIJOps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:45:48 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:50557 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751117AbaIJOpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:44:55 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 3.17-rc4] trace: kdb: Fix kernel panic during ftdump
-Date: Wed, 10 Sep 2014 15:44:07 +0100
-Message-Id: <1410360247-13791-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Wed, 10 Sep 2014 10:45:46 -0400
+Message-ID: <5410640D.8010903@hurleysoftware.com>
+Date: Wed, 10 Sep 2014 10:45:33 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 13/26] locking: Add non-fatal spin lock assert
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com> <1409693975-1028-14-git-send-email-peter@hurleysoftware.com> <20140903092723.GA4783@worktop.ger.corp.intel.com> <5406F964.6060900@hurleysoftware.com> <20140903144029.GA7083@twins.programming.kicks-ass.net> <54072A99.1080306@hurleysoftware.com> <20140903150729.GA7436@twins.programming.kicks-ass.net> <20140904051411.GA27350@gmail.com> <54102FB2.1020808@hurleysoftware.com> <20140910130832.GY4783@worktop.ger.corp.intel.com>
+In-Reply-To: <20140910130832.GY4783@worktop.ger.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kdb's ftdump command unconditionally crashes due to a null
-pointer de-reference whenever the command is run. This in turn causes
-the kernel to panic.
+On 09/10/2014 09:08 AM, Peter Zijlstra wrote:
+> On Wed, Sep 10, 2014 at 07:02:10AM -0400, Peter Hurley wrote:
+>> On 09/04/2014 01:14 AM, Ingo Molnar wrote:
+>>>
+>>> * Peter Zijlstra <peterz@infradead.org> wrote:
+>>>
+>>>> On Wed, Sep 03, 2014 at 10:50:01AM -0400, Peter Hurley wrote:
+>>>>> So a lockdep-only assert is unlikely to draw attention to existing bugs,
+>>>>> especially in established drivers.
+>>>>
+>>>> By the same logic lockdep will not find locking errors in established
+>>>> drivers.
+>>>
+>>> Indeed, this patch is ill-advised in several ways:
+>>>
+>>>   - it extends an API variant that we want to phase
+>>>
+>>>   - emits a warning even if say lockdep has already emitted a
+>>>     warning and locking state is not guaranteed to be consistent. 
+>>>
+>>>   - makes the kernel more expensive once fully debugged, in that
+>>>     non-fatal checks are unconditional.
+>>
+>> Ok.
+>>
+>> One thing: I'm not seeing how lockdep_assert_held() switches off once
+>> the warning has been emitted? Is the caller expected to construct their
+>> own _ONCE tags?
+> 
+> Indeed, it does not do that. I suppose you can add
+> lockdep_assert_held_once() or somesuch if you think the once thing is
+> important.
 
-The abridged stacktrace (gathered with ARCH=arm) is:
---- cut here ---
-[<c09535ac>] (panic) from [<c02132dc>] (die+0x264/0x440)
-[<c02132dc>] (die) from [<c0952eb8>]
-(__do_kernel_fault.part.11+0x74/0x84)
-[<c0952eb8>] (__do_kernel_fault.part.11) from [<c021f954>]
-(do_page_fault+0x1d0/0x3c4)
-[<c021f954>] (do_page_fault) from [<c020846c>] (do_DataAbort+0x48/0xac)
+Ok, will do.
 
-[<c020846c>] (do_DataAbort) from [<c0213c58>] (__dabt_svc+0x38/0x60)
-Exception stack(0xc0deba88 to 0xc0debad0)
-ba80:                   e8c29180 00000001 e9854304 e9854300 c0f567d8
-c0df2580
-baa0: 00000000 00000000 00000000 c0f117b8 c0e3a3c0 c0debb0c 00000000
-c0debad0
-bac0: 0000672e c02f4d60 60000193 ffffffff
-[<c0213c58>] (__dabt_svc) from [<c02f4d60>] (kdb_ftdump+0x1e4/0x3d8)
-[<c02f4d60>] (kdb_ftdump) from [<c02ce328>] (kdb_parse+0x2b8/0x698)
-[<c02ce328>] (kdb_parse) from [<c02ceef0>] (kdb_main_loop+0x52c/0x784)
-[<c02ceef0>] (kdb_main_loop) from [<c02d1b0c>] (kdb_stub+0x238/0x490)
---- cut here ---
+On 09/04/2014 01:14 AM, Ingo Molnar wrote:
+> Also please submit locking related patches as standalone series 
+> to the locking subsystem, not embedded in an unrelated series.
 
-The NULL deref occurs due to the initialized use of struct trace_iter's
-buffer_iter member.
+Ok, but how will Greg know when to take the series that depends on
+this change, if the locking change is submitted separately?
 
-This patch solves this by providing a collection of ring_buffer_iter(s)
-and using this to initialized buffer_iter. Note that static allocation
-is used solely because the trace_iter itself is also static allocated.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/trace/trace_kdb.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index bd90e1b..989288a 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -20,10 +20,12 @@ static void ftrace_dump_buf(int skip_lines, long cpu_file)
- {
- 	/* use static because iter can be a bit big for the stack */
- 	static struct trace_iterator iter;
-+	static struct ring_buffer_iter *buffer_iter[CONFIG_NR_CPUS];
- 	unsigned int old_userobj;
- 	int cnt = 0, cpu;
-
- 	trace_init_global_iter(&iter);
-+	iter.buffer_iter = buffer_iter;
-
- 	for_each_tracing_cpu(cpu) {
- 		atomic_inc(&per_cpu_ptr(iter.trace_buffer->data, cpu)->disabled);
---
-1.9.3
-
+Regards,
+Peter Hurley
