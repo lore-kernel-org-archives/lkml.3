@@ -1,135 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaIJThj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:37:39 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:33705 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaIJThh (ORCPT
+	id S1753327AbaIJTiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:38:20 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:48679 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaIJTiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:37:37 -0400
-Date: Wed, 10 Sep 2014 12:37:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Sep 10
-Message-ID: <20140910193732.GA29618@roeck-us.net>
-References: <20140910185920.336180d4@canb.auug.org.au>
+	Wed, 10 Sep 2014 15:38:19 -0400
+Date: Wed, 10 Sep 2014 12:36:30 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Hugh Dickins <hughd@google.com>, Sasha Levin <sasha.levin@oracle.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+In-Reply-To: <20140910124732.GT17501@suse.de>
+Message-ID: <alpine.LSU.2.11.1409101210520.1744@eggly.anvils>
+References: <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de>
+ <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <20140910124732.GT17501@suse.de>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140910185920.336180d4@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 06:59:20PM +1000, Stephen Rothwell wrote:
-> Hi all,
+On Wed, 10 Sep 2014, Mel Gorman wrote:
+> On Tue, Sep 09, 2014 at 07:45:26PM -0700, Hugh Dickins wrote:
+> > 
+> > I've been rather assuming that the 9d340902 seen in many of the
+> > registers in that Aug26 dump is the pte val in question: that's
+> > SOFT_DIRTY|PROTNONE|RW.
+
+The 900s in the latest dumps imply that that 902 was not important.
+(If any of them are in fact the pte val.)
+
+> > 
+> > I think RW on PROTNONE is unusual but not impossible (migration entry
+> > replacement racing with mprotect setting PROT_NONE, after it's updated
+> > vm_page_prot, before it's reached the page table). 
 > 
-> Changes since 20140909:
+> At the risk of sounding thick, I need to spell this out because I'm
+> having trouble seeing exactly what race you are thinking of. 
 > 
-> New tree: powerpc-merge-mpe
+> Migration entry replacement is protected against parallel NUMA hinting
+> updates by the page table lock (either PMD or PTE level). It's taken by
+> remove_migration_pte on one side and lock_pte_protection on the other.
 > 
-> The pm tree gained conflicts against the mvebu and arm-soc trees.
+> For the mprotect case racing again migration, migration entries are not
+> present so change_pte_range() should ignore it. On migration completion
+> the VMA flags determine the permissions of the new PTE. Parallel faults
+> wait on the migration entry and see the correct value afterwards.
 > 
-> The v4l-dvb tree still had its build failure so I used the version from
-> next-20140908.
+> When creating migration entries, try_to_unmap calls page_check_address
+> which takes the PTL before doing anything. On the mprotect side,
+> lock_pte_protection will block before seeing PROTNONE.
 > 
-> The net-next tree gained a conflict against the arm-soc tree.
+> I think the race you are thinking of is a migration entry created for write,
+> parallel mprotect(PROTNONE) and migration completion. The migration entry
+> was created for write but remove_migration_pte does not double check the VMA
+> protections and mmap_sem is not taken for write across a full migration to
+> protect against changes to vm_page_prot.
+
+Yes, the "if (is_write_migration_entry(entry)) pte = pte_mkwrite(pte);"
+arguably should take the latest value of vma->vm_page_prot into account.
+
+> However, change_pte_range checks
+> for migration entries marked for write under the PTL and marks them read if
+> one is encountered. The consequence is that we potentially take a spurious
+> fault to mark the PTE write again after migration completes but I can't
+> see how that causes a problem as such.
+
+Yes, once mprotect's page table walk reaches that pte, it updates it
+correctly along with all the others nearby (which were not migrated),
+removing the temporary oddity.
+
 > 
-> The wireless-next tree lost its build failure.
+> I'm missing some part of your reasoning that leads to the RW|PROTNONE :(
+
+You don't appear to be missing it at all, you are seeing the possibility
+of an RW|PROTNONE yourself, and how it gets "corrected" afterwards
+("corrected" in quotes because without the present bit, it's not an error).
+
 > 
-> The drm tree still had its build failure for which I applied a merge
-> fix patch.
+> > But exciting though
+> > that line of thought is, I cannot actually bring it to a pte_mknuma bug,
+> > or any bug at all.
+> > 
+
+And I wasn't saying that it led to this bug, just that it was an oddity
+worth thinking about, and worth mentioning to you, in case you could work
+out a way it might lead to the bug, when I had failed to do so.
+
+But we now (almost) know that 902 is irrelevant to this bug anyway.
+
 > 
-> The regulator tree still had its build failure for which I reverted
-> several commits.
+> On x86, PROTNONE|RW translates as GLOBAL|RW which would be unexpected. It
+
+GLOBAL once PRESENT is set, but PROTNONE so long as it is not.
+
+> wouldn't cause this bug but it's sufficiently suspicious to be worth
+> correcting. In case this is the race you're thinking of, the patch is below.
+> Unfortunately, I cannot see how it would affect this problem but worth
+> giving a whirl anyway.
 > 
-> The trivial tree gained a conflict against the block tree.
+> > Mel, no way can it be the cause of this bug - unless Sasha's later
+> > traces actually show a different stack - but I don't see the call
+> > to change_prot_numa() from queue_pages_range() sharing the same
+> > avoidance of PROT_NONE that task_numa_work() has (though it does
+> > have an outdated comment about PROT_NONE which should be removed).
+> > So I think that site probably does need PROT_NONE checking added.
+> > 
 > 
-> The clk tree gained a conflict against the renesas tree.
+> That site should have checked PROT_NONE but it can't be the same bug
+> that trinity is seeing. Minimally trinity is unaware of MPOL_MF_LAZY
+> according to git grep of the trinity source.
+
+Yes, queue_pages_range() is not implicated in any of Sasha's traces.
+Something to fix, but not relevant to this bug.
+
 > 
-> The akpm-current tree lost its build failure.
+> Worth adding this to the debugging mix? It should warn if it encounters
+> the problem but avoid adding the problematic RW bit.
 > 
-> Non-merge commits (relative to Linus' tree): 4389
->  4067 files changed, 140816 insertions(+), 93267 deletions(-)
+> ---8<---
+> migrate: debug patch to try identify race between migration completion and mprotect
+> 
+> A migration entry is marked as write if pte_write was true at the
+> time the entry was created. The VMA protections are not double checked
+> when migration entries are being removed but mprotect itself will mark
+> write-migration-entries as read to avoid problems. It means we potentially
+> take a spurious fault to mark these ptes write again but otherwise it's
+> harmless.  Still, one dump indicates that this situation can actually
+> happen so this debugging patch spits out a warning if the situation occurs
+> and hopefully the resulting warning will contain a clue as to how exactly
+> it happens
+> 
+> Not-signed-off
+> ---
+>  mm/migrate.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 09d489c..631725c 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -146,8 +146,16 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+>  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
+>  	if (pte_swp_soft_dirty(*ptep))
+>  		pte = pte_mksoft_dirty(pte);
+> -	if (is_write_migration_entry(entry))
+> -		pte = pte_mkwrite(pte);
+> +	if (is_write_migration_entry(entry)) {
+> +		/*
+> +		 * This WARN_ON_ONCE is temporary for the purposes of seeing if
+> +		 * it's a case encountered by trinity in Sasha's testing
+> +		 */
+> +		if (!(vma->vm_flags & (VM_WRITE)))
+> +			WARN_ON_ONCE(1);
+> +		else
+> +			pte = pte_mkwrite(pte);
+> +	}
+>  #ifdef CONFIG_HUGETLB_PAGE
+>  	if (PageHuge(new)) {
+>  		pte = pte_mkhuge(pte);
 > 
 
-I see a large number of build failures.
+Right, and Sasha  reports that that can fire, but he sees the bug
+with this patch in and without that firing.
 
-Build results:
-	total: 133 pass: 95 fail: 38
-Failed builds:
-	alpha:defconfig
-	alpha:allmodconfig
-	arm:shmobile_defconfig
-	arm:bcm2835_defconfig
-	arm:efm32_defconfig
-	arm:clps711x_defconfig
-	cris:defconfig
-	cris:etrax-100lx_defconfig
-	cris:artpec_3_defconfig
-	cris:etraxfs_defconfig
-	frv:defconfig
-	hexagon:defconfig
-	ia64:defconfig
-	m68k:allmodconfig
-	m68k:m5272c3_defconfig
-	m68k:m5307c3_defconfig
-	m68k:m5249evb_defconfig
-	mips:allmodconfig
-	mips:bcm47xx_defconfig
-	mips:bcm63xx_defconfig
-	mips:nlm_xlp_defconfig
-	mips:ath79_defconfig
-	mips:ar7_defconfig
-	mips:fuloong2e_defconfig
-	mips:cavium_octeon_defconfig
-	mips:malta_defconfig
-	mn10300:asb2303_defconfig
-	parisc:defconfig
-	parisc:generic-32bit_defconfig
-	parisc:a500_defconfig
-	parisc:generic-64bit_defconfig
-	powerpc:85xx/sbc8548_defconfig
-	sh:microdev_defconfig
-	sparc64:allmodconfig
-	unicore32:defconfig
-	xtensa:defconfig
-	xtensa:allmodconfig
+Consider 902 of no interest, it was just something worth mentioning
+before we got more info.
 
-Key build failures:
-
-kernel/built-in.o: In function `irq_work_sync':
-(.text+0x2cfd8): undefined reference to `module_alloc'
-kernel/built-in.o: In function `irq_work_sync':
-(.text+0x2cfe0): undefined reference to `module_free'
-
-This is seen for several architectures and drivers.
-
----
-drivers/tty/serial/8250/8250_core.c: In function ‘serial8250_ioctl’:
-drivers/tty/serial/8250/8250_core.c:2874:7: error:
-		‘TIOCSRS485’ undeclared (first use in this function)
-drivers/tty/serial/8250/8250_core.c:2886:7: error:
-		‘TIOCGRS485’ undeclared (first use in this function)
-
-Seen for several architectures. For some of the affected architectures
-I have seen patches on lkml, others such as alpha are still unpatched
-as far as I can see.
-
----
-For sparc64, we also have
-
-In file included from drivers/tty/serial/serial_mctrl_gpio.c:21:0:
-include/uapi/asm-generic/termios.h:22:8: error:
-		redefinition of 'struct termio'
-./arch/sparc/include/uapi/asm/termbits.h:16:8: note:
-		originally defined here
-
-I didn't bother trying runtime tests.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
+Hugh
