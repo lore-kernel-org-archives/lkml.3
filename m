@@ -1,147 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223AbaIJP3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:29:37 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:64112 "EHLO
-	mail.work-microwave.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaIJP3g (ORCPT
+	id S1752282AbaIJPbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:31:19 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38540 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751344AbaIJPbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:29:36 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: robh+dt@kernel.org, riku.voipio@iki.fi, cooloney@gmail.com,
-        rpurdie@rpsys.net, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v3] leds: Add DT support for leds-pca9532
-Date: Wed, 10 Sep 2014 17:29:05 +0200
-Message-Id: <1410362945-30623-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 2.1.0
-X-FEAS-SYSTEM-WL: "Roland Stigge" <stigge@antcom.de>
+	Wed, 10 Sep 2014 11:31:18 -0400
+Date: Wed, 10 Sep 2014 17:31:14 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
+Message-ID: <20140910173114.593dd132@bbrezillon>
+In-Reply-To: <20140910150702.GK2974@localhost>
+References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
+	<20140910121424.GG2974@localhost>
+	<20140910152019.111c4c01@bbrezillon>
+	<20140910150702.GK2974@localhost>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT support for leds-pca9532.
+On Wed, 10 Sep 2014 17:07:02 +0200
+Johan Hovold <johan@kernel.org> wrote:
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+> On Wed, Sep 10, 2014 at 03:20:19PM +0200, Boris BREZILLON wrote:
+> > On Wed, 10 Sep 2014 14:14:24 +0200
+> > Johan Hovold <johan@kernel.org> wrote:
+> 
+> > > This does not describe the hardware, but rather a specific software
+> > > configuration.
+> > > 
+> > > The RTT is first of all not an RTC (although it can be used as one in a
+> > > specific software configuration). And the second register resource above
+> > > is not an RTT register, but a general-purpose backup register could be
+> > > used for other purposes (which register to use is currently configurable
+> > > for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
+> > 
+> > We could use a syscon device (which exposes a regmap) for the GPBR
+> > block.
+> > 
+> > rtc@ffffff20 {
+> 
+> rtt
+> 
+> > 	compatible = "atmel,at91sam9260-rtt";
+> > 	reg = <0xfffffd20 0x10>;
+> > 	interrupts = <1 4 7>;
+> > 	clocks = <&clk32k>;
+> > 	atmel,time-reg = <&gpbr 0x0>;
+> > };
+> > 
+> > gpbr: syscon@fffffd50 {
+> > 	compatible = "atmel,at91sam9260-gpbr", "syscon";
+> > 	reg = <0xfffffd50 0x10>;
+> > 	
+> > };
+> 
+> Yes, this essentially what I suggested in the thread (and my last reply)
+> and relying on syscon rather than a custom driver seems like a good
+> idea. It would allow early access to the registers too with the recently
+> proposed changes. It would not guarantee any kind of exclusivity,
+> though, but I guess that's tolerable?
 
----
-Applies to v3.17-rc4
+Yep, that's one of the concern I had with the syscon/regmap
+approach :-(, but I guess I'll give this solution a try and post a new
+version of this series ;-).
 
- v3: Removed superfluous whitespace
- v2: Removed #ifdef statements
+Can we just leave the rtt as an rtc problem on the side for now and bind
+it to the rtc-at91sam9 driver.
 
- Documentation/devicetree/bindings/leds/leds-pca9532.txt |   43 ++++++++++++++
- drivers/leds/leds-pca9532.c                             |   47 ++++++++++++++++
- 2 files changed, 90 insertions(+)
+If we ever decide to add a new driver using the RTT for another purpose
+we will still be able to reference the RTT block like this (and keep
+the existing rtt node definition):
 
---- /dev/null
-+++ linux-2.6/Documentation/devicetree/bindings/leds/leds-pca9532.txt
-@@ -0,0 +1,43 @@
-+NXP PCA9532 LED (incl. GPIO) controller
-+
-+Required properties:
-+- compatible: must be "nxp,pca9532"
-+- reg: I2C address
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be 2:
-+   1) pin number
-+   2) optional parameters:
-+      - bit 0 specifies polarity (0 for normal, 1 for inverted)
-+- nxp,typecodes: groups of 2 bits for each of the 16 pins:
-+  0: None
-+  1: LED
-+  2: Beep
-+  3: GPIO
-+- nxp,statecodes: groups of 2 bits for each of the 16 pins:
-+  0: off
-+  1: on
-+  2: pwm0
-+  3: pwm1
-+
-+Optional properties:
-+- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (see datasheet)
-+- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (see datasheet)
-+
-+Example:
-+
-+	pca9532: pca9532@60 {
-+		compatible = "nxp,pca9532";
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		nxp,typecodes = <0xffffffff>;
-+		nxp,statecodes = <0x00000000>;
-+		reg = <0x60>;
-+	};
-+
-+	sd@20098000 {
-+		wp-gpios = <&pca9532 5 0>;
-+		cd-gpios = <&pca9532 4 0>;
-+		cd-inverted;
-+		bus-width = <4>;
-+		status = "okay";
-+	};
---- linux-2.6.orig/drivers/leds/leds-pca9532.c
-+++ linux-2.6/drivers/leds/leds-pca9532.c
-@@ -21,6 +21,7 @@
- #include <linux/workqueue.h>
- #include <linux/leds-pca9532.h>
- #include <linux/gpio.h>
-+#include <linux/of.h>
- 
- /* m =  num_leds*/
- #define PCA9532_REG_INPUT(i)	((i) >> 3)
-@@ -442,6 +443,43 @@ exit:
- 	return err;
- }
- 
-+static struct pca9532_platform_data *pca9532_parse_dt(struct device *dev)
-+{
-+	struct device_node *np = dev->of_node;
-+	struct pca9532_platform_data *pca9532_pdata;
-+	u32 typecodes, statecodes;
-+	u32 pwm[2];
-+	u32 psc[2];
-+	int i;
-+
-+	pca9532_pdata = devm_kzalloc(dev, sizeof(*pca9532_pdata), GFP_KERNEL);
-+	if (!pca9532_pdata)
-+		return NULL;
-+
-+	if (!of_property_read_u32(np, "nxp,typecodes", &typecodes)) {
-+		for (i = 0; i < 16; i++)
-+			pca9532_pdata->leds[i].type =
-+				(typecodes >> (2 * i)) & 0x3;
-+	}
-+	if (!of_property_read_u32(np, "nxp,statecodes", &statecodes)) {
-+		for (i = 0; i < 16; i++)
-+			pca9532_pdata->leds[i].state =
-+				(statecodes >> (2 * i)) & 0x3;
-+	}
-+	if (!of_property_read_u32_array(np, "nxp,pwm", &pwm[0], 2)) {
-+		for (i = 0; i < 2; i++)
-+			pca9532_pdata->pwm[i] = pwm[i];
-+	}
-+	if (!of_property_read_u32_array(np, "nxp,psc", &psc[0], 2)) {
-+		for (i = 0; i < 2; i++)
-+			pca9532_pdata->psc[i] = psc[i];
-+	}
-+
-+	pca9532_pdata->gpio_base = -1; /* dynamically assign gpio base */
-+
-+	return pca9532_pdata;
-+}
-+
- static int pca9532_probe(struct i2c_client *client,
- 	const struct i2c_device_id *id)
- {
-@@ -449,6 +487,9 @@ static int pca9532_probe(struct i2c_clie
- 	struct pca9532_platform_data *pca9532_pdata =
- 			dev_get_platdata(&client->dev);
- 
-+	if (IS_ENABLED(CONFIG_OF) && !pca9532_pdata && client->dev.of_node)
-+		pca9532_pdata = pca9532_parse_dt(&client->dev);
-+
- 	if (!pca9532_pdata)
- 		return -EIO;
- 
+
+rtt-based-rtc {
+	compatible = "atmel,rtt-rtc";
+	atmel,rtt = <&rtt>;
+	atmel,time-reg = <&gpbr 0x0>;
+}
+
+rtt-based-xdev {
+	compatible = "atmel,rtt-xdev";
+	atmel,rtt = <&rtt>;
+	/*...*/
+}
+
+Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
