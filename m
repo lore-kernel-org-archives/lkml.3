@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaIJRwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:52:49 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:37264 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304AbaIJRwr (ORCPT
+	id S1752891AbaIJRxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:53:18 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:64609 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaIJRxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:52:47 -0400
+	Wed, 10 Sep 2014 13:53:17 -0400
+Date: Wed, 10 Sep 2014 10:53:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: herrmann.der.user@googlemail.com, jdelvare@suse.de,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon, fam15h_power: Add support for two more processors
+Message-ID: <20140910175312.GA7079@roeck-us.net>
+References: <1410368528-4738-1-git-send-email-aravind.gopalakrishnan@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <20140910172710.GA3300@leverpostej>
-References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
-	<20140910172710.GA3300@leverpostej>
-Date: Wed, 10 Sep 2014 10:52:46 -0700
-X-Google-Sender-Auth: Ky5ti5z6-JHAFfRbI8M-MfsFNBc
-Message-ID: <CAD=FV=U4ar=jW273=0PMX1A_hTqxPAJ9avJuTD2N4RNa4a12xg@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
- when requested
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410368528-4738-1-git-send-email-aravind.gopalakrishnan@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Wed, Sep 10, 2014 at 12:02:08PM -0500, Aravind Gopalakrishnan wrote:
+> Fam16h,M30h(Mullins) and Fam15hM30h(Kaveri) processors can
+> report 'power_crit' value. So, adding their respective device ids.
+> 
+> Also, according to BKDGs, the 'TdpRunAvgAccCap' that show_power()
+> uses is valid only on Fam15h, Models 0x0-0xF. On all other processors
+> the field is 'Reserved'. So, return error if we are on any other family/model.
+> 
+> Impact on lm-sensors is minimal. On such families, instead of reporting
+> Current power value as '0', we now have:
+> power1:           N/A
+> 
 
-On Wed, Sep 10, 2014 at 10:27 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> Hi Sonny,
->
-> On Wed, Aug 27, 2014 at 10:03:39PM +0100, Sonny Rao wrote:
->> This is a bug fix for using physical arch timers when
->> the arch_timer_use_virtual boolean is false.  It restores the
->> arch_counter_get_cntpct() function after removal in
->>
->> 0d651e4e "clocksource: arch_timer: use virtual counters"
->>
->> and completes the implementation of memory mapped access for physical
->> timers, so if a system is trying to use physical timers, it will
->> function properly.
->
-> To get back to the topic at hand:
->
-> Which platform is this required by?
+It will result in people complaining to us about it.
 
-I've seen similar problems on the A7s on exynos5420 / exynos5800 and
-on rk3288.  I can't say what other platforms might be affected.  Note
-that the arch timers on exyno5420/exynos5800 are not supported anyway,
-so I guess that means we're just worrying about the rk3288.
+It would be more appropriate to not create the attribute the first place
+if it is not supported. Sure, that is a bit more code, but it isn't that bad.
+You can simply return -ENODEV for unsupported CPUs from the probe function.
 
+Additional comment below.
 
-> Why exactly is arch_timer_use_virtual false in this case?
+Guenter
 
-To re-summarize my understanding of everything (many of the below is
-secondhand knowledge, so correct if wrong):
+> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+> ---
+>  drivers/hwmon/fam15h_power.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+> index 4a7cbfa..b69bf7d 100644
+> --- a/drivers/hwmon/fam15h_power.c
+> +++ b/drivers/hwmon/fam15h_power.c
+> @@ -57,6 +57,10 @@ static ssize_t show_power(struct device *dev,
+>  	struct fam15h_power_data *data = dev_get_drvdata(dev);
+>  	struct pci_dev *f4 = data->pdev;
+>  
+> +	/* The value TdpRunAvgAccCap is valid only on F15h, Models 0x0-0xF */
+> +	if (boot_cpu_data.x86 != 0x15 || boot_cpu_data.x86_model > 0x0)
 
-1. The initial problem is that the virtual offset is not initialized
-by anyone and is per core (each core gets a different, random offset).
-That makes the virtual counter useless.  ...but the kernel only uses
-virtual counters.
+The comment does not match the code. The comment talks about accepting models
+F15h, models 0x0-0xF, but the code rejects anything but F15h model 0x0.
+Now it may well be that the above describes identifies all F15h and F16h CPUs,
+but this is not clear from the comment. It rather looks as if anything but F15h,
+model 0x0 is rejected, including all F16h CPUs. But then why accept F16h CPUs
+in the first place ?
 
-2. As far as I know, we don't have any particular need for HYP mode
-nor for limiting access to secure mode.
-
-3. You can only change the virtual offset from HYP mode.  That means
-someone needs to transition to HYP mode if we want to use virtual
-counters.
-
-4. If the kernel happens to be in HYP mode it will init the virtual offset.
-
-5. We could transition to HYP mode once in the firmware and boot the
-kernel like that, but since firmware is gone after we've booted the
-kernel, we run into the same problem when we power off a processor and
-when we resume from S3.  The firmware is not involved in these cases.
-In these cases the processors have an uninitialized virtual offset
-again.  These processors don't appear to magically come up in HYP
-mode.  Thus it would be up to the kernel to transition to HYP mode,
-init the offset, and get out of HYP mode.  ...or just use the physical
-counter.
-
-
-If you can suggest something that doesn't require us to involve the
-firmware in processor bringup and in resume, I'm all ears.  We have a
-desire not to involve the firmware there because of all the issues of
-keeping kernel/firmware in sync and because of the extra difficultly
-of shipping firmware updates (understandably the QA needed to validate
-a new firmware is much higher than the QA needed to validate a new
-kernel).
-
-
--Doug
+> +		return -ENOSYS;
+> +
+>  	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
+>  				  REG_TDP_RUNNING_AVERAGE, &val);
+>  	running_avg_capture = (val >> 4) & 0x3fffff;
+> @@ -216,7 +220,9 @@ static int fam15h_power_probe(struct pci_dev *pdev,
+>  
+>  static const struct pci_device_id fam15h_power_id_table[] = {
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
+> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
+>  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
+> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
+>  	{}
+>  };
+>  MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
+> -- 
+> 2.0.3
+> 
