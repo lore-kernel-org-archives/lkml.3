@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaIJWwW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 18:52:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58629 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaIJWwU (ORCPT
+	id S1752985AbaIJXAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:00:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48019 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaIJXAt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 18:52:20 -0400
-Date: Wed, 10 Sep 2014 15:52:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>,
-        Joe Perches <joe@perches.com>, Masanari Iida <standby24x7@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-doc <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2] checkpatch: look for common misspellings
-Message-Id: <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
-In-Reply-To: <20140908181524.GA11839@www.outflux.net>
-References: <20140908181524.GA11839@www.outflux.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Sep 2014 19:00:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
+References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
+	<540FC7C8.1070904@gmail.com>
+	<CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
+	<4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
+Date: Thu, 11 Sep 2014 07:00:46 +0800
+Message-ID: <CACVXFVPen-__38-XGHAe2Yxb0CGVLr3sGxQXvvk=Zkwzn-A_gA@mail.gmail.com>
+Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+From: Ming Lei <ming.lei@canonical.com>
+To: "Patel, Gaurav" <gspatel@hp.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Sep 2014 11:15:24 -0700 Kees Cook <keescook@chromium.org> wrote:
+On Thu, Sep 11, 2014 at 12:11 AM, Patel, Gaurav <gspatel@hp.com> wrote:
+>
+> ">> When we use hdparm to download firmware on system with Marvell
+>>> 88SE9125 SATA controller, it returns failure always and it has been
+>>> observed in several systems:"
+>
+>  [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).
 
-> Check for misspellings, based on Debian's lintian list. Several false
-> positives were removed, and several additional words added that were
-> common in the kernel:
-> 
-> 	backword backwords
-> 	invalide valide
-> 	recieves
-> 	singed unsinged
-> 
-> While going back and fixing existing spelling mistakes isn't a high
-> priority, it'd be nice to try to catch them before they hit the tree.
+But RedHat65 ships a 2.6.32 kernel as you said, and you can test the stable
+2.6.32 kernel on one ubuntu release too.
 
-I have a feeling this is going to be a rat hole and that
-scripts/spelling.txt will grow to consume the planet.  Oh well, whatev.
+As far as I can tell, the problem is very probably related with
+kernel, that is why
+I suggest you to test upstream kernel and run 'git bisect' later to
+find the commit
+which caused the regression.
 
-Have a kernel joke:
+But looks you have simply install problem.
 
---- a/scripts/spelling.txt~checkpatch-look-for-common-misspellings-fix
-+++ a/scripts/spelling.txt
-@@ -553,6 +553,7 @@ jeffies||jiffies
- juse||just
- jus||just
- kown||known
-+kubys|linus
- langage||language
- langauage||language
- langauge||language
-_
+Thanks,
 
+
+>
+> Thanks,
+> Gaurav Patel
+> Email: Gspatel@hp.com
+> Cell # 832-382-5550
+>
+>
+> -----Original Message-----
+> From: Ming Lei [mailto:ming.lei@canonical.com]
+> Sent: Wednesday, September 10, 2014 1:34 AM
+> To: Robert Hancock
+> Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List; Patel, Gaurav
+> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+>
+> On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>> On 01/09/14 02:22 AM, Ming Lei wrote:
+>>>
+>>> Hi Guys,
+>>>
+>>> When we use hdparm to download firmware on system with Marvell
+>>> 88SE9125 SATA controller, it returns failure always and it has been
+>>> observed in several systems:
+>>>
+>>> #hdparm --fwdownload-mode7 fw.bin
+>>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
+>>>
+>>> /dev/sda:
+>>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
+>>> FAILED: Input/output error
+>>
+>>
+>> Any errors in dmesg after doing this?
+>
+> No any failure log from kernel.
+>
+> Thanks,
