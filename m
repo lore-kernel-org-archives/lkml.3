@@ -1,115 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaIJRDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:03:25 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:37216 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaIJRDV (ORCPT
+	id S1752870AbaIJRD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:03:59 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:12480 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693AbaIJRCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:03:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <541050E5.60502@gmail.com>
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
-	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
-	<540F2977.7010006@plexistor.com>
-	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
-	<541050E5.60502@gmail.com>
-Date: Wed, 10 Sep 2014 10:03:19 -0700
-Message-ID: <CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>
-Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
- memory driver
-From: Dan Williams <dan.j.williams@intel.com>
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: Boaz Harrosh <boaz@plexistor.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Sep 2014 13:02:44 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v2 3/6] x86, mm, asm-gen: Add ioremap_wt() for WT
+Date: Wed, 10 Sep 2014 10:51:47 -0600
+Message-Id: <1410367910-6026-4-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boaz,
+This patch adds ioremap_wt() for creating WT mapping on x86.
+It follows the same model as ioremap_wc() for multi-architecture
+support.  ARCH_HAS_IOREMAP_WT is defined in the x86 version of
+io.h to indicate that ioremap_wt() is implemented on x86.
 
-On Wed, Sep 10, 2014 at 6:23 AM, Boaz Harrosh <openosd@gmail.com> wrote:
-> On 09/09/2014 07:53 PM, Dan Williams wrote:
->> On Tue, Sep 9, 2014 at 9:23 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
-> <>
->>
->> Hmm this looks like a "ACPI/DeviceTree-over-kernel-command-line"
->> description language.  I understand that this is borrowed from the
->> memmap= precedent, but, if I'm not mistaken, that's really more for
->> debug rather than a permanent platform-device descriptor.
->
-> So what is bad about that ?
->
->> <strawman>
->> Since this looks like firmware why not go ahead and use
->> request_firmware() to request a pmem range descriptor blob
-> </strawman>?
->
-> What? God no! How is this a firmware at all. No this is all BUS info, it is
->  "where on the bus this device's resource was allocated"
->
-> Firmware is static compile time thing common to all of my devices
-> but this here is where in the bus this was stuck in. What is your
-> suggestion that I compile a kernel and "make install" it (initrd)
-> for every DIMM I insert ? since when? and what tool will tell me
-> what to put there?
->
->>  Given you can compile such a blob into a kernel image  or provide it
->> in an initrd I think it makes deployment more straightforward, also
->> the descriptor format can be extended going forward
->
-> What ? really Dan I think you got confused. The nn@ss thing is just:
->    "what connector I stuck my DIMM disk in (and what other empty slots I have)"
->
-> Would you have me compile and install my kernel every time my sdX
-> number change, or my sata channel moved. I do not think so.
->
->> whereas the
->> command line approach mandates ever increasingly complicated strings.
->
-> This is the first API, I intend, there is even a TODO in the patchset, to
-> also have a dynamic sysfs add/remove/grow API for on the fly changes.
-> All these can be easily driven by a simple udev rule to plug and play them.
->
-> Usually in the Kernel, buses do not directly load devices drivers. The
-> bus driver sends an "event" with a new discovered resource, then user-mode
-> udev rule will load an associated driver, which will scan for its device or
-> receive its identification somewhere, that can be the sysfs interface above,
-> or even commandline.
->
-> Farther down the road we might want a Kernel API, through to the DIMM-manager
-> when each device's ID is Identified to managed volumes of DIMMs. (And what
-> happens to them if they move in physical addressing), but even with DIMM-manager
-> I would have gone through a udev-event and pmem-probe because, this way user
-> mode can add a chain of commands associated with new insertions. So since we
-> have a DIMM-manager event going on why not have the udev rule load pmem as well
-> and not have any API. But All this is way down the line.
->
-> Regardless of which, commandline API of pmem will always stay as this is for
-> the pmem emulation as we use it now, in accord with memmap=.
-> (And it works very nice in our lab with DDR3 NvDIMMs that need an memmap= as well)
->
-> We please need to start somewhere, no?
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ arch/x86/include/asm/io.h   |    2 ++
+ arch/x86/mm/ioremap.c       |   24 ++++++++++++++++++++++++
+ include/asm-generic/io.h    |    4 ++++
+ include/asm-generic/iomap.h |    4 ++++
+ 4 files changed, 34 insertions(+)
 
-Sure, but you used the operative term "start", as in you already
-expect to enhance this capability down the road, right?
-
-It's fine to dismiss this request_firmware() based approach, but don't
-mis-characterize it in the process.  With regards to describing device
-boundaries, a bus-descriptor-blob handed to the kernel is a superset
-of the capability provided by the kernel command line.  It can be
-injected statically at compile time, or dynamically loaded from the
-initrd or the rootfs.  It has the added benefit of being flexible to
-change whereas the kernel command line is a more permanent contract
-that we will need to maintain compatibility with in perpetuity.
-
-If you already see this bus description as a "starting" point, then I
-think we need an interface that is more amenable to ongoing change,
-that's not the kernel-command-line.
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 71b9e65..c813c86 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -35,6 +35,7 @@
+   */
+ 
+ #define ARCH_HAS_IOREMAP_WC
++#define ARCH_HAS_IOREMAP_WT
+ 
+ #include <linux/string.h>
+ #include <linux/compiler.h>
+@@ -316,6 +317,7 @@ extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
+ extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ 				enum page_cache_mode pcm);
+ extern void __iomem *ioremap_wc(resource_size_t offset, unsigned long size);
++extern void __iomem *ioremap_wt(resource_size_t offset, unsigned long size);
+ 
+ extern bool is_early_ioremap_ptep(pte_t *ptep);
+ 
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 885fe44..952f4b4 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -155,6 +155,10 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		prot = __pgprot(pgprot_val(prot) |
+ 				cachemode2protval(_PAGE_CACHE_MODE_WC));
+ 		break;
++	case _PAGE_CACHE_MODE_WT:
++		prot = __pgprot(pgprot_val(prot) |
++				cachemode2protval(_PAGE_CACHE_MODE_WT));
++		break;
+ 	case _PAGE_CACHE_MODE_WB:
+ 		break;
+ 	}
+@@ -249,6 +253,26 @@ void __iomem *ioremap_wc(resource_size_t phys_addr, unsigned long size)
+ }
+ EXPORT_SYMBOL(ioremap_wc);
+ 
++/**
++ * ioremap_wt	-	map memory into CPU space write through
++ * @phys_addr:	bus address of the memory
++ * @size:	size of the resource to map
++ *
++ * This version of ioremap ensures that the memory is marked write through.
++ * Write through writes data into memory while keeping the cache up-to-date.
++ *
++ * Must be freed with iounmap.
++ */
++void __iomem *ioremap_wt(resource_size_t phys_addr, unsigned long size)
++{
++	if (pat_enabled)
++		return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WT,
++					__builtin_return_address(0));
++	else
++		return ioremap_nocache(phys_addr, size);
++}
++EXPORT_SYMBOL(ioremap_wt);
++
+ void __iomem *ioremap_cache(resource_size_t phys_addr, unsigned long size)
+ {
+ 	return __ioremap_caller(phys_addr, size, _PAGE_CACHE_MODE_WB,
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index 975e1cc..405d418 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -322,6 +322,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ioremap_wt
++#define ioremap_wt ioremap_nocache
++#endif
++
+ static inline void iounmap(void __iomem *addr)
+ {
+ }
+diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
+index 1b41011..d8f8622 100644
+--- a/include/asm-generic/iomap.h
++++ b/include/asm-generic/iomap.h
+@@ -66,6 +66,10 @@ extern void ioport_unmap(void __iomem *);
+ #define ioremap_wc ioremap_nocache
+ #endif
+ 
++#ifndef ARCH_HAS_IOREMAP_WT
++#define ioremap_wt ioremap_nocache
++#endif
++
+ #ifdef CONFIG_PCI
+ /* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
