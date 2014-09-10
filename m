@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaIJRvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:51:39 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36114 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750967AbaIJRvh (ORCPT
+	id S1752829AbaIJRwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:52:49 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:37264 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751304AbaIJRwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:51:37 -0400
-Date: Wed, 10 Sep 2014 18:51:26 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Rabin Vincent <rabin@rab.in>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
-Message-ID: <20140910175126.GJ1710@arm.com>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
- <1409781429-27593-4-git-send-email-keescook@chromium.org>
- <20140904170349.GL7156@arm.com>
- <CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
- <20140904172748.GO7156@arm.com>
- <20140908191634.GV5598@outflux.net>
- <20140908215506.GA4759@dator>
- <CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
- <20140909123829.GK1754@arm.com>
- <CAGXu5jJoW-B7WwuFUhbN4e1aL-HVxa9x4da9hB9DcCGEXVLgzw@mail.gmail.com>
+	Wed, 10 Sep 2014 13:52:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJoW-B7WwuFUhbN4e1aL-HVxa9x4da9hB9DcCGEXVLgzw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140910172710.GA3300@leverpostej>
+References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org>
+	<20140910172710.GA3300@leverpostej>
+Date: Wed, 10 Sep 2014 10:52:46 -0700
+X-Google-Sender-Auth: Ky5ti5z6-JHAFfRbI8M-MfsFNBc
+Message-ID: <CAD=FV=U4ar=jW273=0PMX1A_hTqxPAJ9avJuTD2N4RNa4a12xg@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+Mark,
 
-On Tue, Sep 09, 2014 at 03:33:11PM +0100, Kees Cook wrote:
-> On Tue, Sep 9, 2014 at 5:38 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > On Mon, Sep 08, 2014 at 11:40:43PM +0100, Kees Cook wrote:
-> >> Ah, so it was, yes! Will, which version of this logic would you prefer?
-> >
-> > I still don't think we're solving the general problem here -- we're actually
-> > just making the ftrace case work. It is perfectly possible for another CPU
-> > to undergo a TLB miss and refill whilst the page table is being modified by
-> > the CPU with preemption disabled. In this case, a local tlb flush won't
-> > invalidate that entry on the other core, and we have no way of knowing when
-> > the original permissions are actually observed across the system.
-> 
-> The fixmap is used by anything doing patching _except_ ftrace,
-> actually. It's used by jump labels, kprobes, and kgdb. This code is
-> the general case. Access to set_fixmap is done via the kernel patching
-> interface: patch_text().
-> 
-> Right now, the patch_text interface checks cache_ops_need_broadcast(),
-> and conditionally runs under stop_machine(). We could make this
-> unconditional, and we'll avoid any problem with TLB misses on another
-> CPU.
+On Wed, Sep 10, 2014 at 10:27 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Hi Sonny,
+>
+> On Wed, Aug 27, 2014 at 10:03:39PM +0100, Sonny Rao wrote:
+>> This is a bug fix for using physical arch timers when
+>> the arch_timer_use_virtual boolean is false.  It restores the
+>> arch_counter_get_cntpct() function after removal in
+>>
+>> 0d651e4e "clocksource: arch_timer: use virtual counters"
+>>
+>> and completes the implementation of memory mapped access for physical
+>> timers, so if a system is trying to use physical timers, it will
+>> function properly.
+>
+> To get back to the topic at hand:
+>
+> Which platform is this required by?
 
-Yes, it we always use stop_machine, that solves the TLB broadcast problem
-and we could do that if CONFIG_ARM_ERRATA_798181 is set.
+I've seen similar problems on the A7s on exynos5420 / exynos5800 and
+on rk3288.  I can't say what other platforms might be affected.  Note
+that the arch timers on exyno5420/exynos5800 are not supported anyway,
+so I guess that means we're just worrying about the rk3288.
 
-> > So I think we need to figure out a way to invalidate the TLB properly. What
-> > do architectures that use IPIs for TLB broadcasting do (x86, some powerpc,
-> > mips, ...)? They must have exactly the same problem.
-> 
-> I don't think this should be done at the set_fixmap level, as it is
-> more a primitive. I think making sure patch_text() always works would
-> be best. What do you think of using an unconditional stop_machine()
-> instead?
 
-Why not move the TLB invalidation into patch_text, then we can do
-stop_machine if IS_ENABLED(CONFIG_ARM_ERRATA_798181) ||
-tlb_ops_need_broadcast()?
+> Why exactly is arch_timer_use_virtual false in this case?
 
-Then that just leaves ftrace.
+To re-summarize my understanding of everything (many of the below is
+secondhand knowledge, so correct if wrong):
 
-Will
+1. The initial problem is that the virtual offset is not initialized
+by anyone and is per core (each core gets a different, random offset).
+That makes the virtual counter useless.  ...but the kernel only uses
+virtual counters.
+
+2. As far as I know, we don't have any particular need for HYP mode
+nor for limiting access to secure mode.
+
+3. You can only change the virtual offset from HYP mode.  That means
+someone needs to transition to HYP mode if we want to use virtual
+counters.
+
+4. If the kernel happens to be in HYP mode it will init the virtual offset.
+
+5. We could transition to HYP mode once in the firmware and boot the
+kernel like that, but since firmware is gone after we've booted the
+kernel, we run into the same problem when we power off a processor and
+when we resume from S3.  The firmware is not involved in these cases.
+In these cases the processors have an uninitialized virtual offset
+again.  These processors don't appear to magically come up in HYP
+mode.  Thus it would be up to the kernel to transition to HYP mode,
+init the offset, and get out of HYP mode.  ...or just use the physical
+counter.
+
+
+If you can suggest something that doesn't require us to involve the
+firmware in processor bringup and in resume, I'm all ears.  We have a
+desire not to involve the firmware there because of all the issues of
+keeping kernel/firmware in sync and because of the extra difficultly
+of shipping firmware updates (understandably the QA needed to validate
+a new firmware is much higher than the QA needed to validate a new
+kernel).
+
+
+-Doug
