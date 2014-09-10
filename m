@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607AbaIJUvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:51:41 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:56036 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaIJUvj (ORCPT
+	id S1753659AbaIJUvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:51:44 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:34401 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599AbaIJUvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:51:39 -0400
+	Wed, 10 Sep 2014 16:51:41 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: "David S. Miller" <davem@davemloft.net>
 Cc: Romain Perier <romain.perier@gmail.com>,
@@ -15,35 +15,76 @@ Cc: Romain Perier <romain.perier@gmail.com>,
         Jingoo Han <jg1.han@samsung.com>, Max Schwarz <max.schwarz@online.de>,
         Florian Fainelli <f.fainelli@gmail.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2 0/2] net: arc_emac: fix tx issues
-Date: Wed, 10 Sep 2014 22:50:01 +0200
-Message-Id: <1410382203-10395-1-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH v2 1/2] net: arc_emac: enable tx interrupts
+Date: Wed, 10 Sep 2014 22:50:02 +0200
+Message-Id: <1410382203-10395-2-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410382203-10395-1-git-send-email-b.galvani@gmail.com>
+References: <1410382203-10395-1-git-send-email-b.galvani@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In the current implementation the cleaning of tx ring is done by the
+NAPI poll handler, which is scheduled after rx interrupts. Thus, in
+absence of received packets the reclaim of used tx buffers is never
+executed, blocking further transmission.
 
-the patches below solve some issues found in the tx ring reclaim
-strategy currently implemented in the arc_emac driver.
+This can be easily reproduced starting the transmission of a UDP flow
+with iperf, which blocks almost immediately because skbs are not
+returned to the stack and the socket send buffer becomes full.
 
-Without these patches a simple outgoing UDP flow blocks almost
-immediately with the socket send buffer full, until some new rx
-packets trigger a clean of the tx ring.
+The patch enables tx interrupts so that the tx reclaim is scheduled
+after completed transmissions.
 
-Everything seems to work fine on a Radxa Rock with this fix applied.
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+---
+ drivers/net/ethernet/arc/emac_main.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Changes since v1:
- - reworded commit messages
-
-Beniamino Galvani (2):
-  net: arc_emac: enable tx interrupts
-  net: arc_emac: prevent reuse of unreclaimed tx descriptors
-
- drivers/net/ethernet/arc/emac_main.c | 53 +++++++++++++++++++++++++-----------
- 1 file changed, 37 insertions(+), 16 deletions(-)
-
+diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
+index dbea847..1d08f63 100644
+--- a/drivers/net/ethernet/arc/emac_main.c
++++ b/drivers/net/ethernet/arc/emac_main.c
+@@ -300,7 +300,7 @@ static int arc_emac_poll(struct napi_struct *napi, int budget)
+ 	work_done = arc_emac_rx(ndev, budget);
+ 	if (work_done < budget) {
+ 		napi_complete(napi);
+-		arc_reg_or(priv, R_ENABLE, RXINT_MASK);
++		arc_reg_or(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
+ 	}
+ 
+ 	return work_done;
+@@ -329,9 +329,9 @@ static irqreturn_t arc_emac_intr(int irq, void *dev_instance)
+ 	/* Reset all flags except "MDIO complete" */
+ 	arc_reg_set(priv, R_STATUS, status);
+ 
+-	if (status & RXINT_MASK) {
++	if (status & (RXINT_MASK | TXINT_MASK)) {
+ 		if (likely(napi_schedule_prep(&priv->napi))) {
+-			arc_reg_clr(priv, R_ENABLE, RXINT_MASK);
++			arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK);
+ 			__napi_schedule(&priv->napi);
+ 		}
+ 	}
+@@ -442,7 +442,7 @@ static int arc_emac_open(struct net_device *ndev)
+ 	arc_reg_set(priv, R_TX_RING, (unsigned int)priv->txbd_dma);
+ 
+ 	/* Enable interrupts */
+-	arc_reg_set(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
++	arc_reg_set(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
+ 
+ 	/* Set CONTROL */
+ 	arc_reg_set(priv, R_CTRL,
+@@ -513,7 +513,7 @@ static int arc_emac_stop(struct net_device *ndev)
+ 	netif_stop_queue(ndev);
+ 
+ 	/* Disable interrupts */
+-	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | ERR_MASK);
++	arc_reg_clr(priv, R_ENABLE, RXINT_MASK | TXINT_MASK | ERR_MASK);
+ 
+ 	/* Disable EMAC */
+ 	arc_reg_clr(priv, R_CTRL, EN_MASK);
 -- 
 1.9.1
 
