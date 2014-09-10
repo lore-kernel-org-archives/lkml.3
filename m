@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaIJH51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:57:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48927 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822AbaIJH50 (ORCPT
+	id S1751973AbaIJH6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:58:36 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60730 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaIJH6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:57:26 -0400
-Date: Wed, 10 Sep 2014 09:57:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
-Message-ID: <20140910075722.GL6758@twins.programming.kicks-ass.net>
-References: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0X5AUaifkWPNnJg2"
-Content-Disposition: inline
-In-Reply-To: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 10 Sep 2014 03:58:34 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-3c-541004a69937
+Message-id: <541004A5.50802@samsung.com>
+Date: Wed, 10 Sep 2014 09:58:29 +0200
+From: =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+MIME-version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, s.nawrocki@samsung.com,
+        mturquette@linaro.org, Chander Kashyap <k.chander@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: Re: [PATCH] clk: samsung: exynos5260: fix typo in clock name
+References: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
+In-reply-to: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7rLWARCDE4+srB4vGYxk8WqDUtY
+	LF6/MLToXXCVzWLT42usFpd3zWGzmHF+H5PF0wkX2SwWbf3CbnH4TTurxapdfxgduD12zrrL
+	7nHn2h42j81L6j36tqxi9Pi8SS6ANYrLJiU1J7MstUjfLoEro+33QZaCVq6KfyuXsjYwHuTo
+	YuTkkBAwkZg3fQ8LhC0mceHeerYuRi4OIYGljBLbz3xmh3A+M0ocffKKCaSKV0BD4vm+BWAd
+	LAKqEvNef2cEsdkEPCSmfe9hBrFFBcIknv06CFUvKPFj8j0WkEEiAtMYJS5eug02lVlgG6PE
+	9+1NQA4Hh7CAq8SGdVUgDUJAg7a1tbKB2JwCnhJvFk8AW8YsYCbx5eVhVghbXmLzmrfMExgF
+	ZiHZMQtJ2SwkZQsYmVcxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihETDlx2Mi49ZHWIU4GBU
+	4uEtvMgfIsSaWFZcmXuIUYKDWUmEd9YroBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGTc++/Yj1
+	SrqsOSNtE+Mql6wZT0uyizd6nJwyf/HKde3s2088+b33afrmeC83lsfCn45Pred9Ly+loqlt
+	s92BxbZm3/23v4Ju5T3Pbn6dKH236YvEgU27WsX02PYxrfrwtfxEza/VZxbVy66YsjBkAcud
+	QPtdpj/NBRQe3CwJkY3h4njTMWfTGiWW4oxEQy3mouJEAHnpExVkAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---0X5AUaifkWPNnJg2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Sep 09, 2014 at 05:03:21PM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
->=20
-> On my workstation the order 4 BTS buffer allocation fails regularly
-> after the system has been up for some time due to memory
-> fragmentation.
->=20
-> BTS is virtual memory, so we can just fall back to vmalloc
-> instead of failing.
->=20
-> Do this here.
->=20
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+On 10.09.2014 07:56, Pankaj Dubey wrote:
+> From: Chander Kashyap <k.chander@samsung.com>
+>
+> The parent name added in parent list as
+> mout_phyclk_mipi_dphy_4l_m_txbyte_clkhs_p, is different
+> than the defined parent due to typo.
+>
+> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
 > ---
->  arch/x86/kernel/cpu/perf_event_intel_ds.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
->=20
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/=
-cpu/perf_event_intel_ds.c
-> index 9dc4199..3cf5b74 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-> @@ -312,8 +312,11 @@ static int alloc_bts_buffer(int cpu)
-> =20
->  	buffer =3D kzalloc_node(BTS_BUFFER_SIZE, GFP_KERNEL | __GFP_NOWARN, nod=
-e);
->  	if (unlikely(!buffer)) {
-> -		WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
-> -		return -ENOMEM;
-> +		buffer =3D vmalloc_node(BTS_BUFFER_SIZE, node);
-> +		if (!buffer) {
-> +			WARN_ONCE(1, "%s: BTS buffer allocation failure\n", __func__);
-> +			return -ENOMEM;
-> +		}
->  	}
-> =20
->  	max =3D BTS_BUFFER_SIZE / BTS_RECORD_SIZE;
+>   drivers/clk/samsung/clk-exynos5260.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 
-We did this once, and that blew up big time.
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Even now, vmalloc_fault() has a very explicit:
+Best regards,
+Krzysztof
 
-  WARN_ON_ONCE(in_nmi());
+>
+> diff --git a/drivers/clk/samsung/clk-exynos5260.c b/drivers/clk/samsung/clk-exynos5260.c
+> index 64596ba..4db4e8d 100644
+> --- a/drivers/clk/samsung/clk-exynos5260.c
+> +++ b/drivers/clk/samsung/clk-exynos5260.c
+> @@ -1579,7 +1579,7 @@ struct samsung_fixed_rate_clock fixed_rate_clks[] __initdata = {
+>   	FRATE(PHYCLK_HDMI_LINK_O_TMDS_CLKHI, "phyclk_hdmi_link_o_tmds_clkhi",
+>   			NULL, CLK_IS_ROOT, 125000000),
+>   	FRATE(PHYCLK_MIPI_DPHY_4L_M_TXBYTECLKHS,
+> -			"phyclk_mipi_dphy_4l_m_txbyteclkhs" , NULL,
+> +			"phyclk_mipi_dphy_4l_m_txbyte_clkhs" , NULL,
+>   			CLK_IS_ROOT, 187500000),
+>   	FRATE(PHYCLK_DPTX_PHY_O_REF_CLK_24M, "phyclk_dptx_phy_o_ref_clk_24m",
+>   			NULL, CLK_IS_ROOT, 24000000),
+>
 
-So this isn't going to happen until you fix that.
-
---0X5AUaifkWPNnJg2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEARiAAoJEHZH4aRLwOS6EL8QALY9KdPus+bauP5b6sHjD3iV
-TM47juZiYGFuyVuntCSVmxBEbcFrxqfF4F8QspohoFDzyRHHy0lnqcVRF5jVPXDd
-2uuThodmJNZM355h8J/pvuPx0u/aweNO/wJLPqfClJOamvhxmA8wOZ+ndv9dmMxf
-F45c5DRuiEJi18sp8UI0DeaCQwQFCuS33MMIFuqYKU0Ircm1MD45TCmmhQJ3tHjp
-oK2I+4VZUyhBm+J3zAMBtPjTVN7zV7kCs3+2OLxdzstZsRdYzZxtGZel22GD2EYe
-yCgOBPyXmIp6mjoAdXOPvFirOxc5cTfLu/O9FUO3laKkyEN3b0eXA+eEYZS/rEu5
-11M7zsKRlyFpgaZ5zce79CxJpzubqyfI28qYbQv3Pc+ixtUVy/WxfmaQd0fPV/Rc
-LMTFuS+RJK6MpXjU4nT62MoG4LiW8Fw5lwginFOMdWkiXi1KQdoV12Fgiklncc9L
-jmAkoz0t8fxZ6qzr8WwLxDHZ2FFWeW4xL0lFL6K03S21xGj8N/RTkc2hK0rdrTas
-fUzLm4Z4G5jAxYk+1bOBMXPDOnApdiW8RBpiEKdjy7UHx6JYTZtX5HbjOy9oxtCI
-mlE/UMHL05cndiL7NB/qH7G8QEaqhTkhMNHm/KFsxLVcGYPGKszYdbt/C1wg8/UL
-KKbmgcHCspQdxFV/sEL4
-=JIOI
------END PGP SIGNATURE-----
-
---0X5AUaifkWPNnJg2--
