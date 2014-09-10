@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaIJIKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:10:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36579 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaIJIKJ (ORCPT
+	id S1751653AbaIJIMO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:12:14 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:46354 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaIJIMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:10:09 -0400
-Date: Wed, 10 Sep 2014 10:10:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Chintan Pandya <cpandya@codeaurora.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers for
- scanner thread
-Message-ID: <20140910081000.GN6758@twins.programming.kicks-ass.net>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
- <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
- <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
- <20140903095815.GK4783@worktop.ger.corp.intel.com>
- <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
- <20140908093949.GZ6758@twins.programming.kicks-ass.net>
- <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
+	Wed, 10 Sep 2014 04:12:09 -0400
+Date: Wed, 10 Sep 2014 09:12:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH v2 1/4] mfd/axp20x: rename files to support more devices
+Message-ID: <20140910081201.GK30307@lee--X1>
+References: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410267775-4683-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xwQtY96q3287+Drf"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410267775-4683-2-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 09 Sep 2014, Jacob Pan wrote:
 
---xwQtY96q3287+Drf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> More XPowers PMIC devices can be supported by extending this driver, so
+> rename it to axp2xx to cover axp288 variant.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  drivers/mfd/Kconfig                      | 7 ++++---
+>  drivers/mfd/Makefile                     | 2 +-
+>  drivers/mfd/{axp20x.c => axp2xx.c}       | 2 +-
+>  include/linux/mfd/{axp20x.h => axp2xx.h} | 0
+>  4 files changed, 6 insertions(+), 5 deletions(-)
+>  rename drivers/mfd/{axp20x.c => axp2xx.c} (99%)
+>  rename include/linux/mfd/{axp20x.h => axp2xx.h} (100%)
 
-On Tue, Sep 09, 2014 at 01:14:50PM -0700, Hugh Dickins wrote:
-> On Mon, 8 Sep 2014, Peter Zijlstra wrote:
-> > >  		switch_mm(oldmm, mm, next);
-> > > +		wake_ksm =3D ksm_switch(mm);
-> >=20
-> > Is this the right mm?
->=20
-> It's next->mm, that's the one I intended (though the patch might
-> be equally workable using prev->mm instead: given free rein, I'd
-> have opted for hooking into both prev and next, but free rein is
-> definitely not what should be granted around here!).
->=20
-> > We've just switched the stack,
->=20
-> I thought that came in switch_to() a few lines further down,
-> but don't think it matters for this.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Ah, yes. Got my task and mm separation messed up.
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index de5abf2..42a70a3 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -67,14 +67,15 @@ config MFD_BCM590XX
+>  	help
+>  	  Support for the BCM590xx PMUs from Broadcom
+>  
+> -config MFD_AXP20X
+> -	bool "X-Powers AXP20X"
+> +config MFD_AXP2XX
+> +	bool "X-Powers AXP2XX"
+>  	select MFD_CORE
+>  	select REGMAP_I2C
+>  	select REGMAP_IRQ
+>  	depends on I2C=y
+>  	help
+> -	  If you say Y here you get support for the X-Powers AXP202 and AXP209.
+> +	  If you say Y here you get support for the X-Powers AXP202, AXP209 and
+> +	  AXP288 power management IC (PMIC).
+>  	  This driver include only the core APIs. You have to select individual
+>  	  components like regulators or the PEK (Power Enable Key) under the
+>  	  corresponding menus.
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index f001487..55d76b3 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -103,7 +103,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-irq.o
+>  obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+>  obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+>  obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+> -obj-$(CONFIG_MFD_AXP20X)	+= axp20x.o
+> +obj-$(CONFIG_MFD_AXP2XX)	+= axp2xx.o
+>  
+>  obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+>  obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp2xx.c
+> similarity index 99%
+> rename from drivers/mfd/axp20x.c
+> rename to drivers/mfd/axp2xx.c
+> index dee6539..c534443 100644
+> --- a/drivers/mfd/axp20x.c
+> +++ b/drivers/mfd/axp2xx.c
+> @@ -21,7 +21,7 @@
+>  #include <linux/regmap.h>
+>  #include <linux/slab.h>
+>  #include <linux/regulator/consumer.h>
+> -#include <linux/mfd/axp20x.h>
+> +#include <linux/mfd/axp2xx.h>
+>  #include <linux/mfd/core.h>
+>  #include <linux/of_device.h>
+>  #include <linux/of_irq.h>
+> diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp2xx.h
+> similarity index 100%
+> rename from include/linux/mfd/axp20x.h
+> rename to include/linux/mfd/axp2xx.h
 
-> > so we're looing at next->mm when we switched away from current.
-> > That might not exist anymore.
->=20
-> I fail to see how that can be.  Looking at the x86 switch_mm(),
-> I can see it referencing (unsurprisingly!) both old and new mms
-> at this point, and no reference to an mm is dropped before the
-> ksm_switch().  oldmm (there called mm) is mmdropped later in
-> finish_task_switch().
-
-Well, see the above confusion about switch_mm vs switch_to :-/
-
-So if this were switch_to(), we'd see next->mm as before the last
-context switch. And since that switch fully happened, it would also
-already have done the finish_task_switch() -> mmdrop().
-
-
-
---xwQtY96q3287+Drf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEAdYAAoJEHZH4aRLwOS6A1cQAI8Vb0oUNxiFZOGEypnIBrOe
-TsRhja+rHPMGJGufjUHB7KM8PPCoQv9h+lsPbVhtHo+S6JQnKS6AFUTgZomuOJrD
-9cJOoTOh0fItLH0YsG9lshJngHA7YqszpqcVGhWfu9rWuWWHry1S0NvmW2Eyfg1W
-nkGR742Y0T+JFqA0HiNP3/GO+G/EwMX+uW/2bf08igecE9jg0IoiHkA1hai1J1dz
-IGdTBn2dkbSX6ibthhvmtGr0oBwKU/64xO6H4OXhXVim3IeSxNbBBsVIhasvTeSp
-/Fxy2ptubQsXEuZ8g8R0XX+NXZ6LqycIWteO3qfGyTvttfNN7V0Z3AFxJfno1TZg
-qRq/FPNEr55kSK7yaRfoX19kkEbqgC2fO0248fMqc3vmiL+UjFtr7wZUA4NXXsDB
-pnJ9ESx7LqgVf0AqaoEjZOL3D+W0iQ2JYi5M7yfNaQRmXA9dlqZc/SeAH0dA4WPZ
-pbo415GzR5BDrVZ58H96yw+PUcyMbxJoSD6mR21HUnrjKVsHaqHxk/CV6lKOyItp
-k//n4z4HKI2aiBGiqhTCFdYi6XP2waF9C9ASeFWU5u2aDGtcUDtm8rUdWzvXHn7t
-v9G0iBg5eiGNwPmJ3CgNOO2VUffBsKCoy9Jq/Pp25phIfi74jmtus0t6mHW8snbk
-vdr2QsOjO08nStVEEXY8
-=nrfj
------END PGP SIGNATURE-----
-
---xwQtY96q3287+Drf--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
