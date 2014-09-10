@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaIJLc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:32:26 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35425 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaIJLbq (ORCPT
+	id S1752282AbaIJLdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:33:10 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:54796 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747AbaIJLdH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:31:46 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        afaerber@suse.de, Nick Dyer <nick.dyer@itdev.co.uk>,
-        Yufeng Shen <miletus@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v4 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
-Date: Wed, 10 Sep 2014 13:31:29 +0200
-Message-Id: <1410348691-18317-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410348691-18317-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1410348691-18317-1-git-send-email-javier.martinez@collabora.co.uk>
+	Wed, 10 Sep 2014 07:33:07 -0400
+Message-ID: <541036F0.2030001@mojatatu.com>
+Date: Wed, 10 Sep 2014 07:33:04 -0400
+From: Jamal Hadi Salim <jhs@mojatatu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com,
+        Benjamin LaHaise <bcrl@kvack.org>,
+        shrijeet Mukherjee <shm@cumulusnetworks.com>
+Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net> <53F79DC5.8030003@ti.com> <540DC00F.1080103@ti.com> <540EE809.9020901@mojatatu.com> <540F1A9A.1020309@ti.com>
+In-Reply-To: <540F1A9A.1020309@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+On 09/09/14 11:19, Santosh Shilimkar wrote:
 
-The Peach Pit board has an Atmel maXTouch trackpad device.
-Add the needed Device Tree nodes to support it.
+> All the documentation is open including packet accelerator offload
+> in ti.com.
 
-This Device Tree change is based on the Chrome OS 3.8 tree
-but adapted to use the mainline Atmel maXTouch DT binding.
+Very nice.
+Would you do me a kindness and point to the switch interface
+documentation (and other ones on that soc)?
 
-Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
+> We got such requests from customers but couldn't
+> support it for Linux.
 
-Changes since v3:
- - Use KEY_RESERVED even for not reserved pins with a GPIO not hooked.
-   Suggested by Nick Dyer.
- - Add a comment to specify the maXTouch chip version so is more clear.
-   Suggested by Nick Dyer.
- - Omit trailing omit KEY_RESERVED after the GPIO pins. Suggested by Nick Dyer.
+It has been difficult because every chip vendor is trying
+to do their own thing. Some have huge (fugly) SDKs in user space
+which make it worse. Thats the struggle we are trying to
+deal with. Of course none of those vendors want to open
+up their specs. You present a nice opportunity to not follow
+that path.
 
-Changes since v2:
- - Add spaces around '=' on properties. Suggested by Andreas Faerber.
+> We are also looking for such
+> support and any direction are welcome. Your slide
+> deck seems to capture the key topics like L2/IPSEC
+> offload which we are also interested to hear.
+>
 
-Changes since v1:
- - Change trackpad IRQ pad function from 0x0 (GPIO input) to 0xf (GPIO IRQ).
-   suggested by Tomasz Figa.
- - Remove BTN_TOOL_* from "linux,gpio-keymap" property since those are set
-   by input mt core if INPUT_MT_POINTER is set. Suggested by Nick Dyer.
- - Use correct values for "linux,gpio-keymap" property. Suggested by Nick Dyer.
- - Remove support for Peach Pi board since it uses a different Atmel touchpad
-   that requires an Atmel object protocol  (T100) not supported by the driver.
- - Use IRQ type constants from <dt-bindings/interrupt-controller/irq.h> instead
-   of magic numbers. Suggested by Andreas Faerber.
+The slides list the most popular offloads. But not necessarily
+all known offloads.
 
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+> Just to be clear, your point was about L2 switch offload
+> which the driver don't support at the moment. It might confuse
+> others. The driver doesn't implements anything non-standard.
+>
 
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index f247709..ad56d4c 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -507,6 +507,28 @@
- 	};
- };
- 
-+&hsi2c_8 {
-+	status = "okay";
-+	clock-frequency = <333000>;
-+
-+	/* Atmel mXT336S */
-+	trackpad@4b {
-+		compatible = "atmel,maxtouch";
-+		reg = <0x4b>;
-+		interrupt-parent = <&gpx1>;
-+		interrupts = <1 IRQ_TYPE_EDGE_FALLING>;
-+		wakeup-source;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&trackpad_irq>;
-+		linux,gpio-keymap = <KEY_RESERVED
-+				     KEY_RESERVED
-+				     KEY_RESERVED	/* GPIO0 */
-+				     KEY_RESERVED	/* GPIO1 */
-+				     KEY_RESERVED	/* GPIO2 */
-+				     BTN_LEFT>; 	/* GPIO3 */
-+	};
-+};
-+
- &hsi2c_9 {
- 	status = "okay";
- 	clock-frequency = <400000>;
-@@ -591,6 +613,13 @@
- 		samsung,pin-drv = <0>;
- 	};
- 
-+	trackpad_irq: trackpad-irq {
-+		samsung,pins = "gpx1-1";
-+		samsung,pin-function = <0xf>;
-+		samsung,pin-pud = <0>;
-+		samsung,pin-drv = <0>;
-+	};
-+
- 	power_key_irq: power-key-irq {
- 		samsung,pins = "gpx1-2";
- 		samsung,pin-function = <0>;
--- 
-2.1.0
+If i understood you correctly:
+Your initial patches dont intend to expose any offloads - you are just
+abstracting this as a NIC. I think that is a legit reason.
+However, the problem is you are also exposing the packet processors
+and switch offloading in a proprietary way.
+For a sample of how L2 basic functions like FDB tables are controlled
+within a NIC - take a look at the Intel NICs.
+Either that or you hide all the offload interfaces and over time add
+them (starting with L2 - NICs with L2 are common).
 
+cheers,
+jamal
