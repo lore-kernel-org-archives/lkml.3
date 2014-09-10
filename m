@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaIJFPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:15:35 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:53478 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaIJFKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:10:33 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v11 net-next 02/12] bpf: enable bpf syscall on x64 and i386
-Date: Tue,  9 Sep 2014 22:09:58 -0700
-Message-Id: <1410325808-3657-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	id S1752288AbaIJFQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:16:01 -0400
+Received: from omr1.cc.vt.edu ([198.82.141.52]:55758 "EHLO omr1.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771AbaIJFP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 01:15:59 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+In-Reply-To: Your message of "Tue, 09 Sep 2014 16:21:14 -0700."
+             <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+            <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1410326115_3387P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 10 Sep 2014 01:15:15 -0400
+Message-ID: <113623.1410326115@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-done as separate commit to ease conflict resolution
+--==_Exmh_1410326115_3387P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- arch/x86/syscalls/syscall_32.tbl  |    1 +
- arch/x86/syscalls/syscall_64.tbl  |    1 +
- include/linux/syscalls.h          |    3 ++-
- include/uapi/asm-generic/unistd.h |    4 +++-
- kernel/sys_ni.c                   |    3 +++
- 5 files changed, 10 insertions(+), 2 deletions(-)
+On Tue, 09 Sep 2014 16:21:14 -0700, Andrew Morton said:
+> On Tue, 9 Sep 2014 23:25:28 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wrote:
+> kfree() is quite a hot path to which this will add overhead.  And we
+> have (as far as we know) no code which will actually use this at
+> present.
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index 028b78168d85..9fe1b5d002f0 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -363,3 +363,4 @@
- 354	i386	seccomp			sys_seccomp
- 355	i386	getrandom		sys_getrandom
- 356	i386	memfd_create		sys_memfd_create
-+357	i386	bpf			sys_bpf
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 35dd922727b9..281150b539a2 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -327,6 +327,7 @@
- 318	common	getrandom		sys_getrandom
- 319	common	memfd_create		sys_memfd_create
- 320	common	kexec_file_load		sys_kexec_file_load
-+321	common	bpf			sys_bpf
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 0f86d85a9ce4..bda9b81357cc 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -65,6 +65,7 @@ struct old_linux_dirent;
- struct perf_event_attr;
- struct file_handle;
- struct sigaltstack;
-+union bpf_attr;
- 
- #include <linux/types.h>
- #include <linux/aio_abi.h>
-@@ -875,5 +876,5 @@ asmlinkage long sys_seccomp(unsigned int op, unsigned int flags,
- 			    const char __user *uargs);
- asmlinkage long sys_getrandom(char __user *buf, size_t count,
- 			      unsigned int flags);
--
-+asmlinkage long sys_bpf(int cmd, union bpf_attr *attr, unsigned int size);
- #endif
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 11d11bc5c78f..22749c134117 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -705,9 +705,11 @@ __SYSCALL(__NR_seccomp, sys_seccomp)
- __SYSCALL(__NR_getrandom, sys_getrandom)
- #define __NR_memfd_create 279
- __SYSCALL(__NR_memfd_create, sys_memfd_create)
-+#define __NR_bpf 280
-+__SYSCALL(__NR_bpf, sys_bpf)
- 
- #undef __NR_syscalls
--#define __NR_syscalls 280
-+#define __NR_syscalls 281
- 
- /*
-  * All syscalls below here should go away really,
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 391d4ddb6f4b..b4b5083f5f5e 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -218,3 +218,6 @@ cond_syscall(sys_kcmp);
- 
- /* operate on Secure Computing state */
- cond_syscall(sys_seccomp);
-+
-+/* access BPF programs and maps */
-+cond_syscall(sys_bpf);
--- 
-1.7.9.5
+We already do a check for ZERO_SIZE_PTR, and given that dereferencing *that* is
+instant death for the kernel, and we see it very rarely, I'm going to guess
+that IS_ERR(ptr) *has* to be true more often than ZERO_SIZE_PTR, and thus even
+more advantageous to short-circuit.
 
+I guess it depends on a few things:
+
+1) How many instances of 'if (!IS_ERR(foo)) kfree(foo);' are in the tree, and
+what percent of kfree() calls executed have the guard on them
+
+2) How many of the hot calls can/will get the guard removed.
+
+3) How many cycles, if any, this adds to the path (a non-trivial question on
+superscalar architectures), compared with doing a test before calling kfree()
+
+I unfortunately have no earthly clue what the values of any of those
+three quantities are....
+
+--==_Exmh_1410326115_3387P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVA/eYwdmEQWDXROgAQI27BAAmq1hlX5b1qxcWw29qC2wbcb91IwJny0A
+ZkrGnbufyOazPnEWQED1ZG0k/9borujJ7UYanehZNCOf7IpNXEtE8cn9TYpQVThC
+bwO6rIKrWBy+Iq6kxTKVDZlMGPNBEJMhbvvJIZFJ7+eOd50E/oEgskTWzFxx+cKY
+K7neMsDP5oaE1BvLGl6JMrzgBLhTXTbvDeHM2GIeRmkUMNyvJCK/evx1O7HSdzmw
+6KR/hT0KKd4ydZ068LbFPv+0vy0PI7vfTyZ61Jt1lewPBidzobVmVuXy1tWwuP7T
+IgDNuR+97QlDcm79H1aQ6crAiU6wmsZ16CAYZn/prA/35pQ3wX1Z7/+kY6QTBIAc
+fkl1f7DK+VQ88KkHqHNFfMAJV0/+WO17pR33Wkll/dlTzD1+3rXJmpqyjrim9wvI
+afGRhzEMI6HcDBppzw8IjG2oN1xjmy+6lIujY1WZFRRb1UKeQsF5SaQ6YJuZ4oDv
+l3yTWnikP3kQuT3P+PLWl8kcQhS5sYvtws+aXbLU79pt9DOgxrsWGRynkTbVSvV6
+RWB/SpAkSqSRr5nWDSccr+yDBeViQs/VwlClh6neL2AzBhyZKjuVXlMEenItYDbn
+OAHRX8BO4wQIZQTHgyfIUMC7pRiP1QBvbIuh99eKiMLdBZDZMUWgsD2g/tplKAK4
+8Ppt1IKac34=
+=ACPN
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1410326115_3387P--
