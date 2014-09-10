@@ -1,184 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaIJMeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:34:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58332 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaIJMd6 convert rfc822-to-8bit (ORCPT
+	id S1751487AbaIJMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:34:09 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:37312 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaIJMeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:33:58 -0400
-Date: Wed, 10 Sep 2014 13:33:52 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <guohanjun@huawei.com>
-Cc: "jcm@redhat.com" <jcm@redhat.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+	Wed, 10 Sep 2014 08:34:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <540F0381.7010500@ti.com>
+References: <1406313096-29761-1-git-send-email-grygorii.strashko@ti.com>
+	<7hr3zln692.fsf@linaro.org>
+	<540F0381.7010500@ti.com>
+Date: Wed, 10 Sep 2014 14:34:02 +0200
+X-Google-Sender-Auth: Q4KbDUOUj8hMKZOG8RlUZ40dBlE
+Message-ID: <CAMuHMdXRx6QUs2zhsXXz6aia0=v521+_B4NR61JVv61aWnwyPw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] PM / clock_ops: allow to specify custom
+ pm_clk_notifier callback
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time tables
-Message-ID: <20140910123352.GA31237@localhost>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
- <20140909162648.GE2910@arm.com>
- <540F2DCF.1010104@redhat.com>
- <20140909171541.GD3896@leverpostej>
- <20140909175010.GF4948@e102568-lin.cambridge.arm.com>
- <540F4155.4090200@arm.com>
- <540F4FCF.1090508@redhat.com>
- <5410326F.8080104@huawei.com>
-MIME-Version: 1.0
-In-Reply-To: <5410326F.8080104@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 10 Sep 2014 12:33:54.0530 (UTC) FILETIME=[7BED4420:01CFCCF3]
-X-MC-Unique: 114091013335605501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 12:13:51PM +0100, Hanjun Guo wrote:
-> On 2014/9/10 3:06, Jon Masters wrote:
-> > On 09/09/2014 02:05 PM, Sudeep Holla wrote:
-> >> On 09/09/14 18:50, Lorenzo Pieralisi wrote:
-> >>> On Tue, Sep 09, 2014 at 06:15:41PM +0100, Mark Rutland wrote:
-> >>>> On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
-> >>>>> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
-> >>>>>> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
-> >>>>>>> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
-> >>>>>>> new file mode 100644
-> >>>>>>> index 0000000..3899ee6
-> >>>>>>> --- /dev/null
-> >>>>>>> +++ b/arch/arm64/include/asm/acenv.h
-> >>>>>>> @@ -0,0 +1,18 @@
-> >>>>>>> +/*
-> >>>>>>> + * ARM64 specific ACPICA environments and implementation
-> >>>>>>> + *
-> >>>>>>> + * Copyright (C) 2014, Linaro Ltd.
-> >>>>>>> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
-> >>>>>>> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
-> >>>>>>> + *
-> >>>>>>> + * This program is free software; you can redistribute it and/or modify
-> >>>>>>> + * it under the terms of the GNU General Public License version 2 as
-> >>>>>>> + * published by the Free Software Foundation.
-> >>>>>>> + */
-> >>>>>>> +
-> >>>>>>> +#ifndef _ASM_ACENV_H
-> >>>>>>> +#define _ASM_ACENV_H
-> >>>>>>> +
-> >>>>>>> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
-> >>>>>>
-> >>>>>> Does this mean that it will be supported at some point? Looking at the
-> >>>>>> places where this function is called, I don't really see how this would
-> >>>>>> ever work on ARM. Which means that we add such macro just to be able to
-> >>>>>> compile code that would never be used on arm64. I would rather see the
-> >>>>>> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
-> >>>>>
-> >>>>> That specific cache behavior is a part of e.g. ACPI C3 state support
-> >>>>> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
-> >>>>
-> >>>> Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
-> >>>> we don't get S1, S2, or S3 states either.
-> >>>>
-> >>>>> As you note, it's not going to work on 64-bit ARM as it does on x86,
-> >>>>> but it's optional to implement C3 and early 64-bit ARM systems should
-> >>>>> not report Wbindv flags in the FADT anyway.
-> >>>>
-> >>>> Unless the arm cache architecture changes, I wouldn't expect any 64-bit
-> >>>> ARM system to set either of the WBINVD flags.
-> >>>>
-> >>>>> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
-> >>>>> disabling C3 support, while also allowing for use of _CST objects to
-> >>>>> define more flexible C-States later on.
-> >>>>
-> >>>> It sounds like we should be sanity checking these in the arm64 ACPI code
-> >>>> for the moment. I don't want us to discover that current platforms
-> >>>> report the wrong thing only when new platforms come out that might
-> >>>> actually report things correctly.
-> >>>
-> >>> I think that the kernel must ignore most of the stuff mentioned above
-> >>> in HW_REDUCED_ACPI mode. And to be frank I still think that the problem
-> >>> is not even there. The problem is trying to compile code that basically
-> >>> has no defined behaviour - ie it is unspecified - on ARM64, that's what
-> >>> Catalin pointed out.
-> >>>
-> >>> I understand it is compiled in by default on x86, but that's not a reason
-> >>> why we should add empty hooks all over the place to compile code that
-> >>> does not stand a chance to be doing anything sensible apart from
-> >>> returning an error code, in the best case scenario.
-> >>>
-> >>
-> >> I had pointed out this earlier, even if we make it compile there's
-> >> every possibility that it can blow up if some vendor adds S- states
-> >> to their ACPI tables. One clear reason why it could blow up is:
-> >>
-> >> "
-> >>       /* This violates the spec but is required for bug compatibility. */
-> >>       acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
-> >> "
-> >>
-> >> I don't think this can ever work on ARM platforms. So better to fix it
-> >> properly.
+Hi Grygorii,
 
-Agree.
+On Tue, Sep 9, 2014 at 3:41 PM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+>>> Also, It updates Keystone 2 platform code to provide custom
+>>> callback which fills list of clocks for Device with all clocks assigned to this
+>>> Device in DT.
+>>> More over, It's safe for Keystone 2 to perform CLK PM domain initialization
+>>> at device's binding time instead of device's creation time.
+>>>
+>>> I've posted these patches because I need fully enable Runtime PM on Keystone 2
+>>> where all HW modules are controlled using clocks only. That's why CLK PM domain
+>>> fits our needs perfectly.
+>>
+>> Heh, doesn't seem like a perfect fit to me ;)
+>>
+>>> Also, on Keystone 2 clocks are initialized early and
+>>> they are available at device creation time. The main problems from my side are:
+>>>   - every time when support for new HW modules is added the ".con_ids" array
+>>>     need to be checked and updated;
+>>>   - restriction for clock's names in DT - to be named using only above con_ids
+>>>     It's ugly.
+>>>
+>>> I hope, this approach to be accepted at least as temporal solution until
+>>> the generic solution is not found.
+>>
+>> Sorry if I missed it, but is there ongoing discussion of a more generic
+>> solution other than this one:
+>
+> Yep. :( But It's ongoing more than 2 months already and seems there is no
+> light at the end of tunnel.
+>
+>>
+>>> [1] Previously, same problem was discussed in, but no final solution was accepted:
+>>>   "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+>>>   https://lkml.org/lkml/2014/4/24/1118
+>>
+>> Personally, I still like Geert's approach better.
+>>
+>
+> Unfortunately, Geert is not going to continue working on it (as I know).
 
-> > How do you want to proceed? I'm not sure it should be !HW_REDUCED_MODE
-> > for the cache behavior, because an embedded x86 box would still probably
-> > define those, but removing the hooks on ARM may make sense.
-> 
-> As Graeme said in the reply, for sleep we are doing the same thing as
-> ia64 in stubbing out the functions,
+For the record, I had postponed working on it, as we had an interim solution for
+multiplatform shmobile being broken in mainline (drivers/sh/pm_runtime.c).
 
-Sorry, that's not really an argument.
+Currently I'm tackling "real" power domains. As this is incompatible with
+the above hack (you can attach only one power domain to a device, as Ulf
+had pointed out before --- Hm, why is the DT property called "power-domains"
+(plural) then?), I'll have to revisit anyway, and get back to it.
+Furthermore, not all shmobile SoCs have such fine-grained power domains
+as sh7372/sh73a0/r8a7740/r8a73a4, so we still need something better there.
 
-> and before that we are trying to remove
-> the hooks on ARM by introducing more stubs and making things more complicated.
+Gr{oetje,eeting}s,
 
-I still think you can make things simpler by not compiling the code
-in question because we'll never implement such hooks on arm64, they
-don't make sense from an architecture perspective (whole cache flushing
-with MMU enabled cannot be done).
+                        Geert
 
-> I agree that we should rework the ACPI core to make sleep/cache related
-> stuff compatible with ARM, but I think we may not do this in one go, it will
-> need incremental changes over the next couple of years as real hardware
-> starts to appear and we finalise the standards to support this.
-> 
-> Now, as we list in the arm-acpi.txt doc, power management of sleep states
-> and CPU power/frequency control are not well defined in ACPI spec for ARM,
-> we need some time to finalize the standard and then we know how to implement
-> that in a good shape.
-> 
-> ACPI 5.1 already fixed lots missing features for ARM64 and provide the
-> fundamental needs to bring up the basic system for ARM server, power
-> management is not critical at now, so why not fix/implement it later?
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-I don't have a problem with implementing (rather than fixing) power
-management later, once the ACPI spec covers it. But the point a few of
-us were trying to make is that even when ACPI spec is updated, the
-current power management code and hooks still won't make sense on ARM.
-The best is to avoid compiling it for ARM now and look at refactoring it
-later to accommodate ARM ACPI.
-
--- 
-Catalin
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
