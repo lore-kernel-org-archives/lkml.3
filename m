@@ -1,113 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaIJOK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:10:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38766 "EHLO mail.kernel.org"
+	id S1752516AbaIJOLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:11:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28748 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410AbaIJOKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:10:55 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 14/14] perf evlist: Unmap ring buffer when fd is nuked
-Date: Wed, 10 Sep 2014 11:08:49 -0300
-Message-Id: <1410358129-9965-15-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410358129-9965-1-git-send-email-acme@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+	id S1751535AbaIJOL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:11:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
+   d="scan'208";a="589215300"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl, eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
+        acme@kernel.org, ak@linux.intel.com, kan.liang@intel.com,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH V5 13/16] perf, x86: re-organize code that implicitly enables LBR/PEBS
+Date: Wed, 10 Sep 2014 10:09:10 -0400
+Message-Id: <1410358153-421-14-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410358153-421-1-git-send-email-kan.liang@intel.com>
+References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Kan Liang <kan.liang@intel.com>
 
-As noticed by receiving a POLLHUP for its pollfd entry.
+make later patch more readable, no logic change.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-4p3ledwt3ra9ak8e5yu3y928@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- tools/perf/util/evlist.c | 29 ++++++++++++++++++++++++++---
- 1 file changed, 26 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 59 ++++++++++++++++++++--------------------
+ 1 file changed, 29 insertions(+), 30 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 6d2499cfd789..fdb755f6e299 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -25,6 +25,8 @@
- #include <linux/bitops.h>
- #include <linux/hash.h>
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 0a71f04..418e953 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -393,36 +393,35 @@ int x86_pmu_hw_config(struct perf_event *event)
  
-+static void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx);
-+
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define SID(e, x, y) xyarray__entry(e->sample_id, x, y)
- 
-@@ -424,14 +426,35 @@ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+static int __perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd, int idx)
-+{
-+	int pos = fdarray__add(&evlist->pollfd, fd, POLLIN | POLLERR | POLLHUP);
+ 		if (event->attr.precise_ip > precise)
+ 			return -EOPNOTSUPP;
+-		/*
+-		 * check that PEBS LBR correction does not conflict with
+-		 * whatever the user is asking with attr->branch_sample_type
+-		 */
+-		if (event->attr.precise_ip > 1 &&
+-		    x86_pmu.intel_cap.pebs_format < 2) {
+-			u64 *br_type = &event->attr.branch_sample_type;
+-
+-			if (has_branch_stack(event)) {
+-				if (!precise_br_compat(event))
+-					return -EOPNOTSUPP;
+-
+-				/* branch_sample_type is compatible */
+-
+-			} else {
+-				/*
+-				 * user did not specify  branch_sample_type
+-				 *
+-				 * For PEBS fixups, we capture all
+-				 * the branches at the priv level of the
+-				 * event.
+-				 */
+-				*br_type = PERF_SAMPLE_BRANCH_ANY;
+-
+-				if (!event->attr.exclude_user)
+-					*br_type |= PERF_SAMPLE_BRANCH_USER;
+-
+-				if (!event->attr.exclude_kernel)
+-					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+-			}
++	}
 +	/*
-+	 * Save the idx so that when we filter out fds POLLHUP'ed we can
-+	 * close the associated evlist->mmap[] entry.
++	 * check that PEBS LBR correction does not conflict with
++	 * whatever the user is asking with attr->branch_sample_type
 +	 */
-+	if (pos >= 0)
-+		evlist->pollfd.priv[pos] = idx;
++	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
++		u64 *br_type = &event->attr.branch_sample_type;
 +
-+	return pos;
-+}
++		if (has_branch_stack(event)) {
++			if (!precise_br_compat(event))
++				return -EOPNOTSUPP;
 +
- int perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
- {
--	return fdarray__add(&evlist->pollfd, fd, POLLIN | POLLERR | POLLHUP);
-+	return __perf_evlist__add_pollfd(evlist, fd, -1);
-+}
++			/* branch_sample_type is compatible */
 +
-+static void perf_evlist__munmap_filtered(struct fdarray *fda, int fd)
-+{
-+	struct perf_evlist *evlist = container_of(fda, struct perf_evlist, pollfd);
++		} else {
++			/*
++			 * user did not specify  branch_sample_type
++			 *
++			 * For PEBS fixups, we capture all
++			 * the branches at the priv level of the
++			 * event.
++			 */
++			*br_type = PERF_SAMPLE_BRANCH_ANY;
 +
-+	perf_evlist__mmap_put(evlist, fda->priv[fd]);
- }
- 
- int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
- {
--	return fdarray__filter(&evlist->pollfd, revents_and_mask, NULL);
-+	return fdarray__filter(&evlist->pollfd, revents_and_mask,
-+			       perf_evlist__munmap_filtered);
- }
- 
- int perf_evlist__poll(struct perf_evlist *evlist, int timeout)
-@@ -751,7 +774,7 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
- 			perf_evlist__mmap_get(evlist, idx);
++			if (!event->attr.exclude_user)
++				*br_type |= PERF_SAMPLE_BRANCH_USER;
++
++			if (!event->attr.exclude_kernel)
++				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
  		}
+ 	}
  
--		if (perf_evlist__add_pollfd(evlist, fd) < 0) {
-+		if (__perf_evlist__add_pollfd(evlist, fd, idx) < 0) {
- 			perf_evlist__mmap_put(evlist, idx);
- 			return -1;
- 		}
 -- 
-1.9.3
+1.8.3.2
 
