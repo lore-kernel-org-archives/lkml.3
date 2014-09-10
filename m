@@ -1,54 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaIJFVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:21:08 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:44507 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaIJFVG (ORCPT
+	id S1751341AbaIJFX0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:23:26 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:51755 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaIJFXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:21:06 -0400
+	Wed, 10 Sep 2014 01:23:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <5074996.Ni2JIb7nJr@vostro.rjw.lan>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
-	<20140909151655.GB4851@dhcp22.suse.cz>
-	<20140909152336.GB8890@mtj.dyndns.org>
-	<5074996.Ni2JIb7nJr@vostro.rjw.lan>
-Date: Tue, 9 Sep 2014 22:21:05 -0700
-Message-ID: <CAM_iQpXo+6ANUe_x96rS5nehK+S3B9iOBU9szc8WQ4nzV7gnRA@mail.gmail.com>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20140910045328.GA32475@saruman.home>
+References: <CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
+	<20140903144225.GD31855@saruman.home>
+	<CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
+	<20140905175651.GK24449@saruman.home>
+	<CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+	<20140908134454.GK22409@saruman.home>
+	<CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+	<20140909144225.GF6151@saruman.home>
+	<CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
+	<CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
+	<20140910045328.GA32475@saruman.home>
+Date: Wed, 10 Sep 2014 10:53:23 +0530
+X-Google-Sender-Auth: IoEPAv6Yl8LgMbFhLf86YW_w1WM
+Message-ID: <CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Julius Werner <jwerner@google.com>, Julius Werner <jwerner@chromium.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 1:48 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, September 10, 2014 12:23:36 AM Tejun Heo wrote:
->> On Tue, Sep 09, 2014 at 05:16:55PM +0200, Michal Hocko wrote:
->> > But OOM killer doesn't kill kernel threads as they do not own any
->> > memory. So the check should be safe, no?
+On Wed, Sep 10, 2014 at 10:23 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Wed, Sep 10, 2014 at 09:09:57AM +0530, Vivek Gautam wrote:
+>> On Wed, Sep 10, 2014 at 9:07 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> > adding Julius here,
 >>
->> Even for userland tasks, try_to_freeze() can currently be anywhere in
->> the kernel.  The frequently used ones are few but there are some odd
->> ones out, and, again, there's nothing enforcing any structure on
->> try_to_freeze() usage.  The other thing is that we may do quite a bit
->> during exiting including allocating memory.  Are those safe for system
->> PM?  Rafael, what exactly are the rules for PM?  What shouldn't
->> change?
+>> i think i had missed adding Julius for this entire series :-(
+>> I should be more careful with the CC list in future.
+>> Added his chromium id, since that seems to be more active.
+>>
+>> >
+>> >
+>> > On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
+>> >>> Hi,
+>> >>>
+>> >>>
+>> >>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >>> > Hi,
+>> >>> >
+>> >>> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
+>> >>> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >>> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
+>> >>> >> >> > Don't we have phy_power_on()
+>> >>> >> >> > for that ? It looks like you could just as well do this from
+>> >>> >> >> > phy_power_on() ?
+>> >>> >> >>
+>> >>> >> >> No, unfortunately keeping these calibration settings in phy_power_on()
+>> >>> >> >> doesn't help, since we need to do this after XHCI reset has happened.
+>> >>> >> >
+>> >>> >> > teach xHCI about PHYs ?
+>> >>> >>
+>> >>> >> sorry i couldn't understand you here.
+>> >>> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
+>> >>> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
+>> >>> >>
+>> >>> >> and the 2nd patch in this series :
+>> >>> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+>> >>> >>
+>> >>> >> Is there something else that is expected ?
+>> >>> >
+>> >>> > right, use that to call phy_init() at the right time, then you need to
+>> >>> > add a new ->calibrate() method which, likely, will only be used by you
+>> >>> > ;-)
+>> >>>
+>> >>> so you mean, the xhci should itself call phy_init() at a time suitable,
+>> >>> so that ->calibrate() is not required at all ?
+>> >>>
+>> >>> i think you meant there - "then you __do not__ need to
+>> >>
+>> >> right :-)
+>> >
+>> > alright, i will prepare a patch for the suggested change.
+>> >
+>> > But AFAI remember we had discussion for this patch in earlier
+>> > version, and Julius suggested to use a generic approach for such
+>> > change wherein other users in future may be able to use the
+>> > facility.
 >
-> We can't make any assumptions regarding the availability of any devices.
-> That is, whatever can end up in device access may potentially fail.
+> right, and what's more generic than adding the support for PHYs straight
+> into xHCI ?
 >
+> What I fear is that we end up opening the doors for every odd
+> platform-specific operation to be added to the framework without really
+> considering what needs to be done. That would defeat the idea of having
+> a generic framework altogether.
 
-So we still have to rule out PM freeze, right?
+Ok, i will prepare the patch series as suggested and post it
+to gather opinion from you. :-)
 
-I am thinking about adding a new task flag or adding a new parameter
-to __refrigerator() to distinguish PM freeze with cgroup freeze. Will try
-to code tomorrow.
+>
+> cheers
+>
+> --
+> balbi
 
-Thanks!
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
