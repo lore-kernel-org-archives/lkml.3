@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaIJPOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:14:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675AbaIJPOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:14:14 -0400
-Date: Wed, 10 Sep 2014 23:13:58 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
- relocations
-Message-ID: <20140910151358.GC1887@dhcp-17-102.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
- <1409926097-2101-2-git-send-email-bhe@redhat.com>
- <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
- <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
- <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
- <20140909192813.GB9435@redhat.com>
- <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
- <20140910143019.GA3771@redhat.com>
- <20140910145334.GB1887@dhcp-17-102.nay.redhat.com>
- <20140910150432.GA7898@redhat.com>
+	id S1752281AbaIJPOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:14:03 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21099 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaIJPOA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 11:14:00 -0400
+Message-ID: <54106A58.50802@oracle.com>
+Date: Wed, 10 Sep 2014 11:12:24 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910150432.GA7898@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
+        x86@kernel.org, linux-mm@kvack.org,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [RFC/PATCH v2 00/10] Kernel address sainitzer (KASan) - dynamic
+ memory error deetector.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/14 at 11:04am, Vivek Goyal wrote:
-> On Wed, Sep 10, 2014 at 10:53:34PM +0800, Baoquan He wrote:
-> > On 09/10/14 at 10:30am, Vivek Goyal wrote:
-> > > In case of kdump we will have to pass nokaslr, as we don't want kernel
-> > > to move as it could stomp over other things we have loaded.
-> > 
-> > For kdump and kexec nokaslr is unnecessary. As you know we always
-> > call add_buffer with buf_end as 1, this will cause kernel loaded at the
-> > top of available memory. E.g on my pc with 16G memory, kexec kernel will
-> > be put nearby 16G, so no random location choosing happen as I said in
-> > above. For kdump, if reserved memory is at 500M~700M, then kernel will
-> > be put nearby 700M, the random location choosing also never happen.
-> > 
-> > In fact, for some cases I need change kexec-tools user app code, to make
-> > kernel be put from down to top.
-> 
-> I think we can't rely on where exactly in memory kexec-tools places the
-> kernel. For kdump case we will have to pass nokaslr to make sure that
-> kaslr does not move kernel.
+On 09/10/2014 10:31 AM, Andrey Ryabinin wrote:
+> Hi,
+> This is a second iteration of kerenel address sanitizer (KASan).
 
-In fact with this fix, it still works though kdump kernel is relocated
-if kdump kernel is put in a low addr of reserved memory. But I am fine
-with it that adding nokaslr to make it safer.
+FWIW, I've been using v1 for a while and it has uncovered quite a few
+real bugs across the kernel.
 
-> 
-> Thanks
-> Vivek
+Some of them (I didn't go beyond the first page on google):
+
+* https://lkml.org/lkml/2014/8/9/162 - Which resulted in major changes to
+ballooning.
+* https://lkml.org/lkml/2014/7/13/192
+* https://lkml.org/lkml/2014/7/24/359
+
+
+Thanks,
+Sasha
