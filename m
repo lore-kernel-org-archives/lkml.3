@@ -1,143 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaIJOdz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:33:55 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:54485 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494AbaIJOdx (ORCPT
+	id S1752918AbaIJOeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:34:20 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:36991 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197AbaIJO3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:33:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
-References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
-	<20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
-	<alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
-	<20140910140759.GC31903@thunk.org>
-	<alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
-Date: Wed, 10 Sep 2014 18:33:52 +0400
-Message-ID: <CAPAsAGyYoPjThA1EV46jYiGX2UzqF1oD4JJueNKh9V1XvAXjcA@mail.gmail.com>
-Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Sep 2014 10:29:02 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, bfields@fieldses.org
+Subject: [RFC PATCH 03/12] locks: have locks_release_file use flock_lock_file to release generic flock locks
+Date: Wed, 10 Sep 2014 10:28:41 -0400
+Message-Id: <1410359330-27564-4-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-10 18:24 GMT+04:00 Jiri Kosina <jkosina@suse.cz>:
-> On Wed, 10 Sep 2014, Theodore Ts'o wrote:
->
->> So I wouldn't be so sure that we don't have these sorts of bugs hiding
->> somewhere; and it's extremely easy for them to sneak in.  That being
->> said, I'm not in favor of making changes to kfree; I'd much rather
->> depending on better testing and static checkers to fix them, since
->> kfree *is* a hot path.
->
-> I of course have no objections to this check being added to whatever
-> static checker, that would be very welcome improvement.
->
-> Still, I believe that kernel shouldn't be just ignoring kfree(ERR_PTR)
-> happening. Would something like the below be more acceptable?
->
->
->
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
->
-> Freeing if ERR_PTR is not covered by ZERO_OR_NULL_PTR() check already
-> present in kfree(), but it happens in the wild and has disastrous effects.
->
-> Issue a warning and don't proceed trying to free the memory if
-> CONFIG_DEBUG_SLAB is set.
->
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ fs/locks.c | 49 +++++++++++++++++++++++++++++++------------------
+ 1 file changed, 31 insertions(+), 18 deletions(-)
 
-This won't work cause CONFIG_DEBUG_SLAB  is only for CONFIG_SLAB=y
-
-How about just VM_BUG_ON(IS_ERR(ptr)); ?
-
-
-> Inspired by a9cfcd63e8d ("ext4: avoid trying to kfree an ERR_PTR pointer").
->
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  mm/slab.c | 6 ++++++
->  mm/slob.c | 7 ++++++-
->  mm/slub.c | 7 ++++++-
->  3 files changed, 18 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index a467b30..6f49d6b 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -3612,6 +3612,12 @@ void kfree(const void *objp)
->
->         trace_kfree(_RET_IP_, objp);
->
-> +#ifdef CONFIG_DEBUG_SLAB
-> +       if (unlikely(IS_ERR(objp))) {
-> +                       WARN(1, "trying to free ERR_PTR\n");
-> +                       return;
-> +       }
-> +#endif
->         if (unlikely(ZERO_OR_NULL_PTR(objp)))
->                 return;
->         local_irq_save(flags);
-> diff --git a/mm/slob.c b/mm/slob.c
-> index 21980e0..66422a0 100644
-> --- a/mm/slob.c
-> +++ b/mm/slob.c
-> @@ -488,7 +488,12 @@ void kfree(const void *block)
->         struct page *sp;
->
->         trace_kfree(_RET_IP_, block);
-> -
-> +#ifdef CONFIG_DEBUG_SLAB
-> +       if (unlikely(IS_ERR(block))) {
-> +               WARN(1, "trying to free ERR_PTR\n");
-> +               return;
-> +       }
-> +#endif
->         if (unlikely(ZERO_OR_NULL_PTR(block)))
->                 return;
->         kmemleak_free(block);
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 3e8afcc..21155ae 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3337,7 +3337,12 @@ void kfree(const void *x)
->         void *object = (void *)x;
->
->         trace_kfree(_RET_IP_, x);
-> -
-> +#ifdef CONFIG_DEBUG_SLAB
-> +       if (unlikely(IS_ERR(x))) {
-> +               WARN(1, "trying to free ERR_PTR\n");
-> +               return;
-> +       }
-> +#endif
->         if (unlikely(ZERO_OR_NULL_PTR(x)))
->                 return;
->
->
-> --
-> Jiri Kosina
-> SUSE Labs
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
-
+diff --git a/fs/locks.c b/fs/locks.c
+index af55bd35be5f..5e8b865814a2 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -2393,6 +2393,30 @@ void locks_remove_posix(struct file *filp, fl_owner_t owner)
+ 
+ EXPORT_SYMBOL(locks_remove_posix);
+ 
++static void
++locks_remove_flock(struct file *filp)
++{
++	struct file_lock fl = {
++		.fl_owner = filp,
++		.fl_pid = current->tgid,
++		.fl_file = filp,
++		.fl_flags = FL_FLOCK,
++		.fl_type = F_UNLCK,
++		.fl_end = OFFSET_MAX,
++	};
++
++	if (!file_inode(filp)->i_flock)
++		return;
++
++	if (filp->f_op->flock)
++		filp->f_op->flock(filp, F_SETLKW, &fl);
++	else
++		flock_lock_file(filp, &fl);
++
++	if (fl.fl_ops && fl.fl_ops->fl_release_private)
++		fl.fl_ops->fl_release_private(&fl);
++}
++
+ /*
+  * This function is called on the last close of an open file.
+  */
+@@ -2403,24 +2427,14 @@ void locks_remove_file(struct file *filp)
+ 	struct file_lock **before;
+ 	LIST_HEAD(dispose);
+ 
+-	if (!inode->i_flock)
+-		return;
+-
++	/* remove any OFD locks */
+ 	locks_remove_posix(filp, filp);
+ 
+-	if (filp->f_op->flock) {
+-		struct file_lock fl = {
+-			.fl_owner = filp,
+-			.fl_pid = current->tgid,
+-			.fl_file = filp,
+-			.fl_flags = FL_FLOCK,
+-			.fl_type = F_UNLCK,
+-			.fl_end = OFFSET_MAX,
+-		};
+-		filp->f_op->flock(filp, F_SETLKW, &fl);
+-		if (fl.fl_ops && fl.fl_ops->fl_release_private)
+-			fl.fl_ops->fl_release_private(&fl);
+-	}
++	/* remove flock locks */
++	locks_remove_flock(filp);
++
++	if (!inode->i_flock)
++		return;
+ 
+ 	spin_lock(&inode->i_lock);
+ 	before = &inode->i_flock;
+@@ -2440,8 +2454,7 @@ void locks_remove_file(struct file *filp)
+ 			 * some info about it and then just remove it from
+ 			 * the list.
+ 			 */
+-			WARN(!IS_FLOCK(fl),
+-				"leftover lock: dev=%u:%u ino=%lu type=%hhd flags=0x%x start=%lld end=%lld\n",
++			WARN(1, "leftover lock: dev=%u:%u ino=%lu type=%hhd flags=0x%x start=%lld end=%lld\n",
+ 				MAJOR(inode->i_sb->s_dev),
+ 				MINOR(inode->i_sb->s_dev), inode->i_ino,
+ 				fl->fl_type, fl->fl_flags,
 -- 
-Best regards,
-Andrey Ryabinin
+1.9.3
+
