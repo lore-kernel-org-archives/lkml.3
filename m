@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaIJNUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:20:24 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37285 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751215AbaIJNUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:20:22 -0400
-Date: Wed, 10 Sep 2014 15:20:19 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
-Message-ID: <20140910152019.111c4c01@bbrezillon>
-In-Reply-To: <20140910121424.GG2974@localhost>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
-	<20140910121424.GG2974@localhost>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751451AbaIJNUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:20:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215AbaIJNU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:20:28 -0400
+Date: Wed, 10 Sep 2014 09:20:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
+ relocations
+Message-ID: <20140910132020.GA2166@redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+ <1409926097-2101-2-git-send-email-bhe@redhat.com>
+ <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+ <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+ <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+ <20140910061035.GC25867@dhcp-16-116.nay.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910061035.GC25867@dhcp-16-116.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 14:14:24 +0200
-Johan Hovold <johan@kernel.org> wrote:
+On Wed, Sep 10, 2014 at 02:10:35PM +0800, Baoquan He wrote:
 
-> On Wed, Sep 03, 2014 at 10:45:34AM +0200, Boris BREZILLON wrote:
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt   | 20 ++++++++++++++++++++
-> >  1 file changed, 20 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+[..]
+> > > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> > > index 57ab74d..887f404 100644
+> > > --- a/arch/x86/boot/compressed/misc.c
+> > > +++ b/arch/x86/boot/compressed/misc.c
+> > > @@ -230,8 +230,9 @@ static void error(char *x)
+> > >                 asm("hlt");
+> > >  }
+> > >
+> > > -#if CONFIG_X86_NEED_RELOCS
+> > > -static void handle_relocations(void *output, unsigned long output_len)
+> > > +#ifdef CONFIG_X86_NEED_RELOCS
+> > > +static void handle_relocations(void *output_orig, void *output,
+> > > +                              unsigned long output_len)
+> > >  {
+> > >         int *reloc;
+> > >         unsigned long delta, map, ptr;
+> > > @@ -242,6 +243,9 @@ static void handle_relocations(void *output, unsigned long output_len)
+> > >          * Calculate the delta between where vmlinux was linked to load
+> > >          * and where it was actually loaded.
+> > >          */
+> > > +       if (output_orig == output)
+> > > +               return;
+> > > +
 > > 
-> > diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> > new file mode 100644
-> > index 0000000..9ca455f
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> > @@ -0,0 +1,20 @@
-> > +Atmel AT91SAM9260 Real Time Timer
-> > +
-> > +Required properties:
-> > +- compatible: should be: "atmel,at91sam9260-rtt"
-> > +- reg: should contain 2 memory regions
-> > +  * the first one encodes the memory region of the RTT controller
-> > +  * the second one encodes the GPBR (General Purpose Backup Resgisters)
-> > +    memory region used to store the current time
-> > +- interrupts: rtc alarm/event interrupt
-> > +- clocks: should contain one clock pointing the the slow clk
-> > +
-> > +Example:
-> > +
-> > +rtc@fffffe00 {
-> > +	compatible = "atmel,at91sam9260-rtt";
-> > +	reg = <0xfffffd20 0x10
-> > +	       0xfffffd50 0x4>;
-> > +	interrupts = <1 4 7>;
-> > +	clocks = <&clk32k>;
-> > +};
+> > I still think this needs a test for the 32-bit case, since IUIC, it
+> > requires relocations unconditionally.
 > 
-> This does not describe the hardware, but rather a specific software
-> configuration.
+> Oops, just understood that 32 bit kernel alwasy need relocations, but
+> only focus on x86_64 and kaslr again when I was doing it. You are right,
+> this is not correct for 32 bit kernel.
 > 
-> The RTT is first of all not an RTC (although it can be used as one in a
-> specific software configuration). And the second register resource above
-> is not an RTT register, but a general-purpose backup register could be
-> used for other purposes (which register to use is currently configurable
-> for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
-
-We could use a syscon device (which exposes a regmap) for the GPBR
-block.
-
-rtc@ffffff20 {
-	compatible = "atmel,at91sam9260-rtt";
-	reg = <0xfffffd20 0x10>;
-	interrupts = <1 4 7>;
-	clocks = <&clk32k>;
-	atmel,time-reg = <&gpbr 0x0>;
-};
-
-gpbr: syscon@fffffd50 {
-	compatible = "atmel,at91sam9260-gpbr", "syscon";
-	reg = <0xfffffd50 0x10>;
-	
-};
-
+> I am thinking if I can add a compiling condition check like below. This
+> only works only when x86_64 or when kaslr is compiled in. Otherwise it
+> wokrs as before.
 > 
-> This was discussed in the thread where I posted an RFC for this last
-> year (which you linked to in your original submission thread), but no
-> conclusion was reached:
-> 
-> 	http://www.spinics.net/lists/arm-kernel/msg236292.html
-> 
-> Johan
+> #if CONFIG_X86_64
+> 	if (output_orig == output)
+> 		return;
+> #endif
 
+Hi Bao,
 
+I think above should work reasonably well. Also put a comment above it.
+Something like as follows.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+/*
+ * 32bit always requires relocations to be performed. For x86_64,
+ * relocations need to be performed only if kaslr has chosen a
+ * different load address then kernel was originally loaded at.
+ *
+ * If we are here, either kaslr is not configured in or kaslr is disabled
+ * or kaslr has chosen not to change the load location of kernel. Don't
+ * perform any relocations.
+ */
+
+Thanks
+Vivek
