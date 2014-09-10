@@ -1,98 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaIJQt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:49:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:32983 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaIJQt2 (ORCPT
+	id S1751972AbaIJQtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:49:47 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:50280 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaIJQtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:49:28 -0400
-Date: Wed, 10 Sep 2014 09:49:17 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] eeepc-laptop: remove possible use of uninitialized value
-Message-ID: <20140910164916.GA48285@vmdeb7>
-References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
- <1409814488.5546.63.camel@x220>
- <20140906021757.GA9197@vmdeb7>
- <7288841.ayNsq2yeGO@vostro.rjw.lan>
- <1410252608.22255.5.camel@x220>
- <20140910033304.GB39541@vmdeb7>
- <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+	Wed, 10 Sep 2014 12:49:45 -0400
+Message-ID: <54108124.9030707@gmail.com>
+Date: Wed, 10 Sep 2014 19:49:40 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Dave Chinner <david@fromorbit.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>
+CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>, willy@linux.intel.com
+Subject: Re: [PATCH v10 20/21] ext4: Add DAX functionality
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com> <5422062f87eb5606f4632fd06575254379f40ddc.1409110741.git.matthew.r.wilcox@intel.com> <20140903111302.GG20473@dastard>
+In-Reply-To: <20140903111302.GG20473@dastard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 04:42:49PM +0200, Frans Klaver wrote:
-> On Wed, Sep 10, 2014 at 5:33 AM, Darren Hart <dvhart@infradead.org> wrote:
-> > On Tue, Sep 09, 2014 at 10:50:08AM +0200, Paul Bolle wrote:
-> >> Hi Darren,
-> >>
-> >> On Sat, 2014-09-06 at 23:17 +0200, Rafael J. Wysocki wrote:
-> >> > On Friday, September 05, 2014 07:17:57 PM Darren Hart wrote:
-> >> > > On Thu, Sep 04, 2014 at 09:08:08AM +0200, Paul Bolle wrote:
-> >> > > [...]
-> >> > > >  static ssize_t store_sys_acpi(struct device *dev, int cm,
-> >> > > > @@ -278,12 +276,13 @@ static ssize_t store_sys_acpi(struct device *dev, int cm,
-> >> > > >         struct eeepc_laptop *eeepc = dev_get_drvdata(dev);
-> >> > > >         int rv, value;
-> >> > > >
-> >> > > > -       rv = parse_arg(buf, count, &value);
-> >> > > > -       if (rv > 0)
-> >> > > > -               value = set_acpi(eeepc, cm, value);
-> >> > > > +       rv = parse_arg(buf, &value);
-> >> > > > +       if (rv < 0)
-> >> > > > +               return rv;
-> >> > > > +       value = set_acpi(eeepc, cm, value);
-> >> > > >         if (value < 0)
-> >> > >
-> >> > > I suppose it's harmless, but it would be more explicit to reuse rv here instead
-> >> > > of value.
-> >>
-> >> Fine with me.
-> >>
-> >> > > >                 return -EIO;
-> >> > >
-> >> > > And as with Frans' version, I suggest propogating the error. We're talking about
-> >> > > a missing/invalid ACPI control method name here, ENODEV seems approprirate.
-> >> > >
-> >> > > Rafael, do you have a strong preference about what to return in such an event?
-> >> >
-> >> > No, I don't, although -ENXIO could be used here too.
-> >>
-> >> If you could say what value you'd like best I'll resend using that
-> >> value. (I don't know what the effect is of using a specific error here,
-> >> so I guess I'll have to bluff about it in the commit explanation.)
-> >
-> > First, I would prefer we propogate the error code rather than remap it.
-> >
-> > We could consider changing what the callee returns...
-> >
-> > #define EIO              5      /* I/O error */
-> > #define ENXIO            6      /* No such device or address */
-> > #define ENODEV          19      /* No such device */
-> >
-> > Of those, ENXIO seems like the most appropriate in this case.
+On 09/03/2014 02:13 PM, Dave Chinner wrote:
+<>
 > 
-> Would it be fair to say that for consistency we should then also
-> change the return values of acpi_setter_handle()? It has the same
-> basic layout and checks as set_acpi() and get_acpi() have.
+> When direct IO fails ext4 falls back to buffered IO, right? And
+> dax_do_io() can return partial writes, yes?
+> 
 
-Yes, that would be appropriate as well.
+There is no buffered writes with DAX. .I.E buffered writes are always
+direct as well. (No page cache)
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+> So that means if you get, say, ENOSPC part way through a DAX write,
+> ext4 can start dirtying the page cache from
+> __generic_file_write_iter() because the DAX write didn't wholly
+> complete? And say this ENOSPC races with space being freed from
+> another inode, then the buffered write will succeed and we'll end up
+> with coherency issues, right?
+> 
+> This is not an idle question - XFS if firing asserts all over the
+> place when doing ENOSPC testing because DAX is returning partial
+> writes and the XFS direct IO code is expecting them to either wholly
+> complete or wholly fail. I can make the DAX variant do allow partial
+> writes, but I'm not going to add a useless fallback to buffered IO
+> for XFS when the (fully featured) direct allocation fails.
+> 
+
+Right, no fall back. Because a fallback is just a retry, because in any
+way DAX assumes there is never a page_cache_page for a written data
+
+> Indeed, I note that in the dax_fault code, any page found in the
+> page cache is explicitly removed and released, and the direct mapped
+> block replaces that page in the vma. IOWs, this code expects pages
+> to be clean as we're only supposed to have regions covered by holes
+> using cached pages (dax_load_hole()). 
+
+Exactly, page_cache_page are only/always "regions covered by holes"
+
+Once there is a real block allocated for an offset it will be directly
+mapped to the vm without a page_cache_page.
+
+> So if we've done a buffered
+> write, we're going to toss out dirty pages the moment there is a
+> page fault on the range and map the unmodified backing store in
+> instead.
+> 
+
+No! There is never "buffered write" with DAX. That is: there is never
+a page_cache_page that holds data which will belong to the storage
+later. DAX means zero-page-cache
+
+> That just seems wrong. Maybe I've forgotten something, but this
+> looks like a wart that we don't need and shouldn't bake into this
+> interface as both ext4 and XFS can allocate into holes and extend
+> files from from the direct IO interfaces. Of course, correct me if
+> I'm wrong about ext4 capabilities...
+> 
+
+Yes you have misread the patchset, all writes are always done directly
+to bdev->direct_access(..) memory *never* via a copy to page_cache.
+
+Currently The only existence of radix-tree pages is for ZERO pages that
+cover holes, which get thrown out as clean or COWed on mkwrite
+
+BTW Matthew: It took me a while to figure out the VFS/VMA api but
+I managed to map a single ZERO page to all holes and COW them to
+real blocks on mkwrite. It needed a combination of flags but the
+main trick is that at mkwrite I do:
+
+	/* our zero page doesn't really hold the correct offset to the file in
+	 * page->index so vmf->pgoff is incorrect, lets fix that */
+	vmf->pgoff = vma->vm_pgoff + (((unsigned long)vmf->virtual_address -
+			vma->vm_start) >> PAGE_SHIFT);
+	/* call fault handler to get a real page for writing */
+	ret = _xip_file_fault(vma, vmf);
+	/* invalidate all other mappings to that location */
+	unmap_mapping_range(mapping, vmf->pgoff << PAGE_SHIFT, PAGE_SIZE, 1);
+
+	/* mkwrite must lock the original page and return VM_FAULT_LOCKED */
+	if (ret == VM_FAULT_NOPAGE) {
+		lock_page(m1fs_zero_page);
+		ret = VM_FAULT_LOCKED;
+	}
+	return ret;
+
+At _xip_file_fault() also called from .fault I do in the case of a hole:
+	if (!(vmf->flags & FAULT_FLAG_WRITE)) {
+		...
+		block = _find_data_block(inode, vmf->pgoff);
+		if (!block) {
+			vmf->page = g_zero_page;
+			err = vm_insert_page(vma,
+					(unsigned long)vmf->virtual_address,
+					vmf->page);
+			goto after_insert;
+		}
+	} else {
+
+Above g_zero_page is my own global zero page, PAGE_ZERO will not work.
+_find_data_block() is like your get_buffer but only for the read case,
+the write case uses a different _get_block_create().
+
+Please tell me if it is interesting for you? I can try to patch your DAX
+patchset to do the same. This can always be done later as an optimization.
+
+> Cheers,
+> Dave.
+> 
+
+Thanks
+Boaz
+
