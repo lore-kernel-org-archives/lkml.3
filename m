@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaIJCPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:15:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30996 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751156AbaIJCPG (ORCPT
+	id S1751637AbaIJC35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:29:57 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13278 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751156AbaIJC3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:15:06 -0400
+	Tue, 9 Sep 2014 22:29:55 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 99.127.230.128
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Pq1KY/G5V2gP6igWAE1PV
-Date: Wed, 10 Sep 2014 02:14:58 +0000
+X-MHO-User: U2FsdGVkX18at+NrJ3fKYFWoL041R3sd
+Date: Wed, 10 Sep 2014 02:29:49 +0000
 From: Tony Lindgren <tony@atomide.com>
 To: Nishanth Menon <nm@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: OMAP5+: Reuse OMAP4 PM code for OMAP5 and DRA7
-Message-ID: <20140910021458.GA1058@atomide.com>
-References: <1410282933-30131-1-git-send-email-nm@ti.com>
+Cc: Beno??t Cousson <bcousson@baylibre.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [GIT PULL] ARM: dts: OMAP5 / DRA7: pinctrl updates
+Message-ID: <20140910022949.GB1058@atomide.com>
+References: <1410271178-28336-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410282933-30131-1-git-send-email-nm@ti.com>
+In-Reply-To: <1410271178-28336-1-git-send-email-nm@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140909 17:16]:
-> OMAP4, OMAP5 and DRA7 share a lot of common logic and data structures.
-> These have been enabled in the previous patches, however, this also
-> means that OMAP5 or DRA7 only builds also need to build OMAP4 logic.
-> Update to reuse OMAP4 logic.
+* Nishanth Menon <nm@ti.com> [140909 14:00]:
 > 
-> This fixes the 'undefined reference to 'omap4_pm_init_early'' in
-> OMAP5 or DRA7 only builds.
+> Hi Tony,
 > 
-> Fixes: 6af16a1dac5465c ("ARM: DRA7: Add hook in SoC initcalls to enable pm initialization")
-> Fixes: 628ed4717000789 ("ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization")
-> Reported-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
+> Please pull this series was posted[1] and based on the previous pulls
+> [2] [3], updating the dts to enable the relevant feature.
 > 
-> This fixes the regression with randconfig that Tony reported with
-> omap-for-v3.18/soc branch.
+> NOTE: I have dropped patch #1 of the series based on [4].
 > 
-> Tested with CONFIG_ARCH_OMAP2, CONFIG_ARCH_OMAP3, CONFIG_ARCH_OMAP4,
-> CONFIG_SOC_OMAP5, CONFIG_SOC_AM33XX, CONFIG_SOC_AM43XX, CONFIG_SOC_DRA7XX
-> only builds.
+> These could go to your branch omap-for-v3.18/dt
+> 
+> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+> 
+>   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+> 
+> are available in the git repository at:
+> 
+>   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-dt-pinctrl-updates
+> 
+> for you to fetch changes up to 66b0436977e2c62388d48836ff784f1fedb49c4f:
+> 
+>   ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable (2014-09-09 08:33:29 -0500)
 
-Thanks applying into omap-for-v3.18/soc.
+Thanks pulling into omap-for-v3.18/dt.
 
-Tony 
+Tony
  
->  arch/arm/mach-omap2/Makefile |   12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
+> ----------------------------------------------------------------
+> Nishanth Menon (5):
+>       ARM: dts: OMAP5: switch to compatible pinctrl
+>       ARM: dts: DRA7: switch to compatible pinctrl
+>       ARM: dts: AM437x: switch to compatible pinctrl
+>       ARM: dts: OMAP5 / DRA7: switch over to interrupts-extended property for UART
+>       ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
 > 
-> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-> index 69bbcba..d9dd99c 100644
-> --- a/arch/arm/mach-omap2/Makefile
-> +++ b/arch/arm/mach-omap2/Makefile
-> @@ -87,9 +87,10 @@ ifeq ($(CONFIG_PM),y)
->  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
->  obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
->  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o
-> -obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o
-> -obj-$(CONFIG_SOC_OMAP5)			+= omap-mpuss-lowpower.o
-> -obj-$(CONFIG_SOC_DRA7XX)		+= omap-mpuss-lowpower.o
-> +omap-4-5-pm-common			=  pm44xx.o omap-mpuss-lowpower.o
-> +obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-pm-common)
-> +obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-pm-common)
-> +obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-pm-common)
->  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
->  
->  obj-$(CONFIG_POWER_AVS_OMAP)		+= sr_device.o
-> @@ -102,7 +103,10 @@ endif
->  
->  ifeq ($(CONFIG_CPU_IDLE),y)
->  obj-$(CONFIG_ARCH_OMAP3)                += cpuidle34xx.o
-> -obj-$(CONFIG_ARCH_OMAP4)                += cpuidle44xx.o
-> +omap-4-5-idle-common			=  cpuidle44xx.o
-> +obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-idle-common)
-> +obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-idle-common)
-> +obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-idle-common)
->  endif
->  
->  # PRCM
-> -- 
-> 1.7.9.5
+>  arch/arm/boot/dts/am4372.dtsi  |    4 +++-
+>  arch/arm/boot/dts/dra7-evm.dts |    2 ++
+>  arch/arm/boot/dts/dra7.dtsi    |   24 +++++++++++++-----------
+>  arch/arm/boot/dts/omap5.dtsi   |   20 ++++++++++++--------
+>  4 files changed, 30 insertions(+), 20 deletions(-)
+> 
+> [1] http://marc.info/?l=linux-kernel&m=140871681606779&w=2
+> [2] http://marc.info/?l=linux-kernel&m=141019565513129&w=2
+> [3] http://marc.info/?l=linux-kernel&m=141019566913133&w=2
+> [4] http://marc.info/?l=linux-omap&m=141022429924564&w=2
+> 
+> Regards,
+> Nishanth Menon
 > 
