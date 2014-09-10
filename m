@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaIJQ2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:28:46 -0400
-Received: from numascale.com ([213.162.240.84]:58671 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925AbaIJQ2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:28:45 -0400
-X-Greylist: delayed 2645 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 12:28:44 EDT
-Message-ID: <541071DB.3010704@numascale.com>
-Date: Wed, 10 Sep 2014 23:44:27 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752273AbaIJQ26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:28:58 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:51922 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaIJQ2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:28:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alban Bedel <alban.bedel@avionic-design.de>
+Cc: Thierry Reding <thierry.reding@gmail.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH V4] pwm: lpc32xx - Add a driver for the motor PWM
+Date: Wed, 10 Sep 2014 18:28:39 +0200
+Message-ID: <3043402.gA1yIrlkCZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140910175941.5c44837f@avionic-0020>
+References: <1410363822-22151-1-git-send-email-alban.bedel@avionic-design.de> <12709842.iga6ki5KTS@wuerfel> <20140910175941.5c44837f@avionic-0020>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Dave Hansen <dave.hansen@intel.com>, Russell King <linux@arm.linux.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>
-Subject: 3.14 x86 ACPI handover regression
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:SJU23fV7ElmLGHmrCYBrgurNw/8k+4jfawrX7g15PCC
+ XYulOZwZn8wuOcQFSoD4UFbEZ+XzFUohgJC65PeXsOXHet77+o
+ jgGrbN4WnyxE1YGswmuhWoIxEeflA0GjQFTZ9L0iMVFwjiC4EI
+ suuKh1r0+mUuXhnMBv8s/r3WuWEsBaI6CsKI0KRMzTMEpAbwdx
+ 3OWt02j3pjDNRTeAjClzxhdAtX3uMEs9YGZyKDlgYoxQICXFPM
+ ZeUBu2Vh2VHPbB87uTnyPmrbd20TRPQYIBY6/bsb5dhhSMt8ga
+ SsDEUjAaYGNILCHySu6bWUcBW8oNGJmNeVTd700JI38ZSBRIBE
+ L0LPDlnr0Cku7KIGMydI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernels 3.14 and newer fail ACPI handover [1] on Supermicro H8QGL 
-servers, invariant of BIOS version or settings, causing boot failure, 
-confirmed across a bunch of servers.
+On Wednesday 10 September 2014 17:59:41 Alban Bedel wrote:
+> On Wed, 10 Sep 2014 17:51:36 +0200
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > On Wednesday 10 September 2014 17:43:42 Alban Bedel wrote:
+> > > +- #pwm-cells: should be 3. See pwm.txt in this directory for a description of
+> > > +  the cells format. The only third cell flag supported by this binding is
+> > > +  PWM_POLARITY_INVERTED.
+> > 
+> > If you don't have multiple pwm outputs or programmable period, I would say it
+> > should use #pwm-cells=<1> and only pass the polarity.
+> 
+> There is 3 channel, so 3 PWM from the API POV, and the period is
+> independently programmable for each one.
 
-Doing some bisect-fu, it turns out that reverting Yinghai's patch fixes 
-the behaviour. Booting with Santosh's patch (5b6e529521d3, which Yinghai 
-reverts) succeeds, but interestingly booting with the patch before 
-Santosh's patch also succeeds, suggesting there's other interaction. 
-Behaviour is stable at all places tested.
+Then you should put the channel number into the first cell and the period
+length into the second cell, as the pwm.txt document says.
 
-Any tips on how to proceed?
-
-Thanks,
-   Daniel
-
--- [1]
-
-ACPI Error: Hardware did not enter ACPI mode (20131218/evxfevnt-113)
-ACPI Warning: AcpiEnable failed (20131218/utxfinit-169)
-ACPI: Unable to enable ACPI
-
--- [2]
-
-commit 4ce7a8697cb795fda6bdf082c14743b4bcd551c3
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Mon Jan 27 17:06:50 2014 -0800
-
-     x86: revert wrong memblock current limit setting
-
-     Dave reported big numa system booting is broken.
-
-     It turns out that commit 5b6e529521d3 ("x86: memblock: set current 
-limit
-     to max low memory address") sets the limit to low wrongly.
-
-     max_low_pfn_mapped is different from max_pfn_mapped.
-     max_low_pfn_mapped is always under 4G.
-
-     That will memblock_alloc_nid all go under 4G.
-
-     Revert 5b6e529521d3 to fix a no-boot regression which was triggered by
-     457ff1de2d24 ("lib/swiotlb.c: use memblock apis for early memory
-     allocations").
-
-     Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-     Reported-by: Dave Hansen <dave.hansen@intel.com>
-     Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-     Cc: Russell King <linux@arm.linux.org.uk>
-     Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-     Cc: Ingo Molnar <mingo@elte.hu>
-     Cc: "H. Peter Anvin" <hpa@zytor.com>
-     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-diff --git a/arch/x86/include/asm/page_types.h 
-b/arch/x86/include/asm/page_types.h
-index 2f59cce..f97fbe3 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -51,9 +51,9 @@ extern int devmem_is_allowed(unsigned long pagenr);
-  extern unsigned long max_low_pfn_mapped;
-  extern unsigned long max_pfn_mapped;
-
--static inline phys_addr_t get_max_low_mapped(void)
-+static inline phys_addr_t get_max_mapped(void)
-  {
--       return (phys_addr_t)max_low_pfn_mapped << PAGE_SHIFT;
-+       return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
-  }
-
-  bool pfn_range_is_mapped(unsigned long start_pfn, unsigned long end_pfn);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c967559..06853e6 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1119,7 +1119,7 @@ void __init setup_arch(char **cmdline_p)
-
-         setup_real_mode();
-
--       memblock_set_current_limit(get_max_low_mapped());
-+       memblock_set_current_limit(get_max_mapped());
-         dma_contiguous_reserve(0);
-
-         /*
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+	Arnd
