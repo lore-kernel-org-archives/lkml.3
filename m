@@ -1,49 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaIJNXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:23:34 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:31021 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaIJNXc (ORCPT
+	id S1751848AbaIJNX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:23:56 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:50870 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaIJNXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:23:32 -0400
-Message-ID: <541050D0.1020302@imgtec.com>
-Date: Wed, 10 Sep 2014 14:23:28 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 10 Sep 2014 09:23:54 -0400
+Message-ID: <541050E5.60502@gmail.com>
+Date: Wed, 10 Sep 2014 16:23:49 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Daniel Borkmann <dborkman@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: filter: Add MIPS to architectures with
- BPF JIT
-References: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com> <54009D34.3010800@redhat.com>
-In-Reply-To: <54009D34.3010800@redhat.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Dan Williams <dan.j.williams@intel.com>, Boaz Harrosh <boaz@plexistor.com>
+CC: Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
+Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
+ memory driver
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>	<540F2977.7010006@plexistor.com> <CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
+In-Reply-To: <CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/29/2014 04:33 PM, Daniel Borkmann wrote:
-> On 08/29/2014 04:23 PM, Markos Chandras wrote:
->> MIPS supports BPF JIT since v3.16-rc1
->>
->> Cc: Randy Dunlap <rdunlap@infradead.org>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Alexei Starovoitov <ast@plumgrid.com>
->> Cc: linux-doc@vger.kernel.org
->> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+On 09/09/2014 07:53 PM, Dan Williams wrote:
+> On Tue, Sep 9, 2014 at 9:23 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
+<>
 > 
-> Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Hi,
+> Hmm this looks like a "ACPI/DeviceTree-over-kernel-command-line"
+> description language.  I understand that this is borrowed from the
+> memmap= precedent, but, if I'm not mistaken, that's really more for
+> debug rather than a permanent platform-device descriptor.
 
-I think this hasn't been merged yet (I can't see it in mainline or
-linux-next). Do I need to ping someone or does it have to go via the
-MIPS tree?
+So what is bad about that ?
 
--- 
-markos
+> <strawman>
+> Since this looks like firmware why not go ahead and use
+> request_firmware() to request a pmem range descriptor blob
+</strawman>?
+
+What? God no! How is this a firmware at all. No this is all BUS info, it is
+ "where on the bus this device's resource was allocated"
+
+Firmware is static compile time thing common to all of my devices
+but this here is where in the bus this was stuck in. What is your
+suggestion that I compile a kernel and "make install" it (initrd)
+for every DIMM I insert ? since when? and what tool will tell me
+what to put there?
+
+>  Given you can compile such a blob into a kernel image  or provide it
+> in an initrd I think it makes deployment more straightforward, also
+> the descriptor format can be extended going forward 
+
+What ? really Dan I think you got confused. The nn@ss thing is just:
+   "what connector I stuck my DIMM disk in (and what other empty slots I have)"
+
+Would you have me compile and install my kernel every time my sdX
+number change, or my sata channel moved. I do not think so.
+
+> whereas the
+> command line approach mandates ever increasingly complicated strings.
+
+This is the first API, I intend, there is even a TODO in the patchset, to
+also have a dynamic sysfs add/remove/grow API for on the fly changes.
+All these can be easily driven by a simple udev rule to plug and play them.
+
+Usually in the Kernel, buses do not directly load devices drivers. The
+bus driver sends an "event" with a new discovered resource, then user-mode
+udev rule will load an associated driver, which will scan for its device or
+receive its identification somewhere, that can be the sysfs interface above,
+or even commandline.
+
+Farther down the road we might want a Kernel API, through to the DIMM-manager
+when each device's ID is Identified to managed volumes of DIMMs. (And what
+happens to them if they move in physical addressing), but even with DIMM-manager
+I would have gone through a udev-event and pmem-probe because, this way user
+mode can add a chain of commands associated with new insertions. So since we
+have a DIMM-manager event going on why not have the udev rule load pmem as well
+and not have any API. But All this is way down the line.
+
+Regardless of which, commandline API of pmem will always stay as this is for
+the pmem emulation as we use it now, in accord with memmap=.
+(And it works very nice in our lab with DDR3 NvDIMMs that need an memmap= as well)
+
+We please need to start somewhere, no?
+
+Thanks
+Boaz
+
