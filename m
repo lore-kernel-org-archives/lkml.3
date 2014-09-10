@@ -1,173 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaIJN4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:56:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42930 "EHLO bear.ext.ti.com"
+	id S1751951AbaIJN5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:57:04 -0400
+Received: from imap.thunk.org ([74.207.234.97]:48276 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064AbaIJN4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:56:38 -0400
-Message-ID: <54105893.70804@ti.com>
-Date: Wed, 10 Sep 2014 08:56:35 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751331AbaIJN5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:57:02 -0400
+Date: Wed, 10 Sep 2014 09:56:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+Message-ID: <20140910135649.GB31903@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Dan Carpenter <dan.carpenter@oracle.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux.com>,
+	Pekka Enberg <penberg@kernel.org>,
+	David Rientjes <rientjes@google.com>,
+	Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org, Dave Jones <davej@redhat.com>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+ <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+ <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+ <20140909221138.2587d864.akpm@linux-foundation.org>
+ <20140910063630.GM6549@mwanda>
 MIME-Version: 1.0
-To: Mugunthan V N <mugunthanvnm@ti.com>, <bcousson@baylibre.com>,
-        <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] ARM: dts: dra7-evm: Enable CPSW and MDIO for dra7xx
- EVM
-References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com> <1410356247-25925-3-git-send-email-mugunthanvnm@ti.com>
-In-Reply-To: <1410356247-25925-3-git-send-email-mugunthanvnm@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910063630.GM6549@mwanda>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 08:37 AM, Mugunthan V N wrote:
-> Adding CPSW phy-id, CPSW and MDIO pinmux configuration for active and
-> sleep states and enable them in board evm dts file.
+On Wed, Sep 10, 2014 at 09:36:30AM +0300, Dan Carpenter wrote:
+> On Tue, Sep 09, 2014 at 10:11:38PM -0700, Andrew Morton wrote:
+> > On Wed, 10 Sep 2014 07:05:40 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wrote:
+> > This is the sort of error which a static checker could find.  I wonder
+> > if any of them do so.
 > 
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
->  arch/arm/boot/dts/dra7-evm.dts | 107 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 107 insertions(+)
+> Yes.  Ted asked me to add this to Smatch and that's how we found the
+> problems in ext4.  I'll push it out later this week.  It won't find
+> every single bug.
 > 
-> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
-> index 50f8022..e5c4e33 100644
-> --- a/arch/arm/boot/dts/dra7-evm.dts
-> +++ b/arch/arm/boot/dts/dra7-evm.dts
-> @@ -151,6 +151,87 @@
->  			0xd0	(PIN_OUTPUT | MUX_MODE0)	/* gpmc_be0n_cle */
->  		>;
->  	};
-> +
-> +	cpsw_default: cpsw_default {
-> +		pinctrl-single,pins = <
-> +			/* Slave 1 */
-> +			0x250 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tclk */
-> +			0x254 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tctl */
-> +			0x258 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td3 */
-> +			0x25c (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td2 */
-> +			0x260 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td1 */
-> +			0x264 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td0 */
-> +			0x268 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rclk */
-> +			0x26c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rctl */
-> +			0x270 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd3 */
-> +			0x274 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd2 */
-> +			0x278 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd1 */
-> +			0x27c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd0 */
+> We have fixed the 8 bugs that Smatch found.
 
-Cant we do this based on emac0 and emac1?
+The ironic thing is that I asked Dan to add the feature to smatch
+because I found two such bugs in ext4, and I suspected there would be
+more.  Sure enough, it found four more such bugs, including two in a
+recent commit where I had found the first two bugs --- and I had
+missed the other two even though I was specifically looking for such
+instances.  Oops.  :-)
 
-> +
-> +			/* Slave 2 */
-> +			0x198 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tclk */
+Maybe we can add a debugging config option?  I think having static
+checkers plus some kmalloc failure testing should be sufficient to
+prevent these sorts of problem from showing up.
 
-NAK. reason comment style -> we use the style:
- /* mode0_name.mode3_name */
+It would seem to me that this is the sort of thing that a static
+checker should find reliably; Coverity has found things that were more
+complex than what this should require, I think.  I don't know if they
+would be willing to add something this kernel-specific, though.  (I've
+added Dave Jones to the thread since he's been working a lot with
+Coverity; Dave, what do you think?)
 
-> +			0x19c (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tctl */
-> +			0x1a0 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td3 */
-> +			0x1a4 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td2 */
-> +			0x1a8 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td1 */
-> +			0x1ac (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td0 */
-> +			0x1b0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rclk */
-> +			0x1b4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rctl */
-> +			0x1b8 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd3 */
-> +			0x1bc (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd2 */
-> +			0x1c0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd1 */
-> +			0x1c4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd0 */
-> +		>;
-> +
-> +	};
-> +
-> +	cpsw_sleep: cpsw_sleep {
-> +		pinctrl-single,pins = <
-> +			/* Slave 1 */
-> +			0x250 (MUX_MODE15)
-> +			0x254 (MUX_MODE15)
-> +			0x258 (MUX_MODE15)
-> +			0x25c (MUX_MODE15)
-> +			0x260 (MUX_MODE15)
-> +			0x264 (MUX_MODE15)
-> +			0x268 (MUX_MODE15)
-> +			0x26c (MUX_MODE15)
-> +			0x270 (MUX_MODE15)
-> +			0x274 (MUX_MODE15)
-> +			0x278 (MUX_MODE15)
-> +			0x27c (MUX_MODE15)
-> +
-> +			/* Slave 1 */
-^^ Slave 1?
-> +			0x198 (MUX_MODE15)
-> +			0x19c (MUX_MODE15)
-> +			0x1a0 (MUX_MODE15)
-> +			0x1a4 (MUX_MODE15)
-> +			0x1a8 (MUX_MODE15)
-> +			0x1ac (MUX_MODE15)
-> +			0x1b0 (MUX_MODE15)
-> +			0x1b4 (MUX_MODE15)
-> +			0x1b8 (MUX_MODE15)
-> +			0x1bc (MUX_MODE15)
-> +			0x1c0 (MUX_MODE15)
-> +			0x1c4 (MUX_MODE15)
-> +		>;
-> +	};
-> +
-> +	davinci_mdio_default: davinci_mdio_default {
-> +		pinctrl-single,pins = <
-> +			/* MDIO */
-^^ you can drop the comment. it is redundant.
-> +			0x23c (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* mdio_data */
-> +			0x240 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mdio_clk */
-> +		>;
-> +	};
-> +
-> +	davinci_mdio_sleep: davinci_mdio_sleep {
-> +		pinctrl-single,pins = <
-> +			0x23c (MUX_MODE15)
-> +			0x240 (MUX_MODE15)
-> +		>;
-> +	};
-> +
->  };
->  
->  &i2c1 {
-> @@ -504,3 +585,29 @@
->  &usb2_phy2 {
->  	phy-supply = <&ldousb_reg>;
->  };
-> +
-> +&mac {
-> +	status = "okay";
-> +	pinctrl-names = "default", "sleep";
-> +	pinctrl-0 = <&cpsw_default>;
-> +	pinctrl-1 = <&cpsw_sleep>;
-> +	dual_emac;
-> +};
-> +
-> +&cpsw_emac0 {
-> +	phy_id = <&davinci_mdio>, <2>;
-> +	phy-mode = "rgmii";
-> +	dual_emac_res_vlan = <1>;
-> +};
-> +
-> +&cpsw_emac1 {
-> +	phy_id = <&davinci_mdio>, <3>;
-> +	phy-mode = "rgmii";
-> +	dual_emac_res_vlan = <2>;
-> +};
-> +
-> +&davinci_mdio {
-> +	pinctrl-names = "default", "sleep";
-> +	pinctrl-0 = <&davinci_mdio_default>;
-> +	pinctrl-1 = <&davinci_mdio_sleep>;
-> +};
-> 
-
-
--- 
-Regards,
-Nishanth Menon
+      	 	    		       - Ted
