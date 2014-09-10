@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaIJOUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:20:55 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:54781 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaIJOUs (ORCPT
+	id S1752579AbaIJOVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:21:55 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:35909 "EHLO
+	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047AbaIJOUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:20:48 -0400
+	Wed, 10 Sep 2014 10:20:21 -0400
+From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <linux@arm.linux.org.uk>, <perex@perex.cz>, <tiwai@suse.de>,
+        <timur@tabi.org>, <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>,
+        <grant.likely@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <alsa-devel@alsa-project.org>,
+        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
+Subject: [PATCH 3/5] ARM: imx_v6_v7_defconfig: enable imx-tlv320aic3x by default
+Date: Wed, 10 Sep 2014 16:46:47 +0300
+Message-ID: <1410356809-26179-4-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
+References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
 MIME-Version: 1.0
-In-Reply-To: <20140910132123.GZ7996@ZenIV.linux.org.uk>
-References: <1410340819-18338-1-git-send-email-voytikd@gmail.com> <20140910132123.GZ7996@ZenIV.linux.org.uk>
-From: Dmitry Voytik <voytikd@gmail.com>
-Date: Wed, 10 Sep 2014 18:20:27 +0400
-Message-ID: <CAAX90H1uYKaW_yCZ7tCrhX9s5PzxVaV=6271OxF972pLbOVurg@mail.gmail.com>
-Subject: Re: [PATCH] fs: seq_file: optimize seq_pad()
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [192.168.117.165]
+X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
+ S326.sam-solutions.net (217.21.35.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 5:21 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Wed, Sep 10, 2014 at 01:20:19PM +0400, Dmitry Voytik wrote:
->> Use seq_putc() instead of seq_printf() in seq_pad() because the
->> former is faster.
->
-> _Solitary_ seq_putc() is certainly going to be faster, but that loop...
-> Do you have profiling results, or is it just an apriori "printf must
-> be sloooowwww"?
+Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+---
+ arch/arm/configs/imx_v6_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-My fail, sorry. The commit message is little bit wrong. I meant that simple
-looping of seq_putc() is faster than seq_printf(). I haven't done profilings.
-I just realized that seq_printf() is more complex than simple loop
-with seq_putc()
-(no need to decode format string as in vsnprintf(), etc).
-If I resend the patch with the following commit message:
-
-Use a simple loop with seq_putc() instead of seq_printf() in seq_pad() as
-this approach is faster due to less complexity in terms of machine cycles.
-
-Would be it Okay?
-Thank you for reviewing.
-
+diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+index 16cfec4385c8..66a6a5c6e75a 100644
+--- a/arch/arm/configs/imx_v6_v7_defconfig
++++ b/arch/arm/configs/imx_v6_v7_defconfig
+@@ -213,6 +213,7 @@ CONFIG_SND_SOC_IMX_WM8962=y
+ CONFIG_SND_SOC_IMX_SGTL5000=y
+ CONFIG_SND_SOC_IMX_SPDIF=y
+ CONFIG_SND_SOC_IMX_MC13783=y
++CONFIG_SND_SOC_IMX_TLV320AIC3X=y
+ CONFIG_USB=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_MXC=y
 -- 
-Best Regards,
-Dmitry Voytik.
-voytikd@gmail.com
+2.1.0
+
