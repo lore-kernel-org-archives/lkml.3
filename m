@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaIJQ6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:58:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43888 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaIJQ6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:58:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,500,1406617200"; 
-   d="scan'208";a="600953121"
-Message-ID: <54108314.80400@intel.com>
-Date: Wed, 10 Sep 2014 09:57:56 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752695AbaIJQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:58:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51431 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528AbaIJQ6x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:58:53 -0400
+Date: Wed, 10 Sep 2014 18:58:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
+Message-ID: <20140910165848.GA11901@worktop.ger.corp.intel.com>
+References: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
+ <20140910075722.GL6758@twins.programming.kicks-ass.net>
+ <20140910144012.GI4120@two.firstfloor.org>
+ <20140910163556.GE4783@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@sr71.net>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: regression caused by cgroups optimization in 3.17-rc2
-References: <54061505.8020500@sr71.net> <5406262F.4050705@intel.com> <54062F32.5070504@sr71.net> <20140904142721.GB14548@dhcp22.suse.cz> <5408CB2E.3080101@sr71.net> <20140905092537.GC26243@dhcp22.suse.cz> <20140910162936.GI25219@dhcp22.suse.cz>
-In-Reply-To: <20140910162936.GI25219@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910163556.GE4783@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 09:29 AM, Michal Hocko wrote:
-> I do not have a bigger machine to play with unfortunately. I think the
-> patch makes sense on its own. I would really appreciate if you could
-> give it a try on your machine with !root memcg case to see how much it
-> helped. I would expect similar results to your previous testing without
-> the revert and Johannes' patch.
+On Wed, Sep 10, 2014 at 06:35:56PM +0200, Peter Zijlstra wrote:
+> On Wed, Sep 10, 2014 at 04:40:12PM +0200, Andi Kleen wrote:
+> > > We did this once, and that blew up big time.
+> > > 
+> > > Even now, vmalloc_fault() has a very explicit:
+> > > 
+> > >   WARN_ON_ONCE(in_nmi());
+> > > 
+> > > So this isn't going to happen until you fix that.
+> > 
+> > Good point.
+> > 
+> > We just need to call vmalloc_sync_all at allocation time,
+> > no need to change vmalloc_fault.
+> 
+> Somehow that wasn't considered adequate, but lemme try and dig out that
+> thread. It should be somewhere...
+> 
+> https://lkml.org/lkml/2010/7/14/465
 
-So you want to see before/after this patch:
+Note that since then we have actually fixed the 'cannot fault from NMI
+context' thing, so we should be able to actually take those faults. I
+suspect we can simply remove those WARNs from the vmalloc fault path,
+but it would need double checking to see if there's no other reasons.
 
-Subject: [PATCH] mm, memcg: Do not kill release batching in
- free_pages_and_swap_cache
+Also:
 
-And you want it on top of a kernel with the revert or without?
+  https://lkml.org/lkml/2014/4/10/581
+  https://patchwork.kernel.org/patch/3048111/
+
+I'm not entirely sure what the final conclusion is, except to note that
+it didn't happen.
