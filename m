@@ -1,33 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaIJTU6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:20:58 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52476 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaIJTU5 (ORCPT
+	id S1752841AbaIJT2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:28:15 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:40316 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaIJT2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:20:57 -0400
-Date: Wed, 10 Sep 2014 20:20:53 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Wed, 10 Sep 2014 15:28:13 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Wed, 10 Sep 2014 15:28:10 -0400
 To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Jeff Layton <jlayton@primarydata.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, trond.myklebust@primarydata.com,
+        smayhew@redhat.com
 Subject: Re: [RFC PATCH 08/12] nfs: convert lock handling to use
  file_lock_context
-Message-ID: <20140910192052.GB7996@ZenIV.linux.org.uk>
-References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
- <1410359330-27564-9-git-send-email-jlayton@primarydata.com>
- <20140910191734.GD4210@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Message-ID: <20140910152810.36ec5bc0@tlielax.poochiereds.net>
 In-Reply-To: <20140910191734.GD4210@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+	<1410359330-27564-9-git-send-email-jlayton@primarydata.com>
+	<20140910191734.GD4210@fieldses.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 03:17:34PM -0400, J. Bruce Fields wrote:
+On Wed, 10 Sep 2014 15:17:34 -0400
+"J. Bruce Fields" <bfields@fieldses.org> wrote:
+
 > On Wed, Sep 10, 2014 at 10:28:46AM -0400, Jeff Layton wrote:
 > > Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 > > ---
@@ -46,7 +51,231 @@ On Wed, Sep 10, 2014 at 03:17:34PM -0400, J. Bruce Fields wrote:
 > >  	struct inode *inode = state->inode;
 > >  	struct file_lock *fl;
 > > +	struct file_lock_context *flctx = inode->i_flctx;
+> > +	struct list_head *list;
+> >  	int status = 0;
+> >  
+> > -	if (inode->i_flock == NULL)
+> > -		goto out;
+> > -
+> > -	/* Protect inode->i_flock using the i_lock */
+> > -	spin_lock(&inode->i_lock);
+> > -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+> > -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+> > -			continue;
+> > -		if (nfs_file_open_context(fl->fl_file) != ctx)
+> > -			continue;
+> > -		spin_unlock(&inode->i_lock);
+> > -		status = nfs4_lock_delegation_recall(fl, state, stateid);
+> > -		if (status < 0)
+> > -			goto out;
+> > -		spin_lock(&inode->i_lock);
+> > +	flctx = inode->i_flctx;
+> > +	if (flctx) {
+> > +		list = &flctx->flc_posix;
+> > +		spin_lock(&flctx->flc_lock);
+> > +restart:
+> > +		list_for_each_entry(fl, list, fl_list) {
+> > +			if (nfs_file_open_context(fl->fl_file) != ctx)
+> > +				continue;
+> > +			spin_unlock(&flctx->flc_lock);
+> > +			status = nfs4_lock_delegation_recall(fl, state, stateid);
+> > +			if (status < 0)
+> > +				goto out;
+> > +			spin_lock(&flctx->flc_lock);
+> > +		}
+> > +		if (list == &flctx->flc_posix) {
+> > +			list = &flctx->flc_flock;
+> > +			goto restart;
+> > +		}
+> > +		spin_unlock(&flctx->flc_lock);
+> >  	}
+> > -	spin_unlock(&inode->i_lock);
+> >  out:
+> >  	return status;
+> >  }
+> > diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+> > index a043f618cd5a..2899a0f26293 100644
+> > --- a/fs/nfs/nfs4state.c
+> > +++ b/fs/nfs/nfs4state.c
+> > @@ -1377,21 +1377,23 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+> >  	struct inode *inode = state->inode;
+> >  	struct nfs_inode *nfsi = NFS_I(inode);
+> >  	struct file_lock *fl;
+> > +	struct file_lock_context *flctx = inode->i_flctx;
+> > +	struct list_head *list;
+> >  	int status = 0;
+> >  
+> > -	if (inode->i_flock == NULL)
+> > +	if (!flctx)
+> >  		return 0;
+> >  
+> > +	list = &flctx->flc_posix;
+> > +
+> >  	/* Guard against delegation returns and new lock/unlock calls */
+> >  	down_write(&nfsi->rwsem);
+> > -	/* Protect inode->i_flock using the BKL */
+> > -	spin_lock(&inode->i_lock);
+> > -	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+> > -		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+> > -			continue;
+> > +	spin_lock(&flctx->flc_lock);
+> > +restart:
+> > +	list_for_each_entry(fl, list, fl_list) {
+> >  		if (nfs_file_open_context(fl->fl_file)->state != state)
+> >  			continue;
+> > -		spin_unlock(&inode->i_lock);
+> > +		spin_unlock(&flctx->flc_lock);
+> >  		status = ops->recover_lock(state, fl);
+> >  		switch (status) {
+> >  			case 0:
+> > @@ -1418,9 +1420,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+> >  				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+> >  				status = 0;
+> >  		}
+> > -		spin_lock(&inode->i_lock);
+> > +		spin_lock(&flctx->flc_lock);
+> >  	}
+> > -	spin_unlock(&inode->i_lock);
+> > +	if (list == &flctx->flc_posix) {
+> > +		list = &flctx->flc_flock;
+> > +		goto restart;
+> > +	}
+> > +	spin_unlock(&flctx->flc_lock);
+> >  out:
+> >  	up_write(&nfsi->rwsem);
+> >  	return status;
+> > diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+> > index ba491926df5f..4df8d8755026 100644
+> > --- a/fs/nfs/pagelist.c
+> > +++ b/fs/nfs/pagelist.c
+> > @@ -782,7 +782,8 @@ static bool nfs_can_coalesce_requests(struct nfs_page *prev,
+> >  	if (prev) {
+> >  		if (!nfs_match_open_context(req->wb_context, prev->wb_context))
+> >  			return false;
+> > -		if (req->wb_context->dentry->d_inode->i_flock != NULL &&
+> > +		if (req->wb_context->dentry->d_inode->i_flctx != NULL &&
+> > +		    !list_empty(&req->wb_context->dentry->d_inode->i_flctx->flc_posix) &&
+> >  		    !nfs_match_lock_context(req->wb_lock_context,
+> >  					    prev->wb_lock_context))
+> >  			return false;
+> > diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> > index e3b5cf28bdc5..02b8777f8f2f 100644
+> > --- a/fs/nfs/write.c
+> > +++ b/fs/nfs/write.c
+> > @@ -1128,7 +1128,8 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
+> >  		do_flush = req->wb_page != page || req->wb_context != ctx;
+> >  		/* for now, flush if more than 1 request in page_group */
+> >  		do_flush |= req->wb_this_page != req;
+> > -		if (l_ctx && ctx->dentry->d_inode->i_flock != NULL) {
+> > +		if (l_ctx && ctx->dentry->d_inode->i_flctx &&
+> > +		    !list_empty(&ctx->dentry->d_inode->i_flctx->flc_posix)) {
+> >  			do_flush |= l_ctx->lockowner.l_owner != current->files
+> >  				|| l_ctx->lockowner.l_pid != current->tgid;
+> >  		}
+> > @@ -1189,6 +1190,12 @@ out:
+> >  	return PageUptodate(page) != 0;
+> >  }
+> >  
+> > +static bool
+> > +is_whole_file_wrlock(struct file_lock *fl)
+> > +{
+> > +	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
+> > +}
+> > +
+> >  /* If we know the page is up to date, and we're not using byte range locks (or
+> >   * if we have the whole file locked for writing), it may be more efficient to
+> >   * extend the write to cover the entire page in order to avoid fragmentation
+> > @@ -1199,17 +1206,37 @@ out:
+> >   */
+> >  static int nfs_can_extend_write(struct file *file, struct page *page, struct inode *inode)
+> >  {
+> > +	int ret;
+> > +	struct file_lock_context *flctx = inode->i_flctx;
+> > +	struct file_lock *fl;
+> > +
+> >  	if (file->f_flags & O_DSYNC)
+> >  		return 0;
+> >  	if (!nfs_write_pageuptodate(page, inode))
+> >  		return 0;
+> >  	if (NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
+> >  		return 1;
+> > -	if (inode->i_flock == NULL || (inode->i_flock->fl_start == 0 &&
+> > -			inode->i_flock->fl_end == OFFSET_MAX &&
+> > -			inode->i_flock->fl_type != F_RDLCK))
+> 
+> Doesn't the existing code already have a bug?  Without the i_lock
+> inode->i_flock could turn NULL partyway through 
+> 
+> There's a bug in the existing code, isn't there?  Without holding the
+> i_lock, couldn't inode->i_flock turn NULL partway through this
+> conditional and cause NULL dereferences?  (Or, more bizarrely, the
+> checks of those various fields could end up being for different locks.)
+> 
 
-Ummm...  Something ought to be done for inflicting identifiers like that on
-those who'll read that code.  But That Would Probably Be Illegal(tm), more's
-the pity...
+(cc'ing Trond and Scott...)
+
+Yeah, I think you're correct. We really ought to hold the i_lock there
+once we see that i_flock isn't NULL.
+
+It's stuff like this that makes me wonder if we ought to convert all of
+this to using RCU. Being able to hold the rcu_read_lock instead of the
+i_lock (or the flc_lock once the conversion is done) would be rather
+nice.
+
+
+> > -		return 1;
+> > -	return 0;
+> > +	/* no lock context == no locks */
+> > +	if (!flctx)
+> > +		return 0;
+> > +
+> > +	/* if lists are empty then there are no locks */
+> > +	if (list_empty(&flctx->flc_posix) && list_empty(&flctx->flc_flock))
+> > +		return 0;
+> > +
+> > +	ret = 0;
+> > +	/* Check to see if there are whole file write locks */
+> > +	spin_lock(&flctx->flc_lock);
+> > +	fl = list_first_entry(&flctx->flc_posix, struct file_lock, fl_list);
+> > +	if (is_whole_file_wrlock(fl)) {
+> > +		ret = 1;
+> > +	} else {
+> > +		fl = list_first_entry(&flctx->flc_flock, struct file_lock, fl_list);
+> > +		if (is_whole_file_wrlock(fl))
+> > +			ret = 1;
+> > +	}
+> > +	spin_unlock(&flctx->flc_lock);
+> > +	return ret;
+> 
+> Kind of pity we're turning 5 lines of code into 20 in the name of
+> simplification.  Could be slightly pithier:
+> 
+> 	ret = is_whole_file_wrlock(fl);
+> 	if (!ret) {
+> 		fl = ...
+> 		ret = is_whole_file_wrlock(fl);
+> 	}
+> 
+> But, whatever, looks OK to me.
+> 
+> --b.
+> 
+
+Yes, that's the downside of moving to multiple list_heads. Still, I
+think it's worth doing that even if we end up with the code a bit more
+verbose.
+
+It may be best to consider moving some of this into helpers that live
+in locks.c. I really don't like having filesystems poke around in the
+intimate details of the file locking code as a general rule...
+
+> >  }
+> >  
+> >  /*
+> > -- 
+> > 1.9.3
+> > 
+
+
+-- 
+Jeff Layton <jlayton@primarydata.com>
