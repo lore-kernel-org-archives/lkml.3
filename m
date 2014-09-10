@@ -1,251 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaIJFLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 01:11:04 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:58761 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaIJFKr (ORCPT
+	id S1751947AbaIJFLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:11:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49133 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbaIJFLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 01:10:47 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v11 net-next 09/12] bpf: verifier (add branch/goto checks)
-Date: Tue,  9 Sep 2014 22:10:05 -0700
-Message-Id: <1410325808-3657-10-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	Wed, 10 Sep 2014 01:11:17 -0400
+Date: Tue, 9 Sep 2014 22:11:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+Message-Id: <20140909221138.2587d864.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+	<20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+	<alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check that control flow graph of eBPF program is a directed acyclic graph
+On Wed, 10 Sep 2014 07:05:40 +0200 (CEST) Jiri Kosina <jkosina@suse.cz> wrote:
 
-check_cfg() does:
-- detect loops
-- detect unreachable instructions
-- check that program terminates with BPF_EXIT insn
-- check that all branches are within program boundary
+> > > --- a/mm/slab.c
+> > > +++ b/mm/slab.c
+> > > @@ -3612,7 +3612,7 @@ void kfree(const void *objp)
+> > >  
+> > >  	trace_kfree(_RET_IP_, objp);
+> > >  
+> > > -	if (unlikely(ZERO_OR_NULL_PTR(objp)))
+> > > +	if (unlikely(ZERO_OR_NULL_PTR(objp) || IS_ERR(objp)))
+> > >  		return;
+> > 
+> > kfree() is quite a hot path to which this will add overhead.  And we
+> > have (as far as we know) no code which will actually use this at
+> > present.
+> 
+> We obviously don't, as such code will be causing explosions. This is meant 
+> as a prevention of problems such as the one that has just been fixed in 
+> ext4.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- kernel/bpf/verifier.c |  183 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 183 insertions(+)
+Well.  I bet there exist sites which can pass an ERR_PTR to kfree but
+haven't been know to do so yet because errors are rare.  Your patch
+would fix all those by magic, but is it worth the overhead?
 
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index df4eb58f7f0a..f03257de2bc3 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -313,6 +313,185 @@ static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
- 	return (struct bpf_map *) (unsigned long) imm64;
- }
- 
-+/* non-recursive DFS pseudo code
-+ * 1  procedure DFS-iterative(G,v):
-+ * 2      label v as discovered
-+ * 3      let S be a stack
-+ * 4      S.push(v)
-+ * 5      while S is not empty
-+ * 6            t <- S.pop()
-+ * 7            if t is what we're looking for:
-+ * 8                return t
-+ * 9            for all edges e in G.adjacentEdges(t) do
-+ * 10               if edge e is already labelled
-+ * 11                   continue with the next edge
-+ * 12               w <- G.adjacentVertex(t,e)
-+ * 13               if vertex w is not discovered and not explored
-+ * 14                   label e as tree-edge
-+ * 15                   label w as discovered
-+ * 16                   S.push(w)
-+ * 17                   continue at 5
-+ * 18               else if vertex w is discovered
-+ * 19                   label e as back-edge
-+ * 20               else
-+ * 21                   // vertex w is explored
-+ * 22                   label e as forward- or cross-edge
-+ * 23           label t as explored
-+ * 24           S.pop()
-+ *
-+ * convention:
-+ * 0x10 - discovered
-+ * 0x11 - discovered and fall-through edge labelled
-+ * 0x12 - discovered and fall-through and branch edges labelled
-+ * 0x20 - explored
-+ */
-+
-+enum {
-+	DISCOVERED = 0x10,
-+	EXPLORED = 0x20,
-+	FALLTHROUGH = 1,
-+	BRANCH = 2,
-+};
-+
-+#define PUSH_INT(I) \
-+	do { \
-+		if (cur_stack >= insn_cnt) { \
-+			ret = -E2BIG; \
-+			goto free_st; \
-+		} \
-+		stack[cur_stack++] = I; \
-+	} while (0)
-+
-+#define PEEK_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[cur_stack - 1]; \
-+		_ret; \
-+	 })
-+
-+#define POP_INT() \
-+	({ \
-+		int _ret; \
-+		if (cur_stack == 0) \
-+			_ret = -1; \
-+		else \
-+			_ret = stack[--cur_stack]; \
-+		_ret; \
-+	 })
-+
-+#define PUSH_INSN(T, W, E) \
-+	do { \
-+		int w = W; \
-+		if (E == FALLTHROUGH && st[T] >= (DISCOVERED | FALLTHROUGH)) \
-+			break; \
-+		if (E == BRANCH && st[T] >= (DISCOVERED | BRANCH)) \
-+			break; \
-+		if (w < 0 || w >= insn_cnt) { \
-+			verbose("jump out of range from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} \
-+		if (st[w] == 0) { \
-+			/* tree-edge */ \
-+			st[T] = DISCOVERED | E; \
-+			st[w] = DISCOVERED; \
-+			PUSH_INT(w); \
-+			goto peek_stack; \
-+		} else if ((st[w] & 0xF0) == DISCOVERED) { \
-+			verbose("back-edge from insn %d to %d\n", T, w); \
-+			ret = -EINVAL; \
-+			goto free_st; \
-+		} else if (st[w] == EXPLORED) { \
-+			/* forward- or cross-edge */ \
-+			st[T] = DISCOVERED | E; \
-+		} else { \
-+			verbose("insn state internal bug\n"); \
-+			ret = -EFAULT; \
-+			goto free_st; \
-+		} \
-+	} while (0)
-+
-+/* non-recursive depth-first-search to detect loops in BPF program
-+ * loop == back-edge in directed graph
-+ */
-+static int check_cfg(struct verifier_env *env)
-+{
-+	struct bpf_insn *insns = env->prog->insnsi;
-+	int insn_cnt = env->prog->len;
-+	int cur_stack = 0;
-+	int *stack;
-+	int ret = 0;
-+	int *st;
-+	int i, t;
-+
-+	st = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!st)
-+		return -ENOMEM;
-+
-+	stack = kzalloc(sizeof(int) * insn_cnt, GFP_KERNEL);
-+	if (!stack) {
-+		kfree(st);
-+		return -ENOMEM;
-+	}
-+
-+	st[0] = DISCOVERED; /* mark 1st insn as discovered */
-+	PUSH_INT(0);
-+
-+peek_stack:
-+	while ((t = PEEK_INT()) != -1) {
-+		if (BPF_CLASS(insns[t].code) == BPF_JMP) {
-+			u8 opcode = BPF_OP(insns[t].code);
-+
-+			if (opcode == BPF_EXIT) {
-+				goto mark_explored;
-+			} else if (opcode == BPF_CALL) {
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+			} else if (opcode == BPF_JA) {
-+				if (BPF_SRC(insns[t].code) != BPF_K) {
-+					ret = -EINVAL;
-+					goto free_st;
-+				}
-+				/* unconditional jump with single edge */
-+				PUSH_INSN(t, t + insns[t].off + 1, FALLTHROUGH);
-+			} else {
-+				/* conditional jump with two edges */
-+				PUSH_INSN(t, t + 1, FALLTHROUGH);
-+				PUSH_INSN(t, t + insns[t].off + 1, BRANCH);
-+			}
-+		} else {
-+			/* all other non-branch instructions with single
-+			 * fall-through edge
-+			 */
-+			PUSH_INSN(t, t + 1, FALLTHROUGH);
-+		}
-+
-+mark_explored:
-+		st[t] = EXPLORED;
-+		if (POP_INT() == -1) {
-+			verbose("pop_int internal bug\n");
-+			ret = -EFAULT;
-+			goto free_st;
-+		}
-+	}
-+
-+
-+	for (i = 0; i < insn_cnt; i++) {
-+		if (st[i] != EXPLORED) {
-+			verbose("unreachable insn %d\n", i);
-+			ret = -EINVAL;
-+			goto free_st;
-+		}
-+	}
-+
-+free_st:
-+	kfree(st);
-+	kfree(stack);
-+	return ret;
-+}
-+
- /* look for pseudo eBPF instructions that access map FDs and
-  * replace them with actual map pointers
-  */
-@@ -462,6 +641,10 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
- 	if (ret < 0)
- 		goto skip_full_check;
- 
-+	ret = check_cfg(env);
-+	if (ret < 0)
-+		goto skip_full_check;
-+
- 	/* ret = do_check(env); */
- 
- skip_full_check:
--- 
-1.7.9.5
-
+This is the sort of error which a static checker could find.  I wonder
+if any of them do so.
