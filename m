@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaIJOKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:10:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38683 "EHLO mail.kernel.org"
+	id S1752400AbaIJOKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:10:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38723 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221AbaIJOKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:10:37 -0400
+	id S1752366AbaIJOKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:10:46 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 12/14] perf evlist: Refcount mmaps
-Date: Wed, 10 Sep 2014 11:08:47 -0300
-Message-Id: <1410358129-9965-13-git-send-email-acme@kernel.org>
+Subject: [PATCH 13/14] tools lib fd array: Allow associating an integer cookie with each entry
+Date: Wed, 10 Sep 2014 11:08:48 -0300
+Message-Id: <1410358129-9965-14-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410358129-9965-1-git-send-email-acme@kernel.org>
 References: <1410358129-9965-1-git-send-email-acme@kernel.org>
@@ -29,9 +29,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We need to know how many fds are using a perf mmap via
-PERF_EVENT_IOC_SET_OUTPUT, so that we can know when to ditch an mmap,
-refcount it.
+We will use this in perf's evlist class so that it can, at
+fdarray__filter() time, to unmap the associated ring buffer.
+
+We may need to have further info associated with each fdarray entry, in
+that case we'll make that int array a 'union fdarray_priv' one and put a
+pointer there so that users can stash whatever they want there. For now,
+an int is enough tho.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -44,90 +48,136 @@ Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140908153824.GG2773@kernel.org
-Link: http://lkml.kernel.org/n/tip-9ymfcxmk52sb7u1g0i3aiovh@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ugusyqex32mc86hqh7cjdy3i@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 21 ++++++++++++++++++++-
- tools/perf/util/evlist.h |  6 ++++++
- 2 files changed, 26 insertions(+), 1 deletion(-)
+ tools/lib/api/fd/array.c | 28 ++++++++++++++++++++++++----
+ tools/lib/api/fd/array.h |  4 +++-
+ tools/perf/util/evlist.c |  2 +-
+ 3 files changed, 28 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 477ede5367ee..662057a44126 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -664,6 +664,7 @@ static void __perf_evlist__munmap(struct perf_evlist *evlist, int idx)
- 	if (evlist->mmap[idx].base != NULL) {
- 		munmap(evlist->mmap[idx].base, evlist->mmap_len);
- 		evlist->mmap[idx].base = NULL;
-+		evlist->mmap[idx].nfds = 0;
- 	}
+diff --git a/tools/lib/api/fd/array.c b/tools/lib/api/fd/array.c
+index bd923d41b450..3f6d1a03d195 100644
+--- a/tools/lib/api/fd/array.c
++++ b/tools/lib/api/fd/array.c
+@@ -13,21 +13,31 @@
+ void fdarray__init(struct fdarray *fda, int nr_autogrow)
+ {
+ 	fda->entries	 = NULL;
++	fda->priv	 = NULL;
+ 	fda->nr		 = fda->nr_alloc = 0;
+ 	fda->nr_autogrow = nr_autogrow;
  }
  
-@@ -697,6 +698,7 @@ struct mmap_params {
- static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
- 			       struct mmap_params *mp, int fd)
+ int fdarray__grow(struct fdarray *fda, int nr)
  {
-+	evlist->mmap[idx].nfds = 1;
- 	evlist->mmap[idx].prev = 0;
- 	evlist->mmap[idx].mask = mp->mask;
- 	evlist->mmap[idx].base = mmap(NULL, evlist->mmap_len, mp->prot,
-@@ -711,6 +713,19 @@ static int __perf_evlist__mmap(struct perf_evlist *evlist, int idx,
++	void *priv;
+ 	int nr_alloc = fda->nr_alloc + nr;
++	size_t psize = sizeof(fda->priv[0]) * nr_alloc;
+ 	size_t size  = sizeof(struct pollfd) * nr_alloc;
+ 	struct pollfd *entries = realloc(fda->entries, size);
+ 
+ 	if (entries == NULL)
+ 		return -ENOMEM;
+ 
++	priv = realloc(fda->priv, psize);
++	if (priv == NULL) {
++		free(entries);
++		return -ENOMEM;
++	}
++
+ 	fda->nr_alloc = nr_alloc;
+ 	fda->entries  = entries;
++	fda->priv     = priv;
  	return 0;
  }
  
-+static void perf_evlist__mmap_get(struct perf_evlist *evlist, int idx)
-+{
-+	++evlist->mmap[idx].nfds;
-+}
-+
-+static void perf_evlist__mmap_put(struct perf_evlist *evlist, int idx)
-+{
-+	BUG_ON(evlist->mmap[idx].nfds == 0);
-+
-+	if (--evlist->mmap[idx].nfds == 0)
-+		__perf_evlist__munmap(evlist, idx);
-+}
-+
- static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
- 				       struct mmap_params *mp, int cpu,
- 				       int thread, int *output)
-@@ -732,10 +747,14 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
- 		} else {
- 			if (ioctl(fd, PERF_EVENT_IOC_SET_OUTPUT, *output) != 0)
- 				return -1;
-+
-+			perf_evlist__mmap_get(evlist, idx);
- 		}
+@@ -50,6 +60,7 @@ struct fdarray *fdarray__new(int nr_alloc, int nr_autogrow)
+ void fdarray__exit(struct fdarray *fda)
+ {
+ 	free(fda->entries);
++	free(fda->priv);
+ 	fdarray__init(fda, 0);
+ }
  
--		if (perf_evlist__add_pollfd(evlist, fd) < 0)
-+		if (perf_evlist__add_pollfd(evlist, fd) < 0) {
-+			perf_evlist__mmap_put(evlist, idx);
- 			return -1;
+@@ -61,6 +72,8 @@ void fdarray__delete(struct fdarray *fda)
+ 
+ int fdarray__add(struct fdarray *fda, int fd, short revents)
+ {
++	int pos = fda->nr;
++
+ 	if (fda->nr == fda->nr_alloc &&
+ 	    fdarray__grow(fda, fda->nr_autogrow) < 0)
+ 		return -ENOMEM;
+@@ -69,10 +82,11 @@ int fdarray__add(struct fdarray *fda, int fd, short revents)
+ 	fda->entries[fda->nr].fd     = fd;
+ 	fda->entries[fda->nr].events = revents;
+ 	fda->nr++;
+-	return 0;
++	return pos;
+ }
+ 
+-int fdarray__filter(struct fdarray *fda, short revents)
++int fdarray__filter(struct fdarray *fda, short revents,
++		    void (*entry_destructor)(struct fdarray *fda, int fd))
+ {
+ 	int fd, nr = 0;
+ 
+@@ -80,11 +94,17 @@ int fdarray__filter(struct fdarray *fda, short revents)
+ 		return 0;
+ 
+ 	for (fd = 0; fd < fda->nr; ++fd) {
+-		if (fda->entries[fd].revents & revents)
++		if (fda->entries[fd].revents & revents) {
++			if (entry_destructor)
++				entry_destructor(fda, fd);
++
+ 			continue;
 +		}
  
- 		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
- 		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index fc013704d903..19bbe0410827 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -18,9 +18,15 @@ struct record_opts;
- #define PERF_EVLIST__HLIST_BITS 8
- #define PERF_EVLIST__HLIST_SIZE (1 << PERF_EVLIST__HLIST_BITS)
+-		if (fd != nr)
++		if (fd != nr) {
+ 			fda->entries[nr] = fda->entries[fd];
++			fda->priv[nr]	 = fda->priv[fd];
++		}
  
-+/**
-+ * struct perf_mmap - perf's ring buffer mmap details
-+ *
-+ * @nfds - file descriptors pointing here via PERF_EVENT_IOC_SET_OUTPUT
-+ */
- struct perf_mmap {
- 	void		 *base;
- 	int		 mask;
-+	int		 nfds;
- 	unsigned int	 prev;
- 	char		 event_copy[PERF_SAMPLE_MAX_SIZE];
+ 		++nr;
+ 	}
+diff --git a/tools/lib/api/fd/array.h b/tools/lib/api/fd/array.h
+index de38361ba69e..7b2870a96898 100644
+--- a/tools/lib/api/fd/array.h
++++ b/tools/lib/api/fd/array.h
+@@ -10,6 +10,7 @@ struct fdarray {
+ 	int	       nr_alloc;
+ 	int	       nr_autogrow;
+ 	struct pollfd *entries;
++	int	      *priv;
  };
+ 
+ void fdarray__init(struct fdarray *fda, int nr_autogrow);
+@@ -20,7 +21,8 @@ void fdarray__delete(struct fdarray *fda);
+ 
+ int fdarray__add(struct fdarray *fda, int fd, short revents);
+ int fdarray__poll(struct fdarray *fda, int timeout);
+-int fdarray__filter(struct fdarray *fda, short revents);
++int fdarray__filter(struct fdarray *fda, short revents,
++		    void (*entry_destructor)(struct fdarray *fda, int fd));
+ int fdarray__grow(struct fdarray *fda, int extra);
+ int fdarray__fprintf(struct fdarray *fda, FILE *fp);
+ 
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 662057a44126..6d2499cfd789 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -431,7 +431,7 @@ int perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
+ 
+ int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
+ {
+-	return fdarray__filter(&evlist->pollfd, revents_and_mask);
++	return fdarray__filter(&evlist->pollfd, revents_and_mask, NULL);
+ }
+ 
+ int perf_evlist__poll(struct perf_evlist *evlist, int timeout)
 -- 
 1.9.3
 
