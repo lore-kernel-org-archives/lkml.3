@@ -1,154 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173AbaIJQV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:21:58 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:45306
+	id S1752218AbaIJQXS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:23:18 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:45330
 	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaIJQV5 (ORCPT
+	with ESMTP id S1750935AbaIJQXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:21:57 -0400
-Date: Wed, 10 Sep 2014 18:21:55 +0200
+	Wed, 10 Sep 2014 12:23:16 -0400
+Date: Wed, 10 Sep 2014 18:23:15 +0200
 From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+To: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Cc: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard.weinberger@gmail.com>,
         Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20140910162155.GA7748@mail.hallyn.com>
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <20140910123525.GA29064@ubuntu-hedt>
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [RFC PATCH 2/3] procfs: show hierarchy of pid namespace
+Message-ID: <20140910162315.GB7748@mail.hallyn.com>
+References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <1409740200-26461-3-git-send-email-chenhanxiao@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140910123525.GA29064@ubuntu-hedt>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409740200-26461-3-git-send-email-chenhanxiao@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Seth Forshee (seth.forshee@canonical.com):
-> On Tue, Sep 02, 2014 at 10:44:53AM -0500, Seth Forshee wrote:
-> > Another issue mentioned by Eric was what to use for i_[ug]id if the ids
-> > from userspace don't map into the user namespace, which is going to be a
-> > problem for any other filesystems which become mountable from user
-> > namespaces as well. We discussed a few options for addressing this, the
-> > most promising of which seems to be either using INVALID_[UG]ID for
-> > these inodes or creating vfs-wide "nobody" ids for this purpose. After
-> > thinking about it for a while I'm favoring using the invalid ids, but
-> > I'm hoping to solicit some more feedback.
-> > 
-> > For now these patches are using invalid ids if the user doesn't map into
-> > the namespace. I went through the vfs code and found one place where
-> > this could be handled better (addressed in patch 1 of the series). The
-> > only other issue I found was that currently no one, not even root, can
-> > change onwership of such inodes, but I suspect we can find a way around
-> > this.
+Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
+> This patch will show the hierarchy of pid namespace
+> under /proc/pidns like:
+> /proc/pidns
+> ├── hierarchy
+> │   ├── pidns4026532399
+> │   │   ├── pidns -> /proc/2863/ns/pid
+> │   │   └── pidns4026532515
+> │   │       └── pidns -> /proc/10611/ns/pid
+> │   └── pidns4026532504
+> │       └── pidns -> /proc/4450/ns/pid
+> └── refresh
 > 
-> I started playing around with using -2 as a global nobody id. The
-> changes below (made on top of this series) are working fine in light
-> testing. I'm still not sure about the security implications of doing
-> this though. Possibly the nobody id should be removed from init_user_ns
-> to prevent any use of the id to gain unauthroized access to such files.
-> Thoughts?
+> a) hierarchy dir:
+>   use to show hierarchy infomation using dir and symlinks.
+>   dirs are named as pidns($inum)
+>   a symlink is created under pidns($inum), and linked to
+>   that pid namespace.
+> 
+> b) refresh
+>   trigger key.
+>   We need to write sth to /proc/nspid/refresh,
+>   then we could get hierarchy info
+>   under /proc/pidns/hierarchy.
 
-Can you explain the downsides of just using -1?  What are we able to do
-(as a fuse-in-container user) when we use -2 that we can't do when it
-uses -1?
+Ouch.  There may not be a better way, but it sure would be nice if
+we could simply have the list update in real-time.
 
-> diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-> index c0b9968db6a1..893fc0d6ff96 100644
-> --- a/fs/fuse/dir.c
-> +++ b/fs/fuse/dir.c
-> @@ -905,8 +905,8 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
->  	stat->ino = attr->ino;
->  	stat->mode = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
->  	stat->nlink = attr->nlink;
-> -	stat->uid = make_kuid(fc->user_ns, attr->uid);
-> -	stat->gid = make_kgid(fc->user_ns, attr->gid);
-> +	stat->uid = make_kuid_munged(fc->user_ns, attr->uid);
-> +	stat->gid = make_kgid_munged(fc->user_ns, attr->gid);
->  	stat->rdev = inode->i_rdev;
->  	stat->atime.tv_sec = attr->atime;
->  	stat->atime.tv_nsec = attr->atimensec;
-> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-> index f3a3ded82f85..330ac3d502a6 100644
-> --- a/fs/fuse/inode.c
-> +++ b/fs/fuse/inode.c
-> @@ -167,8 +167,8 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
->  	inode->i_ino     = fuse_squash_ino(attr->ino);
->  	inode->i_mode    = (inode->i_mode & S_IFMT) | (attr->mode & 07777);
->  	set_nlink(inode, attr->nlink);
-> -	inode->i_uid     = make_kuid(fc->user_ns, attr->uid);
-> -	inode->i_gid     = make_kgid(fc->user_ns, attr->gid);
-> +	inode->i_uid     = make_kuid_munged(fc->user_ns, attr->uid);
-> +	inode->i_gid     = make_kgid_munged(fc->user_ns, attr->gid);
->  	inode->i_blocks  = attr->blocks;
->  	inode->i_atime.tv_sec   = attr->atime;
->  	inode->i_atime.tv_nsec  = attr->atimensec;
-> diff --git a/include/linux/uidgid.h b/include/linux/uidgid.h
-> index 6c302267f7cc..9054273af163 100644
-> --- a/include/linux/uidgid.h
-> +++ b/include/linux/uidgid.h
-> @@ -45,6 +45,9 @@ static inline gid_t __kgid_val(kgid_t gid)
->  #define INVALID_UID KUIDT_INIT(-1)
->  #define INVALID_GID KGIDT_INIT(-1)
->  
-> +#define NOBODY_UID KUIDT_INIT(-2)
-> +#define NOBODY_GID KGIDT_INIT(-2)
+If we have to 'echo 1 > /proc/pidns/refresh' to update the fs tree under
+/proc/pidns/ to reflect new pidns activity, then why not just make this
+a text file?  I suppose if it were a textfile you'd be encouraging ppl
+to 'cat pidlist | while read line; do grep line /proc/pidns; done',
+which would cause a refresh of that file for every grep?
+
+My concern with this approach is that it is unlike any other pseudo-fs
+that I know of, and people may simply expect the fs contents to be
+uptodate rather than a snapshot.
+
+> Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> ---
+>  fs/proc/Kconfig           |   6 ++
+>  fs/proc/Makefile          |   1 +
+>  fs/proc/pidns_hierarchy.c | 161 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 168 insertions(+)
+>  create mode 100644 fs/proc/pidns_hierarchy.c
+> 
+> diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+> index 2183fcf..e2e2292 100644
+> --- a/fs/proc/Kconfig
+> +++ b/fs/proc/Kconfig
+> @@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
+>  	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
+>  	  /proc/kpagecount, and /proc/kpageflags. Disabling these
+>            interfaces will reduce the size of the kernel by approximately 4kb.
 > +
->  static inline bool uid_eq(kuid_t left, kuid_t right)
->  {
->  	return __kuid_val(left) == __kuid_val(right);
-> @@ -175,4 +178,44 @@ static inline bool kgid_has_mapping(struct user_namespace *ns, kgid_t gid)
->  
->  #endif /* CONFIG_USER_NS */
->  
-> +/**
-> + *	make_kuid_munged - Map a user-namespace uid pair into a kuid
-> + * 	@from: User namespace that the uid is in
-> + * 	@uid:  User identifier
+> +config PROC_PID_HIERARCHY
+> +	bool "Enable /proc/pidns_hierarchy support" if EXPERT
+> +	depends on PROC_FS
+> +	help
+> +	  Show pid namespace hierarchy infomation
+> diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+> index 239493e..733599b 100644
+> --- a/fs/proc/Makefile
+> +++ b/fs/proc/Makefile
+> @@ -29,3 +29,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+>  proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+>  proc-$(CONFIG_PRINTK)	+= kmsg.o
+>  proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
+> +proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
+> diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
+> new file mode 100644
+> index 0000000..d35340f
+> --- /dev/null
+> +++ b/fs/proc/pidns_hierarchy.c
+> @@ -0,0 +1,161 @@
+> +/*
+> + * proc_pidns_hierarchy.c -- handles pidns hierarchy
 > + *
-> + *	Maps a user-namespace uid pair into a kernel internal kuid,
-> + *	and returns that kuid.
-> + *
-> + *	Unlike make_kuid, make_kuid_munged never fails and always
-> + *	returns a valid uid. If @uid has no mapping in @from
-> + *	NOBODY_UID is returned.
+> + * Copyright 2014
 > + */
-> +static inline kuid_t make_kuid_munged(struct user_namespace *from, uid_t uid)
+> +
+> +#include <linux/init.h>
+> +#include <linux/errno.h>
+> +#include <linux/proc_fs.h>
+> +#include <linux/module.h>
+> +#include <linux/list.h>
+> +#include <linux/slab.h>
+> +#include <linux/pid_namespace.h>
+> +
+> +/*
+> + * The /proc/pidns directory
+> + */
+> +
+> +#define BASE_DIR	"pidns"			/* Subdir in /proc */
+> +#define HIERARCHY_DIR	"pidns/hierarchy"	/* hierarchy dir */
+> +#define REFRESH_KEY	"pidns/refresh"		/* refresh key */
+> +#define NAME		"pidns_hierarchy"	/* Module name */
+> +
+> +static LIST_HEAD(pidns_list);
+> +static DEFINE_RWLOCK(pidns_lock);
+> +static struct proc_dir_entry *proc_root;
+> +
+> +struct ns_pid_list {
+> +	struct pid *pid;
+> +	struct list_head list;
+> +};
+> +
+> +static void free_pidns_list(struct list_head *head)
 > +{
-> +	kuid_t kuid = make_kuid(from, uid);
-> +	if (!uid_valid(kuid))
-> +		kuid = NOBODY_UID;
-> +	return kuid;
+> +	struct ns_pid_list *tmp, *pos;
+> +
+> +	list_for_each_entry_safe(pos, tmp, head, list) {
+> +		list_del(&pos->list);
+> +		kfree(pos);
+> +	}
 > +}
 > +
-> +/**
-> + *	make_kgid_munged - Map a user-namespace gid pair into a kgid
-> + * 	@from: User namespace that the gid is in
-> + * 	@gid:  User identifier
-> + *
-> + *	Maps a user-namespace gid pair into a kernel internal kgid,
-> + *	and returns that kgid.
-> + *
-> + *	Unlike make_kgid, make_kgid_munged never fails and always
-> + *	returns a valid gid. If @gid has no mapping in @from
-> + *	NOBODY_GID is returned.
+> +/*
+> + * Only add pids with different ns
 > + */
-> +static inline kgid_t make_kgid_munged(struct user_namespace *from, gid_t gid)
+> +static int
+> +ns_pid_list_really_add(struct pid *pid)
 > +{
-> +	kgid_t kgid = make_kgid(from, gid);
-> +	if (!gid_valid(kgid))
-> +		kgid = NOBODY_GID;
-> +	return kgid;
+> +	struct ns_pid_list *tmp, *pos;
+> +
+> +	list_for_each_entry_safe(pos, tmp, &pidns_list, list)
+> +		if (ns_of_pid(pid) == ns_of_pid(pos->pid))
+> +			return 0;
+> +
+> +	return 1;
 > +}
 > +
->  #endif /* _LINUX_UIDGID_H */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +static int
+> +ns_pid_list_add(struct pid *pid)
+> +{
+> +	struct ns_pid_list *ent;
+> +
+> +	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+> +	if (!ent)
+> +		return -ENOMEM;
+> +	ent->pid = pid;
+> +	if (ns_pid_list_really_add(pid))
+> +		list_add_tail(&ent->list, &pidns_list);
+> +
+> +	return 0;
+> +}
+> +
+> +static void print_list(void)
+> +{
+> +	struct ns_pid_list *tmp, *pos;
+> +	struct proc_dir_entry *parent, *parent_new;
+> +	struct pid_namespace *ns, *curr_ns;
+> +	struct pid *pid;
+> +	char name_buf[16], pid_buf[32];
+> +	int i, k;
+> +
+> +	curr_ns = task_active_pid_ns(current);
+> +
+> +	list_for_each_entry_safe(pos, tmp, &pidns_list, list) {
+> +		pid = pos->pid;
+> +		k = -1;
+> +		ns = pid->numbers[pid->level].ns;
+> +		/* Check whether pid has relationship with current ns */
+> +		for (; ns != NULL; ns = ns->parent)
+> +			if (ns == curr_ns)
+> +				k = curr_ns->level;
+> +		if (k == -1)
+> +			continue;
+> +		parent = proc_root;
+> +		for (i = k + 1; i <= pid->level; i++) {
+> +			ns = pid->numbers[i].ns;
+> +			snprintf(name_buf, 16, "pidns%u",
+> +				pid->numbers[i].ns->proc_inum);
+> +			snprintf(pid_buf, 32, "/proc/%u/ns/pid",
+> +				pid->numbers[0].nr);
+> +			/* don't duplicate ns dirs */
+> +			parent_new = proc_uniq_dir(parent, name_buf);
+> +			if (!parent_new) {
+> +				parent_new = proc_mkdir(name_buf, parent);
+> +				proc_symlink("pidns", parent_new, pid_buf);
+> +			}
+> +		parent = parent_new;
+> +		}
+> +	}
+> +}
+> +
+> +void proc_pidns_list(void)
+> +{
+> +	struct pid *pid;
+> +	struct task_struct *task = &init_task;
+> +
+> +	remove_proc_subtree(HIERARCHY_DIR, NULL);
+> +	proc_root = proc_mkdir(HIERARCHY_DIR, NULL);
+> +	free_pidns_list(&pidns_list);
+> +
+> +	do {
+> +		pid = task_pid(task);
+> +		if (pid) {
+> +			if (pid->level > 0)
+> +				ns_pid_list_add(pid);
+> +		}
+> +	} while ((task = next_task(task)) != &init_task);
+> +
+> +	print_list();
+> +	printk(KERN_INFO "refresh finished\n");
+> +}
+> +
+> +ssize_t proc_pidns_refresh_switch(struct file *file, const char __user *buf,
+> +		size_t size, loff_t *ppos)
+> +{
+> +	write_lock(&pidns_lock);
+> +	proc_pidns_list();
+> +	write_unlock(&pidns_lock);
+> +	return 1;
+> +}
+> +
+> +static const struct file_operations proc_pidns_refresh_fops = {
+> +	.write = proc_pidns_refresh_switch,
+> +};
+> +
+> +static int __init pidns_hierarchy_init(void)
+> +{
+> +
+> +	if (!proc_mkdir(BASE_DIR, NULL))
+> +		return -ENOMEM;
+> +	proc_root = proc_mkdir(HIERARCHY_DIR, NULL);
+> +	if (!proc_root)
+> +		return -ENOMEM;
+> +
+> +	proc_create(REFRESH_KEY, S_IWUGO,
+> +		NULL, &proc_pidns_refresh_fops);
+> +	printk(KERN_INFO "%s: loaded successfully\n", NAME);
+> +
+> +	return 0;
+> +}
+> +fs_initcall(pidns_hierarchy_init);
+> -- 
+> 1.9.0
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
