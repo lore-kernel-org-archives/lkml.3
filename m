@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaIJRCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:02:17 -0400
-Received: from mout.gmx.net ([212.227.15.18]:54600 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaIJRCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:02:16 -0400
-Message-ID: <54108939.5050208@gmx.net>
-Date: Wed, 10 Sep 2014 19:24:09 +0200
-From: Stefan Wahren <wahrenst@gmx.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        "festevam@gmail.com" <festevam@gmail.com>
-CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC 2/3] ARM: regulator: add Freescale MXS regulator driver
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de> <1410089869-6611-3-git-send-email-info@lategoodbye.de> <20140909182211.GG3896@leverpostej> <540F523D.4010904@lategoodbye.de> <20140910141853.GA4994@leverpostej>
-In-Reply-To: <20140910141853.GA4994@leverpostej>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:PeY6MSEjqT/iHQHmU6E5Z+zfXFlpRAsFb4SAEjS/yOUQoa0g3yF
- cBRHUNca4VL1+9Eu6Dwc8BEpUgTSsycud5KwTpCi1ttao1W6IkYWOha1WI7nFZl40wI7rjm
- bqHl90I1s7qMLY/VD4K+I6pPkx3j3euVIY2ltX0G+b/pjpIHPthVTZeYDH3I+HxJb6Pgfjm
- wl6LVO0Jdjak6Vdg2Jx4g==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752567AbaIJRC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:02:28 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:7715 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342AbaIJRC0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 13:02:26 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com, konrad.wilk@oracle.com
+Subject: [PATCH v2 0/6] Support Write-Through mapping on x86
+Date: Wed, 10 Sep 2014 10:51:44 -0600
+Message-Id: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patchset adds support of Write-Through (WT) mapping on x86.
+The study below shows that using WT mapping may be useful for
+non-volatile memory.
 
-Am 10.09.2014 16:18, schrieb Mark Rutland:
->[...]
->
->>>> +       of_property_read_u32(np, "mxs-default-microvolt",
->>>> +                                  &val);
->>>> +
->>>> +       if (val)
->>>> +               mxs_set_voltage(rdev, val, val, NULL);
->>>
->>> As I mentioned in my comments on the binding, I'd like to know why this
->>> is necessary and if it is why it shouldn't be a standardised property.
->>
->>   From my understanding the standardised properties only defines a range,
->> but no default state of the regulators. If the initialization from the
->> bootloader or a hardcoded initialization in the driver is okay then the
->> property is not necessary.
->
-> Sure. My questions was why it is necessary to preconfigure the
-> regulators at all rather than why it is necessary to do so in this
-> manner.
->
-> Mark.
->
+  http://www.hpl.hp.com/techreports/2012/HPL-2012-236.pdf
 
-sorry i don't have a clue. In the original code there isn't a comment 
-about the reason. Currently there is no init of the vddio regulator by 
-the kernel and everything works fine.
+This patchset applies on top of the Juergen's patchset below,
+which provides the basis of the PAT management.
 
-@Fabio: Do you have any doubts?
+  https://lkml.org/lkml/2014/9/8/55
 
-Stefan
+All new/modified interfaces have been tested.
+
+v2:
+ - Changed WT to use slot 7 of the PAT MSR. (H. Peter Anvin,
+   Andy Lutomirski)
+ - Changed to have conservative checks to exclude all Pentium 2, 3,
+   M, and 4 families. (Ingo Molnar, Henrique de Moraes Holschuh,
+   Andy Lutomirski)
+ - Updated documentation to cover WT interfaces and usages.
+   (Andy Lutomirski, Yigal Korman)
+
+---
+Toshi Kani (6):
+  1/6 x86, mm, pat: Set WT to PA4 slot of PAT MSR
+  2/6 x86, mm, pat: Change reserve_memtype() to handle WT
+  3/6 x86, mm, asm-gen: Add ioremap_wt() for WT
+  4/6 x86, mm: Add set_memory_wt() for WT
+  5/6 x86, mm, pat: Add pgprot_writethrough() for WT
+  6/6 x86, pat: Update documentation for WT changes
+
+---
+ Documentation/x86/pat.txt            | 14 +++++--
+ arch/x86/include/asm/cacheflush.h    | 10 ++++-
+ arch/x86/include/asm/io.h            |  2 +
+ arch/x86/include/asm/pgtable_types.h |  3 ++
+ arch/x86/mm/ioremap.c                | 24 ++++++++++++
+ arch/x86/mm/pageattr.c               | 73 +++++++++++++++++++++++++++++++++---
+ arch/x86/mm/pat.c                    | 69 +++++++++++++++++++++++++---------
+ include/asm-generic/io.h             |  4 ++
+ include/asm-generic/iomap.h          |  4 ++
+ include/asm-generic/pgtable.h        |  4 ++
+ 10 files changed, 179 insertions(+), 28 deletions(-)
