@@ -1,115 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783AbaIJXgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:36:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758AbaIJXga (ORCPT
+	id S1753847AbaIJXgu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:36:50 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37271 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810AbaIJXgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:36:30 -0400
-Date: Wed, 10 Sep 2014 16:36:28 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Feiner <pfeiner@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH] mm: softdirty: unmapped addresses between VMAs are
- clean
-Message-Id: <20140910163628.66302ac77f7835ba5df2f49c@linux-foundation.org>
-In-Reply-To: <1410391486-9106-1-git-send-email-pfeiner@google.com>
-References: <1410391486-9106-1-git-send-email-pfeiner@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 10 Sep 2014 19:36:48 -0400
+Message-ID: <1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
+ with a '.'
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
+Date: Wed, 10 Sep 2014 19:36:44 -0400
+In-Reply-To: <20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
+References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
+	 <20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091023-0928-0000-0000-000004C99CF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 16:24:46 -0700 Peter Feiner <pfeiner@google.com> wrote:
+On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote: 
+> Reinstate the generation of EPERM for a key type name beginning with a '.' in
+> a userspace call.  Types whose name begins with a '.' are internal only.
+> 
+> The test was removed by:
+> 
+> 	commit a4e3b8d79a5c6d40f4a9703abf7fe3abcc6c3b8d
+> 	Author: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> 	Date:   Thu May 22 14:02:23 2014 -0400
+> 	Subject: KEYS: special dot prefixed keyring name bug fix
+> 
 
-> If a /proc/pid/pagemap read spans a [VMA, an unmapped region, then a
-> VM_SOFTDIRTY VMA], the virtual pages in the unmapped region are reported
-> as softdirty. Here's a program to demonstrate the bug:
-> 
-> int main() {
-> 	const uint64_t PAGEMAP_SOFTDIRTY = 1ul << 55;
-> 	uint64_t pme[3];
-> 	int fd = open("/proc/self/pagemap", O_RDONLY);;
-> 	char *m = mmap(NULL, 3 * getpagesize(), PROT_READ,
-> 	               MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-> 	munmap(m + getpagesize(), getpagesize());
-> 	pread(fd, pme, 24, (unsigned long) m / getpagesize() * 8);
-> 	assert(pme[0] & PAGEMAP_SOFTDIRTY);    /* passes */
-> 	assert(!(pme[1] & PAGEMAP_SOFTDIRTY)); /* fails */
-> 	assert(pme[2] & PAGEMAP_SOFTDIRTY);    /* passes */
-> 	return 0;
-> }
-> 
-> (Note that all pages in new VMAs are softdirty until cleared).
-> 
-> Tested:
-> 	Used the program given above. I'm going to include this code in
-> 	a selftest in the future.
-> 
-> ...
->
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
->
-> ...
->
-> @@ -1048,32 +1048,51 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  
->  	if (pmd_trans_unstable(pmd))
->  		return 0;
-> -	for (; addr != end; addr += PAGE_SIZE) {
-> -		int flags2;
-> -
-> -		/* check to see if we've left 'vma' behind
-> -		 * and need a new, higher one */
-> -		if (vma && (addr >= vma->vm_end)) {
-> -			vma = find_vma(walk->mm, addr);
-> -			if (vma && (vma->vm_flags & VM_SOFTDIRTY))
-> -				flags2 = __PM_SOFT_DIRTY;
-> -			else
-> -				flags2 = 0;
-> -			pme = make_pme(PM_NOT_PRESENT(pm->v2) | PM_STATUS2(pm->v2, flags2));
-> +
-> +	while (1) {
-> +		unsigned long vm_start = end;
+The test was removed, as the patch log description indicates, because
+the comparison is against the wrong field.  Even the function name
+indicates key_get_type_from_user() is about the key type, not the key or
+keyring name.
 
-Did you really mean to do that?  If so, perhaps a little comment to
-explain how it works?
+Debugging info:
 
-> +		unsigned long vm_end = end;
-> +		unsigned long vm_flags = 0;
-> +
-> +		if (vma) {
-> +			/*
-> +			 * We can't possibly be in a hugetlb VMA. In general,
-> +			 * for a mm_walk with a pmd_entry and a hugetlb_entry,
-> +			 * the pmd_entry can only be called on addresses in a
-> +			 * hugetlb if the walk starts in a non-hugetlb VMA and
-> +			 * spans a hugepage VMA. Since pagemap_read walks are
-> +			 * PMD-sized and PMD-aligned, this will never be true.
-> +			 */
-> +			BUG_ON(is_vm_hugetlb_page(vma));
-> +			vm_start = vma->vm_start;
-> +			vm_end = min(end, vma->vm_end);
-> +			vm_flags = vma->vm_flags;
-> +		}
-> +
-> +		/* Addresses before the VMA. */
-> +		for (; addr < vm_start; addr += PAGE_SIZE) {
-> +			pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
-> +
-> +			err = add_to_pagemap(addr, &pme, pm);
-> +			if (err)
-> +				return err;
->
-> ...
->
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index e26f860..7a8d9b9 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -37,6 +37,7 @@ static int key_get_type_from_user(char *type,
+                return ret;
+        if (ret == 0 || ret >= len)
+                return -EINVAL;
++       printk(KERN_INFO "%s: type %s \n", __func__, type);
+        type[len - 1] = '\0';
+        return 0;
+}
+
+: [    7.725429]: key_get_type_from_user: type trusted 
+: [    9.007721] key_get_type_from_user: type keyring 
+: [    9.011889] key_get_type_from_user: type keyring 
+: [    9.068825] key_get_type_from_user: type encrypted 
+: [    9.268310] key_get_type_from_user: type asymmetric 
+: [    9.290360] key_get_type_from_user: type keyring 
+: [    9.354509] key_get_type_from_user: type asymmetric 
+: [    9.390396] key_get_type_from_user: type asymmetric 
+: [    9.414216] key_get_type_from_user: type asymmetric 
+: [    9.437155] key_get_type_from_user: type asymmetric 
+
+
+> I think we want to keep the restriction on type name so that userspace can't
+> add keys of a special internal type.
+
+Definitely!  Commit a4e3b8d7 added a comparison against the description.
+
+> Note that removal of the test causes several of the tests in the keyutils
+> testsuite to fail.
+
+Perhaps the added description test is insufficient, but reverting this
+commit won't resolve the underlying problem.
+
+Mimi
+
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> cc: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> ---
+> 
+>  security/keys/keyctl.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+> index e26f860e5f2e..eff88a5f5d40 100644
+> --- a/security/keys/keyctl.c
+> +++ b/security/keys/keyctl.c
+> @@ -37,6 +37,8 @@ static int key_get_type_from_user(char *type,
+>  		return ret;
+>  	if (ret == 0 || ret >= len)
+>  		return -EINVAL;
+> +	if (type[0] == '.')
+> +		return -EPERM;
+>  	type[len - 1] = '\0';
+>  	return 0;
+>  }
+> 
+
+
