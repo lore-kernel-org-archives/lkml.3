@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaIJBbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 21:31:42 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:42607 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbaIJBbj (ORCPT
+	id S1752017AbaIJBkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 21:40:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42125 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaIJBkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 21:31:39 -0400
-From: Richard Larocque <rlarocque@google.com>
-To: tglx@linutronix.de, john.stultz@linaro.org
-Cc: linux-kernel@vger.kernel.org, Richard Larocque <rlarocque@google.com>
-Subject: [PATCH 3/3] alarmtimer: Lock k_itimer during timer callback
-Date: Tue,  9 Sep 2014 18:31:05 -0700
-Message-Id: <1410312665-25381-4-git-send-email-rlarocque@google.com>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1410312665-25381-1-git-send-email-rlarocque@google.com>
-References: <1410312665-25381-1-git-send-email-rlarocque@google.com>
+	Tue, 9 Sep 2014 21:40:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140909184856.GG16750@infradead.org>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+	<1410267949-21904-9-git-send-email-ming.lei@canonical.com>
+	<20140909184856.GG16750@infradead.org>
+Date: Wed, 10 Sep 2014 09:40:11 +0800
+Message-ID: <CACVXFVNhmvy+aSgbJX8zgRVJQS0q6PWJLhmy_XVN_9YvSFdwag@mail.gmail.com>
+Subject: Re: [PATCH 8/8] blk-mq: support per-distpatch_queue flush machinery
+From: Ming Lei <ming.lei@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Locks the k_itimer's it_lock member when handling the alarm timer's
-expiry callback.
+On Wed, Sep 10, 2014 at 2:48 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>> +     if (hctx) {
+>> +             int cmd_sz = q->tag_set->cmd_size;
+>> +             int node = hctx->numa_node;
+>> +
+>> +             fq = kzalloc_node(sizeof(*fq), GFP_KERNEL, node);
+>> +             if (!fq)
+>> +                     goto failed;
+>> +
+>> +             rq_sz = round_up(rq_sz + cmd_sz, cache_line_size());
+>> +             fq->flush_rq = kzalloc_node(rq_sz, GFP_KERNEL, node);
+>> +             if (!fq->flush_rq)
+>> +                     goto rq_failed;
+>> +
+>> +             spin_lock_init(&fq->mq_flush_lock);
+>> +     } else {
+>> +             fq = kzalloc(sizeof(*fq), GFP_KERNEL);
+>> +             if (!fq)
+>> +                     goto failed;
+>> +
+>> +             fq->flush_rq = kzalloc(rq_sz, GFP_KERNEL);
+>> +             if (!fq->flush_rq)
+>> +                     goto rq_failed;
+>> +     }
+>
+> Seems like this would be a lot cleaner by passing the cmd_size and
+> node_id explicitly.  The added benefit would be that we could also
+> pass the node for the blk_init_queue_node() case.
 
-The regular posix timers defined in posix-timers.c have this lock held
-during timout processing because their callbacks are routed through
-posix_timer_fn().  The alarm timers follow a different path, so they
-ought to grab the lock somewhere else.
+OK.
 
-Signed-off-by: Richard Larocque <rlarocque@google.com>
----
+>
+>> +static void __blk_mq_exit_flush(struct request_queue *q,
+>> +             unsigned free_end, unsigned int exit_end)
+>> +{
+>> +     struct blk_mq_hw_ctx *hctx;
+>> +     unsigned int k;
+>> +     struct blk_flush_queue *fq;
+>> +     struct blk_mq_tag_set *set = q->tag_set;
+>> +     unsigned start_idx = set->queue_depth;
+>> +
+>> +     queue_for_each_hw_ctx(q, hctx, k) {
+>> +             if (k >= free_end)
+>> +                     break;
+>> +
+>> +             fq = hctx->fq;
+>> +             if (k < exit_end && set->ops->exit_request)
+>> +                     set->ops->exit_request(set->driver_data,
+>> +                                     fq->flush_rq, k,
+>> +                                     start_idx + k);
+>> +
+>> +             blk_free_flush_queue(fq);
+>> +     }
+>
+> Can we merge the mq init/exit case into some existing for each hctx
+> loop in blk-mq?
 
-I'm not at all sure this makes sense.  Feel free to drop this patch if the
-extra locking is wrong or unnecessary.  It's here for discussion purposes only.
+I am wondering we can do that because lifetime is totally different
+between flush requests and tag_set requests which are initialized
+before request queue is created.
 
-It's not entirely clear to me what the it_lock is supposed to protect, but it
-does seem very odd that the alarm timers don't hold it when their callback is
-in progress, while the regular timers do hold it.
-
-The comments at the top of the file specify that the it_lock should not be
-modified by timer code, but I'm not sure that's applicable if the timer code
-doesn't leverage posix_timer_fn().  Since the alarm timer's call to
-posix_event_timer() goes through alarm_handle_timer() instead, nothing actually
-grabs that lock before the call to posix_event_timer().
-
- kernel/time/alarmtimer.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index 091d660..5f5e5c9 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -464,8 +464,12 @@ static enum alarmtimer_type clock2alarm(clockid_t clockid)
- static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
- 							ktime_t now)
- {
-+	unsigned long flags;
- 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
- 						it.alarm.alarmtimer);
-+	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
-+
-+	spin_lock_irqsave(&ptr->it_lock, flags);
- 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
- 		if (posix_timer_event(ptr, 0) != 0)
- 			ptr->it_overrun++;
-@@ -475,9 +479,11 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
- 	if (ptr->it.alarm.interval.tv64) {
- 		ptr->it_overrun += alarm_forward(alarm, now,
- 						ptr->it.alarm.interval);
--		return ALARMTIMER_RESTART;
-+		result = ALARMTIMER_RESTART;
- 	}
--	return ALARMTIMER_NORESTART;
-+	spin_unlock_irqrestore(&ptr->it_lock, flags);
-+
-+	return result;
- }
- 
- /**
--- 
-2.1.0.rc2.206.gedb03e5
-
+Thanks,
