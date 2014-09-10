@@ -1,113 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaIJM4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:56:35 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:34658 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaIJM4e (ORCPT
+	id S1751180AbaIJNEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:04:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64219 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750956AbaIJNEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:56:34 -0400
-Message-ID: <54104A7F.2030509@mvista.com>
-Date: Wed, 10 Sep 2014 07:56:31 -0500
-From: Corey Minyard <cminyard@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Wed, 10 Sep 2014 09:04:23 -0400
+Date: Wed, 10 Sep 2014 14:04:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: "jcm@redhat.com" <jcm@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
+Message-ID: <20140910130419.GJ28488@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-5-git-send-email-hanjun.guo@linaro.org>
+ <CAErSpo6G89mkPgas8Wk3ofq__dUo5MKvBjob5D_w5_GaBJWH0w@mail.gmail.com>
+ <540F7BE2.8060403@redhat.com>
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        gouji.masayuki@jp.fujitsu.com
-Subject: Re: [PATCH v2] ipmi: Clear drvdata when interface is removed
-References: <1410317770-4856-1-git-send-email-indou.takao@jp.fujitsu.com>
-In-Reply-To: <1410317770-4856-1-git-send-email-indou.takao@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <540F7BE2.8060403@redhat.com>
+Thread-Topic: [PATCH v3 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, applied to my tree for 3.18.
+On Tue, Sep 09, 2014 at 11:14:58PM +0100, Jon Masters wrote:
+> On 09/09/2014 01:17 PM, Bjorn Helgaas wrote:
+> > On Mon, Sep 1, 2014 at 8:57 AM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> >> From: Al Stone <al.stone@linaro.org>
+> >>
+> >> Introduce one early parameters "off" for "acpi" to disable ACPI on
+> >> ARM64.
+> > 
+> > It might be worth mentioning the purpose of this in the changelog (and
+> > maybe the documentation).  I don't think this parameter is supported
+> > on ia64, and on x86 it seems like it's mostly used as a "fix" by
+> > Ubuntu users who consider the problem resolved when they find this
+> > parameter.  That just means we don't get a chance to fix the real
+> > underlying problem, so I'm not sure it's a real benefit to have the
+> > parameter.
+> 
+> >> -       acpi=           [HW,ACPI,X86]
+> >> +       acpi=           [HW,ACPI,X86,ARM]
+> >>                         Advanced Configuration and Power Interface
+> >>                         Format: { force | off | strict | noirq | rsdt }
+> >>                         force -- enable ACPI if default was off
+> >> @@ -175,6 +175,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >>                                 strictly ACPI specification compliant.
+> >>                         rsdt -- prefer RSDT over (default) XSDT
+> >>                         copy_dsdt -- copy DSDT to memory
+> >> +                       For ARM64, ONLY "acpi=off" is available.
+> 
+> Something along the lines of:
+> 
+> "The purpose of disabling ACPI on 64-bit ARM server platforms is to
+> allow for an orderly adoption of ACPI on early systems that may also
+> provide a DeviceTree based boot option initially. The acpi= option
+> disables both parsing of any tables passed in through the EFI System
+> Table RSDP and also disables the runtime ACPI interpreter on arm64".
 
--corey
+Please, let's keep this polarised rhetoric out of the Linux kernel. If ACPI
+support gets merged for arm64, then the community has a commitment to
+support it alongside devicetree. There isn't a migration path because
+nothing is being replaced and we shouldn't dictate to users in which
+circumstances they are allowed to use one firmware interface over another.
 
-On 09/09/2014 09:56 PM, Takao Indoh wrote:
-> This patch fixes a bug on hotmod removing.
->
-> After ipmi interface is removed using hotmod, kernel panic occurs when
-> rmmod impi_si. For example, try this:
->
->  # echo "remove,"`cat /proc/ipmi/0/params` > \
->  /sys/module/ipmi_si/parameters/hotmod
->  # rmmod ipmi_si
->
-> Then, rmmod fails with the following messages.
->
-> ------------[ cut here ]------------
-> WARNING: CPU: 12 PID: 10819 at /mnt/repos/linux/lib/list_debug.c:53
-> __list_del_entry+0x63/0xd0()
-> (snip)
-> CPU: 12 PID: 10819 Comm: rmmod Not tainted 3.17.0-rc1 #19
-> Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015
-> Rev.3D81.3030 02/10/2012
->  0000000000000009 ffff88022d547d40 ffffffff81575778 ffff88022d547d88
->  ffff88022d547d78 ffffffff8104ec5d ffff88023908cdb0 ffffffffa06fa4e0
->  ffff8800bac20860 0000000000000000 0000000002046090 ffff88022d547dd8
-> Call Trace:
->  [<ffffffff81575778>] dump_stack+0x45/0x56
->  [<ffffffff8104ec5d>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff8104eccc>] warn_slowpath_fmt+0x4c/0x50
->  [<ffffffff811f60bf>] ? __kernfs_remove+0xdf/0x220
->  [<ffffffff81291213>] __list_del_entry+0x63/0xd0
->  [<ffffffff8129128d>] list_del+0xd/0x30
->  [<ffffffffa06f285a>] cleanup_one_si+0x2a/0x230 [ipmi_si]
->  [<ffffffffa06f2f05>] ipmi_pnp_remove+0x15/0x20 [ipmi_si]
->  [<ffffffff8131c7d4>] pnp_device_remove+0x24/0x40
->  [<ffffffff8137175f>] __device_release_driver+0x7f/0xf0
->  [<ffffffff81372100>] driver_detach+0xb0/0xc0
->  [<ffffffff81371415>] bus_remove_driver+0x55/0xd0
->  [<ffffffff8137283c>] driver_unregister+0x2c/0x50
->  [<ffffffff8131ca02>] pnp_unregister_driver+0x12/0x20
->  [<ffffffffa06f347c>] cleanup_ipmi_si+0xbc/0xf0 [ipmi_si]
->  [<ffffffff810c33f2>] SyS_delete_module+0x132/0x1c0
->  [<ffffffff81002ab9>] ? do_notify_resume+0x59/0x80
->  [<ffffffff8157c45a>] ? int_signal+0x12/0x17
->  [<ffffffff8157c1d2>] system_call_fastpath+0x16/0x1b
-> ---[ end trace 70b4377268f85c23 ]---
->
-> list_del in cleanup_one_si() fails because the smi_info is already
-> removed when hotmod removing.
->
-> When ipmi interface is removed by hotmod, smi_info is removed by
-> cleanup_one_si(), but is is still set in drvdata. Therefore when rmmod
-> ipmi_si, ipmi_pnp_remove tries to remove it again and fails.
->
-> By this patch, a pointer to smi_info in drvdata is cleared when hotmod
-> removing so that it will be not accessed when rmmod.
->
-> changelog:
-> v2:
-> - Clear drvdata in cleanup_one_si
-> - Change subject
->
-> v1:
-> https://lkml.org/lkml/2014/9/8/741
->
->
-> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> ---
->  drivers/char/ipmi/ipmi_si_intf.c | 3 +++
->  1 file changed, 3 insertions(+)
->
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 5d66568..01dcbdb 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -3655,6 +3655,9 @@ static void cleanup_one_si(struct smi_info *to_clean)
->  	if (!to_clean)
->  		return;
->  
-> +	if (to_clean->dev)
-> +		dev_set_drvdata(to_clean->dev, NULL);
-> +
->  	list_del(&to_clean->link);
->  
->  	/* Tell the driver that we are shutting down. */
+Other entities (server vendors, distributions, firmware guys, ...) can make
+up their own rules, but attempting to peddle their agenda in the upstream
+kernel is completely inappropriate.
 
+It's blindingly obvious that acpi=off is there to disable ACPI at boot.
+We either support that option or we don't -- none of this `oh, well you
+can use it in this specific case I suppose' rubbish. I'm not questioning
+your use-case, but there's really no need to talk about an `orderly
+adoption' when all you need to say is that your ACPI is busted and passing
+acpi=off lets you boot with a devicetree.
+
+Yes, I'm being pedantic, but it's really important not to get the upstream
+messaging wrong about ACPI. Devicetree is absolutely *not* going away and
+people can choose to use whatever they prefer, however they prefer to use
+it.
+
+Will
