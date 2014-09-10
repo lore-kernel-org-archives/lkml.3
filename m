@@ -1,300 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaIJTGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:06:06 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51569 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaIJTGE (ORCPT
+	id S1753163AbaIJTGo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:06:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18586 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751903AbaIJTGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:06:04 -0400
-Message-ID: <5410A111.6040007@kernel.org>
-Date: Wed, 10 Sep 2014 20:05:53 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 10 Sep 2014 15:06:43 -0400
+Message-ID: <5410A118.9080803@oracle.com>
+Date: Wed, 10 Sep 2014 15:06:00 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Hartmut Knaack <knaack.h@gmx.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH] iio: adc: rockchip_saradc: add support for rk3066-tsadc
- variant
-References: <1999284.oRCTeZRSv1@diego> <540642CA.9080007@gmx.de> <38104193.mr2XbIjNkb@diego>
-In-Reply-To: <38104193.mr2XbIjNkb@diego>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+References: <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <20140910124732.GT17501@suse.de>
+In-Reply-To: <20140910124732.GT17501@suse.de>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/14 11:13, Heiko Stübner wrote:
-> Am Mittwoch, 3. September 2014, 00:20:58 schrieb Hartmut Knaack:
->> Heiko Stübner schrieb:
->>> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
->>> for temperature measurements. This so called tsadc does not contain any
->>> active parts like temperature interrupts and only supports polling the
->>> current temperature. The returned voltage can then be converted by a
->>> suitable thermal driver to and actual temperature and used for thermal
->>> handling.
->>>
->>> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
->>> ---
->>
->> Looks mostly good to me, just some minor style issues inline.
->>
->>> This is a different IP than the rk3288-tsadc Ceasar provided a driver for.
->>> As the commit messages states, the one used on the rk3066 is just a
->>> saradc,
->>> while the new tsadc in the rk3288 contains active components for thermal
->>> handling.
->>>
->>> A working example using the pending iio-thermal driver can found on
->>> https://github.com/mmind/linux-rockchip/commit/c07e02f069d9677d489f2541766
->>> 19fae36f2aad0> 
->>>  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
->>>  drivers/iio/adc/rockchip_saradc.c                  | 62
->>>  +++++++++++++++++----- 2 files changed, 50 insertions(+), 14
->>>  deletions(-)
->>>
->>> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->>> b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt index
->>> 5d3ec1d..a9a5fe1 100644
->>> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->>> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
->>> @@ -1,7 +1,7 @@
->>>
->>>  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
->>>
->>>  Required properties:
->>> -- compatible: Should be "rockchip,saradc"
->>> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
->>>
->>>  - reg: physical base address of the controller and length of memory
->>>  mapped
->>>  
->>>         region.
->>>  
->>>  - interrupts: The interrupt number to the cpu. The interrupt specifier
->>>  format> 
->>> diff --git a/drivers/iio/adc/rockchip_saradc.c
->>> b/drivers/iio/adc/rockchip_saradc.c index e074a0b..7effada 100644
->>> --- a/drivers/iio/adc/rockchip_saradc.c
->>> +++ b/drivers/iio/adc/rockchip_saradc.c
->>> @@ -18,13 +18,13 @@
->>>
->>>  #include <linux/interrupt.h>
->>>  #include <linux/io.h>
->>>  #include <linux/of.h>
->>>
->>> +#include <linux/of_device.h>
->>>
->>>  #include <linux/clk.h>
->>>  #include <linux/completion.h>
->>>  #include <linux/regulator/consumer.h>
->>>  #include <linux/iio/iio.h>
->>>  
->>>  #define SARADC_DATA			0x00
->>>
->>> -#define SARADC_DATA_MASK		0x3ff
->>>
->>>  #define SARADC_STAS			0x04
->>>  #define SARADC_STAS_BUSY		BIT(0)
->>>
->>> @@ -38,15 +38,22 @@
->>>
->>>  #define SARADC_DLY_PU_SOC		0x0c
->>>  #define SARADC_DLY_PU_SOC_MASK		0x3f
->>>
->>> -#define SARADC_BITS			10
->>>
->>>  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
->>>
->>> +struct rockchip_saradc_data {
->>> +	int				num_bits;
->>> +	const struct iio_chan_spec	*channels;
->>> +	int				num_channels;
->>> +	unsigned long			clk_rate;
->>> +};
->>> +
->>>
->>>  struct rockchip_saradc {
->>>  
->>>  	void __iomem		*regs;
->>>  	struct clk		*pclk;
->>>  	struct clk		*clk;
->>>  	struct completion	completion;
->>>  	struct regulator	*vref;
->>>
->>> +	const struct rockchip_saradc_data *data;
->>>
->>>  	u16			last_val;
->>>  
->>>  };
->>
->> The alignment of the whole block should be adjusted to fit with the new
->> element.
+On 09/10/2014 08:47 AM, Mel Gorman wrote:
+> migrate: debug patch to try identify race between migration completion and mprotect
 > 
-> Hmm, I'm not sure if this should be in this patch, as changing the indentation 
-> is more or less an unrelated change which makes recognizing the actual change 
-> of adding the data field harder to see. 
+> A migration entry is marked as write if pte_write was true at the
+> time the entry was created. The VMA protections are not double checked
+> when migration entries are being removed but mprotect itself will mark
+> write-migration-entries as read to avoid problems. It means we potentially
+> take a spurious fault to mark these ptes write again but otherwise it's
+> harmless.  Still, one dump indicates that this situation can actually
+> happen so this debugging patch spits out a warning if the situation occurs
+> and hopefully the resulting warning will contain a clue as to how exactly
+> it happens
 > 
-> It could be a second patch on top to adapt the formating, but this also sounds 
-> a bit like overkill.
+> Not-signed-off
+> ---
+>  mm/migrate.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
 > 
-> In any case I guess I'll wait for Jonathan to decide how he likes this to be 
-> approached.
-> 
-Personally I hate this sort of careful block alignment for structures precisely because
-it generates churn.  I just don't hate it enough to moan about it in reviews :)
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 09d489c..631725c 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -146,8 +146,16 @@ static int remove_migration_pte(struct page *new, struct vm_area_struct *vma,
+>  	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
+>  	if (pte_swp_soft_dirty(*ptep))
+>  		pte = pte_mksoft_dirty(pte);
+> -	if (is_write_migration_entry(entry))
+> -		pte = pte_mkwrite(pte);
+> +	if (is_write_migration_entry(entry)) {
+> +		/*
+> +		 * This WARN_ON_ONCE is temporary for the purposes of seeing if
+> +		 * it's a case encountered by trinity in Sasha's testing
+> +		 */
+> +		if (!(vma->vm_flags & (VM_WRITE)))
+> +			WARN_ON_ONCE(1);
+> +		else
+> +			pte = pte_mkwrite(pte);
+> +	}
+>  #ifdef CONFIG_HUGETLB_PAGE
+>  	if (PageHuge(new)) {
+>  		pte = pte_mkhuge(pte);
 
-Definitely doesn't want to be in this patch, but feel free to submit another
-either tidying up or dropping it in favour of not bothering to align it.
+I seem to have hit this warning:
+
+[ 4782.617806] WARNING: CPU: 10 PID: 21180 at mm/migrate.c:155 remove_migration_pte+0x3f7/0x420()
+[ 4782.619315] Modules linked in:
+[ 4782.622189]
+[ 4782.622501] CPU: 10 PID: 21180 Comm: trinity-main Tainted: G        W      3.17.0-rc4-next-20140910-sasha-00032-g6825fb5-dirty #1137
+[ 4782.624344]  0000000000000009 ffff8800193eb770 ffffffffa04c742a 0000000000000000
+[ 4782.627801]  ffff8800193eb7a8 ffffffff9d16e55d 00007f2458d89000 ffff880120959600
+[ 4782.629283]  ffff88012b02c000 ffffea002abeab00 ffff88063118da90 ffff8800193eb7b8
+[ 4782.631353] Call Trace:
+[ 4782.633789]  [<ffffffffa04c742a>] dump_stack+0x4e/0x7a
+[ 4782.634314]  [<ffffffff9d16e55d>] warn_slowpath_common+0x7d/0xa0
+[ 4782.634877]  [<ffffffff9d16e63a>] warn_slowpath_null+0x1a/0x20
+[ 4782.635430]  [<ffffffff9d315487>] remove_migration_pte+0x3f7/0x420
+[ 4782.636042]  [<ffffffff9d2e99cf>] rmap_walk+0xef/0x380
+[ 4782.636544]  [<ffffffff9d3147f1>] remove_migration_ptes+0x41/0x50
+[ 4782.637130]  [<ffffffff9d315090>] ? __migration_entry_wait.isra.24+0x160/0x160
+[ 4782.639928]  [<ffffffff9d3154b0>] ? remove_migration_pte+0x420/0x420
+[ 4782.640616]  [<ffffffff9d31671b>] move_to_new_page+0x16b/0x230
+[ 4782.641251]  [<ffffffff9d2e9e8c>] ? try_to_unmap+0x6c/0xf0
+[ 4782.643950]  [<ffffffff9d2e88a0>] ? try_to_unmap_nonlinear+0x5c0/0x5c0
+[ 4782.644690]  [<ffffffff9d2e70a0>] ? invalid_migration_vma+0x30/0x30
+[ 4782.645273]  [<ffffffff9d2e82e0>] ? page_remove_rmap+0x320/0x320
+[ 4782.646072]  [<ffffffff9d31717c>] migrate_pages+0x85c/0x930
+[ 4782.646701]  [<ffffffff9d2d0e20>] ? isolate_freepages_block+0x410/0x410
+[ 4782.647407]  [<ffffffff9d2cfa60>] ? arch_local_save_flags+0x30/0x30
+[ 4782.648114]  [<ffffffff9d2d1803>] compact_zone+0x4d3/0x8a0
+[ 4782.650157]  [<ffffffff9d2d1c2f>] compact_zone_order+0x5f/0xa0
+[ 4782.651014]  [<ffffffff9d2d1f87>] try_to_compact_pages+0x127/0x2f0
+[ 4782.651656]  [<ffffffff9d2b0c98>] __alloc_pages_direct_compact+0x68/0x200
+[ 4782.652313]  [<ffffffff9d2b17ca>] __alloc_pages_nodemask+0x99a/0xd90
+[ 4782.652916]  [<ffffffff9d300a1c>] alloc_pages_vma+0x13c/0x270
+[ 4782.653618]  [<ffffffff9d31d914>] ? do_huge_pmd_wp_page+0x494/0xc90
+[ 4782.654487]  [<ffffffff9d31d914>] do_huge_pmd_wp_page+0x494/0xc90
+[ 4782.656045]  [<ffffffff9d320d20>] ? __mem_cgroup_count_vm_event+0xd0/0x240
+[ 4782.657089]  [<ffffffff9d2dcb7d>] handle_mm_fault+0x8bd/0xc50
+[ 4782.660931]  [<ffffffff9d1d26e6>] ? __lock_is_held+0x56/0x80
+[ 4782.662695]  [<ffffffff9d0c7bc7>] __do_page_fault+0x1b7/0x660
+[ 4782.663259]  [<ffffffff9d1cdc5e>] ? put_lock_stats.isra.13+0xe/0x30
+[ 4782.663851]  [<ffffffff9d1abf41>] ? vtime_account_user+0x91/0xa0
+[ 4782.664419]  [<ffffffff9d2a2c35>] ? context_tracking_user_exit+0xb5/0x1b0
+[ 4782.665119]  [<ffffffff9db6e103>] ? __this_cpu_preempt_check+0x13/0x20
+[ 4782.665969]  [<ffffffff9d1ce2e2>] ? trace_hardirqs_off_caller+0xe2/0x1b0
+[ 4782.666634]  [<ffffffff9d0c8141>] trace_do_page_fault+0x51/0x2b0
+[ 4782.667257]  [<ffffffff9d0bee83>] do_async_page_fault+0x63/0xd0
+[ 4782.667871]  [<ffffffffa0511018>] async_page_fault+0x28/0x30
+
+Although it wasn't followed by anything else, and I've seen the original issue
+getting triggered without this WARN showing up, so it seems like a different,
+unrelated issue?
 
 
-> 
->>> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev
->>> *indio_dev,> 
->>>  		}
->>>  		
->>>  		*val = ret / 1000;
->>>
->>> -		*val2 = SARADC_BITS;
->>> +		*val2 = info->data->num_bits;
->>>
->>>  		return IIO_VAL_FRACTIONAL_LOG2;
->>>  	
->>>  	default:
->>>  		return -EINVAL;
->>>
->>> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void
->>> *dev_id)> 
->>>  	/* Read value */
->>>  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
->>>
->>> -	info->last_val &= SARADC_DATA_MASK;
->>> +	info->last_val &= BIT(info->data->num_bits) - 1;
->>
->> I think using GENMASK would reflect the intention better, that you want to
->> mask out your data.
-> 
-> I didn't know GENMASK before, so thanks for the pointer .. this looks quite 
-> cool :-)
-> 
-> 
->>>  	/* Clear irq & power down adc */
->>>  	writel_relaxed(0, info->regs + SARADC_CTRL);
->>>
->>> @@ -133,12 +140,44 @@ static const struct iio_chan_spec
->>> rockchip_saradc_iio_channels[] = {> 
->>>  	ADC_CHANNEL(2, "adc2"),
->>>  
->>>  };
->>>
->>> +static const struct rockchip_saradc_data saradc_data = {
->>> +	.num_bits = 10,
->>> +	.channels = rockchip_saradc_iio_channels,
->>> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
->>> +	.clk_rate = 1000000,
->>> +};
->>> +
->>> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] =
->>> {
->>> +	ADC_CHANNEL(0, "adc0"),
->>> +	ADC_CHANNEL(1, "adc1"),
->>> +};
->>> +
->>> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
->>> +	.num_bits = 12,
->>> +	.channels = rockchip_rk3066_tsadc_iio_channels,
->>> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
->>> +	.clk_rate = 50000,
->>> +};
->>> +
->>> +static const struct of_device_id rockchip_saradc_match[] = {
->>> +	{
->>> +		.compatible = "rockchip,saradc",
->>> +		.data = &saradc_data,
->>> +	}, {
->>> +		.compatible = "rockchip,rk3066-tsadc",
->>> +		.data = &rk3066_tsadc_data,
->>> +	},
->>> +	{},
->>> +};
->>> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
->>> +
->>>
->>>  static int rockchip_saradc_probe(struct platform_device *pdev)
->>>  {
->>>  
->>>  	struct rockchip_saradc *info = NULL;
->>>  	struct device_node *np = pdev->dev.of_node;
->>>  	struct iio_dev *indio_dev = NULL;
->>>  	struct resource	*mem;
->>>
->>> +	const struct of_device_id *match;
->>>
->>>  	int ret;
->>>  	int irq;
->>>
->>> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct
->>> platform_device *pdev)> 
->>>  	}
->>>  	info = iio_priv(indio_dev);
->>>
->>> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
->>> +	info->data = match->data;
->>> +
->>>
->>>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>>  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
->>>  	if (IS_ERR(info->regs))
->>>
->>> @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct
->>> platform_device *pdev)> 
->>>  	 * Use a default of 1MHz for the converter clock.
->>>  	 * This may become user-configurable in the future.
->>>  	 */
->>>
->>> -	ret = clk_set_rate(info->clk, 1000000);
->>> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
->>>
->>>  	if (ret < 0) {
->>>  	
->>>  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
->>>  		return ret;
->>>
->>> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct
->>> platform_device *pdev)> 
->>>  	indio_dev->info = &rockchip_saradc_iio_info;
->>>  	indio_dev->modes = INDIO_DIRECT_MODE;
->>>
->>> -	indio_dev->channels = rockchip_saradc_iio_channels;
->>> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
->>> +	indio_dev->channels = info->data->channels;
->>> +	indio_dev->num_channels = info->data->num_channels;
->>>
->>>  	ret = iio_device_register(indio_dev);
->>>  	if (ret)
->>>
->>> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
->>>
->>>  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
->>>  
->>>  			 rockchip_saradc_suspend, rockchip_saradc_resume);
->>>
->>> -static const struct of_device_id rockchip_saradc_match[] = {
->>> -	{ .compatible = "rockchip,saradc" },
->>> -	{},
->>> -};
->>> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
->>> -
->>>
->>>  static struct platform_driver rockchip_saradc_driver = {
->>>  
->>>  	.probe		= rockchip_saradc_probe,
->>>  	.remove		= rockchip_saradc_remove,
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Thanks,
+Sasha
