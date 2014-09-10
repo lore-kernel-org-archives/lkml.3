@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaIJB6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 21:58:32 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:58177 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaIJB6a (ORCPT
+	id S1752728AbaIJB6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 21:58:51 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:36228 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752017AbaIJB6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 21:58:30 -0400
-Date: Wed, 10 Sep 2014 09:56:39 +0800
+	Tue, 9 Sep 2014 21:58:48 -0400
+Date: Wed, 10 Sep 2014 09:58:24 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: Johan Hovold <johan@kernel.org>
 Cc: Benjamin Henrion <zoobab@gmail.com>, gregkh@linuxfoundation.org,
@@ -15,7 +15,7 @@ Cc: Benjamin Henrion <zoobab@gmail.com>, gregkh@linuxfoundation.org,
         dforsi@gmail.com, gnomes@lxorguk.ukuu.org.uk,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v8] usb:serial:pl2303: add GPIOs interface on PL2303
-Message-ID: <20140910015639.GA11191@udknight>
+Message-ID: <20140910015824.GA11233@localhost.localdomain>
 Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
 	Johan Hovold <johan@kernel.org>,
 	Benjamin Henrion <zoobab@gmail.com>, gregkh@linuxfoundation.org,
