@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296AbaIJHJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:09:34 -0400
-Received: from sym2.noone.org ([178.63.92.236]:37878 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803AbaIJHJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:09:32 -0400
-Date: Wed, 10 Sep 2014 09:09:28 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org,
-        gregkh@linuxfoundation.org, jslaby@suse.cz, grant.likely@linaro.org,
-        alan@linux.intel.com, varkabhadram@gmail.com, heiko@sntech.de,
-        yingjoe.chen@gmail.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH v5 1/2] tty: serial: 8250: Add Mediatek UART driver
-Message-ID: <20140910070928.GF3578@distanz.ch>
-References: <1410276703-5274-1-git-send-email-matthias.bgg@gmail.com>
- <1410276703-5274-2-git-send-email-matthias.bgg@gmail.com>
+	id S1751142AbaIJHP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:15:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45768 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaIJHP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 03:15:56 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH] checkpatch: struct of_device_id should usually be const
+Date: Wed, 10 Sep 2014 09:15:46 +0200
+Message-Id: <1410333346-29062-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 2.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410276703-5274-2-git-send-email-matthias.bgg@gmail.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-09 at 17:31:42 +0200, Matthias Brugger <matthias.bgg@gmail.com> wrote:
-> The device has a highspeed register which influences the calcualtion
-> of the divisor. The chip lacks support for some baudrates. When requested,
-> we set the divisor to the next smaller baudrate and adjust the c_cflag
-> accordingly.
-> 
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ scripts/checkpatch.pl | 1 +
+ 1 file changed, 1 insertion(+)
 
-All my previous review comments have been addressed.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b385bcbbf2f5..01f503e0ebbd 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -4941,6 +4941,7 @@ sub process {
+ 				mtrr_ops|
+ 				neigh_ops|
+ 				nlmsvc_binding|
++				of_device_id|
+ 				pci_raw_ops|
+ 				pipe_buf_operations|
+ 				platform_hibernation_ops|
+-- 
+2.1.0
 
-Reviewed-by: Tobias Klauser <tklauser@distanz.ch>
