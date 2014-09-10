@@ -1,60 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505AbaIJKxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:53:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60797 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752321AbaIJKxa (ORCPT
+	id S1752516AbaIJKyT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:54:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37269 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaIJKyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:53:30 -0400
-Date: Wed, 10 Sep 2014 11:53:05 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, moinejf@free.fr,
-        kuninori.morimoto.gx@renesas.com, jsarha@ti.com,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140910105305.GU2601@sirena.org.uk>
-References: <1410314395-10050-1-git-send-email-Li.Xiubo@freescale.com>
+	Wed, 10 Sep 2014 06:54:18 -0400
+Date: Wed, 10 Sep 2014 12:53:59 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Shengjiu Wang <shengjiu.wang@freescale.com>
+Cc: Nicolin Chen <nicoleotsuka@gmail.com>, timur@tabi.org,
+        Li.Xiubo@freescale.com, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140910105359.GA16489@pengutronix.de>
+References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
+ <20140909183804.GA6944@Asurada>
+ <20140910062118.GA26348@pengutronix.de>
+ <20140910103005.GB17326@audiosh1>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7jXYzuaWN+k1iCx7"
+	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
 Content-Disposition: inline
-In-Reply-To: <1410314395-10050-1-git-send-email-Li.Xiubo@freescale.com>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 81.132.226.177
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv4] ASoC: simple-card: Adjust the comments of simple card.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140910103005.GB17326@audiosh1>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:34:17 up  3:21, 34 users,  load average: 0.03, 0.04, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---7jXYzuaWN+k1iCx7
-Content-Type: text/plain; charset=us-ascii
+--9jxsPFA5p3P2qPhR
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Sep 10, 2014 at 09:59:55AM +0800, Xiubo Li wrote:
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Hi,
 
-Applied, thanks.
+On Wed, Sep 10, 2014 at 06:30:06PM +0800, Shengjiu Wang wrote:
+> On Wed, Sep 10, 2014 at 08:21:18AM +0200, Markus Pargmann wrote:
+> > On Tue, Sep 09, 2014 at 11:38:05AM -0700, Nicolin Chen wrote:
+> > > On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
+> > > > @@ -1321,7 +1333,11 @@ static int fsl_ssi_probe(struct platform_dev=
+ice *pdev)
+> > > >  		return -ENOMEM;
+> > > >  	}
+> > > > =20
+> > > > -	ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
+> > > > +	if (ssi_private->soc->imx)
+> > > > +		ssi_private->regs =3D devm_regmap_init_mmio_clk(&pdev->dev,
+> > > > +			"ipg", iomem, &fsl_ssi_regconfig);
+> > > > +	else
+> > > > +		ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
+> > >=20
+> > > As Markus mentioned, the key point here is to be compatible with those
+> > > non-clock-name platforms.
+> > >=20
+> > > I think it would be safer to keep the current code while adding an ex=
+tra
+> > > clk_disable_unprepare() at the end of probe() as a common routine. And
+> > > meantime, make sure to have the call for imx only because it seems th=
+at
+> > > the other platforms do not depend on the clock. //a bit guessing here=
+ :)
+> > >=20
+> > > Then we can get a patch like:
+> > > open() {
+> > > +	clk_prepare_enable();
+> > > 	....
+> > > }
+> > >=20
+> > > close() {
+> > > 	....
+> > > +	clk_disable_unprepare()
+> > > }
+> > >=20
+> > > probe() {
+> > > 	clk_get();
+> > > 	clk_prepare_enable();
+> > > 	....
+> > > 	if (xxx)
+> > > -		goto err_xx;
+> > > +		return ret;
+> > > 	....
+> > > +	clk_disable_unprepare();
+> > > 	return 0;
+> > > -err_xx:
+> > > -	clk_disable_unprepare()
+> > > }
+> > >=20
+> > > remove() {
+> > > 	....
+> > > -	clk_disable_unprepare()
+> > > }
+> >=20
+> > If I remember correctly, there may be AC97 communication with the codec
+> > before any substream is created. That's why we enable the SSI unit right
+> > at the beginning for AC97 in fsl_ssi_setup_reg_vals(). So we need to
+> > check for AC97 before disabling clocks.
+> >=20
+> > Best regards,
+> >=20
+> > Markus
+>=20
+> hi Markus
+>=20
+> I think if clk_prepare_enable() in startup(), and clk_disable_unprepare()
+> in shutdown can meet this requirement, right?
 
---7jXYzuaWN+k1iCx7
+Yes that could work.
+
+>=20
+> done:
+>         if (ssi_private->dai_fmt)
+>                 _fsl_ssi_set_dai_fmt(ssi_private, ssi_private->dai_fmt);
+>=20
+> I find that in end of probe, there is setting of dai_fmt. Can we remove t=
+his?
+> because this setting need to enable ipg clock, and if ac97, ipg clock can=
+'t be
+> disabled.
+
+No you can't remove it. It is necessary for the DT property "fsl,mode".
+Most dts do not have this property anymore because the sound cards are
+setting the dai-fmt. But there are still some powerpc dts files that
+contain that property.
+
+Best regards,
+
+Markus
+
+--=20
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+--9jxsPFA5p3P2qPhR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAEBAgAGBQJUEC2RAAoJECTWi3JdVIfQkU8H/24k5I/KPCCIbMqsW3J4/yaS
-HeIRx0Py06TznLf3W2138wowa5xrqggV80dABsULOGc5OdeUgZN0Om9xEHLPDBu3
-dRrnMg0R739TNAqy2ry07hxqZDgdsW011P2D+NHJ+/mEOal0aQZqnl/eHE2L8ihr
-I42nbODf80wanuAVGjKI/UqzUctYzRYCKawu/gdMyHVcTAdEj+j0nXwp1qIh1BA0
-Ux3P0Pt/YyI6M3Frc35GelaHV8wX1PMJNMot8BJGv1/f3PAaTa1gAZsZwpZ6f6WJ
-Ry6b9v0Z5KK7yMexlQRzql4qfeCIS5wP3fvtO5mO4LeapP0GMYSiTBjS/E3c3c8=
-=QSKX
+iQIcBAEBAgAGBQJUEC3HAAoJEEpcgKtcEGQQZzwQAIVVINoEJjvi/FANlG/mhPoW
+HMsfwFYgkJUfbLo2+tzsOdQ3rIYNxw6rlaRruwNP7D/cfTa2vY0RUszKRoPS6+lR
+MYYC52JKEjZHcEK/4yU8j3xCrC9/lOfsKPv7IXdjwE3iXHBOCeaUIp7Fy5cVlhSu
+SQHfPs1FFF5kRIbcXdls+Pd5Wy1j2hT+lymX8NFGx8icOuLvHk2PVvqlL/EQPf8J
+2UUrydscZvRkjzJI0KL2F0VT3I10/6GHdxIvzzQDBOIW8QlRqReaZsYm5udhkMTl
+OVkDWWkafmukhv5+8jjMDLqj0Mqx2FCGNsL/Bse5ClN5u8qGAG1+9OooL3ekbAGc
+ZnsrVMz97iKhhwCNlECmoGDQX+E+Pt7bVuXGfSBJLG4TuojFtotGqjH+vQhruROw
+kHHDSt9SAHSuJNlDU8i1Z6vYVgWfUbJl5GekB+tkmkprnOo4LaZL6D0+sHZCQolW
+m0KzFwpXHgyUDuW85VSjWhYpUcy3/CKEFcaXIjV4TvCQb6LCELQTiXDJskbl2MHv
+D6gdyp9Jdqi9buHgeuOOwUnJH7omAjKFKFgWciVNu3SBp8w/dmzS2kZvBBUeUcTZ
+heKDdLTXigpD8/2cSe2BhRiWo1s1H67GeOT3MLKaUvJVliE+kVZozdZsWYPSnTiL
+wcBVOpLSxoXyRy6sHg5n
+=C5g+
 -----END PGP SIGNATURE-----
 
---7jXYzuaWN+k1iCx7--
+--9jxsPFA5p3P2qPhR--
