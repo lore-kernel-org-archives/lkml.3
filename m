@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698AbaIJPyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:54:40 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39295 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaIJPyi (ORCPT
+	id S1752734AbaIJPyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:54:52 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:57410 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaIJPyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:54:38 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 10 Sep 2014 17:52:36 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Johan Hovold <johan@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
-Message-ID: <20140910155236.GL2974@localhost>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
- <1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
- <20140910121424.GG2974@localhost>
- <20140910152019.111c4c01@bbrezillon>
- <20140910150702.GK2974@localhost>
- <20140910173114.593dd132@bbrezillon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910173114.593dd132@bbrezillon>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Wed, 10 Sep 2014 11:54:51 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: dri-devel@lists.freedesktop.org
+Cc: Dave Airlie <airlied@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Adam Jackson <ajax@redhat.com>, linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH RFC 0/4] Linking DRM Connectors to Backlight Devices
+Date: Wed, 10 Sep 2014 17:54:19 +0200
+Message-Id: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 05:31:14PM +0200, Boris BREZILLON wrote:
-> On Wed, 10 Sep 2014 17:07:02 +0200
-> Johan Hovold <johan@kernel.org> wrote:
+Hi
 
-> > Yes, this essentially what I suggested in the thread (and my last reply)
-> > and relying on syscon rather than a custom driver seems like a good
-> > idea. It would allow early access to the registers too with the recently
-> > proposed changes. It would not guarantee any kind of exclusivity,
-> > though, but I guess that's tolerable?
-> 
-> Yep, that's one of the concern I had with the syscon/regmap
-> approach :-(, but I guess I'll give this solution a try and post a new
-> version of this series ;-).
+This series introduces a link between DRM connectors and backlight-class
+devices. It tries to solve some long standing issues:
 
-Perhaps we should see what Nicolas and Jean-Christophe says before
-rushing into anything (again). ;)
+ * User-space currently has a hard-time figuring out which backlight device to
+   use, and which backlight device belongs to which display. So far, most
+   systems only provide backlight-devices for internal displays, so figuring out
+   the connection is easy, but that might change with more capable external
+   connectors.
+   If multiple backlights are available, the easiest solution is to simply write
+   to all of them and hope at least one of them works. This obviously fails if
+   the devices interact badly, so it's not really a solution.
 
-I remember J-C considered loosing track of what was using a particular
-backup register to be a regression. But I guess you can't have it both
-ways (e.g. if you also want the early access soon provided by syscon).
+ * User-space needs root privileges to write to sysfs. There are no char-devs
+   that can be used to control access-management to the backlight API, so /sys
+   is the only interface available. So far, udev policy has been "/sys is
+   read-only for non-root" and it's not going to change. char-devs are *THE*
+   standard way to provide non-root user-space APIs, so use them!
 
-I'll refresh my rtt and gmbr-node patches meanwhile, as they should be
-needed in some form at least.
+Several solutions have been discussed so far, but we never agreed on one. I'm
+aware of at least the following solutions:
 
-> Can we just leave the rtt as an rtc problem on the side for now and bind
-> it to the rtc-at91sam9 driver.
-> 
-> If we ever decide to add a new driver using the RTT for another purpose
-> we will still be able to reference the RTT block like this (and keep
-> the existing rtt node definition):
-> 
-> rtt-based-rtc {
-> 	compatible = "atmel,rtt-rtc";
-> 	atmel,rtt = <&rtt>;
-> 	atmel,time-reg = <&gpbr 0x0>;
-> }
+ * Provide char-devs for backlight devices and a sysfs link from connectors to
+   backlight devices. This way, user-space can managed access to char-devs *and*
+   get proper topology information.
+   However, this might be an n:m relationship (n:1 for displays exposed as
+   multiple connectors, 1:m for boards with multiple backlights? whatever..) and
+   it sounds like a waste of resources to add char-devs just to write brightness
+   values.
 
-But why not do this from the start?
+ * Do everything in privileged user-space. One daemon that provides an
+   unprivileged-API and forwards writes to /sys. It reads topology information
+   from udev hwdb.
+   This circumvents the ugly sysfs API and not really solves the problem. It
+   should work, though ugly.
 
-> rtt-based-xdev {
-> 	compatible = "atmel,rtt-xdev";
-> 	atmel,rtt = <&rtt>;
-> 	/*...*/
-> }
+ * Add a DRM connector property that takes brightness values.
+   This is the nicest solution for user-space, but introduces a whole lot of
+   issues on the kernel side. There already is a backlight-class and we had a
+   hard-time trying to move it into DRM drivers, so no-one ever did the work.
 
-Johan
+This series tries to solve this problem with a much simpler approach:
+Instead of moving backlights into DRM, we simply link DRM properties to a
+backlight device. That is, the kernel manages a link between a connector and a
+backlight device (or n backlight devices) which can be modified by udev in case
+the kernel got it wrong (we don't want huge board-fixup-tables in the kernel).
+User-space can now use the simpl DRM API to manage backlights, and the kernel
+does not need any special driver code to make it work.
+
+Patch #1 and #2 are cleanups and can be applied right away. #3 adds in-kernel
+backlight APIs and #4 implements the connector-backlight link.
+
+Comments welcome!
+David
+
+David Herrmann (4):
+  backlight: use static initializers
+  backlight: use spin-lock to protect device list
+  backlight: add kernel-internal backlight API
+  drm: link connectors to backlight devices
+
+ drivers/gpu/drm/Kconfig             |   1 +
+ drivers/gpu/drm/Makefile            |   2 +-
+ drivers/gpu/drm/drm_backlight.c     | 387 ++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/drm_crtc.c          |  45 +++--
+ drivers/gpu/drm/drm_drv.c           |  11 +
+ drivers/gpu/drm/drm_sysfs.c         |  53 +++++
+ drivers/video/backlight/backlight.c |  91 +++++++--
+ include/drm/drm_backlight.h         |  44 ++++
+ include/drm/drm_crtc.h              |   3 +
+ include/linux/backlight.h           |  17 ++
+ 10 files changed, 622 insertions(+), 32 deletions(-)
+ create mode 100644 drivers/gpu/drm/drm_backlight.c
+ create mode 100644 include/drm/drm_backlight.h
+
+-- 
+2.1.0
+
