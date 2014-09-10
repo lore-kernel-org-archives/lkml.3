@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbaIJSRC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:17:02 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:37445 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756AbaIJSQ7 (ORCPT
+	id S1753153AbaIJSRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:17:30 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:33176 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958AbaIJSR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:16:59 -0400
+	Wed, 10 Sep 2014 14:17:29 -0400
+Message-ID: <541095C1.2040500@kernel.dk>
+Date: Wed, 10 Sep 2014 12:17:37 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <54103506.1030501@redhat.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-	<1410325808-3657-12-git-send-email-ast@plumgrid.com>
-	<54103506.1030501@redhat.com>
-Date: Wed, 10 Sep 2014 11:16:57 -0700
-Message-ID: <CAMEtUuwQXj=oWzyBkogTSfOAhjhx0oyB5gC4+HoccTGWg8Obfg@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 11/12] net: filter: move eBPF instruction macros
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Robert Elliott <relliott@beardog.cce.hp.com>, elliott@hp.com, hch@lst.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] block: return error if too many reserved tags are
+ requested
+References: <20140910001417.9294.40414.stgit@beardog.cce.hp.com> <20140910001806.9294.35884.stgit@beardog.cce.hp.com>
+In-Reply-To: <20140910001806.9294.35884.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 4:24 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
->>
->> move instruction macros (like BPF_MOV64_REG or BPF_ALU32_IMM)
->> from linux/filter.h into uapi/linux/bpf.h
->> so that userspace programs can use them.
->>
->> verifier testsuite (in later patches) will be using them.
->>
->> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
->
->
-> I don't think we need this commit at all. These macros are not really
-> part of the ABI and we should expose __as less as possible__, otherwise
-> we won't be able to alter them anymore. Plus, based on your previous
-> argumentation regarding the header file expose, we also won't be able
-> to add any new macros anymore since you could run into name collisions.
->
-> Anyway, I don't see a reason why a e.g. central user space eBPF library
-> cannot live with, for example, a private copy of these helper macros or
-> whatever it wants to define by itself.
->
-> I know in classic BPF there's BPF_STMT() and BPF_JUMP() but it's much
-> less complicated than eBPF and less likely to changes.
+On 09/09/2014 06:18 PM, Robert Elliott wrote:
+> From: Robert Elliott <elliott@hp.com>
+> 
+> Make blk_mq_alloc_tag_set return an error if set->reserved_tags
+> is greater than BLK_MQ_MAX_DEPTH minus the minimum number of
+> tags, since:
+> * set->queue_depth is truncated to that value
+> * set->reserved_tags needs to be less than set->queue_depth
+> 
+> Signed-off-by: Robert Elliott <elliott@hp.com>
+> ---
+>  block/blk-mq.c |    8 +++++---
+>  1 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index c49fe00..dc2970d 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -1936,16 +1936,18 @@ int blk_mq_alloc_tag_set(struct blk_mq_tag_set *set)
+>  		return -EINVAL;
+>  	if (!set->queue_depth)
+>  		return -EINVAL;
+> +	if (set->reserved_tags > BLK_MQ_MAX_DEPTH - BLK_MQ_TAG_MIN)
+> +		return -EINVAL;
+>  	if (set->queue_depth < set->reserved_tags + BLK_MQ_TAG_MIN)
+>  		return -EINVAL;
+>  
+>  	if (!set->nr_hw_queues || !set->ops->queue_rq || !set->ops->map_queue)
+>  		return -EINVAL;
+>  
+> -	if (set->queue_depth > BLK_MQ_MAX_DEPTH) {
+> +	if (set->queue_depth > BLK_MQ_MAX_DEPTH - set->reserved_tags) {
 
-Interesting idea. Are you saying just copy paste these
-226 lines into user libbpf.h for now to use them in testsuite
-and examples ? Hmm.
-Indeed the less lines we add to uapi the better. I'll do that.
+This is harder to read than:
+
+	if (set->queue_depth + set->reserved_tags > BLK_MQ_MAX_DEPTH) {
+
+which more clearly expresses the same thing. But set->queue_depth is the
+total pool, reserved tags come out of that pool. So I don't think this
+is correct.
+
+-- 
+Jens Axboe
+
