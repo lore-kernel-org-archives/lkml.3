@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaIJTHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:07:05 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52578 "EHLO
+	id S1752971AbaIJTHq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:07:46 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:43852 "EHLO
 	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753336AbaIJTHA (ORCPT
+	with ESMTP id S1753361AbaIJTHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:07:00 -0400
+	Wed, 10 Sep 2014 15:07:03 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
         One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH v2 05/14] usb: serial: Remove unused tty->hw_stopped
-Date: Wed, 10 Sep 2014 15:06:27 -0400
-Message-Id: <1410375996-4693-6-git-send-email-peter@hurleysoftware.com>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 09/14] tty: Serialize tty flow control changes with flow_lock
+Date: Wed, 10 Sep 2014 15:06:31 -0400
+Message-Id: <1410375996-4693-10-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410375996-4693-1-git-send-email-peter@hurleysoftware.com>
 References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
@@ -27,98 +26,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tty core does not test tty->hw_stopped; remove from drivers
-which don't test it themselves.
+Without serialization, the flow control state can become inverted
+wrt. the actual hardware state. For example,
 
-cc: Johan Hovold <johan@kernel.org>
+CPU 0                          | CPU 1
+stop_tty()                     |
+  lock ctrl_lock               |
+  tty->stopped = 1             |
+  unlock ctrl_lock             |
+                               | start_tty()
+                               |   lock ctrl_lock
+                               |   tty->stopped = 0
+                               |   unlock ctrl_lock
+                               |   driver->start()
+  driver->stop()               |
+
+In this case, the flow control state now indicates the tty has
+been started, but the actual hardware state has actually been stopped.
+
+Introduce tty->flow_lock spinlock to serialize tty flow control changes.
+Split out unlocked __start_tty()/__stop_tty() flavors for use by
+ioctl(TCXONC) in follow-on patch.
+
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/usb/serial/digi_acceleport.c  | 7 +------
- drivers/usb/serial/io_ti.c            | 7 +------
- drivers/usb/serial/ti_usb_3410_5052.c | 7 +------
- 3 files changed, 3 insertions(+), 18 deletions(-)
+ drivers/tty/tty_io.c       | 39 ++++++++++++++++++++++++++++-----------
+ include/linux/tty.h        |  5 ++++-
+ include/linux/tty_driver.h |  4 ++++
+ 3 files changed, 36 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index 8a23c53..12b0e67 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -834,7 +834,6 @@ static void digi_set_termios(struct tty_struct *tty,
- 			arg |= DIGI_OUTPUT_FLOW_CONTROL_CTS;
- 		} else {
- 			arg &= ~DIGI_OUTPUT_FLOW_CONTROL_CTS;
--			tty->hw_stopped = 0;
- 		}
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 714320b..b898e29 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -933,18 +933,18 @@ void no_tty(void)
+  *	but not always.
+  *
+  *	Locking:
+- *		Uses the tty control lock internally
++ *		ctrl_lock
++ *		flow_lock
+  */
  
- 		buf[i++] = DIGI_CMD_SET_OUTPUT_FLOW_CONTROL;
-@@ -1500,15 +1499,11 @@ static int digi_read_oob_callback(struct urb *urb)
- 			if (val & DIGI_READ_INPUT_SIGNALS_CTS) {
- 				priv->dp_modem_signals |= TIOCM_CTS;
- 				/* port must be open to use tty struct */
--				if (rts) {
--					tty->hw_stopped = 0;
-+				if (rts)
- 					tty_port_tty_wakeup(&port->port);
--				}
- 			} else {
- 				priv->dp_modem_signals &= ~TIOCM_CTS;
- 				/* port must be open to use tty struct */
--				if (rts)
--					tty->hw_stopped = 1;
- 			}
- 			if (val & DIGI_READ_INPUT_SIGNALS_DSR)
- 				priv->dp_modem_signals |= TIOCM_DSR;
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index c0a42e9..ddbb8fe 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -1456,12 +1456,8 @@ static void handle_new_msr(struct edgeport_port *edge_port, __u8 msr)
- 	tty = tty_port_tty_get(&edge_port->port->port);
- 	/* handle CTS flow control */
- 	if (tty && C_CRTSCTS(tty)) {
--		if (msr & EDGEPORT_MSR_CTS) {
--			tty->hw_stopped = 0;
-+		if (msr & EDGEPORT_MSR_CTS)
- 			tty_wakeup(tty);
--		} else {
--			tty->hw_stopped = 1;
--		}
- 	}
- 	tty_kref_put(tty);
+-void stop_tty(struct tty_struct *tty)
++void __stop_tty(struct tty_struct *tty)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&tty->ctrl_lock, flags);
+-	if (tty->stopped) {
+-		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++
++	if (tty->stopped)
+ 		return;
+-	}
+ 	tty->stopped = 1;
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
+ 	if (tty->link && tty->link->packet) {
+ 		tty->ctrl_status &= ~TIOCPKT_START;
+ 		tty->ctrl_status |= TIOCPKT_STOP;
+@@ -955,6 +955,14 @@ void stop_tty(struct tty_struct *tty)
+ 		(tty->ops->stop)(tty);
  }
-@@ -2177,7 +2173,6 @@ static void change_port_settings(struct tty_struct *tty,
- 		dev_dbg(dev, "%s - RTS/CTS is enabled\n", __func__);
- 	} else {
- 		dev_dbg(dev, "%s - RTS/CTS is disabled\n", __func__);
--		tty->hw_stopped = 0;
- 		restart_read(edge_port);
- 	}
  
-diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
-index 3dd3ff8..e9da41d 100644
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -773,7 +773,6 @@ static void ti_set_termios(struct tty_struct *tty,
- 			config->wFlags |= TI_UART_ENABLE_RTS_IN;
- 		config->wFlags |= TI_UART_ENABLE_CTS_OUT;
- 	} else {
--		tty->hw_stopped = 0;
- 		ti_restart_read(tport, tty);
- 	}
++void stop_tty(struct tty_struct *tty)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&tty->flow_lock, flags);
++	__stop_tty(tty);
++	spin_unlock_irqrestore(&tty->flow_lock, flags);
++}
+ EXPORT_SYMBOL(stop_tty);
  
-@@ -1291,12 +1290,8 @@ static void ti_handle_new_msr(struct ti_port *tport, __u8 msr)
- 	/* handle CTS flow control */
- 	tty = tty_port_tty_get(&tport->tp_port->port);
- 	if (tty && C_CRTSCTS(tty)) {
--		if (msr & TI_MSR_CTS) {
--			tty->hw_stopped = 0;
-+		if (msr & TI_MSR_CTS)
- 			tty_wakeup(tty);
--		} else {
--			tty->hw_stopped = 1;
--		}
- 	}
- 	tty_kref_put(tty);
+ /**
+@@ -968,17 +976,17 @@ EXPORT_SYMBOL(stop_tty);
+  *
+  *	Locking:
+  *		ctrl_lock
++ *		flow_lock
+  */
+ 
+-void start_tty(struct tty_struct *tty)
++void __start_tty(struct tty_struct *tty)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&tty->ctrl_lock, flags);
+-	if (!tty->stopped || tty->flow_stopped) {
+-		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
++
++	if (!tty->stopped || tty->flow_stopped)
+ 		return;
+-	}
+ 	tty->stopped = 0;
++	spin_lock_irqsave(&tty->ctrl_lock, flags);
+ 	if (tty->link && tty->link->packet) {
+ 		tty->ctrl_status &= ~TIOCPKT_STOP;
+ 		tty->ctrl_status |= TIOCPKT_START;
+@@ -991,6 +999,14 @@ void start_tty(struct tty_struct *tty)
+ 	tty_wakeup(tty);
  }
+ 
++void start_tty(struct tty_struct *tty)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&tty->flow_lock, flags);
++	__start_tty(tty);
++	spin_unlock_irqrestore(&tty->flow_lock, flags);
++}
+ EXPORT_SYMBOL(start_tty);
+ 
+ /* We limit tty time update visibility to every 8 seconds or so. */
+@@ -3031,6 +3047,7 @@ void initialize_tty_struct(struct tty_struct *tty,
+ 	INIT_WORK(&tty->hangup_work, do_tty_hangup);
+ 	mutex_init(&tty->atomic_write_lock);
+ 	spin_lock_init(&tty->ctrl_lock);
++	spin_lock_init(&tty->flow_lock);
+ 	INIT_LIST_HEAD(&tty->tty_files);
+ 	INIT_WORK(&tty->SAK_work, do_SAK_work);
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index a707196..af26171 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -252,6 +252,7 @@ struct tty_struct {
+ 	struct rw_semaphore termios_rwsem;
+ 	struct mutex winsize_mutex;
+ 	spinlock_t ctrl_lock;
++	spinlock_t flow_lock;
+ 	/* Termios values are protected by the termios rwsem */
+ 	struct ktermios termios, termios_locked;
+ 	struct termiox *termiox;	/* May be NULL for unsupported */
+@@ -261,7 +262,7 @@ struct tty_struct {
+ 	unsigned long flags;
+ 	int count;
+ 	struct winsize winsize;		/* winsize_mutex */
+-	int stopped;
++	int stopped;			/* flow_lock */
+ 	int flow_stopped;
+ 	int hw_stopped;
+ 	int packet;
+@@ -400,7 +401,9 @@ extern int tty_paranoia_check(struct tty_struct *tty, struct inode *inode,
+ extern char *tty_name(struct tty_struct *tty, char *buf);
+ extern void tty_wait_until_sent(struct tty_struct *tty, long timeout);
+ extern int tty_check_change(struct tty_struct *tty);
++extern void __stop_tty(struct tty_struct *tty);
+ extern void stop_tty(struct tty_struct *tty);
++extern void __start_tty(struct tty_struct *tty);
+ extern void start_tty(struct tty_struct *tty);
+ extern int tty_register_driver(struct tty_driver *driver);
+ extern int tty_unregister_driver(struct tty_driver *driver);
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index e48c608..92e337c 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -152,6 +152,8 @@
+  * 	This routine notifies the tty driver that it should stop
+  * 	outputting characters to the tty device.  
+  *
++ *	Called with ->flow_lock held. Serialized with start() method.
++ *
+  *	Optional:
+  *
+  *	Note: Call stop_tty not this method.
+@@ -161,6 +163,8 @@
+  * 	This routine notifies the tty driver that it resume sending
+  *	characters to the tty device.
+  *
++ *	Called with ->flow_lock held. Serialized with stop() method.
++ *
+  *	Optional:
+  *
+  *	Note: Call start_tty not this method.
 -- 
 2.1.0
 
