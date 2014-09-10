@@ -1,150 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbaIJIFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:05:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7658 "EHLO mx1.redhat.com"
+	id S1752229AbaIJIGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:06:14 -0400
+Received: from sym2.noone.org ([178.63.92.236]:43243 "EHLO sym2.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750803AbaIJIFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:05:34 -0400
-Message-ID: <5410062A.4090003@redhat.com>
-Date: Wed, 10 Sep 2014 10:04:58 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751364AbaIJIGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:06:02 -0400
+Date: Wed, 10 Sep 2014 10:05:58 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jslaby@suse.cz,
+        linux-serial@vger.kernel.org
+Subject: Re: randconfig build error with next-20140909, in
+ drivers/tty/serial/serial_mctrl_gpio.c
+Message-ID: <20140910080558.GB14260@distanz.ch>
+References: <CA+r1ZhjCZBWjkxjoJz=PO-YZg6LbghQV75tGnpiSOrHM9CaygA@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 net-next 04/12] bpf: expand BPF syscall with program
- load/unload
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-5-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1410325808-3657-5-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+r1ZhjCZBWjkxjoJz=PO-YZg6LbghQV75tGnpiSOrHM9CaygA@mail.gmail.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
-> eBPF programs are similar to kernel modules. They are loaded by the user
-> process and automatically unloaded when process exits. Each eBPF program is
-> a safe run-to-completion set of instructions. eBPF verifier statically
-> determines that the program terminates and is safe to execute.
->
-> The following syscall wrapper can be used to load the program:
-> int bpf_prog_load(enum bpf_prog_type prog_type,
->                    const struct bpf_insn *insns, int insn_cnt,
->                    const char *license)
-> {
->      union bpf_attr attr = {
->          .prog_type = prog_type,
->          .insns = insns,
->          .insn_cnt = insn_cnt,
->          .license = license,
->      };
->
->      return bpf(BPF_PROG_LOAD, &attr, sizeof(attr));
-> }
-> where 'insns' is an array of eBPF instructions and 'license' is a string
-> that must be GPL compatible to call helper functions marked gpl_only
->
-> Upon succesful load the syscall returns prog_fd.
-> Use close(prog_fd) to unload the program.
->
-> User space tests and examples follow in the later patches
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-...
-> diff --git a/include/linux/filter.h b/include/linux/filter.h
-> index 4b59edead908..9727616693e5 100644
-> --- a/include/linux/filter.h
-> +++ b/include/linux/filter.h
-> @@ -15,6 +15,7 @@
->   struct sk_buff;
->   struct sock;
->   struct seccomp_data;
-> +struct bpf_prog_info;
->
->   /* ArgX, context and stack frame pointer register positions. Note,
->    * Arg1, Arg2, Arg3, etc are used as argument mappings of function
-> @@ -302,8 +303,12 @@ struct bpf_work_struct {
->   struct bpf_prog {
->   	u16			pages;		/* Number of allocated pages */
->   	bool			jited;		/* Is our filter JIT'ed? */
-> +	bool			has_info;	/* whether 'info' is valid */
->   	u32			len;		/* Number of filter blocks */
-> -	struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-> +	union {
-> +		struct sock_fprog_kern	*orig_prog;	/* Original BPF program */
-> +		struct bpf_prog_info	*info;
-> +	};
+On 2014-09-10 at 00:32:25 +0200, Jim Davis <jim.epost@gmail.com> wrote:
+> Building with the attached random configuration file,
+> 
+> drivers/tty/serial/serial_mctrl_gpio.c:44:6: error: redefinition of
+> ‘mctrl_gpio_set’
+>  void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
+>       ^
+> In file included from drivers/tty/serial/serial_mctrl_gpio.c:23:0:
+> drivers/tty/serial/serial_mctrl_gpio.h:80:6: note: previous definition
+> of ‘mctrl_gpio_set’ was here
+>  void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
+>       ^
+> drivers/tty/serial/serial_mctrl_gpio.c:59:19: error: redefinition of
+> ‘mctrl_gpio_to_gpiod’
+>  struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
+>                    ^
+> In file included from drivers/tty/serial/serial_mctrl_gpio.c:23:0:
+> drivers/tty/serial/serial_mctrl_gpio.h:91:19: note: previous
+> definition of ‘mctrl_gpio_to_gpiod’ was here
+>  struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
+>                    ^
+> drivers/tty/serial/serial_mctrl_gpio.c:69:14: error: redefinition of
+> ‘mctrl_gpio_get’
+>  unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
+>               ^
+> In file included from drivers/tty/serial/serial_mctrl_gpio.c:23:0:
+> drivers/tty/serial/serial_mctrl_gpio.h:85:14: note: previous
+> definition of ‘mctrl_gpio_get’ was here
+>  unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
+>               ^
+> drivers/tty/serial/serial_mctrl_gpio.c:93:21: error: redefinition of
+> ‘mctrl_gpio_init’
+>  struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
+>                      ^
+> In file included from drivers/tty/serial/serial_mctrl_gpio.c:23:0:
+> drivers/tty/serial/serial_mctrl_gpio.h:98:21: note: previous
+> definition of ‘mctrl_gpio_init’ was here
+>  struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
+>                      ^
+> drivers/tty/serial/serial_mctrl_gpio.c:131:6: error: redefinition of
+> ‘mctrl_gpio_free’
+>  void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
+>       ^
+> In file included from drivers/tty/serial/serial_mctrl_gpio.c:23:0:
+> drivers/tty/serial/serial_mctrl_gpio.h:104:6: note: previous
+> definition of ‘mctrl_gpio_free’ was here
+>  void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
+>       ^
+>   CC [M]  drivers/net/wireless/ti/wl1251/io.o
+> make[3]: *** [drivers/tty/serial/serial_mctrl_gpio.o] Error 1
 
-All members of this bpf_prog_info should go into bpf_work_struct,
-as I have intended this to be a ancillary structure here. Since
-we already allocate this anyway, you can reduce complexity by doing
-the additional allocation plus remove the has_info member.
+The problem seems to be that if GPIOLIB is not selected, the noop
+functions from serial_mctrl_gpio.h are pulled in, but
+serial_mctrl_gpio.c is still compiled. Since all drivers that include
+serial_mctrl_gpio.h also depend on SERIAL_MCTRL_GPIO I'd suggest adding
+a "select GPIOLIB" to config SERIAL_MCTRL_GPIO and removing the
+noop functions alltogether, see patch below:
 
->   	struct bpf_work_struct	*work;		/* Deferred free work struct */
->   	unsigned int		(*bpf_func)(const struct sk_buff *skb,
->   					    const struct bpf_insn *filter);
-> diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-> index 3a03fdf4db0e..1d0411965576 100644
-> --- a/include/uapi/linux/bpf.h
-> +++ b/include/uapi/linux/bpf.h
-> @@ -99,12 +99,23 @@ enum bpf_cmd {
-...
-> +/* called by sockets/tracing/seccomp before attaching program to an event
-> + * pairs with bpf_prog_put()
-> + */
-
-But seccomp already does refcounting on each BPF filter. Or, is the
-intention to remove this from seccomp?
-
-> +struct bpf_prog *bpf_prog_get(u32 ufd)
-> +{
-> +	struct fd f = fdget(ufd);
-> +	struct bpf_prog *prog;
-> +
-> +	prog = get_prog(f);
-> +
-> +	if (IS_ERR(prog))
-> +		return prog;
-> +
-> +	atomic_inc(&prog->info->refcnt);
-> +	fdput(f);
-> +	return prog;
-> +}
-...
-> diff --git a/net/core/filter.c b/net/core/filter.c
-> index dfc716ffa44b..d771e4f03745 100644
-> --- a/net/core/filter.c
-> +++ b/net/core/filter.c
-> @@ -835,6 +835,7 @@ static void bpf_release_orig_filter(struct bpf_prog *fp)
->   {
->   	struct sock_fprog_kern *fprog = fp->orig_prog;
->
-> +	BUG_ON(fp->has_info);
-
-Why BUG_ON() (also in so many other places)?
-
->   	if (fprog) {
->   		kfree(fprog->filter);
->   		kfree(fprog);
-> @@ -973,6 +974,7 @@ static struct bpf_prog *bpf_prepare_filter(struct bpf_prog *fp)
->
->   	fp->bpf_func = NULL;
->   	fp->jited = false;
-> +	fp->has_info = false;
->
->   	err = bpf_check_classic(fp->insns, fp->len);
->   	if (err) {
->
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 8079f52..5f1ea62 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1575,5 +1575,6 @@ endmenu
+ 
+ config SERIAL_MCTRL_GPIO
+ 	tristate
++	select GPIOLIB
+ 
+ endif # TTY
+diff --git a/drivers/tty/serial/serial_mctrl_gpio.h b/drivers/tty/serial/serial_mctrl_gpio.h
+index 400ba04..5e4c96a 100644
+--- a/drivers/tty/serial/serial_mctrl_gpio.h
++++ b/drivers/tty/serial/serial_mctrl_gpio.h
+@@ -40,8 +40,6 @@ enum mctrl_gpio_idx {
+  */
+ struct mctrl_gpios;
+ 
+-#ifdef CONFIG_GPIOLIB
+-
+ /*
+  * Set state of the modem control output lines via GPIOs.
+  */
+@@ -74,37 +72,4 @@ struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx);
+  */
+ void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios);
+ 
+-#else /* GPIOLIB */
+-
+-static inline
+-void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
+-{
+-}
+-
+-static inline
+-unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
+-{
+-	return *mctrl;
+-}
+-
+-static inline
+-struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
+-				      enum mctrl_gpio_idx gidx)
+-{
+-	return ERR_PTR(-ENOSYS);
+-}
+-
+-static inline
+-struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
+-{
+-	return ERR_PTR(-ENOSYS);
+-}
+-
+-static inline
+-void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
+-{
+-}
+-
+-#endif /* GPIOLIB */
+-
+ #endif
