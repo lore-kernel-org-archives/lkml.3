@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaIJULN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:11:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63723 "EHLO mga02.intel.com"
+	id S1753361AbaIJUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:14:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57458 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216AbaIJULK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:11:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,501,1406617200"; 
-   d="scan'208";a="601052631"
-Date: Wed, 10 Sep 2014 13:11:03 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Subject: Re: [PATCH v2 2/4] mfd/axp2xx: extend axp20x to support axp288 pmic
-Message-ID: <20140910131103.4f0e06fc@ultegra>
-In-Reply-To: <20140910091354.GL30307@lee--X1>
-References: <1410267775-4683-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1410267775-4683-3-git-send-email-jacob.jun.pan@linux.intel.com>
- <20140910091354.GL30307@lee--X1>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751865AbaIJUO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 16:14:57 -0400
+Message-ID: <5410B10A.4030207@zytor.com>
+Date: Wed, 10 Sep 2014 13:14:02 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Toshi Kani <toshi.kani@hp.com>, Andy Lutomirski <luto@amacapital.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle
+ WT
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>	 <1410367910-6026-3-git-send-email-toshi.kani@hp.com>	 <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com> <1410377428.28990.260.camel@misato.fc.hp.com>
+In-Reply-To: <1410377428.28990.260.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 10:13:54 +0100
-Lee Jones <lee.jones@linaro.org> wrote:
+On 09/10/2014 12:30 PM, Toshi Kani wrote:
+> 
+> When WT is unavailable due to the PAT errata, it does not fail but gets
+> redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
+> to UC- as well.
+> 
 
-> I think adding ACPI support should be in its own patch.
-Agree with the rest reviews comments. On this one, I agree I should
-take out the non-essential part of the ACPI code. i.e. mfd cell
-device for acpi opregion handler driver. Let it be part of opregion
-handler driver submission later on.
+But on pre-PAT hardware you can still do WT.
 
-However, the enumeration part of the ACPI code is essential to support
-this device since it is intended to be enumerated under ACPI only, a
-customized PMIC for Intel.
+	-hpa
 
-Thanks,
-
-Jacob
