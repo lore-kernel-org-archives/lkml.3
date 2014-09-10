@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbaIJERv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 00:17:51 -0400
-Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:38375 "EHLO
+	id S1752046AbaIJESk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 00:18:40 -0400
+Received: from smtprelay0137.hostedemail.com ([216.40.44.137]:35637 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751118AbaIJERs (ORCPT
+	by vger.kernel.org with ESMTP id S1751882AbaIJERq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 00:17:48 -0400
+	Wed, 10 Sep 2014 00:17:46 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:2904:3138:3139:3140:3141:3142:3165:3352:3865:3866:4250:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13311:13357:14093:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grass30_60f25c5dd0311
-X-Filterd-Recvd-Size: 2422
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3867:3871:3872:5007:6117:6119:6261:10004:10026:10848:11026:11658:11914:12043:12294:12296:12438:12517:12519:12555:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hot73_6090940bc180a
+X-Filterd-Recvd-Size: 3686
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
-Cc: Ursula Braun <ursula.braun@de.ibm.com>, linux390@de.ibm.com,
-        "David S. Miller" <davem@davemloft.net>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 4/5] iucv: Convert pr_warning to pr_warn
-Date: Tue,  9 Sep 2014 21:17:31 -0700
-Message-Id: <d976373ac5f17cb7716048d938a3ee1a5a10e6e2.1410322181.git.joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 3/5] pktgen: Convert pr_warning to pr_warn
+Date: Tue,  9 Sep 2014 21:17:30 -0700
+Message-Id: <dedab28c56667eb9829df99fb7d22ad83a58e52e.1410322181.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1410322181.git.joe@perches.com>
 References: <cover.1410322181.git.joe@perches.com>
@@ -27,48 +25,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Use the more common pr_warn.
-Coalesce formats.
 Realign arguments.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/iucv/iucv.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ net/core/pktgen.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/net/iucv/iucv.c b/net/iucv/iucv.c
-index da78793..2a6a1fd 100644
---- a/net/iucv/iucv.c
-+++ b/net/iucv/iucv.c
-@@ -493,8 +493,8 @@ static void iucv_declare_cpu(void *data)
- 			err = "Paging or storage error";
- 			break;
- 		}
--		pr_warning("Defining an interrupt buffer on CPU %i"
--			   " failed with 0x%02x (%s)\n", cpu, rc, err);
-+		pr_warn("Defining an interrupt buffer on CPU %i failed with 0x%02x (%s)\n",
-+			cpu, rc, err);
- 		return;
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 21cb483..5c728aa 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -506,7 +506,7 @@ static ssize_t pgctrl_write(struct file *file, const char __user *buf,
+ 		pktgen_reset_all_threads(pn);
+ 
+ 	else
+-		pr_warning("Unknown command: %s\n", data);
++		pr_warn("Unknown command: %s\n", data);
+ 
+ 	return count;
+ }
+@@ -861,14 +861,14 @@ static ssize_t pktgen_if_write(struct file *file,
+ 	pg_result = &(pkt_dev->result[0]);
+ 
+ 	if (count < 1) {
+-		pr_warning("wrong command format\n");
++		pr_warn("wrong command format\n");
+ 		return -EINVAL;
  	}
  
-@@ -1831,7 +1831,7 @@ static void iucv_external_interrupt(struct ext_code ext_code,
- 	BUG_ON(p->iptype  < 0x01 || p->iptype > 0x09);
- 	work = kmalloc(sizeof(struct iucv_irq_list), GFP_ATOMIC);
- 	if (!work) {
--		pr_warning("iucv_external_interrupt: out of memory\n");
-+		pr_warn("iucv_external_interrupt: out of memory\n");
- 		return;
+ 	max = count;
+ 	tmp = count_trail_chars(user_buffer, max);
+ 	if (tmp < 0) {
+-		pr_warning("illegal format\n");
++		pr_warn("illegal format\n");
+ 		return tmp;
  	}
- 	memcpy(&work->data, p, sizeof(work->data));
-@@ -1974,8 +1974,7 @@ static int iucv_pm_restore(struct device *dev)
- 	printk(KERN_WARNING "iucv_pm_restore %p\n", iucv_path_table);
- #endif
- 	if ((iucv_pm_state != IUCV_PM_RESTORING) && iucv_path_table)
--		pr_warning("Suspending Linux did not completely close all IUCV "
--			"connections\n");
-+		pr_warn("Suspending Linux did not completely close all IUCV connections\n");
- 	iucv_pm_state = IUCV_PM_RESTORING;
- 	if (cpumask_empty(&iucv_irq_cpumask)) {
- 		rc = iucv_query_maxconn();
+ 	i = tmp;
+@@ -2056,15 +2056,15 @@ static void pktgen_setup_inject(struct pktgen_dev *pkt_dev)
+ 	ntxq = pkt_dev->odev->real_num_tx_queues;
+ 
+ 	if (ntxq <= pkt_dev->queue_map_min) {
+-		pr_warning("WARNING: Requested queue_map_min (zero-based) (%d) exceeds valid range [0 - %d] for (%d) queues on %s, resetting\n",
+-			   pkt_dev->queue_map_min, (ntxq ?: 1) - 1, ntxq,
+-			   pkt_dev->odevname);
++		pr_warn("WARNING: Requested queue_map_min (zero-based) (%d) exceeds valid range [0 - %d] for (%d) queues on %s, resetting\n",
++			pkt_dev->queue_map_min, (ntxq ?: 1) - 1, ntxq,
++			pkt_dev->odevname);
+ 		pkt_dev->queue_map_min = (ntxq ?: 1) - 1;
+ 	}
+ 	if (pkt_dev->queue_map_max >= ntxq) {
+-		pr_warning("WARNING: Requested queue_map_max (zero-based) (%d) exceeds valid range [0 - %d] for (%d) queues on %s, resetting\n",
+-			   pkt_dev->queue_map_max, (ntxq ?: 1) - 1, ntxq,
+-			   pkt_dev->odevname);
++		pr_warn("WARNING: Requested queue_map_max (zero-based) (%d) exceeds valid range [0 - %d] for (%d) queues on %s, resetting\n",
++			pkt_dev->queue_map_max, (ntxq ?: 1) - 1, ntxq,
++			pkt_dev->odevname);
+ 		pkt_dev->queue_map_max = (ntxq ?: 1) - 1;
+ 	}
+ 
+@@ -3173,8 +3173,8 @@ static int pktgen_stop_device(struct pktgen_dev *pkt_dev)
+ 	int nr_frags = pkt_dev->skb ? skb_shinfo(pkt_dev->skb)->nr_frags : -1;
+ 
+ 	if (!pkt_dev->running) {
+-		pr_warning("interface: %s is already stopped\n",
+-			   pkt_dev->odevname);
++		pr_warn("interface: %s is already stopped\n",
++			pkt_dev->odevname);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -3692,7 +3692,7 @@ static int pktgen_remove_device(struct pktgen_thread *t,
+ 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
+ 
+ 	if (pkt_dev->running) {
+-		pr_warning("WARNING: trying to remove a running interface, stopping it now\n");
++		pr_warn("WARNING: trying to remove a running interface, stopping it now\n");
+ 		pktgen_stop_device(pkt_dev);
+ 	}
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
