@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaIJRbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:31:23 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64615 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaIJRbW (ORCPT
+	id S1752225AbaIJRco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:32:44 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:42416 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963AbaIJRcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:31:22 -0400
-Message-ID: <54108AE7.8020600@gmail.com>
-Date: Wed, 10 Sep 2014 10:31:19 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 10 Sep 2014 13:32:41 -0400
 MIME-Version: 1.0
-To: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "rwells@codeaurora.org" <rwells@codeaurora.org>
-CC: dirk.brandewie@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Len Brown <len.brown@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Subject: Re: [RFC v1 0/6] CPPC as a PID backend
-References: <1410300728-26637-1-git-send-email-ashwin.chaugule@linaro.org>	<541071CF.9030901@gmail.com> <CAJ5Y-eYRiq8ZFuKQHR0cDBWQfp7eEQLVfzvXNHpxOwEFQZeEeg@mail.gmail.com>
-In-Reply-To: <CAJ5Y-eYRiq8ZFuKQHR0cDBWQfp7eEQLVfzvXNHpxOwEFQZeEeg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <541013CE.6020307@redhat.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	<541013CE.6020307@redhat.com>
+Date: Wed, 10 Sep 2014 10:32:40 -0700
+Message-ID: <CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 09:11 AM, Ashwin Chaugule wrote:
-> On 10 September 2014 11:44, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
->> Hi Ashwin,
+On Wed, Sep 10, 2014 at 2:03 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>>             struct { /* anonymous struct used by BPF_PROG_LOAD command */
+>>                 enum bpf_prog_type    prog_type;
+>>                 __u32                 insn_cnt;
+>>                 const struct bpf_insn *insns;
+>>                 const char            *license;
+>>                 __u32                 log_level; /* verbosity level of
+>> eBPF verifier */
+>>                 __u32                 log_size;  /* size of user buffer */
+>>                 void                  *log_buf;  /* user supplied buffer
+>> */
 >
-> Hi Dirk,
 >
->>
->> I think the CPPC based driver should be a separate driver.
->>
->> We made the conscious decision to not use any of the ACPI mechanisms
->> to enumerate or control P state selection.  Experience over the years
->> has shown that the quality/accuracy of the BIOS/ACPI implementations
->> vary widely across OEM's and platform types from a single OEM. Features
->> that always work on a server platform from a given OEM may not work or
->> provide bad information on client platforms for example.
->>
->> Another reason for doing intel_pstate was to be able to land intel specific
->> features and fixes without breaking other architectures as the power
->> management capabilities of the platform evolve. As processors that support
->> Hardware P states (HWP) as described in section 14.4 of the current SDM
->> come into the market intel_pstate will change to not doing much other
->> than enabling HWP and providing an interface to forward user configuration
->> requests to the processor if the user chooses to enable HWP otherwise the
->> current mechanisms will be used.  This is why the intel_pstate sysfs
->> interface is the way it is to be able to map cleanly to HWP and provide
->> an abstract interface going forward.
->>
->> Having separate drivers allows the system integrator/user to select the
->> most appropriate mechanism for their system.
->>
->> --Dirk
->
-> With the current split I think you will still be able to maintain
-> Intel specific changes for the future in the backend driver. The PID
-> algorithm seems platform independent anyway and the PID knobs are
-> exported to userspace for platform specific tuning. The Intel backend
-> driver should be unaffected by the CPPC (ACPI) backend. We can also
-> make them mutually exclusive at runtime.
+> What is log buffer? Would that mean the verifier will return an error
+> string if the program will not pass it, or if not, what other data?
+> I think the man page is missing how to examine the returned verifier
+> log buffer data.
 
-We could make it runtime selectable whether to use CPPC or the
-native mechanisms for P state enumeration and selection but we would
-get into an awful black/white list situation that would not make
-anyone happy.
-
-Using CPPC on Intel platforms implies using HWP which is already
-planned for in intel_pstate.  I am not aware of any effort to support
-CPPC on Intel platforms that do not support HWP.  For Intel platforms
-using CPPC is NOT needed or desirable IMHO.  We had many conversations
-over many months while CPPC was being defined and made the decision
-to not use this mechanism on Intel Linux platforms.
-
-For other platforms that plan on conforming to ACPI 5.x with respect
-to P state enumeration and selection I would like to leave it to them
-to hurd all the cats at the OEMs to get CPPC correct on all their platforms.
-
->
-> Or are you suggesting using PID + CPPC as another driver? IIUC, that
-> would lead to a lot of redundancy.
->
-
-The redundancy is actually pretty small IMHO if you take out the
-enumeration/init code the code shared at runtime is pretty small
-sample/calc_busy/PID.
-
-
-> Cheers,
-> Ashwin
->
-
+yes. it's an error log (as text string for humans) from verifier.
+It is briefly explained in the man page:
+       EACCES For BPF_PROG_LOAD, though program has valid instructions, it was
+              rejected, since it was deemed unsafe (may access disallowed mem-
+              ory region or  uninitialized  stack/register  or  function  con-
+              straints don't match actual types or misaligned access). In such
+              case it is recommended to call bpf() again with  log_level  =  1
+              and examine log_buf for specific reason provided by verifier.
+and there is a whole section about it in
+Documentation/networking/filter.txt
+called "Understanding eBPF verifier messages".
