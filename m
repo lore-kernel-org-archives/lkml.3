@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750997AbaIJDZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 23:25:19 -0400
-Received: from mail-by2on0103.outbound.protection.outlook.com ([207.46.100.103]:49664
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750719AbaIJDZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 23:25:17 -0400
-X-Greylist: delayed 855 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Sep 2014 23:25:17 EDT
-Date: Wed, 10 Sep 2014 11:10:48 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 0/3] refine the ssi clock for imx6sl, and update dts
- file.
-Message-ID: <20140910031046.GA18566@dragon>
-References: <cover.1410253534.git.shengjiu.wang@freescale.com>
+	id S1751472AbaIJD0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 23:26:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:32849 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaIJD0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 23:26:50 -0400
+Date: Tue, 9 Sep 2014 20:26:46 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Message-ID: <20140910032646.GA39541@vmdeb7>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+ <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
+ <D034802C.A7BEE%dvhart@linux.intel.com>
+ <4656BEB6164FC34F8171C6538F1A595B2E98854F@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1410253534.git.shengjiu.wang@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(189002)(199003)(51704005)(24454002)(76176999)(6806004)(50466002)(31966008)(33656002)(74662001)(81342001)(54356999)(50986999)(83322001)(81542001)(44976005)(68736004)(102836001)(104016003)(21056001)(33716001)(90102001)(99396002)(74502001)(85306004)(4396001)(20776003)(47776003)(64706001)(92566001)(85852003)(83072002)(92726001)(80022001)(86362001)(97756001)(26826002)(84676001)(83506001)(57986006)(87936001)(23726002)(79102001)(77982001)(76482001)(46102001)(107046002)(105606002)(95666004)(106466001)(46406003)(97736003)(110136001)(32563001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB324;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E98854F@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 05:13:24PM +0800, Shengjiu Wang wrote:
-> This serial patch is for refining the ssi clock tree for imx6sl,
-> and update imx6qdl and imx6sl dts file.
+On Wed, Sep 10, 2014 at 12:34:50AM +0000, Chen, Alvin wrote:
+> > >@@ -136,7 +136,6 @@ config GPIO_DWAPB
+> > > 	tristate "Synopsys DesignWare APB GPIO driver"
+> > > 	select GPIO_GENERIC
+> > > 	select GENERIC_IRQ_CHIP
+> > >-	depends on OF_GPIO
+> > 
+> > You cover this specific dependencies with inline ifdefs, but you lose the
+> > CONFIG_OF depends by dropping it, and there are no such checks in the probe
+> > routine. Assumptions of OF are not limited to probe in this driver.
+> > 
+> > While I would like to see this assumption properly abstracted, the most
+> > expedient/immediate fix is probably to add a depends on OF above.
 > 
-> Shengjiu Wang (3):
->   ARM: clk-imx6sl: refine clock tree for SSI
->   ARM: dts: imx6qdl: add baud clock and clock-names for ssi
->   ARM: dts: imx6sl: add baud clock and clock-names for ssi
+> Andriy, how do you think? 
+> 
+> How about 
+> depends on OF_GPIO || MFD_GPIO_DWAPB, or
+> depends on OF_GPIO || MFD_INTEL_QUARK_I2C_GPIO?
+> 
 
-Applied all, thanks.
+Upon closer inspection, I think my concern is invalid. the OF header already
+tests for CONFIG_OF and provides no-op / -ENOSYS (tsk tsk) alternatives. So long
+as you can compile with "#CONFIG_OF is not set" as it is, then I withdraw my
+comment.
+
+Sorry for the noise.
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
