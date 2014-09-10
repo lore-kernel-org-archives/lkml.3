@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372AbaIJMPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:15:48 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:34547 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaIJMPp (ORCPT
+	id S1751447AbaIJMQZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:16:25 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62487 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaIJMQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:15:45 -0400
-Message-ID: <541040ED.1020800@suse.cz>
-Date: Wed, 10 Sep 2014 14:15:41 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Wed, 10 Sep 2014 08:16:23 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 10 Sep 2014 14:14:24 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
+Message-ID: <20140910121424.GG2974@localhost>
+References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-To: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] tty: serial: men_z135_uart: Fix driver for changes
- in hardware
-References: <1410329329-4327-1-git-send-email-johannes.thumshirn@men.de>
-In-Reply-To: <1410329329-4327-1-git-send-email-johannes.thumshirn@men.de>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014, 08:08 AM, Johannes Thumshirn wrote:
-> * Add module parameter to configure the (baud rate dependent) RX timeout.
->   Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
-
-Buried in the log. Instead, it would be nice to have this in
-MODULE_PARM_DESC.
-
-> --- a/drivers/tty/serial/men_z135_uart.c
-> +++ b/drivers/tty/serial/men_z135_uart.c
-...
-> @@ -118,6 +117,10 @@ static int align;
->  module_param(align, int, S_IRUGO);
->  MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
+On Wed, Sep 03, 2014 at 10:45:34AM +0200, Boris BREZILLON wrote:
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt   | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
 > 
-> +static int rx_timeout;
-> +module_param(rx_timeout, uint, S_IRUGO);
+> diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> new file mode 100644
+> index 0000000..9ca455f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+> @@ -0,0 +1,20 @@
+> +Atmel AT91SAM9260 Real Time Timer
+> +
+> +Required properties:
+> +- compatible: should be: "atmel,at91sam9260-rtt"
+> +- reg: should contain 2 memory regions
+> +  * the first one encodes the memory region of the RTT controller
+> +  * the second one encodes the GPBR (General Purpose Backup Resgisters)
+> +    memory region used to store the current time
+> +- interrupts: rtc alarm/event interrupt
+> +- clocks: should contain one clock pointing the the slow clk
+> +
+> +Example:
+> +
+> +rtc@fffffe00 {
+> +	compatible = "atmel,at91sam9260-rtt";
+> +	reg = <0xfffffd20 0x10
+> +	       0xfffffd50 0x4>;
+> +	interrupts = <1 4 7>;
+> +	clocks = <&clk32k>;
+> +};
 
-int variable vs. uint handler.
+This does not describe the hardware, but rather a specific software
+configuration.
 
-> @@ -373,43 +376,47 @@ out:
->   * @irq: The IRQ number
->   * @data: Pointer to UART port
->   *
-> - * Check IIR register to see which tasklet to start.
-> + * Check IIR register to find the cause of the interrupt and handle it.
-> + * It is possible that multiple interrupts reason bits are set and reading
-> + * the IIR is a destructive read, so we always need to check for all possible
-> + * interrupts and handle them.
->   */
->  static irqreturn_t men_z135_intr(int irq, void *data)
->  {
->  	struct men_z135_port *uart = (struct men_z135_port *)data;
->  	struct uart_port *port = &uart->port;
-> +	int handled = 0;
+The RTT is first of all not an RTC (although it can be used as one in a
+specific software configuration). And the second register resource above
+is not an RTT register, but a general-purpose backup register could be
+used for other purposes (which register to use is currently configurable
+for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
 
-This can be bool or use IRQ_NONE directly.
+This was discussed in the thread where I posted an RFC for this last
+year (which you linked to in your original submission thread), but no
+conclusion was reached:
 
-...
-> -	return IRQ_HANDLED;
-> +	if (irq_id & MEN_Z135_IRQ_ID_RDA || irq_id & MEN_Z135_IRQ_ID_CTI) {
+	http://www.spinics.net/lists/arm-kernel/msg236292.html
 
-A matter of taste, but
- irq_id & (MEN_Z135_IRQ_ID_RDA | MEN_Z135_IRQ_ID_CTI)
-looks and works better.
-
-thanks,
--- 
-js
-suse labs
+Johan
