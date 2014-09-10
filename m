@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaIJVET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:04:19 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:64746 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaIJVER (ORCPT
+	id S1753558AbaIJVGn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:06:43 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:56381 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753182AbaIJVGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:04:17 -0400
-Date: Wed, 10 Sep 2014 14:04:14 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 3.17-rc4
-Message-ID: <20140910210414.GA24104@core.coreip.homeip.net>
-References: <20140815061242.GA23913@core.coreip.homeip.net>
+	Wed, 10 Sep 2014 17:06:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140815061242.GA23913@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410381050.28990.295.camel@misato.fc.hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+ <1410367910-6026-3-git-send-email-toshi.kani@hp.com> <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
+ <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com> <1410381050.28990.295.camel@misato.fc.hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Sep 2014 14:06:20 -0700
+Message-ID: <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle WT
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Sep 10, 2014 at 1:30 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Wed, 2014-09-10 at 13:14 -0700, H. Peter Anvin wrote:
+>> On 09/10/2014 12:30 PM, Toshi Kani wrote:
+>> >
+>> > When WT is unavailable due to the PAT errata, it does not fail but gets
+>> > redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
+>> > to UC- as well.
+>> >
+>>
+>> But on pre-PAT hardware you can still do WT.
+>
+> Yes, if we manipulates the bits directly, but such code is no longer
+> allowed for PAT systems.  The PAT-based kernel interfaces won't work for
+> pre-PAT systems, and therefore requests are redirected to UC- on such
+> systems.
+>
 
-Please pull from:
+Right, the PWT bit.  Forgot about that.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+I wonder whether it would make sense to do some followup patches to
+replace the current support for non-PAT machines with a "PAT" and
+corresponding reverse map that exactly matches the mapping when PAT is
+disabled.  These patches are almost there.
 
-to receive updates for the input subsystem. You will get an update to
-Synaptics PS/2 driver to handle "ForcePads" (currently found in HP
-EliteBook 1040 laptops), a change for Elan PS/2 driver to detect newer
-touchpads, bunch of devices get annotated as Trackpoint and/or Pointer
-to help userspace classify and handle them, plus assorted driver fixes.
-
-Changelog:
----------
-
-Dmitry Torokhov (1):
-      Input: synaptics - add support for ForcePads
-
-Hans de Goede (3):
-      Input: elantech - fix detection of touchpad on ASUS s301l
-      Input: add INPUT_PROP_POINTING_STICK property
-      Input: add missing POINTER / DIRECT properties to a bunch of drivers
-
-John Sung (1):
-      Input: serport - add compat handling for SPIOCSTYPE ioctl
-
-Klaus Goger (1):
-      Input: cap1106 - fix register definition
-
-Lothar Waﬂmann (1):
-      Input: matrix_keypad - use request_any_context_irq()
-
-Masanari Iida (1):
-      Input: wm971x - fix typo in module parameter description
-
-Nick Dyer (1):
-      Input: atmel_mxt_ts - downgrade warning about empty interrupts
-
-Stephen Warren (1):
-      Input: atmel_mxt_ts - fix double free of input device
-
-
-Diffstat:
---------
-
- drivers/input/keyboard/cap1106.c         |  4 +-
- drivers/input/keyboard/matrix_keypad.c   |  9 +++--
- drivers/input/mouse/alps.c               |  4 ++
- drivers/input/mouse/elantech.c           | 11 ++++++
- drivers/input/mouse/psmouse-base.c       |  2 +
- drivers/input/mouse/synaptics.c          | 68 ++++++++++++++++++++++++--------
- drivers/input/mouse/synaptics.h          | 11 ++++++
- drivers/input/mouse/synaptics_usb.c      |  6 +++
- drivers/input/mouse/trackpoint.c         |  3 ++
- drivers/input/serio/serport.c            | 45 +++++++++++++++++----
- drivers/input/touchscreen/atmel_mxt_ts.c | 25 +++++++++---
- drivers/input/touchscreen/wm9712.c       |  2 +-
- drivers/input/touchscreen/wm9713.c       |  2 +-
- include/uapi/linux/input.h               |  1 +
- 14 files changed, 156 insertions(+), 37 deletions(-)
-
--- 
-Dmitry
+--Andy
