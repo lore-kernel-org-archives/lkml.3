@@ -1,105 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109AbaIJDf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 23:35:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38522 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaIJDf0 (ORCPT
+	id S1751331AbaIJDhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 23:37:31 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:47462 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaIJDh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 23:35:26 -0400
-Date: Tue, 9 Sep 2014 20:35:20 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Azael Avalos <coproscefalo@gmail.com>, Jonathan Cameron <jic23@kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
-Message-ID: <20140910033520.GC39541@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
- <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
- <20140906024253.GB11389@vmdeb7>
- <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
- <20140909000429.GB5835@vmdeb7>
- <20140909013553.GC16363@kroah.com>
+	Tue, 9 Sep 2014 23:37:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140909013553.GC16363@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140909144225.GF6151@saruman.home>
+References: <1409656338-20337-1-git-send-email-gautam.vivek@samsung.com>
+	<1409656338-20337-5-git-send-email-gautam.vivek@samsung.com>
+	<20140902143438.GB16872@saruman.home>
+	<CAFp+6iEyqmbwMLFrBKD7NVLDAC=b+h1hPKFS=BG4k9D69hn_dg@mail.gmail.com>
+	<20140903144225.GD31855@saruman.home>
+	<CAFp+6iETPJCWMMkjHrpDcdCv=K0PbefYLa4eBOwN=aUY2=EHLA@mail.gmail.com>
+	<20140905175651.GK24449@saruman.home>
+	<CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+	<20140908134454.GK22409@saruman.home>
+	<CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+	<20140909144225.GF6151@saruman.home>
+Date: Wed, 10 Sep 2014 09:07:28 +0530
+X-Google-Sender-Auth: imroKd2uTRL6BhrQoW4gw91tVlg
+Message-ID: <CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for exynos5420/5800
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Felipe Balbi <balbi@ti.com>, Julius Werner <jwerner@google.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, kishon <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 06:35:53PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Sep 08, 2014 at 05:04:30PM -0700, Darren Hart wrote:
-> > On Fri, Sep 05, 2014 at 11:04:18PM -0600, Azael Avalos wrote:
-> > > Hi there,
-> > > 
-> > > 2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
-> > > > On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
-> > > >> The accelerometer sensor is very sensitive, and having userspace
-> > > >> poll the sysfs position entry is not very battery friendly.
-> > > >>
-> > > >> This patch removes the sysfs entry and instead, it creates an
-> > > >> input polled device (joystick) for the built-in accelerometer.
-> > > >
-> > > > Hrm, while sysfs details can change across kernel versions, usually due to
-> > > > driver core changes, we try to keep them as consistent as possible so as not to
-> > > > break userspace.
-> > > >
-> > > > That said, if we are going to try and come up with a better model for
-> > > > representing an accelerometer, wouldn't treating it as an IIO device be the more
-> > > > logical approach?
-> > > 
-> > > Yes of course, but the actual accelerometer device (sensor?) is not
-> > > really exposed,
-> > > only certain "functions" it provides, and they are divided across two
-> > > different ACPI devices,
-> > > TOS620A exposes the protection, and the TOS1900 (and et. al.) only
-> > > exposes the axes.
-> > 
-> > As I understand it, IIO defines an interface to a device, a standard sysfs set
-> > of properties. I should think we could provide the appropriate callbacks even
-> > for a partially implemented (or a pair of) accelerometer.
-> > 
-> > Jonathan, what are your thoughts here. Is such a "device" (ACPI accessors to
-> > axis and threshold) a candidate for IIO, or is this input polled device more
-> > appropriate?
-> > 
-> > > 
-> > > I see your point in breaking userspace, but given the fact that it was
-> > > recently introduced,
-> > > I didn't thought it was already "adopted", that's why I decided to
-> > > remove the sysfs entry.
-> > 
-> > Looks like since 3.15 if I read the log correctly. That is fairly recent and
-> > this is not one of the "defined interfaces" in the sysfs documentation.
-> > 
-> > Greg, can you weigh in here - does this change count as "breaking userspace", or
-> > is this more inline with the scheduler knobs in /proc/sched_debug which can
-> > change from version to version.
-> > 
-> > > 
-> > > Then we might as well keep the sysfs entry and have the input polled
-> > > device as well.
-> > 
-> > Let's see what Greg has to say. If he isn't bothered by the change, I won't push
-> > the issue.
-> 
-> If it should be an IIO device, great, make it an IIO device, and move
-> away from a custom sysfs interface that matches nothing else.
-> 
-> But I really doubt it should be a joystick device, that just doesn't
-> make sense at all.
+adding Julius here,
 
-I immediately went to a tablet with a marble maze game and it didn't seem too
-crazy, but I don't suppose that is what people are actually doing with it...
 
-What are people actually doing with this thing Azael?
+On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
+>> Hi,
+>>
+>>
+>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > Hi,
+>> >
+>> > On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
+>> >> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >> > On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
+>> >> >> > Don't we have phy_power_on()
+>> >> >> > for that ? It looks like you could just as well do this from
+>> >> >> > phy_power_on() ?
+>> >> >>
+>> >> >> No, unfortunately keeping these calibration settings in phy_power_on()
+>> >> >> doesn't help, since we need to do this after XHCI reset has happened.
+>> >> >
+>> >> > teach xHCI about PHYs ?
+>> >>
+>> >> sorry i couldn't understand you here.
+>> >> Aren't we trying to do the same with Heikki's patch about dwc3 :
+>> >> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
+>> >>
+>> >> and the 2nd patch in this series :
+>> >> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+>> >>
+>> >> Is there something else that is expected ?
+>> >
+>> > right, use that to call phy_init() at the right time, then you need to
+>> > add a new ->calibrate() method which, likely, will only be used by you
+>> > ;-)
+>>
+>> so you mean, the xhci should itself call phy_init() at a time suitable,
+>> so that ->calibrate() is not required at all ?
+>>
+>> i think you meant there - "then you __do not__ need to
+>
+> right :-)
+
+alright, i will prepare a patch for the suggested change.
+
+But AFAI remember we had discussion for this patch in earlier version,
+and Julius suggested to use a generic approach for such
+change wherein other users in future may be able to use the
+facility.
+Julius any thoughts about the change suggested by Felipe.
+
+[snip]
+
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
