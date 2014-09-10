@@ -1,126 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaIJS0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:26:46 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:58083 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaIJS0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:26:45 -0400
+	id S1752777AbaIJS1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:27:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1929 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751044AbaIJS1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 14:27:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,500,1406617200"; 
+   d="scan'208";a="571294453"
+Date: Wed, 10 Sep 2014 11:27:44 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, eranian@google.com, tglx@linutronix.de
+Subject: Re: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
+Message-ID: <20140910182744.GJ5387@tassilo.jf.intel.com>
+References: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
+ <20140910075722.GL6758@twins.programming.kicks-ass.net>
+ <20140910144012.GI4120@two.firstfloor.org>
+ <20140910163556.GE4783@worktop.ger.corp.intel.com>
+ <20140910165848.GA11901@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1410367910-6026-3-git-send-email-toshi.kani@hp.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com> <1410367910-6026-3-git-send-email-toshi.kani@hp.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 10 Sep 2014 11:26:23 -0700
-Message-ID: <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle WT
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910165848.GA11901@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> This patch changes reserve_memtype() to handle the WT cache mode.
-> When PAT is not enabled, it continues to set UC- to *new_type for
-> any non-WB request.
->
-> When a target range is RAM, reserve_ram_pages_type() fails for WT
-> for now.  This function may not reserve a RAM range for WT since
-> reserve_ram_pages_type() uses the page flags limited to three memory
-> types, WB, WC and UC.
+> Note that since then we have actually fixed the 'cannot fault from NMI
+> context' thing, so we should be able to actually take those faults. I
+> suspect we can simply remove those WARNs from the vmalloc fault path,
+> but it would need double checking to see if there's no other reasons.
 
-Should it fail if WT is unavailable due to errata?  More generally,
-how are all of the do_something_wc / do_something_wt /
-do_something_nocache helpers supposed to handle unsupported types?
+I think we actually need to use vmalloc_sync_all, because the PEBS/DS
+microcode may do the first access, and those lose events when
+the page is not present.
 
---Andy
-
->
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->  arch/x86/include/asm/cacheflush.h |    4 ++++
->  arch/x86/mm/pat.c                 |   16 +++++++++++++---
->  2 files changed, 17 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
-> index 157644b..c912680 100644
-> --- a/arch/x86/include/asm/cacheflush.h
-> +++ b/arch/x86/include/asm/cacheflush.h
-> @@ -53,6 +53,10 @@ static inline void set_page_memtype(struct page *pg,
->         case _PAGE_CACHE_MODE_WB:
->                 memtype_flags = _PGMT_WB;
->                 break;
-> +       case _PAGE_CACHE_MODE_WT:
-> +       case _PAGE_CACHE_MODE_WP:
-> +               pr_err("set_page_memtype: unsupported cachemode %d\n", memtype);
-> +               BUG();
->         default:
->                 memtype_flags = _PGMT_DEFAULT;
->                 break;
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index 598d7c7..7644967 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -268,6 +268,8 @@ static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
->
->  /*
->   * For RAM pages, we use page flags to mark the pages with appropriate type.
-> + * The page flags are currently limited to three types, WB, WC and UC. Hence,
-> + * any request to WT or WP will fail with -EINVAL.
->   * Here we do two pass:
->   * - Find the memtype of all the pages in the range, look for any conflicts
->   * - In case of no conflicts, set the new memtype for pages in the range
-> @@ -279,6 +281,13 @@ static int reserve_ram_pages_type(u64 start, u64 end,
->         struct page *page;
->         u64 pfn;
->
-> +       if ((req_type == _PAGE_CACHE_MODE_WT) ||
-> +           (req_type == _PAGE_CACHE_MODE_WP)) {
-> +               if (new_type)
-> +                       *new_type = _PAGE_CACHE_MODE_UC_MINUS;
-> +               return -EINVAL;
-> +       }
-> +
->         if (req_type == _PAGE_CACHE_MODE_UC) {
->                 /* We do not support strong UC */
->                 WARN_ON_ONCE(1);
-> @@ -328,6 +337,7 @@ static int free_ram_pages_type(u64 start, u64 end)
->   * - _PAGE_CACHE_MODE_WC
->   * - _PAGE_CACHE_MODE_UC_MINUS
->   * - _PAGE_CACHE_MODE_UC
-> + * - _PAGE_CACHE_MODE_WT
->   *
->   * If new_type is NULL, function will return an error if it cannot reserve the
->   * region with req_type. If new_type is non-NULL, function will return
-> @@ -347,10 +357,10 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
->         if (!pat_enabled) {
->                 /* This is identical to page table setting without PAT */
->                 if (new_type) {
-> -                       if (req_type == _PAGE_CACHE_MODE_WC)
-> -                               *new_type = _PAGE_CACHE_MODE_UC_MINUS;
-> +                       if (req_type == _PAGE_CACHE_MODE_WB)
-> +                               *new_type = _PAGE_CACHE_MODE_WB;
->                         else
-> -                               *new_type = req_type;
-> +                               *new_type = _PAGE_CACHE_MODE_UC_MINUS;
->                 }
->                 return 0;
->         }
-
-
+-Andi
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+ak@linux.intel.com -- Speaking for myself only
