@@ -1,75 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaIJObH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:31:07 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54788 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaIJObB (ORCPT
+	id S1753006AbaIJObF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:31:05 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:54533 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752411AbaIJO3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:31:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: sundeep subbaraya <sundeep.lkml@gmail.com>
-Cc: "balbi@ti.com" <balbi@ti.com>, Daniel Mack <daniel@zonque.org>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        svemula@xilinx.com, anirudh@xilinx.com,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Subject: Re: [PATCH v4 2/2] usb: gadget: Add xilinx usb2 device support
-Date: Wed, 10 Sep 2014 16:30:50 +0200
-Message-ID: <8798156.X6RhQq9Iqm@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CALHRZuqt-XJ5mPczzGJtSN=iq7TPut0=54r90QHWR+w-Lwwtyg@mail.gmail.com>
-References: <1406020130-20467-1-git-send-email-sbhatta@xilinx.com> <20140821140040.GE9608@saruman.home> <CALHRZuqt-XJ5mPczzGJtSN=iq7TPut0=54r90QHWR+w-Lwwtyg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:lOmpO6y3jmx1Nqso84NAxw5wjCxf3guL5qyaCOCR6gd
- XFEp4CuLQyqnq5Hv/U9u+Tk2KAqSPXD6CQfz64+DmxEeYG1vGh
- zZ15vUSdHBBJEGwqVd94LaitOSgdiw33QmtIDG64IEoC3SRYPO
- v478dm4E8G2zchqFPNqkg8+6MASZvPEyAIoHRFcltlhNWwAM8F
- D3RaUDQZxzbiz5PBsSqa5tl4XKEH2ogggKVXu/O5n8fGY5hW57
- vlP38KAv/f69tvnVnlZtVeTTBSYOc3MHhalEjZJssNlPDF+VdR
- XalV/iz4jL1BSwjJSkSSQ7RHSo+Ecl7WXgfCDbkEY03d3NWyYu
- F09SyPhkelmYGF1q3jfQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 10 Sep 2014 10:29:10 -0400
+From: Jeff Layton <jlayton@primarydata.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, bfields@fieldses.org
+Subject: [RFC PATCH 08/12] nfs: convert lock handling to use file_lock_context
+Date: Wed, 10 Sep 2014 10:28:46 -0400
+Message-Id: <1410359330-27564-9-git-send-email-jlayton@primarydata.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 September 2014 19:25:11 sundeep subbaraya wrote:
-> > that's not exactly what I asked  Usually you only add COMPILE_TEST
-> > when you have an ARCH dependency. So something like:
-> >
-> >         depends on ARCH_ARM || COMPILE_TEST
-> >
-> > would make it clear that this driver is only available on ARM, but when
-> > doing my build tests, I'd still be able to compile it on x86.
-> 
-> Ok got it 
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+---
+ fs/nfs/delegation.c | 37 +++++++++++++++++++++----------------
+ fs/nfs/nfs4state.c  | 24 +++++++++++++++---------
+ fs/nfs/pagelist.c   |  3 ++-
+ fs/nfs/write.c      | 39 +++++++++++++++++++++++++++++++++------
+ 4 files changed, 71 insertions(+), 32 deletions(-)
 
-Most of the xilinx stuff also applies to MICROBLAZE however, so it
-may need to be
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 5853f53db732..22c6eed9bb5b 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -85,25 +85,30 @@ static int nfs_delegation_claim_locks(struct nfs_open_context *ctx, struct nfs4_
+ {
+ 	struct inode *inode = state->inode;
+ 	struct file_lock *fl;
++	struct file_lock_context *flctx = inode->i_flctx;
++	struct list_head *list;
+ 	int status = 0;
+ 
+-	if (inode->i_flock == NULL)
+-		goto out;
+-
+-	/* Protect inode->i_flock using the i_lock */
+-	spin_lock(&inode->i_lock);
+-	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+-		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+-			continue;
+-		if (nfs_file_open_context(fl->fl_file) != ctx)
+-			continue;
+-		spin_unlock(&inode->i_lock);
+-		status = nfs4_lock_delegation_recall(fl, state, stateid);
+-		if (status < 0)
+-			goto out;
+-		spin_lock(&inode->i_lock);
++	flctx = inode->i_flctx;
++	if (flctx) {
++		list = &flctx->flc_posix;
++		spin_lock(&flctx->flc_lock);
++restart:
++		list_for_each_entry(fl, list, fl_list) {
++			if (nfs_file_open_context(fl->fl_file) != ctx)
++				continue;
++			spin_unlock(&flctx->flc_lock);
++			status = nfs4_lock_delegation_recall(fl, state, stateid);
++			if (status < 0)
++				goto out;
++			spin_lock(&flctx->flc_lock);
++		}
++		if (list == &flctx->flc_posix) {
++			list = &flctx->flc_flock;
++			goto restart;
++		}
++		spin_unlock(&flctx->flc_lock);
+ 	}
+-	spin_unlock(&inode->i_lock);
+ out:
+ 	return status;
+ }
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index a043f618cd5a..2899a0f26293 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1377,21 +1377,23 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+ 	struct inode *inode = state->inode;
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+ 	struct file_lock *fl;
++	struct file_lock_context *flctx = inode->i_flctx;
++	struct list_head *list;
+ 	int status = 0;
+ 
+-	if (inode->i_flock == NULL)
++	if (!flctx)
+ 		return 0;
+ 
++	list = &flctx->flc_posix;
++
+ 	/* Guard against delegation returns and new lock/unlock calls */
+ 	down_write(&nfsi->rwsem);
+-	/* Protect inode->i_flock using the BKL */
+-	spin_lock(&inode->i_lock);
+-	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+-		if (!(fl->fl_flags & (FL_POSIX|FL_FLOCK)))
+-			continue;
++	spin_lock(&flctx->flc_lock);
++restart:
++	list_for_each_entry(fl, list, fl_list) {
+ 		if (nfs_file_open_context(fl->fl_file)->state != state)
+ 			continue;
+-		spin_unlock(&inode->i_lock);
++		spin_unlock(&flctx->flc_lock);
+ 		status = ops->recover_lock(state, fl);
+ 		switch (status) {
+ 			case 0:
+@@ -1418,9 +1420,13 @@ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_
+ 				/* kill_proc(fl->fl_pid, SIGLOST, 1); */
+ 				status = 0;
+ 		}
+-		spin_lock(&inode->i_lock);
++		spin_lock(&flctx->flc_lock);
+ 	}
+-	spin_unlock(&inode->i_lock);
++	if (list == &flctx->flc_posix) {
++		list = &flctx->flc_flock;
++		goto restart;
++	}
++	spin_unlock(&flctx->flc_lock);
+ out:
+ 	up_write(&nfsi->rwsem);
+ 	return status;
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index ba491926df5f..4df8d8755026 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -782,7 +782,8 @@ static bool nfs_can_coalesce_requests(struct nfs_page *prev,
+ 	if (prev) {
+ 		if (!nfs_match_open_context(req->wb_context, prev->wb_context))
+ 			return false;
+-		if (req->wb_context->dentry->d_inode->i_flock != NULL &&
++		if (req->wb_context->dentry->d_inode->i_flctx != NULL &&
++		    !list_empty(&req->wb_context->dentry->d_inode->i_flctx->flc_posix) &&
+ 		    !nfs_match_lock_context(req->wb_lock_context,
+ 					    prev->wb_lock_context))
+ 			return false;
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index e3b5cf28bdc5..02b8777f8f2f 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1128,7 +1128,8 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
+ 		do_flush = req->wb_page != page || req->wb_context != ctx;
+ 		/* for now, flush if more than 1 request in page_group */
+ 		do_flush |= req->wb_this_page != req;
+-		if (l_ctx && ctx->dentry->d_inode->i_flock != NULL) {
++		if (l_ctx && ctx->dentry->d_inode->i_flctx &&
++		    !list_empty(&ctx->dentry->d_inode->i_flctx->flc_posix)) {
+ 			do_flush |= l_ctx->lockowner.l_owner != current->files
+ 				|| l_ctx->lockowner.l_pid != current->tgid;
+ 		}
+@@ -1189,6 +1190,12 @@ out:
+ 	return PageUptodate(page) != 0;
+ }
+ 
++static bool
++is_whole_file_wrlock(struct file_lock *fl)
++{
++	return fl->fl_start == 0 && fl->fl_end == OFFSET_MAX && fl->fl_type == F_WRLCK;
++}
++
+ /* If we know the page is up to date, and we're not using byte range locks (or
+  * if we have the whole file locked for writing), it may be more efficient to
+  * extend the write to cover the entire page in order to avoid fragmentation
+@@ -1199,17 +1206,37 @@ out:
+  */
+ static int nfs_can_extend_write(struct file *file, struct page *page, struct inode *inode)
+ {
++	int ret;
++	struct file_lock_context *flctx = inode->i_flctx;
++	struct file_lock *fl;
++
+ 	if (file->f_flags & O_DSYNC)
+ 		return 0;
+ 	if (!nfs_write_pageuptodate(page, inode))
+ 		return 0;
+ 	if (NFS_PROTO(inode)->have_delegation(inode, FMODE_WRITE))
+ 		return 1;
+-	if (inode->i_flock == NULL || (inode->i_flock->fl_start == 0 &&
+-			inode->i_flock->fl_end == OFFSET_MAX &&
+-			inode->i_flock->fl_type != F_RDLCK))
+-		return 1;
+-	return 0;
++	/* no lock context == no locks */
++	if (!flctx)
++		return 0;
++
++	/* if lists are empty then there are no locks */
++	if (list_empty(&flctx->flc_posix) && list_empty(&flctx->flc_flock))
++		return 0;
++
++	ret = 0;
++	/* Check to see if there are whole file write locks */
++	spin_lock(&flctx->flc_lock);
++	fl = list_first_entry(&flctx->flc_posix, struct file_lock, fl_list);
++	if (is_whole_file_wrlock(fl)) {
++		ret = 1;
++	} else {
++		fl = list_first_entry(&flctx->flc_flock, struct file_lock, fl_list);
++		if (is_whole_file_wrlock(fl))
++			ret = 1;
++	}
++	spin_unlock(&flctx->flc_lock);
++	return ret;
+ }
+ 
+ /*
+-- 
+1.9.3
 
-	ARM || MICROBLAZE || COMPILE_TEST
-
-(not ARCH_ARM, btw).
-
-> >> > Also, your code uses device tree functions unconditionally, which is
-> >> > fine, but it must hence depend on 'OF'.
-> >>
-> >> Ok will add OF along with COMPILE_TEST
-> >
-> > so this would be:
-> >
-> >         depends on OF || COMPILE_TEST
-
-If it requires OF to build, you can use 'OF && (ARM || COMPILE_TEST)',
-but if there is no compile-time dependency, you can just leave out
-the 'depends on OF' completely. You can't even build a Zynq machine
-without OF enabled.
-
-	Arnd
