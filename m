@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaIJAtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 20:49:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34541 "EHLO mga02.intel.com"
+	id S1752686AbaIJAtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 20:49:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46506 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005AbaIJAtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 20:49:13 -0400
+	id S1751364AbaIJAtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 20:49:14 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,494,1406617200"; 
-   d="scan'208";a="570875884"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="383860698"
 From: Andi Kleen <andi@firstfloor.org>
 To: peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
         tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/2] perf, x86: Use INTEL_FLAGS_UEVENT_CONSTRAINT for PRECDIST
-Date: Tue,  9 Sep 2014 17:49:08 -0700
-Message-Id: <1410310148-26260-2-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/2] perf, x86: Add INTEL_FLAGS_UEVENT_CONSTRAINT
+Date: Tue,  9 Sep 2014 17:49:07 -0700
+Message-Id: <1410310148-26260-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410310148-26260-1-git-send-email-andi@firstfloor.org>
-References: <1410310148-26260-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-The earlier commit 86a04461a made near all PEBS on
-Sandy/IvyBridge/Haswell to reject non zero flags.
+Add a FLAGS_UEVENT_CONSTRAINT macro that allows us to
+match on event+umask, and in additional all flags.
 
-However this wasn't done for the INST_RETIRED.PREC_DIST event
-because no suitable macro existed. Now that we have
-INTEL_FLAGS_UEVENT_CONSTRAINT enforce zero flags for
-INST_RETIRED.PREC_DIST too.
+This is needed to ensure the INV and CMASK fields
+are zero for specific events, as this can cause undefined
+behavior.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 9dc4199..e578c66 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -606,7 +606,7 @@ struct event_constraint intel_westmere_pebs_event_constraints[] = {
- };
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index fc5eb39..4e6cdb0 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -253,6 +253,10 @@ struct cpu_hw_events {
+ #define INTEL_UEVENT_CONSTRAINT(c, n)	\
+ 	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK)
  
- struct event_constraint intel_snb_pebs_event_constraints[] = {
--	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
- 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
- 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-@@ -617,7 +617,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- };
- 
- struct event_constraint intel_ivb_pebs_event_constraints[] = {
--        INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+        INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
- 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
-@@ -628,7 +628,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
- };
- 
- struct event_constraint intel_hsw_pebs_event_constraints[] = {
--	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-+	INTEL_FLAGS_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
- 	INTEL_PLD_CONSTRAINT(0x01cd, 0xf),    /* MEM_TRANS_RETIRED.* */
- 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
- 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
++/* Like UEVENT_CONSTRAINT, but match flags too */
++#define INTEL_FLAGS_UEVENT_CONSTRAINT(c, n)	\
++	EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS)
++
+ #define INTEL_PLD_CONSTRAINT(c, n)	\
+ 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+ 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
 -- 
 1.9.3
 
