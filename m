@@ -1,138 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaIJCOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:14:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:59675 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaIJCOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:14:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
-   d="scan'208";a="570903084"
-Message-ID: <540FB3EA.5030109@linux.intel.com>
-Date: Wed, 10 Sep 2014 10:14:02 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751950AbaIJCPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:15:08 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30996 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751156AbaIJCPG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:15:06 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Pq1KY/G5V2gP6igWAE1PV
+Date: Wed, 10 Sep 2014 02:14:58 +0000
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: OMAP5+: Reuse OMAP4 PM code for OMAP5 and DRA7
+Message-ID: <20140910021458.GA1058@atomide.com>
+References: <1410282933-30131-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Patch v4 07/16] x86, irq: Prefer assigned ID in APIC ID register
- for x86_64
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-8-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091256270.11037@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409091256270.11037@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410282933-30131-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Nishanth Menon <nm@ti.com> [140909 17:16]:
+> OMAP4, OMAP5 and DRA7 share a lot of common logic and data structures.
+> These have been enabled in the previous patches, however, this also
+> means that OMAP5 or DRA7 only builds also need to build OMAP4 logic.
+> Update to reuse OMAP4 logic.
+> 
+> This fixes the 'undefined reference to 'omap4_pm_init_early'' in
+> OMAP5 or DRA7 only builds.
+> 
+> Fixes: 6af16a1dac5465c ("ARM: DRA7: Add hook in SoC initcalls to enable pm initialization")
+> Fixes: 628ed4717000789 ("ARM: OMAP5: Add hook in SoC initcalls to enable pm initialization")
+> Reported-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+> 
+> This fixes the regression with randconfig that Tony reported with
+> omap-for-v3.18/soc branch.
+> 
+> Tested with CONFIG_ARCH_OMAP2, CONFIG_ARCH_OMAP3, CONFIG_ARCH_OMAP4,
+> CONFIG_SOC_OMAP5, CONFIG_SOC_AM33XX, CONFIG_SOC_AM43XX, CONFIG_SOC_DRA7XX
+> only builds.
 
+Thanks applying into omap-for-v3.18/soc.
 
-On 2014/9/9 19:04, Thomas Gleixner wrote:
-> On Thu, 28 Aug 2014, Jiang Liu wrote:
+Tony 
+ 
+>  arch/arm/mach-omap2/Makefile |   12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
 > 
->> From: Yinghai Lu <yinghai@kernel.org>
->>
->> Perfer the assigned ID in APIC ID register for x86_64 if it's still
->> available.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: Joerg Roedel <joro@8bytes.org>
->> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> ---
->>  arch/x86/kernel/apic/io_apic.c |   38 +++++++++++++++++++++++++++++++++-----
->>  1 file changed, 33 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->> index 3faf9599ff29..196d9c15fdec 100644
->> --- a/arch/x86/kernel/apic/io_apic.c
->> +++ b/arch/x86/kernel/apic/io_apic.c
->> @@ -3575,26 +3575,54 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
->>  	return apic_id;
->>  }
->>  
->> -static u8 __init io_apic_unique_id(u8 id)
->> +static u8 io_apic_unique_id(int idx, u8 id)
-> 
-> How is that change related to the changelog?
-My bad, removal of __init marker belongs to next patch.
-
-> 
->>  {
->>  	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
->>  	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
->> -		return io_apic_get_unique_id(nr_ioapics, id);
->> +		return io_apic_get_unique_id(idx, id);
->>  	else
->>  		return id;
->>  }
->>  #else
->> -static u8 __init io_apic_unique_id(u8 id)
->> +static u8 io_apic_unique_id(int idx, u8 id)
->>  {
->>  	int i;
->> +	u8 new_id;
->> +	unsigned long flags;
->>  	DECLARE_BITMAP(used, 256);
->> +	union IO_APIC_reg_00 reg_00;
->>  
->>  	bitmap_zero(used, 256);
->>  	for_each_ioapic(i)
->>  		__set_bit(mpc_ioapic_id(i), used);
->>  	if (!test_bit(id, used))
->>  		return id;
->> -	return find_first_zero_bit(used, 256);
->> +
->> +	/* check register at first */
->> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
->> +	reg_00.raw = io_apic_read(idx, 0);
->> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
->> +	new_id = reg_00.bits.ID;
->> +	if (!test_bit(new_id, used)) {
->> +		apic_printk(APIC_VERBOSE, KERN_INFO
->> +			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
->> +			 idx, new_id, id);
->> +		return new_id;
->> +	}
->> +
->> +	new_id = find_first_zero_bit(used, 256);
->> +	reg_00.bits.ID = new_id;
->> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
->> +	io_apic_write(idx, 0, reg_00.raw);
->> +	reg_00.raw = io_apic_read(idx, 0);
->> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
->> +
->> +	/* Sanity check */
->> +	if (reg_00.bits.ID != new_id)
->> +		pr_warn("IOAPIC[%d]: Unable to change apic_id to %d!\n",
->> +			idx, new_id);
-> 
-> So we detect, that the ID could not be changed and we return it
-> nevertheless?
-Seems it deserves a BUG_ON here. We have tried the ID from ACPI table,
-the ID from hardware register, they all fails. And we can't change the
-hardware register too. Seems no way out here.
-Regards!
-Gerry
-> 
-> Thanks,
-> 
-> 	tglx
+> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+> index 69bbcba..d9dd99c 100644
+> --- a/arch/arm/mach-omap2/Makefile
+> +++ b/arch/arm/mach-omap2/Makefile
+> @@ -87,9 +87,10 @@ ifeq ($(CONFIG_PM),y)
+>  obj-$(CONFIG_ARCH_OMAP2)		+= pm24xx.o
+>  obj-$(CONFIG_ARCH_OMAP2)		+= sleep24xx.o
+>  obj-$(CONFIG_ARCH_OMAP3)		+= pm34xx.o sleep34xx.o
+> -obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o
+> -obj-$(CONFIG_SOC_OMAP5)			+= omap-mpuss-lowpower.o
+> -obj-$(CONFIG_SOC_DRA7XX)		+= omap-mpuss-lowpower.o
+> +omap-4-5-pm-common			=  pm44xx.o omap-mpuss-lowpower.o
+> +obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-pm-common)
+> +obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-pm-common)
+> +obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-pm-common)
+>  obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
+>  
+>  obj-$(CONFIG_POWER_AVS_OMAP)		+= sr_device.o
+> @@ -102,7 +103,10 @@ endif
+>  
+>  ifeq ($(CONFIG_CPU_IDLE),y)
+>  obj-$(CONFIG_ARCH_OMAP3)                += cpuidle34xx.o
+> -obj-$(CONFIG_ARCH_OMAP4)                += cpuidle44xx.o
+> +omap-4-5-idle-common			=  cpuidle44xx.o
+> +obj-$(CONFIG_ARCH_OMAP4)		+= $(omap-4-5-idle-common)
+> +obj-$(CONFIG_SOC_OMAP5)			+= $(omap-4-5-idle-common)
+> +obj-$(CONFIG_SOC_DRA7XX)		+= $(omap-4-5-idle-common)
+>  endif
+>  
+>  # PRCM
+> -- 
+> 1.7.9.5
 > 
