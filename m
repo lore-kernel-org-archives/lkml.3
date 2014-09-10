@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaIJCqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:46:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25017 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501AbaIJCqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:46:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
-   d="scan'208";a="570912420"
-Message-ID: <540FBB93.4020509@linux.intel.com>
-Date: Wed, 10 Sep 2014 10:46:43 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	id S1752216AbaIJCrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:47:16 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59986 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637AbaIJCrP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:47:15 -0400
+Date: Tue, 9 Sep 2014 19:45:26 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch v4 14/16] x86, irq: Introduce helper to check whether
- an IOAPIC has been registered
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091433150.11037@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409091433150.11037@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+In-Reply-To: <540F7D42.1020402@oracle.com>
+Message-ID: <alpine.LSU.2.11.1409091903390.10989@eggly.anvils>
+References: <20140805144439.GW10819@suse.de> <alpine.LSU.2.11.1408051649330.6591@eggly.anvils> <53E17F06.30401@oracle.com> <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com>
+ <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 9 Sep 2014, Sasha Levin wrote:
+> On 09/09/2014 05:33 PM, Mel Gorman wrote:
+> > On Mon, Sep 08, 2014 at 01:56:55PM -0400, Sasha Levin wrote:
+> >> On 09/08/2014 01:18 PM, Mel Gorman wrote:
+> >>> A worse possibility is that somehow the lock is getting corrupted but
+> >>> that's also a tough sell considering that the locks should be allocated
+> >>> from a dedicated cache. I guess I could try breaking that to allocate
+> >>> one page per lock so DEBUG_PAGEALLOC triggers but I'm not very
+> >>> optimistic.
+> >>
+> >> I did see ptl corruption couple days ago:
+> >>
+> >> 	https://lkml.org/lkml/2014/9/4/599
+> >>
+> >> Could this be related?
+> >>
+> > 
+> > Possibly although the likely explanation then would be that there is
+> > just general corruption coming from somewhere. Even using your config
+> > and applying a patch to make linux-next boot (already in Tejun's tree)
+> > I was unable to reproduce the problem after running for several hours. I
+> > had to run trinity on tmpfs as ext4 and xfs blew up almost immediately
+> > so I have a few questions.
+> 
+> I agree it could be a case of random corruption somewhere else, it's just
+> that the amount of times this exact issue reproduced
 
+Yes, I doubt it's random corruption; but I've been no more successful
+than Mel in working it out (I share responsibility for that VM_BUG_ON).
 
-On 2014/9/9 20:37, Thomas Gleixner wrote:
-> On Thu, 28 Aug 2014, Jiang Liu wrote:
-> 
->> Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
->> been registered, it will be used when enabling IOAPIC hotplug.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->> ---
->>  arch/x86/include/asm/io_apic.h |    1 +
->>  arch/x86/kernel/acpi/boot.c    |   11 +++++++++++
->>  arch/x86/kernel/apic/io_apic.c |   11 +++++++++++
->>  include/linux/acpi.h           |    1 +
->>  4 files changed, 24 insertions(+)
->>
->> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
->> index ce63cf34c93c..0db2b7037e4b 100644
->> --- a/arch/x86/include/asm/io_apic.h
->> +++ b/arch/x86/include/asm/io_apic.h
->> @@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
->>  extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->>  			      struct ioapic_domain_cfg *cfg);
->>  extern int mp_unregister_ioapic(u32 gsi_base);
->> +extern int mp_ioapic_registered(u32 gsi_base);
->>  extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
->>  			    irq_hw_number_t hwirq);
->>  extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
->> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
->> index 560a6d1cb0f4..6aa796f77b71 100644
->> --- a/arch/x86/kernel/acpi/boot.c
->> +++ b/arch/x86/kernel/acpi/boot.c
->> @@ -810,6 +810,17 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
->>  }
->>  EXPORT_SYMBOL(acpi_unregister_ioapic);
->>  
->> +int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
->> +{
->> +	int ret;
->> +
->> +	down_write(&acpi_ioapic_rwsem);
-> 
-> Why down_write? You are merily checking whether the thing is
-> registered already.
-Yeah, a down_read() should be enough:)
+Sasha, you say you're getting plenty of these now, but I've only seen
+the dump for one of them, on Aug26: please post a few more dumps, so
+that we can look for commonality.
 
->> +	ret  = mp_ioapic_registered(gsi_base);
->> +	up_write(&acpi_ioapic_rwsem);
->> +
->> +	return ret;
->> +}
-> 
-> So I assume that this is for a particular caller in the apci ioapic
-> hotplug code and that call site has its own serialization. Otherwise
-> the return value is not protected at all.
-> 
-> Please add a Docbook comment to that function, and document the
-> locking rules as thats pretty non obvious.
-How about this comments about locking rules?
-/*
- * Locks related to IOAPIC hotplug
- * Hotplug side:
- *      ->lock_device_hotplug() //device_hotplug_lock
- *              ->acpi_ioapic_rwsem
- *                      ->ioapic_lock
- * Interrupt mapping side:
- *      ->acpi_ioapic_rwsem
- *              ->ioapic_mutex
- *                      ->ioapic_lock
- */
-Regards!
-Gerry
-> 
-> The such is missing in some other patches as well.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+And please attach a disassembly of change_protection_range() (noting
+which of the dumps it corresponds to, in case it has changed around):
+"Code" just shows a cluster of ud2s for the unlikely bugs at end of the
+function, we cannot tell at all what should be in the registers by then.
+
+I've been rather assuming that the 9d340902 seen in many of the
+registers in that Aug26 dump is the pte val in question: that's
+SOFT_DIRTY|PROTNONE|RW.
+
+I think RW on PROTNONE is unusual but not impossible (migration entry
+replacement racing with mprotect setting PROT_NONE, after it's updated
+vm_page_prot, before it's reached the page table).  But exciting though
+that line of thought is, I cannot actually bring it to a pte_mknuma bug,
+or any bug at all.
+
+Mel, no way can it be the cause of this bug - unless Sasha's later
+traces actually show a different stack - but I don't see the call
+to change_prot_numa() from queue_pages_range() sharing the same
+avoidance of PROT_NONE that task_numa_work() has (though it does
+have an outdated comment about PROT_NONE which should be removed).
+So I think that site probably does need PROT_NONE checking added.
+
+Hugh
