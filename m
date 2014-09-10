@@ -1,358 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaIJT2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:28:39 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51711 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330AbaIJT2i (ORCPT
+	id S1753275AbaIJTaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:30:24 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35368 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaIJTaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:28:38 -0400
-Message-ID: <5410A652.8070006@kernel.org>
-Date: Wed, 10 Sep 2014 20:28:18 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, Daniel Baluta <daniel.baluta@intel.com>
-CC: linux-iio@vger.kernel.org, pmeerw@pmeerw.net, linux-kernel@vger.kernel.org,
-        Tsechih_Lin@asus.com
-Subject: Re: [PATCH v7] iio: Add Dyna-Image AL3320A ambient light sensor driver
-References: <1410332226-5481-1-git-send-email-daniel.baluta@intel.com> <54109112.90508@gmx.de>
-In-Reply-To: <54109112.90508@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Sep 2014 15:30:21 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
+        gregkh@linuxfoundation.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH 03/16] tty: serial: 8250_core: read only RX if there is something in the FIFO
+Date: Wed, 10 Sep 2014 21:29:58 +0200
+Message-Id: <1410377411-26656-4-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/14 18:57, Hartmut Knaack wrote:
-> Daniel Baluta schrieb, Am 10.09.2014 08:57:
->> Minimal implementation. This driver provides raw illuminance readings.
->>
->> This is based on drivers/hwmon/al3320.c (*) driver from msm tree written
->> by Tsechih Lin <Tsechih_Lin@asus.com>
->>
->> * https://android.googlesource.com/kernel/msm.git
->>
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
-Thanks Daniel.
-Also thanks to Hartmut for reviewing stamina.
+The serial8250_do_startup() function unconditionally clears the
+interrupts and for that it reads from the RX-FIFO without checking if
+there is a byte in the FIFO or not. This works fine on OMAP4+ HW like
+AM335x or DRA7.
+OMAP3630 ES1.1 (which means probably all OMAP3 and earlier) does not like
+this:
 
-I've been effectively offline for a 10 days (some of it spent in a fridge)
-so am even more grateful to those who help with reviewing than normal.
+|Unhandled fault: external abort on non-linefetch (0x1028) at 0xfb020000
+|Internal error: : 1028 [#1] ARM
+|Modules linked in:
+|CPU: 0 PID: 1 Comm: swapper Not tainted 3.16.0-00022-g7edcb57-dirty #1213
+|task: de0572c0 ti: de058000 task.ti: de058000
+|PC is at mem32_serial_in+0xc/0x1c
+|LR is at serial8250_do_startup+0x220/0x85c
+|Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+|Control: 10c5387d  Table: 80004019  DAC: 00000015
+|[<c03051d4>] (mem32_serial_in) from [<c0307fe8>] (serial8250_do_startup+0x220/0x85c)
+|[<c0307fe8>] (serial8250_do_startup) from [<c0309e00>] (omap_8250_startup+0x5c/0xe0)
+|[<c0309e00>] (omap_8250_startup) from [<c030863c>] (serial8250_startup+0x18/0x2c)
+|[<c030863c>] (serial8250_startup) from [<c030394c>] (uart_startup+0x78/0x1d8)
+|[<c030394c>] (uart_startup) from [<c0304678>] (uart_open+0xe8/0x114)
+|[<c0304678>] (uart_open) from [<c02e9e10>] (tty_open+0x1a8/0x5a4)
 
-Applied to the togreg branch of iio.git which I will push out as testing
-for the autobuilders to play when not in an airport departure lounge on the
-30 mins of free airport wifi.  What fun.
+Reviewed-by: Tony Lindgren <tony@atomide.com>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/8250/8250_core.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-I wonder if this will send?
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 3cf5c98013e4..547afde9fdda 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -2088,8 +2088,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	/*
+ 	 * Clear the interrupt registers.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
+ 
+@@ -2250,8 +2250,8 @@ int serial8250_do_startup(struct uart_port *port)
+ 	 * saved flags to avoid getting false values from polling
+ 	 * routines or the previous session.
+ 	 */
+-	serial_port_in(port, UART_LSR);
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial_port_in(port, UART_IIR);
+ 	serial_port_in(port, UART_MSR);
+ 	up->lsr_saved_flags = 0;
+@@ -2344,7 +2344,8 @@ void serial8250_do_shutdown(struct uart_port *port)
+ 	 * Read data port to reset things, and then unlink from
+ 	 * the IRQ chain.
+ 	 */
+-	serial_port_in(port, UART_RX);
++	if (serial_port_in(port, UART_LSR) & UART_LSR_DR)
++		serial_port_in(port, UART_RX);
+ 	serial8250_rpm_put(up);
+ 
+ 	del_timer_sync(&up->timer);
+-- 
+2.1.0
 
->> ---
->> Changes since v6: (reported by Hartmut)
->>         * drop variable i and reuse ret
->>
->> Changes since v5: (reported by Hartmut)
->>         * fix comments for al3320a_range
->>         * make sure we always use a valid index in al3320a_scales
->>
->> Changes since v4: (reported by Peter)
->>         * no need to fix endianess when reading raw value
->>
->> Changes since v3: (reported by Hartmut and Jonathan)
->>         * dropped the local store for the range, instead read it when necessary
->>         * removed wrapper functions
->>         * added in_illuminance_scale_available attribute
->>         * fix bug when reading raw value, use i2c_smbus_read_word instead of
->>           i2c_smbus_read_word_swapped and fix the endianess after read.
->>         * small coding style fixes
->>
->> Changes since v2: (reported by Peter Meerwald)
->>         * removed definition of DATA_HIGH and SW_RESET as they are not used
->>         * added a comment to al3320a_get_adc_value() function
->>         * added thresholds on TODO list
->>         * small style fixes
->>
->> Changes since v1: (reported by Peter Meerwald)
->>         * used u8 instead of int for passing gain and mean_time
->>         * used i2c_smbus_read_word_swapped instead of 2 x i2c_smbus_read_byte_data
->>         * used devm_iio_device_register instead of iio_device_register
->>         * small style fixes
->>  drivers/iio/light/Kconfig   |  10 ++
->>  drivers/iio/light/Makefile  |   1 +
->>  drivers/iio/light/al3320a.c | 232 ++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 243 insertions(+)
->>  create mode 100644 drivers/iio/light/al3320a.c
->>
->> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
->> index bf05ca5..5bea821 100644
->> --- a/drivers/iio/light/Kconfig
->> +++ b/drivers/iio/light/Kconfig
->> @@ -17,6 +17,16 @@ config ADJD_S311
->>  	 This driver can also be built as a module.  If so, the module
->>  	 will be called adjd_s311.
->>  
->> +config AL3320A
->> +	tristate "AL3320A ambient light sensor"
->> +	depends on I2C
->> +	help
->> +	 Say Y here if you want to build a driver for the Dyna Image AL3320A
->> +	 ambient light sensor.
->> +
->> +	 To compile this driver as a module, choose M here: the
->> +	 module will be called al3320a.
->> +
->>  config APDS9300
->>  	tristate "APDS9300 ambient light sensor"
->>  	depends on I2C
->> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
->> index 8b8c09f..47877a3 100644
->> --- a/drivers/iio/light/Makefile
->> +++ b/drivers/iio/light/Makefile
->> @@ -4,6 +4,7 @@
->>  
->>  # When adding new entries keep the list in alphabetical order
->>  obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
->> +obj-$(CONFIG_AL3320A)		+= al3320a.o
->>  obj-$(CONFIG_APDS9300)		+= apds9300.o
->>  obj-$(CONFIG_CM32181)		+= cm32181.o
->>  obj-$(CONFIG_CM36651)		+= cm36651.o
->> diff --git a/drivers/iio/light/al3320a.c b/drivers/iio/light/al3320a.c
->> new file mode 100644
->> index 0000000..6aac651
->> --- /dev/null
->> +++ b/drivers/iio/light/al3320a.c
->> @@ -0,0 +1,232 @@
->> +/*
->> + * AL3320A - Dyna Image Ambient Light Sensor
->> + *
->> + * Copyright (c) 2014, Intel Corporation.
->> + *
->> + * This file is subject to the terms and conditions of version 2 of
->> + * the GNU General Public License.  See the file COPYING in the main
->> + * directory of this archive for more details.
->> + *
->> + * IIO driver for AL3320A (7-bit I2C slave address 0x1C).
->> + *
->> + * TODO: interrupt support, thresholds
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/init.h>
->> +#include <linux/i2c.h>
->> +
->> +#include <linux/iio/iio.h>
->> +#include <linux/iio/sysfs.h>
->> +
->> +#define AL3320A_DRV_NAME "al3320a"
->> +
->> +#define AL3320A_REG_CONFIG		0x00
->> +#define AL3320A_REG_STATUS		0x01
->> +#define AL3320A_REG_INT			0x02
->> +#define AL3320A_REG_WAIT		0x06
->> +#define AL3320A_REG_CONFIG_RANGE	0x07
->> +#define AL3320A_REG_PERSIST		0x08
->> +#define AL3320A_REG_MEAN_TIME		0x09
->> +#define AL3320A_REG_ADUMMY		0x0A
->> +#define AL3320A_REG_DATA_LOW		0x22
->> +
->> +#define AL3320A_REG_LOW_THRESH_LOW	0x30
->> +#define AL3320A_REG_LOW_THRESH_HIGH	0x31
->> +#define AL3320A_REG_HIGH_THRESH_LOW	0x32
->> +#define AL3320A_REG_HIGH_THRESH_HIGH	0x33
->> +
->> +#define AL3320A_CONFIG_DISABLE		0x00
->> +#define AL3320A_CONFIG_ENABLE		0x01
->> +
->> +#define AL3320A_GAIN_SHIFT		1
->> +#define AL3320A_GAIN_MASK		(BIT(2) | BIT(1))
->> +
->> +/* chip params default values */
->> +#define AL3320A_DEFAULT_MEAN_TIME	4
->> +#define AL3320A_DEFAULT_WAIT_TIME	0 /* no waiting */
->> +
->> +#define AL3320A_SCALE_AVAILABLE "0.512 0.128 0.032 0.01"
->> +
->> +enum al3320a_range {
->> +	AL3320A_RANGE_1, /* 33.28 Klx */
->> +	AL3320A_RANGE_2, /* 8.32 Klx  */
->> +	AL3320A_RANGE_3, /* 2.08 Klx  */
->> +	AL3320A_RANGE_4  /* 0.65 Klx  */
->> +};
->> +
->> +static const int al3320a_scales[][2] = {
->> +	{0, 512000}, {0, 128000}, {0, 32000}, {0, 10000}
->> +};
->> +
->> +struct al3320a_data {
->> +	struct i2c_client *client;
->> +};
->> +
->> +static const struct iio_chan_spec al3320a_channels[] = {
->> +	{
->> +		.type	= IIO_LIGHT,
->> +		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
->> +				      BIT(IIO_CHAN_INFO_SCALE),
->> +	}
->> +};
->> +
->> +static IIO_CONST_ATTR(in_illuminance_scale_available, AL3320A_SCALE_AVAILABLE);
->> +
->> +static struct attribute *al3320a_attributes[] = {
->> +	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
->> +	NULL,
->> +};
->> +
->> +static const struct attribute_group al3320a_attribute_group = {
->> +	.attrs = al3320a_attributes,
->> +};
->> +
->> +static int al3320a_init(struct al3320a_data *data)
->> +{
->> +	int ret;
->> +
->> +	/* power on */
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG,
->> +					AL3320A_CONFIG_ENABLE);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_CONFIG_RANGE,
->> +					AL3320A_RANGE_3 << AL3320A_GAIN_SHIFT);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_MEAN_TIME,
->> +					AL3320A_DEFAULT_MEAN_TIME);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ret = i2c_smbus_write_byte_data(data->client, AL3320A_REG_WAIT,
->> +					AL3320A_DEFAULT_WAIT_TIME);
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	return 0;
->> +}
->> +
->> +static int al3320a_read_raw(struct iio_dev *indio_dev,
->> +			    struct iio_chan_spec const *chan, int *val,
->> +			    int *val2, long mask)
->> +{
->> +	struct al3320a_data *data = iio_priv(indio_dev);
->> +	int ret;
->> +
->> +	switch (mask) {
->> +	case IIO_CHAN_INFO_RAW:
->> +		/*
->> +		 * ALS ADC value is stored in two adjacent registers:
->> +		 * - low byte of output is stored at AL3320A_REG_DATA_LOW
->> +		 * - high byte of output is stored at AL3320A_REG_DATA_LOW + 1
->> +		 */
->> +		ret = i2c_smbus_read_word_data(data->client,
->> +					       AL3320A_REG_DATA_LOW);
->> +		if (ret < 0)
->> +			return ret;
->> +		*val = ret;
->> +		return IIO_VAL_INT;
->> +	case IIO_CHAN_INFO_SCALE:
->> +		ret = i2c_smbus_read_byte_data(data->client,
->> +					       AL3320A_REG_CONFIG_RANGE);
->> +		if (ret < 0)
->> +			return ret;
->> +
->> +		ret = (ret & AL3320A_GAIN_MASK) >> AL3320A_GAIN_SHIFT;
->> +		*val = al3320a_scales[ret][0];
->> +		*val2 = al3320a_scales[ret][1];
->> +
->> +		return IIO_VAL_INT_PLUS_MICRO;
->> +	}
->> +	return -EINVAL;
->> +}
->> +
->> +static int al3320a_write_raw(struct iio_dev *indio_dev,
->> +			     struct iio_chan_spec const *chan, int val,
->> +			     int val2, long mask)
->> +{
->> +	struct al3320a_data *data = iio_priv(indio_dev);
->> +	int i;
->> +
->> +	switch (mask) {
->> +	case IIO_CHAN_INFO_SCALE:
->> +		for (i = 0; i < ARRAY_SIZE(al3320a_scales); i++) {
->> +			if (val == al3320a_scales[i][0] &&
->> +			    val2 == al3320a_scales[i][1])
->> +				return i2c_smbus_write_byte_data(data->client,
->> +					AL3320A_REG_CONFIG_RANGE,
->> +					i << AL3320A_GAIN_SHIFT);
->> +		}
->> +		break;
->> +	}
->> +	return -EINVAL;
->> +}
->> +
->> +static const struct iio_info al3320a_info = {
->> +	.driver_module	= THIS_MODULE,
->> +	.read_raw	= al3320a_read_raw,
->> +	.write_raw	= al3320a_write_raw,
->> +	.attrs		= &al3320a_attribute_group,
->> +};
->> +
->> +static int al3320a_probe(struct i2c_client *client,
->> +			 const struct i2c_device_id *id)
->> +{
->> +	struct al3320a_data *data;
->> +	struct iio_dev *indio_dev;
->> +	int ret;
->> +
->> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
->> +	if (!indio_dev)
->> +		return -ENOMEM;
->> +
->> +	data = iio_priv(indio_dev);
->> +	i2c_set_clientdata(client, indio_dev);
->> +	data->client = client;
->> +
->> +	indio_dev->dev.parent = &client->dev;
->> +	indio_dev->info = &al3320a_info;
->> +	indio_dev->name = AL3320A_DRV_NAME;
->> +	indio_dev->channels = al3320a_channels;
->> +	indio_dev->num_channels = ARRAY_SIZE(al3320a_channels);
->> +	indio_dev->modes = INDIO_DIRECT_MODE;
->> +
->> +	ret = al3320a_init(data);
->> +	if (ret < 0) {
->> +		dev_err(&client->dev, "al3320a chip init failed\n");
->> +		return ret;
->> +	}
->> +	return devm_iio_device_register(&client->dev, indio_dev);
->> +}
->> +
->> +static int al3320a_remove(struct i2c_client *client)
->> +{
->> +	return i2c_smbus_write_byte_data(client, AL3320A_REG_CONFIG,
->> +					 AL3320A_CONFIG_DISABLE);
->> +}
->> +
->> +static const struct i2c_device_id al3320a_id[] = {
->> +	{"al3320a", 0},
->> +	{}
->> +};
->> +MODULE_DEVICE_TABLE(i2c, al3320a_id);
->> +
->> +static struct i2c_driver al3320a_driver = {
->> +	.driver = {
->> +		.name = AL3320A_DRV_NAME,
->> +	},
->> +	.probe		= al3320a_probe,
->> +	.remove		= al3320a_remove,
->> +	.id_table	= al3320a_id,
->> +};
->> +
->> +module_i2c_driver(al3320a_driver);
->> +
->> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
->> +MODULE_DESCRIPTION("AL3320A Ambient Light Sensor driver");
->> +MODULE_LICENSE("GPL v2");
->>
-> 
