@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753537AbaIJUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:34:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825AbaIJUeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:34:06 -0400
-Message-ID: <5410B54E.1020607@redhat.com>
-Date: Wed, 10 Sep 2014 16:32:14 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753431AbaIJUfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:35:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57795 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaIJUfr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 16:35:47 -0400
+Date: Wed, 10 Sep 2014 13:34:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: Paul.Zimmerman@synopsys.com, balbi@ti.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] usb: dwc2/gadget: improvements for gadget driver
+Message-ID: <20140910203459.GA2350@kroah.com>
+References: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linuxfoundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Make paranoid check in move_freepages
- a VM_BUG_ON
-References: <20140909145228.GB12309@suse.de>
-In-Reply-To: <20140909145228.GB12309@suse.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410252297-13738-1-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 10:52 AM, Mel Gorman wrote:
-> Since 2.6.24 there has been a paranoid check in move_freepages that looks
-> up the zone of two pages. This is a very slow path and the only time I've
-> seen this bug trigger recently is when memory initialisation was broken
-> during patch development. Despite the fact it's a slow path, this patch
-> converts the check to a VM_BUG_ON anyway as it is served its purpose by now.
+On Tue, Sep 09, 2014 at 10:44:51AM +0200, Robert Baldyga wrote:
+> Hi,
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> I have splitted my patchset "usb: dwc2/gadget: fix series" into two series.
+> This patch series contains improvements for dwc2/gadget driver. It's intended
+> for 3.18.
+> 
+> Andrzej Pietrasiewicz (1):
+>   usb: dwc2/gadget: Fix comment text
+> 
+> Kamil Debski (1):
+>   usb: dwc2/gadget: move phy bus legth initialization
+> 
+> Marek Szyprowski (2):
+>   usb: dwc2/gadget: hide some not really needed debug messages
+>   usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+> 
+> Robert Baldyga (2):
+>   usb: dwc2/gadget: assign TX FIFO dynamically
+>   usb: dwc2/gadget: disable clock when it's not needed
+> 
+>  drivers/usb/dwc2/core.h   |   3 ++
+>  drivers/usb/dwc2/gadget.c | 132 +++++++++++++++++++++++++++++-----------------
+>  2 files changed, 86 insertions(+), 49 deletions(-)
 
-Acked-by: Rik van Riel <riel@redhat.com>
+As these depend on your previous changes, I'll wait until after those
+get merged into Linus's tree before applying them.  Probably sometime
+next week.
 
+thanks,
+
+greg k-h
