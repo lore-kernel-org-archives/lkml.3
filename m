@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaIJSHv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:07:51 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:44557 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaIJSHt (ORCPT
+	id S1752909AbaIJSIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:08:44 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:62027 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523AbaIJSIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:07:49 -0400
-Date: Wed, 10 Sep 2014 11:07:36 -0700
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        shawn.guo@freescale.com, kernel@pengutronix.de, linux@arm.linux.org.uk,
-        perex@perex.cz, tiwai@suse.de, timur@tabi.org, Li.Xiubo@freescale.com,
-        grant.likely@linaro.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 2/5] ASoC: fsl: add imx-tlv320aic3x machine driver
-Message-ID: <20140910180735.GB4628@Asurada>
-References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
+	Wed, 10 Sep 2014 14:08:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <54103776.3080706@redhat.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	<1410325808-3657-13-git-send-email-ast@plumgrid.com>
+	<54103776.3080706@redhat.com>
+Date: Wed, 10 Sep 2014 11:08:40 -0700
+Message-ID: <CAMEtUuzEQu30WiYprRcDBogJxxrDeNhvn=kF+z8cVvhR-vjTQg@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 12/12] bpf: mini eBPF library, test stubs and
+ verifier testsuite
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-   
-On Wed, Sep 10, 2014 at 04:46:46PM +0300, Dmitry Lavnikevich wrote:
-> This is driver for i.MX6 boards with tlv320aic3x audio codecs.
-> 
-> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-> ---
->  .../bindings/sound/fsl,imx-audio-tlv320aic3x.txt   |  27 ++++
->  sound/soc/fsl/Kconfig                              |  13 ++
->  sound/soc/fsl/Makefile                             |   2 +
->  sound/soc/fsl/imx-tlv320aic3x.c                    | 177 +++++++++++++++++++++
->  4 files changed, 219 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/sound/fsl,imx-audio-tlv320aic3x.txt
->  create mode 100644 sound/soc/fsl/imx-tlv320aic3x.c
+On Wed, Sep 10, 2014 at 4:35 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>
+> Since we already have an extensive BPF test suite, that is, lib/test_bpf.c,
+> which currently also does sanity checks for the classic BPF verifier, is
+> there a reason these verifier test cases cannot be extended/integrated there
+> as well but have to go to kernel/bpf/test_stub.c resp.
+> samples/bpf/test_verifier.c ?
+> I don't like that we put testing code into kernel/bpf/ whereas we already
+> have a BPF test infrastructure in the kernel elsewhere.
 
-This whole single patch looks pretty clean. So I suggest it may be merged
-into fsl-asoc-card.c driver whose DT binding is almost identical to yours
-so that we don't need to add a machine driver with duplicated code. And
-you can feel free to enable fsl-asoc-card in the defconfig as well -- I
-was about to do it and to replace imx-wm8962 and imx-sgtl5000 with it.
-
-The only extra trivia you need to tackle is to add a clock binding into
-your dts for CODEC side.
-
-Thanks
-Nicolin
+yes. there is a reason. Verifier needs to be tested from user space,
+since it works on fds. Process local map_fd are part of the eBPF
+programs. Therefore one is testing things from kernel and
+another from userspace. We definitely need both.
+Currently there is no use case to call verifier from inside
+the kernel. I'm not sure there will be one. Verifier's main
+purpose is to check user supplied programs and provide
+humans an understandable error messages of what
+is 'unsafe' in particular program.
+Eventually we will integrate this verifier messages with
+program compilation. Like, the user would write a program
+in C then invoke a wrapper of compiler and verifier, which
+will point to lines in C code which are doing something
+wrong like loops or out of bounds access. Currently verifier
+complains about particular 'unsafe' instruction, but
+humans have hard time correlating asm to C.
