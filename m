@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752427AbaIJKU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:20:28 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:35319 "EHLO
+	id S1752464AbaIJKUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:20:35 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:35333 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaIJKUZ (ORCPT
+	with ESMTP id S1752434AbaIJKUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:20:25 -0400
+	Wed, 10 Sep 2014 06:20:31 -0400
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 To: Kukjin Kim <kgene.kim@samsung.com>
 Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
@@ -17,9 +17,9 @@ Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Vivek Gautam <gautam.vivek@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH v3 5/7] ARM: dts: Add Peach Pit and Pi dts entry for ISL29018 sensor
-Date: Wed, 10 Sep 2014 12:19:49 +0200
-Message-Id: <1410344391-5675-6-git-send-email-javier.martinez@collabora.co.uk>
+Subject: [PATCH v3 7/7] ARM: exynos_defconfig: Enable MAX77802
+Date: Wed, 10 Sep 2014 12:19:51 +0200
+Message-Id: <1410344391-5675-8-git-send-email-javier.martinez@collabora.co.uk>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk>
 References: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk>
@@ -27,54 +27,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Exynos5420 based Peach Pit and the Exynos5800 based Peach Pi
-machines have an i2c ISL29018 light sensor. This patch adds the
-device nodes needed to support this device.
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-These DTS snippets were taken from the downstream Chrome OS 3.8
-kernel Device Tree for Peach Pit and Pi boards.
+Enabled MAX77802 pmic for exynos systems.
+One config USB_ANNOUNCE_NEW_DEVICES to display device
+information on connect.
+Another config for I2C_CHARDEV to see i2c device nodes.
 
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
 ---
- arch/arm/boot/dts/exynos5420-peach-pit.dts | 6 ++++++
- arch/arm/boot/dts/exynos5800-peach-pi.dts  | 6 ++++++
- 2 files changed, 12 insertions(+)
+ arch/arm/configs/exynos_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index 07115b7..b8fea56 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -498,6 +498,12 @@
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&max98090_irq>;
- 	};
-+
-+	light-sensor@44 {
-+		compatible = "isil,isl29018";
-+		reg = <0x44>;
-+		vcc-supply = <&tps65090_fet5>;
-+	};
- };
- 
- &hsi2c_9 {
-diff --git a/arch/arm/boot/dts/exynos5800-peach-pi.dts b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-index 1c128e1..17537f0 100644
---- a/arch/arm/boot/dts/exynos5800-peach-pi.dts
-+++ b/arch/arm/boot/dts/exynos5800-peach-pi.dts
-@@ -496,6 +496,12 @@
- 		pinctrl-names = "default";
- 		pinctrl-0 = <&max98091_irq>;
- 	};
-+
-+	light-sensor@44 {
-+		compatible = "isil,isl29018";
-+		reg = <0x44>;
-+		vcc-supply = <&tps65090_fet5>;
-+	};
- };
- 
- &hsi2c_9 {
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index 676c744..fbbac06 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -68,6 +68,7 @@ CONFIG_HW_RANDOM=y
+ CONFIG_TCG_TPM=y
+ CONFIG_TCG_TIS_I2C_INFINEON=y
+ CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_MUX=y
+ CONFIG_I2C_ARB_GPIO_CHALLENGE=y
+ CONFIG_I2C_EXYNOS5=y
+@@ -97,6 +98,7 @@ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_MAX8997=y
+ CONFIG_REGULATOR_MAX77686=y
++CONFIG_REGULATOR_MAX77802=y
+ CONFIG_REGULATOR_S2MPA01=y
+ CONFIG_REGULATOR_S2MPS11=y
+ CONFIG_REGULATOR_S5M8767=y
+@@ -116,6 +118,7 @@ CONFIG_SND_SOC=y
+ CONFIG_SND_SOC_SAMSUNG=y
+ CONFIG_SND_SOC_SNOW=y
+ CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+ CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_EXYNOS=y
 -- 
 2.1.0
 
