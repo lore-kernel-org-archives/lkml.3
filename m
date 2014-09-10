@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaIJH6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:58:51 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:41870 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaIJH6s (ORCPT
+	id S1752058AbaIJH7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:59:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48936 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaIJH73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:58:48 -0400
+	Wed, 10 Sep 2014 03:59:29 -0400
+Date: Wed, 10 Sep 2014 09:59:26 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] perf, x86: Use INTEL_FLAGS_UEVENT_CONSTRAINT for
+ PRECDIST
+Message-ID: <20140910075926.GM6758@twins.programming.kicks-ass.net>
+References: <1410310148-26260-1-git-send-email-andi@firstfloor.org>
+ <1410310148-26260-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <1408683272-7984-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1408683219-7939-1-git-send-email-srinivas.kandagatla@linaro.org>
-	<1408683272-7984-1-git-send-email-srinivas.kandagatla@linaro.org>
-Date: Wed, 10 Sep 2014 09:58:48 +0200
-Message-ID: <CAPDyKFqJw0Dc8ac2i0tebJpuHVhUVd=YUnGHZDTHNd2AAJqOtg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/3] mmc: mmci: Support any block sizes for ux500v2 and
- qcom variant
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-mmc <linux-mmc@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Chris Ball <chris@printf.net>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wgXxy63RjE4bNDjS"
+Content-Disposition: inline
+In-Reply-To: <1410310148-26260-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 August 2014 06:54, Srinivas Kandagatla
-<srinivas.kandagatla@linaro.org> wrote:
-> From: Ulf Hansson <ulf.hansson@linaro.org>
->
-> For the ux500v2 variant of the PL18x block, any block sizes are
-> supported. This will make it possible to decrease data overhead
-> for SDIO transfers.
->
-> This patch is based on Ulf Hansson patch
-> http://www.spinics.net/lists/linux-mmc/msg12160.html
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->         enabled this support on qcom variant.
->
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-I am not sure how to handle this patch.
+--wgXxy63RjE4bNDjS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It will as you say in the cover letter for this patchset, improve
-situations for the ath6kl driver when it's issuing 12 bytes and 24
-bytes reads and solve those issues.
+On Tue, Sep 09, 2014 at 05:49:08PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>=20
+> The earlier commit 86a04461a made near all PEBS on
+> Sandy/IvyBridge/Haswell to reject non zero flags.
 
-On the other hand, as stated earlier mmci_pio_write need to be fixed
-to have full support for any block size. That applies to the qcom
-variant as well.
+What's magic about nehalem and westmere?
 
-For ux500, I am sure this won't cause any regressions since the cw1200
-isn't probed. Also, I am not sure the "any block size" support is even
-enabled for that driver.
+--wgXxy63RjE4bNDjS
+Content-Type: application/pgp-signature
 
-How about, that we add a comment in the pio_write function describing
-that we need to fix it for "SDIO any block size" support? And leave
-that as a future improvement?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Kind regards
-Uffe
+iQIcBAEBAgAGBQJUEATeAAoJEHZH4aRLwOS66LsP/ikw+ZcDROZIuv/TFhrvwcnT
+hFxDr76HmMflR+VwhEJ/JLqXAwSBaqglLB/xpqXRSS+S55fpzNvNZsJToppb9QZP
+ATCS8H+C2lejvMLYG9hELansyAt2gtMcSYkyzU9h0SDauMaD38sGwv7ecKHtdp0+
+CVXRWq83l1i3NANPEeRURTJb/m/JlyzRDEO1xXaakaom7Dpps3R0F6JU9bGp4TVB
+V+I72f62p1wAq47GY/PPru/U+y6E5Yxg2BSMSSY/fj4kH8FJlpIZgflZH8kTHXsw
+E0amiPzZMKjLWGr6ZJfLWEjfERs1U4DxXqBxNVqddXCC0If0Av6G88w145x8F107
+XSbg33IWYtr6F5OFBgI4dHcbxDmkwCbwzAZ+2n4iHz8OMUlyOSOMSAAVXGYqWIjm
+B7hfA7RW3tduxFomfNYuIKAkUNzJuNvgOJXiDFzvnkhcsjhbobDBkxvDHP4qA3R2
+Q9ifbN8D5CPHGwX4p5WA2bRNI07FV+zELgKDJtopEYLnvjR8hbYUc36vxUuYh3Yj
+y8uPovPSOV5GYPtfIMsjvcAMyX3SZbpPHseOs2+HGXmmNuD4TSGP2erYF0K5/98I
+c/4uxVF2FuOjR0Ozs2003M6wUX25MdnCOC/wsMxC3uJOBm9V4rH1f0SUpnmQVVmk
+ccUjnSuTCH1k5Mh6gGil
+=SES3
+-----END PGP SIGNATURE-----
 
-> ---
->  drivers/mmc/host/mmci.c | 10 +++++++---
->  1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index c11cb05..533ad2b 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -77,6 +77,7 @@ static unsigned int fmax = 515633;
->   * @qcom_fifo: enables qcom specific fifo pio read logic.
->   * @reversed_irq_handling: handle data irq before cmd irq.
->   * @qcom_dml: enables qcom specific dma glue for dma transfers.
-> + * @any_blksize: true if block any sizes are supported
->   */
->  struct variant_data {
->         unsigned int            clkreg;
-> @@ -102,6 +103,7 @@ struct variant_data {
->         bool                    qcom_fifo;
->         bool                    reversed_irq_handling;
->         bool                    qcom_dml;
-> +       bool                    any_blksize;
->  };
->
->  static struct variant_data variant_arm = {
-> @@ -194,6 +196,7 @@ static struct variant_data variant_ux500v2 = {
->         .pwrreg_clkgate         = true,
->         .busy_detect            = true,
->         .pwrreg_nopower         = true,
-> +       .any_blksize            = true,
->  };
->
->  static struct variant_data variant_qcom = {
-> @@ -212,6 +215,7 @@ static struct variant_data variant_qcom = {
->         .explicit_mclk_control  = true,
->         .qcom_fifo              = true,
->         .qcom_dml               = true,
-> +       .any_blksize            = true,
->  };
->
->  static int mmci_card_busy(struct mmc_host *mmc)
-> @@ -239,10 +243,11 @@ static int mmci_card_busy(struct mmc_host *mmc)
->  static int mmci_validate_data(struct mmci_host *host,
->                               struct mmc_data *data)
->  {
-> +       struct variant_data *variant = host->variant;
-> +
->         if (!data)
->                 return 0;
-> -
-> -       if (!is_power_of_2(data->blksz)) {
-> +       if (!is_power_of_2(data->blksz) && !variant->any_blksize) {
->                 dev_err(mmc_dev(host->mmc),
->                         "unsupported block size (%d bytes)\n", data->blksz);
->                 return -EINVAL;
-> @@ -796,7 +801,6 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
->         writel(host->size, base + MMCIDATALENGTH);
->
->         blksz_bits = ffs(data->blksz) - 1;
-> -       BUG_ON(1 << blksz_bits != data->blksz);
->
->         if (variant->blksz_datactrl16)
->                 datactrl = MCI_DPSM_ENABLE | (data->blksz << 16);
-> --
-> 1.9.1
->
+--wgXxy63RjE4bNDjS--
