@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaIJRBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:01:24 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:36714 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaIJRBW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:01:22 -0400
-Message-ID: <541083EC.7080803@wwwdotorg.org>
-Date: Wed, 10 Sep 2014 11:01:32 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752256AbaIJRCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:02:17 -0400
+Received: from mout.gmx.net ([212.227.15.18]:54600 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751082AbaIJRCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 13:02:16 -0400
+Message-ID: <54108939.5050208@gmx.net>
+Date: Wed, 10 Sep 2014 19:24:09 +0200
+From: Stefan Wahren <wahrenst@gmx.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>, Marcel Ziswiler <marcel@ziswiler.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Russell King <linux@arm.linux.org.uk>,
+To: Mark Rutland <mark.rutland@arm.com>,
+        "festevam@gmail.com" <festevam@gmail.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        stefan@agner.ch
-Subject: Re: [PATCH 1/3] ASoC: tegra: add tegra sgtl5000 machine driver
-References: <cover.1410276224.git.marcel@ziswiler.com>	<f90791ebb1799a4aa62dd6b527885ddadae3c058.1410276224.git.marcel@ziswiler.com> <CAOMZO5BYGwHGSeHeaQxEO=BUBGbno9P29et582SDzmwmfVioZA@mail.gmail.com>
-In-Reply-To: <CAOMZO5BYGwHGSeHeaQxEO=BUBGbno9P29et582SDzmwmfVioZA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC 2/3] ARM: regulator: add Freescale MXS regulator driver
+References: <1410089869-6611-1-git-send-email-info@lategoodbye.de> <1410089869-6611-3-git-send-email-info@lategoodbye.de> <20140909182211.GG3896@leverpostej> <540F523D.4010904@lategoodbye.de> <20140910141853.GA4994@leverpostej>
+In-Reply-To: <20140910141853.GA4994@leverpostej>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:PeY6MSEjqT/iHQHmU6E5Z+zfXFlpRAsFb4SAEjS/yOUQoa0g3yF
+ cBRHUNca4VL1+9Eu6Dwc8BEpUgTSsycud5KwTpCi1ttao1W6IkYWOha1WI7nFZl40wI7rjm
+ bqHl90I1s7qMLY/VD4K+I6pPkx3j3euVIY2ltX0G+b/pjpIHPthVTZeYDH3I+HxJb6Pgfjm
+ wl6LVO0Jdjak6Vdg2Jx4g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 12:00 PM, Fabio Estevam wrote:
-> On Tue, Sep 9, 2014 at 12:28 PM, Marcel Ziswiler <marcel@ziswiler.com> wrote:
->> This binding and driver describe/support playback to headphones, and
->> capture from line-in and microphone.
->>
->> This driver is useful for the Toradex Apalis T30 and Colibri T30 modules.
->>
->> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
->> ---
->>   .../bindings/sound/nvidia,tegra-audio-sgtl5000.txt |  45 +++++
->>   sound/soc/tegra/Kconfig                            |  10 +
->>   sound/soc/tegra/Makefile                           |   2 +
->>   sound/soc/tegra/tegra_sgtl5000.c                   | 216 +++++++++++++++++++++
->
-> What about using the simple-audio-card binding instead of adding the
-> tegra_sgtl5000 machine driver?
->
-> An example of simple-audio-card used with sgtl5000 can be found here:
->
-> http://www.spinics.net/lists/devicetree/msg44466.html
+Hi,
 
-I don't think that will work; the Tegra audio complex requires some 
-clock management that doesn't immediately seem to fit into the 
-simple-audio-card concept.
+Am 10.09.2014 16:18, schrieb Mark Rutland:
+>[...]
+>
+>>>> +       of_property_read_u32(np, "mxs-default-microvolt",
+>>>> +                                  &val);
+>>>> +
+>>>> +       if (val)
+>>>> +               mxs_set_voltage(rdev, val, val, NULL);
+>>>
+>>> As I mentioned in my comments on the binding, I'd like to know why this
+>>> is necessary and if it is why it shouldn't be a standardised property.
+>>
+>>   From my understanding the standardised properties only defines a range,
+>> but no default state of the regulators. If the initialization from the
+>> bootloader or a hardcoded initialization in the driver is okay then the
+>> property is not necessary.
+>
+> Sure. My questions was why it is necessary to preconfigure the
+> regulators at all rather than why it is necessary to do so in this
+> manner.
+>
+> Mark.
+>
 
-I had intended to refactor and collapse all the Tegra DT audio bindings 
-(and driver code) into a single instance so we didn't need to keep 
-adding more and more. However, I unfortunately never got around to that 
-and probably won't in the future either. Basically, the binding and code 
-would end up essentially identical to any of the current Tegra drivers 
-(or the union of them), with a few tweaks such as only creating e.g. a 
-headphone jack if a property in DT said to, and moving the sampling 
-frequency -> CODEC MCLK table out of the driver into a table in DT. I 
-think with those things parameterized in DT, we could get away with a 
-single "nvidia,tegra-audio-simple" binding and driver. Such a new 
-binding could be based on simple-audio-card with extensions though.
+sorry i don't have a clue. In the original code there isn't a comment 
+about the reason. Currently there is no init of the vddio regulator by 
+the kernel and everything works fine.
+
+@Fabio: Do you have any doubts?
+
+Stefan
