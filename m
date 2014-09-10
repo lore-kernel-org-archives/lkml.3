@@ -1,96 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaIJU4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:56:06 -0400
-Received: from mail-bn1bon0113.outbound.protection.outlook.com ([157.56.111.113]:31088
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752065AbaIJU4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:56:01 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 16:56:01 EDT
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "dh.herrmann@gmail.com" <dh.herrmann@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "cooloney@gmail.com" <cooloney@gmail.com>,
-        "airlied@gmail.com" <airlied@gmail.com>,
-        "ajax@redhat.com" <ajax@redhat.com>
-Subject: Re: [PATCH RFC 0/4] Linking DRM Connectors to Backlight Devices
-Thread-Topic: [PATCH RFC 0/4] Linking DRM Connectors to Backlight Devices
-Thread-Index: AQHPzQ+ReaAlSMa+v0aOCKHz6RNakZv61OyA
-Date: Wed, 10 Sep 2014 20:40:57 +0000
-Message-ID: <1410381657.4117.3.camel@nebula.com>
-References: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
-In-Reply-To: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [208.54.5.157]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 033054F29A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019019)(6009001)(24454002)(189002)(377424004)(199003)(50986999)(110136001)(90102001)(106116001)(33646002)(83072002)(4396001)(85852003)(64706001)(85306004)(20776003)(106356001)(99396002)(77982001)(99286002)(103116003)(74502001)(105586002)(79102001)(46102001)(81342001)(36756003)(19580395003)(92566001)(87936001)(77096002)(76482001)(81542001)(76176999)(92726001)(83322001)(101416001)(31966008)(80022001)(97736003)(86362001)(107046002)(66066001)(2351001)(95666004)(74662001)(54356999)(21056001)(19580405001)(2501002)(2656002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB423;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <404849167CC5C84CAD1207B1BDCF3684@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	id S1753772AbaIJU40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:56:26 -0400
+Received: from mout.perfora.net ([74.208.4.197]:65271 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751624AbaIJU4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 16:56:22 -0400
+From: Marcel Ziswiler <marcel@ziswiler.com>
+To: alsa-devel@alsa-project.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        stefan@agner.ch, Marcel Ziswiler <marcel@ziswiler.com>,
+        Fabio Estevam <festevam@gmail.com>
+Subject: [PATCH v2 1/2] ARM: tegra: apalis/colibri t30: integrate audio support
+Date: Wed, 10 Sep 2014 22:54:55 +0200
+Message-Id: <00f249b3d648d3a8d550c5db0737f3aa6d93f07e.1410362950.git.marcel@ziswiler.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1410362950.git.marcel@ziswiler.com>
+References: <cover.1410362950.git.marcel@ziswiler.com>
+X-Provags-ID: V02:K0:D9axrhrHDYt7aiU/KVYgtFB0Ho8wJi6byXaLkNoYjNZ
+ Lfjk5lm6TW/NLfWsT2ddH0EEBvUdApX8ZrByXl26cXvjs5V+bU
+ G75RU2iwLY4h80SnkJyUO6Qx3X8m50Hs4HiSuJxOQWClXak6vs
+ uu9uTPNCFf4hTGccb8a2OhMRK+qmwlvfoxP/k5nQxmfbUXmsNR
+ 6///PdHInhouSDgOKnNsMLceUmQDNRNq1VIxl6N+YwZlmz1viC
+ PV2iFed08OSyXI8de1URgQN7s9pnwpLCXZr+f03cJ/YqaZqWfz
+ cQJygDOGf0VE3kCp3GO6vvcz8B6VW2eQ6A/WN5uHbfICVTTr4E
+ 8pZ/YWxaBLX7y1gj+/+QuPKHnidpceRdQ/H17HCDpcoVyIeaKY
+ GYOunF4GNCd4EdqdfZTCBXGwFSgykljI4sZHGoT/f07nkLADdt
+ hwAOn
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8AKuBM0019233
 
-On Wed, 2014-09-10 at 17:54 +0200, David Herrmann wrote:
+Integrate Freescale SGTL5000 analogue audio codec support.
 
->  * User-space currently has a hard-time figuring out which backlight device to
->    use, and which backlight device belongs to which display. So far, most
->    systems only provide backlight-devices for internal displays, so figuring out
->    the connection is easy, but that might change with more capable external
->    connectors.
+Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes in v2:
+- Using simple-audio-card as suggested by Fabio.
 
-The parent device of the backlight will be the correct display, if the
-kernel has a meaningful way to determine that. We could do a better job
-in the ACPI code than we currently do, but (unfortunately) that requires
-us to know the ACPI IDs that each GPU vendor uses.
+ arch/arm/boot/dts/tegra30-apalis.dtsi  | 65 ++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/tegra30-colibri.dtsi | 65 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 130 insertions(+)
 
->    If multiple backlights are available, the easiest solution is to simply write
->    to all of them and hope at least one of them works. This obviously fails if
->    the devices interact badly, so it's not really a solution.
-
-There's a pretty well-defined process for that, although it sucks - if
-it's an LVDS or eDP display and there's a backlight of type "firmware",
-use it. If there's no "firmware" backlight, but there is a "platform"
-one, use that. Otherwise look for a "native" backlight that has the
-output as a parent. libbacklight does all of this for you. 
-
->  * User-space needs root privileges to write to sysfs. There are no char-devs
->    that can be used to control access-management to the backlight API, so /sys
->    is the only interface available. So far, udev policy has been "/sys is
->    read-only for non-root" and it's not going to change. char-devs are *THE*
->    standard way to provide non-root user-space APIs, so use them!
-
-Yeah, this is a problem.
-
-> This series tries to solve this problem with a much simpler approach:
-> Instead of moving backlights into DRM, we simply link DRM properties to a
-> backlight device. That is, the kernel manages a link between a connector and a
-> backlight device (or n backlight devices) which can be modified by udev in case
-> the kernel got it wrong (we don't want huge board-fixup-tables in the kernel).
-> User-space can now use the simpl DRM API to manage backlights, and the kernel
-> does not need any special driver code to make it work.
-
-This doesn't really simplify userspace significantly - something's still
-going to have to make the same policy decision as we do right now, and
-the kernel isn't really the right place to do that. It does have the
-benefit of allowing that policy decision to be made at boot time and
-then allow that to be consumed by all later userspace, so there is
-*some* benefit, but I think the "make unprivileged userspace possible"
-argument is much more compelling.
-
+diff --git a/arch/arm/boot/dts/tegra30-apalis.dtsi b/arch/arm/boot/dts/tegra30-apalis.dtsi
+index a5446cb..fa3bc92 100644
+--- a/arch/arm/boot/dts/tegra30-apalis.dtsi
++++ b/arch/arm/boot/dts/tegra30-apalis.dtsi
+@@ -47,6 +47,24 @@
+ 		pinctrl-0 = <&state_default>;
+ 
+ 		state_default: pinmux {
++			/* Apalis Analogue Audio */
++			clk1_out_pw4 {
++				nvidia,pins = "clk1_out_pw4";
++				nvidia,function = "extperiph1";
++				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
++				nvidia,tristate = <TEGRA_PIN_DISABLE>;
++				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
++			};
++			dap3_fs_pp0 {
++				nvidia,pins =	"dap3_fs_pp0",
++						"dap3_sclk_pp3",
++						"dap3_din_pp1",
++						"dap3_dout_pp2";
++				nvidia,function = "i2s2";
++				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
++				nvidia,tristate = <TEGRA_PIN_DISABLE>;
++			};
++
+ 			/* Apalis BKL1_ON */
+ 			pv2 {
+ 				nvidia,pins = "pv2";
+@@ -404,6 +422,16 @@
+ 		status = "okay";
+ 		clock-frequency = <100000>;
+ 
++		/* SGTL5000 audio codec */
++		sgtl5000: codec@0a {
++			#sound-dai-cells = <0>;
++			compatible = "fsl,sgtl5000";
++			reg = <0x0a>;
++			VDDA-supply = <&sys_3v3_reg>;
++			VDDIO-supply = <&sys_3v3_reg>;
++			clocks = <&tegra_car TEGRA30_CLK_EXTERN1>;
++		};
++
+ 		pmic: tps65911@2d {
+ 			compatible = "ti,tps65911";
+ 			reg = <0x2d>;
+@@ -635,6 +663,13 @@
+ 		nvidia,sys-clock-req-active-high;
+ 	};
+ 
++	ahub@70080000 {
++		i2s@70080500 {
++			#sound-dai-cells = <0>;
++			status = "okay";
++		};
++	};
++
+ 	sdhci@78000600 {
+ 		status = "okay";
+ 		bus-width = <8>;
+@@ -684,4 +719,34 @@
+ 			regulator-always-on;
+ 		};
+ 	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "Toradex Apalis T30";
++		simple-audio-card,routing =
++			"Headphone Jack", "HP_OUT",
++			"LINE_IN", "Line In Jack",
++			"MIC_IN", "Microphone Jack";
++		simple-audio-card,widgets =
++			"Headphone", "Headphone Jack",
++			"Line In", "Line In Jack",
++			"Microphone", "Microphone Jack";
++
++		simple-audio-card,codec {
++			bitclock-master;
++			clocks = <&tegra_car TEGRA30_CLK_EXTERN1>;
++			frame-master;
++			sound-dai = <&sgtl5000>;
++		};
++
++		simple-audio-card,cpu {
++			bitclock-master;
++			clocks = <&tegra_car TEGRA30_CLK_PLL_A>,
++				 <&tegra_car TEGRA30_CLK_PLL_A_OUT0>;
++			frame-master;
++			master-clkdir-out;
++			sound-dai = <&tegra_i2s2>;
++		};
++	};
+ };
+diff --git a/arch/arm/boot/dts/tegra30-colibri.dtsi b/arch/arm/boot/dts/tegra30-colibri.dtsi
+index c4ed1be..1f97348 100644
+--- a/arch/arm/boot/dts/tegra30-colibri.dtsi
++++ b/arch/arm/boot/dts/tegra30-colibri.dtsi
+@@ -29,6 +29,24 @@
+ 		pinctrl-0 = <&state_default>;
+ 
+ 		state_default: pinmux {
++			/* Colibri Analogue Audio */
++			clk1_out_pw4 {
++				nvidia,pins = "clk1_out_pw4";
++				nvidia,function = "extperiph1";
++				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
++				nvidia,tristate = <TEGRA_PIN_DISABLE>;
++				nvidia,enable-input = <TEGRA_PIN_DISABLE>;
++			};
++			dap3_fs_pp0 {
++				nvidia,pins =	"dap3_fs_pp0",
++						"dap3_sclk_pp3",
++						"dap3_din_pp1",
++						"dap3_dout_pp2";
++				nvidia,function = "i2s2";
++				nvidia,pull = <TEGRA_PIN_PULL_NONE>;
++				nvidia,tristate = <TEGRA_PIN_DISABLE>;
++			};
++
+ 			/* Colibri BL_ON */
+ 			pv2 {
+ 				nvidia,pins = "pv2";
+@@ -182,6 +200,16 @@
+ 		status = "okay";
+ 		clock-frequency = <100000>;
+ 
++		/* SGTL5000 audio codec */
++		sgtl5000: codec@0a {
++			#sound-dai-cells = <0>;
++			compatible = "fsl,sgtl5000";
++			reg = <0x0a>;
++			VDDA-supply = <&sys_3v3_reg>;
++			VDDIO-supply = <&sys_3v3_reg>;
++			clocks = <&tegra_car TEGRA30_CLK_EXTERN1>;
++		};
++
+ 		pmic: tps65911@2d {
+ 			compatible = "ti,tps65911";
+ 			reg = <0x2d>;
+@@ -331,6 +359,13 @@
+ 		nvidia,sys-clock-req-active-high;
+ 	};
+ 
++	ahub@70080000 {
++		i2s@70080500 {
++			#sound-dai-cells = <0>;
++			status = "okay";
++		};
++	};
++
+ 	emmc: sdhci@78000600 {
+ 		status = "okay";
+ 		bus-width = <8>;
+@@ -383,4 +418,34 @@
+ 			regulator-always-on;
+ 		};
+ 	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "Toradex Colibri T30";
++		simple-audio-card,routing =
++			"Headphone Jack", "HP_OUT",
++			"LINE_IN", "Line In Jack",
++			"MIC_IN", "Microphone Jack";
++		simple-audio-card,widgets =
++			"Headphone", "Headphone Jack",
++			"Line In", "Line In Jack",
++			"Microphone", "Microphone Jack";
++
++		simple-audio-card,codec {
++			bitclock-master;
++			clocks = <&tegra_car TEGRA30_CLK_EXTERN1>;
++			frame-master;
++			sound-dai = <&sgtl5000>;
++		};
++
++		simple-audio-card,cpu {
++			bitclock-master;
++			clocks = <&tegra_car TEGRA30_CLK_PLL_A>,
++				 <&tegra_car TEGRA30_CLK_PLL_A_OUT0>;
++			frame-master;
++			master-clkdir-out;
++			sound-dai = <&tegra_i2s2>;
++		};
++	};
+ };
 -- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.9.3
+
