@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaIJP2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:28:12 -0400
-Received: from antcom.de ([46.38.233.243]:54327 "EHLO chuck.antcom.de"
+	id S1752007AbaIJP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:28:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45039 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaIJP2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:28:10 -0400
-X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 11:28:09 EDT
-Message-ID: <54106CC2.5080606@antcom.de>
-Date: Wed, 10 Sep 2014 17:22:42 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Icedove/30.0
+	id S1751867AbaIJP2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 11:28:15 -0400
+Date: Wed, 10 Sep 2014 17:28:11 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+In-Reply-To: <20140910152104.GS6549@mwanda>
+Message-ID: <alpine.LNX.2.00.1409101725340.5523@pobox.suse.cz>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz> <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org> <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz> <20140910140759.GC31903@thunk.org> <alpine.LNX.2.00.1409101625160.5523@pobox.suse.cz>
+ <20140910152104.GS6549@mwanda>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: robh+dt@kernel.org, riku.voipio@iki.fi, cooloney@gmail.com,
-        rpurdie@rpsys.net, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
-Subject: Re: [PATCH] leds: Add DT support for leds-pca9532
-References: <1410269280-8761-1-git-send-email-stigge@antcom.de> <17734612.3IvPuVrruO@wuerfel>
-In-Reply-To: <17734612.3IvPuVrruO@wuerfel>
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 08:08 PM, Arnd Bergmann wrote:
-> Is this a full PWM controller? If it is, it would be better to also
-> provide a #pwm-cells property and register the device with the PWM
-> subsystem to allow arbitrary users.
+On Wed, 10 Sep 2014, Dan Carpenter wrote:
+
+> > BTW if we stretch this argument a little bit more, we should also kill the 
+> > ZERO_OR_NULL_PTR() check from kfree() and make it callers responsibility 
+> > to perform the checking only if applicable ... we are currently doing a 
+> > lot of pointless checking in cases where caller would be able to guarantee 
+> > that the pointer is going to be non-NULL.
 > 
-> If the PWM is only really usable for LED, it's probably enough to
-> leave this used by the LED subsystem.
+> What you're saying is that we should remove the ZERO_SIZE_PTR
+> completely.  ZERO_SIZE_PTR is a very useful idiom and also it's too late
+> to remove it because everything depends on it.
 
-Right, this PWM is really only intended for LED use (as already done w/o
-DT).
+I was just argumenting that if we care about single additional test in 
+this path, the ZERO_OR_NULL_PTR() should have never been added at the 
+first place, and the responsibility for checking should have been kept at 
+callers.
 
-Sending the updated patch.
+Too late for this now, yes.
 
-Roland
+-- 
+Jiri Kosina
+SUSE Labs
