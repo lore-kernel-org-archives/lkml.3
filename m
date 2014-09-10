@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaIJXAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:00:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48019 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaIJXAt convert rfc822-to-8bit (ORCPT
+	id S1753344AbaIJXBo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:01:44 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:38181 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbaIJXBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:00:49 -0400
+	Wed, 10 Sep 2014 19:01:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
-References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
-	<540FC7C8.1070904@gmail.com>
-	<CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
-	<4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
-Date: Thu, 11 Sep 2014 07:00:46 +0800
-Message-ID: <CACVXFVPen-__38-XGHAe2Yxb0CGVLr3sGxQXvvk=Zkwzn-A_gA@mail.gmail.com>
-Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
-From: Ming Lei <ming.lei@canonical.com>
-To: "Patel, Gaurav" <gspatel@hp.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <54108ECA.6090200@plexistor.com>
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+	<540F2977.7010006@plexistor.com>
+	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
+	<541050E5.60502@gmail.com>
+	<CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>
+	<54108ECA.6090200@plexistor.com>
+Date: Wed, 10 Sep 2014 16:01:41 -0700
+Message-ID: <CAPcyv4gqyiTaSJY56ZrJh05kwh9O9sXNKOz40fGu5s_=eY=U6Q@mail.gmail.com>
+Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
+ memory driver
+From: Dan Williams <dan.j.williams@intel.com>
+To: Boaz Harrosh <boaz@plexistor.com>
+Cc: Boaz Harrosh <openosd@gmail.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:11 AM, Patel, Gaurav <gspatel@hp.com> wrote:
->
-> ">> When we use hdparm to download firmware on system with Marvell
->>> 88SE9125 SATA controller, it returns failure always and it has been
->>> observed in several systems:"
->
->  [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).
-
-But RedHat65 ships a 2.6.32 kernel as you said, and you can test the stable
-2.6.32 kernel on one ubuntu release too.
-
-As far as I can tell, the problem is very probably related with
-kernel, that is why
-I suggest you to test upstream kernel and run 'git bisect' later to
-find the commit
-which caused the regression.
-
-But looks you have simply install problem.
-
-Thanks,
-
-
->
-> Thanks,
-> Gaurav Patel
-> Email: Gspatel@hp.com
-> Cell # 832-382-5550
->
->
-> -----Original Message-----
-> From: Ming Lei [mailto:ming.lei@canonical.com]
-> Sent: Wednesday, September 10, 2014 1:34 AM
-> To: Robert Hancock
-> Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List; Patel, Gaurav
-> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
->
-> On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> On 01/09/14 02:22 AM, Ming Lei wrote:
->>>
->>> Hi Guys,
->>>
->>> When we use hdparm to download firmware on system with Marvell
->>> 88SE9125 SATA controller, it returns failure always and it has been
->>> observed in several systems:
->>>
->>> #hdparm --fwdownload-mode7 fw.bin
->>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
->>>
->>> /dev/sda:
->>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
->>> FAILED: Input/output error
+On Wed, Sep 10, 2014 at 10:47 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
+> On 09/10/2014 08:03 PM, Dan Williams wrote:
+>> Hi Boaz,
 >>
+> <>
+>>> We please need to start somewhere, no?
 >>
->> Any errors in dmesg after doing this?
+>> Sure, but you used the operative term "start", as in you already
+>> expect to enhance this capability down the road, right?
+>>
 >
-> No any failure log from kernel.
+> Yes
 >
-> Thanks,
+>> It's fine to dismiss this request_firmware() based approach, but don't
+>> mis-characterize it in the process.  With regards to describing device
+>> boundaries, a bus-descriptor-blob handed to the kernel is a superset
+>> of the capability provided by the kernel command line.  It can be
+>> injected statically at compile time, or dynamically loaded from the
+>> initrd or the rootfs.  It has the added benefit of being flexible to
+>> change whereas the kernel command line is a more permanent contract
+>> that we will need to maintain compatibility with in perpetuity.
+>>
+>
+> initrd or rootfs means for me "make install". But I want my fedora
+> to never make or install. Pre-compiled binary blobs including rootfs and
+> it needs to work.
+>
+>> If you already see this bus description as a "starting" point, then I
+>> think we need an interface that is more amenable to ongoing change,
+>> that's not the kernel-command-line.
+>>
+>
+> module-command-line. a module can be loaded via udev and/or module param
+> can be changed dynamically on the fly. And also be specified via
+> kernel-command-line. So it is much less permanent contract API than
+> "rootfs"
+>
+> And yes, I intend to add more interfaces. And No! I do not intend to
+> ever extend this module-param interface, that I can see. This one is
+> that, which it is right now. Later a sysfs/ objects will enable dynamic
+> management of devices. So both: initial device list on load - more devices
+> or removal on the fly, unload all on unload. This is my plan. So right
+> now I do not see this map= need ever change in the future. Only more
+> interfaces added in (the very near) future.
+>
+
+Imagine you want to deploy a policy like "use half of the memory
+provided by the dimm in slot3, i.e. the only one with a battery".
+That sort of thing gets unwieldy in a command line string compared to
+a description table format that we can update at will.
