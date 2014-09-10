@@ -1,68 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaIJOdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:33:25 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54636 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaIJOdX (ORCPT
+	id S1752904AbaIJOdz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:33:55 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:54485 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaIJOdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:33:23 -0400
-Date: Wed, 10 Sep 2014 16:33:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: perf: perf_fuzzer triggers instant reboot
-Message-ID: <20140910143306.GD4783@worktop.ger.corp.intel.com>
-References: <alpine.DEB.2.11.1409081343270.29974@vincent-weaver-1.umelst.maine.edu>
- <20140908185115.GI6758@twins.programming.kicks-ass.net>
- <alpine.DEB.2.11.1409091203500.14857@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.11.1409091317550.15651@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.11.1409091352260.15874@vincent-weaver-1.umelst.maine.edu>
- <20140910083136.GP6758@twins.programming.kicks-ass.net>
- <alpine.DEB.2.11.1409100914410.8981@vincent-weaver-1.umelst.maine.edu>
- <541059C9.1040200@oracle.com>
- <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu>
+	Wed, 10 Sep 2014 10:33:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1409101027250.8981@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+	<20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+	<alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+	<20140910140759.GC31903@thunk.org>
+	<alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
+Date: Wed, 10 Sep 2014 18:33:52 +0400
+Message-ID: <CAPAsAGyYoPjThA1EV46jYiGX2UzqF1oD4JJueNKh9V1XvAXjcA@mail.gmail.com>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:30:31AM -0400, Vince Weaver wrote:
-> On Wed, 10 Sep 2014, Sasha Levin wrote:
-> 
-> > On 09/10/2014 09:18 AM, Vince Weaver wrote:
-> > > that's what got me looking at things again, the trinity reports.  Though I 
-> > > think those involve CPU hotplugging which my fuzzer shouldn't trigger.
-> > > 
-> > > I do think this is the same memory corruption/reboot bug that I reported 
-> > > back in February (the thread is "perf_fuzzer compiled for x32 causes 
-> > > reboot" but I wasn't able to isolate the problem then either.
-> > > 
-> > > Somehow something is stomping over memory with a forking workload (likely 
-> > > an improper free with RCU like we've seen before) but the fact that it 
-> > > causes a reboot immediately makes it *really* hard to debug this.
-> > 
-> > Could this be http://permalink.gmane.org/gmane.linux.kernel/1779436 which
-> > I saw couple days ago?
-> 
-> It could be.
-> 
-> I have about 10 open bugs with similar symptoms found with my perf_fuzzer 
-> here (and a few more that are possibly the same memory corruption bug that 
-> "fixes" went into the kernel but it's unclear if it actually fixed things
-> or just altered the locking enough to make it harder to hit).
-> 
-> 	http://web.eece.maine.edu/~vweaver/projects/perf_events/fuzzer/bugs_found.html
-> 
-> I've been trying for months now to make progress on these but this type of 
-> bug is really hard to debug.
+2014-09-10 18:24 GMT+04:00 Jiri Kosina <jkosina@suse.cz>:
+> On Wed, 10 Sep 2014, Theodore Ts'o wrote:
+>
+>> So I wouldn't be so sure that we don't have these sorts of bugs hiding
+>> somewhere; and it's extremely easy for them to sneak in.  That being
+>> said, I'm not in favor of making changes to kfree; I'd much rather
+>> depending on better testing and static checkers to fix them, since
+>> kfree *is* a hot path.
+>
+> I of course have no objections to this check being added to whatever
+> static checker, that would be very welcome improvement.
+>
+> Still, I believe that kernel shouldn't be just ignoring kfree(ERR_PTR)
+> happening. Would something like the below be more acceptable?
+>
+>
+>
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+>
+> Freeing if ERR_PTR is not covered by ZERO_OR_NULL_PTR() check already
+> present in kfree(), but it happens in the wild and has disastrous effects.
+>
+> Issue a warning and don't proceed trying to free the memory if
+> CONFIG_DEBUG_SLAB is set.
+>
 
-Did we actually fix some at least? I had the idea we did get a few
-sorted. But yes, this is tedious and hard going :/
+This won't work cause CONFIG_DEBUG_SLAB  is only for CONFIG_SLAB=y
+
+How about just VM_BUG_ON(IS_ERR(ptr)); ?
+
+
+> Inspired by a9cfcd63e8d ("ext4: avoid trying to kfree an ERR_PTR pointer").
+>
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  mm/slab.c | 6 ++++++
+>  mm/slob.c | 7 ++++++-
+>  mm/slub.c | 7 ++++++-
+>  3 files changed, 18 insertions(+), 2 deletions(-)
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index a467b30..6f49d6b 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -3612,6 +3612,12 @@ void kfree(const void *objp)
+>
+>         trace_kfree(_RET_IP_, objp);
+>
+> +#ifdef CONFIG_DEBUG_SLAB
+> +       if (unlikely(IS_ERR(objp))) {
+> +                       WARN(1, "trying to free ERR_PTR\n");
+> +                       return;
+> +       }
+> +#endif
+>         if (unlikely(ZERO_OR_NULL_PTR(objp)))
+>                 return;
+>         local_irq_save(flags);
+> diff --git a/mm/slob.c b/mm/slob.c
+> index 21980e0..66422a0 100644
+> --- a/mm/slob.c
+> +++ b/mm/slob.c
+> @@ -488,7 +488,12 @@ void kfree(const void *block)
+>         struct page *sp;
+>
+>         trace_kfree(_RET_IP_, block);
+> -
+> +#ifdef CONFIG_DEBUG_SLAB
+> +       if (unlikely(IS_ERR(block))) {
+> +               WARN(1, "trying to free ERR_PTR\n");
+> +               return;
+> +       }
+> +#endif
+>         if (unlikely(ZERO_OR_NULL_PTR(block)))
+>                 return;
+>         kmemleak_free(block);
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 3e8afcc..21155ae 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3337,7 +3337,12 @@ void kfree(const void *x)
+>         void *object = (void *)x;
+>
+>         trace_kfree(_RET_IP_, x);
+> -
+> +#ifdef CONFIG_DEBUG_SLAB
+> +       if (unlikely(IS_ERR(x))) {
+> +               WARN(1, "trying to free ERR_PTR\n");
+> +               return;
+> +       }
+> +#endif
+>         if (unlikely(ZERO_OR_NULL_PTR(x)))
+>                 return;
+>
+>
+> --
+> Jiri Kosina
+> SUSE Labs
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+
+-- 
+Best regards,
+Andrey Ryabinin
