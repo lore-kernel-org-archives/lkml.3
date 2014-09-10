@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaIJHA4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 03:00:56 -0400
-Received: from smtprelay0041.hostedemail.com ([216.40.44.41]:44258 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750970AbaIJHAy (ORCPT
+	id S1751727AbaIJHBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 03:01:42 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:2335 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaIJHBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 03:00:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:146:355:379:541:599:967:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2911:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:4362:4425:4470:5007:6248:7652:7808:7875:7903:8828:9025:10004:10400:10848:11026:11232:11473:11658:11914:12043:12050:12438:12485:12517:12519:12663:12740:13071:13161:13229:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: salt53_415667c2f5562
-X-Filterd-Recvd-Size: 3273
-Message-ID: <1410332446.24028.26.camel@joe-AO725>
-Subject: Re: [PATCH v2] checkpatch: look for common misspellings
-From: Joe Perches <joe@perches.com>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-doc <linux-doc@vger.kernel.org>
-Date: Wed, 10 Sep 2014 00:00:46 -0700
-In-Reply-To: <CALLJCT3syNafyj-y+1osLCMabszJbyZhmmKWLO8k8-y4Nkmpzg@mail.gmail.com>
-References: <20140908181524.GA11839@www.outflux.net>
-	 <1410202114.12560.16.camel@joe-AO725>
-	 <CALLJCT3syNafyj-y+1osLCMabszJbyZhmmKWLO8k8-y4Nkmpzg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Wed, 10 Sep 2014 03:01:41 -0400
+Message-ID: <540FF70E.9050203@xs4all.nl>
+Date: Wed, 10 Sep 2014 09:00:30 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Fancy Fang <chen.fang@freescale.com>, m.chehab@samsung.com,
+        viro@ZenIV.linux.org.uk
+CC: shawn.guo@freescale.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH] [media] videobuf-dma-contig: replace vm_iomap_memory()
+ with remap_pfn_range().
+References: <1410326937-31140-1-git-send-email-chen.fang@freescale.com>
+In-Reply-To: <1410326937-31140-1-git-send-email-chen.fang@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 13:37 +0900, Masanari Iida wrote:
-> Hello Joe, Kees,
+On 09/10/14 07:28, Fancy Fang wrote:
+> When user requests V4L2_MEMORY_MMAP type buffers, the videobuf-core
+> will assign the corresponding offset to the 'boff' field of the
+> videobuf_buffer for each requested buffer sequentially. Later, user
+> may call mmap() to map one or all of the buffers with the 'offset'
+> parameter which is equal to its 'boff' value. Obviously, the 'offset'
+> value is only used to find the matched buffer instead of to be the
+> real offset from the buffer's physical start address as used by
+> vm_iomap_memory(). So, in some case that if the offset is not zero,
+> vm_iomap_memory() will fail.
 
-Hello Masanari-san.
+Is this just a fix for something that can fail theoretically, or do you
+actually have a case where this happens? I am very reluctant to make
+any changes to videobuf. Drivers should all migrate to vb2.
 
-> Sorry for late reply.
-> I was on holiday when the version 1 patch discussions were posted.
+I have CC-ed Marek as well since he knows a lot more about this stuff
+than I do.
 
-No worries, holidays are far more important
-than patches like this...
+Regards,
 
-These patches are simple niceties, not fixes
-for bugs, so review and acceptance timing is
-not urgent.
+	Hans
 
-> I am using codespell ( https://github.com/lucasdemarchi/codespell/ ).
-> The codespell has its own typo dictionary.
-> The dictionary format is
 > 
-> typo->good   (1 candidate)
-> typo->good1,good2,  (multiple candidates)
-> typo->good, comment  (1 candidate with special remark)
+> Signed-off-by: Fancy Fang <chen.fang@freescale.com>
+> ---
+>  drivers/media/v4l2-core/videobuf-dma-contig.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> Its similar to your  typo||good  format.
+> diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+> index bf80f0f..8bd9889 100644
+> --- a/drivers/media/v4l2-core/videobuf-dma-contig.c
+> +++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+> @@ -305,7 +305,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+>  	/* Try to remap memory */
+>  	size = vma->vm_end - vma->vm_start;
+>  	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+> -	retval = vm_iomap_memory(vma, mem->dma_handle, size);
+> +	retval = remap_pfn_range(vma, vma->vm_start,
+> +				 mem->dma_handle >> PAGE_SHIFT,
+> +				 size, vma->vm_page_prot);
+>  	if (retval) {
+>  		dev_err(q->dev, "mmap: remap failed with error %d. ",
+>  			retval);
 > 
-> The license of the codespell is GPLv2 according to COPYING file in tar ball.
-> 
-> Compare number of typo samples in dictionary.
-> Your dictionary :  1033
-> codespell-1.4 :     4261
-> codespell-1.4 + my adding 5245
-> Your dictionary + codespell-1.4 + my adding - remove duplicate:  5742
-> 
-> Latest version of codespell is 1.7.
-> My dictionary is based on codespell-1.4. So I use the number as of 1.4.
-> 
-> I can provide my typo samples under GPLv2 license.
-
-Thanks.
-
-Any additions you have to the dictionary would be
-gladly welcomed.
-
-Using a common format for the dictionary and any
-suggested corrections would be good too.
-
-Maybe the dictionary and code should be changed to
-use the codespell format.  It seems a bit more
-flexible than the lintian form.
-
-I do not know if one project is more active than
-the other, but perhaps that should be the deciding
-factor.  Or maybe just Kees' preference...
-
-Merging all these together might not be a good
-solution though.
-
-Right now, the checkpatch spelling code uses word
-boundaries that include an underscore.
-
-checkpatch spelling tests are done on 4 segments of
-a #define like "PREFIX_PREFERED_SEG_ABC" finding the
-misspelling of PREFERED.
-
-Some sifting of the dictionary is still necessary to
-eliminate some common prefixes to avoid too many false
-positives.
-
-For example, "ths" was dropped because it's a prefix
-used by several modules even though it's a somewhat
-frequent typo.
-
 
