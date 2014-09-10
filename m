@@ -1,57 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaIJLZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 07:25:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338AbaIJLZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 07:25:30 -0400
-Message-ID: <54103506.1030501@redhat.com>
-Date: Wed, 10 Sep 2014 13:24:54 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 net-next 11/12] net: filter: move eBPF instruction
- macros
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <1410325808-3657-12-git-send-email-ast@plumgrid.com>
-In-Reply-To: <1410325808-3657-12-git-send-email-ast@plumgrid.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751944AbaIJLa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 07:30:28 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:56641 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaIJLa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 07:30:26 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-0b-5410364ac6ec
+From: Maciej Matraszek <m.matraszek@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Maciej Matraszek <m.matraszek@samsung.com>
+Subject: [PATCH] PM / Domains: add debugfs listing of struct generic_pm_domain-s
+Date: Wed, 10 Sep 2014 13:28:56 +0200
+Message-id: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDJMWRmVeSWpSXmKPExsVy+t/xa7peZgIhBm/+aFpsnLGe1aJ58Xo2
+	i9cvDC1mTdnLZHF51xw2i8+9RxgtTr64zGhx99RRNoszpy+xOnB6LN7zkslj/9w17B5brraz
+	ePRtWcXosWL1d3aPz5vkAtiiuGxSUnMyy1KL9O0SuDIOPtnHWLDeuOLTIfEGxm/qXYwcHBIC
+	JhL/djp0MXICmWISF+6tZ+ti5OIQEljKKLFi9TRGCKeXSWLTxsvsIFVsAgYSm//1s4AkRASu
+	MUrsWbSMGcRhFpjOKLGkczobSJWwQIDE1nXfwDpYBFQlTr7/wQxi8wq4S9z/t5EFYp+cxMlj
+	k1knMHIvYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESQl92MC4+ZnWIUYCDUYmHt/Ai
+	f4gQa2JZcWXuIUYJDmYlEd40I4EQId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYxbhee+W/Dhn1Ws
+	RuvTPbqmmc82uYu+2L1TYp7qdZV8/98prydNkXTbfT1g45PCC32xJf9aNdYZzrg5IaWd8atc
+	7Yp3v6OnrpTS5HkSeXXqXc2zN5l4jlt8j655Mv2bjP4zmT8bp97lj7qRmP1RNUk+TY/1lcwF
+	z/yTE88KHfsevvtN0FpW89OdSizFGYmGWsxFxYkA+UBcef8BAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 07:10 AM, Alexei Starovoitov wrote:
-> move instruction macros (like BPF_MOV64_REG or BPF_ALU32_IMM)
-> from linux/filter.h into uapi/linux/bpf.h
-> so that userspace programs can use them.
->
-> verifier testsuite (in later patches) will be using them.
->
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Add /sys/kernel/debug/pm_genpd/pm_genpd_summary file, which
+lists power domains in the system, their statuses and attached devices,
+resembling /sys/kernel/debug/clk/clk_summary.
 
-I don't think we need this commit at all. These macros are not really
-part of the ABI and we should expose __as less as possible__, otherwise
-we won't be able to alter them anymore. Plus, based on your previous
-argumentation regarding the header file expose, we also won't be able
-to add any new macros anymore since you could run into name collisions.
+Currently it is impossible to inspect (from userland) whether
+a power domain is on or off. And, if it is on, which device blocks it
+from powering down. This change allows developers working on
+embedded devices power efficiency to list all necessary information
+about generic power domains in one place.
 
-Anyway, I don't see a reason why a e.g. central user space eBPF library
-cannot live with, for example, a private copy of these helper macros or
-whatever it wants to define by itself.
+The content of pm_genpd/pm_genpd_summary file is generated by iterating
+over all generic power domain in the system, and, for each,
+over registered devices.
 
-I know in classic BPF there's BPF_STMT() and BPF_JUMP() but it's much
-less complicated than eBPF and less likely to changes.
+Example output:
+$ cat  /sys/kernel/debug/pm_genpd/pm_genpd_summary
+    domain                      status         slaves
+           /device                                      runtime status
+----------------------------------------------------------------------
+isp-power-domain                off
+    /devices/soc/12180000.fimc-is                       suspended
+    /devices/soc/12180000.fimc-is/120a0000.fimc-lite    suspended
+lcd0-power-domain               on
+    /devices/soc/11c80000.dsi                           active
+    /devices/soc/11c00000.fimd                          active
+    /devices/soc/11e20000.sysmmu                        suspended
+g3d-power-domain                off
+    /devices/soc/13001000.gpu                           suspended
+mfc-power-domain                off
+    /devices/soc/13400000.mfc-codec                     suspended
+    /devices/soc/13620000.sysmmu                        suspended
+cam-power-domain                off
+    /devices/soc/11830000.jpeg-codec                    suspended
+    /devices/soc/11a60000.sysmmu                        suspended
+    /devices/soc/12180000.fimc-is/120c0000.csis         suspended
+
+To enable this feature, compile the kernel with debugfs
+and CONFIG_PM_ADVANCED_DEBUG enabled.
+
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+---
+ drivers/base/power/domain.c | 153 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 153 insertions(+)
+
+diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+index eee55c1e5fde..d1aa731ba0db 100644
+--- a/drivers/base/power/domain.c
++++ b/drivers/base/power/domain.c
+@@ -2189,3 +2189,156 @@ void pm_genpd_init(struct generic_pm_domain *genpd,
+ 	list_add(&genpd->gpd_list_node, &gpd_list);
+ 	mutex_unlock(&gpd_list_lock);
+ }
++
++
++/***        debugfs support        ***/
++
++#ifdef CONFIG_PM_ADVANCED_DEBUG
++#include <linux/pm.h>
++#include <linux/device.h>
++#include <linux/debugfs.h>
++#include <linux/kobject.h>
++static struct dentry *pm_genpd_debugfs_dir;
++
++/*
++ * TODO: This function is a slightly modified version of rtpm_status_show
++ * from sysfs.c, but dependencies between PM_GENERIC_DOMAINS and PM_RUNTIME
++ * are too loose to generalize it.
++ */
++#ifdef CONFIG_PM_RUNTIME
++static void rtpm_status_str(struct seq_file *s, struct device *dev)
++{
++	static const char * const status_lookup[] = {
++		[RPM_ACTIVE] = "active",
++		[RPM_RESUMING] = "resuming",
++		[RPM_SUSPENDED] = "suspended",
++		[RPM_SUSPENDING] = "suspending"
++	};
++	const char *p = "";
++
++	if (dev->power.runtime_error)
++		p = "error";
++	else if (dev->power.disable_depth)
++		p = "unsupported";
++	else if (dev->power.runtime_status < ARRAY_SIZE(status_lookup))
++		p = status_lookup[dev->power.runtime_status];
++	else
++		WARN_ON(1);
++
++	seq_puts(s, p);
++}
++#else
++static void rtpm_status_str(struct seq_file *s, struct device *dev)
++{
++	seq_puts(s, "active");
++}
++#endif
++
++static int pm_genpd_summary_one(struct seq_file *s,
++		struct generic_pm_domain *gpd)
++{
++	static const char * const status_lookup[] = {
++		[GPD_STATE_ACTIVE] = "on",
++		[GPD_STATE_WAIT_MASTER] = "wait-master",
++		[GPD_STATE_BUSY] = "busy",
++		[GPD_STATE_REPEAT] = "off-in-progress",
++		[GPD_STATE_POWER_OFF] = "off"
++	};
++	struct pm_domain_data *pm_data;
++	const char *kobj_path;
++	struct gpd_link *link;
++	int ret;
++
++	ret = mutex_lock_interruptible(&gpd->lock);
++	if (ret)
++		return -ERESTARTSYS;
++
++	if (WARN_ON(gpd->status >= ARRAY_SIZE(status_lookup)))
++		goto exit;
++	seq_printf(s, "%-30s  %-15s  ", gpd->name, status_lookup[gpd->status]);
++
++	/*
++	 * Modifications on the list require holding locks on both
++	 * master and slave, so we are safe.
++	 * Also gpd->name is immutable.
++	 */
++	list_for_each_entry(link, &gpd->master_links, master_node) {
++		seq_printf(s, "%s", link->slave->name);
++		if (!list_is_last(&link->master_node, &gpd->master_links))
++			seq_puts(s, ", ");
++	}
++
++	list_for_each_entry(pm_data, &gpd->dev_list, list_node) {
++		kobj_path = kobject_get_path(&pm_data->dev->kobj, GFP_KERNEL);
++		if (kobj_path == NULL)
++			continue;
++
++		seq_printf(s, "\n    %-50s  ", kobj_path);
++		rtpm_status_str(s, pm_data->dev);
++		kfree(kobj_path);
++	}
++
++	seq_puts(s, "\n");
++exit:
++	mutex_unlock(&gpd->lock);
++
++	return 0;
++}
++
++static int pm_genpd_summary_show(struct seq_file *s, void *data)
++{
++	struct generic_pm_domain *gpd;
++	int ret = 0;
++
++	seq_puts(s, "    domain                      status         slaves\n");
++	seq_puts(s, "           /device                                      runtime status\n");
++	seq_puts(s, "----------------------------------------------------------------------\n");
++
++	ret = mutex_lock_interruptible(&gpd_list_lock);
++	if (ret)
++		return -ERESTARTSYS;
++
++	list_for_each_entry(gpd, &gpd_list, gpd_list_node) {
++		ret = pm_genpd_summary_one(s, gpd);
++		if (ret)
++			break;
++	}
++	mutex_unlock(&gpd_list_lock);
++
++	return ret;
++}
++
++static int pm_genpd_summary_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, pm_genpd_summary_show, inode->i_private);
++}
++
++static const struct file_operations pm_genpd_summary_fops = {
++	.open = pm_genpd_summary_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init pm_genpd_debug_init(void)
++{
++	struct dentry *d;
++
++	pm_genpd_debugfs_dir = debugfs_create_dir("pm_genpd", NULL);
++
++	/* No debugfs */
++	if (IS_ERR(pm_genpd_debugfs_dir))
++		return PTR_ERR(pm_genpd_debugfs_dir);
++
++	if (!pm_genpd_debugfs_dir)
++		return -ENOMEM;
++
++	d = debugfs_create_file("pm_genpd_summary", S_IRUGO,
++			pm_genpd_debugfs_dir, NULL, &pm_genpd_summary_fops);
++	if (!d)
++		return -ENOMEM;
++
++	return 0;
++}
++late_initcall(pm_genpd_debug_init);
++#endif /* CONFIG_PM_ADVANCED_DEBUG */
+-- 
+1.9.1
+
