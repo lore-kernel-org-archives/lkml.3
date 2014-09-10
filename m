@@ -1,89 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238AbaIJShd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:37:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57138 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaIJShb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:37:31 -0400
-Date: Wed, 10 Sep 2014 11:34:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 13/26] locking: Add non-fatal spin lock assert
-Message-ID: <20140910183452.GA15250@kroah.com>
-References: <1409693975-1028-14-git-send-email-peter@hurleysoftware.com>
- <20140903092723.GA4783@worktop.ger.corp.intel.com>
- <5406F964.6060900@hurleysoftware.com>
- <20140903144029.GA7083@twins.programming.kicks-ass.net>
- <54072A99.1080306@hurleysoftware.com>
- <20140903150729.GA7436@twins.programming.kicks-ass.net>
- <20140904051411.GA27350@gmail.com>
- <54102FB2.1020808@hurleysoftware.com>
- <20140910130832.GY4783@worktop.ger.corp.intel.com>
- <5410640D.8010903@hurleysoftware.com>
+	id S1753252AbaIJSiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:38:18 -0400
+Received: from fieldses.org ([174.143.236.118]:41016 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882AbaIJSiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 14:38:17 -0400
+Date: Wed, 10 Sep 2014 14:38:15 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@primarydata.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH 01/12] locks: add a new struct file_locking_context
+ pointer to struct inode
+Message-ID: <20140910183815.GB4210@fieldses.org>
+References: <1410359330-27564-1-git-send-email-jlayton@primarydata.com>
+ <1410359330-27564-2-git-send-email-jlayton@primarydata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5410640D.8010903@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410359330-27564-2-git-send-email-jlayton@primarydata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:45:33AM -0400, Peter Hurley wrote:
-> On 09/10/2014 09:08 AM, Peter Zijlstra wrote:
-> > On Wed, Sep 10, 2014 at 07:02:10AM -0400, Peter Hurley wrote:
-> >> On 09/04/2014 01:14 AM, Ingo Molnar wrote:
-> >>>
-> >>> * Peter Zijlstra <peterz@infradead.org> wrote:
-> >>>
-> >>>> On Wed, Sep 03, 2014 at 10:50:01AM -0400, Peter Hurley wrote:
-> >>>>> So a lockdep-only assert is unlikely to draw attention to existing bugs,
-> >>>>> especially in established drivers.
-> >>>>
-> >>>> By the same logic lockdep will not find locking errors in established
-> >>>> drivers.
-> >>>
-> >>> Indeed, this patch is ill-advised in several ways:
-> >>>
-> >>>   - it extends an API variant that we want to phase
-> >>>
-> >>>   - emits a warning even if say lockdep has already emitted a
-> >>>     warning and locking state is not guaranteed to be consistent. 
-> >>>
-> >>>   - makes the kernel more expensive once fully debugged, in that
-> >>>     non-fatal checks are unconditional.
-> >>
-> >> Ok.
-> >>
-> >> One thing: I'm not seeing how lockdep_assert_held() switches off once
-> >> the warning has been emitted? Is the caller expected to construct their
-> >> own _ONCE tags?
-> > 
-> > Indeed, it does not do that. I suppose you can add
-> > lockdep_assert_held_once() or somesuch if you think the once thing is
-> > important.
+On Wed, Sep 10, 2014 at 10:28:39AM -0400, Jeff Layton wrote:
+> The current scheme of using the i_flock list is really difficult to
+> manage. Start conversion to a new scheme to eventually replace it.
 > 
-> Ok, will do.
+> We start by adding a new i_flctx to struct inode. For now, it lives in
+> parallel with i_flock list, but will eventually replace it. The idea is
+> to allocate a structure to sit in that pointer and act as a locus for
+> all things file locking.
 > 
-> On 09/04/2014 01:14 AM, Ingo Molnar wrote:
-> > Also please submit locking related patches as standalone series 
-> > to the locking subsystem, not embedded in an unrelated series.
+> We'll manage it with RCU and the i_lock, so that things like the
+> break_lease() check can use RCU to check for its presence.
+
+And the plan is to allocate it once and then never destroy it until the
+inode's destroyed?
+
+OK, seems like a sensible compromise assuming that typically only a
+small nunmber of files are ever locked.
+
+--b.
+
 > 
-> Ok, but how will Greg know when to take the series that depends on
-> this change, if the locking change is submitted separately?
-
- Cc: me on those changes, and I can track what happens with the tip tree
- where these would show up.
-
-Or wait a release cycle, that also is an easy way.
-
-thanks,
-
-greg k-h
+> Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+> ---
+>  fs/inode.c         |  3 ++-
+>  fs/locks.c         | 38 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/fs.h | 13 +++++++++++++
+>  3 files changed, 53 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 26753ba7b6d6..e87b47ab69a2 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -192,7 +192,7 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+>  #ifdef CONFIG_FSNOTIFY
+>  	inode->i_fsnotify_mask = 0;
+>  #endif
+> -
+> +	inode->i_flctx = NULL;
+>  	this_cpu_inc(nr_inodes);
+>  
+>  	return 0;
+> @@ -235,6 +235,7 @@ void __destroy_inode(struct inode *inode)
+>  	BUG_ON(inode_has_buffers(inode));
+>  	security_inode_free(inode);
+>  	fsnotify_inode_delete(inode);
+> +	locks_free_lock_context(inode->i_flctx);
+>  	if (!inode->i_nlink) {
+>  		WARN_ON(atomic_long_read(&inode->i_sb->s_remove_count) == 0);
+>  		atomic_long_dec(&inode->i_sb->s_remove_count);
+> diff --git a/fs/locks.c b/fs/locks.c
+> index 735b8d3fa78c..6aa36bf21cc9 100644
+> --- a/fs/locks.c
+> +++ b/fs/locks.c
+> @@ -202,8 +202,43 @@ static DEFINE_HASHTABLE(blocked_hash, BLOCKED_HASH_BITS);
+>   */
+>  static DEFINE_SPINLOCK(blocked_lock_lock);
+>  
+> +static struct kmem_cache *flctx_cache __read_mostly;
+>  static struct kmem_cache *filelock_cache __read_mostly;
+>  
+> +static struct file_lock_context *
+> +locks_get_lock_context(struct inode *inode)
+> +{
+> +	struct file_lock_context *new = NULL;
+> +
+> +	if (inode->i_flctx)
+> +		goto out;
+> +
+> +	new = kmem_cache_alloc(flctx_cache, GFP_KERNEL);
+> +	if (!new)
+> +		goto out;
+> +
+> +	spin_lock(&inode->i_lock);
+> +	if (likely(!inode->i_flctx)) {
+> +		spin_lock_init(&new->flc_lock);
+> +		INIT_LIST_HEAD(&new->flc_flock);
+> +		swap(inode->i_flctx, new);
+> +	}
+> +	spin_unlock(&inode->i_lock);
+> +	if (new)
+> +		kmem_cache_free(flctx_cache, new);
+> +out:
+> +	return inode->i_flctx;
+> +}
+> +
+> +void
+> +locks_free_lock_context(struct file_lock_context *ctx)
+> +{
+> +	if (ctx) {
+> +		WARN_ON_ONCE(!list_empty(&ctx->flc_flock));
+> +		kmem_cache_free(flctx_cache, ctx);
+> +	}
+> +}
+> +
+>  static void locks_init_lock_heads(struct file_lock *fl)
+>  {
+>  	INIT_HLIST_NODE(&fl->fl_link);
+> @@ -2621,6 +2656,9 @@ static int __init filelock_init(void)
+>  {
+>  	int i;
+>  
+> +	flctx_cache = kmem_cache_create("file_lock_ctx",
+> +			sizeof(struct file_lock_context), 0, SLAB_PANIC, NULL);
+> +
+>  	filelock_cache = kmem_cache_create("file_lock_cache",
+>  			sizeof(struct file_lock), 0, SLAB_PANIC, NULL);
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index bb9484ae1eef..090212e26d12 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -594,6 +594,7 @@ struct inode {
+>  #endif
+>  	const struct file_operations	*i_fop;	/* former ->i_op->default_file_ops */
+>  	struct file_lock	*i_flock;
+> +	struct file_lock_context	*i_flctx;
+>  	struct address_space	i_data;
+>  #ifdef CONFIG_QUOTA
+>  	struct dquot		*i_dquot[MAXQUOTAS];
+> @@ -933,6 +934,11 @@ struct file_lock {
+>  	} fl_u;
+>  };
+>  
+> +struct file_lock_context {
+> +	spinlock_t		flc_lock;
+> +	struct list_head	flc_flock;
+> +};
+> +
+>  /* The following constant reflects the upper bound of the file/locking space */
+>  #ifndef OFFSET_MAX
+>  #define INT_LIMIT(x)	(~((x)1 << (sizeof(x)*8 - 1)))
+> @@ -959,6 +965,7 @@ extern int fcntl_setlease(unsigned int fd, struct file *filp, long arg);
+>  extern int fcntl_getlease(struct file *filp);
+>  
+>  /* fs/locks.c */
+> +void locks_free_lock_context(struct file_lock_context *ctx);
+>  void locks_free_lock(struct file_lock *fl);
+>  extern void locks_init_lock(struct file_lock *);
+>  extern struct file_lock * locks_alloc_lock(void);
+> @@ -1016,6 +1023,12 @@ static inline int fcntl_getlease(struct file *filp)
+>  	return 0;
+>  }
+>  
+> +static inline void
+> +locks_free_lock_context(struct file_lock_context *ctx)
+> +{
+> +	return;
+> +}
+> +
+>  static inline void locks_init_lock(struct file_lock *fl)
+>  {
+>  	return;
+> -- 
+> 1.9.3
+> 
