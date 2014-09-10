@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336AbaIJTac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:30:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35388 "EHLO
+	id S1753401AbaIJTal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:30:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35397 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752398AbaIJTa3 (ORCPT
+	with ESMTP id S1752398AbaIJTah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:30:29 -0400
+	Wed, 10 Sep 2014 15:30:37 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, tony@atomide.com, balbi@ti.com,
         gregkh@linuxfoundation.org,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 07/16] tty: serial: 8250_dma: handle error on TX submit
-Date: Wed, 10 Sep 2014 21:30:02 +0200
-Message-Id: <1410377411-26656-8-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 01/16] tty: serial: 8250_core: allow to set ->throttle / ->unthrottle callbacks
+Date: Wed, 10 Sep 2014 21:29:56 +0200
+Message-Id: <1410377411-26656-2-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
 References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
@@ -26,120 +26,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now it is possible that serial8250_tx_dma() fails and returns
--EBUSY. The caller (serial8250_start_tx()) will then enable
-UART_IER_THRI which will generate an interrupt once the TX FIFO is
-empty.
-In serial8250_handle_irq() nothing will happen because up->dma is set
-and so serial8250_tx_chars() won't be invoked. We end up with plenty of
-interrupts and some "too much work for irq" output.
-
-This patch introduces dma_tx_err in struct uart_8250_port to signal that
-the last invocation of serial8250_tx_dma() failed so we can fill the TX
-FIFO manually. Should the next invocation of serial8250_start_tx()
-succeed then the dma_tx_err flag along with the THRI bit is removed and
-DMA only usage may continue.
+The OMAP UART provides support for HW assisted flow control. What is
+missing is the support to throttle / unthrottle callbacks which are used
+by the omap-serial driver at the moment.
+This patch adds the callbacks. It should be safe to add them since they
+are only invoked from the serial_core (uart_throttle()) if the feature
+flags are set.
 
 Reviewed-by: Tony Lindgren <tony@atomide.com>
 Tested-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/8250/8250.h      |  1 +
- drivers/tty/serial/8250/8250_core.c |  4 +++-
- drivers/tty/serial/8250/8250_dma.c  | 30 +++++++++++++++++++++++++-----
- 3 files changed, 29 insertions(+), 6 deletions(-)
+ drivers/tty/serial/8250/8250_core.c | 14 ++++++++++++++
+ include/linux/serial_core.h         |  2 ++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-index 1bcb4b2141a6..a63d198f8d03 100644
---- a/drivers/tty/serial/8250/8250.h
-+++ b/drivers/tty/serial/8250/8250.h
-@@ -41,6 +41,7 @@ struct uart_8250_dma {
- 	size_t			tx_size;
- 
- 	unsigned char		tx_running:1;
-+	unsigned char		tx_err: 1;
- };
- 
- struct old_serial_port {
 diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 139f3d2b8aa9..9f961ea82564 100644
+index a0c1d64f34c5..68c44d97091b 100644
 --- a/drivers/tty/serial/8250/8250_core.c
 +++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1594,8 +1594,10 @@ int serial8250_handle_irq(struct uart_port *port, unsigned int iir)
- 			status = serial8250_rx_chars(up, status);
+@@ -1319,6 +1319,16 @@ static void serial8250_start_tx(struct uart_port *port)
  	}
- 	serial8250_modem_status(up);
--	if (!up->dma && (status & UART_LSR_THRE))
-+	if ((!up->dma || (up->dma && up->dma->tx_err)) &&
-+			(status & UART_LSR_THRE)) {
- 		serial8250_tx_chars(up);
-+	}
+ }
  
- 	spin_unlock_irqrestore(&port->lock, flags);
- 	return 1;
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index 148ffe4c232f..69e54abb6e71 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -36,8 +36,16 @@ static void __dma_tx_complete(void *param)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(&p->port);
- 
--	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port))
--		serial8250_tx_dma(p);
-+	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port)) {
-+		int ret;
++static void serial8250_throttle(struct uart_port *port)
++{
++	port->throttle(port);
++}
 +
-+		ret = serial8250_tx_dma(p);
-+		if (ret) {
-+			dma->tx_err = 1;
-+			p->ier |= UART_IER_THRI;
-+			serial_port_out(&p->port, UART_IER, p->ier);
-+		}
-+	}
++static void serial8250_unthrottle(struct uart_port *port)
++{
++	port->unthrottle(port);
++}
++
+ static void serial8250_stop_rx(struct uart_port *port)
+ {
+ 	struct uart_8250_port *up = up_to_u8250p(port);
+@@ -2912,6 +2922,8 @@ static struct uart_ops serial8250_pops = {
+ 	.get_mctrl	= serial8250_get_mctrl,
+ 	.stop_tx	= serial8250_stop_tx,
+ 	.start_tx	= serial8250_start_tx,
++	.throttle	= serial8250_throttle,
++	.unthrottle	= serial8250_unthrottle,
+ 	.stop_rx	= serial8250_stop_rx,
+ 	.enable_ms	= serial8250_enable_ms,
+ 	.break_ctl	= serial8250_break_ctl,
+@@ -3462,6 +3474,8 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
+ 		uart->capabilities	= up->capabilities;
+ 		uart->rs485_config	= up->rs485_config;
+ 		uart->rs485		= up->rs485;
++		uart->port.throttle	= up->port.throttle;
++		uart->port.unthrottle	= up->port.unthrottle;
  
- 	spin_unlock_irqrestore(&p->port.lock, flags);
- }
-@@ -69,6 +77,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	struct uart_8250_dma		*dma = p->dma;
- 	struct circ_buf			*xmit = &p->port.state->xmit;
- 	struct dma_async_tx_descriptor	*desc;
-+	int ret;
- 
- 	if (uart_tx_stopped(&p->port) || dma->tx_running ||
- 	    uart_circ_empty(xmit))
-@@ -80,8 +89,10 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 					   dma->tx_addr + xmit->tail,
- 					   dma->tx_size, DMA_MEM_TO_DEV,
- 					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
--	if (!desc)
--		return -EBUSY;
-+	if (!desc) {
-+		ret = -EBUSY;
-+		goto err;
-+	}
- 
- 	dma->tx_running = 1;
- 
-@@ -94,8 +105,17 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 				   UART_XMIT_SIZE, DMA_TO_DEVICE);
- 
- 	dma_async_issue_pending(dma->txchan);
--
-+	if (dma->tx_err) {
-+		dma->tx_err = 0;
-+		if (p->ier & UART_IER_THRI) {
-+			p->ier &= ~UART_IER_THRI;
-+			serial_out(p, UART_IER, p->ier);
-+		}
-+	}
- 	return 0;
-+err:
-+	dma->tx_err = 1;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(serial8250_tx_dma);
- 
+ 		/* Take tx_loadsz from fifosize if it wasn't set separately */
+ 		if (uart->port.fifosize && !uart->tx_loadsz)
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 3bd7d55eebce..80936c68a7d3 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -124,6 +124,8 @@ struct uart_port {
+ 				               struct ktermios *old);
+ 	int			(*startup)(struct uart_port *port);
+ 	void			(*shutdown)(struct uart_port *port);
++	void			(*throttle)(struct uart_port *port);
++	void			(*unthrottle)(struct uart_port *port);
+ 	int			(*handle_irq)(struct uart_port *);
+ 	void			(*pm)(struct uart_port *, unsigned int state,
+ 				      unsigned int old);
 -- 
 2.1.0
 
