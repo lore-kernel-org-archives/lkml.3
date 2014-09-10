@@ -1,118 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906AbaIJOYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:24:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43078 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087AbaIJOYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:24:41 -0400
-Date: Wed, 10 Sep 2014 16:24:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
-In-Reply-To: <20140910140759.GC31903@thunk.org>
-Message-ID: <alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
-References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz> <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org> <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz> <20140910140759.GC31903@thunk.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752319AbaIJOZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:25:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21365 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaIJOZa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:25:30 -0400
+Message-ID: <54105F28.1000506@oracle.com>
+Date: Wed, 10 Sep 2014 10:24:40 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Dave Jones <davej@redhat.com>
+CC: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Trinity and mbind flags (WAS: Re: mm: BUG in unmap_page_range)
+References: <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <20140910124732.GT17501@suse.de>
+In-Reply-To: <20140910124732.GT17501@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014, Theodore Ts'o wrote:
+On 09/10/2014 08:47 AM, Mel Gorman wrote:
+> That site should have checked PROT_NONE but it can't be the same bug
+> that trinity is seeing. Minimally trinity is unaware of MPOL_MF_LAZY
+> according to git grep of the trinity source.
 
-> So I wouldn't be so sure that we don't have these sorts of bugs hiding
-> somewhere; and it's extremely easy for them to sneak in.  That being
-> said, I'm not in favor of making changes to kfree; I'd much rather
-> depending on better testing and static checkers to fix them, since
-> kfree *is* a hot path.
-
-I of course have no objections to this check being added to whatever 
-static checker, that would be very welcome improvement.
-
-Still, I believe that kernel shouldn't be just ignoring kfree(ERR_PTR) 
-happening. Would something like the below be more acceptable?
+Actually, if I'm reading it correctly I think that Trinity handles mbind()
+calls wrong. It passes the wrong values for mode flags and actual flags.
 
 
-
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
-
-Freeing if ERR_PTR is not covered by ZERO_OR_NULL_PTR() check already
-present in kfree(), but it happens in the wild and has disastrous effects.
-
-Issue a warning and don't proceed trying to free the memory if
-CONFIG_DEBUG_SLAB is set.
-
-Inspired by a9cfcd63e8d ("ext4: avoid trying to kfree an ERR_PTR pointer").
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- mm/slab.c | 6 ++++++
- mm/slob.c | 7 ++++++-
- mm/slub.c | 7 ++++++-
- 3 files changed, 18 insertions(+), 2 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index a467b30..6f49d6b 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3612,6 +3612,12 @@ void kfree(const void *objp)
- 
- 	trace_kfree(_RET_IP_, objp);
- 
-+#ifdef CONFIG_DEBUG_SLAB
-+	if (unlikely(IS_ERR(objp))) {
-+			WARN(1, "trying to free ERR_PTR\n");
-+			return;
-+	}
-+#endif
- 	if (unlikely(ZERO_OR_NULL_PTR(objp)))
- 		return;
- 	local_irq_save(flags);
-diff --git a/mm/slob.c b/mm/slob.c
-index 21980e0..66422a0 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -488,7 +488,12 @@ void kfree(const void *block)
- 	struct page *sp;
- 
- 	trace_kfree(_RET_IP_, block);
--
-+#ifdef CONFIG_DEBUG_SLAB
-+	if (unlikely(IS_ERR(block))) {
-+		WARN(1, "trying to free ERR_PTR\n");
-+		return;
-+	}
-+#endif
- 	if (unlikely(ZERO_OR_NULL_PTR(block)))
- 		return;
- 	kmemleak_free(block);
-diff --git a/mm/slub.c b/mm/slub.c
-index 3e8afcc..21155ae 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -3337,7 +3337,12 @@ void kfree(const void *x)
- 	void *object = (void *)x;
- 
- 	trace_kfree(_RET_IP_, x);
--
-+#ifdef CONFIG_DEBUG_SLAB
-+	if (unlikely(IS_ERR(x))) {
-+		WARN(1, "trying to free ERR_PTR\n");
-+		return;
-+	}
-+#endif
- 	if (unlikely(ZERO_OR_NULL_PTR(x)))
- 		return;
- 
-
--- 
-Jiri Kosina
-SUSE Labs
+Thanks,
+Sasha
