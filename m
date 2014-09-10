@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaIJRDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:03:18 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:3409 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaIJRCt (ORCPT
+	id S1752848AbaIJRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:03:25 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:37216 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752AbaIJRDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:02:49 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linux-foundation.org, arnd@arndb.de
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 5/6] x86, mm, pat: Add pgprot_writethrough() for WT
-Date: Wed, 10 Sep 2014 10:51:49 -0600
-Message-Id: <1410367910-6026-6-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+	Wed, 10 Sep 2014 13:03:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <541050E5.60502@gmail.com>
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+	<540F2977.7010006@plexistor.com>
+	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
+	<541050E5.60502@gmail.com>
+Date: Wed, 10 Sep 2014 10:03:19 -0700
+Message-ID: <CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>
+Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
+ memory driver
+From: Dan Williams <dan.j.williams@intel.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Boaz Harrosh <boaz@plexistor.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds pgprot_writethrough() for setting WT to a given
-pgprot_t.
+Hi Boaz,
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
----
- arch/x86/include/asm/pgtable_types.h |    3 +++
- arch/x86/mm/pat.c                    |   10 ++++++++++
- include/asm-generic/pgtable.h        |    4 ++++
- 3 files changed, 17 insertions(+)
+On Wed, Sep 10, 2014 at 6:23 AM, Boaz Harrosh <openosd@gmail.com> wrote:
+> On 09/09/2014 07:53 PM, Dan Williams wrote:
+>> On Tue, Sep 9, 2014 at 9:23 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
+> <>
+>>
+>> Hmm this looks like a "ACPI/DeviceTree-over-kernel-command-line"
+>> description language.  I understand that this is borrowed from the
+>> memmap= precedent, but, if I'm not mistaken, that's really more for
+>> debug rather than a permanent platform-device descriptor.
+>
+> So what is bad about that ?
+>
+>> <strawman>
+>> Since this looks like firmware why not go ahead and use
+>> request_firmware() to request a pmem range descriptor blob
+> </strawman>?
+>
+> What? God no! How is this a firmware at all. No this is all BUS info, it is
+>  "where on the bus this device's resource was allocated"
+>
+> Firmware is static compile time thing common to all of my devices
+> but this here is where in the bus this was stuck in. What is your
+> suggestion that I compile a kernel and "make install" it (initrd)
+> for every DIMM I insert ? since when? and what tool will tell me
+> what to put there?
+>
+>>  Given you can compile such a blob into a kernel image  or provide it
+>> in an initrd I think it makes deployment more straightforward, also
+>> the descriptor format can be extended going forward
+>
+> What ? really Dan I think you got confused. The nn@ss thing is just:
+>    "what connector I stuck my DIMM disk in (and what other empty slots I have)"
+>
+> Would you have me compile and install my kernel every time my sdX
+> number change, or my sata channel moved. I do not think so.
+>
+>> whereas the
+>> command line approach mandates ever increasingly complicated strings.
+>
+> This is the first API, I intend, there is even a TODO in the patchset, to
+> also have a dynamic sysfs add/remove/grow API for on the fly changes.
+> All these can be easily driven by a simple udev rule to plug and play them.
+>
+> Usually in the Kernel, buses do not directly load devices drivers. The
+> bus driver sends an "event" with a new discovered resource, then user-mode
+> udev rule will load an associated driver, which will scan for its device or
+> receive its identification somewhere, that can be the sysfs interface above,
+> or even commandline.
+>
+> Farther down the road we might want a Kernel API, through to the DIMM-manager
+> when each device's ID is Identified to managed volumes of DIMMs. (And what
+> happens to them if they move in physical addressing), but even with DIMM-manager
+> I would have gone through a udev-event and pmem-probe because, this way user
+> mode can add a chain of commands associated with new insertions. So since we
+> have a DIMM-manager event going on why not have the udev rule load pmem as well
+> and not have any API. But All this is way down the line.
+>
+> Regardless of which, commandline API of pmem will always stay as this is for
+> the pmem emulation as we use it now, in accord with memmap=.
+> (And it works very nice in our lab with DDR3 NvDIMMs that need an memmap= as well)
+>
+> We please need to start somewhere, no?
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index bd2f50f..cc7c65d 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -394,6 +394,9 @@ extern int nx_enabled;
- #define pgprot_writecombine	pgprot_writecombine
- extern pgprot_t pgprot_writecombine(pgprot_t prot);
- 
-+#define pgprot_writethrough	pgprot_writethrough
-+extern pgprot_t pgprot_writethrough(pgprot_t prot);
-+
- /* Indicate that x86 has its own track and untrack pfn vma functions */
- #define __HAVE_PFNMAP_TRACKING
- 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 7644967..97aab95 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -875,6 +875,16 @@ pgprot_t pgprot_writecombine(pgprot_t prot)
- }
- EXPORT_SYMBOL_GPL(pgprot_writecombine);
- 
-+pgprot_t pgprot_writethrough(pgprot_t prot)
-+{
-+	if (pat_enabled)
-+		return __pgprot(pgprot_val(prot) |
-+				cachemode2protval(_PAGE_CACHE_MODE_WT));
-+	else
-+		return pgprot_noncached(prot);
-+}
-+EXPORT_SYMBOL_GPL(pgprot_writethrough);
-+
- #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_X86_PAT)
- 
- static struct memtype *memtype_get_idx(loff_t pos)
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index 53b2acc..1af0ed9 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -249,6 +249,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- #define pgprot_writecombine pgprot_noncached
- #endif
- 
-+#ifndef pgprot_writethrough
-+#define pgprot_writethrough pgprot_noncached
-+#endif
-+
- /*
-  * When walking page tables, get the address of the next boundary,
-  * or the end address of the range if that comes earlier.  Although no
+Sure, but you used the operative term "start", as in you already
+expect to enhance this capability down the road, right?
+
+It's fine to dismiss this request_firmware() based approach, but don't
+mis-characterize it in the process.  With regards to describing device
+boundaries, a bus-descriptor-blob handed to the kernel is a superset
+of the capability provided by the kernel command line.  It can be
+injected statically at compile time, or dynamically loaded from the
+initrd or the rootfs.  It has the added benefit of being flexible to
+change whereas the kernel command line is a more permanent contract
+that we will need to maintain compatibility with in perpetuity.
+
+If you already see this bus description as a "starting" point, then I
+think we need an interface that is more amenable to ongoing change,
+that's not the kernel-command-line.
