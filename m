@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaIJNqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:46:47 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:33970 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141AbaIJNqp (ORCPT
+	id S1751598AbaIJNsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:48:00 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:44628 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaIJNr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:46:45 -0400
-Message-ID: <5410561D.9040707@st.com>
-Date: Wed, 10 Sep 2014 15:46:05 +0200
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 10 Sep 2014 09:47:58 -0400
+Message-ID: <5410568B.3050005@imgtec.com>
+Date: Wed, 10 Sep 2014 14:47:55 +0100
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Philipp Zabel <pza@pengutronix.de>
-Cc: Lee Jones <lee.jones@linaro.org>, Peter Griffin <peter.griffin@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <srinivas.kandagatla@gmail.com>, <patrice.chotard@st.com>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [GIT PULL v2] STiH407 reset controller support
-References: <20140909213651.GA591@pengutronix.de>
-In-Reply-To: <20140909213651.GA591@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Daniel Borkmann <dborkman@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexei Starovoitov <ast@plumgrid.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: filter: Add MIPS to architectures with
+ BPF JIT
+References: <1409322218-3689-1-git-send-email-markos.chandras@imgtec.com> <54009D34.3010800@redhat.com> <541050D0.1020302@imgtec.com> <541052A1.9010700@redhat.com>
+In-Reply-To: <541052A1.9010700@redhat.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-09-10_03:2014-09-09,2014-09-10,1970-01-01 signatures=0
+X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+On 09/10/2014 02:31 PM, Daniel Borkmann wrote:
+> On 09/10/2014 03:23 PM, Markos Chandras wrote:
+>> On 08/29/2014 04:33 PM, Daniel Borkmann wrote:
+>>> On 08/29/2014 04:23 PM, Markos Chandras wrote:
+>>>> MIPS supports BPF JIT since v3.16-rc1
+>>>>
+>>>> Cc: Randy Dunlap <rdunlap@infradead.org>
+>>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>>> Cc: Daniel Borkmann <dborkman@redhat.com>
+>>>> Cc: Alexei Starovoitov <ast@plumgrid.com>
+>>>> Cc: linux-doc@vger.kernel.org
+>>>> Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+>>>
+>>> Acked-by: Daniel Borkmann <dborkman@redhat.com>
+> ...
+>> I think this hasn't been merged yet (I can't see it in mainline or
+>> linux-next). Do I need to ping someone or does it have to go via the
+>> MIPS tree?
+> 
+> You need to send this patch to netdev@vger.kernel.org so Dave
+> can pick it up from there.
 
-On 09/09/2014 11:36 PM, Philipp Zabel wrote:
-> Hi Maxime,
->
-> I have rebased the STiH407 reset controller patches onto v3.17-rc1.
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
->
->    Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
->
-> are available in the git repository at:
->
->    git://git.pengutronix.de/git/pza/linux.git tags/reset-for-sti-3.18
->
-> for you to fetch changes up to a83a81838a294adbb5356e6b4a3adcda1439d98e:
->
->    reset: sti: Document sti-picophyreset controllers bindings. (2014-09-04 13:05:01 +0200)
->
-> ----------------------------------------------------------------
-> STiH407 reset controller support
->
-> ----------------------------------------------------------------
-> Peter Griffin (2):
->        reset: stih407: Add softreset, powerdown and picophy controllers
->        reset: sti: Document sti-picophyreset controllers bindings.
->
->   .../bindings/reset/st,sti-picophyreset.txt         |  42 ++++++
->   drivers/reset/sti/Kconfig                          |   4 +
->   drivers/reset/sti/Makefile                         |   1 +
->   drivers/reset/sti/reset-stih407.c                  | 158 +++++++++++++++++++++
->   .../dt-bindings/reset-controller/stih407-resets.h  |  61 ++++++++
->   5 files changed, 266 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/reset/st,sti-picophyreset.txt
->   create mode 100644 drivers/reset/sti/reset-stih407.c
->   create mode 100644 include/dt-bindings/reset-controller/stih407-resets.h
->
+Ok thanks. I will add your Acked-by and resend it to that list.
 
-Thanks!
-
-Merged into sti-dt-for-v3.18.
-It will be available at:
-git://git.stlinux.com/devel/kernel/linux-sti.git
-in a couple of hours.
-
-Best regards,
-Maxime
+-- 
+markos
