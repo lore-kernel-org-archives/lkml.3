@@ -1,243 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaIJEjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 00:39:36 -0400
-Received: from bay004-omc1s22.hotmail.com ([65.54.190.33]:49788 "EHLO
-	BAY004-OMC1S22.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751186AbaIJEje convert rfc822-to-8bit
+	id S1751484AbaIJEjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 00:39:42 -0400
+Received: from bay004-omc1s27.hotmail.com ([65.54.190.38]:59185 "EHLO
+	BAY004-OMC1S27.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186AbaIJEjj convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 00:39:34 -0400
-X-TMN: [DPRbcDCM+fKU6ZTiRbasOde34TSvWwpg]
+	Wed, 10 Sep 2014 00:39:39 -0400
+X-TMN: [XiHaI1oILatJ9J3vk0mIFmkniNHqjVmA]
 X-Originating-Email: [dudlx@outlook.com]
-Message-ID: <BAY176-DS11EE3CB0452DEB0B00E867BDCF0@phx.gbl>
+Message-ID: <BAY176-DS11E7D56D0B03E07D77BD72BDCF0@phx.gbl>
 From: Dudley Du <dudlx@outlook.com>
 To: <dmitry.torokhov@gmail.com>, <rydberg@euromail.se>
 CC: <bleung@google.com>, <patrikf@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6 03/13] input: cyapa: add cyapa driver runtime power management interfaces support
-Date: Wed, 10 Sep 2014 12:34:27 +0800
+Subject: [PATCH v6 04/13] input: cyapa: add cyapa key function interfaces in sysfs system
+Date: Wed, 10 Sep 2014 12:34:33 +0800
 MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac/MsIGBpq5Qb9DnRmyaAQxtzfaMVA==
+Thread-Index: Ac/MsIUzI3cY09HATfe0aHKsmQ9wmw==
 Content-Language: zh-cn
-X-OriginalArrivalTime: 10 Sep 2014 04:34:28.0682 (UTC) FILETIME=[822532A0:01CFCCB0]
+X-OriginalArrivalTime: 10 Sep 2014 04:34:35.0078 (UTC) FILETIME=[85F52660:01CFCCB0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add runtime_suspend_scanrate_ms power management interfaces in device's
-power group, so users or applications can control the runtime power
-management strategy of trackpad device as their requirements.
+Add key basic function interfaces in cyapa driver in sysfs system,
+these interfaces are commonly used in pre- and after production, and
+for trackpad device state checking, manage and firmware image updating.
+These interfaces including firmware_version and product_id interfaces
+for reading firmware version and trackpad device product id values,
+and including update_fw interface to command firmware image update
+process. Also including baseline and calibrate interfaces, so can
+read and check the trackpad device states. If the baseline values are
+invalid, then can use calibrate interface to recover it.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
- drivers/input/mouse/cyapa.c | 142 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 142 insertions(+)
+ drivers/input/mouse/cyapa.c | 192 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/input/mouse/cyapa.h |  27 +++++++
+ 2 files changed, 219 insertions(+)
 
 diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index d61ccbc..eb3a5a8 100644
+index eb3a5a8..1e45fd5 100644
 --- a/drivers/input/mouse/cyapa.c
 +++ b/drivers/input/mouse/cyapa.c
-@@ -271,9 +271,16 @@ static int cyapa_check_is_operational(struct cyapa *cyapa)
- static irqreturn_t cyapa_irq(int irq, void *dev_id)
- {
- 	struct cyapa *cyapa = dev_id;
-+	struct device *dev = &cyapa->client->dev;
- 	struct input_dev *input = cyapa->input;
- 	bool cont;
- 
-+	pm_runtime_get_sync(dev);
-+	pm_runtime_mark_last_busy(dev);
-+
-+	if (device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
-+
- 	/* Interrupt event maybe cuased by host command to trackpad device. */
- 	cont = true;
- 	if (cyapa->ops->irq_cmd_handler)
-@@ -297,6 +304,8 @@ static irqreturn_t cyapa_irq(int irq, void *dev_id)
- 
- 		mutex_unlock(&cyapa->state_sync_lock);
+@@ -391,6 +391,78 @@ static void cyapa_detect(struct cyapa *cyapa)
  	}
-+
-+	pm_runtime_put_sync_autosuspend(dev);
- out:
- 	return IRQ_HANDLED;
  }
-@@ -503,6 +512,86 @@ static const struct attribute_group cyapa_power_wakeup_group = {
- };
- #endif /* CONFIG_PM_SLEEP */
  
-+#ifdef CONFIG_PM_RUNTIME
-+static ssize_t cyapa_show_rt_suspend_scanrate(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf)
++static int cyapa_firmware(struct cyapa *cyapa, const char *fw_name)
 +{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u8 pwr_cmd;
-+	u16 sleep_time;
++	struct device *dev = &cyapa->client->dev;
++	int ret;
++	const struct firmware *fw;
 +
-+	mutex_lock(&cyapa->state_sync_lock);
-+	pwr_cmd = cyapa->runtime_suspend_power_mode;
-+	sleep_time = cyapa->runtime_suspend_sleep_time;
-+	mutex_unlock(&cyapa->state_sync_lock);
++	ret = request_firmware(&fw, fw_name, dev);
++	if (ret) {
++		dev_err(dev, "Could not load firmware from %s, %d\n",
++			fw_name, ret);
++		return ret;
++	}
 +
-+	if (cyapa->gen == CYAPA_GEN3)
-+		return scnprintf(buf, PAGE_SIZE, "%u\n",
-+			cyapa_pwr_cmd_to_sleep_time(pwr_cmd));
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
-+}
-+
-+static ssize_t cyapa_update_rt_suspend_scanrate(struct device *dev,
-+						struct device_attribute *attr,
-+						const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u16 time;
-+
-+	if (buf == NULL || count == 0 || kstrtou16(buf, 10, &time)) {
-+		dev_err(dev, "invalid runtime suspend scanrate ms parameter\n");
-+		return -EINVAL;
++	if (cyapa->ops->check_fw) {
++		ret = cyapa->ops->check_fw(cyapa, fw);
++		if (ret) {
++			dev_err(dev, "Invalid CYAPA firmware image: %s\n",
++					fw_name);
++			goto done;
++		}
++	} else {
++		dev_err(dev, "Unknown status, operation forbidden, gen=%d\n",
++			cyapa->gen);
++		ret = -EINVAL;
++		goto done;
 +	}
 +
 +	/*
-+	 * When the suspend scanrate is changed, pm_runtime_get to resume
-+	 * a potentially suspended device, update to the new pwr_cmd
-+	 * and then pm_runtime_put to suspend into the new power mode.
++	 * Resume the potentially suspended device because doing FW
++	 * update on a device not in the FULL mode has a chance to
++	 * fail.
 +	 */
 +	pm_runtime_get_sync(dev);
-+	mutex_lock(&cyapa->state_sync_lock);
-+	cyapa->runtime_suspend_sleep_time = cyapa_clamp_sleep_time(time);
-+	cyapa->runtime_suspend_power_mode =
-+		cyapa_sleep_time_to_pwr_cmd(cyapa->runtime_suspend_sleep_time);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	pm_runtime_put_sync_autosuspend(dev);
 +
-+	return count;
++	if (cyapa->ops->bl_enter) {
++		ret = cyapa->ops->bl_enter(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_activate) {
++		ret = cyapa->ops->bl_activate(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_initiate) {
++		ret = cyapa->ops->bl_initiate(cyapa, fw);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->update_fw) {
++		ret = cyapa->ops->update_fw(cyapa, fw);
++		if (ret)
++			goto err_detect;
++	}
++
++	if (cyapa->ops->bl_verify_app_integrity) {
++		ret = cyapa->ops->bl_verify_app_integrity(cyapa);
++		if (ret)
++			goto err_detect;
++	}
++
++err_detect:
++	pm_runtime_put_noidle(dev);
++
++done:
++	release_firmware(fw);
++	return ret;
 +}
 +
-+static DEVICE_ATTR(runtime_suspend_scanrate_ms, S_IRUGO|S_IWUSR,
-+		   cyapa_show_rt_suspend_scanrate,
-+		   cyapa_update_rt_suspend_scanrate);
+ /*
+  * Sysfs Interface.
+  */
+@@ -592,6 +664,122 @@ static void cyapa_start_runtime(struct cyapa *cyapa)
+ static void cyapa_start_runtime(struct cyapa *cyapa) {}
+ #endif /* CONFIG_PM_RUNTIME */
+ 
++static ssize_t cyapa_show_fm_ver(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	int ret;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
 +
-+static struct attribute *cyapa_power_runtime_entries[] = {
-+	&dev_attr_runtime_suspend_scanrate_ms.attr,
++	mutex_lock(&cyapa->state_sync_lock);
++	ret = scnprintf(buf, PAGE_SIZE, "%d.%d\n", cyapa->fw_maj_ver,
++			 cyapa->fw_min_ver);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static ssize_t cyapa_show_product_id(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	int ret;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++
++	mutex_lock(&cyapa->state_sync_lock);
++	ret = scnprintf(buf, PAGE_SIZE, "%s\n", cyapa->product_id);
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static ssize_t cyapa_update_fw_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	char fw_name[64];
++	int ret;
++
++	if (count > 64) {
++		dev_err(dev, "File name too long\n");
++		return -EINVAL;
++	}
++
++	memcpy(fw_name, buf, count);
++	if (fw_name[count - 1] == '\n')
++		fw_name[count - 1] = '\0';
++	else
++		fw_name[count] = '\0';
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	ret = cyapa_firmware(cyapa, fw_name);
++	if (ret)
++		dev_err(dev, "firmware update failed, %d\n", ret);
++	else
++		dev_dbg(dev, "firmware update succeeded\n");
++
++	mutex_unlock(&cyapa->state_sync_lock);
++
++	/* Redetect trackpad device states. */
++	cyapa_detect_async(cyapa, 0);
++
++	return ret ? ret : count;
++}
++
++static ssize_t cyapa_calibrate_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int ret;
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	if (!cyapa->ops->calibrate_store) {
++		dev_err(dev, "Calibrate operation not supported.\n");
++		ret = -ENOTSUPP;
++	} else
++		ret = cyapa->ops->calibrate_store(dev, attr, buf, count);
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret < 0 ? ret : count;
++}
++
++static ssize_t cyapa_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	ssize_t ret;
++
++	mutex_lock(&cyapa->state_sync_lock);
++
++	if (!cyapa->ops->show_baseline) {
++		dev_err(dev, "Calibrate operation not supported.\n");
++		ret = -ENOTSUPP;
++	} else
++		ret = cyapa->ops->show_baseline(dev, attr, buf);
++
++	mutex_unlock(&cyapa->state_sync_lock);
++	return ret;
++}
++
++static DEVICE_ATTR(firmware_version, S_IRUGO, cyapa_show_fm_ver, NULL);
++static DEVICE_ATTR(product_id, S_IRUGO, cyapa_show_product_id, NULL);
++static DEVICE_ATTR(update_fw, S_IWUSR, NULL, cyapa_update_fw_store);
++static DEVICE_ATTR(baseline, S_IRUGO, cyapa_show_baseline, NULL);
++static DEVICE_ATTR(calibrate, S_IWUSR, NULL, cyapa_calibrate_store);
++
++static struct attribute *cyapa_sysfs_entries[] = {
++	&dev_attr_firmware_version.attr,
++	&dev_attr_product_id.attr,
++	&dev_attr_update_fw.attr,
++	&dev_attr_baseline.attr,
++	&dev_attr_calibrate.attr,
 +	NULL,
 +};
 +
-+static const struct attribute_group cyapa_power_runtime_group = {
-+	.name = power_group_name,
-+	.attrs = cyapa_power_runtime_entries,
++static const struct attribute_group cyapa_sysfs_group = {
++	.attrs = cyapa_sysfs_entries,
 +};
-+
-+static void cyapa_start_runtime(struct cyapa *cyapa)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+
-+	cyapa->runtime_suspend_power_mode = PWR_MODE_IDLE;
-+	cyapa->runtime_suspend_sleep_time =
-+		cyapa_pwr_cmd_to_sleep_time(cyapa->runtime_suspend_power_mode);
-+	if (sysfs_merge_group(&dev->kobj, &cyapa_power_runtime_group))
-+		dev_warn(dev, "error creating wakeup runtime entries.\n");
-+	pm_runtime_set_active(dev);
-+	pm_runtime_use_autosuspend(dev);
-+	pm_runtime_set_autosuspend_delay(dev, AUTOSUSPEND_DELAY);
-+	pm_runtime_enable(dev);
-+}
-+#else
-+static void cyapa_start_runtime(struct cyapa *cyapa) {}
-+#endif /* CONFIG_PM_RUNTIME */
 +
  void cyapa_detect_async(void *data, async_cookie_t cookie)
  {
  	struct cyapa *cyapa = (struct cyapa *)data;
-@@ -521,7 +610,11 @@ void cyapa_detect_async(void *data, async_cookie_t cookie)
+@@ -690,6 +878,9 @@ static int cyapa_probe(struct i2c_client *client,
+ 		goto err_uninit_tp_modules;
+ 	}
  
- static void cyapa_detect_and_start(void *data, async_cookie_t cookie)
- {
-+	struct cyapa *cyapa = data;
-+
- 	cyapa_detect_async(data, cookie);
-+
-+	cyapa_start_runtime(cyapa);
- }
- 
- static int cyapa_tp_modules_init(struct cyapa *cyapa)
-@@ -625,9 +718,16 @@ static int cyapa_remove(struct i2c_client *client)
- 	cyapa->removed = true;
- 	mutex_unlock(&cyapa->state_sync_lock);
- 
-+	pm_runtime_disable(&client->dev);
++	if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
++		dev_warn(dev, "error creating sysfs entries.\n");
 +
  #ifdef CONFIG_PM_SLEEP
+ 	if (device_can_wakeup(dev) &&
+ 	    sysfs_merge_group(&client->dev.kobj, &cyapa_power_wakeup_group))
+@@ -719,6 +910,7 @@ static int cyapa_remove(struct i2c_client *client)
+ 	mutex_unlock(&cyapa->state_sync_lock);
+ 
+ 	pm_runtime_disable(&client->dev);
++	sysfs_remove_group(&client->dev.kobj, &cyapa_sysfs_group);
+ 
+ #ifdef CONFIG_PM_SLEEP
  	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_wakeup_group);
- #endif
-+
-+#ifdef CONFIG_PM_RUNTIME
-+	sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_runtime_group);
-+#endif
-+
- 	free_irq(cyapa->irq, cyapa);
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 636fea9..b61a71b 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -171,6 +171,22 @@ struct cyapa;
+ typedef bool (*cb_sort)(struct cyapa *, u8 *, int);
  
- 	input_unregister_device(cyapa->input);
-@@ -694,12 +794,54 @@ static int cyapa_resume(struct device *dev)
+ struct cyapa_dev_ops {
++	int (*check_fw)(struct cyapa *, const struct firmware *);
++	int (*bl_enter)(struct cyapa *);
++	int (*bl_activate)(struct cyapa *);
++	int (*bl_initiate)(struct cyapa *, const struct firmware *);
++	int (*update_fw)(struct cyapa *, const struct firmware *);
++	int (*bl_verify_app_integrity)(struct cyapa *);
++	int (*bl_deactivate)(struct cyapa *);
++
++	ssize_t (*show_baseline)(struct device *,
++			struct device_attribute *, char *);
++	ssize_t (*calibrate_store)(struct device *,
++			struct device_attribute *, const char *, size_t);
++
++	int (*read_fw)(struct cyapa *);
++	int (*read_raw_data)(struct cyapa *);
++
+ 	int (*initialize)(struct cyapa *cyapa);
+ 	int (*uninitialize)(struct cyapa *cyapa);
  
- 	async_schedule(cyapa_detect_async, cyapa);
+@@ -244,6 +260,17 @@ struct cyapa {
+ 	struct mutex state_sync_lock;
+ 	bool removed;
  
-+	/* Update runtime power management to reflect active state. */
-+	pm_runtime_disable(dev);
-+	pm_runtime_set_active(dev);
-+	pm_runtime_enable(dev);
- 	return 0;
- }
- #endif /* CONFIG_PM_SLEEP */
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int cyapa_runtime_suspend(struct device *dev)
-+{
-+	int ret;
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
++	/* Per-instance debugfs root */
++	struct dentry *dentry_dev;
 +
-+	if (cyapa->ops->set_power_mode) {
-+		/* Set trackpad device to idle mode. */
-+		ret = cyapa->ops->set_power_mode(cyapa,
-+				cyapa->runtime_suspend_power_mode,
-+				cyapa->runtime_suspend_sleep_time);
-+		if (ret)
-+			dev_err(dev, "runtime suspend failed, %d\n", ret);
-+		return ret;
-+	}
++	/* Buffer to store firmware read using debugfs */
++	struct mutex debugfs_mutex;
++	u8 *fw_image;
++	size_t fw_image_size;
++	/* Buffer to store sensors' raw data */
++	u8 *tp_raw_data;
++	size_t tp_raw_data_size;
 +
-+	return 0;
-+}
-+
-+static int cyapa_runtime_resume(struct device *dev)
-+{
-+	int ret;
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+
-+	if (cyapa->ops->set_power_mode) {
-+		/* Resume to full active mode. */
-+		ret = cyapa->ops->set_power_mode(cyapa,
-+				PWR_MODE_FULL_ACTIVE, 0);
-+		if (ret)
-+			dev_err(dev, "runtime resume failed, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+#endif /* CONFIG_PM_RUNTIME */
-+
- static const struct dev_pm_ops cyapa_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(cyapa_suspend, cyapa_resume)
-+	SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume, NULL)
+ 	const struct cyapa_dev_ops *ops;
  };
  
- static const struct i2c_device_id cyapa_id_table[] = {
 -- 
 1.9.1
 
