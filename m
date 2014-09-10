@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaIJQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:58:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51431 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528AbaIJQ6x (ORCPT
+	id S1751865AbaIJRBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:01:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36714 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaIJRBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:58:53 -0400
-Date: Wed, 10 Sep 2014 18:58:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        tglx@linutronix.de, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, x86: Fall back to vmalloc for BTS buffer allocation
-Message-ID: <20140910165848.GA11901@worktop.ger.corp.intel.com>
-References: <1410307401-12401-1-git-send-email-andi@firstfloor.org>
- <20140910075722.GL6758@twins.programming.kicks-ass.net>
- <20140910144012.GI4120@two.firstfloor.org>
- <20140910163556.GE4783@worktop.ger.corp.intel.com>
+	Wed, 10 Sep 2014 13:01:22 -0400
+Message-ID: <541083EC.7080803@wwwdotorg.org>
+Date: Wed, 10 Sep 2014 11:01:32 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910163556.GE4783@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Fabio Estevam <festevam@gmail.com>, Marcel Ziswiler <marcel@ziswiler.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        stefan@agner.ch
+Subject: Re: [PATCH 1/3] ASoC: tegra: add tegra sgtl5000 machine driver
+References: <cover.1410276224.git.marcel@ziswiler.com>	<f90791ebb1799a4aa62dd6b527885ddadae3c058.1410276224.git.marcel@ziswiler.com> <CAOMZO5BYGwHGSeHeaQxEO=BUBGbno9P29et582SDzmwmfVioZA@mail.gmail.com>
+In-Reply-To: <CAOMZO5BYGwHGSeHeaQxEO=BUBGbno9P29et582SDzmwmfVioZA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 06:35:56PM +0200, Peter Zijlstra wrote:
-> On Wed, Sep 10, 2014 at 04:40:12PM +0200, Andi Kleen wrote:
-> > > We did this once, and that blew up big time.
-> > > 
-> > > Even now, vmalloc_fault() has a very explicit:
-> > > 
-> > >   WARN_ON_ONCE(in_nmi());
-> > > 
-> > > So this isn't going to happen until you fix that.
-> > 
-> > Good point.
-> > 
-> > We just need to call vmalloc_sync_all at allocation time,
-> > no need to change vmalloc_fault.
-> 
-> Somehow that wasn't considered adequate, but lemme try and dig out that
-> thread. It should be somewhere...
-> 
-> https://lkml.org/lkml/2010/7/14/465
+On 09/09/2014 12:00 PM, Fabio Estevam wrote:
+> On Tue, Sep 9, 2014 at 12:28 PM, Marcel Ziswiler <marcel@ziswiler.com> wrote:
+>> This binding and driver describe/support playback to headphones, and
+>> capture from line-in and microphone.
+>>
+>> This driver is useful for the Toradex Apalis T30 and Colibri T30 modules.
+>>
+>> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+>> ---
+>>   .../bindings/sound/nvidia,tegra-audio-sgtl5000.txt |  45 +++++
+>>   sound/soc/tegra/Kconfig                            |  10 +
+>>   sound/soc/tegra/Makefile                           |   2 +
+>>   sound/soc/tegra/tegra_sgtl5000.c                   | 216 +++++++++++++++++++++
+>
+> What about using the simple-audio-card binding instead of adding the
+> tegra_sgtl5000 machine driver?
+>
+> An example of simple-audio-card used with sgtl5000 can be found here:
+>
+> http://www.spinics.net/lists/devicetree/msg44466.html
 
-Note that since then we have actually fixed the 'cannot fault from NMI
-context' thing, so we should be able to actually take those faults. I
-suspect we can simply remove those WARNs from the vmalloc fault path,
-but it would need double checking to see if there's no other reasons.
+I don't think that will work; the Tegra audio complex requires some 
+clock management that doesn't immediately seem to fit into the 
+simple-audio-card concept.
 
-Also:
-
-  https://lkml.org/lkml/2014/4/10/581
-  https://patchwork.kernel.org/patch/3048111/
-
-I'm not entirely sure what the final conclusion is, except to note that
-it didn't happen.
+I had intended to refactor and collapse all the Tegra DT audio bindings 
+(and driver code) into a single instance so we didn't need to keep 
+adding more and more. However, I unfortunately never got around to that 
+and probably won't in the future either. Basically, the binding and code 
+would end up essentially identical to any of the current Tegra drivers 
+(or the union of them), with a few tweaks such as only creating e.g. a 
+headphone jack if a property in DT said to, and moving the sampling 
+frequency -> CODEC MCLK table out of the driver into a table in DT. I 
+think with those things parameterized in DT, we could get away with a 
+single "nvidia,tegra-audio-simple" binding and driver. Such a new 
+binding could be based on simple-audio-card with extensions though.
