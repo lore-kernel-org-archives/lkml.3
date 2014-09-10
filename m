@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaIJETh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 00:19:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55558 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbaIJERp (ORCPT
+	id S1752125AbaIJEUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 00:20:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21412 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751364AbaIJET5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 00:17:45 -0400
-Date: Tue, 9 Sep 2014 21:17:40 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] toshiba_acpi: Change touchpad store to check for
- invalid values
-Message-ID: <20140910041740.GE39541@vmdeb7>
-References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
- <1409937247-2525-6-git-send-email-coproscefalo@gmail.com>
+	Wed, 10 Sep 2014 00:19:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
+   d="scan'208";a="476511882"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>, IIO <linux-iio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "Lu, Aaron" <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        "Angelo Compagnucci" <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>
+Subject: RE: [PATCH 4/4] iio/adc/axp288: add support for axp288 gpadc
+Thread-Topic: [PATCH 4/4] iio/adc/axp288: add support for axp288 gpadc
+Thread-Index: AQHPy7P1jf7XBD1W9U+uoFAqdgHsLZv5wLdw
+Date: Wed, 10 Sep 2014 04:19:49 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD576EDB3F@BGSMSX104.gar.corp.intel.com>
+References: <1410215046-31751-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410215046-31751-5-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1410215046-31751-5-git-send-email-jacob.jun.pan@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409937247-2525-6-git-send-email-coproscefalo@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 11:14:07AM -0600, Azael Avalos wrote:
-> The function toshiba_touchpad_store is not checking
-> for invalid values and simply returns silently.
-> 
-> This patch checks for invalid values and returns accordingly.
-> 
-> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+Hi Jacob,
 
-Queued, thanks.
+> +#if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME) static int 
+> +axp288_gpadc_suspend(struct device *dev) {
+> +	int ret;
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct gpadc_info *info = iio_priv(indio_dev);
+> +
+> +	mutex_lock(&indio_dev->mlock);
+> +	ret = axp288_gpadc_enable(info->regmap, false);
+> +	mutex_unlock(&indio_dev->mlock);
+> +
+> +	return ret;
+> +}
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+AXP288 has integrated fuel gauge which relies on VBATT and IBATT ADC measurements. If we disable the ADC then Fuel Gauge will get stuck.
+So for the proper functioning of this integrated fuel gauging ADC measurements should always be ON.
+
+Thanks,
+Ram
