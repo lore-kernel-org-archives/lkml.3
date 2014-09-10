@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563AbaIJKVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 06:21:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60475 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528AbaIJKVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 06:21:18 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Kristian Otnes <kotnes@cisco.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] bus: omap_l3_noc: Fix connID for OMAP4
-Date: Wed, 10 Sep 2014 05:20:27 -0500
-Message-ID: <1410344427-26006-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752595AbaIJKVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 06:21:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60709 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaIJKV0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 06:21:26 -0400
+Date: Wed, 10 Sep 2014 11:21:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marex@denx.de, shawn.guo@linaro.org,
+        Frank.Li@freescale.com
+Message-ID: <20140910102105.GR2601@sirena.org.uk>
+References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lRMsAdG4hjP4MFkn"
+Content-Disposition: inline
+In-Reply-To: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 81.132.226.177
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d4d8819e205854c ("bus: omap_l3_noc: fix masterid detection")
-did the right thing in dropping the LSB 2 bits which is not part
-of the ConnID for NTTP master address. However, as part of that
-change, we should also have ensured that existing list of OMAP4 connID
-codes are also shifted by 2 bits to ensure that connIDs map to "Table
-13-18. ConnID Values" as provided in Technical Reference Manuals for
-OMAP4430(Rev AP, April 2014, SWPU220AP) and OMAP4460(Rev AB, April
-2014, SWPU234AB)
 
-Fixes: d4d8819e205854c ("bus: omap_l3_noc: fix masterid detection")
-Reported-by: Kristian Otnes <kotnes@cisco.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+--lRMsAdG4hjP4MFkn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Based on v3.17-rc1 - but might be 3.17 rc material
+On Wed, Sep 10, 2014 at 09:30:04AM +0800, Robin Gong wrote:
 
-Quick links (seems to work on firefox):
-4430:
-http://www.ti.com/lit/ug/swpu231ap/swpu231ap.pdf#page=3030&zoom=auto,0,699.5
-4460:
-http://www.ti.com/lit/ug/swpu235ab/swpu235ab.pdf#page=3073&zoom=auto,0,699.5
+> +static bool spi_imx_can_dma(struct spi_master *master, struct spi_device *spi,
+> +			 struct spi_transfer *transfer)
+> +{
+> +	struct spi_imx_data *spi_imx = spi_master_get_devdata(master);
+> +
+> +	if (spi_imx->dma_is_inited && (transfer->len > spi_imx->rx_wml)
+> +	    && (transfer->len > spi_imx->tx_wml))
+> +		spi_imx->usedma = true;
+> +	else
+> +		spi_imx->usedma = false;
+> +
+> +	return spi_imx->usedma;
+> +}
 
-NOTE: there are a few more cleanup patches that can follow these..
-will leave those out for now.
+This isn't going to work, anything that looks at the usedma flag will
+see the result of the last thing that was checked which may or may not
+be the transfer that it's handling.  The driver should check to see if
+the core mapped the transfer for DMA.
 
- drivers/bus/omap_l3_noc.h |   50 ++++++++++++++++++++++-----------------------
- 1 file changed, 25 insertions(+), 25 deletions(-)
+--lRMsAdG4hjP4MFkn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index 551e010..9525458 100644
---- a/drivers/bus/omap_l3_noc.h
-+++ b/drivers/bus/omap_l3_noc.h
-@@ -188,31 +188,31 @@ static struct l3_flagmux_data omap_l3_flagmux_clk3 = {
- };
- 
- static struct l3_masters_data omap_l3_masters[] = {
--	{ 0x0 , "MPU"},
--	{ 0x10, "CS_ADP"},
--	{ 0x14, "xxx"},
--	{ 0x20, "DSP"},
--	{ 0x30, "IVAHD"},
--	{ 0x40, "ISS"},
--	{ 0x44, "DucatiM3"},
--	{ 0x48, "FaceDetect"},
--	{ 0x50, "SDMA_Rd"},
--	{ 0x54, "SDMA_Wr"},
--	{ 0x58, "xxx"},
--	{ 0x5C, "xxx"},
--	{ 0x60, "SGX"},
--	{ 0x70, "DSS"},
--	{ 0x80, "C2C"},
--	{ 0x88, "xxx"},
--	{ 0x8C, "xxx"},
--	{ 0x90, "HSI"},
--	{ 0xA0, "MMC1"},
--	{ 0xA4, "MMC2"},
--	{ 0xA8, "MMC6"},
--	{ 0xB0, "UNIPRO1"},
--	{ 0xC0, "USBHOSTHS"},
--	{ 0xC4, "USBOTGHS"},
--	{ 0xC8, "USBHOSTFS"}
-+	{ 0x00, "MPU"},
-+	{ 0x04, "CS_ADP"},
-+	{ 0x05, "xxx"},
-+	{ 0x08, "DSP"},
-+	{ 0x0C, "IVAHD"},
-+	{ 0x10, "ISS"},
-+	{ 0x11, "DucatiM3"},
-+	{ 0x12, "FaceDetect"},
-+	{ 0x14, "SDMA_Rd"},
-+	{ 0x15, "SDMA_Wr"},
-+	{ 0x16, "xxx"},
-+	{ 0x17, "xxx"},
-+	{ 0x18, "SGX"},
-+	{ 0x1C, "DSS"},
-+	{ 0x20, "C2C"},
-+	{ 0x22, "xxx"},
-+	{ 0x23, "xxx"},
-+	{ 0x24, "HSI"},
-+	{ 0x28, "MMC1"},
-+	{ 0x29, "MMC2"},
-+	{ 0x2A, "MMC6"},
-+	{ 0x2C, "UNIPRO1"},
-+	{ 0x30, "USBHOSTHS"},
-+	{ 0x31, "USBOTGHS"},
-+	{ 0x32, "USBHOSTFS"}
- };
- 
- static struct l3_flagmux_data *omap_l3_flagmux[] = {
--- 
-1.7.9.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUECYQAAoJECTWi3JdVIfQWnAH/0TKY6xJ2i+5Tu3FsNwHzYNO
+K/37WBHrBc8YOzu7p5MC74fOkyhQAw2/08zSsye3pfsRRqPgyc7MF1zjAuL08D1P
+mSDgswdRnFRAL8u+E23YiLt/1b5W0m8jqqYamOk/6K/Hh/9OIO1Vihy6Y8j9g/LW
+Z9+s0I3Jf/18kHpfPeJ5FBt5YWAybCBa5hvY2lH090cYmvMWWBasa63bQSFu3tim
+bMyqN9Xed6IBWssQq+TrfqMd7/zbYiLL7VnCRbKQ9chu61bziV88CuQIsy2u2riF
+CkPcCzbx1TXAbjtNfjT3MV95Kf5Xxifl29ID9pC7cAuD3oPv52WUJEiM3gpLs0E=
+=2Lux
+-----END PGP SIGNATURE-----
+
+--lRMsAdG4hjP4MFkn--
