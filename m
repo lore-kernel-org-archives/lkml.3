@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaIJUaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:30:15 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:65063 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaIJUaL (ORCPT
+	id S1752777AbaIJUaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:30:13 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:61482 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaIJUaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Sep 2014 16:30:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <5410724B.8000803@intel.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
-	<1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
-	<1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
-	<5410724B.8000803@intel.com>
-Date: Thu, 11 Sep 2014 00:30:10 +0400
-Message-ID: <CAPAsAGzm29VWz8ZvOu+fVGn4Vbj7bQZAnB11M5ZZXRTQTchj0w@mail.gmail.com>
-Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
-From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+In-Reply-To: <1410379933.28990.287.camel@misato.fc.hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+ <1410367910-6026-7-git-send-email-toshi.kani@hp.com> <CALCETrVnHg0X=R23qyiPtxYs3knHaXq65L0Jw_1oY4=gX5kpXQ@mail.gmail.com>
+ <1410379933.28990.287.camel@misato.fc.hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Sep 2014 13:29:49 -0700
+Message-ID: <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+Subject: Re: [PATCH v2 6/6] x86, pat: Update documentation for WT changes
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-10 19:46 GMT+04:00 Dave Hansen <dave.hansen@intel.com>:
-> Overall, the approach here looks pretty sane.  As you noted, it would be
-> nice to keep PAGE_OFFSET in one place, but it's not a deal breaker for
-> me.  The use of the vmemmap code looks to be a nice fit.
+On Wed, Sep 10, 2014 at 1:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Wed, 2014-09-10 at 11:30 -0700, Andy Lutomirski wrote:
+>> On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > +Drivers may map the entire NV-DIMM range with ioremap_cache and then change
+>> > +a specific range to wt with set_memory_wt.
+>>
+>> That's mighty specific :)
 >
-> Few nits below.
+> How about below?
 >
-> On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
->> 16TB of virtual addressed used for shadow memory.
->> It's located in range [0xffff800000000000 - 0xffff900000000000]
->> Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
->> to 0xffff900000000000.
-> ...
->> It would be nice to not have different PAGE_OFFSET with and without CONFIG_KASAN.
->> We have big enough hole between vmemmap and esp fixup stacks.
->> So how about moving all direct mapping, vmalloc and vmemmap 8TB up without
->> hiding it under CONFIG_KASAN?
->
-> Is there a reason this has to be _below_ the linear map?  Couldn't we
-> just carve some space out of the vmalloc() area for the kasan area?
->
+> Drivers may use set_memory_wt to set WT type for cached reserve ranges.
 
-Yes, there is a reason for this. For inline instrumentation we need to
-catch access to userspace without any additional check.
-This means that we need shadow of 1 << 61 bytes and we don't have so
-many addresses available. However, we could use
-hole between userspace and kernelspace for that. For any address
-between [0 - 0xffff800000000000], shadow address will be
-in this hole, so checking shadow value will produce general protection
-fault (GPF). We may even try handle GPF in a special way
-and print more user-friendly report (this will be under CONFIG_KASAN of course).
+Do they have to be cached?
 
-But now I realized that we even if we put shadow in vmalloc, shadow
-addresses  corresponding to userspace addresses
-still will be in between userspace - kernelspace, so we also will get GPF.
-There is the only problem I see now in such approach. Lets consider
-that because of some bug in kernel we are trying to access
-memory slightly bellow 0xffff800000000000. In this case kasan will try
-to check some shadow which in fact is not a shadow byte at all.
-It's not a big deal though, kernel will crash anyway. In only means
-that debugging of such problems could be a little more complex
-than without kasan.
+How about:
 
+Drivers may call set_memory_wt on ioremapped ranges.  In this case,
+there is no need to change the memory type back before calling
+iounmap.
 
+(Or only on cached ioremapped ranges if that is, in fact, the case.)
+
+--Andy
 
 >
->>  arch/x86/Kconfig                     |  1 +
->>  arch/x86/boot/Makefile               |  2 ++
->>  arch/x86/boot/compressed/Makefile    |  2 ++
->>  arch/x86/include/asm/kasan.h         | 20 ++++++++++++
->>  arch/x86/include/asm/page_64_types.h |  4 +++
->>  arch/x86/include/asm/pgtable.h       |  7 ++++-
->>  arch/x86/kernel/Makefile             |  2 ++
->>  arch/x86/kernel/dumpstack.c          |  5 ++-
->>  arch/x86/kernel/head64.c             |  6 ++++
->>  arch/x86/kernel/head_64.S            | 16 ++++++++++
->>  arch/x86/mm/Makefile                 |  3 ++
->>  arch/x86/mm/init.c                   |  3 ++
->>  arch/x86/mm/kasan_init_64.c          | 59 ++++++++++++++++++++++++++++++++++++
->>  arch/x86/realmode/Makefile           |  2 +-
->>  arch/x86/realmode/rm/Makefile        |  1 +
->>  arch/x86/vdso/Makefile               |  1 +
->>  include/linux/kasan.h                |  3 ++
->>  lib/Kconfig.kasan                    |  1 +
->>  18 files changed, 135 insertions(+), 3 deletions(-)
->>  create mode 100644 arch/x86/include/asm/kasan.h
->>  create mode 100644 arch/x86/mm/kasan_init_64.c
+>> It's also not all that informative.  Are you supposed to set the
+>> memory back before iounmapping?
 >
-> This probably deserves an update of Documentation/x86/x86_64/mm.txt, too.
+> Setting back to WB before iounmap is not required, but set_memory_wb is
+> used when it wants to put it back to WB before unmapping.
+>
+>> Can you do this with set_memory_wc on
+>> an uncached mapping?
+>
+> The table lists interfaces and their intended usage.  Using
+> set_memory_wc on an uncached mapping probably works, but is not an
+> intended use.
+>
+> Thanks,
+> -Toshi
 >
 
-Sure, I didn't bother to do it now in case if memory layout changes in
-this patch not final.
 
->> +void __init kasan_map_shadow(void)
->> +{
->> +     int i;
->> +
->> +     memcpy(early_level4_pgt, init_level4_pgt, 4096);
->> +     load_cr3(early_level4_pgt);
->> +
->> +     clear_zero_shadow_mapping(kasan_mem_to_shadow(PAGE_OFFSET),
->> +                             kasan_mem_to_shadow(0xffffc80000000000UL));
->
-> This 0xffffc80000000000UL could be PAGE_OFFSET+MAXMEM.
->
->
->
 
 -- 
-Best regards,
-Andrey Ryabinin
+Andy Lutomirski
+AMA Capital Management, LLC
