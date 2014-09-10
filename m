@@ -1,83 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaIJMwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:52:09 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:59245 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaIJMwH (ORCPT
+	id S1751222AbaIJM4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:56:35 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:34658 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaIJM4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:52:07 -0400
-Message-ID: <54104971.1080501@atmel.com>
-Date: Wed, 10 Sep 2014 14:52:01 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 10 Sep 2014 08:56:34 -0400
+Message-ID: <54104A7F.2030509@mvista.com>
+Date: Wed, 10 Sep 2014 07:56:31 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        ARM kernel <arm@kernel.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Wu, Josh" <Josh.wu@atmel.com>, voice <voice.shen@atmel.com>,
-        "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-Subject: [ANNOUNCE] ARM: at91: removal of board files
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        gouji.masayuki@jp.fujitsu.com
+Subject: Re: [PATCH v2] ipmi: Clear drvdata when interface is removed
+References: <1410317770-4856-1-git-send-email-indou.takao@jp.fujitsu.com>
+In-Reply-To: <1410317770-4856-1-git-send-email-indou.takao@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Ok, applied to my tree for 3.18.
 
-The Atmel ARM-based SoC community (aka AT91) has been working on Device
-Tree since early August 2011. I only come back on this long process just
-for saying a big thank you to all people involved in this effort which
-in the end gives to the AT91 community a cleaner, stronger and more
-generic code base.
+-corey
 
-With the work about to being completed on the LCD controller we have now
-a comprehensive support for all AT91 SoC in DT. Some drivers were
-converted to DT several years ago, some have just been converted but we
-can rely on this technology and stop having to maintain useless code.
+On 09/09/2014 09:56 PM, Takao Indoh wrote:
+> This patch fixes a bug on hotmod removing.
+>
+> After ipmi interface is removed using hotmod, kernel panic occurs when
+> rmmod impi_si. For example, try this:
+>
+>  # echo "remove,"`cat /proc/ipmi/0/params` > \
+>  /sys/module/ipmi_si/parameters/hotmod
+>  # rmmod ipmi_si
+>
+> Then, rmmod fails with the following messages.
+>
+> ------------[ cut here ]------------
+> WARNING: CPU: 12 PID: 10819 at /mnt/repos/linux/lib/list_debug.c:53
+> __list_del_entry+0x63/0xd0()
+> (snip)
+> CPU: 12 PID: 10819 Comm: rmmod Not tainted 3.17.0-rc1 #19
+> Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015
+> Rev.3D81.3030 02/10/2012
+>  0000000000000009 ffff88022d547d40 ffffffff81575778 ffff88022d547d88
+>  ffff88022d547d78 ffffffff8104ec5d ffff88023908cdb0 ffffffffa06fa4e0
+>  ffff8800bac20860 0000000000000000 0000000002046090 ffff88022d547dd8
+> Call Trace:
+>  [<ffffffff81575778>] dump_stack+0x45/0x56
+>  [<ffffffff8104ec5d>] warn_slowpath_common+0x7d/0xa0
+>  [<ffffffff8104eccc>] warn_slowpath_fmt+0x4c/0x50
+>  [<ffffffff811f60bf>] ? __kernfs_remove+0xdf/0x220
+>  [<ffffffff81291213>] __list_del_entry+0x63/0xd0
+>  [<ffffffff8129128d>] list_del+0xd/0x30
+>  [<ffffffffa06f285a>] cleanup_one_si+0x2a/0x230 [ipmi_si]
+>  [<ffffffffa06f2f05>] ipmi_pnp_remove+0x15/0x20 [ipmi_si]
+>  [<ffffffff8131c7d4>] pnp_device_remove+0x24/0x40
+>  [<ffffffff8137175f>] __device_release_driver+0x7f/0xf0
+>  [<ffffffff81372100>] driver_detach+0xb0/0xc0
+>  [<ffffffff81371415>] bus_remove_driver+0x55/0xd0
+>  [<ffffffff8137283c>] driver_unregister+0x2c/0x50
+>  [<ffffffff8131ca02>] pnp_unregister_driver+0x12/0x20
+>  [<ffffffffa06f347c>] cleanup_ipmi_si+0xbc/0xf0 [ipmi_si]
+>  [<ffffffff810c33f2>] SyS_delete_module+0x132/0x1c0
+>  [<ffffffff81002ab9>] ? do_notify_resume+0x59/0x80
+>  [<ffffffff8157c45a>] ? int_signal+0x12/0x17
+>  [<ffffffff8157c1d2>] system_call_fastpath+0x16/0x1b
+> ---[ end trace 70b4377268f85c23 ]---
+>
+> list_del in cleanup_one_si() fails because the smi_info is already
+> removed when hotmod removing.
+>
+> When ipmi interface is removed by hotmod, smi_info is removed by
+> cleanup_one_si(), but is is still set in drvdata. Therefore when rmmod
+> ipmi_si, ipmi_pnp_remove tries to remove it again and fails.
+>
+> By this patch, a pointer to smi_info in drvdata is cleared when hotmod
+> removing so that it will be not accessed when rmmod.
+>
+> changelog:
+> v2:
+> - Clear drvdata in cleanup_one_si
+> - Change subject
+>
+> v1:
+> https://lkml.org/lkml/2014/9/8/741
+>
+>
+> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+> ---
+>  drivers/char/ipmi/ipmi_si_intf.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+> index 5d66568..01dcbdb 100644
+> --- a/drivers/char/ipmi/ipmi_si_intf.c
+> +++ b/drivers/char/ipmi/ipmi_si_intf.c
+> @@ -3655,6 +3655,9 @@ static void cleanup_one_si(struct smi_info *to_clean)
+>  	if (!to_clean)
+>  		return;
+>  
+> +	if (to_clean->dev)
+> +		dev_set_drvdata(to_clean->dev, NULL);
+> +
+>  	list_del(&to_clean->link);
+>  
+>  	/* Tell the driver that we are shutting down. */
 
-So today, it's time for making one of the latest steps of this work: the
-*removal* of old-style "board-*.c" and "at91*_devices.c" files in
-mach-at91 directory.
-
-A work has been started several months ago (Cf. ARM: at91: DT: switch C
-board to DT, on Nov. 2013) but we didn't have much feedback from board
-maintainers.
-This time, we will simply remove the support for the boards that have
-not migrated to the Device Tree by the 3.18-3.19 time frame. To ensure
-this does not happen to your board, make sure to:
-- rework the patches sent by Jean-Christophe back then
-- or send your own .dts file for your board.
-All in all it will be easy to build these .dts files both from existing
-boards with the same SoC or convert the old board files that could
-easily be found in git history.
-
-BTW: Let me recall some simple rules while submitting an AT91 board DT file:
-- prefix .dts file name with "at91-"
-  (at91-foxg20.dts or at91-sama5d3_xplained.dts for instance)
-- DT nodes in address ascending order
-- command line without "mem" parameter and as short and generic
-  as possible
-- sorted inclusion of the .dts file in arch/arm/boot/dts/Makefile
-- a vendor used in a DT file must be added in
-  Documentation/devicetree/bindings/vendor-prefixes.txt as well
-- consider using the dual license approach for your board .dts file:
-  GPLv2+ and X11:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/283767.html
-
-Please do not hesitate to contact the AT91 community for any question: I
-know that you may have difficulties to switch to this method if you are
-not used to kernel development, definitively, we can help.
-
-Best regards,
--- 
-Nicolas Ferre
