@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaIJII6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:08:58 -0400
-Received: from sym2.noone.org ([178.63.92.236]:43431 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751807AbaIJIHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:07:01 -0400
-Date: Wed, 10 Sep 2014 10:06:58 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        linux-serial@vger.kernel.org
-Subject: [PATCH] tty: serial: serial_mctrl_gpio: Fix build error for !GPIOLIB
-Message-ID: <20140910080657.GC14260@distanz.ch>
-References: <CA+r1ZhjCZBWjkxjoJz=PO-YZg6LbghQV75tGnpiSOrHM9CaygA@mail.gmail.com>
+	id S1751508AbaIJIKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:10:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36579 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaIJIKJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:10:09 -0400
+Date: Wed, 10 Sep 2014 10:10:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Chintan Pandya <cpandya@codeaurora.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers for
+ scanner thread
+Message-ID: <20140910081000.GN6758@twins.programming.kicks-ass.net>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org>
+ <1408536628-29379-2-git-send-email-cpandya@codeaurora.org>
+ <alpine.LSU.2.11.1408272258050.10518@eggly.anvils>
+ <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils>
+ <20140908093949.GZ6758@twins.programming.kicks-ass.net>
+ <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xwQtY96q3287+Drf"
 Content-Disposition: inline
-In-Reply-To: <CA+r1ZhjCZBWjkxjoJz=PO-YZg6LbghQV75tGnpiSOrHM9CaygA@mail.gmail.com>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If SERIAL_MCTRL_GPIO is selected but GPIOLIB is not, the noop functions
-from serial_mctrl_gpio.h are pulled in. However, serial_mctrl_gpio.c is
-still compiled, leading to function redefinition build errors. Since all
-drivers that include serial_mctrl_gpio.h also depend on
-SERIAL_MCTRL_GPIO, let it depend on GPIOLIB as well remove the noop
-functions alltogether.
 
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/tty/serial/Kconfig             |  1 +
- drivers/tty/serial/serial_mctrl_gpio.h | 35 ----------------------------------
- 2 files changed, 1 insertion(+), 35 deletions(-)
+--xwQtY96q3287+Drf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 8079f52..5f1ea62 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1575,5 +1575,6 @@ endmenu
- 
- config SERIAL_MCTRL_GPIO
- 	tristate
-+	select GPIOLIB
- 
- endif # TTY
-diff --git a/drivers/tty/serial/serial_mctrl_gpio.h b/drivers/tty/serial/serial_mctrl_gpio.h
-index 400ba04..5e4c96a 100644
---- a/drivers/tty/serial/serial_mctrl_gpio.h
-+++ b/drivers/tty/serial/serial_mctrl_gpio.h
-@@ -40,8 +40,6 @@ enum mctrl_gpio_idx {
-  */
- struct mctrl_gpios;
- 
--#ifdef CONFIG_GPIOLIB
--
- /*
-  * Set state of the modem control output lines via GPIOs.
-  */
-@@ -74,37 +72,4 @@ struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx);
-  */
- void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios);
- 
--#else /* GPIOLIB */
--
--static inline
--void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
--{
--}
--
--static inline
--unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
--{
--	return *mctrl;
--}
--
--static inline
--struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
--				      enum mctrl_gpio_idx gidx)
--{
--	return ERR_PTR(-ENOSYS);
--}
--
--static inline
--struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
--{
--	return ERR_PTR(-ENOSYS);
--}
--
--static inline
--void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
--{
--}
--
--#endif /* GPIOLIB */
--
- #endif
--- 
-2.0.1
+On Tue, Sep 09, 2014 at 01:14:50PM -0700, Hugh Dickins wrote:
+> On Mon, 8 Sep 2014, Peter Zijlstra wrote:
+> > >  		switch_mm(oldmm, mm, next);
+> > > +		wake_ksm =3D ksm_switch(mm);
+> >=20
+> > Is this the right mm?
+>=20
+> It's next->mm, that's the one I intended (though the patch might
+> be equally workable using prev->mm instead: given free rein, I'd
+> have opted for hooking into both prev and next, but free rein is
+> definitely not what should be granted around here!).
+>=20
+> > We've just switched the stack,
+>=20
+> I thought that came in switch_to() a few lines further down,
+> but don't think it matters for this.
 
+Ah, yes. Got my task and mm separation messed up.
+
+> > so we're looing at next->mm when we switched away from current.
+> > That might not exist anymore.
+>=20
+> I fail to see how that can be.  Looking at the x86 switch_mm(),
+> I can see it referencing (unsurprisingly!) both old and new mms
+> at this point, and no reference to an mm is dropped before the
+> ksm_switch().  oldmm (there called mm) is mmdropped later in
+> finish_task_switch().
+
+Well, see the above confusion about switch_mm vs switch_to :-/
+
+So if this were switch_to(), we'd see next->mm as before the last
+context switch. And since that switch fully happened, it would also
+already have done the finish_task_switch() -> mmdrop().
+
+
+
+--xwQtY96q3287+Drf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUEAdYAAoJEHZH4aRLwOS6A1cQAI8Vb0oUNxiFZOGEypnIBrOe
+TsRhja+rHPMGJGufjUHB7KM8PPCoQv9h+lsPbVhtHo+S6JQnKS6AFUTgZomuOJrD
+9cJOoTOh0fItLH0YsG9lshJngHA7YqszpqcVGhWfu9rWuWWHry1S0NvmW2Eyfg1W
+nkGR742Y0T+JFqA0HiNP3/GO+G/EwMX+uW/2bf08igecE9jg0IoiHkA1hai1J1dz
+IGdTBn2dkbSX6ibthhvmtGr0oBwKU/64xO6H4OXhXVim3IeSxNbBBsVIhasvTeSp
+/Fxy2ptubQsXEuZ8g8R0XX+NXZ6LqycIWteO3qfGyTvttfNN7V0Z3AFxJfno1TZg
+qRq/FPNEr55kSK7yaRfoX19kkEbqgC2fO0248fMqc3vmiL+UjFtr7wZUA4NXXsDB
+pnJ9ESx7LqgVf0AqaoEjZOL3D+W0iQ2JYi5M7yfNaQRmXA9dlqZc/SeAH0dA4WPZ
+pbo415GzR5BDrVZ58H96yw+PUcyMbxJoSD6mR21HUnrjKVsHaqHxk/CV6lKOyItp
+k//n4z4HKI2aiBGiqhTCFdYi6XP2waF9C9ASeFWU5u2aDGtcUDtm8rUdWzvXHn7t
+v9G0iBg5eiGNwPmJ3CgNOO2VUffBsKCoy9Jq/Pp25phIfi74jmtus0t6mHW8snbk
+vdr2QsOjO08nStVEEXY8
+=nrfj
+-----END PGP SIGNATURE-----
+
+--xwQtY96q3287+Drf--
