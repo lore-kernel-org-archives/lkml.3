@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaIJMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 08:16:25 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:62487 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaIJMQX (ORCPT
+	id S1751285AbaIJMTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 08:19:24 -0400
+Received: from mail-yk0-f177.google.com ([209.85.160.177]:45845 "EHLO
+	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaIJMTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 08:16:23 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 10 Sep 2014 14:14:24 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] rtc: at91sam9: add DT bindings documentation
-Message-ID: <20140910121424.GG2974@localhost>
-References: <1409733934-14465-1-git-send-email-boris.brezillon@free-electrons.com>
- <1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 10 Sep 2014 08:19:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409733934-14465-6-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <541037D2.7060007@gmail.com>
+References: <20140213201421.GJ22203@tuxdriver.com>
+	<1397581703.8212.5.camel@x220>
+	<CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+	<1403087119.1984.93.camel@x220>
+	<CAHNKnsSfaT7xC5_wv=TrGLEQ2pjC91Q1XG891_n64OuR0fA9Jg@mail.gmail.com>
+	<1403091974.1984.102.camel@x220>
+	<1409911856.7832.9.camel@x220>
+	<CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
+	<1409916824.7832.20.camel@x220>
+	<CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
+	<20140909182734.GJ29412@tuxdriver.com>
+	<CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
+	<541037D2.7060007@gmail.com>
+Date: Wed, 10 Sep 2014 16:19:21 +0400
+Message-ID: <CAHNKnsTtqz10c=vV-f10awLanYZzom3kJ1cO5xgTGs-t3O9NYg@mail.gmail.com>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Paul Bolle <pebolle@tiscali.nl>, Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 10:45:34AM +0200, Boris BREZILLON wrote:
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt   | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> new file mode 100644
-> index 0000000..9ca455f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-> @@ -0,0 +1,20 @@
-> +Atmel AT91SAM9260 Real Time Timer
-> +
-> +Required properties:
-> +- compatible: should be: "atmel,at91sam9260-rtt"
-> +- reg: should contain 2 memory regions
-> +  * the first one encodes the memory region of the RTT controller
-> +  * the second one encodes the GPBR (General Purpose Backup Resgisters)
-> +    memory region used to store the current time
-> +- interrupts: rtc alarm/event interrupt
-> +- clocks: should contain one clock pointing the the slow clk
-> +
-> +Example:
-> +
-> +rtc@fffffe00 {
-> +	compatible = "atmel,at91sam9260-rtt";
-> +	reg = <0xfffffd20 0x10
-> +	       0xfffffd50 0x4>;
-> +	interrupts = <1 4 7>;
-> +	clocks = <&clk32k>;
-> +};
+2014-09-10 15:36 GMT+04:00, Jiri Slaby <jirislaby@gmail.com>:
+> On 09/10/2014, 12:33 PM, Sergey Ryazanov wrote:
+>> 2014-09-09 22:27 GMT+04:00, John W. Linville <linville@tuxdriver.com>:
+>>> On Fri, Sep 05, 2014 at 04:02:10PM +0400, Sergey Ryazanov wrote:
+>>>> 2014-09-05 15:33 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+>>>>> Hi Sergey,
+>>>>>
+>>>>> On Fri, 2014-09-05 at 15:12 +0400, Sergey Ryazanov wrote:
+>>>>>> 2014-09-05 14:10 GMT+04:00, Paul Bolle <pebolle@tiscali.nl>:
+>>>>>>> On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
+>>>>>>>> Having this conversation every rc1 is getting a bit silly. Could
+>>>>>>>> Jiri
+>>>>>>>> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
+>>>>>>>> submitted?
+>>>>>>>
+>>>>>>> I waited until rc3. Have you seen any activity on this front? If
+>>>>>>> not,
+>>>>>>> should I resend the patch that removes the code in mainline that
+>>>>>>> depends
+>>>>>>> on ATHEROS_AR231X (ie, AHB bus support)?
+>>>>>>>
+>>>>>> Recent activity always could be found in [1]. Now I finish another
+>>>>>> one
+>>>>>> round of cleanups and have a plan to fix several things (you can
+>>>>>> always find something that you really want to improve). But if you
+>>>>>> insist I could immediately switch to "send upstream" mode. And seems
+>>>>>> that this would be better approach.
+>>>>>>
+>>>>>> 1. https://dev.openwrt.org/log/trunk/target/linux/atheros
+>>>>>
+>>>>> And where can the related PULL requests or patch submissions be found?
+>>>>>
+>>>> I have not sent patches yet, since I thought that it would be easier
+>>>> to cleanup them in openwrt tree and then send them upstream.
+>>>
+>>> That excuse has worn a bit thin.  Perhaps Paul should repost his
+>>> removal and you can add a revert to the start of your patch series?
+>>>
+>> As for me, I do not like such flapping
+>
+> Agreed in case what you have is in a good enough shape. You (and also
+> others) can still clean up the code in upstream too. So, if it is
+> mergeable, send it for upstream inclusion now, otherwise I am all for
+> John to apply the Paul's patch.
 
-This does not describe the hardware, but rather a specific software
-configuration.
+Two days is the last deadline :)
 
-The RTT is first of all not an RTC (although it can be used as one in a
-specific software configuration). And the second register resource above
-is not an RTT register, but a general-purpose backup register could be
-used for other purposes (which register to use is currently configurable
-for legacy booting using CONFIG_RTC_DRV_AT91SAM9_GPBR).
+> The unused code has been a way too long
+> in the tree now.
 
-This was discussed in the thread where I posted an RFC for this last
-year (which you linked to in your original submission thread), but no
-conclusion was reached:
+Code actively used in owrt firmware and its forks.
 
-	http://www.spinics.net/lists/arm-kernel/msg236292.html
-
-Johan
+-- 
+BR,
+Sergey
