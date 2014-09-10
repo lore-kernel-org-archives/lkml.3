@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775AbaIJVLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:11:05 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:34238 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718AbaIJVK6 (ORCPT
+	id S1753747AbaIJVLC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:11:02 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43731 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715AbaIJVK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:10:58 -0400
-From: Purnendu Kapadia <pro8linux@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        pro8linux@gmail.com
-Subject: [PATCH] staging: android: checkpatch fixes for sw_sync files
-Date: Wed, 10 Sep 2014 22:10:49 +0100
-Message-Id: <1410383449-28680-1-git-send-email-pro8linux@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 10 Sep 2014 17:10:57 -0400
+MIME-Version: 1.0
+X-Originating-IP: [72.182.51.248]
+In-Reply-To: <5410B1FE.9090504@zytor.com>
+References: <20140712181328.GA8738@redhat.com>
+	<54079B70.4050200@hurleysoftware.com>
+	<1409785893.30640.118.camel@pasglop>
+	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+	<1409824374.4246.62.camel@pasglop>
+	<5408E458.3@zytor.com>
+	<54090AF4.7060406@hurleysoftware.com>
+	<54091B30.7080100@zytor.com>
+	<5409D76D.2070203@hurleysoftware.com>
+	<5409D9C0.7030403@zytor.com>
+	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+	<5410B1FE.9090504@zytor.com>
+Date: Wed, 10 Sep 2014 16:10:56 -0500
+Message-ID: <CAOS_Y6SA_TZUgr7nHiA_0EUuL9J9rTMboRTMBCfcoiHGONXYhw@mail.gmail.com>
+Subject: Re: bit fields && data tearing
+From: Rob Landley <rob@landley.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@aculab.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   - add line after declaration
-   - allignment should match open parenthesis
-   - remove unnecessary new line
+On Wed, Sep 10, 2014 at 3:18 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/08/2014 10:52 AM, One Thousand Gnomes wrote:
+>>
+>> I think the whole "removing Alpha EV5" support is basically bonkers. Just
+>> use set_bit in the tty layer. Alpha will continue to work as well as it
+>> always has done and you won't design out support for any future processor
+>> that turns out not to do byte aligned stores.
+>>
+>
+> I think it's pretty safe to say such a processor is unlikely to ever be
+> created, for the same reason there weren't any 48-bit computers when
+> 32-bit computers ran out of steam: it caused more problems than it
+> solved, and Alpha pretty much proved that.  The engineering advantages
+> would have to be so overwhelmingly in favor for someone to want to walk
+> down that road again.
+>
+>         -hpa
 
-Signed-off-by: Purnendu Kapadia <pro8linux@gmail.com>
----
- drivers/staging/android/sw_sync.c | 9 +++++----
- drivers/staging/android/sw_sync.h | 2 +-
- 2 files changed, 6 insertions(+), 5 deletions(-)
+I note for the record I'm trying to get basic Alpha support working in
+http://landley.net/aboriginal/about.html now that qemu at least offers
+a qemu-system-alpha, and if I do get it working I may take a stab at
+adding alpha support to musl-libc.
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index a76db3f..c90838d 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -48,11 +48,11 @@ EXPORT_SYMBOL(sw_sync_pt_create);
- 
- static struct sync_pt *sw_sync_pt_dup(struct sync_pt *sync_pt)
- {
--	struct sw_sync_pt *pt = (struct sw_sync_pt *) sync_pt;
-+	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
- 	struct sw_sync_timeline *obj =
- 		(struct sw_sync_timeline *)sync_pt_parent(sync_pt);
- 
--	return (struct sync_pt *) sw_sync_pt_create(obj, pt->value);
-+	return (struct sync_pt *)sw_sync_pt_create(obj, pt->value);
- }
- 
- static int sw_sync_pt_has_signaled(struct sync_pt *sync_pt)
-@@ -94,9 +94,10 @@ static void sw_sync_timeline_value_str(struct sync_timeline *sync_timeline,
- }
- 
- static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
--				       char *str, int size)
-+				 char *str, int size)
- {
- 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
-+
- 	snprintf(str, size, "%d", pt->value);
- }
- 
-@@ -110,7 +111,6 @@ static struct sync_timeline_ops sw_sync_timeline_ops = {
- 	.pt_value_str = sw_sync_pt_value_str,
- };
- 
--
- struct sw_sync_timeline *sw_sync_timeline_create(const char *name)
- {
- 	struct sw_sync_timeline *obj = (struct sw_sync_timeline *)
-@@ -156,6 +156,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
- static int sw_sync_release(struct inode *inode, struct file *file)
- {
- 	struct sw_sync_timeline *obj = file->private_data;
-+
- 	sync_timeline_destroy(&obj->obj);
- 	return 0;
- }
-diff --git a/drivers/staging/android/sw_sync.h b/drivers/staging/android/sw_sync.h
-index 1a50669..c87ae9e 100644
---- a/drivers/staging/android/sw_sync.h
-+++ b/drivers/staging/android/sw_sync.h
-@@ -50,7 +50,7 @@ static inline void sw_sync_timeline_inc(struct sw_sync_timeline *obj, u32 inc)
- }
- 
- static inline struct sync_pt *sw_sync_pt_create(struct sw_sync_timeline *obj,
--		u32 value)
-+						u32 value)
- {
- 	return NULL;
- }
--- 
-1.9.1
+It's not just that I want to get cross platform testing of package
+builds working on a convenient/reproducible/portable way on as many
+different targets as I can. My project is designed the way it is
+because I think losing the ability to reproduce things from first
+principles (and thus understand why it was done that way in the first
+place) is a _bad_idea_. And an increasingly real-world problem, see
+http://wrttn.in/04af1a for example. (And the way NASA lost the plans
+for the Saturn V rocket... In fact scientists' general disinclination
+to reproduce old experimental results to see if they were actually
+true or not comes up on a regular basis, most recent I saw was
+http://www.theglobeandmail.com/life/health-and-fitness/health/the-curious-case-of-the-cyclists-unshaved-legs/article20370814/
+)
 
+Of course Peter has consistently dismissed my concerns as "academic":
+
+http://lkml.iu.edu/hypermail/linux/kernel/0802.1/4400.html
+
+Personally, I hope the projects I work on _do_ outlive me, an try to
+make it easy for newbies to recapitulate phylogeny. That's why I
+thought requiring perl dependencies to build was a bad idea, and why I
+thought removing 386 support entirely (instead of restricting it to
+UP) was a bad idea. The idea that Linux no longer needs to build on
+the original machine Linus designed it for, and now it no longer needs
+to work on the machine the "arch" directory was created for (and the
+first 64 bit machine)... These positions would appear to have a single
+consistent proponent, with whom I disagree.
+
+Oh well, just wanted to get that out there,
+
+Rob
