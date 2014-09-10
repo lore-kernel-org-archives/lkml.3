@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038AbaIJE6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 00:58:03 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:58455 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaIJE6B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 00:58:01 -0400
+	id S1751095AbaIJFFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 01:05:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60732 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaIJFFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 01:05:43 -0400
+Date: Wed, 10 Sep 2014 07:05:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+In-Reply-To: <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz> <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <04ab01cfcbe0$caeac4d0$60c04e70$@kernel.org>
-References: <1408533593-32346-1-git-send-email-javier.martinez@collabora.co.uk>
-	<CABxcv==ycrPw1MTv7X0baX2WfqgDS+4EEfGAWc+ZhpiR6=Uy+Q@mail.gmail.com>
-	<04ab01cfcbe0$caeac4d0$60c04e70$@kernel.org>
-Date: Tue, 9 Sep 2014 21:58:00 -0700
-X-Google-Sender-Auth: BBzGf0ZR9KaM119DU_q_k0Zr-to
-Message-ID: <CAD=FV=UuT_78kWS274jY1y69XQoYCadgfAHXjdBaJdJDsVk-pw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] Add max77802 support for Peach boards
-From: Doug Anderson <dianders@chromium.org>
-To: kgene@kernel.org
-Cc: Javier Martinez Canillas <javier@dowhile0.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 9 Sep 2014, Andrew Morton wrote:
 
-On Mon, Sep 8, 2014 at 8:47 PM,  <kgene@kernel.org> wrote:
-> Javier Martinez Canillas wrote:
->>
->> Hello Kukjin,
->>
-> Hi,
->
->> On Wed, Aug 20, 2014 at 1:19 PM, Javier Martinez Canillas
->> <javier.martinez@collabora.co.uk> wrote:
->> >
->> > This is a second version of the series that adds max77802 support for
->> > the Peach Pit and Pi boards. The series also have all the pending
->> > patches that were posted but depended on this support. I've picked
->> > all the patches I found and rebased them to be sure that they apply
->> > cleanly on top of linux-next. Also I've taken some DT snippets from
->> > the downstream Chrome OS 3.8 kernel DTS for devices that use one of
->> > these regulators as their input supply.
->> >
->>
->> Any comments on this series?
->>
-> Looks good to me but I just wanted to get ack from chrome guy, Doug? But since
-> Naveen tested, it should be fine I think. I'll take the series.
+> > kfree() is happy to accept NULL pointer and does nothing in such case. 
+> > It's reasonable to expect it to behave the same if ERR_PTR is passed to 
+> > it.
+> > 
+> > Inspired by a9cfcd63e8d ("ext4: avoid trying to kfree an ERR_PTR 
+> > pointer").
+> > 
+> > ...
+> >
+> > --- a/mm/slab.c
+> > +++ b/mm/slab.c
+> > @@ -3612,7 +3612,7 @@ void kfree(const void *objp)
+> >  
+> >  	trace_kfree(_RET_IP_, objp);
+> >  
+> > -	if (unlikely(ZERO_OR_NULL_PTR(objp)))
+> > +	if (unlikely(ZERO_OR_NULL_PTR(objp) || IS_ERR(objp)))
+> >  		return;
+> 
+> kfree() is quite a hot path to which this will add overhead.  And we
+> have (as far as we know) no code which will actually use this at
+> present.
 
-I haven't had crazy amounts of time to review pit/pi patches recently,
-but luckily Javier has been picking up my slack.  I think he's more of
-a maintainer for these file than I am at this point.
+We obviously don't, as such code will be causing explosions. This is meant 
+as a prevention of problems such as the one that has just been fixed in 
+ext4.
 
-...but I did do a quick skim / compare to our tree and found one small
-bug (see patch #1) and added my Reviewed-by tags.
+> How about a new
+> 
+> kfree_safe(...)
+> {
+> 	if (IS_ERR(...))
+> 		return;
+> 	if (other-stuff-when-we-think-of-it)
+> 		return;
+> 	kfree(...);
+> }
 
--Doug
+I think this unfortunately undermines the whole point of the patch ... if 
+the caller knows that he might potentially be feeding ERR_PTR() to 
+kfree(), he can as well check the pointer himself.
 
-
--Doug
+-- 
+Jiri Kosina
+SUSE Labs
