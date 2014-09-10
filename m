@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811AbaIJCBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:01:36 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:10079 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaIJCBe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:01:34 -0400
-Message-ID: <540FAFA4.1080008@huawei.com>
-Date: Wed, 10 Sep 2014 09:55:48 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751691AbaIJCOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:14:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59675 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaIJCOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:14:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,495,1406617200"; 
+   d="scan'208";a="570903084"
+Message-ID: <540FB3EA.5030109@linux.intel.com>
+Date: Wed, 10 Sep 2014 10:14:02 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Liviu Dudau <Liviu.Dudau@arm.com>, Rob Herring <robherring2@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Will Deacon" <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "Suravee Suthikulanit" <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Device Tree ML" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>
-Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI
- domain_nr
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <1410184472-17630-8-git-send-email-Liviu.Dudau@arm.com> <CAL_JsqJi8k1Goc3UmXhuxf9v7=4gJrYG_Di7v574PxS8TsJaXw@mail.gmail.com> <20140908145459.GO27864@e106497-lin.cambridge.arm.com> <CAL_JsqJdGKDVwJOpPp19OkVPGzR7Zqv3nh+ONHHaYnPLYTYoYg@mail.gmail.com> <20140908155931.GP27864@e106497-lin.cambridge.arm.com> <540E960D.7080408@huawei.com> <20140909084621.GS27864@e106497-lin.cambridge.arm.com> <540EC8CB.7010106@huawei.com> <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com>
-In-Reply-To: <CAErSpo4cAfom2=07NYDRfTCdHO22M0v+ueiaZuG6v2Xd18wEnQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch v4 07/16] x86, irq: Prefer assigned ID in APIC ID register
+ for x86_64
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-8-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091256270.11037@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409091256270.11037@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.540FAFB2.007F,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 00588597c07062a49489c0bbfbc5ea0e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> OK. Sorry, I have one last question, because domain will be used to calculate the address used to
->> access PCI hardware config registers. So if DTS file doesn't report the domain, how do we know
->> we would access the right registers when we use the auto increment domain vaule ?
->> Has there a mechanism to make sure system can access the correct registers by the domain ?
+
+
+On 2014/9/9 19:04, Thomas Gleixner wrote:
+> On Thu, 28 Aug 2014, Jiang Liu wrote:
 > 
-> I think you're referring to config access via ECAM (PCIe r3.0, sec
-> 7.2.2).  In that case, I don't think the domain should be used to
-> compute the memory-mapped configuration address.  Each host bridge is
-> in exactly one domain, and each host bridge has an associated ECAM
-> area base.  The address calculation uses the bus number, device
-> number, function number, and register number to compute an offset into
-> the ECAM area.
+>> From: Yinghai Lu <yinghai@kernel.org>
+>>
+>> Perfer the assigned ID in APIC ID register for x86_64 if it's still
+>> available.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Joerg Roedel <joro@8bytes.org>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  arch/x86/kernel/apic/io_apic.c |   38 +++++++++++++++++++++++++++++++++-----
+>>  1 file changed, 33 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+>> index 3faf9599ff29..196d9c15fdec 100644
+>> --- a/arch/x86/kernel/apic/io_apic.c
+>> +++ b/arch/x86/kernel/apic/io_apic.c
+>> @@ -3575,26 +3575,54 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+>>  	return apic_id;
+>>  }
+>>  
+>> -static u8 __init io_apic_unique_id(u8 id)
+>> +static u8 io_apic_unique_id(int idx, u8 id)
 > 
-> So as long as the DT tells you the ECAM information for each host
-> bridge, that should be sufficient.  The domain number is then just a
-> Linux convenience and is not tied to the platform as it is on ia64.
-
-Hi Bjorn, you are right, thanks for your detailed explanation! :)
-
-Thanks!
-Yijing.
+> How is that change related to the changelog?
+My bad, removal of __init marker belongs to next patch.
 
 > 
-> Bjorn
+>>  {
+>>  	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
+>>  	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
+>> -		return io_apic_get_unique_id(nr_ioapics, id);
+>> +		return io_apic_get_unique_id(idx, id);
+>>  	else
+>>  		return id;
+>>  }
+>>  #else
+>> -static u8 __init io_apic_unique_id(u8 id)
+>> +static u8 io_apic_unique_id(int idx, u8 id)
+>>  {
+>>  	int i;
+>> +	u8 new_id;
+>> +	unsigned long flags;
+>>  	DECLARE_BITMAP(used, 256);
+>> +	union IO_APIC_reg_00 reg_00;
+>>  
+>>  	bitmap_zero(used, 256);
+>>  	for_each_ioapic(i)
+>>  		__set_bit(mpc_ioapic_id(i), used);
+>>  	if (!test_bit(id, used))
+>>  		return id;
+>> -	return find_first_zero_bit(used, 256);
+>> +
+>> +	/* check register at first */
+>> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
+>> +	reg_00.raw = io_apic_read(idx, 0);
+>> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+>> +	new_id = reg_00.bits.ID;
+>> +	if (!test_bit(new_id, used)) {
+>> +		apic_printk(APIC_VERBOSE, KERN_INFO
+>> +			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
+>> +			 idx, new_id, id);
+>> +		return new_id;
+>> +	}
+>> +
+>> +	new_id = find_first_zero_bit(used, 256);
+>> +	reg_00.bits.ID = new_id;
+>> +	raw_spin_lock_irqsave(&ioapic_lock, flags);
+>> +	io_apic_write(idx, 0, reg_00.raw);
+>> +	reg_00.raw = io_apic_read(idx, 0);
+>> +	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+>> +
+>> +	/* Sanity check */
+>> +	if (reg_00.bits.ID != new_id)
+>> +		pr_warn("IOAPIC[%d]: Unable to change apic_id to %d!\n",
+>> +			idx, new_id);
 > 
-> .
+> So we detect, that the ID could not be changed and we return it
+> nevertheless?
+Seems it deserves a BUG_ON here. We have tried the ID from ACPI table,
+the ID from hardware register, they all fails. And we can't change the
+hardware register too. Seems no way out here.
+Regards!
+Gerry
 > 
-
-
--- 
-Thanks!
-Yijing
-
+> Thanks,
+> 
+> 	tglx
+> 
