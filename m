@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaIJWbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 18:31:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50472 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751803AbaIJWbF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 18:31:05 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] sched/idle : find the best idle CPU with cpuidle info
-Date: Thu, 11 Sep 2014 00:50:34 +0200
-Message-ID: <4753245.VagS0oaVYJ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1409101734470.16533@knanqh.ubzr>
-References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org> <alpine.LFD.2.11.1409101734470.16533@knanqh.ubzr>
+	id S1752944AbaIJWq7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 18:46:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25802 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453AbaIJWq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 18:46:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,501,1406617200"; 
+   d="scan'208";a="601114814"
+Message-ID: <5410D486.4060200@intel.com>
+Date: Wed, 10 Sep 2014 15:45:26 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+CC: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>	<1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>	<1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>	<5410724B.8000803@intel.com> <CAPAsAGzm29VWz8ZvOu+fVGn4Vbj7bQZAnB11M5ZZXRTQTchj0w@mail.gmail.com>
+In-Reply-To: <CAPAsAGzm29VWz8ZvOu+fVGn4Vbj7bQZAnB11M5ZZXRTQTchj0w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 10, 2014 05:35:27 PM Nicolas Pitre wrote:
-> 
-> Ping.
+On 09/10/2014 01:30 PM, Andrey Ryabinin wrote:
+> Yes, there is a reason for this. For inline instrumentation we need to
+> catch access to userspace without any additional check.
+> This means that we need shadow of 1 << 61 bytes and we don't have so
+> many addresses available.
 
-Is this urgent, and if so, then why?
-
-> On Thu, 4 Sep 2014, Nicolas Pitre wrote:
-> 
-> > This is a rework of the series initially posted by Daniel Lezcano here:
-> > 
-> > http://news.gmane.org/group/gmane.linux.power-management.general/thread=44161
-> > 
-> > Those patches were straightened up, commit logs are more comprehensive,
-> > bugs were fixed, etc.
-> > 
-> > 
-> >  drivers/cpuidle/cpuidle.c |  6 ++++++
-> >  kernel/sched/fair.c       | 43 ++++++++++++++++++++++++++++++++++-------
-> >  kernel/sched/idle.c       |  6 ++++++
-> >  kernel/sched/sched.h      | 39 +++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 87 insertions(+), 7 deletions(-)
-> > 
-> > 
-> > Nicolas
-> > 
-> > 
-> > _______________________________________________
-> > linaro-kernel mailing list
-> > linaro-kernel@lists.linaro.org
-> > http://lists.linaro.org/mailman/listinfo/linaro-kernel
-> > 
-> > 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+That sounds reasonable.
