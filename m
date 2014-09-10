@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaIJNcj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 09:32:39 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:55808 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaIJNcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 09:32:36 -0400
-Date: Wed, 10 Sep 2014 09:32:32 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-api@vger.kernel.org
-Subject: Re: [PATCH] locks: Ability to test for flock presence on fd
-Message-ID: <20140910093232.1252707e@tlielax.poochiereds.net>
-In-Reply-To: <20140909161820.GH1776@fieldses.org>
-References: <5405FBAE.5020303@parallels.com>
-	<20140902184456.GC31793@fieldses.org>
-	<54061562.4080306@parallels.com>
-	<20140909161820.GH1776@fieldses.org>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1751901AbaIJNhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 09:37:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41993 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751658AbaIJNhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 09:37:38 -0400
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
+Subject: [PATCH v2 1/2] ARM: dts: dra7: Add CPSW and MDIO module nodes for dra7
+Date: Wed, 10 Sep 2014 19:07:26 +0530
+Message-ID: <1410356247-25925-2-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com>
+References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014 12:18:21 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+Add CPSW and MDIO related device tree data for DRA7XX and made as status
+disabled. Phy-id, pinmux for active and sleep state needs to be added in
+board dts files and enable the CPSW device.
 
-> On Tue, Sep 02, 2014 at 11:07:14PM +0400, Pavel Emelyanov wrote:
-> > > Would it make sense to return the lock type held instead, so you could
-> > > do one flock(fd, LOCK_TEST) instead of flock(fd, LOCK_TEST|LOCK_SH) and
-> > > flock(fd, LOCK_TEST|LOCK_EX) ?
-> > 
-> > Well, in our case we parse /proc/locks anyway to see what
-> > files at least to test for being locked. But what you propose
-> > looks even better. I'll look what can be done here.
-> 
-> Actually I think I prefer your version.  It seems cleaner to define
-> LOCK_TEST as returning the same result as you'd get if you actually
-> tried the lock, just without applying the lock.  It avoids having a
-> different return-value convention for this one command.  It might avoid
-> some ambiguity in cases where the flock might be denied for reasons
-> other than a conflicting flock (e.g. on NFS where flocks and fcntl locks
-> conflict).  It's closer to what GETLK does in the fcntl case.
-> 
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi | 59 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
 
-Yeah, I think I agree here too. Best to keep the interface as simple
-as possible, and the principle of least surprise would dictate that the
-return value match how other flock() calls work.
-
-I would still like to see a proposed manpage update for it. For bonus
-points, writing a section on flock() for the glibc manual might help
-get that piece merged as well.
-
-It was my experience that getting the small header file #defines into
-glibc for OFD locks was much more difficult than the kernel piece. YMMV
-of course, but getting the glibc folks to buy into the idea ahead of
-time would be good if possible.
-
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index d678152..8d79321 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -34,6 +34,8 @@
+ 		serial3 = &uart4;
+ 		serial4 = &uart5;
+ 		serial5 = &uart6;
++		ethernet0 = &cpsw_emac0;
++		ethernet1 = &cpsw_emac1;
+ 	};
+ 
+ 	timer {
+@@ -1262,6 +1264,63 @@
+ 			ti,irqs-skip = <10 133 139 140>;
+ 			ti,irqs-safe-map = <0>;
+ 		};
++
++		mac: ethernet@4a100000 {
++			compatible = "ti,cpsw";
++			ti,hwmods = "gmac";
++			cpdma_channels = <8>;
++			ale_entries = <1024>;
++			bd_ram_size = <0x2000>;
++			no_bd_ram = <0>;
++			rx_descs = <64>;
++			mac_control = <0x20>;
++			slaves = <2>;
++			active_slave = <0>;
++			cpts_clock_mult = <0x80000000>;
++			cpts_clock_shift = <29>;
++			reg = <0x48484000 0x1000
++			       0x48485200 0x2E00>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			/*
++			 * rx_thresh_pend
++			 * rx_pend
++			 * tx_pend
++			 * misc_pend
++			 */
++			interrupts = <GIC_SPI 334 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 335 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 336 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 337 IRQ_TYPE_LEVEL_HIGH>;
++			ranges;
++			status = "disabled";
++
++			davinci_mdio: mdio@48485000 {
++				compatible = "ti,davinci_mdio";
++				#address-cells = <1>;
++				#size-cells = <0>;
++				ti,hwmods = "davinci_mdio";
++				bus_freq = <1000000>;
++				reg = <0x48485000 0x100>;
++			};
++
++			cpsw_emac0: slave@48480200 {
++				/* Filled in by U-Boot */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			cpsw_emac1: slave@48480300 {
++				/* Filled in by U-Boot */
++				mac-address = [ 00 00 00 00 00 00 ];
++			};
++
++			phy_sel: cpsw-phy-sel@4a002554 {
++				compatible = "ti,dra7xx-cpsw-phy-sel";
++				reg= <0x4a002554 0x4>;
++				reg-names = "gmii-sel";
++			};
++		};
++
+ 	};
+ };
+ 
 -- 
-Jeff Layton <jlayton@poochiereds.net>
+2.1.0
+
