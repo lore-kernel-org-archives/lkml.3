@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaIJSyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:54:51 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:64399 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaIJSyr (ORCPT
+	id S1752783AbaIJTCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:02:51 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44111 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaIJTCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:54:47 -0400
+	Wed, 10 Sep 2014 15:02:50 -0400
+Date: Wed, 10 Sep 2014 12:02:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 8/8] blk-mq: support per-distpatch_queue flush machinery
+Message-ID: <20140910190247.GA28821@infradead.org>
+References: <1410267949-21904-1-git-send-email-ming.lei@canonical.com>
+ <1410267949-21904-9-git-send-email-ming.lei@canonical.com>
+ <20140909184856.GG16750@infradead.org>
+ <CACVXFVNhmvy+aSgbJX8zgRVJQS0q6PWJLhmy_XVN_9YvSFdwag@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <54108B34.6010701@lategoodbye.de>
-References: <1410089869-6611-1-git-send-email-info@lategoodbye.de>
-	<1410089869-6611-3-git-send-email-info@lategoodbye.de>
-	<20140909182211.GG3896@leverpostej>
-	<540F523D.4010904@lategoodbye.de>
-	<20140910141853.GA4994@leverpostej>
-	<20140910151316.GG7960@sirena.org.uk>
-	<54108B34.6010701@lategoodbye.de>
-Date: Wed, 10 Sep 2014 15:54:45 -0300
-Message-ID: <CAOMZO5BEN_DQOyhrx5ZB7y6DoDvqbLvDyJfAabOvtUvKOiGHOA@mail.gmail.com>
-Subject: Re: [PATCH RFC 2/3] ARM: regulator: add Freescale MXS regulator driver
-From: Fabio Estevam <festevam@gmail.com>
-To: Stefan Wahren <info@lategoodbye.de>
-Cc: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "stefan.wahren@i2se.com" <stefan.wahren@i2se.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNhmvy+aSgbJX8zgRVJQS0q6PWJLhmy_XVN_9YvSFdwag@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Wed, Sep 10, 2014 at 09:40:11AM +0800, Ming Lei wrote:
+> I am wondering we can do that because lifetime is totally different
+> between flush requests and tag_set requests which are initialized
+> before request queue is created.
 
-On Wed, Sep 10, 2014 at 2:32 PM, Stefan Wahren <info@lategoodbye.de> wrote:
-> Hi Mark,
->
-> Am 10.09.2014 17:13, schrieb Mark Brown:
->>
->> On Wed, Sep 10, 2014 at 03:18:53PM +0100, Mark Rutland wrote:
->>>
->>> On Tue, Sep 09, 2014 at 08:17:17PM +0100, Stefan Wahren wrote:
->>
->>
->> Ugh, this looks like it might be a regulator driver but since the
->> subject line was "ARM: " I deleted it unread - if your changelog looks
->> different to all the other changelogs in the subsystem it probably needs
->> changing.
->
->
-> sorry about the confusion, i will remove ARM in the next version.
->
-> Changelog? I didn't send a changelog because it was my first version.
->
-> Should i resend this version only to you?
+We shouldn't do it in the tag sets, but where we allocate and free
+each hctx: blk_mq_init_queue and blk_mq_free_hw_queues.
 
-In the cover letter of this RFC series you mentioned that this has not
-been tested on real hardware.
-
-What about sending a new version of this series (with the RFC prefix
-removed and with Mark Rutland's suggestion implemented) tested on a
-mx28 board and also with the Subject of the regulator patch changed to
-'regulator: add support for mxs regulator" with Mark Brown on Cc?
