@@ -1,71 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaIJPVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:21:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38960 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077AbaIJPVw (ORCPT
+	id S1752122AbaIJPY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:24:26 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:6776 "EHLO
+	mail.work-microwave.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077AbaIJPYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:21:52 -0400
-Date: Wed, 10 Sep 2014 18:21:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
-Message-ID: <20140910152104.GS6549@mwanda>
-References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
- <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
- <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
- <20140910140759.GC31903@thunk.org>
- <alpine.LNX.2.00.1409101625160.5523@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1409101625160.5523@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 10 Sep 2014 11:24:24 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: robh+dt@kernel.org, riku.voipio@iki.fi, cooloney@gmail.com,
+        rpurdie@rpsys.net, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v2] leds: Add DT support for leds-pca9532
+Date: Wed, 10 Sep 2014 17:23:54 +0200
+Message-Id: <1410362634-29599-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 2.1.0
+X-FEAS-SYSTEM-WL: "Roland Stigge" <stigge@antcom.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 04:26:46PM +0200, Jiri Kosina wrote:
-> On Wed, 10 Sep 2014, Theodore Ts'o wrote:
-> 
-> > I'd much rather depending on better testing and static checkers to fix 
-> > them, since kfree *is* a hot path.
-> 
-> BTW if we stretch this argument a little bit more, we should also kill the 
-> ZERO_OR_NULL_PTR() check from kfree() and make it callers responsibility 
-> to perform the checking only if applicable ... we are currently doing a 
-> lot of pointless checking in cases where caller would be able to guarantee 
-> that the pointer is going to be non-NULL.
+This patch adds DT support for leds-pca9532.
 
-What you're saying is that we should remove the ZERO_SIZE_PTR
-completely.  ZERO_SIZE_PTR is a very useful idiom and also it's too late
-to remove it because everything depends on it.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Returning ZERO_SIZE_PTR is not an error.  Callers shouldn't test for it.
-It works like this:
-1) User space says "copy zero items to somewhere."
-2) The kernel says "here is a zero size pointer"
-3) We do some stuff like:
-	copy_from_user(zero_pointer, src, 0)
-   or:
-	for (i = 0; i < 0; i++)
-4) The caller frees the ZERO_SIZE_PTR.
-5) We return success.
+---
+Applies to v3.17-rc4
 
-If we get rid of it then we're start returning -ENOMEM all over the
-place and that breaks userspace.  Or we introduce zero as a special case
-for every kmalloc.
+ v2: Removed #ifdef statements
 
-You would think there would be a lot of bugs with ZERO_SIZE_POINTERs
-but they seem fairly rare to me.  There are some where we allocate a
-zero length string and then put a NUL terminator at the end.
+ Documentation/devicetree/bindings/leds/leds-pca9532.txt |   43 ++++++++++++++
+ drivers/leds/leds-pca9532.c                             |   47 ++++++++++++++++
+ 2 files changed, 90 insertions(+)
 
-regards,
-dan carpenter
+--- /dev/null
++++ linux-2.6/Documentation/devicetree/bindings/leds/leds-pca9532.txt
+@@ -0,0 +1,43 @@
++NXP PCA9532 LED (incl. GPIO) controller
++
++Required properties:
++- compatible: must be "nxp,pca9532"
++- reg: I2C address
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be 2:
++   1) pin number
++   2) optional parameters:
++      - bit 0 specifies polarity (0 for normal, 1 for inverted)
++- nxp,typecodes: groups of 2 bits for each of the 16 pins:
++  0: None
++  1: LED
++  2: Beep
++  3: GPIO
++- nxp,statecodes: groups of 2 bits for each of the 16 pins:
++  0: off
++  1: on
++  2: pwm0
++  3: pwm1
++
++Optional properties:
++- nxp,psc: array of 2 numbers: PSC values for the two PWM channels (see datasheet)
++- nxp,pwm: array of 2 numbers: PWM values for the two PWM channels (see datasheet)
++
++Example:
++
++	pca9532: pca9532@60 {
++		compatible = "nxp,pca9532";
++		gpio-controller;
++		#gpio-cells = <2>;
++		nxp,typecodes = <0xffffffff>;
++		nxp,statecodes = <0x00000000>;
++		reg = <0x60>;
++	};
++
++	sd@20098000 {
++		wp-gpios = <&pca9532 5 0>;
++		cd-gpios = <&pca9532 4 0>;
++		cd-inverted;
++		bus-width = <4>;
++		status = "okay";
++	};
+--- linux-2.6.orig/drivers/leds/leds-pca9532.c
++++ linux-2.6/drivers/leds/leds-pca9532.c
+@@ -21,6 +21,7 @@
+ #include <linux/workqueue.h>
+ #include <linux/leds-pca9532.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
+ 
+ /* m =  num_leds*/
+ #define PCA9532_REG_INPUT(i)	((i) >> 3)
+@@ -442,6 +443,43 @@ exit:
+ 	return err;
+ }
+ 
++static struct pca9532_platform_data *pca9532_parse_dt(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	struct pca9532_platform_data *pca9532_pdata;
++	u32 typecodes, statecodes;
++	u32 pwm[2];
++	u32 psc[2];
++	int i;
++
++	pca9532_pdata = devm_kzalloc(dev, sizeof(*pca9532_pdata), GFP_KERNEL);
++	if (!pca9532_pdata)
++		return NULL;
++
++	if (!of_property_read_u32(np, "nxp,typecodes", &typecodes)) {
++		for (i = 0; i < 16; i++)
++			pca9532_pdata->leds[i].type =
++				(typecodes >> (2 * i)) & 0x3;
++	}
++	if (!of_property_read_u32(np, "nxp,statecodes", &statecodes)) {
++		for (i = 0; i < 16; i++)
++			pca9532_pdata->leds[i].state =
++				(statecodes >> (2 * i)) & 0x3;
++	}
++	if (!of_property_read_u32_array(np, "nxp,pwm", &pwm[0], 2)) {
++		for (i = 0; i < 2; i++)
++			pca9532_pdata->pwm[i] = pwm[i];
++	}
++	if (!of_property_read_u32_array(np, "nxp,psc", &psc[0], 2)) {
++		for (i = 0; i < 2; i++)
++			pca9532_pdata->psc[i] = psc[i];
++	}
++
++	pca9532_pdata->gpio_base = -1; /* dynamically assign gpio base */
++
++	return pca9532_pdata;
++}
++
+ static int pca9532_probe(struct i2c_client *client,
+ 	const struct i2c_device_id *id)
+ {
+@@ -449,6 +487,10 @@ static int pca9532_probe(struct i2c_clie
+ 	struct pca9532_platform_data *pca9532_pdata =
+ 			dev_get_platdata(&client->dev);
+ 
++
++	if (IS_ENABLED(CONFIG_OF) && !pca9532_pdata && client->dev.of_node)
++		pca9532_pdata = pca9532_parse_dt(&client->dev);
++
+ 	if (!pca9532_pdata)
+ 		return -EIO;
+ 
