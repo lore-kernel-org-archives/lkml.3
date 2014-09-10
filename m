@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaIJBmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 21:42:45 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:57682 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576AbaIJBmn (ORCPT
+	id S1751652AbaIJBns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 21:43:48 -0400
+Received: from mail-bn1bbn0105.outbound.protection.outlook.com ([157.56.111.105]:15931
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750998AbaIJBnr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 21:42:43 -0400
+	Tue, 9 Sep 2014 21:43:47 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "perex@perex.cz" <perex@perex.cz>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "tiwai@suse.de" <tiwai@suse.de>, "moinejf@free.fr" <moinejf@free.fr>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "kuninori.morimoto.gx@renesas.com" <kuninori.morimoto.gx@renesas.com>,
+        "jsarha@ti.com" <jsarha@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv3 2/3] ASoC: simple-card: Adjust the comments of simple
+ card.
+Thread-Topic: [PATCHv3 2/3] ASoC: simple-card: Adjust the comments of simple
+ card.
+Thread-Index: AQHPxyVGfzbtQPFB80m6O1LoS0Ljvpv4vZeAgADkvjA=
+Date: Wed, 10 Sep 2014 01:43:40 +0000
+Message-ID: <c8f233709d2c4c89b435d3b09c6fae50@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409711021-19277-1-git-send-email-Li.Xiubo@freescale.com>
+ <1409711021-19277-3-git-send-email-Li.Xiubo@freescale.com>
+ <20140909120235.GY2601@sirena.org.uk>
+In-Reply-To: <20140909120235.GY2601@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 033054F29A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019019)(6009001)(51704005)(24454002)(189002)(164054003)(199003)(74502001)(74662001)(558084003)(92566001)(95666004)(85306004)(76576001)(110136001)(77982001)(76482001)(107046002)(4396001)(19580395003)(99286002)(105586002)(81342001)(83322001)(31966008)(77096002)(106356001)(81542001)(108616004)(87936001)(21056001)(76176999)(50986999)(64706001)(90102001)(79102001)(66066001)(85852003)(74316001)(83072002)(80022001)(46102001)(2656002)(86362001)(106116001)(20776003)(99396002)(33646002)(19580405001)(54356999)(97736003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0616;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140909.103059.1330265085939107782.davem@davemloft.net>
-References: <1409894238-9055-1-git-send-email-ast@plumgrid.com>
-	<20140909.103059.1330265085939107782.davem@davemloft.net>
-Date: Tue, 9 Sep 2014 18:42:41 -0700
-Message-ID: <CAMEtUuzObhWe7xvD5CMQCzAZ4weOdi4HZH+51WE4Fhdj4q6d=w@mail.gmail.com>
-Subject: Re: [PATCH v10 net-next 0/2] load imm64 insn and uapi/linux/bpf.h
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 10:30 AM, David Miller <davem@davemloft.net> wrote:
->
-> You kept saying "LLVM is the user" but that's a bullshit argument
-> because you aren't including the patches necessary to actually
-> propagate native eBPF programs into the kernel.
->
-> That's what, 1 or 2 patches, right?  Which is not an unreasonable
-> request.
+> Subject: Re: [PATCHv3 2/3] ASoC: simple-card: Adjust the comments of simple
+> card.
+> 
+> On Wed, Sep 03, 2014 at 10:23:40AM +0800, Xiubo Li wrote:
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> 
+> This doesn't apply against current code.
 
-I just don't see how I could do that in 2 patches.
-In V8 series the first user was appearing in patch 22 out of 28.
-Last two days I spent solely hacking the series to move it sooner.
-Today the first user is still in patch 15.
-Will try to shorten them even more.
-So blame it on my skills and not my attitude.
+I will send one new version about this.
 
-> Anyways, I'm just extremely frustrated with how you operate and work,
-> you push things way too hard.  I hate to say this, but you are the
-> kind of submitter who gets his way by being persistent rather than
-> making well formed pleasant submissions that are easy to integrate.
-
-Understood. Will try to make patches shorter and hopefully
-more pleasant. I think 'being persistent' is mandatory here :)
+Thanks,
+BRs
+Xiubo
