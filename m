@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaIJOxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:53:49 -0400
-Received: from mga14.intel.com ([192.55.52.115]:60112 "EHLO mga14.intel.com"
+	id S1752156AbaIJOxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:53:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31542 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaIJOxr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:53:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
-   d="scan'208";a="589237373"
-From: "Drokin, Oleg" <oleg.drokin@intel.com>
-To: Joe Perches <joe@perches.com>
-CC: Julia Lawall <julia.lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "<devel@driverdev.osuosl.org>" <devel@driverdev.osuosl.org>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        "<kernel-janitors@vger.kernel.org>" <kernel-janitors@vger.kernel.org>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "Andy Whitcroft" <apw@canonical.com>
-Subject: Re: [PATCH] checkpatch: Warn on macros with flow control statements
-Thread-Topic: [PATCH] checkpatch: Warn on macros with flow control statements
-Thread-Index: AQHPzG4AtdGxJRLQ1EGIjgHETNmIL5v6gvcAgABXSoCAAALvgIAACJAAgAAEgYA=
-Date: Wed, 10 Sep 2014 14:52:47 +0000
-Message-ID: <7058A061-03C6-4C09-9A82-5F4DADB0FA01@intel.com>
-References: <1410106715-9573-6-git-send-email-Julia.Lawall@lip6.fr>
- <20140909125410.GJ6549@mwanda> <1410295093.12560.60.camel@joe-AO725>
- <20140910084306.GV6600@mwanda> <1410357331.24028.39.camel@joe-AO725>
- <alpine.DEB.2.10.1409101604210.4747@hadrien>
- <1410359800.24028.51.camel@joe-AO725>
-In-Reply-To: <1410359800.24028.51.camel@joe-AO725>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.119.182]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <F4C4C8CF122ECF479920C6EC7B81015F@intel.com>
-Content-Transfer-Encoding: 7BIT
+	id S1750967AbaIJOxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:53:50 -0400
+Date: Wed, 10 Sep 2014 22:53:34 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
+ relocations
+Message-ID: <20140910145334.GB1887@dhcp-17-102.nay.redhat.com>
+References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
+ <1409926097-2101-2-git-send-email-bhe@redhat.com>
+ <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
+ <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
+ <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
+ <20140909192813.GB9435@redhat.com>
+ <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
+ <20140910143019.GA3771@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140910143019.GA3771@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
-
-On Sep 10, 2014, at 10:36 AM, Joe Perches wrote:
-
-> On Wed, 2014-09-10 at 16:06 +0200, Julia Lawall wrote:
->> On Wed, 10 Sep 2014, Joe Perches wrote:
->>> On Wed, 2014-09-10 at 11:43 +0300, Dan Carpenter wrote:
->>>> On Tue, Sep 09, 2014 at 01:38:13PM -0700, Joe Perches wrote:
->>>>> Macros with flow control statements (goto and return) are
->>>>> not very nice to read as any flow movement is unexpected.
->>> 
->>> break and continue are also flow control statements
->>> but are those are frequently used in macros in
->>> complete switch statements so were not added.
->> 
->> Would it be possible to make a warning when there is a break or continue
->> but no while/switch/etc.
+On 09/10/14 at 10:30am, Vivek Goyal wrote:
+> On Wed, Sep 10, 2014 at 03:21:15PM +0800, Baoquan He wrote:
+ 
+ 
+> > In fact, I think below checking will be clearer and works too.
+> > 
+> > 
+> > static void handle_relocations(void *output, unsigned long output_len)
+> > {
+> > 
+> > ...
+> > 
+> > #if CONFIG_X86_64
+> > 
+> > or
+> > 
+> > #if CONFIG_RANDOMIZE_BASE
+> > #ifdef CONFIG_HIBERNATION
+> > 	if (!cmdline_find_option_bool("kaslr")) {
+> >                debug_putstr("No relocation needed... ");
+> >                return;
+> > 	}
+> > #else
+> > 	if (cmdline_find_option_bool("nokaslr")) {
+> >                debug_putstr("No relocation needed... ");
+> >                return;
+> > 	}
+> > #endif
 > 
-> I suppose the has_flow_statement could be extended.
+> > 
+> > 	if (max_addr > CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
+> >                 debug_putstr("Random addr is not allowed. No relocation
+> > needed... \n");
+> >                 return;
 > 
-> Maybe something like:
+> Hi Bao,
 > 
-> 			if ($ctx =~ /\b(goto|return|break|continue)\b/ &&
-> 			    $ctx !~ /\b(switch|if|do|while)\b/) {
-> 				has_flow_statement = 1;
-> 			}
+> I dont think that this is required or this is correct. kaslr will not
+> choose a physical location which is beyond CONFIG_RANDOMIZE_BASE_MAX_OFFSET,
+> So not sure what will this do.
 > 
-> but checkpatch isn't really capable  of doing proper
-> flow logic analysis.
+> Just the other check of output_orig == output should fix issue for us.
+> 
+> If one is not passing nokaslr in case of kexec, and kernel is loaded
+> high (say 64G), I think kaslr will automatically move kernel below 1G
+> and handle_relocations() should succeed.
 
-While possibly not really suitable in checkpatch, it might be a good addition to
-some static code analyzer as a "future bugs possible due to this" check.
+No, if kernel is loaded high (say 64G), the random kernel location
+choosing won't happen. Since in process_e820_entry() it only accepts the
+memory region which is above output, plus the
+CONFIG_RANDOMIZE_BASE_MAX_OFFSET checking, any kenrel loaded high above
+1G will not get a new random kernel location. So it's safe in this case.
 
-Bye,
-    Oleg
+> 
+> In case of kdump we will have to pass nokaslr, as we don't want kernel
+> to move as it could stomp over other things we have loaded.
+
+For kdump and kexec nokaslr is unnecessary. As you know we always
+call add_buffer with buf_end as 1, this will cause kernel loaded at the
+top of available memory. E.g on my pc with 16G memory, kexec kernel will
+be put nearby 16G, so no random location choosing happen as I said in
+above. For kdump, if reserved memory is at 500M~700M, then kernel will
+be put nearby 700M, the random location choosing also never happen.
+
+In fact, for some cases I need change kexec-tools user app code, to make
+kernel be put from down to top.
+
+> 
+> So I would suggest that test and repost the other patch with proper changelog
+> and that might be sufficient for now. Only other thing we will need is
+> Kees's patch for avoiding setup data regions in kaslr.
+
+Anyway, it's great people think the "output_orig=output" is good and can
+solve our problems, and it does change less code. I can repost that one
+with your suggestion that put some comments above that.
+
+Thanks for your comments and suggstion.
+
+> 
+> Thanks
+> Vivek
