@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaIJOll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:41:41 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:49078 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbaIJOlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:41:39 -0400
+	id S1753028AbaIJOmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:42:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43529 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931AbaIJOmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:42:09 -0400
+Date: Wed, 10 Sep 2014 16:42:06 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+In-Reply-To: <CAPAsAGyYoPjThA1EV46jYiGX2UzqF1oD4JJueNKh9V1XvAXjcA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1409101640350.5523@pobox.suse.cz>
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz> <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org> <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz> <20140910140759.GC31903@thunk.org> <alpine.LNX.2.00.1409101613500.5523@pobox.suse.cz>
+ <CAPAsAGyYoPjThA1EV46jYiGX2UzqF1oD4JJueNKh9V1XvAXjcA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20140910143019.GA3771@redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
-	<1409926097-2101-2-git-send-email-bhe@redhat.com>
-	<CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
-	<20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
-	<CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
-	<20140909192813.GB9435@redhat.com>
-	<20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
-	<20140910143019.GA3771@redhat.com>
-Date: Wed, 10 Sep 2014 07:41:38 -0700
-X-Google-Sender-Auth: -qAIibQPyE8VrPrLjPz5xJD7KGs
-Message-ID: <CAGXu5jLTd=xvhjiSGsp5FiT7w0cSctZF2KPOvfU=1_R8Up-97w@mail.gmail.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle relocations
-From: Kees Cook <keescook@chromium.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Baoquan He <bhe@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 7:30 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> So I would suggest that test and repost the other patch with proper changelog
-> and that might be sufficient for now. Only other thing we will need is
-> Kees's patch for avoiding setup data regions in kaslr.
+On Wed, 10 Sep 2014, Andrey Ryabinin wrote:
 
-If someone can confirm that my patch works, I can request x86 pull it.
+> > I of course have no objections to this check being added to whatever
+> > static checker, that would be very welcome improvement.
+> >
+> > Still, I believe that kernel shouldn't be just ignoring kfree(ERR_PTR)
+> > happening. Would something like the below be more acceptable?
+> >
+> >
+> >
+> > From: Jiri Kosina <jkosina@suse.cz>
+> > Subject: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+> >
+> > Freeing if ERR_PTR is not covered by ZERO_OR_NULL_PTR() check already
+> > present in kfree(), but it happens in the wild and has disastrous effects.
+> >
+> > Issue a warning and don't proceed trying to free the memory if
+> > CONFIG_DEBUG_SLAB is set.
+> >
+> 
+> This won't work cause CONFIG_DEBUG_SLAB  is only for CONFIG_SLAB=y
+> 
+> How about just VM_BUG_ON(IS_ERR(ptr)); ?
 
-Currently living here:
-https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=kaslr
+VM_BUG_ON() makes very little sense to me, as we are going to oops anyway 
+later, so it's a lose-lose situation.
 
-Thanks!
-
--Kees
+VM_WARN_ON() + return seems like much more reasonable choice.
 
 -- 
-Kees Cook
-Chrome OS Security
+Jiri Kosina
+SUSE Labs
