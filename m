@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaIJIGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:06:09 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:34848 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635AbaIJIGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:06:02 -0400
-X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 04:06:01 EDT
-Message-ID: <541004B6.8070800@sgi.com>
-Date: Wed, 10 Sep 2014 02:58:46 -0500
-From: Gary Kroening <gfk@sgi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752264AbaIJIHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:07:08 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:58348 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaIJIHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:07:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, linux-next@vger.kernel.org,
+        Romain Perier <romain.perier@gmail.com>, linux-kernel@vger.kernel.org,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Subject: Re: linux-next: manual merge of the net-next tree with the arm-soc tree
+Date: Wed, 10 Sep 2014 10:06:19 +0200
+Message-ID: <4343050.11meBDLdD4@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140910144837.5e3089e1@canb.auug.org.au>
+References: <20140910144837.5e3089e1@canb.auug.org.au>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>, Nathan Zimmer <nzimmer@sgi.com>,
-        jroedel@suse.de
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] iommu/vt-d: Use the SIRTP when enabling remapping
-References: <1410297096-54096-1-git-send-email-nzimmer@sgi.com> <540FF614.8000003@siemens.com>
-In-Reply-To: <540FF614.8000003@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:wkF6jJHwbynMLdansAIW/HehI1UR4+FCX1y0gfUNX+W
+ 9E3zF9NxCI+cCMlz33nICGmGdjrain+HnlyQtdxQ0LLoN0ocI6
+ siQZ3RMglESU+jz1PtNWI7mfSxiOmPBiWMK0zR9BS8a3vKxajY
+ Mz/oBrC8yKjD0opb5ZYPd/HNSLbeTt3nDydGxEtuQuTpe5Df+G
+ fFptunTufdwwj36+DDM5xwC4CFj5XLuQdoCVZV9qUXMxMhAALU
+ P7UWf4B4KKwtfuQZn8QxDVUZRkvIAisTXB9eiXff6RXKjUoc/U
+ Z5swRJ8qzcADvlJdu7rXOlysF5pzY08uZ2vFfiDNoKsUDVZ9GG
+ GPkCDnl98y87PXXnXTOw=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/10/2014 1:56 AM, Jan Kiszka wrote:
-> On 2014-09-09 23:11, Nathan Zimmer wrote:
->> The previous change (iommu/vt-d: Don't store SIRTP request) to this area
->> caused a crash in our simulator. In particular is seems that by the time a
->> UART interrupt is sent through the system, we don't see interrupt remapping
->> to be enabled.  So the interrupt does not get translated to a logical
->> interrupt and crashes.
->>
->> OR'ing the SIRTP request to make sure it is seen but hopefully not sticky.
->> This seems like a clean fix, at least on our simulator; if you don't agree,
->> our simulator guy will take a closer look at our iommu model.
->
-> Check the VT-d spec (6.7, Set Interrupt Remapping Table Pointer
-> Operation): "Software must always follow the interrupt-remapping table
-> pointer set operation with a global invalidate of the IEC to ensure
-> hardware references the new structures *before* enabling interrupt
-> remapping." There is also (command register description): "If multiple
-> control fields in this register need to be modified, software must
-> serialize the modifications through multiple writes to this register."
-> This, in combination with the command registers description of bits 24
-> and 25 strongly suggests that your model is broken.
+On Wednesday 10 September 2014 14:48:37 Stephen Rothwell wrote:
+> Today's linux-next merge of the net-next tree got a conflict in
+> arch/arm/boot/dts/rk3188-radxarock.dts between commit 4721ab855d1a
+> ("ARM: dts: rockchip: add hym8563 rtc to Radxa Rock board") from the
+> arm-soc tree and commit c6ec956b73db ("ARM: dts: Enable emac node on
+> the rk3188-radxarock boards") from the net-next tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+> 
 
-Thanks, Jan. I'll read up on it. Still working out some kinks with
-the relatively new IOMMU/interrupt-remapping logic which we added over
-the last 18 months or so. Sorry for any distraction, and thanks for the
-help/info.
-Gary
+Thanks, looks good.
 
->
->>
->> Found testing on our simulator, not real hardware.
->
-> Funnily, the original issue was found by the QEMU model of VT-d that
-> used to take the last cited sentence very strictly (I asked to remove it
-> due to the preexisting Linux versions).
->
-> Jan
->
-
+	Arnd
