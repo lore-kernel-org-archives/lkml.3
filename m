@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaIJSOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 14:14:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38097 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696AbaIJSOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 14:14:10 -0400
-Message-ID: <54109506.70207@ti.com>
-Date: Wed, 10 Sep 2014 14:14:30 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752985AbaIJSOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 14:14:19 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44657 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaIJSOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 14:14:16 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-ide@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [RESEND: PATCH] ahci: add pcid for Marvel 0x9182 controller
-References: <1409937660-30544-1-git-send-email-m-karicheri2@ti.com> <20140905175326.GB12991@mtj.dyndns.org>
-In-Reply-To: <20140905175326.GB12991@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140910142740.GC16489@pengutronix.de>
+References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
+	<1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
+	<20140910142740.GC16489@pengutronix.de>
+Date: Wed, 10 Sep 2014 11:14:15 -0700
+Message-ID: <CAGoOwPSpkNy6uNVAjG2HgiHHscKZjL5wgVrkyGwWCmyU7x+gWg@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH 2/5] ASoC: fsl: add imx-tlv320aic3x machine driver
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ijc+devicetree@hellion.org.uk, Kumar Gala <galak@codeaurora.org>,
+        shawn.guo@freescale.com, kernel@pengutronix.de, linux@arm.linux.org.uk,
+        "perex@perex.cz" <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Timur Tabi <timur@tabi.org>, Xiubo Li <Li.Xiubo@freescale.com>,
+        grant.likely@linaro.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 01:53 PM, Tejun Heo wrote:
-> On Fri, Sep 05, 2014 at 01:21:00PM -0400, Murali Karicheri wrote:
->> Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
->> for the ID in the ahci driver.
+On Wed, Sep 10, 2014 at 7:27 AM, Markus Pargmann <mpa@pengutronix.de> wrote:
+> Hi,
+>
+> On Wed, Sep 10, 2014 at 04:46:46PM +0300, Dmitry Lavnikevich wrote:
+>> This is driver for i.MX6 boards with tlv320aic3x audio codecs.
 >>
->> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+>> ---
+>>  .../bindings/sound/fsl,imx-audio-tlv320aic3x.txt   |  27 ++++
+>>  sound/soc/fsl/Kconfig                              |  13 ++
+>>  sound/soc/fsl/Makefile                             |   2 +
+>>  sound/soc/fsl/imx-tlv320aic3x.c                    | 177 +++++++++++++++++++++
+>>  4 files changed, 219 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/sound/fsl,imx-audio-tlv320aic3x.txt
+>>  create mode 100644 sound/soc/fsl/imx-tlv320aic3x.c
 >
-> Applied to libata/for-3.17-fixes w/ stable cc'd.
->
-> Thanks.
->
-Tejun,
+> Is it possible to use the simple-card
+> (Documentation/devicetree/bindings/sound/simple-card.txt) instead of
+> adding a new audio card driver? There are also DT bindings for the imx
+> audiomultiplexer (imx-audmux.txt).
 
-Thanks
+I don't know why my mutt doesn't display this mail.
 
-Murali
+Anyway, if Simple Card supports audmux, yes, it's also a good idea.
