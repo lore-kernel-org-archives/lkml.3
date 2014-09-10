@@ -1,112 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaIJIVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:21:24 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:54537 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937AbaIJIVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:21:21 -0400
-Message-ID: <541009F1.1070906@linux.vnet.ibm.com>
-Date: Wed, 10 Sep 2014 13:51:05 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751973AbaIJIW2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:22:28 -0400
+Received: from mail-bn1bon0143.outbound.protection.outlook.com ([157.56.111.143]:8588
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751048AbaIJIW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:22:26 -0400
+Date: Wed, 10 Sep 2014 16:28:55 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <broonie@kernel.org>,
+        <marex@denx.de>, <shawn.guo@linaro.org>, <Frank.Li@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>
+Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
+Message-ID: <20140910082853.GA29906@Robin-OptiPlex-780>
+References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+ <5412055.BAOgFikuh9@wuerfel>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
-References: <540707D9.4040208@linux.vnet.ibm.com> <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com> <5409AA64.2010700@linux.vnet.ibm.com> <CAKfTPtDYXeCnYgR0yU2Ed-XBP9ezfk-j1gCgEyiReyQjD5hC6Q@mail.gmail.com>
-In-Reply-To: <CAKfTPtDYXeCnYgR0yU2Ed-XBP9ezfk-j1gCgEyiReyQjD5hC6Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091008-0320-0000-0000-000000718E3B
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5412055.BAOgFikuh9@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(199003)(24454002)(51704005)(189002)(105606002)(46102001)(110136001)(23726002)(6806004)(81156004)(104016003)(21056001)(80022001)(95666004)(90102001)(85306004)(76482001)(92566001)(107046002)(92726001)(76176999)(50986999)(106466001)(54356999)(81342001)(84676001)(44976005)(4396001)(33656002)(50466002)(20776003)(77982001)(79102001)(83506001)(68736004)(69596002)(97756001)(87936001)(83072002)(46406003)(85852003)(74662001)(81542001)(99396002)(83322001)(19580395003)(19580405001)(64706001)(31966008)(102836001)(33716001)(97736003)(47776003)(74502001)(26826002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB494;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 033054F29A
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/2014 05:57 PM, Vincent Guittot wrote:
-> On 5 September 2014 14:19, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->> Hi Vincent,
->>
->> On 09/03/2014 10:28 PM, Vincent Guittot wrote:
->>> On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->>>> Hi,
->>>
->>> Hi Preeti,
->>>
->>>>
->>>> There are places in kernel/sched/fair.c in the load balancing part where
->>>> rq->nr_running is used as against cfs_rq->nr_running. At least I could
->>>> not make out why the former was used in the following scenarios.
->>>> It looks to me that it can very well lead to incorrect load balancing.
->>>> Also I did not pay attention to the numa balancing part of the code
->>>> while skimming through this file to catch this scenario. There are a
->>>> couple of places there too which need to be scrutinized.
->>>>
->>>> 1. load_balance(): The check (busiest->nr_running > 1)
->>>> The load balancing would be futile if there are tasks of other
->>>> scheduling classes, wouldn't it?
->>>
->>> agree with you
->>>
->>>>
->>>> 2. active_load_balance_cpu_stop(): A similar check and a similar
->>>> consequence as 1 here.
->>>
->>> agree with you
->>>
->>>>
->>>> 3. nohz_kick_needed() : We check for more than one task on the runqueue
->>>> and hence trigger load balancing even if there are rt-tasks.
->>>
->>> I can see one potentiel reason why rq->nr_running is interesting that
->>> is the group capacity might have changed because of non cfs tasks
->>> since last load balance. So we need to monitor the change of the
->>> groups' capacity to ensure that the average load of each group is
->>> still in the same level
->>>
->>>>
->>>> 4. cpu_avg_load_per_task(): This stands out among the rest as an
->>>> incorrect usage of rq->nr_running in place of cfs_rq->nr_running. We
->>>> divide the load associated with the cfs_rq by the number of tasks on the
->>>> rq. This will make the cfs_rq load look smaller.
->>>
->>> This one is solved in the consolidation of cpu_capacity patchset
->>
->> Sorry, but I don't see where in your patchset you have addressed this
->> issue. Can you please point out the patch?
+On Wed, Sep 10, 2014 at 10:17:14AM +0200, Arnd Bergmann wrote:
+> On Wednesday 10 September 2014 09:30:04 Robin Gong wrote:
+> > Enable DMA support on i.mx6. The read speed can increase from 600KB/s
+> > to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
+> > If not set "dma-names" in dts, spi will use PIO mode. This patch only
+> > validate on i.mx6, not i.mx5, but encourage ones to apply this patch
+> > on i.mx5 since they share the same IP.
+> > 
+> > Note:
+> >   Sometime, there is a weid data in rxfifo after one full tx/rx
+> > transfer finish by DMA on i.mx6dl, so we disable dma functhion on
+> > i.mx6dl.
+> > 
+> > Signed-off-by: Frank Li <Frank.Li@freescale.com>
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > 
+> > 
 > 
-> In [PATCH v5 03/12] sched: fix avg_load computation:
+> The patch looks good to me, but you need to also update the
+> Documentation/devicetree/bindings/spi/fsl-imx-cspi.txt file to
+> document the additional optional properties.
 > 
-> static unsigned long cpu_avg_load_per_task(int cpu)
->  {
->         struct rq *rq = cpu_rq(cpu);
-> -       unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
-> +       unsigned long nr_running = ACCESS_ONCE(rq->cfs.h_nr_running);
->         unsigned long load_avg = rq->cfs.runnable_load_avg;
-> 
-> Are you referring to another problem than the one above ?
-
-No Vincent, this is one. Thanks for pointing it out.
-
-Regards
-Preeti U Murthy
-> 
-> Regards
-> Vincent
-> 
->>
->> Regards
->> Preeti U Murthy
->>
-> 
-
+> 	Arnd
+Thanks for your reminding, I'll add it in the v6.
