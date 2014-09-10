@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaIJTnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 15:43:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42815 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaIJTnj (ORCPT
+	id S1753026AbaIJTo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 15:44:57 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47642 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751701AbaIJToz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 15:43:39 -0400
-Date: Wed, 10 Sep 2014 12:43:35 -0700 (PDT)
-Message-Id: <20140910.124335.837039370159482619.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, sage@inktank.com, ursula.braun@de.ibm.com,
-        linux390@de.ibm.com, pablo@netfilter.org, kaber@trash.net,
-        kadlec@blackhole.kfki.hu, linux-kernel@vger.kernel.org,
-        ceph-devel@vger.kernel.org, linux-s390@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
-Subject: Re: [PATCH net-next 0/5] net: Convert pr_warning to pr_warn
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1410322181.git.joe@perches.com>
-References: <cover.1410322181.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 10 Sep 2014 12:43:39 -0700 (PDT)
+	Wed, 10 Sep 2014 15:44:55 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v2 14/14] tty: Workaround Alpha non-atomic byte storage in tty_struct
+Date: Wed, 10 Sep 2014 15:06:36 -0400
+Message-Id: <1410375996-4693-15-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410375996-4693-1-git-send-email-peter@hurleysoftware.com>
+References: <1409693975-1028-1-git-send-email-peter@hurleysoftware.com>
+ <1410375996-4693-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue,  9 Sep 2014 21:17:27 -0700
+The Alpha EV4/EV5 cpus can corrupt adjacent byte and short data because
+those cpus use RMW to store byte and short data. Thus, concurrent adjacent
+byte stores could become corrupted, if serialized by a different lock.
+tty_struct uses different locks to protect certain fields within the
+structure, and thus is vulnerable to byte stores which are not atomic.
 
-> Remove remaining uses of pr_warning in net/
-> 
-> Joe Perches (5):
->   atm: Convert pr_warning to pr_warn
->   ceph: Convert pr_warning to pr_warn
->   pktgen: Convert pr_warning to pr_warn
->   iucv: Convert pr_warning to pr_warn
->   netfilter: Convert pr_warning to pr_warn
+Merge the ->ctrl_status byte and packet mode bit, both protected by the
+->ctrl_lock, into an unsigned long.
 
-All except the ceph patch which is going via another tree.
+The padding bits are necessary to force the compiler to allocate the
+type specified; otherwise, gcc will ignore the type specifier and
+allocate the minimum number of bytes required to store the bitfield.
+In turn, this would allow Alpha EV4/EV5 cpus to corrupt adjacent byte
+or short storage (because those cpus use RMW to store byte and short data).
+
+gcc versions < 4.7.2 will also corrupt storage adjacent to bitfields
+smaller than unsigned long on ia64, ppc64, hppa64, and sparc64, thus
+requiring more than unsigned int storage (which would otherwise be
+sufficient to fix the Alpha non-atomic storage problem).
+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ include/linux/tty.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 3c1276b..7a0a796 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -266,8 +266,9 @@ struct tty_struct {
+ 		      flow_stopped:1,
+ 		      unused:62;
+ 	int hw_stopped;
+-	int packet;
+-	unsigned char ctrl_status;	/* ctrl_lock */
++	unsigned long ctrl_status:8,	/* ctrl_lock */
++		      packet:1,
++		      unused_ctrl:55;
+ 	unsigned int receive_room;	/* Bytes free for queue */
+ 	int flow_change;
+ 
+-- 
+2.1.0
+
