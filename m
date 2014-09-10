@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaIJOxy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:53:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaIJOxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:53:50 -0400
-Date: Wed, 10 Sep 2014 22:53:34 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle
- relocations
-Message-ID: <20140910145334.GB1887@dhcp-17-102.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
- <1409926097-2101-2-git-send-email-bhe@redhat.com>
- <CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
- <20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
- <CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
- <20140909192813.GB9435@redhat.com>
- <20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
- <20140910143019.GA3771@redhat.com>
+	id S1751637AbaIJO6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:58:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59122 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaIJO6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:58:18 -0400
+Message-ID: <54106707.4010006@codeaurora.org>
+Date: Wed, 10 Sep 2014 10:58:15 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910143019.GA3771@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Doug Anderson <dianders@chromium.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+References: <1409173419-13076-1-git-send-email-sonnyrao@chromium.org> <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com> <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com> <53FE5B09.2020403@codeaurora.org> <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com> <53FE7E3B.1010500@codeaurora.org> <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com> <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com> <20140828093505.GC14650@leverpostej> <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
+In-Reply-To: <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/14 at 10:30am, Vivek Goyal wrote:
-> On Wed, Sep 10, 2014 at 03:21:15PM +0800, Baoquan He wrote:
- 
- 
-> > In fact, I think below checking will be clearer and works too.
-> > 
-> > 
-> > static void handle_relocations(void *output, unsigned long output_len)
-> > {
-> > 
-> > ...
-> > 
-> > #if CONFIG_X86_64
-> > 
-> > or
-> > 
-> > #if CONFIG_RANDOMIZE_BASE
-> > #ifdef CONFIG_HIBERNATION
-> > 	if (!cmdline_find_option_bool("kaslr")) {
-> >                debug_putstr("No relocation needed... ");
-> >                return;
-> > 	}
-> > #else
-> > 	if (cmdline_find_option_bool("nokaslr")) {
-> >                debug_putstr("No relocation needed... ");
-> >                return;
-> > 	}
-> > #endif
+On 09/05/2014 06:11 PM, Doug Anderson wrote:
+> Mark,
 > 
-> > 
-> > 	if (max_addr > CONFIG_RANDOMIZE_BASE_MAX_OFFSET) {
-> >                 debug_putstr("Random addr is not allowed. No relocation
-> > needed... \n");
-> >                 return;
+> On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> Not if you boot Linux at hyp, as we've recommended for this precise
+>> reason. That doesn't fix other things like CNTFRQ if the secure
+>> initialisation doesn't poke that, however.
 > 
-> Hi Bao,
+> I'll freely admit that I'm out of my league and out of my comfort zone
+> here, but...
 > 
-> I dont think that this is required or this is correct. kaslr will not
-> choose a physical location which is beyond CONFIG_RANDOMIZE_BASE_MAX_OFFSET,
-> So not sure what will this do.
+> In the theory that firmware ought to be as minimal as possible
+> (because it's hard to update and hard to keep in sync with kernel
+> versions), it seems like firmware ought to start the kernel out in as
+> permissive mode as it's willing to provide, right?
 > 
-> Just the other check of output_orig == output should fix issue for us.
+> If the kernel is started out as permissive as possible then it can do
+> anything it needs to.  Future versions of the kernel can be
+> implemented to do any way-cool things that they want to do without an
+> update to firmware, right?  ...and current versions of the kernel can
+> just shed permissions if they don't want them.
 > 
-> If one is not passing nokaslr in case of kexec, and kernel is loaded
-> high (say 64G), I think kaslr will automatically move kernel below 1G
-> and handle_relocations() should succeed.
-
-No, if kernel is loaded high (say 64G), the random kernel location
-choosing won't happen. Since in process_e820_entry() it only accepts the
-memory region which is above output, plus the
-CONFIG_RANDOMIZE_BASE_MAX_OFFSET checking, any kenrel loaded high above
-1G will not get a new random kernel location. So it's safe in this case.
-
+> ...so if I understand correctly, "Secure SVC" mode is more permissive
+> than "Non Secure HYP" mode, right?  It looks to me as if we currently
+> start the kernel in "Secure SVC" mode.  What do you think about the
+> kernel detecting Secure SVC and then dropping down permission levels
+> (to Non Secure HYP).  Once it did this, it could update things like
+> the virtual offset and then transition down further into non-secure
+> SVC mode.
 > 
-> In case of kdump we will have to pass nokaslr, as we don't want kernel
-> to move as it could stomp over other things we have loaded.
+> ...or maybe this has been discussed millions of times already and I'm
+> just clueless.  ...or maybe this is just too hard for the kernel to do
+> in a generic way?
 
-For kdump and kexec nokaslr is unnecessary. As you know we always
-call add_buffer with buf_end as 1, this will cause kernel loaded at the
-top of available memory. E.g on my pc with 16G memory, kexec kernel will
-be put nearby 16G, so no random location choosing happen as I said in
-above. For kdump, if reserved memory is at 500M~700M, then kernel will
-be put nearby 700M, the random location choosing also never happen.
+I think this is a great idea. When running on simulators, it would make (the
+non-DTB parts of) the bootwrapper and QEMU's built-in bootloader unnecessary.
 
-In fact, for some cases I need change kexec-tools user app code, to make
-kernel be put from down to top.
+Implementing it on AArch64 should be trivial as you can just read CurrentEL
+and work from whatever EL/PL you're at. Is there an easy way to check whether
+you're in secure or nonsecure mode in AArch32? I seem to recall discussion
+about putting this information into the DTB, which makes me think there isn't.
 
-> 
-> So I would suggest that test and repost the other patch with proper changelog
-> and that might be sufficient for now. Only other thing we will need is
-> Kees's patch for avoiding setup data regions in kaslr.
+Christopher
 
-Anyway, it's great people think the "output_orig=output" is good and can
-solve our problems, and it does change less code. I can repost that one
-with your suggestion that put some comments above that.
-
-Thanks for your comments and suggstion.
-
-> 
-> Thanks
-> Vivek
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
