@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaIJJXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 05:23:50 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:35599 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497AbaIJJXs (ORCPT
+	id S1751924AbaIJJ01 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 05:26:27 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48586 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaIJJ0Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 05:23:48 -0400
-Message-ID: <541018A0.6070403@linaro.org>
-Date: Wed, 10 Sep 2014 17:23:44 +0800
-From: Guodong Xu <guodong.xu@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+	Wed, 10 Sep 2014 05:26:25 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8A9PraK005428, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: Ivan Vecera <ivecera@redhat.com>, Hau <hau@realtek.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: nic_swsd <nic_swsd@realtek.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Support Opensource <support.opensource@diasemi.com>
-Subject: Re: [PATCH] regulator: remove unnecessary of_node_get() to parent
-References: <1410321039-26888-1-git-send-email-guodong.xu@linaro.org>	<CAFRkauBBmEKNnc3M-CPAWQ8yMZFo6W-wj-M1qMmn3hGAYL6sTg@mail.gmail.com> <CAFRkauDnp0pEEFkzvUoD8i4Up5DaMJDM26uGihah86FxsO7Rsw@mail.gmail.com>
-In-Reply-To: <CAFRkauDnp0pEEFkzvUoD8i4Up5DaMJDM26uGihah86FxsO7Rsw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>
+Subject: RE: [PATCH net-next v2] r8169:add support for RTL8168H and RTL8107E
+Thread-Topic: [PATCH net-next v2] r8169:add support for RTL8168H and RTL8107E
+Thread-Index: AQHPu9aTOx1ldhH+Hka8NZq9A476G5v2zASAgAGdD0D//+mVAIAB5XJg
+Date: Wed, 10 Sep 2014 09:25:57 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB252152B@RTITMBSV03.realtek.com.tw>
+References: <1408470844-30038-1-git-send-email-hau@realtek.com>
+ <540DA87D.9000302@redhat.com>
+ <0835B3720019904CB8F7AA43166CEEB25211E3@RTITMBSV03.realtek.com.tw>
+ <540EF02E.7090209@redhat.com>
+In-Reply-To: <540EF02E.7090209@redhat.com>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ From: Ivan Vecera [mailto:ivecera@redhat.com] 
+> Sent: Tuesday, September 09, 2014 8:19 PM
+[...]
+> Thanks Hayes,
+> have you got any idea when do you update them?
 
-
-On 09/10/2014 12:23 PM, Axel Lin wrote:
-> 2014-09-10 12:20 GMT+08:00 Axel Lin <axel.lin@ingics.com>:
->> 2014-09-10 11:50 GMT+08:00 Guodong Xu <guodong.xu@linaro.org>:
->>> These of_node_get() were added to balance refcount decrements inside of
->>> of_find_node_by_name().
->>> See: commit c92f5dd2c42f ("regulator: Add missing of_node_put()")
->>>
->>> However of_find_node_by_name() was then replaced by of_get_child_by_name(),
->>> which doesn't call of_node_put() against its input parameter.
->>>
->>> So, need to remove these unnecessary of_node_get() calls.
->>
->> The of_node_get() and of_node_put() is a pair.
->> You need to either keep both or remove both.
->>
->>
->> BTW,
->> I think either the comment of of_get_child_by_name() needs fix or the
->> implementation
->> needs fix. The implementation does not increment refcount.
-> 
-> Ah, I see the of_node_get() and of_node_put() in __of_get_next_child.
-> So of_get_child_by_name() is correct.(both comment and implementation)
-> 
-
-That's right. You only need to call of_node_put() once on the node
-of_get_child_by_name() returns. That's why I submit this patch to remove
-of_node_get() _before_ calling to of_get_child_by_name().
-
--Guodong
+If all are fine, I would release them this week.
+ 
+Best Regards,
+Hayes
