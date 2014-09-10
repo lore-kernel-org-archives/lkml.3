@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaIJXSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 19:18:53 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62920 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750970AbaIJXSw (ORCPT
+	id S1753447AbaIJXTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 19:19:15 -0400
+Received: from exprod5og122.obsmtp.com ([64.18.0.192]:42598 "HELO
+	exprod5og122.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752353AbaIJXTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 19:18:52 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Thu, 11 Sep 2014 01:38:21 +0200
-Message-ID: <2606659.qXoKHWVyLl@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAM_iQpUP9kSGMs6Lq9tBLGaJrW6yyBWU5z38WzBiH4x-H_ZdYA@mail.gmail.com>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <CAM_iQpXwEEoCTqksFEyJ7UigOJkf6g5UHnddEHcMDjwKz6K-DQ@mail.gmail.com> <CAM_iQpUP9kSGMs6Lq9tBLGaJrW6yyBWU5z38WzBiH4x-H_ZdYA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 10 Sep 2014 19:19:06 -0400
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>
+Cc: linux-pci@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@apm.com, jcm@redhat.com,
+        Tanmay Inamdar <tinamdar@apm.com>
+Subject: [PATCH v7 0/4] APM X-Gene PCIe host controller
+Date: Wed, 10 Sep 2014 16:20:16 -0700
+Message-Id: <1410391220-4866-1-git-send-email-tinamdar@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 10, 2014 01:30:25 PM Cong Wang wrote:
-> On Mon, Sep 8, 2014 at 4:29 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
-> > On Mon, Sep 8, 2014 at 4:42 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> On Monday, September 08, 2014 04:16:15 PM Cong Wang wrote:
-> >>> On Mon, Sep 8, 2014 at 4:23 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >>> >
-> >>> > The reason why it matters for the suspend-time freezing is that we freeze tasks
-> >>> > to take them out of the picture entirely until they are thawed.  Therefore we
-> >>> > can't allow them to go back to the picture just for a while until they are
-> >>> > killed.  Frozen tasks are not supposed to get back to the picture at all.
-> >>> >
-> >>>
-> >>>
-> >>> Ok, then checking TIF_MEMDIE is unsafe for PM freeze, we should
-> >>> keep the cgroup_freezing() test to make sure freeze request is from
-> >>> cgroup not PM. Question got answered. :)
-> >>
-> >> Do I think correctly that cgroups freezing and system suspend are
-> >> mutually exclusive?  If not, then this still is problematic.
-> >
-> > Good point! Although rare, but it is possible we freeze a process both from
-> > cgroup and PM. Hmm, this means we have to explicitly exclude PM rather
-> > just checking cgroup freeze? Interesting, but I am not familiar with PM.
-> >
-> 
-> I am wondering if the folllowing check makes any sense with regarding
-> to rule out PM freeze:
-> 
->         if ((!pm_nosig_freezing && !pm_freezing) &&
->             cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE))
->                 return true;
-> 
-> PM will not freeze the process again if it is already frozen by cgroup,
-> so here we just make sure that it will not thaw if PM freeze is in progress.
-> 
-> Am I missing anything?
+This patch adds support for AppliedMicro X-Gene PCIe host controller. The
+driver is tested on X-Gene platform with different gen1/2/3 PCIe endpoint
+cards.
 
-And where exactly would you like to put this check?  Into __refrigerator()?
+X-Gene PCIe controller driver has depedency on the pcie arm64 arch support.
+Liviu Dudau from ARM has sent a patch set for pcie arm64 arch support and
+support for creating generic pcie bridge from device tree. Liviu's patches
+are available here
+https://lkml.org/lkml/2014/9/8/333
+
+If someone wishes to test PCIe on X-Gene with this patch set, above mentioned
+patches from Liviu must be applied before the patches in this patch set. Also
+please use latest xgene u-boot firmware.
+
+changes since V6:
+1. Port driver to changed interface as per Liviu's v10 series.
+
+changes since V5:
+1. Port driver to changed interface of 'of_create_pci_host_bridge'
+2. Fix the prefetch bit setting
+3. Removed bunch of register programming which is already done by firmware
+
+changes since V4:
+1. fix section mismatch warnings
+2. fix the patch description
+3. fix indentation
+4. update read/write cfg functions by passing both addr and offset.
+5. use 'time_before' for timeout.
+6. remove unnecessary 'IS_ERR_OR_NULL'. Keep 'IS_ERR' for 'clk_get'
+7. remove BUG_ON for pci_ioremap_io.
+
+changes since V3:
+1. remove 'struct hw_pci' and supporting ops in hw_pci
+2. add code to create the host bridge from dts
+3. add code to scan the the host bridge
+4. modify outbound windows setup function to get resource information from
+   'bridge->windows'
+5. add compatible string in pcie dts node with current X-Gene SOC name.
+
+changes since V2:
+1. redefined each PCI port in different PCI domain correctly.
+2. removed setup_lane and setup_link functions from driver.
+3. removed scan_bus wrapper and set_primary_bus hack.
+4. added pci_ioremap_io for io resources.
+
+changes since V1:
+1. added PCI domain support
+2. reading cpu and pci addresses from device tree to configure regions.
+3. got rid of unnecessary wrappers for readl and writel.
+4. got rid of endpoint configuration code.
+5. added 'dma-ranges' property support to read inbound region configuration.
+6. renamed host driver file to 'pci-xgene.c' from 'pcie-xgene.c'
+7. dropped 'clock-names' property from bindings
+8. added comments whereever requested.
+
+
+Tanmay Inamdar (4):
+  pci:host: APM X-Gene PCIe host controller driver
+  arm64: dts: APM X-Gene PCIe device tree nodes
+  dt-bindings: pci: xgene pcie device tree bindings
+  MAINTAINERS: entry for APM X-Gene PCIe host driver
+
+ .../devicetree/bindings/pci/xgene-pci.txt          |  55 ++
+ MAINTAINERS                                        |   8 +
+ arch/arm64/boot/dts/apm-mustang.dts                |   8 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 | 160 +++++
+ drivers/pci/host/Kconfig                           |  10 +
+ drivers/pci/host/Makefile                          |   1 +
+ drivers/pci/host/pci-xgene.c                       | 647 +++++++++++++++++++++
+ 7 files changed, 889 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/xgene-pci.txt
+ create mode 100644 drivers/pci/host/pci-xgene.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
