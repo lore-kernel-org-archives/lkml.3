@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaIJPpj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:45:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54901 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaIJPpg (ORCPT
+	id S1751928AbaIJPrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:47:17 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45655 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaIJPrQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:45:36 -0400
-Date: Wed, 10 Sep 2014 08:45:35 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: linux-usb <linux-usb@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [REGRESSION 3.17] scsi (uas) disks no longer using tagged
- command queuing
-Message-ID: <20140910154535.GA5102@infradead.org>
-References: <540EC52C.3000804@redhat.com>
- <20140909152730.GA17882@infradead.org>
- <540FFBF4.9090001@redhat.com>
+	Wed, 10 Sep 2014 11:47:16 -0400
+Date: Wed, 10 Sep 2014 16:47:09 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Doug Anderson <dianders@chromium.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Fix code to use physical timers
+ when requested
+Message-ID: <20140910154709.GF31237@localhost>
+References: <CAOesGMjK65Rc-K0fyFUUJLw6huLT82E-nqJwZO4PqhgopF96Ow@mail.gmail.com>
+ <CAPz6YkWAPtuy4sAuAK9GtpDgfGsccxeS+pqqe_t_R818Jt01qA@mail.gmail.com>
+ <53FE5B09.2020403@codeaurora.org>
+ <CAOesGMhTivDzJFuxONggcJ6N5UvZopKa=+tv9PoPX593cpnm0A@mail.gmail.com>
+ <53FE7E3B.1010500@codeaurora.org>
+ <CAOesGMgXnsqttHwAxEW4a7-Rx-nmSwpJd_Dt1iCcFOvzDwbzdA@mail.gmail.com>
+ <CAD=FV=VjN6Xam-nRRcxvOoN-gokU6DbGVjoPXN_fkTJssH1RWA@mail.gmail.com>
+ <20140828093505.GC14650@leverpostej>
+ <CAD=FV=UwfP0x-bswbtV_eUvpKeOSNnsVVLTE3VHguyhm_jiSug@mail.gmail.com>
+ <54106707.4010006@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <54106707.4010006@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Sep 2014 15:47:11.0468 (UTC) FILETIME=[7C3D92C0:01CFCD0E]
+X-MC-Unique: 114091016471401101
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <540FFBF4.9090001@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:21:24AM +0200, Hans de Goede wrote:
-> I've applied the patch, this results in the following new dmesg output
-> when using uas:
+On Wed, Sep 10, 2014 at 03:58:15PM +0100, Christopher Covington wrote:
+> On 09/05/2014 06:11 PM, Doug Anderson wrote:
+> > On Thu, Aug 28, 2014 at 2:35 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> >> Not if you boot Linux at hyp, as we've recommended for this precise
+> >> reason. That doesn't fix other things like CNTFRQ if the secure
+> >> initialisation doesn't poke that, however.
+> > 
+> > I'll freely admit that I'm out of my league and out of my comfort zone
+> > here, but...
+> > 
+> > In the theory that firmware ought to be as minimal as possible
+> > (because it's hard to update and hard to keep in sync with kernel
+> > versions), it seems like firmware ought to start the kernel out in as
+> > permissive mode as it's willing to provide, right?
+> > 
+> > If the kernel is started out as permissive as possible then it can do
+> > anything it needs to.  Future versions of the kernel can be
+> > implemented to do any way-cool things that they want to do without an
+> > update to firmware, right?  ...and current versions of the kernel can
+> > just shed permissions if they don't want them.
+> > 
+> > ...so if I understand correctly, "Secure SVC" mode is more permissive
+> > than "Non Secure HYP" mode, right?  It looks to me as if we currently
+> > start the kernel in "Secure SVC" mode.  What do you think about the
+> > kernel detecting Secure SVC and then dropping down permission levels
+> > (to Non Secure HYP).  Once it did this, it could update things like
+> > the virtual offset and then transition down further into non-secure
+> > SVC mode.
+> > 
+> > ...or maybe this has been discussed millions of times already and I'm
+> > just clueless.  ...or maybe this is just too hard for the kernel to do
+> > in a generic way?
 > 
-> [  120.602632] initialized host-wide tag map!
+> I think this is a great idea. When running on simulators, it would make (the
+> non-DTB parts of) the bootwrapper and QEMU's built-in bootloader unnecessary.
 > 
-> Thank you for looking into this.
+> Implementing it on AArch64 should be trivial as you can just read CurrentEL
+> and work from whatever EL/PL you're at. Is there an easy way to check whether
+> you're in secure or nonsecure mode in AArch32? I seem to recall discussion
+> about putting this information into the DTB, which makes me think there isn't.
 
-So we're initializing the tag map, but scsi_activate_tcq doesn't pick it
-up.  I can't really come up with a good explanation for it, but there
-even without that there is an elephant in the room:  as part of the
-scsi-mq series I moved the bqt field used for this into a union with the
-new blk_mq_tag_set.  Below is a patch to get rid of that union, can you
-try if that fixes it?
+(I replied couple of days ago but the SMTP server I was using still
+hasn't delivered it)
 
+Anyway, for AArch64 you get the CurrentEL but does not tell you whether
+it's secure or not (the same as the mode bits in CPSR basically). Secure
+EL1 is not more permissive than non-secure EL2, you still have to go
+through EL3 firmware using an SMC call to be able to switch to EL2. So
+for AArch64, you need to rely on firmware to do at least the correct
+initialisation (unless you start the kernel at EL3).
 
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index d0f69a3..bcffff2 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -584,10 +584,8 @@ struct Scsi_Host {
- 	 * Area to keep a shared tag map (if needed, will be
- 	 * NULL if not).
- 	 */
--	union {
--		struct blk_queue_tag	*bqt;
--		struct blk_mq_tag_set	tag_set;
--	};
-+	struct blk_queue_tag	*bqt;
-+	struct blk_mq_tag_set	tag_set;
- 
- 	atomic_t host_busy;		   /* commands actually active on low-level */
- 	atomic_t host_blocked;
+-- 
+Catalin
+
