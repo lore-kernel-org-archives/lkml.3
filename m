@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaIJQN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 12:13:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51563 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882AbaIJQN6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 12:13:58 -0400
-Date: Wed, 10 Sep 2014 11:13:37 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Felipe Balbi <balbi@ti.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] usb: f_fs: replace BUG in dead-code with less
- serious WARN_ON
-Message-ID: <20140910161337.GL667@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410364225-6087-1-git-send-email-mina86@mina86.com>
- <1410364225-6087-2-git-send-email-mina86@mina86.com>
+	id S1752677AbaIJQOM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 12:14:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24123 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335AbaIJQOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 12:14:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,499,1406617200"; 
+   d="scan'208";a="571220185"
+Message-ID: <541077DF.1060609@intel.com>
+Date: Wed, 10 Sep 2014 09:10:07 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8SdtHY/0P4yzaavF"
-Content-Disposition: inline
-In-Reply-To: <1410364225-6087-2-git-send-email-mina86@mina86.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boaz Harrosh <boaz@plexistor.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org, Toshi Kani <toshi.kani@hp.com>,
+        linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/9] mm: Let sparse_{add,remove}_one_section receive a
+ node_id
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <540F1EC6.4000504@plexistor.com> <540F20AB.4000404@plexistor.com> <540F48BA.2090304@intel.com> <541022DB.9090000@plexistor.com>
+In-Reply-To: <541022DB.9090000@plexistor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8SdtHY/0P4yzaavF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/10/2014 03:07 AM, Boaz Harrosh wrote:
+> On 09/09/2014 09:36 PM, Dave Hansen wrote:
+>> On 09/09/2014 08:45 AM, Boaz Harrosh wrote:
+>>> This is for add_persistent_memory that will want a section of pages
+>>> allocated but without any zone associated. This is because belonging
+>>> to a zone will give the memory to the page allocators, but
+>>> persistent_memory belongs to a block device, and is not available for
+>>> regular volatile usage.
+>>
+>> I don't think we should be taking patches like this in to the kernel
+>> until we've seen the other side of it.  Where is the page allocator code
+>> which will see a page belonging to no zone?  Am I missing it in this set?
+> 
+> It is not missing. It will never be.
+> 
+> These pages do not belong to any allocator. They are not allocate-able
+> pages. In fact they are not "memory" they are "storage"
+> 
+> These pages belong wholesomely to a block-device. In turn the block
+> device grants ownership of a partition of this pages to an FS.
+> The FS loaded has its own block allocation schema. Which internally
+> circulate each pages usage around. But the page never goes beyond its
+> FS.
 
-On Wed, Sep 10, 2014 at 05:50:25PM +0200, Michal Nazarewicz wrote:
-> Even though the BUG() in __ffs_event_add is a dead-code, it is still
-> better to warn rather then crash the system if that code ever gets
-> executed.
->=20
-> Suggested-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  This has been compile tested only.
->=20
->  drivers/usb/gadget/function/f_fs.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/func=
-tion/f_fs.c
-> index ec50e0d..74d48b3 100644
-> --- a/drivers/usb/gadget/function/f_fs.c
-> +++ b/drivers/usb/gadget/function/f_fs.c
-> @@ -2321,7 +2321,9 @@ static void __ffs_event_add(struct ffs_data *ffs,
->  		break;
-> =20
->  	default:
-> -		BUG();
-> +		pr_vdebug("%d: unknown event, this should not happen\n", type);
-> +		WARN_ON(1);
+I'm mostly worried about things that start with an mmap().
 
-WARN(1, "unknown event type %d\n", type);
-Then you can drop pr_vdebug();
+Imagine you mmap() a persistent memory file, fault some pages in, then
+'cat /proc/$pid/numa_maps'.  That code will look at the page to see
+which zone and node it is in.
 
---=20
-balbi
+Or, consider if you mmap() then put a futex in the page.  The page will
+have get_user_pages() called on it by the futex code, and a reference
+taken.  The reference can outlast the mmap().  We either have to put the
+file somewhere special and scan the page's reference occasionally, or we
+need to hook something under put_page() to make sure that we keep the
+page out of the normal allocator.
 
---8SdtHY/0P4yzaavF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>> I see about 80 or so calls to page_zone() in the kernel.  How will a
+>> zone-less page look to all of these sites?
+> 
+> None of these 80 call site will be reached! the pages are always used
+> below the FS, like send them on the network, or send them to a slower
+> block device via a BIO. I have a full fledge FS on top of this code
+> and it all works very smoothly, and stable. (And fast ;))
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Does the fs support mmap()?
 
-iQIcBAEBAgAGBQJUEHixAAoJEIaOsuA1yqREBb4QAKDLC4oY9ibwEsK/3Ld1TzJY
-2p0kWQGctmNXIs2AX6AfHpUH6eNwIqPd4aPH7+XJdS8E9vZzS1/ezZBo1I1cFwGs
-/wrh6JXMCZbxPWFA8wFImzg68bIVseX/t4jl8bsFSMHUmawosCUtNtuH3Qh6ngoS
-KuBZoGTXjyic/XdrQy40q48Vco082vuhJL3oBVGNiQWUMCe9r3oALoY3MVqkGmAI
-pHAdToIMCtpbtSAuU7c+b/OTkxcKankWiH4ZQ5Tq+b2LkTEHpWVaa3w1oe0pbvLn
-k0s4VLBTqm1HD+1Q+LhxbydC+TpS28wCI5cU0ne1taTlvmnQ7HaBFHxNduwJOcFr
-0Debq59hJdPJMaZuplJWeYWRs5pg+B2aZlu9QTcZ4kqaa6gT870a4OlbQWWC8CeH
-7SLsfpHBbSTQrx3xvS57X/MKRiqkPiRwOowfM+DxPM0CMzUIeQSr9/Hk1BCWwa6w
-fbwIiRSYBeXMZziZ4cn8cWyIeSvxby6ReDOqQbrFrq9do91WVRp7Lxreziz/W0Hw
-9+vDcnQsbz8rF38CG3QoY9G48ULVbugCehiuqfw8xrM5poKSYes/JQgmsL41Iv+P
-B3/2a42dzL1pYvzlnASdPRQfXNsRUJ0b0ymwCClgy9J0rXz9JA2PqGo/WmCbOMyd
-bk0ZRhS+1+n+c5jvN9mq
-=xl/x
------END PGP SIGNATURE-----
-
---8SdtHY/0P4yzaavF--
+The idea of layering is a nice one, but mmap() is a big fat layering
+violation. :)
