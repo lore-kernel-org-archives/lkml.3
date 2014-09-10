@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaIJPEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 11:04:44 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:35400 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaIJPEm (ORCPT
+	id S1751963AbaIJPFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 11:05:06 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21829 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751471AbaIJPFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 11:04:42 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-a3-541068867cae
-Message-id: <541066FB.9070606@samsung.com>
-Date: Wed, 10 Sep 2014 18:58:03 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.7.0
-MIME-version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, linux-kernel@vger.kernel.org
-Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Michal Marek <mmarek@suse.cz>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        x86@kernel.org, linux-mm@kvack.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [RFC/PATCH v2 00/10] Kernel address sainitzer (KASan) - dynamic
- memory error deetector.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
- <541067D1.4090907@intel.com>
-In-reply-to: <541067D1.4090907@intel.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02SfSzUcRzH9/09nsvl6yLfaWXZtJiHjLVvZaY/4jdltcXWrK0O153NobtY
-	eprIxXFmzNPN0K4a5xbOmofJU+aKEvKwhKiIcowztIvq+Md/r33er/fn88+HRwpHKGdebPwt
-	sTxeFOfK8Km+beOwl1IKw0/U5BzGllelNC6r1TO4e3SDxcvPcwAeW18EeHVhGuAfMzMszptR
-	srio3glXZ6czuHHORODqrGka/2lpIvDHljIGT+n/0nioo5LAj9oGCKw0b9PYqO4gsGmimMLK
-	p/UE1nZ/JvHSXAGJGwyFJB7RdbL4w5aRxpt13+igQ5y+XA+4iuYVwDVrJlmu0pDENVR5cNrW
-	BYIz6LIYzrCaz3Iq0zDBLfX3s9ybEgvFfR8uJriV2XGKW24bYbh3ld0sZzYcuSSM5AfEiONi
-	k8Vyn8DrfOla9jJILCdur//MB6ngK1ABHg9BfzScJlEBm/94EA1M1TIqwOcJ4TOAdBm5wBoI
-	YTqB1L/8rL4AeiBTY5h1TEE3VNtZuKMw0BttaxoZKzvCK+i3eZ21sgDao82CKcrKDvAcqsrO
-	oKz7SahhUV99/U7hALyBlL3z9O7hJwANVehoa2AD3dFWXetOm4SeqD2jiNllF9SgN5F5AGr2
-	HNHs0TR7tEpA6oCjOCk6URElkfl6K0QyRVK8xDs6QWYAu6+w1gS0Pae7AOQBV1vBzUG7cCEt
-	SlakyLoA4pGuDoK0IBguFMSIUu6I5QnX5ElxYkUXIHg2zqmA/9bFfzri8mjI47vtjfd6Fjxb
-	O5rd6OMDtlJnR0nbuPF9bwAkTz7s/VL6uujU1TQnn6iLIaGDR+3U81kFhcHnxRHlD15MBJ5V
-	5/oFj9num7mQekwTnBlhMWbSkQJBSf+nSXOo130z5p9ZrHHYeJk/KLQ37XcHs71hSxZPLz/t
-	vCulkIp8PUi5QvQPWKMvHugCAAA=
+	Wed, 10 Sep 2014 11:05:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+u4dOAbNMZPD1yLORmgJa6Y4O6vy0Y9TU=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 8BA2E5DD707
+Date: Wed, 10 Sep 2014 11:04:47 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Christoph Lameter <cl@linux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nicolas.pitre@linaro.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+Message-ID: <20140910150447.GV30828@titan.lakedaemon.net>
+References: <20140901230728.GM29327@sirena.org.uk>
+ <1627064.QhxvejlWdk@amdc1032>
+ <alpine.DEB.2.11.1409020857110.9201@gentwo.org>
+ <alpine.DEB.2.11.1409020958530.9608@gentwo.org>
+ <20140904171123.GD26364@mtj.dyndns.org>
+ <20140909003729.GA11706@mtj.dyndns.org>
+ <alpine.DEB.2.11.1409100914180.23942@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1409100914180.23942@gentwo.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 07:01 PM, Dave Hansen wrote:
-> On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
->> This is a second iteration of kerenel address sanitizer (KASan).
-> 
-> Could you give a summary of what you've changed since the last version?
-> 
+Christoph,
 
-I gave, grep for "Changes since v1:"
+On Wed, Sep 10, 2014 at 09:15:30AM -0500, Christoph Lameter wrote:
+> On Tue, 9 Sep 2014, Tejun Heo wrote:
+> > On Fri, Sep 05, 2014 at 02:11:23AM +0900, Tejun Heo wrote:
+> > > On Tue, Sep 02, 2014 at 10:00:07AM -0500, Christoph Lameter wrote:
+> > > > Subject: irqchip: Properly fetch the per cpu offset
+> > > >
+> > > > The raw_cpu_read() conversion dropped the fetch of the offset
+> > > > from base->percpu_base in gic_get_percpu_base.
+> > > >
+> > > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > > >
+> > > > Index: linux/drivers/irqchip/irq-gic.c
+> > > > ===================================================================
+> > > > --- linux.orig/drivers/irqchip/irq-gic.c
+> > > > +++ linux/drivers/irqchip/irq-gic.c
+> > > > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+> > > >  #ifdef CONFIG_GIC_NON_BANKED
+> > > >  static void __iomem *gic_get_percpu_base(union gic_base *base)
+> > > >  {
+> > > > -	return raw_cpu_read(base->percpu_base);
+> > > > +	return raw_cpu_read(*base->percpu_base);
+> > >
+> > > I suppose this should go through percpu/for-3.18-consistent-ops?  Can
+> > > we please cc irq folks and get acks?
+> >
+> > Christoph, please drive this forward.
+> 
+> CCing IRQ subsystem and IRQCHIP drivers maintainers.
+
+Thanks Chris.  I'm a bit behind on irqchip stuff, so I may have missed
+something here...  Did we get Cc'd on the original patch that caused the
+regression?  I'm fairly certain I haven't seen it to Ack it.
+
+It wouldn't be an issue worth mentioning if it were a vendor-specific
+driver, however, the gic is used by damn near every major ARM SoC.
+Tejun (I think) was kind enough to post the links to the email
+thread for the original patch, so I'll try to get to this soon-ish.
+
+thx,
+
+Jason.
