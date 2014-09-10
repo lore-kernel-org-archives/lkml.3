@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaIJRkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:40:53 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50378 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaIJRkv (ORCPT
+	id S1752673AbaIJRmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:42:00 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50380 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751609AbaIJRl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:40:51 -0400
+	Wed, 10 Sep 2014 13:41:59 -0400
+Date: Wed, 10 Sep 2014 18:41:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Mark Brown <broonie@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+Message-ID: <20140910174141.GH12361@n2100.arm.linux.org.uk>
+References: <20140901230728.GM29327@sirena.org.uk> <1627064.QhxvejlWdk@amdc1032> <alpine.DEB.2.11.1409020857110.9201@gentwo.org> <alpine.DEB.2.11.1409020958530.9608@gentwo.org> <alpine.LFD.2.11.1409051525440.16533@knanqh.ubzr>
 MIME-Version: 1.0
-In-Reply-To: <CALAqxLWped1Qsh=Ps7Vc2=ORpKGNhjvKc-hWoA0Wg5aAf7O8Xg@mail.gmail.com>
-References: <1410312665-25381-1-git-send-email-rlarocque@google.com>
-	<CALAqxLWped1Qsh=Ps7Vc2=ORpKGNhjvKc-hWoA0Wg5aAf7O8Xg@mail.gmail.com>
-Date: Wed, 10 Sep 2014 10:40:50 -0700
-Message-ID: <CABgu+=P+y9QCwcT-+KncoAk6XvHbgaWBWwU3L7cy8qf9_M7ZVg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] alarmtimer: Fix some non-standard alarm timer behavior
-From: Richard Larocque <rlarocque@google.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1409051525440.16533@knanqh.ubzr>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 8:33 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On Tue, Sep 9, 2014 at 6:31 PM, Richard Larocque <rlarocque@google.com> wrote:
->> I've been working on some changes to posix-timers.c in an attempt to better
->> support CRIU.  Along the way, I've discovered some issues with the posix alarm
->> timers that should be fixed independent of any other work.
->>
->> It seems that there was an older issue with the setting of relative timeouts
->> with timer_settime().  That was addressed around 3.16 with
->> 16927776ae757d0d132bdbfabbfe2c498342bd59 ("alarmtimer: Fix bug where relative
->> alarm timers were treated as absolute").  That fixed the setting of times, but
->> it doesn't fix the retrieval of times.
->>
->> According to the man pages (and POSIX), timer_gettime() is supposed to return
->> the time left until the timeout, not the absolute time at which the timeout is
->> expected to fire.  The non-ALARM clocks correctly show relative times, but
->> CLOCK_BOOTTIME_ALARM and CLOCK_REALTIME_ALARM do not.
->>
->> A second issue with these timers is that they call posix_event_timer() without
->> checking the value of it_sigev_notify.  This is a problem, because
->> it_sigev_notify could be SIGEV_NONE, in which case the signal should not be
->> delivered.  The non-alarm timers don't need to check it_sigev_notify in their
->> timeout handling code path, because they never schedule timeouts for those
->> kinds of timers in the first place.
->>
->> See below for a program that demonstrates these behaviors, and some sample output.
->>
->> The third patch in this stack is the odd one out.  I suspect that there's
->> a locking issue in the alarm timer code, and this is my attempt to fix it.
->> It's not quite related to the first two, but it does conflict with one of them,
->> so I figured I should include it in this patch stack.
->
-> Oof. More paper bags for me to wear. Thanks so much for discovering
-> these and providing these fixes.
->
-> I'll review and queue these up for my own testing and then send them
-> on (the locking one I'll have to look closely at). Do you mind if I
-> add a variant of your demo code to my timekeeping test suite?
->
-> thanks
-> -john
+On Fri, Sep 05, 2014 at 03:27:51PM -0400, Nicolas Pitre wrote:
+> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+> 
+> > On Tue, 2 Sep 2014, Christoph Lameter wrote:
+> > 
+> > > Oww.. This is double indirection deal there. A percpu offset pointing to
+> > > a pointer?
+> > >
+> > > Generally the following is true (definition from
+> > > include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
+> > >
+> > > #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
+> > 
+> > I think what the issue is that we dropped the fetch of the percpu offset
+> > in the patch. Instead we are using the address of the variable that
+> > contains the offset. Does this patch fix it?
+> > 
+> > 
+> > Subject: irqchip: Properly fetch the per cpu offset
+> > 
+> > The raw_cpu_read() conversion dropped the fetch of the offset
+> > from base->percpu_base in gic_get_percpu_base.
+> > 
+> > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > 
+> > Index: linux/drivers/irqchip/irq-gic.c
+> > ===================================================================
+> > --- linux.orig/drivers/irqchip/irq-gic.c
+> > +++ linux/drivers/irqchip/irq-gic.c
+> > @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+> >  #ifdef CONFIG_GIC_NON_BANKED
+> >  static void __iomem *gic_get_percpu_base(union gic_base *base)
+> >  {
+> > -	return raw_cpu_read(base->percpu_base);
+> > +	return raw_cpu_read(*base->percpu_base);
+> 
+> Isn't the pointer dereference supposed to be performed _outside_ the per 
+> CPU accessor?
 
-Sure, use the testing code as you see fit.  Let me know if you'd like
-some boilerplate legalese statements to go along with it.
+I think this is correct.
+
+Let's start from the depths of raw_cpu_read(), where the pointer is
+verified to be the correct type:
+
+#define __verify_pcpu_ptr(ptr)                                          \
+do {                                                                    \
+        const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;    \
+        (void)__vpp_verify;                                             \
+} while (0)
+
+So, "ptr" should be of type "const void __percpu *" (note the __percpu
+annotation there, which makes it sparse-checkable.)
+
+The next level up is this:
+
+#define __pcpu_size_call_return(stem, variable)                         \
+({                                                                      \
+        typeof(variable) pscr_ret__;                                    \
+        __verify_pcpu_ptr(&(variable));                                 \
+
+So, we pass the address of the variable to the verification function.
+That makes it a void-typed variable - "const void __percpu".
+
+#define raw_cpu_read(pcp)   __pcpu_size_call_return(raw_cpu_read_, pcp)
+
+So this also makes "pcp" a "const void __percpu".
+
+Now, what type is base->percpu_base?
+
+        void __percpu * __iomem *percpu_base;
+
+The thing we want to be per-cpu is a "void __iomem *" pointer.  However,
+we have a pointer to the per-cpu instance.  That's the "void __percpu *"
+bit.
+
+So, for this to match the requirements for raw_cpu_read(), we need to
+do one dereference to end up with "void __percpu".
+
+Hence, to me, the patch looks correct.
+
+Whether it works or not is a /completely/ different matter.  As has been
+pointed out, the only place this code gets used is on a very small number
+of platforms, which I don't have, and that gives me zero way to test it.
+If it's Exynos which is affected by this, we need to call on Samsung to
+test this patch.
+
+Now, this code was introduced by Marc Zyngier in order to support Exynos,
+probably the result of another patch on the mailing list from Samsung.
+(I've added Marc and another Samsung guy to the Cc list.)  Whatever,
+*someone* needs to verify this but it needs to be done with the affected
+hardware.  Whether Marc can, or whether it has to be someone from Samsung,
+I don't care which.
+
+/Or/ we deem the code unmaintained, broken, and untestable, and we start
+considering ripping it out of the mainline kernel on the basis that no
+one cares about it anymore.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
