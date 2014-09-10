@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaIJIRz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:17:55 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55159 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaIJIRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:17:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Robin Gong <b38343@freescale.com>, broonie@kernel.org, marex@denx.de,
-        shawn.guo@linaro.org, Frank.Li@freescale.com,
-        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
-Subject: Re: [PATCH v5] spi: spi-imx: add DMA support
-Date: Wed, 10 Sep 2014 10:17:14 +0200
-Message-ID: <5412055.BAOgFikuh9@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1410312604-31949-1-git-send-email-b38343@freescale.com>
-References: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+	id S1751597AbaIJITe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:19:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750803AbaIJITb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:19:31 -0400
+Message-ID: <54100975.6030809@redhat.com>
+Date: Wed, 10 Sep 2014 10:19:01 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:XXRhn3BKxd5Go5JUsjAaPtKdFKjvqDd+eNH7xJrvc6h
- Ce3oXj+Crj688JOiRwIaVRWRcAa4jXz4ymmJUTGGd/eQzULJNS
- YlOkLwUPywSQ2PiM3JOMO9Tq/JHajKhOsLvTpk31h/+7Clu30q
- O7ReFxHj/Tgtj9FBwBO3EMbuy27wUC3dZYqphmEQFrLMh3+clR
- rnGR+l6BIDMK/XZEgmOGeRCwaH/96a7xvEzXShQAqk1DnV0+Zn
- QLbfNDTFDzjcUo+gFdE/yGOW3WJtotOQ9CEImJl8C/KbCcy6V9
- J+s+El4IzHNTS15lpEAIOu3T4f0aIACsFoP6A81G06sS5eHkhD
- ZLqYqiyTtGemOl4F9IaI=
-X-UI-Out-Filterresults: notjunk:1;
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+In-Reply-To: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 September 2014 09:30:04 Robin Gong wrote:
-> Enable DMA support on i.mx6. The read speed can increase from 600KB/s
-> to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
-> If not set "dma-names" in dts, spi will use PIO mode. This patch only
-> validate on i.mx6, not i.mx5, but encourage ones to apply this patch
-> on i.mx5 since they share the same IP.
-> 
-> Note:
->   Sometime, there is a weid data in rxfifo after one full tx/rx
-> transfer finish by DMA on i.mx6dl, so we disable dma functhion on
-> i.mx6dl.
-> 
-> Signed-off-by: Frank Li <Frank.Li@freescale.com>
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> 
-> 
+On 09/10/2014 07:09 AM, Alexei Starovoitov wrote:
+...
+> As requested by Andy and others, here is the man page:
+>
+> BPF(2)                     Linux Programmer's Manual                    BPF(2)
+...
+>         In the future maps can have different types: hash, array, bloom filter,
+>         radix-tree, but currently only hash type is supported:
+>         enum bpf_map_type {
+>            BPF_MAP_TYPE_UNSPEC,
+>            BPF_MAP_TYPE_HASH,
+>         };
 
-The patch looks good to me, but you need to also update the
-Documentation/devicetree/bindings/spi/fsl-imx-cspi.txt file to
-document the additional optional properties.
-
-	Arnd
+If we mention them here in the man page, users are going to request
+them, naturally. ;) So I'd just mention what we have, not what we do
+not yet have. But I'm wondering how much library boiler plate only
+for BPF we want to add in future, hopefully not most of what's in
+Corman ... ? ;)
