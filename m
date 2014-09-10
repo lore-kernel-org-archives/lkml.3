@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814AbaIJV1w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 17:27:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35199 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967AbaIJV1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 17:27:51 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Jassi Brar <jaswinder.singh@linaro.org>, Dave Gerlach <d-gerlach@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Suman Anna <s-anna@ti.com>
-Subject: [REPOST PATCHv3 0/2] OMAP Mailbox framework adaptation
-Date: Wed, 10 Sep 2014 16:27:23 -0500
-Message-ID: <1410384445-44894-1-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.4
+	id S1753974AbaIJV17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 17:27:59 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:37979 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaIJV1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 17:27:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410383484.28990.303.camel@misato.fc.hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+ <1410367910-6026-3-git-send-email-toshi.kani@hp.com> <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
+ <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>
+ <1410381050.28990.295.camel@misato.fc.hp.com> <CALCETrUz016rDogLFTVETLh7ybVjgOMOhkL5kF2wJTLUF041xQ@mail.gmail.com>
+ <1410383484.28990.303.camel@misato.fc.hp.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Sep 2014 14:27:31 -0700
+Message-ID: <CALCETrV4DEr7tQUPCSzJMjBwgJ3-Xgcw8PFt_CCDbMoWRQ4Uug@mail.gmail.com>
+Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle WT
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Sep 10, 2014 at 2:11 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Wed, 2014-09-10 at 14:06 -0700, Andy Lutomirski wrote:
+>> On Wed, Sep 10, 2014 at 1:30 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > On Wed, 2014-09-10 at 13:14 -0700, H. Peter Anvin wrote:
+>> >> On 09/10/2014 12:30 PM, Toshi Kani wrote:
+>> >> >
+>> >> > When WT is unavailable due to the PAT errata, it does not fail but gets
+>> >> > redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
+>> >> > to UC- as well.
+>> >> >
+>> >>
+>> >> But on pre-PAT hardware you can still do WT.
+>> >
+>> > Yes, if we manipulates the bits directly, but such code is no longer
+>> > allowed for PAT systems.  The PAT-based kernel interfaces won't work for
+>> > pre-PAT systems, and therefore requests are redirected to UC- on such
+>> > systems.
+>> >
+>>
+>> Right, the PWT bit.  Forgot about that.
+>>
+>> I wonder whether it would make sense to do some followup patches to
+>> replace the current support for non-PAT machines with a "PAT" and
+>> corresponding reverse map that exactly matches the mapping when PAT is
+>> disabled.  These patches are almost there.
+>
+> That's possible, but the only benefit is that we can enable WT on
+> pre-PAT systems, which I do not think anyone cares now...  WB & UC work
+> on pre-PAT systems.  WC & WT need PAT.  I think this requirement is
+> reasonable.
 
-This is a repost of the Mailbox Framework adaptation support patches
-for the OMAP mailbox driver (last 2 patches out of 5) from the OMAP
-Mailbox framework adoption and DT support series [1]. The previous
-series is split into 3 different series to resolve merge and build
-dependencies.
+It might end up being a cleanup, though.  A whole bunch of
+rarely-exercised if (!pat_enabled) things would go away.
 
-The patches are based on 3.17-rc3, with the baseline dependencies
-having already been merged in the 3.17 window. The testing is done
-against the latest version v10 [2] of the mailbox framework compared
-to v9 in the previous post, and there are no code changes required
-to any patches. Please see [1] for the history of these patches.
-
-The following are the remaining dependencies for these 2 patches:
-- OMAP Mailbox DT support in driver [3]
-- OMAP Mailbox DTS patch adding the sub-mailboxes [4]
-- Mailbox Framework v10 [2]
-The reference branch with all the patches is hosted (not for merging) at
-https://github.com/sumananna/mailbox/commits/submit/3.17-rc3-omap-mbox-v10-fwk-v3
-
-The following shows the boot logs on various OMAP platforms:
-  OMAP2 (SDP2430)           : http://pastebin.ubuntu.com/8312682
-  OMAP3 (BeagleXM)          : http://pastebin.ubuntu.com/8312348
-  OMAP4 (PandaBoard)        : http://pastebin.ubuntu.com/8312364
-  OMAP5 (OMAP5 uEVM)        : http://pastebin.ubuntu.com/8312378
-  DRA7  (DRA7 EVM)          : http://pastebin.ubuntu.com/8312482
-  AM33xx (BeagleBone Black) : http://pastebin.ubuntu.com/8312420
-  AM43xx (AM437x GP EVM)    : http://pastebin.ubuntu.com/8312457
-
-[1] http://marc.info/?l=linux-omap&m=140668054422693&w=2
-[2] https://lkml.org/lkml/2014/8/1/200
-[3] http://marc.info/?l=linux-omap&m=141037688814464&w=2
-[4] http://marc.info/?l=linux-omap&m=141037727114587&w=2
-
-Suman Anna (2):
-  mailbox/omap: adapt to the new mailbox framework
-  ARM: dts: OMAP2+: Add #mbox-cells property to all mailbox nodes
-
- .../devicetree/bindings/mailbox/omap-mailbox.txt   |  24 ++
- arch/arm/boot/dts/am33xx.dtsi                      |   1 +
- arch/arm/boot/dts/am4372.dtsi                      |   1 +
- arch/arm/boot/dts/dra7.dtsi                        |  13 +
- arch/arm/boot/dts/omap2420.dtsi                    |   1 +
- arch/arm/boot/dts/omap2430.dtsi                    |   1 +
- arch/arm/boot/dts/omap3.dtsi                       |   1 +
- arch/arm/boot/dts/omap4.dtsi                       |   1 +
- arch/arm/boot/dts/omap5.dtsi                       |   1 +
- drivers/mailbox/omap-mailbox.c                     | 346 ++++++++++++---------
- drivers/remoteproc/omap_remoteproc.c               |  51 +--
- include/linux/omap-mailbox.h                       |  16 +-
- 12 files changed, 277 insertions(+), 180 deletions(-)
-
--- 
-2.0.4
-
+--Andy
