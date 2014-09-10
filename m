@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaIJO1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 10:27:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370AbaIJO1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 10:27:41 -0400
-Date: Wed, 10 Sep 2014 10:27:12 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
-Message-ID: <20140910142712.GA10785@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Theodore Ts'o <tytso@mit.edu>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jiri Kosina <jkosina@suse.cz>, Christoph Lameter <cl@linux.com>,
-	Pekka Enberg <penberg@kernel.org>,
-	David Rientjes <rientjes@google.com>,
-	Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org
-References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
- <20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
- <alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
- <20140909221138.2587d864.akpm@linux-foundation.org>
- <20140910063630.GM6549@mwanda>
- <20140910135649.GB31903@thunk.org>
+	id S1752069AbaIJO2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 10:28:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45746 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748AbaIJO2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 10:28:11 -0400
+Date: Wed, 10 Sep 2014 16:27:40 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        shawn.guo@freescale.com, kernel@pengutronix.de, linux@arm.linux.org.uk,
+        perex@perex.cz, tiwai@suse.de, timur@tabi.org, nicoleotsuka@gmail.com,
+        Li.Xiubo@freescale.com, grant.likely@linaro.org,
+        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 2/5] ASoC: fsl: add imx-tlv320aic3x machine
+ driver
+Message-ID: <20140910142740.GC16489@pengutronix.de>
+References: <1410356809-26179-1-git-send-email-d.lavnikevich@sam-solutions.com>
+ <1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SkvwRMAIpAhPCcCJ"
 Content-Disposition: inline
-In-Reply-To: <20140910135649.GB31903@thunk.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410356809-26179-3-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:22:37 up  7:10, 45 users,  load average: 0.00, 0.04, 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:56:49AM -0400, Theodore Ts'o wrote:
 
- > The ironic thing is that I asked Dan to add the feature to smatch
- > because I found two such bugs in ext4, and I suspected there would be
- > more.  Sure enough, it found four more such bugs, including two in a
- > recent commit where I had found the first two bugs --- and I had
- > missed the other two even though I was specifically looking for such
- > instances.  Oops.  :-)
- > 
- > Maybe we can add a debugging config option?  I think having static
- > checkers plus some kmalloc failure testing should be sufficient to
- > prevent these sorts of problem from showing up.
- > 
- > It would seem to me that this is the sort of thing that a static
- > checker should find reliably; Coverity has found things that were more
- > complex than what this should require, I think.  I don't know if they
- > would be willing to add something this kernel-specific, though.  (I've
- > added Dave Jones to the thread since he's been working a lot with
- > Coverity; Dave, what do you think?)
+--SkvwRMAIpAhPCcCJ
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It *might* be possible to rig up something using their modelling 
-functionality, but I've not managed to make that work to my ends in the past.
+Hi,
 
-I suspect a runtime check would be more fruitful faster than they could
-implement kernel specific checkers & roll them out.
+On Wed, Sep 10, 2014 at 04:46:46PM +0300, Dmitry Lavnikevich wrote:
+> This is driver for i.MX6 boards with tlv320aic3x audio codecs.
+>=20
+> Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+> ---
+>  .../bindings/sound/fsl,imx-audio-tlv320aic3x.txt   |  27 ++++
+>  sound/soc/fsl/Kconfig                              |  13 ++
+>  sound/soc/fsl/Makefile                             |   2 +
+>  sound/soc/fsl/imx-tlv320aic3x.c                    | 177 +++++++++++++++=
+++++++
+>  4 files changed, 219 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/sound/fsl,imx-audio=
+-tlv320aic3x.txt
+>  create mode 100644 sound/soc/fsl/imx-tlv320aic3x.c
 
-	Dave
+Is it possible to use the simple-card
+(Documentation/devicetree/bindings/sound/simple-card.txt) instead of
+adding a new audio card driver? There are also DT bindings for the imx
+audiomultiplexer (imx-audmux.txt).
 
+Best regards,
+
+Markus
+
+--=20
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+--SkvwRMAIpAhPCcCJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUEF/bAAoJEEpcgKtcEGQQ8FUP/1T8kBw9DpI+zwwwpLSehGQm
+6Ji7FrbHkdebaT67xrOD4mtqepsmRdIdJ/Nj3epWLwwNjJMJOYtzPGOQzYvZxMiT
+3PwhyRMmWrU86fFoZlK1rO8/mY/ZF0VmAjzMnvO6fQpO9f/sl+z+bTYJbzTzfp3Y
+i2MQ/FF4CGCEOUZtFpu8Tth1YyKhAkI6HQd/px4JJ+PmuEy54xRZuu9k7COYvogH
+faVBV0qaYGhBhMLN5UPVEuRjlaphc+WyD0dq9/F4HCODhhQK/Apsz0fDoFr3p5A4
+isfxF05I9iQGOFbdx45vqUW87NXjXiqtfHgdt2W3cZjC80IVd469pbSTBkfW8ncb
+nzoMV1wswMGTPcr5pVorVoOesj2DQ5H+lebem2aO4c82g9JF2nAZjVCcph5RSjoU
+ZxzcWzjEkWBMZxXyP7n20pL8VjOVwOe6Qi64LYIQXxlFRn4ivlzLj69HC3wOMtG5
+aP6J3pcoH9+2yOMEWxkSrhjcY72GY9Q3Nqe9U7unFtond/AM7/MAvOEe/kwrsYfr
+1SK2o5InF4C07Twla6gV6xnJcx03OCEQsGfqHoSxyaXmS+XWtQ/pbUOoSV7Mm7DM
+gDjPsz+8MQmCmhlWp7Q7OS52Ky55EPS7r9Hq9Hcvx9D7+ybb9HnxP5XFHY+n/Fm1
+VDG9BEJrmQ5mKC4SHwip
+=/Noa
+-----END PGP SIGNATURE-----
+
+--SkvwRMAIpAhPCcCJ--
