@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaIKI5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:57:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43430 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753997AbaIKI4S (ORCPT
+	id S1753731AbaIKI6c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:58:32 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:44144 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408AbaIKI60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:56:18 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 8/8] rtc: at91sam9: add DT bindings documentation
-Date: Thu, 11 Sep 2014 10:56:07 +0200
-Message-Id: <1410425767-17874-9-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 11 Sep 2014 04:58:26 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time
+ tables
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+In-Reply-To: <20140909162648.GE2910@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	<1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
+	<20140909162648.GE2910@arm.com>
+Date: Wed, 10 Sep 2014 22:37:57 +0100
+Message-Id: <20140910213757.C7B8CC40E5E@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/rtc/atmel,at91sam9-rtc.txt | 24 ++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
+On Tue, 9 Sep 2014 17:26:49 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+> > diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> > index c96172a..fb7cc0e 100644
+> > --- a/arch/arm64/kernel/setup.c
+> > +++ b/arch/arm64/kernel/setup.c
+> > @@ -43,6 +43,7 @@
+> >  #include <linux/of_fdt.h>
+> >  #include <linux/of_platform.h>
+> >  #include <linux/efi.h>
+> > +#include <linux/acpi.h>
+> >  
+> >  #include <asm/fixmap.h>
+> >  #include <asm/cpu.h>
+> > @@ -385,6 +386,9 @@ void __init setup_arch(char **cmdline_p)
+> >  	efi_init();
+> >  	arm64_memblock_init();
+> >  
+> > +	/* Parse the ACPI tables for possible boot-time configuration */
+> > +	acpi_boot_table_init();
+> 
+> Is there any dummy acpi_boot_table_init() when !CONFIG_ACPI? I couldn't
+> see one in this patch, so I don't see how this would compile when ACPI
+> is disabled.
 
-diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-new file mode 100644
-index 0000000..258a036
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/atmel,at91sam9-rtc.txt
-@@ -0,0 +1,24 @@
-+Atmel AT91SAM9260 Real Time Timer
-+
-+Required properties:
-+- compatible: should be: "atmel,at91sam9260-rtt"
-+- reg: should encode the memory region of the RTT controller
-+- interrupts: rtc alarm/event interrupt
-+- clocks: should contain one clock pointing the the slow clk
-+- atmel,time-reg: should encode the GPBR register used to store the RTC
-+		  time. The first cell should point to the GPBR node and
-+		  the second one encode the offset within the GPBR block
-+		  (or in other terms, the GPBR register used to store the
-+		  current time value).
-+
-+
-+
-+Example:
-+
-+rtc@fffffe00 {
-+	compatible = "atmel,at91sam9260-rtt";
-+	reg = <0xfffffd20 0x10>;
-+	interrupts = <1 4 7>;
-+	clocks = <&clk32k>;
-+	atmel,time-reg = <&gpbr 0x0>;
-+};
--- 
-1.9.1
+It's in include/linux/acpi.h in the !CONFIG_ACPI section.
+
+g.
 
