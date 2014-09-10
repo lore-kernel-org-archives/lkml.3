@@ -1,90 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbaIJRxS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 13:53:18 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64609 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaIJRxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 13:53:17 -0400
-Date: Wed, 10 Sep 2014 10:53:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: herrmann.der.user@googlemail.com, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon, fam15h_power: Add support for two more processors
-Message-ID: <20140910175312.GA7079@roeck-us.net>
-References: <1410368528-4738-1-git-send-email-aravind.gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410368528-4738-1-git-send-email-aravind.gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752902AbaIJR4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 13:56:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63482 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752459AbaIJR43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 13:56:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,500,1406617200"; 
+   d="scan'208";a="600986606"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V5 2/3] perf tools: parse the pmu event prefix and surfix
+Date: Wed, 10 Sep 2014 13:55:31 -0400
+Message-Id: <1410371732-1185-2-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410371732-1185-1-git-send-email-kan.liang@intel.com>
+References: <1410371732-1185-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 12:02:08PM -0500, Aravind Gopalakrishnan wrote:
-> Fam16h,M30h(Mullins) and Fam15hM30h(Kaveri) processors can
-> report 'power_crit' value. So, adding their respective device ids.
-> 
-> Also, according to BKDGs, the 'TdpRunAvgAccCap' that show_power()
-> uses is valid only on Fam15h, Models 0x0-0xF. On all other processors
-> the field is 'Reserved'. So, return error if we are on any other family/model.
-> 
-> Impact on lm-sensors is minimal. On such families, instead of reporting
-> Current power value as '0', we now have:
-> power1:           N/A
-> 
+From: Kan Liang <kan.liang@intel.com>
 
-It will result in people complaining to us about it.
+There are two types of event formats for PMU events. E.g. el-abort OR
+cpu/el-abort/. However, the lexer mistakenly recognizes the simple style
+format as two events.
 
-It would be more appropriate to not create the attribute the first place
-if it is not supported. Sure, that is a bit more code, but it isn't that bad.
-You can simply return -ENODEV for unsupported CPUs from the probe function.
+The parse_events_pmu_check function uses bsearch to search the name in
+known pmu event list. It can tell the lexer that the name is a PE_NAME
+or a PMU event name prefix or a PMU event name suffix. All these
+information will be used for accurately parsing kernel PMU events.
 
-Additional comment below.
+The pmu events list will be read from sysfs at runtime.
 
-Guenter
+Note: Currently, the patch only want to handle the PMU event name as
+"a-b" and "a". The only exception, "stalled-cycles-frontend" and
+"stalled-cycles-fronted" are already hardcoded in lexer.
 
-> Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-> ---
->  drivers/hwmon/fam15h_power.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
-> index 4a7cbfa..b69bf7d 100644
-> --- a/drivers/hwmon/fam15h_power.c
-> +++ b/drivers/hwmon/fam15h_power.c
-> @@ -57,6 +57,10 @@ static ssize_t show_power(struct device *dev,
->  	struct fam15h_power_data *data = dev_get_drvdata(dev);
->  	struct pci_dev *f4 = data->pdev;
->  
-> +	/* The value TdpRunAvgAccCap is valid only on F15h, Models 0x0-0xF */
-> +	if (boot_cpu_data.x86 != 0x15 || boot_cpu_data.x86_model > 0x0)
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
 
-The comment does not match the code. The comment talks about accepting models
-F15h, models 0x0-0xF, but the code rejects anything but F15h model 0x0.
-Now it may well be that the above describes identifies all F15h and F16h CPUs,
-but this is not clear from the comment. It rather looks as if anything but F15h,
-model 0x0 is rejected, including all F16h CPUs. But then why accept F16h CPUs
-in the first place ?
+v2: Read kernel PMU events from sysfs at runtime
+v3: Use strlcpy to replace strncpyv2: Read kernel PMU events from sysfs at
+runtime
+v4: rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+v5: scan kernel pmu events from sysfs only needed
+    rename the init/check/clenup functions and related struct.
+    allocate each symbol string separatelly
 
-> +		return -ENOSYS;
-> +
->  	pci_bus_read_config_dword(f4->bus, PCI_DEVFN(PCI_SLOT(f4->devfn), 5),
->  				  REG_TDP_RUNNING_AVERAGE, &val);
->  	running_avg_capture = (val >> 4) & 0x3fffff;
-> @@ -216,7 +220,9 @@ static int fam15h_power_probe(struct pci_dev *pdev,
->  
->  static const struct pci_device_id fam15h_power_id_table[] = {
->  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
->  	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
-> +	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
->  	{}
->  };
->  MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
-> -- 
-> 2.0.3
-> 
+ tools/perf/util/parse-events.c | 118 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/parse-events.h |  14 +++++
+ tools/perf/util/pmu.c          |  10 ----
+ tools/perf/util/pmu.h          |  10 ++++
+ 4 files changed, 142 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index b9174bc..9a50a8d 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -30,6 +30,9 @@ extern int parse_events_debug;
+ #endif
+ int parse_events_parse(void *data, void *scanner);
+ 
++static struct perf_pmu_event_symbol *perf_pmu_events_list;
++static size_t perf_pmu_events_list_num;
++
+ static struct event_symbol event_symbols_hw[PERF_COUNT_HW_MAX] = {
+ 	[PERF_COUNT_HW_CPU_CYCLES] = {
+ 		.symbol = "cpu-cycles",
+@@ -864,6 +867,120 @@ int parse_events_name(struct list_head *list, char *name)
+ 	return 0;
+ }
+ 
++static int
++comp_pmu(const void *p1, const void *p2)
++{
++	struct perf_pmu_event_symbol *pmu1 =
++			(struct perf_pmu_event_symbol *) p1;
++	struct perf_pmu_event_symbol *pmu2 =
++			(struct perf_pmu_event_symbol *) p2;
++
++	return strcmp(pmu1->symbol, pmu2->symbol);
++}
++
++/*
++ * Read the pmu events list from sysfs
++ * Save it into perf_pmu_events_list
++ */
++static void perf_pmu__parse_init(void)
++{
++
++	struct perf_pmu *pmu = NULL;
++	struct perf_pmu_alias *alias;
++	int len = 0;
++
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			if (!strcmp(pmu->name, "cpu")) {
++				if (strchr(alias->name, '-'))
++					len++;
++				len++;
++			}
++	}
++	if (len == 0)
++		return;
++	perf_pmu_events_list =
++		malloc(sizeof(struct perf_pmu_event_symbol) * len);
++	perf_pmu_events_list_num = len;
++
++	pmu = NULL;
++	len = 0;
++	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++		list_for_each_entry(alias, &pmu->aliases, list) {
++			if (!strcmp(pmu->name, "cpu")) {
++				struct perf_pmu_event_symbol *p =
++					perf_pmu_events_list + len;
++				char *tmp = strchr(alias->name, '-');
++
++				if (tmp != NULL) {
++					p->symbol =
++						malloc(tmp - alias->name + 1);
++					strlcpy(p->symbol, alias->name,
++						tmp - alias->name + 1);
++					p->type = KERNEL_PMU_EVENT_PREFIX;
++					tmp++;
++					p++;
++					p->symbol = malloc(strlen(tmp) + 1);
++					strcpy(p->symbol, tmp);
++					p->type = KERNEL_PMU_EVENT_SUFFIX;
++					len += 2;
++				} else {
++					p->symbol =
++						malloc(strlen(alias->name) + 1);
++					strcpy(p->symbol, alias->name);
++					p->type = KERNEL_PMU_EVENT;
++					len++;
++				}
++			}
++		}
++	qsort(perf_pmu_events_list, len,
++		sizeof(struct perf_pmu_event_symbol), comp_pmu);
++
++}
++
++static void perf_pmu__parse_cleanup(void)
++{
++	if (!perf_pmu_events_list_num) {
++		struct perf_pmu_event_symbol *p;
++		size_t i;
++
++		for (i = 0; i < perf_pmu_events_list_num; i++) {
++			p = perf_pmu_events_list + i;
++			free(p->symbol);
++		}
++		free(perf_pmu_events_list);
++		perf_pmu_events_list = NULL;
++		perf_pmu_events_list_num = 0;
++	}
++}
++
++enum perf_pmu_event_symbol_type
++perf_pmu__parse_check(const char *name)
++{
++	struct perf_pmu_event_symbol p, *r;
++
++	/* scan kernel pmu events from sysfs if needed */
++	if (!perf_pmu_events_list_num)
++		perf_pmu__parse_init();
++	/*
++	 * name "cpu" could be prefix of cpu-cycles or cpu// events.
++	 * cpu-cycles has been handled by hardcode.
++	 * So it must be cpu// events, not kernel pmu event.
++	 */
++	if (!perf_pmu_events_list_num || !strcmp(name, "cpu"))
++		return NONE_KERNEL_PMU_EVENT;
++
++	p.symbol = malloc(strlen(name) + 1);
++	strcpy(p.symbol, name);
++	r = bsearch(&p, perf_pmu_events_list,
++			perf_pmu_events_list_num,
++			sizeof(struct perf_pmu_event_symbol), comp_pmu);
++	free(p.symbol);
++	if (r == NULL)
++		return NONE_KERNEL_PMU_EVENT;
++	return r->type;
++}
++
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+@@ -918,6 +1035,7 @@ int parse_events(struct perf_evlist *evlist, const char *str)
+ 	int ret;
+ 
+ 	ret = parse_events__scanner(str, &data, PE_START_EVENTS);
++	perf_pmu__parse_cleanup();
+ 	if (!ret) {
+ 		int entries = data.idx - evlist->nr_entries;
+ 		perf_evlist__splice_list_tail(evlist, &data.list, entries);
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index df094b4..9f064e4 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -35,6 +35,18 @@ extern int parse_filter(const struct option *opt, const char *str, int unset);
+ 
+ #define EVENTS_HELP_MAX (128*1024)
+ 
++enum perf_pmu_event_symbol_type {
++	NONE_KERNEL_PMU_EVENT,		/* not a PMU EVENT */
++	KERNEL_PMU_EVENT,		/* normal style PMU event */
++	KERNEL_PMU_EVENT_PREFIX,	/* prefix of pre-suf style event */
++	KERNEL_PMU_EVENT_SUFFIX,	/* suffix of pre-suf style event */
++};
++
++struct perf_pmu_event_symbol {
++	char	*symbol;
++	enum perf_pmu_event_symbol_type	type;
++};
++
+ enum {
+ 	PARSE_EVENTS__TERM_TYPE_NUM,
+ 	PARSE_EVENTS__TERM_TYPE_STR,
+@@ -95,6 +107,8 @@ int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ 				void *ptr, char *type);
+ int parse_events_add_pmu(struct list_head *list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
++enum perf_pmu_event_symbol_type
++perf_pmu__parse_check(const char *name);
+ void parse_events__set_leader(char *name, struct list_head *list);
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 22a4ad5..f358345 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -12,16 +12,6 @@
+ #include "parse-events.h"
+ #include "cpumap.h"
+ 
+-#define UNIT_MAX_LEN	31 /* max length for event unit name */
+-
+-struct perf_pmu_alias {
+-	char *name;
+-	struct list_head terms; /* HEAD struct parse_events_term -> list */
+-	struct list_head list;  /* ELEM */
+-	char unit[UNIT_MAX_LEN+1];
+-	double scale;
+-};
+-
+ struct perf_pmu_format {
+ 	char *name;
+ 	int value;
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 0f5c0a8..2020519 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -25,6 +25,16 @@ struct perf_pmu {
+ 	struct list_head list;    /* ELEM */
+ };
+ 
++#define UNIT_MAX_LEN	31 /* max length for event unit name */
++
++struct perf_pmu_alias {
++	char *name;
++	struct list_head terms; /* HEAD struct parse_events_term -> list */
++	struct list_head list;  /* ELEM */
++	char unit[UNIT_MAX_LEN+1];
++	double scale;
++};
++
+ struct perf_pmu *perf_pmu__find(const char *name);
+ int perf_pmu__config(struct perf_pmu *pmu, struct perf_event_attr *attr,
+ 		     struct list_head *head_terms);
+-- 
+1.8.3.2
+
