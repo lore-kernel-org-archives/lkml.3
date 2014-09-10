@@ -1,103 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808AbaIJINN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 04:13:13 -0400
-Received: from mail-bn1bn0109.outbound.protection.outlook.com ([157.56.110.109]:51261
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751260AbaIJINK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 04:13:10 -0400
-X-Greylist: delayed 82758 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 04:13:10 EDT
-Date: Wed, 10 Sep 2014 16:12:53 +0800
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-CC: <timur@tabi.org>, <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>,
-        <broonie@kernel.org>, <perex@perex.cz>, <tiwai@suse.de>,
-        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <mpa@pengutronix.de>
-Subject: Re: [PATCH V1] ASoC: fsl_ssi: refine ipg clock usage in this module
-Message-ID: <20140910081251.GA14662@audiosh1>
-References: <e5a50d8bfde3aea5fcd092118da5aea4072c7e2f.1410254125.git.shengjiu.wang@freescale.com>
- <20140909183804.GA6944@Asurada>
+	id S1751959AbaIJIOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 04:14:24 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:2316 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaIJIOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 04:14:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 10 Sep 2014 01:12:58 -0700
+Message-ID: <5410084A.9020302@nvidia.com>
+Date: Wed, 10 Sep 2014 16:14:02 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140909183804.GA6944@Asurada>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(199003)(51704005)(24454002)(189002)(105606002)(84676001)(83322001)(81156004)(95666004)(76482001)(77982001)(79102001)(107046002)(83506001)(85852003)(64706001)(85306004)(110136001)(106466001)(69596002)(1411001)(50466002)(26826002)(46102001)(68736004)(99396002)(90102001)(33716001)(74662001)(102836001)(33656002)(74502001)(97756001)(50986999)(4396001)(6806004)(47776003)(83072002)(104016003)(92726001)(87936001)(21056001)(20776003)(92566001)(44976005)(23726002)(80022001)(54356999)(81542001)(97736003)(46406003)(86362001)(76176999)(81342001)(31966008)(21314002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0610;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 033054F29A
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Eduardo Valentin <edubezval@gmail.com>
+CC: Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        Stephen Warren <swarren@wwwdotorg.org>, <lm-sensors@lm-sensors.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] thermal: add more description for thermal-zones
+References: <53FBEE39.2020001@nvidia.com> <20140826121210.GB15219@developer> <53FD484F.7030504@nvidia.com> <20140827133217.GB15875@developer> <53FE8AC9.2070907@nvidia.com> <20140828132135.GA17074@developer> <53FFED7B.6010508@nvidia.com> <CAC-25o-9OQ-wfpCJmgDGB0kqDHwUc15XX7Ay7Pes6UmpJakUkQ@mail.gmail.com> <540449BC.2050807@nvidia.com> <54098538.1000505@nvidia.com> <20140830194318.GA3025@developer>
+In-Reply-To: <20140830194318.GA3025@developer>
+X-Originating-IP: [10.19.224.131]
+X-ClientProxiedBy: HKMAIL104.nvidia.com (10.18.16.13) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 11:38:05AM -0700, Nicolin Chen wrote:
-> On Tue, Sep 09, 2014 at 05:18:07PM +0800, Shengjiu Wang wrote:
-> > @@ -1321,7 +1333,11 @@ static int fsl_ssi_probe(struct platform_device *pdev)
-> >  		return -ENOMEM;
-> >  	}
-> >  
-> > -	ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
-> > +	if (ssi_private->soc->imx)
-> > +		ssi_private->regs = devm_regmap_init_mmio_clk(&pdev->dev,
-> > +			"ipg", iomem, &fsl_ssi_regconfig);
-> > +	else
-> > +		ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
+On 08/31/2014 03:43 AM, Eduardo Valentin wrote:
 > 
-> As Markus mentioned, the key point here is to be compatible with those
-> non-clock-name platforms.
+> Hello Wei,
 > 
-> I think it would be safer to keep the current code while adding an extra
-> clk_disable_unprepare() at the end of probe() as a common routine. And
-> meantime, make sure to have the call for imx only because it seems that
-> the other platforms do not depend on the clock. //a bit guessing here :)
+> On Fri, Sep 05, 2014 at 05:41:12PM +0800, Wei Ni wrote:
+>> Hi, Eduardo
+>>
+>> On 09/01/2014 06:26 PM, Wei Ni wrote:
+>>> On 08/29/2014 07:32 PM, edubezval@gmail.com wrote:
+>>>> Hello Wei,
+>>>>
+>>>> On Thu, Aug 28, 2014 at 11:03 PM, Wei Ni <wni@nvidia.com> wrote:
+>>>>> On 08/28/2014 09:21 PM, Eduardo Valentin wrote:
+>>>>>> Hello Wei,
+>>>>>>
+>>>>>> On Thu, Aug 28, 2014 at 09:50:01AM +0800, Wei Ni wrote:
+>>>>>>> On 08/27/2014 09:32 PM, Eduardo Valentin wrote:
+>>>>>>>> Hello Wei,
+>>>>>>>>
+>>>>>>>> On Wed, Aug 27, 2014 at 10:54:07AM +0800, Wei Ni wrote:
+>>>>>>>>> On 08/26/2014 08:12 PM, Eduardo Valentin wrote:
+>>>>>>>>>> On Tue, Aug 26, 2014 at 10:17:29AM +0800, Wei Ni wrote:
+>>>>>>>>>>> On 08/25/2014 07:07 PM, Eduardo Valentin wrote:
+>>>>>>>>>>>> Hello Wei Ni,
+>>>>>>>>>>>>
+>>>>>>>>>>>> On Mon, Aug 25, 2014 at 02:29:47PM +0800, Wei Ni wrote:
+>>>>>>>>>>>>> Add more description for the "polling-delay" property.
+>>>>>>>>>>>>> Set "trips" and "cooling maps" as optional property, because
+>>>>>>>>>>>>> if missing these two sub-nodes, the thermal zone device still
+>>>>>>>>>>>>> work properly.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Signed-off-by: Wei Ni <wni@nvidia.com>
+>>>>>>>>>>>>> ---
+>>>>>>>>>>>>>  Documentation/devicetree/bindings/thermal/thermal.txt | 10 ++++++----
+>>>>>>>>>>>>>  1 file changed, 6 insertions(+), 4 deletions(-)
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> diff --git a/Documentation/devicetree/bindings/thermal/thermal.txt b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>>>>> index f5db6b7..e3d3ed9 100644
+>>>>>>>>>>>>> --- a/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>>>>> +++ b/Documentation/devicetree/bindings/thermal/thermal.txt
+>>>>>>>>>>>>> @@ -136,8 +136,8 @@ containing trip nodes and one sub-node containing all the zone cooling maps.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>>  Required properties:
+>>>>>>>>>>>>>  - polling-delay:      The maximum number of milliseconds to wait between polls
+>>>>>>>>>>>>> -  Type: unsigned      when checking this thermal zone.
+>>>>>>>>>>>>> -  Size: one cell
+>>>>>>>>>>>>> +  Type: unsigned      when checking this thermal zone. If this value is 0, the
+>>>>>>>>>>>>> +  Size: one cell      driver will not run polling queue, but just cancel it.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>
+>>>>>>>>>>>> The description above is specific to Linux kernel implementation
+>>>>>>>>>>>> nomenclature. DT description needs to be OS agnostic.
+>>>>>>>>>>>>
+>>>>>>>>>>>>>  - polling-delay-passive: The maximum number of milliseconds to wait
+>>>>>>>>>>>>>    Type: unsigned      between polls when performing passive cooling.
+>>>>>>>>>>>>> @@ -148,14 +148,16 @@ Required properties:
+>>>>>>>>>>>>>    phandles + sensor
+>>>>>>>>>>>>>    specifier
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> +Optional property:
+>>>>>>>>>>>>>  - trips:              A sub-node which is a container of only trip point nodes
+>>>>>>>>>>>>>    Type: sub-node      required to describe the thermal zone.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>>  - cooling-maps:               A sub-node which is a container of only cooling device
+>>>>>>>>>>>>>    Type: sub-node      map nodes, used to describe the relation between trips
+>>>>>>>>>>>>> -                      and cooling devices.
+>>>>>>>>>>>>> +                      and cooling devices. If missing the "trips" property,
+>>>>>>>>>>>>> +                      This sub-node will not be parsed, because no trips can
+>>>>>>>>>>>>> +                      be bound to cooling devices.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Do you mean if the thermal zone misses the "trips" property? Actually,
+>>>>>>>>>>>> the binding describes both, cooling-maps and trips, as required
+>>>>>>>>>>>> properties. Thus, both needs to be in place to consider the thermal zone
+>>>>>>>>>>>> as a proper described zone.
+>>>>>>>>>>>
+>>>>>>>>>>> I moved the "trips" and "cooling-maps" to optional property, because if
+>>>>>>>>>>> missing these two properties, the thermal zone devices still can be
+>>>>>>>>>>> registered, and the driver can work properly, it has the basic function,
+>>>>>>>>>>> can read temperature from thermal sysfs, although it doesn't have trips
+>>>>>>>>>>> and bind with cooling devices.
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> If a thermal zone is used only for monitoring, then I believe it lost
+>>>>>>>>>> its purpose. As  Maybe a different framework shall be used, such as hwmon,
+>>>>>>>>>> for instance?
+>>>>>>>>>
+>>>>>>>>> Yes, if we only use it for monitoring, we can use hwmon. But we have
+>>>>>>>>> more functions base on these two thermal zone devices. We have a
+>>>>>>>>> skin-temperature driver, which used nct1008's remote and local
+>>>>>>>>> temperatures to estimator the skin temperature. As you know the thermal
+>>>>>>>>> framework is more powerful, the remote/local sensors can be register as
+>>>>>>>>> thermal zone, then the skin-temp driver can use thermal_zone_get_temp()
+>>>>>>>>> to read their temperatures and then estimator skin's temp. We also will
+>>>>>>>>> set trips and cooling devices for this skin-temp.
+>>>>>>>>
+>>>>>>>> In this case, don't you think it would make sense to create a thermal
+>>>>>>>> zone for the skin temperature and add the required sensors (including
+>>>>>>>> the nct1008) in it?
+>>>>>>>
+>>>>>>> Hi, Eduardo
+>>>>>>> Yes, we will create a thermal zone for the skin-temp driver and add the
+>>>>>>> required sensors in it, but in here we want to register these required
+>>>>>>> sensors as thermal zone devices, then the thermal framework can export
+>>>>>>> functions to read these sensors temperature. If use hwmon framework, it
+>>>>>>> can't export nct1008's internal sensors, such as remote/local sensors,
+>>>>>>> and no exported functions to read these temperatures. If we doesn't use
+>>>>>>> the thermal/of-thermal framework, we have to develop a new framework to
+>>>>>>> parse those sensor nodes, and I think this new one may only have slight
+>>>>>>> difference with current thermal framework.
+>>>>>>> If we set those two properties as optional property, then we can use it
+>>>>>>> in this case simply.
+>>>>>>>
+>>>>>>> The skin-temp nodes will something like this:
+>>>>>>>
+>>>>>>> skin_temp: therm-est {
+>>>>>>>      compatible = "nvidia,tegra124-therm-est";
+>>>>>>>
+>>>>>>>      #thermal-sensor-cells = <0>;
+>>>>>>>
+>>>>>>>      sub-devs {
+>>>>>>>              dev@0 {
+>>>>>>> /* we need to register nct1008_remote as thermal zone devices, so that
+>>>>>>> it's easy to handle it by using thermal framework's exported functions. */
+>>>>>>>                      dev = <&nct1008_remote>;
+>>>>>>>              };
+>>>>>>>              dev@1 {
+>>>>>>>                      dev = <&nct1008_local>;
+>>>>>>>              };
+>>>>>>>      };
+>>>>>>> };
+>>>>>>>
+>>>>>>> thermal-zones {
+>>>>>>>      skin-therm {
+>>>>>>>              polling-delay-passive = <15000>
+>>>>>>>              polling-delay = <0>;
+>>>>>>>
+>>>>>>>              thermal-sensors = <&skin_temp>;
+>>>>>>
+>>>>>> The binding allows you to add several sensors in one thermal zone.
+>>>>>> Please have a look on the example (c) of the thermal.txt binding
+>>>>>> description. It might be that what you want to do is actually:
+>>>>>>               thermal-sensors = <&ntc1008_local>,
+>>>>>>                               <&ntc1008_remote>;
+>>>>>
+>>>>>
+>>>>> Yes, we have considered it, but in current kernel, it only supports 1
+>>>>> sensor per zone. and according to the example (c), it's supposed to only
+>>>>> support simple algorithm, such as:
+>>>>> /* hotspot = 100 * bandgap - 120 * adc + 484 */
+>>>>>  coefficients =          <100    -120    484>;
+>>>>>
+>>>>> but in our skin-temp driver, we will recored 20 history temperatures for
+>>>>> every sensors, and set different coefficients for every history
+>>>>> temperatures, our HW team have private mathematical mode to calculate
+>>>>> these coeffs for different boards. And I think other users may use
+>>>>> different algorithm to calculate thermal zone temperature based on
+>>>>> several sensors.
+>>>>>
+>>>>> So I think it's better to register sensors to thermal zones, not set
+>>>>> trips and binding cooling devices, then user's thermal driver can use
+>>>>> them freely.
+>>>>>
+>>>>
+>>>> In your system, the used governor is userspace, then?
+>>>
+>>> No, we developed a new governor named as "pid governor", it manages
+>>> thermals based on output values of PID controller.
 > 
-> Then we can get a patch like:
-> open() {
-> +	clk_prepare_enable();
-> 	....
-> }
+> Have you tried the patch set from Javi? the power allocator schem 
+> includes a PID controller governor. Might be worth having a common
+> solution. I think it is easier if I merge his changes into a branch and
+> you have try on it. His patch series have already gone through several
+> reviews. But you are free to comment too.
+
+Oh, it's great, could you show me link of the patch set, so that I can
+try it.
+
 > 
-> close() {
-> 	....
-> +	clk_disable_unprepare()
-> }
-what is the open() and close()? do you mean the fsl_ssi_startup()
-and fsl_ssi_shutdown()?
+>>>
+>>> Indeed, our thermal management includes skin-temp, soc-thermal,
+>>> cpu-throttle driver and pid governor. This pach set is prepared for the
+>>> skin-temp driver.
+>>> As you know the tegra soc-therm is in upstreaming, and we will post
+>>> other drivers step by step.
+>>
+>> Will you take this patch, if so i will post skin-temp driver later.
+>> Looking forward your comments :)
+>>
 > 
-> probe() {
-> 	clk_get();
-> 	clk_prepare_enable();
-> 	....
-> 	if (xxx)
-> -		goto err_xx;
-> +		return ret;
-> 	....
-> +	clk_disable_unprepare();
-> 	return 0;
-> -err_xx:
-> -	clk_disable_unprepare()
-> }
-If this probe() is fsl_ssi_imx_probe(), I think no need to add
-clk_prepare_enable() or clk_disable_unprepare(), seems there is no 
-registers accessing in this probe.
+> I am afraid moving the maps and trips properties to optional abuses the
+> purpose of the thermal DT. The primary goal is to describe hardware, and
+> in this specific case, the hardware proper thermal operating conditions.
 > 
-> remove() {
-> 	....
-> -	clk_disable_unprepare()
-> }
+> DT has to be as agnostic to OS implementation as possible.
 > 
-> As long as you make the subject clear as 'Don't enable core/ipg clock
-> when SSI's idle', I'm sure you can make them within a single patch.
+> For the above reason, I do not think this patch is a good idea.
+
+Yes, I understand what you are worrying about, but it seems it's
+difficult to handle this specific case in current framework or even
+develop a new framework. How about to still set trips and maps as
+required properties, but just add description something like "If missing
+it, the thermal zone only has basic function such as reading temperature"
+
+Thanks.
+Wei.
+
 > 
-> And an alternative way for open() and close() is to put those code into
-> pm_runtime_resume/suspend() instead (since we might have some internal
-> code need to be added by using pm_runtime as well), which would make
-> the further code neater IMO.
 > 
-> Thank you
-> Nicolin
+> Cheers,
+> 
+>> Thanks.
+>> Wei.
+>>
+>>>
+>>> Thanks.
+>>> Wei.
+>>>
+>>>>
+>>>>> Thanks.
+>>>>> Wei.
+>>>>>
+>>>>>>
+>>>>>>
+>>>>>>>
+>>>>>>>              trips {
+>>>>>>>              };
+>>>>>>>              cooling-maps {
+>>>>>>>              };
+>>>>>>>      };
+>>>>>>> };
+>>>>>>>
+>>>>>>> Wei.
+>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Wei.
+>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> The purpose of a thermal zone is to describe thermal behavior of a
+>>>>>>>>>> hardware. As it is mentioned in the thermal.txt file.
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>>> Thanks.
+>>>>>>>>>>> Wei.
+>>>>>>>>>>>
+>>>>>>>>>>>>
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> -Optional property:
+>>>>>>>>>>>>>  - coefficients:               An array of integers (one signed cell) containing
+>>>>>>>>>>>>>    Type: array         coefficients to compose a linear relation between
+>>>>>>>>>>>>>    Elem size: one cell the sensors listed in the thermal-sensors property.
+>>>>>>>>>>>>> --
+>>>>>>>>>>>>> 1.8.1.5
+>>>>>>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>> --
+>>>>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>>>>>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>>>>>>
+>>>>>>>>>
+>>>>>>>
+>>>>>
+>>>>
+>>>>
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+
