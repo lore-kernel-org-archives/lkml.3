@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaIJUbu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 16:31:50 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:41631 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001AbaIJUbt (ORCPT
+	id S1753376AbaIJUcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 16:32:36 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:45827 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaIJUce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 16:31:49 -0400
+	Wed, 10 Sep 2014 16:32:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <5410B10A.4030207@zytor.com>
-References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
- <1410367910-6026-3-git-send-email-toshi.kani@hp.com> <CALCETrXRjU3HvHogpm5eKB3Cogr5QHUvE67JOFGbOmygKYEGyA@mail.gmail.com>
- <1410377428.28990.260.camel@misato.fc.hp.com> <5410B10A.4030207@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 10 Sep 2014 13:31:27 -0700
-Message-ID: <CALCETrX5JEZ3cLbuehobnH3bmBDAKARV9o0V5VYoazV8rL5o-A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/6] x86, mm, pat: Change reserve_memtype() to handle WT
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
+In-Reply-To: <alpine.DEB.2.11.1409101116160.1654@gentwo.org>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+	<1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
+	<1410359487-31938-5-git-send-email-a.ryabinin@samsung.com>
+	<alpine.DEB.2.11.1409101116160.1654@gentwo.org>
+Date: Thu, 11 Sep 2014 00:32:34 +0400
+Message-ID: <CAPAsAGxuoXEM2AXRV_at0=xiLOmaZe+QY-45KeA7ZvvHzhOqMg@mail.gmail.com>
+Subject: Re: [RFC/PATCH v2 04/10] mm: slub: introduce virt_to_obj function.
+From: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Yigal Korman <yigal@plexistor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 1:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 09/10/2014 12:30 PM, Toshi Kani wrote:
->>
->> When WT is unavailable due to the PAT errata, it does not fail but gets
->> redirected to UC-.  Similarly, when PAT is disabled, WT gets redirected
->> to UC- as well.
->>
+2014-09-10 20:16 GMT+04:00 Christoph Lameter <cl@linux.com>:
+> On Wed, 10 Sep 2014, Andrey Ryabinin wrote:
 >
-> But on pre-PAT hardware you can still do WT.
+>> virt_to_obj takes kmem_cache address, address of slab page,
+>> address x pointing somewhere inside slab object,
+>> and returns address of the begging of object.
 >
-
-Using MTRRs?  /me shudders, although I suppose this would be okay for
-NV-DIMMs as long as you map the whole thing WT.
-
-One of these days I'll finish excising mtrr_add from everything
-outside arch/x86.  I already killed it in all modern graphics drivers
-:)
-
---Andy
-
-
-
->         -hpa
+> This function is SLUB specific. Does it really need to be in slab.h?
 >
 
-
+Oh, yes this should be in slub.c
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Best regards,
+Andrey Ryabinin
