@@ -1,80 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637AbaIJC35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Sep 2014 22:29:57 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13278 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaIJC3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Sep 2014 22:29:55 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18at+NrJ3fKYFWoL041R3sd
-Date: Wed, 10 Sep 2014 02:29:49 +0000
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Beno??t Cousson <bcousson@baylibre.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [GIT PULL] ARM: dts: OMAP5 / DRA7: pinctrl updates
-Message-ID: <20140910022949.GB1058@atomide.com>
-References: <1410271178-28336-1-git-send-email-nm@ti.com>
+	id S1751974AbaIJCd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Sep 2014 22:33:56 -0400
+Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:3700
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751700AbaIJCdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Sep 2014 22:33:54 -0400
+From: Robin Gong <b38343@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>, <broonie@kernel.org>
+CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <marex@denx.de>, <shawn.guo@linaro.org>, <Frank.Li@freescale.com>
+Subject: [PATCH v5] spi: spi-imx: add DMA support
+Date: Wed, 10 Sep 2014 09:30:04 +0800
+Message-ID: <1410312604-31949-1-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.9.1
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019019)(6009001)(189002)(199003)(92566001)(107046002)(64706001)(76482001)(106466001)(84676001)(74662001)(229853001)(50986999)(44976005)(6806004)(99396002)(15975445006)(31966008)(50466002)(33646002)(85306004)(88136002)(81342001)(48376002)(50226001)(97736003)(104016003)(90102001)(20776003)(4396001)(105606002)(47776003)(79102001)(68736004)(74502001)(89996001)(104166001)(93916002)(95666004)(19580405001)(15202345003)(36756003)(19580395003)(46102001)(80022001)(92726001)(87286001)(81542001)(21056001)(62966002)(102836001)(77982001)(77156001)(85852003)(26826002)(87936001)(83072002)(83322001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB492;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410271178-28336-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 033054F29A
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140909 14:00]:
-> 
-> Hi Tony,
-> 
-> Please pull this series was posted[1] and based on the previous pulls
-> [2] [3], updating the dts to enable the relevant feature.
-> 
-> NOTE: I have dropped patch #1 of the series based on [4].
-> 
-> These could go to your branch omap-for-v3.18/dt
-> 
-> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> 
->   Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> 
-> are available in the git repository at:
-> 
->   https://github.com/nmenon/linux-2.6-playground.git pull/v3.18/for-dt-pinctrl-updates
-> 
-> for you to fetch changes up to 66b0436977e2c62388d48836ff784f1fedb49c4f:
-> 
->   ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable (2014-09-09 08:33:29 -0500)
+Enable DMA support on i.mx6. The read speed can increase from 600KB/s
+to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
+If not set "dma-names" in dts, spi will use PIO mode. This patch only
+validate on i.mx6, not i.mx5, but encourage ones to apply this patch
+on i.mx5 since they share the same IP.
 
-Thanks pulling into omap-for-v3.18/dt.
+Note:
+  Sometime, there is a weid data in rxfifo after one full tx/rx
+transfer finish by DMA on i.mx6dl, so we disable dma functhion on
+i.mx6dl.
 
-Tony
+Signed-off-by: Frank Li <Frank.Li@freescale.com>
+Signed-off-by: Robin Gong <b38343@freescale.com>
+
+---
+Change from v4:
+1. Enrich comments.
+2. Remove the rxfifo workaround. The issue only exist on i.mx6dl, so disable
+   dma function in dts.
+
+Change from v3:
+1. Use spi core framwork to handle dump tx/rx buf
+2. Add one workaround for weird data in rxfifo when one full transfer done.
+
+Change from v2:
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/291722/focus=294363
+1. Dma setup only for imx51-ecspi
+2. Use one small dummy buffer(1 bd size) to templiy store data
+   for meanless rx/tx, instead of malloc the actual transfer size.
+3. Split spi_mx_sdma_transfer to smaller and easily to read.
+4. Fix some code indent.
+---
+ drivers/spi/spi-imx.c | 287 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 281 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/spi/spi-imx.c b/drivers/spi/spi-imx.c
+index 5daff20..c41a7a3 100644
+--- a/drivers/spi/spi-imx.c
++++ b/drivers/spi/spi-imx.c
+@@ -21,6 +21,8 @@
+ #include <linux/clk.h>
+ #include <linux/completion.h>
+ #include <linux/delay.h>
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
+ #include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/interrupt.h>
+@@ -37,6 +39,7 @@
+ #include <linux/of_device.h>
+ #include <linux/of_gpio.h>
  
-> ----------------------------------------------------------------
-> Nishanth Menon (5):
->       ARM: dts: OMAP5: switch to compatible pinctrl
->       ARM: dts: DRA7: switch to compatible pinctrl
->       ARM: dts: AM437x: switch to compatible pinctrl
->       ARM: dts: OMAP5 / DRA7: switch over to interrupts-extended property for UART
->       ARM: dts: dra7-evm: Mark uart1 rxd as wakeup capable
-> 
->  arch/arm/boot/dts/am4372.dtsi  |    4 +++-
->  arch/arm/boot/dts/dra7-evm.dts |    2 ++
->  arch/arm/boot/dts/dra7.dtsi    |   24 +++++++++++++-----------
->  arch/arm/boot/dts/omap5.dtsi   |   20 ++++++++++++--------
->  4 files changed, 30 insertions(+), 20 deletions(-)
-> 
-> [1] http://marc.info/?l=linux-kernel&m=140871681606779&w=2
-> [2] http://marc.info/?l=linux-kernel&m=141019565513129&w=2
-> [3] http://marc.info/?l=linux-kernel&m=141019566913133&w=2
-> [4] http://marc.info/?l=linux-omap&m=141022429924564&w=2
-> 
-> Regards,
-> Nishanth Menon
-> 
++#include <linux/platform_data/dma-imx.h>
+ #include <linux/platform_data/spi-imx.h>
+ 
+ #define DRIVER_NAME "spi_imx"
+@@ -51,6 +54,9 @@
+ #define MXC_INT_RR	(1 << 0) /* Receive data ready interrupt */
+ #define MXC_INT_TE	(1 << 1) /* Transmit FIFO empty interrupt */
+ 
++/* The maximum  bytes that a sdma BD can transfer.*/
++#define MAX_SDMA_BD_BYTES  (1 << 15)
++#define IMX_DMA_TIMEOUT (msecs_to_jiffies(3000))
+ struct spi_imx_config {
+ 	unsigned int speed_hz;
+ 	unsigned int bpw;
+@@ -95,6 +101,16 @@ struct spi_imx_data {
+ 	const void *tx_buf;
+ 	unsigned int txfifo; /* number of words pushed in tx FIFO */
+ 
++	/* DMA */
++	unsigned int dma_is_inited;
++	unsigned int dma_finished;
++	bool usedma;
++	u32 rx_wml;
++	u32 tx_wml;
++	u32 rxt_wml;
++	struct completion dma_rx_completion;
++	struct completion dma_tx_completion;
++
+ 	const struct spi_imx_devtype_data *devtype_data;
+ 	int chipselect[0];
+ };
+@@ -181,9 +197,24 @@ static unsigned int spi_imx_clkdiv_2(unsigned int fin,
+ 	return 7;
+ }
+ 
++static bool spi_imx_can_dma(struct spi_master *master, struct spi_device *spi,
++			 struct spi_transfer *transfer)
++{
++	struct spi_imx_data *spi_imx = spi_master_get_devdata(master);
++
++	if (spi_imx->dma_is_inited && (transfer->len > spi_imx->rx_wml)
++	    && (transfer->len > spi_imx->tx_wml))
++		spi_imx->usedma = true;
++	else
++		spi_imx->usedma = false;
++
++	return spi_imx->usedma;
++}
++
+ #define MX51_ECSPI_CTRL		0x08
+ #define MX51_ECSPI_CTRL_ENABLE		(1 <<  0)
+ #define MX51_ECSPI_CTRL_XCH		(1 <<  2)
++#define MX51_ECSPI_CTRL_SMC		(1 << 3)
+ #define MX51_ECSPI_CTRL_MODE_MASK	(0xf << 4)
+ #define MX51_ECSPI_CTRL_POSTDIV_OFFSET	8
+ #define MX51_ECSPI_CTRL_PREDIV_OFFSET	12
+@@ -201,6 +232,18 @@ static unsigned int spi_imx_clkdiv_2(unsigned int fin,
+ #define MX51_ECSPI_INT_TEEN		(1 <<  0)
+ #define MX51_ECSPI_INT_RREN		(1 <<  3)
+ 
++#define MX51_ECSPI_DMA      0x14
++#define MX51_ECSPI_DMA_TX_WML_OFFSET	0
++#define MX51_ECSPI_DMA_TX_WML_MASK	0x3F
++#define MX51_ECSPI_DMA_RX_WML_OFFSET	16
++#define MX51_ECSPI_DMA_RX_WML_MASK	(0x3F << 16)
++#define MX51_ECSPI_DMA_RXT_WML_OFFSET	24
++#define MX51_ECSPI_DMA_RXT_WML_MASK	(0x3F << 24)
++
++#define MX51_ECSPI_DMA_TEDEN_OFFSET	7
++#define MX51_ECSPI_DMA_RXDEN_OFFSET	23
++#define MX51_ECSPI_DMA_RXTDEN_OFFSET	31
++
+ #define MX51_ECSPI_STAT		0x18
+ #define MX51_ECSPI_STAT_RR		(1 <<  3)
+ 
+@@ -257,17 +300,22 @@ static void __maybe_unused mx51_ecspi_intctrl(struct spi_imx_data *spi_imx, int
+ 
+ static void __maybe_unused mx51_ecspi_trigger(struct spi_imx_data *spi_imx)
+ {
+-	u32 reg;
+-
+-	reg = readl(spi_imx->base + MX51_ECSPI_CTRL);
+-	reg |= MX51_ECSPI_CTRL_XCH;
++	u32 reg = readl(spi_imx->base + MX51_ECSPI_CTRL);
++
++	if (!spi_imx->usedma)
++		reg |= MX51_ECSPI_CTRL_XCH;
++	else if (!spi_imx->dma_finished)
++		reg |= MX51_ECSPI_CTRL_SMC;
++	else
++		reg &= ~MX51_ECSPI_CTRL_SMC;
+ 	writel(reg, spi_imx->base + MX51_ECSPI_CTRL);
+ }
+ 
+ static int __maybe_unused mx51_ecspi_config(struct spi_imx_data *spi_imx,
+ 		struct spi_imx_config *config)
+ {
+-	u32 ctrl = MX51_ECSPI_CTRL_ENABLE, cfg = 0;
++	u32 ctrl = MX51_ECSPI_CTRL_ENABLE, cfg = 0, dma = 0;
++	u32 tx_wml_cfg, rx_wml_cfg, rxt_wml_cfg;
+ 	u32 clk = config->speed_hz, delay;
+ 
+ 	/*
+@@ -319,6 +367,30 @@ static int __maybe_unused mx51_ecspi_config(struct spi_imx_data *spi_imx,
+ 	else			/* SCLK is _very_ slow */
+ 		usleep_range(delay, delay + 10);
+ 
++	/*
++	 * Configure the DMA register: setup the watermark
++	 * and enable DMA request.
++	 */
++	if (spi_imx->dma_is_inited) {
++		dma = readl(spi_imx->base + MX51_ECSPI_DMA);
++
++		spi_imx->tx_wml = spi_imx_get_fifosize(spi_imx) / 2;
++		spi_imx->rx_wml = spi_imx_get_fifosize(spi_imx) / 2;
++		spi_imx->rxt_wml = spi_imx_get_fifosize(spi_imx) / 2;
++		rx_wml_cfg = spi_imx->rx_wml << MX51_ECSPI_DMA_RX_WML_OFFSET;
++		tx_wml_cfg = spi_imx->tx_wml << MX51_ECSPI_DMA_TX_WML_OFFSET;
++		rxt_wml_cfg = spi_imx->rxt_wml << MX51_ECSPI_DMA_RXT_WML_OFFSET;
++		dma = (dma & ~MX51_ECSPI_DMA_TX_WML_MASK
++			   & ~MX51_ECSPI_DMA_RX_WML_MASK
++			   & ~MX51_ECSPI_DMA_RXT_WML_MASK)
++			   | rx_wml_cfg | tx_wml_cfg | rxt_wml_cfg
++			   |(1 << MX51_ECSPI_DMA_TEDEN_OFFSET)
++			   |(1 << MX51_ECSPI_DMA_RXDEN_OFFSET)
++			   |(1 << MX51_ECSPI_DMA_RXTDEN_OFFSET);
++
++		writel(dma, spi_imx->base + MX51_ECSPI_DMA);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -730,7 +802,186 @@ static int spi_imx_setupxfer(struct spi_device *spi,
+ 	return 0;
+ }
+ 
+-static int spi_imx_transfer(struct spi_device *spi,
++static void spi_imx_sdma_exit(struct spi_imx_data *spi_imx)
++{
++	struct spi_master *master = spi_imx->bitbang.master;
++
++	if (master->dma_rx) {
++		dma_release_channel(master->dma_rx);
++		master->dma_rx = NULL;
++	}
++
++	if (master->dma_tx) {
++		dma_release_channel(master->dma_tx);
++		master->dma_tx = NULL;
++	}
++
++	spi_imx->dma_is_inited = 0;
++}
++
++static int spi_imx_sdma_init(struct device *dev, struct spi_imx_data *spi_imx,
++			     struct spi_master *master,
++			     const struct resource *res)
++{
++	struct dma_slave_config slave_config = {};
++	int ret;
++
++	/* Prepare for TX DMA: */
++	master->dma_tx = dma_request_slave_channel(dev, "tx");
++	if (!master->dma_tx) {
++		dev_err(dev, "cannot get the TX DMA channel!\n");
++		ret = -EINVAL;
++		goto err;
++	}
++
++	slave_config.direction = DMA_MEM_TO_DEV;
++	slave_config.dst_addr = res->start + MXC_CSPITXDATA;
++	slave_config.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	slave_config.dst_maxburst = spi_imx_get_fifosize(spi_imx) / 2;
++	ret = dmaengine_slave_config(master->dma_tx, &slave_config);
++	if (ret) {
++		dev_err(dev, "error in TX dma configuration.");
++		goto err;
++	}
++
++	/* Prepare for RX : */
++	master->dma_rx = dma_request_slave_channel(dev, "rx");
++	if (!master->dma_rx) {
++		dev_dbg(dev, "cannot get the DMA channel.\n");
++		ret = -EINVAL;
++		goto err;
++	}
++
++	slave_config.direction = DMA_DEV_TO_MEM;
++	slave_config.src_addr = res->start + MXC_CSPIRXDATA;
++	slave_config.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	slave_config.src_maxburst = spi_imx_get_fifosize(spi_imx) / 2;
++	ret = dmaengine_slave_config(master->dma_rx, &slave_config);
++	if (ret) {
++		dev_err(dev, "error in RX dma configuration.\n");
++		goto err;
++	}
++
++	init_completion(&spi_imx->dma_rx_completion);
++	init_completion(&spi_imx->dma_tx_completion);
++	master->can_dma = spi_imx_can_dma;
++	master->max_dma_len = MAX_SDMA_BD_BYTES;
++	spi_imx->bitbang.master->flags = SPI_MASTER_MUST_RX |
++					 SPI_MASTER_MUST_TX;
++	spi_imx->dma_is_inited = 1;
++
++	return 0;
++err:
++	spi_imx_sdma_exit(spi_imx);
++	return ret;
++}
++
++static void spi_imx_dma_rx_callback(void *cookie)
++{
++	struct spi_imx_data *spi_imx = (struct spi_imx_data *)cookie;
++
++	complete(&spi_imx->dma_rx_completion);
++}
++
++static void spi_imx_dma_tx_callback(void *cookie)
++{
++	struct spi_imx_data *spi_imx = (struct spi_imx_data *)cookie;
++
++	complete(&spi_imx->dma_tx_completion);
++}
++
++static int spi_imx_dma_transfer(struct spi_imx_data *spi_imx,
++				struct spi_transfer *transfer)
++{
++	struct dma_async_tx_descriptor *desc_tx = NULL, *desc_rx = NULL;
++	int ret;
++	u32 dma;
++	int left;
++	struct spi_master *master = spi_imx->bitbang.master;
++	struct sg_table *tx = &transfer->tx_sg, *rx = &transfer->rx_sg;
++
++	if (tx) {
++		desc_tx = dmaengine_prep_slave_sg(master->dma_tx,
++					tx->sgl, tx->nents, DMA_TO_DEVICE,
++					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++		if (!desc_tx)
++			goto no_dma;
++
++		desc_tx->callback = spi_imx_dma_tx_callback;
++		desc_tx->callback_param = (void *)spi_imx;
++		dmaengine_submit(desc_tx);
++	}
++
++	if (rx) {
++		desc_rx = dmaengine_prep_slave_sg(master->dma_rx,
++					rx->sgl, rx->nents, DMA_FROM_DEVICE,
++					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
++		if (!desc_rx)
++			goto no_dma;
++
++		desc_rx->callback = spi_imx_dma_rx_callback;
++		desc_rx->callback_param = (void *)spi_imx;
++		dmaengine_submit(desc_rx);
++	}
++
++	reinit_completion(&spi_imx->dma_rx_completion);
++	reinit_completion(&spi_imx->dma_tx_completion);
++
++	/* Trigger the cspi module. */
++	spi_imx->dma_finished = 0;
++
++	dma = readl(spi_imx->base + MX51_ECSPI_DMA);
++	dma = dma & (~MX51_ECSPI_DMA_RXT_WML_MASK);
++	/* Change RX_DMA_LENGTH trigger dma fetch tail data */
++	left = transfer->len % spi_imx->rxt_wml;
++	if (left)
++		writel(dma | (left << MX51_ECSPI_DMA_RXT_WML_OFFSET),
++				spi_imx->base + MX51_ECSPI_DMA);
++	spi_imx->devtype_data->trigger(spi_imx);
++
++	dma_async_issue_pending(master->dma_tx);
++	dma_async_issue_pending(master->dma_rx);
++	/* Wait SDMA to finish the data transfer.*/
++	ret = wait_for_completion_timeout(&spi_imx->dma_tx_completion,
++						IMX_DMA_TIMEOUT);
++	if (!ret) {
++		pr_warn("%s %s: I/O Error in DMA TX\n",
++			dev_driver_string(&master->dev),
++			dev_name(&master->dev));
++		dmaengine_terminate_all(master->dma_tx);
++	} else {
++		ret = wait_for_completion_timeout(&spi_imx->dma_rx_completion,
++				IMX_DMA_TIMEOUT);
++		if (!ret) {
++			pr_warn("%s %s: I/O Error in DMA RX\n",
++				dev_driver_string(&master->dev),
++				dev_name(&master->dev));
++			spi_imx->devtype_data->reset(spi_imx);
++			dmaengine_terminate_all(master->dma_rx);
++		}
++		writel(dma |
++		       spi_imx->rxt_wml << MX51_ECSPI_DMA_RXT_WML_OFFSET,
++		       spi_imx->base + MX51_ECSPI_DMA);
++	}
++
++	spi_imx->dma_finished = 1;
++	spi_imx->devtype_data->trigger(spi_imx);
++
++	if (!ret)
++		ret = -ETIMEDOUT;
++	else if (ret > 0)
++		ret = transfer->len;
++
++	return ret;
++
++no_dma:
++	pr_warn_once("%s %s: DMA not available, falling back to PIO\n",
++		     dev_driver_string(&master->dev),
++		     dev_name(&master->dev));
++	return -EAGAIN;
++}
++
++static int spi_imx_pio_transfer(struct spi_device *spi,
+ 				struct spi_transfer *transfer)
+ {
+ 	struct spi_imx_data *spi_imx = spi_master_get_devdata(spi->master);
+@@ -751,6 +1002,22 @@ static int spi_imx_transfer(struct spi_device *spi,
+ 	return transfer->len;
+ }
+ 
++static int spi_imx_transfer(struct spi_device *spi,
++				struct spi_transfer *transfer)
++{
++	int ret;
++	struct spi_imx_data *spi_imx = spi_master_get_devdata(spi->master);
++
++	if (spi_imx->bitbang.master->can_dma &&
++	    spi_imx_can_dma(spi_imx->bitbang.master, spi, transfer)) {
++		ret = spi_imx_dma_transfer(spi_imx, transfer);
++		if (ret != -EAGAIN)
++			return ret;
++	}
++
++	return spi_imx_pio_transfer(spi, transfer);
++}
++
+ static int spi_imx_setup(struct spi_device *spi)
+ {
+ 	struct spi_imx_data *spi_imx = spi_master_get_devdata(spi->master);
+@@ -911,6 +1178,13 @@ static int spi_imx_probe(struct platform_device *pdev)
+ 		goto out_put_per;
+ 
+ 	spi_imx->spi_clk = clk_get_rate(spi_imx->clk_per);
++	/*
++	 * Only validated on i.mx6 now, can remove the constrain if validated on
++	 * other chips.
++	 */
++	if (spi_imx->devtype_data == &imx51_ecspi_devtype_data
++	    && spi_imx_sdma_init(&pdev->dev, spi_imx, master, res))
++		dev_err(&pdev->dev, "dma setup error,use pio instead\n");
+ 
+ 	spi_imx->devtype_data->reset(spi_imx);
+ 
+@@ -949,6 +1223,7 @@ static int spi_imx_remove(struct platform_device *pdev)
+ 	writel(0, spi_imx->base + MXC_CSPICTRL);
+ 	clk_unprepare(spi_imx->clk_ipg);
+ 	clk_unprepare(spi_imx->clk_per);
++	spi_imx_sdma_exit(spi_imx);
+ 	spi_master_put(master);
+ 
+ 	return 0;
+-- 
+1.9.1
+
