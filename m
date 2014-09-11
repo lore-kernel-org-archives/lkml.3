@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaIKRx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:53:26 -0400
-Received: from mout.gmx.net ([212.227.17.21]:63932 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979AbaIKRxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:53:25 -0400
-Message-ID: <5411E149.5090305@gmx.de>
-Date: Thu, 11 Sep 2014 19:52:09 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752612AbaIKR5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:57:37 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:58422
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751053AbaIKR5g convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 13:57:36 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/48] staging: comedi: avoid using comedi_board()
+Thread-Topic: [PATCH 00/48] staging: comedi: avoid using comedi_board()
+Thread-Index: AQHPzBidpyB9E37aHUyfPTFUHQsjBpv8NngQ
+Date: Thu, 11 Sep 2014 17:57:34 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F9872E@P3PWEX4MB008.ex4.secureserver.net>
+References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: john@johnmccutchan.com, rlove@rlove.org, eparis@parisplace.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] fsnotify: don't put user context if it was never assigned
-References: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:VdOqsTesVaClWkkpwk6FLHEjaHH+lK0Qagw0EwcUS4MoKf/zLFR
- pmybPdWDp7PZfKIM6WzLkBWQyAZj62tC/kWjpqO7zJ46sbk5KwguLKOdGPtGxWifBFzpaO1
- KRtMNaDuokEICVU5a8S3DxQjOAWHj2Wa239HdSpspM8O3AO2A/v4Bcogn+EQEPXIEBhit23
- InR6HMRESf/I45zsKL3qQ==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sasha,
-
-I have CCed Jan, because he has been the only one working on this file 
-in the last 18 months.
-
-A failure path in which group->inotify_data.user is not yet assigned 
-starts here:
-
-static struct fsnotify_group *inotify_new_group(unsigned int max_events)
-{
-...
-	oevent = kmalloc(sizeof(struct inotify_event_info), GFP_KERNEL);
-	if (unlikely(!oevent)) {
-		fsnotify_destroy_group(group);
-		return ERR_PTR(-ENOMEM);
-	}
-
-So your check
-   if (group->inotify_data.user)
-is reasonable.
-
-3.17.0-rc3 compiles with the patch applied.
-
-Reviewed-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-
-@Andrew
-Please, add the patch to the mm-tree.
-
-Best regards
-
-Heinrich Schuchardt
-
-On 29.07.2014 15:25, Sasha Levin wrote:
-> On some failure paths we may attempt to free user context even
-> if it wasn't assigned yet. This will cause a NULL ptr deref
-> and a kernel BUG.
+On Tuesday, September 09, 2014 3:26 AM, Ian Abbott wrote:
+> The `comedi_board` inline function takes a single parameter of type
+> `struct comedi_device *` and merely returns the value of the `board_ptr`
+> member therein.  This is somewhat superfluous as the member can be
+> accessed directly.
 >
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->   fs/notify/inotify/inotify_fsnotify.c |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
+> Replace all uses of `comedi_board(dev)` with `dev->board_ptr`.
 >
-> diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-> index 43ab1e1..9c8187e 100644
-> --- a/fs/notify/inotify/inotify_fsnotify.c
-> +++ b/fs/notify/inotify/inotify_fsnotify.c
-> @@ -165,8 +165,10 @@ static void inotify_free_group_priv(struct fsnotify_group *group)
->   	/* ideally the idr is empty and we won't hit the BUG in the callback */
->   	idr_for_each(&group->inotify_data.idr, idr_callback, group);
->   	idr_destroy(&group->inotify_data.idr);
-> -	atomic_dec(&group->inotify_data.user->inotify_devs);
-> -	free_uid(group->inotify_data.user);
-> +	if (group->inotify_data.user) {
-> +		atomic_dec(&group->inotify_data.user->inotify_devs);
-> +		free_uid(group->inotify_data.user);
-> +	}
->   }
+> Note, if there are any conflicts when applying this series, they can
+> just be skipped for now and corrected later.
 >
->   static void inotify_free_event(struct fsnotify_event *fsn_event)
->
+> A subsequent patch will remove the `comedi_board` function, once there
+> is nothing using it.
+
+Greg,
+
+Just wanted to give you a heads up on this series and the ones I have
+posted. The series are:
+
+>From Ian, [PATCH 00/48] staging: comedi: avoid using comedi_board()
+>From me, [PATCH 00/30] staging: comedi: adl_pci9118: continue cleanup
+>From me, [PATCH 00/34] staging: comedi: cleanup async cmd->stop_{src,arg} usage
+
+There are a couple conflicts between the series from Ian and my two.
+If you drop these two from Ian's series:
+ 
+06) staging: comedi: adl_pci9118: replace comedi_board() calls
+10) staging: comedi: amplc_dio200_common: replace comedi_board() calls
+
+The rest will apply cleanly in the order above (assuming I didn't miss anything).
+
+Also, Ian had a couple issues with patch 07/34 and 08/34 from the last
+series I posted. I already asked if you could drop those two. I needed I
+will repost the series.
+
+Thanks,
+Hartley
 
