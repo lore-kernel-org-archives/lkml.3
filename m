@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526AbaIKOxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:53:03 -0400
-Received: from mout.gmx.net ([212.227.17.21]:49740 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754685AbaIKOw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:52:58 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-Date: Thu, 11 Sep 2014 16:52:22 +0200
-Message-ID: <1591383.Xdy91rktuP@fb07-iapwap2>
-User-Agent: KMail/4.13.3 (Linux/3.16.1-46.g90bc0f1-desktop; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140911144003.GD5149@katana>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de> <20140911141257.GC5149@katana> <20140911144003.GD5149@katana>
+	id S1756552AbaIKOxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:53:19 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:54895 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753364AbaIKOxQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:53:16 -0400
+Date: Thu, 11 Sep 2014 17:47:16 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page on
+ migration in vcpu_enter_guest().
+Message-ID: <20140911144716.GF26540@minantech.com>
+References: <20140911101200.GF25317@minantech.com>
+ <54117DB4.307@redhat.com>
+ <20140911113051.GG25317@minantech.com>
+ <54119E01.9000908@redhat.com>
+ <20140911135956.GC26540@minantech.com>
+ <5411AC82.4080005@redhat.com>
+ <20140911142121.GD26540@minantech.com>
+ <5411B084.7030800@redhat.com>
+ <20140911143123.GE26540@minantech.com>
+ <5411B3B3.900@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart6151357.4VKUoaRBI6"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:nT/2KIkPyvx0PHdDuUWYkcYQeLGWVIfM+VNyNGF7NMqcH9CYU9h
- Hp/QjRCH5f3bEERbkWkXbC/NjSaxBqIYhh2yRez6jG/CVg8+0iDgHh156X6V+1qxYb4Sfro
- Jry5leWMZ/fGKk5lDGfU2/H7A5VTYgTUXo9dtWGhnrNcxuIYRTEkVzwSJ1UmbyCCDahtKh/
- 0EToN78KY+T3vJKaCqWzg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5411B3B3.900@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart6151357.4VKUoaRBI6
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-
-Am Donnerstag, 11. September 2014, 16:40:04 schrieb Wolfram Sang:
-> > b) could be seen as a configuration thing since the functionality
-> > backend could be changed at runtime even.
+On Thu, Sep 11, 2014 at 04:37:39PM +0200, Paolo Bonzini wrote:
+> Il 11/09/2014 16:31, Gleb Natapov ha scritto:
+> >> > What if the page being swapped out is L1's APIC access page?  We don't
+> >> > run prepare_vmcs12 in that case because it's an L2->L0->L2 entry, so we
+> >> > need to "do something".
+> > We will do something on L2->L1 exit. We will call kvm_reload_apic_access_page().
+> > That is what patch 5 of this series is doing.
 > 
-> Come to think of it, not only the functionality, also the address can be
-> changed at runtime. This makes me think it should really not be in DT
-> after all.
+> Sorry, I meant "the APIC access page prepared by L1" for L2's execution.
+> 
+> You wrote:
+> 
+> > if (!is_guest_mode() || !(vmcs12->secondary_vm_exec_control & ECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
+> >     write(PIC_ACCESS_ADDR)
+> > 
+> > In other words if L2 shares L1 apic access page then reload, otherwise do nothing.
+> 
+> but in that case you have to redo nested_get_page, so "do nothing"
+> doesn't work.
+> 
+Ah, 7/7 is new in this submission. Before that this page was still
+pinned.  Looking at 7/7 now I do not see how it can work since it has no
+code for mmu notifier to detect that it deals with such page and call
+kvm_reload_apic_access_page().  I said to Tang previously that nested
+kvm has a bunch of pinned page that are hard to deal with and suggested
+to iron out non nested case first :(
 
-even worse, there can be multiple masters and slaves changing their role on 
-the fly AFAIK. So the best dt can do is to provide an initial configuration, 
-so all drivers know where they are and where to start. Everything else can be 
-changed during runtime.
-
-> People will probably find out that it is possible to put it in DT, but
-> it should not be encouraged and they should do it on their own risk.
-
---nextPart6151357.4VKUoaRBI6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJUEbcmAAoJEKyeR39HFBtoUJAH/2VkYCMJ+aDlPXoWbktY2AHP
-xHbstyCIzfj7kdVl8G4BRmuAbkSzoSGtm/apwz6zQOv0YjwaxUw32gaO6/E3srVT
-qEzCTqg7gyvvhenOQY2OWXJvM9inwBPQzuB8DRVtRTbO8kJtyk7YCBhaKURc6xyf
-pqyhLjuJrwRuAxxF1hd3fur3uvtop11LFNbv5hxybGWyRRosO38h0vaHfLpKSqSD
-RjqV7NfjxoQ8sk25IAghwRquO+YeaItJ1fWcmcaOLGj/ID27X54SHq2vYGVkqMN2
-n9+CZ6n795dxd1tj1WQnIVl3CCd/0xcS5QAfmMgVKQ7sgfJB6AX/ElX6BxJf3u0=
-=3/oV
------END PGP SIGNATURE-----
-
---nextPart6151357.4VKUoaRBI6--
-
+--
+			Gleb.
