@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878AbaIKNEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:04:44 -0400
+	id S1756128AbaIKNEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:04:52 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52280 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754313AbaIKNEl (ORCPT
+	by vger.kernel.org with ESMTP id S1756037AbaIKNEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:04:41 -0400
+	Thu, 11 Sep 2014 09:04:50 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
-        "Steve Wise" <swise@opengridcomputing.com>
+CC: akpm@linux-foundation.org, "Jens Axboe" <axboe@fb.com>,
+        "Christoph Hellwig" <hch@lst.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.41558588@decadent.org.uk>
+Message-ID: <lsq.1410438733.123058155@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 054/131] RDMA/iwcm: Use a default listen backlog if needed
+Subject: [PATCH 3.2 003/131] block: don't assume last put of shared tags
+ is for the host
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,99 +32,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Christoph Hellwig <hch@lst.de>
 
-commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+commit d45b3279a5a2252cafcd665bbf2db8c9b31ef783 upstream.
 
-If the user creates a listening cm_id with backlog of 0 the IWCM ends
-up not allowing any connection requests at all.  The correct behavior
-is for the IWCM to pick a default value if the user backlog parameter
-is zero.
+There is no inherent reason why the last put of a tag structure must be
+the one for the Scsi_Host, as device model objects can be held for
+arbitrary periods.  Merge blk_free_tags and __blk_free_tags into a single
+funtion that just release a references and get rid of the BUG() when the
+host reference wasn't the last.
 
-Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
-iwarp support without this fix.
-
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-[bwh: Backported to 3.2: use register_net_sysctl_table()]
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/core/iwcm.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ block/blk-tag.c | 33 +++++++--------------------------
+ 1 file changed, 7 insertions(+), 26 deletions(-)
 
---- a/drivers/infiniband/core/iwcm.c
-+++ b/drivers/infiniband/core/iwcm.c
-@@ -46,6 +46,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/sysctl.h>
+--- a/block/blk-tag.c
++++ b/block/blk-tag.c
+@@ -27,18 +27,15 @@ struct request *blk_queue_find_tag(struc
+ EXPORT_SYMBOL(blk_queue_find_tag);
  
- #include <rdma/iw_cm.h>
- #include <rdma/ib_addr.h>
-@@ -65,6 +66,20 @@ struct iwcm_work {
- 	struct list_head free_list;
- };
- 
-+static unsigned int default_backlog = 256;
-+
-+static struct ctl_table_header *iwcm_ctl_table_hdr;
-+static struct ctl_table iwcm_ctl_table[] = {
-+	{
-+		.procname	= "default_backlog",
-+		.data		= &default_backlog,
-+		.maxlen		= sizeof(default_backlog),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
- /*
-  * The following services provide a mechanism for pre-allocating iwcm_work
-  * elements.  The design pre-allocates them  based on the cm_id type:
-@@ -419,6 +434,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
- 
- 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
- 
-+	if (!backlog)
-+		backlog = default_backlog;
-+
- 	ret = alloc_work_entries(cm_id_priv, backlog);
- 	if (ret)
- 		return ret;
-@@ -1014,17 +1032,33 @@ int iw_cm_init_qp_attr(struct iw_cm_id *
- }
- EXPORT_SYMBOL(iw_cm_init_qp_attr);
- 
-+static struct ctl_path iwcm_ctl_path[] = {
-+	{ .procname = "net" },
-+	{ .procname = "iw_cm" },
-+	{ }
-+};
-+
- static int __init iw_cm_init(void)
+ /**
+- * __blk_free_tags - release a given set of tag maintenance info
++ * blk_free_tags - release a given set of tag maintenance info
+  * @bqt:	the tag map to free
+  *
+- * Tries to free the specified @bqt.  Returns true if it was
+- * actually freed and false if there are still references using it
++ * Drop the reference count on @bqt and frees it when the last reference
++ * is dropped.
+  */
+-static int __blk_free_tags(struct blk_queue_tag *bqt)
++void blk_free_tags(struct blk_queue_tag *bqt)
  {
- 	iwcm_wq = create_singlethread_workqueue("iw_cm_wq");
- 	if (!iwcm_wq)
- 		return -ENOMEM;
+-	int retval;
+-
+-	retval = atomic_dec_and_test(&bqt->refcnt);
+-	if (retval) {
++	if (atomic_dec_and_test(&bqt->refcnt)) {
+ 		BUG_ON(find_first_bit(bqt->tag_map, bqt->max_depth) <
+ 							bqt->max_depth);
  
-+	iwcm_ctl_table_hdr = register_net_sysctl_table(&init_net,
-+						       iwcm_ctl_path,
-+						       iwcm_ctl_table);
-+	if (!iwcm_ctl_table_hdr) {
-+		pr_err("iw_cm: couldn't register sysctl paths\n");
-+		destroy_workqueue(iwcm_wq);
-+		return -ENOMEM;
-+	}
-+
- 	return 0;
+@@ -50,9 +47,8 @@ static int __blk_free_tags(struct blk_qu
+ 
+ 		kfree(bqt);
+ 	}
+-
+-	return retval;
+ }
++EXPORT_SYMBOL(blk_free_tags);
+ 
+ /**
+  * __blk_queue_free_tags - release tag maintenance info
+@@ -69,28 +65,13 @@ void __blk_queue_free_tags(struct reques
+ 	if (!bqt)
+ 		return;
+ 
+-	__blk_free_tags(bqt);
++	blk_free_tags(bqt);
+ 
+ 	q->queue_tags = NULL;
+ 	queue_flag_clear_unlocked(QUEUE_FLAG_QUEUED, q);
  }
  
- static void __exit iw_cm_cleanup(void)
- {
-+	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
- 	destroy_workqueue(iwcm_wq);
- }
- 
+ /**
+- * blk_free_tags - release a given set of tag maintenance info
+- * @bqt:	the tag map to free
+- *
+- * For externally managed @bqt frees the map.  Callers of this
+- * function must guarantee to have released all the queues that
+- * might have been using this tag map.
+- */
+-void blk_free_tags(struct blk_queue_tag *bqt)
+-{
+-	if (unlikely(!__blk_free_tags(bqt)))
+-		BUG();
+-}
+-EXPORT_SYMBOL(blk_free_tags);
+-
+-/**
+  * blk_queue_free_tags - release tag maintenance info
+  * @q:  the request queue for the device
+  *
 
