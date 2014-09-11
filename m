@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753268AbaIKXph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:45:37 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:43692 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaIKXpg (ORCPT
+	id S1752709AbaIKXun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:50:43 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:64682 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaIKXum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:45:36 -0400
-Date: Fri, 12 Sep 2014 01:45:31 +0200
-From: Arianna Avanzini <avanzini.arianna@gmail.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        bob.liu@oracle.com, felipe.franciosi@citrix.com, axboe@fb.com
-Subject: Re: [PATCH RFC 4/4] xen, blkback: add support for multiple block
- rings
-Message-ID: <20140911234530.GB2052@gmail.com>
-Reply-To: avanzini.arianna@gmail.com
-References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com>
- <1408706404-6614-5-git-send-email-avanzini.arianna@gmail.com>
- <53F7428E.90806@citrix.com>
+	Thu, 11 Sep 2014 19:50:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F7428E.90806@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5412327B.6030000@lwfinger.net>
+References: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
+	<5412327B.6030000@lwfinger.net>
+Date: Thu, 11 Sep 2014 16:50:41 -0700
+X-Google-Sender-Auth: 1fZjUOLIb3Ld2n2xup_au0xTD30
+Message-ID: <CAGXu5jJmyyWrsS2EFPT59RjK-np3sqmxe69meecmpicv6BNKrA@mail.gmail.com>
+Subject: Re: repeated bugs in new rtl wifi drivers
+From: Kees Cook <keescook@chromium.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 22, 2014 at 02:15:58PM +0100, David Vrabel wrote:
-> On 22/08/14 12:20, Arianna Avanzini wrote:
-> > This commit adds to xen-blkback the support to retrieve the block
-> > layer API being used and the number of available hardware queues,
-> > in case the block layer is using the multi-queue API. This commit
-> > also lets the driver advertise the number of available hardware
-> > queues to the frontend via XenStore, therefore allowing for actual
-> > multiple I/O rings to be used.
-> 
-> Does it make sense for number of queues should be dependent on the
-> number of queues available in the underlying block device?  
+On Thu, Sep 11, 2014 at 4:38 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> On 09/11/2014 05:27 PM, Kees Cook wrote:
+>>
+>> Hi,
+>>
+>> I keep fixing this same bug that keeps showing up in the rtl wifi
+>> drivers. CL_PRINTF keeps getting redefined (incorrectly) instead of
+>> using a correctly fixed global. Is there a way to stop this from
+>> happening again?
+>>
+>> Here are the past three (identical) fixes I've landed:
+>> a3355a62673e2c4bd8617d2f07c8edee92a89b8d
+>> 037526f1ae7eeff5cf27ad790ebfe30303eeebe8
+>> 6437f51ec36af8ef1e3e2659439b35c37e5498e2
+>>
+>> And the buildbot report below seems to show there are more to be made. :)
+>
+>
+> Sorry that I missed your fix. I should have seen it come through Linville's
+> list. I will push your fix through again.
 
-Thank you for raising that point. It probably is not the best solution.
+Well, I should clarify: it's not getting unfixed/reverted, but rather,
+it hasn't been consolidated to avoid needing the code again in the
+future. All three of the fixes above are on almost identical header
+files. If we could consolidate them, that would be great, and it would
+keep things much nicer.
 
-Bob Liu suggested to have the number of I/O rings depend on the number
-of vCPUs in the driver domain. Konrad Wilk suggested to compute the
-number of I/O rings according to the following formula to preserve the
-possibility to explicitly define the number of hardware queues to be
-exposed to the frontend:
-what_backend_exposes = some_module_parameter ? :
-                   min(nr_online_cpus(), nr_hardware_queues()).
-io_rings = min(nr_online_cpus(), what_backend_exposes);
+>
+> We are in the process of unifying the in-house driver development at Realtek
+> with what I have been doing in the kernel. Unfortunately, this will involve
+> rather massive changes in all the codes. I am trying not to wipe out fixes
+> such as this one, but I expect that others will slip through. Once this
+> painful process is completed, maintaining the drivers should be a lot
+> easier.
 
-(Please do correct me if I misunderstood your point)
+Good to hear! :) Thanks for working on this!
 
-> What
-> behaviour do we want when a domain is migrated to a host with different
-> storage?
-> 
+-Kees
 
-This first patchset does not include support to migrate a multi-queue-capable
-domU to a host with different storage. The second version, which I am posting
-now, includes it. The behavior I have implemented as of now lets the frontend
-use the same number of rings, if the backend is still multi-queue-capable
-after the migration, otherwise it exposes one only ring.
-
-> Can you split this patch up as well?
-
-Sure, thank you for the comments.
-
-> 
-> David
-
+-- 
+Kees Cook
+Chrome OS Security
