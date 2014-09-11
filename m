@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690AbaIKNMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:12:37 -0400
+	id S1756701AbaIKNM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:12:56 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52280 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754039AbaIKNER (ORCPT
+	by vger.kernel.org with ESMTP id S1753860AbaIKNEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:04:17 -0400
+	Thu, 11 Sep 2014 09:04:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Axel Lin" <axel.lin@ingics.com>
+CC: akpm@linux-foundation.org, "Scott Teel" <scott.teel@hp.com>,
+        "Robert Elliott" <elliott@hp.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "Joe Handzik" <joseph.t.handzik@hp.com>,
+        "Christoph Hellwig" <hch@lst.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.857008004@decadent.org.uk>
+Message-ID: <lsq.1410438733.613194760@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 028/131] hwmon: (ads1015) Fix off-by-one for valid
- channel index checking
+Subject: [PATCH 3.2 022/131] hpsa: fix bad -ENOMEM return value in
+ hpsa_big_passthru_ioctl
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,29 +35,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 56de1377ad92f72ee4e5cb0faf7a9b6048fdf0bf upstream.
+commit 0758f4f732b08b6ef07f2e5f735655cf69fea477 upstream.
 
-Current code uses channel as array index, so the valid channel value is
-0 .. ADS1015_CHANNELS - 1.
+When copy_from_user fails, return -EFAULT, not -ENOMEM
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Reported-by: Robert Elliott <elliott@hp.com>
+Reviewed-by: Joe Handzik <joseph.t.handzik@hp.com>
+Reviewed-by: Scott Teel <scott.teel@hp.com>
+Reviewed by: Mike MIller <michael.miller@canonical.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/ads1015.c | 2 +-
+ drivers/scsi/hpsa.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -186,7 +186,7 @@ static int ads1015_get_channels_config_o
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -2769,7 +2769,7 @@ static int hpsa_big_passthru_ioctl(struc
  		}
- 
- 		channel = be32_to_cpup(property);
--		if (channel > ADS1015_CHANNELS) {
-+		if (channel >= ADS1015_CHANNELS) {
- 			dev_err(&client->dev,
- 				"invalid channel index %d on %s\n",
- 				channel, node->full_name);
+ 		if (ioc->Request.Type.Direction == XFER_WRITE) {
+ 			if (copy_from_user(buff[sg_used], data_ptr, sz)) {
+-				status = -ENOMEM;
++				status = -EFAULT;
+ 				goto cleanup1;
+ 			}
+ 		} else
 
