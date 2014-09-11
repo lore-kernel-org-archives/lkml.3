@@ -1,134 +1,598 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaIKPt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:49:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:34993 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaIKPt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:49:28 -0400
-Date: Thu, 11 Sep 2014 12:49:22 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
- cookie with each entry
-Message-ID: <20140911154922.GK10158@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-14-git-send-email-acme@kernel.org>
- <20140911103319.GA13634@krava.brq.redhat.com>
- <20140911132911.GB10158@kernel.org>
- <20140911145945.GC32722@krava.brq.redhat.com>
- <20140911152330.GI10158@kernel.org>
- <20140911153527.GE32722@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911153527.GE32722@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756843AbaIKPtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:49:47 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39208 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756768AbaIKPto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:49:44 -0400
+From: mathieu.poirier@linaro.org
+To: will.deacon@arm.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org
+Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        panchaxari.prasannamurthy@linaro.org, kaixu.xia@linaro.org,
+        marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
+        robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dsaxena@linaro.org, mathieu.poirier@linaro.org
+Subject: [PATCH 04/11 v6] coresight-etb: add CoreSight ETB driver
+Date: Thu, 11 Sep 2014 09:49:11 -0600
+Message-Id: <1410450558-12358-5-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 11, 2014 at 05:35:27PM +0200, Jiri Olsa escreveu:
-> On Thu, Sep 11, 2014 at 12:23:30PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Sep 11, 2014 at 04:59:45PM +0200, Jiri Olsa escreveu:
-> > > On Thu, Sep 11, 2014 at 10:29:11AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > But then I had no use whatsoever for the ->ptr one at this point, so I
-> > > > just nuked it, to keep _just_ what is used _right now_, and added the
-> > > > comment to the changelog :-)
+From: Pratik Patel <pratikp@codeaurora.org>
 
-> > > if we are treeting tools/lib/api as 'external' lib, I think we should
-> > > use 'void *' for priv and let the user retype it to whatever he wants
+This driver manages CoreSight ETB (Embedded Trace Buffer) which
+acts as a circular buffer sink collecting generated trace data.
 
-> > > but I dont care/insist here too much.. it just seems strange to me ;-)
-> > 
-> > Ok, so perhaps it should be:
-> > 
-> > 	struct fdarray {
-> > 		...
-> > 		union {
-> > 			int idx;
-> > 		} *priv;
-> > 		...
-> > }
-> > 
-> > And then perf's evlist will use:
-> > 
-> > 	fda->priv[fd].idx;
-> > 
-> > 	Then, when we get the need for a pointer, we can go there and
-> > add it to the union.
-> > 
-> > 	This will make tools/lib/api/fd/ a little bit more friendly to
-> > use outside the kernel sources, since then a new version will be source
-> > code compatible (but not necessarily binary compatible).
-> 
-> you lost me ;-)
-> 
-> could you please make an example of the !compatibility you mentioned?
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/coresight/Makefile          |   3 +-
+ drivers/coresight/coresight-etb10.c | 536 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 538 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-etb10.c
 
-If I leave it as is now, when I add that void * pointer to each entry in
-fdarray->priv[], I will have to change fdarray's users, i.e. right now I
-will have to go and change evlist.h, i.e. every place that has:
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index 540df99..5dd3d98 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -3,4 +3,5 @@
+ #
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
+-obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
++					   coresight-etb10.o
+diff --git a/drivers/coresight/coresight-etb10.c b/drivers/coresight/coresight-etb10.c
+new file mode 100644
+index 0000000..459e485
+--- /dev/null
++++ b/drivers/coresight/coresight-etb10.c
+@@ -0,0 +1,536 @@
++/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/clk.h>
++#include <linux/seq_file.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
++
++#include "coresight-priv.h"
++
++#define ETB_RAM_DEPTH_REG	0x004
++#define ETB_STATUS_REG		0x00c
++#define ETB_RAM_READ_DATA_REG	0x010
++#define ETB_RAM_READ_POINTER	0x014
++#define ETB_RAM_WRITE_POINTER	0x018
++#define ETB_TRG			0x01c
++#define ETB_CTL_REG		0x020
++#define ETB_RWD_REG		0x024
++#define ETB_FFSR		0x300
++#define ETB_FFCR		0x304
++#define ETB_ITMISCOP0		0xee0
++#define ETB_ITTRFLINACK		0xee4
++#define ETB_ITTRFLIN		0xee8
++#define ETB_ITATBDATA0		0xeeC
++#define ETB_ITATBCTR2		0xef0
++#define ETB_ITATBCTR1		0xef4
++#define ETB_ITATBCTR0		0xef8
++
++/** register description **/
++/* STS - 0x00C */
++#define ETB_STATUS_RAM_FULL	BIT(0)
++/* CTL - 0x020 */
++#define ETB_CTL_CAPT_EN		BIT(0)
++/* FFCR - 0x304 */
++#define ETB_FFCR_EN_FTC		BIT(0)
++#define ETB_FFCR_FON_MAN	BIT(6)
++#define ETB_FFCR_STOP_FI	BIT(12)
++#define ETB_FFCR_STOP_TRIGGER	BIT(13)
++
++#define ETB_FFCR_BIT		6
++#define ETB_FFSR_BIT		1
++#define ETB_FRAME_SIZE_WORDS	4
++
++/**
++ * @base:	memory mapped base address for this component.
++ * @dev:	the device entity associated to this component.
++ * @csdev:	component vitals needed by the framework.
++ * @miscdev:	specifics to handle "/dev/xyz.etb" entry.
++ * @clk:	the clock this component is associated to.
++ * @spinlock:	only one at a time pls.
++ * @in_use:	synchronise user space access to etb buffer.
++ * @buf:	area of memory where ETB buffer content gets sent.
++ * @buffer_depth: size of @buf.
++ * @enable:	this ETB is being used.
++ * @trigger_cntr: amount of words to store after a trigger.
++ */
++struct etb_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct miscdevice	miscdev;
++	struct clk		*clk;
++	spinlock_t		spinlock;
++	atomic_t		in_use;
++	u8			*buf;
++	u32			buffer_depth;
++	bool			enable;
++	u32			trigger_cntr;
++};
++
++static unsigned int etb_get_buffer_depth(struct etb_drvdata *drvdata)
++{
++	int ret;
++	u32 depth = 0;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	/* RO registers don't need locking */
++	depth = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
++
++	clk_disable_unprepare(drvdata->clk);
++	return depth;
++}
++
++static void etb_enable_hw(struct etb_drvdata *drvdata)
++{
++	int i;
++	u32 depth;
++
++	CS_UNLOCK(drvdata->base);
++
++	depth = drvdata->buffer_depth;
++	/* reset write RAM pointer address */
++	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
++	/* clear entire RAM buffer */
++	for (i = 0; i < depth; i++)
++		writel_relaxed(0x0, drvdata->base + ETB_RWD_REG);
++
++	/* reset write RAM pointer address */
++	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
++	/* reset read RAM pointer address */
++	writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
++
++	writel_relaxed(drvdata->trigger_cntr, drvdata->base + ETB_TRG);
++	writel_relaxed(ETB_FFCR_EN_FTC | ETB_FFCR_STOP_TRIGGER,
++		       drvdata->base + ETB_FFCR);
++	/* ETB trace capture enable */
++	writel_relaxed(ETB_CTL_CAPT_EN, drvdata->base + ETB_CTL_REG);
++
++	CS_LOCK(drvdata->base);
++}
++
++static int etb_enable(struct coresight_device *csdev)
++{
++	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
++	unsigned long flags;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	etb_enable_hw(drvdata);
++	drvdata->enable = true;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "ETB enabled\n");
++	return 0;
++}
++
++static void etb_disable_hw(struct etb_drvdata *drvdata)
++{
++	u32 ffcr;
++
++	CS_UNLOCK(drvdata->base);
++
++	ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
++	/* stop formatter when a stop has completed */
++	ffcr |= ETB_FFCR_STOP_FI;
++	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
++	/* manually generate a flush of the system */
++	ffcr |= ETB_FFCR_FON_MAN;
++	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
++
++	coresight_timeout(drvdata->base, ETB_FFCR, ETB_FFCR_BIT, 0);
++
++	/* disable trace capture */
++	writel_relaxed(0x0, drvdata->base + ETB_CTL_REG);
++
++	coresight_timeout(drvdata->base, ETB_FFSR, ETB_FFSR_BIT, 1);
++	CS_LOCK(drvdata->base);
++}
++
++static void etb_dump_hw(struct etb_drvdata *drvdata)
++{
++	int i;
++	u8 *buf_ptr;
++	u32 read_data, depth;
++	u32 read_ptr, write_ptr;
++	u32 frame_off, frame_endoff;
++
++	CS_UNLOCK(drvdata->base);
++
++	read_ptr = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
++	write_ptr = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
++
++	frame_off = write_ptr % ETB_FRAME_SIZE_WORDS;
++	frame_endoff = ETB_FRAME_SIZE_WORDS - frame_off;
++	if (frame_off) {
++		dev_err(drvdata->dev,
++			"write_ptr: %lu not aligned to formatter frame size\n",
++			(unsigned long)write_ptr);
++		dev_err(drvdata->dev, "frameoff: %lu, frame_endoff: %lu\n",
++			(unsigned long)frame_off, (unsigned long)frame_endoff);
++		write_ptr += frame_endoff;
++	}
++
++	if ((readl_relaxed(drvdata->base + ETB_STATUS_REG)
++		      & ETB_STATUS_RAM_FULL) == 0)
++		writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
++	else
++		writel_relaxed(write_ptr, drvdata->base + ETB_RAM_READ_POINTER);
++
++	depth = drvdata->buffer_depth;
++	buf_ptr = drvdata->buf;
++	for (i = 0; i < depth; i++) {
++		read_data = readl_relaxed(drvdata->base +
++					  ETB_RAM_READ_DATA_REG);
++		*buf_ptr++ = read_data >> 0;
++		*buf_ptr++ = read_data >> 8;
++		*buf_ptr++ = read_data >> 16;
++		*buf_ptr++ = read_data >> 24;
++	}
++
++	if (frame_off) {
++		buf_ptr -= (frame_endoff * 4);
++		for (i = 0; i < frame_endoff; i++) {
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++			*buf_ptr++ = 0x0;
++		}
++	}
++
++	writel_relaxed(read_ptr, drvdata->base + ETB_RAM_READ_POINTER);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void etb_disable(struct coresight_device *csdev)
++{
++	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	etb_disable_hw(drvdata);
++	etb_dump_hw(drvdata);
++	drvdata->enable = false;
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "ETB disabled\n");
++}
++
++static const struct coresight_ops_sink etb_sink_ops = {
++	.enable		= etb_enable,
++	.disable	= etb_disable,
++};
++
++static const struct coresight_ops etb_cs_ops = {
++	.sink_ops	= &etb_sink_ops,
++};
++
++static void etb_dump(struct etb_drvdata *drvdata)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	if (drvdata->enable) {
++		etb_disable_hw(drvdata);
++		etb_dump_hw(drvdata);
++		etb_enable_hw(drvdata);
++	}
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	dev_info(drvdata->dev, "ETB dumped\n");
++}
++
++static int etb_open(struct inode *inode, struct file *file)
++{
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++
++	if (atomic_cmpxchg(&drvdata->in_use, 0, 1))
++		return -EBUSY;
++
++	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
++	return 0;
++}
++
++static ssize_t etb_read(struct file *file, char __user *data,
++				size_t len, loff_t *ppos)
++{
++	u32 depth;
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++
++	etb_dump(drvdata);
++
++	depth = drvdata->buffer_depth;
++	if (*ppos + len > depth * 4)
++		len = depth * 4 - *ppos;
++
++	if (copy_to_user(data, drvdata->buf + *ppos, len)) {
++		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
++		return -EFAULT;
++	}
++
++	*ppos += len;
++
++	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
++		__func__, len, (int) (depth * 4 - *ppos));
++	return len;
++}
++
++static int etb_release(struct inode *inode, struct file *file)
++{
++	struct etb_drvdata *drvdata = container_of(file->private_data,
++						   struct etb_drvdata, miscdev);
++	atomic_set(&drvdata->in_use, 0);
++
++	dev_dbg(drvdata->dev, "%s: released\n", __func__);
++	return 0;
++}
++
++static const struct file_operations etb_fops = {
++	.owner		= THIS_MODULE,
++	.open		= etb_open,
++	.read		= etb_read,
++	.release	= etb_release,
++	.llseek		= no_llseek,
++};
++
++static ssize_t debugfs_status_show(struct seq_file *f, void *ptr)
++{
++	int ret;
++	unsigned long flags;
++	u32 etb_rdr, etb_sr, etb_rrp, etb_rwp;
++	u32 etb_trg, etb_cr, etb_ffsr, etb_ffcr;
++	struct etb_drvdata *drvdata = f->private;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		goto out;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	CS_UNLOCK(drvdata->base);
++
++	etb_rdr = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
++	etb_sr = readl_relaxed(drvdata->base + ETB_STATUS_REG);
++	etb_rrp = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
++	etb_rwp = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
++	etb_trg = readl_relaxed(drvdata->base + ETB_TRG);
++	etb_cr = readl_relaxed(drvdata->base + ETB_CTL_REG);
++	etb_ffsr = readl_relaxed(drvdata->base + ETB_FFSR);
++	etb_ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
++
++	CS_LOCK(drvdata->base);
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	seq_printf(f,
++		   "Depth:\t\t0x%x\n"
++		   "Status:\t\t0x%x\n"
++		   "RAM read ptr:\t0x%x\n"
++		   "RAM wrt ptr:\t0x%x\n"
++		   "Trigger cnt:\t0x%x\n"
++		   "Control:\t0x%x\n"
++		   "Flush status:\t0x%x\n"
++		   "Flush ctrl:\t0x%x\n",
++		   etb_rdr, etb_sr, etb_rrp, etb_rwp,
++		   etb_trg, etb_cr, etb_ffsr, etb_ffcr);
++out:
++	return 0;
++}
++
++static int debugfs_status_show_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debugfs_status_show, inode->i_private);
++}
++
++static const struct file_operations debugfs_status_ops = {
++	.open = debugfs_status_show_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static const struct coresight_ops_entry debugfs_status_entry = {
++	.name = "status",
++	.mode = S_IRUGO,
++	.ops = &debugfs_status_ops,
++};
++
++static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
++{
++	struct etb_drvdata *drvdata = data;
++
++	*val = drvdata->trigger_cntr;
++	return 0;
++}
++
++static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
++{
++	struct etb_drvdata *drvdata = data;
++
++	drvdata->trigger_cntr = val;
++	return 0;
++}
++CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
++			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
++			debugfs_trigger_cntr_set, "%llx\n");
++
++static const struct coresight_ops_entry *etb_attr_grps[] = {
++	&debugfs_trigger_cntr_entry,
++	&debugfs_status_entry,
++	NULL,
++};
++
++static int etb_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	int ret;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct etb_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
++
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
++	}
++
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	spin_lock_init(&drvdata->spinlock);
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
++	clk_disable_unprepare(drvdata->clk);
++
++	if (drvdata->buffer_depth < 0)
++		return -EINVAL;
++
++	drvdata->buf = devm_kzalloc(dev,
++				    drvdata->buffer_depth * 4, GFP_KERNEL);
++	if (!drvdata->buf)
++		return -ENOMEM;
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++
++	desc->type = CORESIGHT_DEV_TYPE_SINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
++	desc->ops = &etb_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->debugfs_ops = etb_attr_grps;
++	desc->owner = THIS_MODULE;
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev))
++		return PTR_ERR(drvdata->csdev);
++
++	drvdata->miscdev.name = pdata->name;
++	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
++	drvdata->miscdev.fops = &etb_fops;
++	ret = misc_register(&drvdata->miscdev);
++	if (ret)
++		goto err_misc_register;
++
++	dev_info(dev, "ETB initialized\n");
++	return 0;
++
++err_misc_register:
++	coresight_unregister(drvdata->csdev);
++	return ret;
++}
++
++static int etb_remove(struct amba_device *adev)
++{
++	struct etb_drvdata *drvdata = amba_get_drvdata(adev);
++
++	misc_deregister(&drvdata->miscdev);
++	coresight_unregister(drvdata->csdev);
++	return 0;
++}
++
++static struct amba_id etb_ids[] = {
++	{
++		.id	= 0x0003b907,
++		.mask	= 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver etb_driver = {
++	.drv = {
++		.name	= "coresight-etb10",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= etb_probe,
++	.remove		= etb_remove,
++	.id_table	= etb_ids,
++};
++
++static int __init etb_init(void)
++{
++	return amba_driver_register(&etb_driver);
++}
++module_init(etb_init);
++
++static void __exit etb_exit(void)
++{
++	amba_driver_unregister(&etb_driver);
++}
++module_exit(etb_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Embedded Trace Buffer driver");
+-- 
+1.9.1
 
-	fda->priv[fd];
-
-	will have to be changed to:
-
-	fda->priv[fd].idx;
-
-If I instead change it to:
-
- 	struct fdarray {
- 		...
- 		union {
- 			int idx;
- 		} *priv;
- 		...
-	}
-
-Then I will not have to change anything when I add that void * pointer
-to the union.
- 
-> > 	If we commit to that we can't just go on and change all its
-> > users as we can now do for things like 'struct sk_buff', 'struct sock'
-> > and any other kernel data structures.
-> > 	There are costs in making it 'external' in the sense you're
-> > implying. I want to make it a bit less 'external' (in your sense), at
-> > least while we initially implement new stuff like this one.
- 
-> and the costs?
- 
-> also I did not mean that union above, what I meant was:
- 
-> struct fdarray {
-> 	...
-> 	void *priv;
-> 	...
-> }
-
-Yeah, that is what I am trying to avoid. This will make it use
-sizeof(void *) for each entry, and I have no use for that right now. All
-I need is sizeof(int) for each entry.
-
-Remember, this is an array, so its not just a matter of changing:
-
-	int *priv;
-
-to:
-
-	void *priv;
-
-But since it is an array, it will use, in this case, double the space,
-on 64-bit, for no gain _right now_.
-
-- Arnaldo
