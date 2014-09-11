@@ -1,187 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaIKTJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:09:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41859 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755098AbaIKTJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755172AbaIKTJp (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Sep 2014 15:09:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41856 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755056AbaIKTJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 15:09:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
-   d="scan'208";a="571925959"
+   d="scan'208";a="571925950"
 From: kan.liang@intel.com
 To: acme@kernel.org, jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V6 3/3] perf tools: Add support to new style format of kernel PMU event
-Date: Thu, 11 Sep 2014 15:08:59 -0400
-Message-Id: <1410462539-5468-4-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V6 0/3] perf tools: pmu event new style format fix
+Date: Thu, 11 Sep 2014 15:08:56 -0400
+Message-Id: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
-References: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-Add new rules for kernel PMU event.
+There are two types of pmu event stytle formats, "pmu_event_name"
+or "cpu/pmu_event_name/". However, there is a bug on supporting these
+two formats, especially when they mixed with other perf events.
+The patch set intends to fix this issue.
 
-Currently, the patch only want to handle the PMU event name as "a-b" and
-"a".
+The patch set has been tested on my haswell.
+Here is the test script I used for this issue.
+(Note: please make sure that your test system supports TSX and
+L1-dcache-loads events. Otherwise, you may want to change the events 
+to other pmu events.)
 
-event_pmu:
-PE_KERNEL_PMU_EVENT
-|
-PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
+[lk@localhost ~]$ cat perf_style_test.sh
+#hardware events + kernel pmu event with different style
+perf stat -x, -e cycles,mem-stores,tx-start sleep 2
+perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
+perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
+perf stat -x, -e instructions,cpu/tx-start/ sleep 2
+perf stat -x, -e '{cycles,tx-start}' sleep 2
+perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
 
-PE_KERNEL_PMU_EVENT token is for
-cycles-ct/cycles-t/mem-loads/mem-stores.
-The prefix cycles is mixed up with cpu-cycles.
-loads and stores are mixed up with cache event
-So they have to be hardcode in lex.
+#HW Cache event + kernel pmu event with different style
+perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
+perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
+perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
+perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
 
-PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU
-events.
-The lex looks generic identifier up in the table and return the matched
-token. If there is no match, generic PE_NAME token will be return.
+#Raw event + kernel pmu event with different style:
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
+perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
 
-Using the rules, kernel PMU event could use new style format without //
+Changes since V1:
+Read kernel PMU events from sysfs at runtime
 
-so you can use
+Changes since V2:
+Use strlcpy to replace strncpy
 
-perf record -e mem-loads ...
+Changes since V3:
+rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
 
-instead of
+Changes since V4:
+scan kernel pmu events from sysfs only needed
+rename the init/check/clenup functions and related struct.
+allocate each symbol string separatelly
+Use ALLOC_LIST
 
-perf record -e cpu/mem-loads/
+Changes since V5:
+Using perf_pmu__find to instead of perf_pmu__scan
+Don't scan all the time if the system doesn't support kernel pmu events
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/util/parse-events.l | 30 +++++++++++++++++++++++++++++-
- tools/perf/util/parse-events.y | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 69 insertions(+), 1 deletion(-)
+Kan Liang (3):
+  Revert "perf tools: Default to cpu// for events v5"
+  perf tools: parse the pmu event prefix and surfix
+  perf tools: Add support to new style format of kernel PMU event
 
-diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-index 3432995..ea970cf 100644
---- a/tools/perf/util/parse-events.l
-+++ b/tools/perf/util/parse-events.l
-@@ -51,6 +51,24 @@ static int str(yyscan_t scanner, int token)
- 	return token;
- }
- 
-+static int pmu_str_check(yyscan_t scanner)
-+{
-+	YYSTYPE *yylval = parse_events_get_lval(scanner);
-+	char *text = parse_events_get_text(scanner);
-+
-+	yylval->str = strdup(text);
-+	switch (perf_pmu__parse_check(text)) {
-+		case KERNEL_PMU_EVENT_PREFIX:
-+			return PE_PMU_EVENT_PRE;
-+		case KERNEL_PMU_EVENT_SUFFIX:
-+			return PE_PMU_EVENT_SUF;
-+		case KERNEL_PMU_EVENT:
-+			return PE_KERNEL_PMU_EVENT;
-+		default:
-+			return PE_NAME;
-+	}
-+}
-+
- static int sym(yyscan_t scanner, int type, int config)
- {
- 	YYSTYPE *yylval = parse_events_get_lval(scanner);
-@@ -178,6 +196,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
- emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
- dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
- 
-+	/*
-+	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
-+	 * Because the prefix cycles is mixed up with cpu-cycles.
-+	 * loads and stores are mixed up with cache event
-+	 */
-+cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
-+
- L1-dcache|l1-d|l1d|L1-data		|
- L1-icache|l1-i|l1i|L1-instruction	|
- LLC|L2					|
-@@ -199,7 +227,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
- {num_hex}		{ return value(yyscanner, 16); }
- 
- {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
--{name}			{ return str(yyscanner, PE_NAME); }
-+{name}			{ return pmu_str_check(yyscanner); }
- "/"			{ BEGIN(config); return '/'; }
- -			{ return '-'; }
- ,			{ BEGIN(event); return ','; }
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 55fab6a..3f26c03 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
- %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
- %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
- %token PE_ERROR
-+%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
- %type <num> PE_VALUE
- %type <num> PE_VALUE_SYM_HW
- %type <num> PE_VALUE_SYM_SW
-@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
- %type <str> PE_MODIFIER_EVENT
- %type <str> PE_MODIFIER_BP
- %type <str> PE_EVENT_NAME
-+%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
- %type <num> value_sym
- %type <head> event_config
- %type <term> event_term
-@@ -220,6 +222,44 @@ PE_NAME '/' '/'
- 	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
- 	$$ = list;
- }
-+|
-+PE_KERNEL_PMU_EVENT
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *head;
-+	struct parse_events_term *term;
-+	struct list_head *list;
-+
-+	ALLOC_LIST(head);
-+	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					$1, 1));
-+	list_add_tail(&term->list, head);
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
-+	parse_events__free_terms(head);
-+	$$ = list;
-+}
-+|
-+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *head;
-+	struct parse_events_term *term;
-+	struct list_head *list;
-+	char pmu_name[128];
-+	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
-+
-+	ALLOC_LIST(head);
-+	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
-+					&pmu_name, 1));
-+	list_add_tail(&term->list, head);
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
-+	parse_events__free_terms(head);
-+	$$ = list;
-+}
- 
- value_sym:
- PE_VALUE_SYM_HW
+ tools/perf/util/include/linux/string.h |   1 -
+ tools/perf/util/parse-events.c         | 128 +++++++++++++++++++++++++++------
+ tools/perf/util/parse-events.h         |  14 ++++
+ tools/perf/util/parse-events.l         |  30 +++++++-
+ tools/perf/util/parse-events.y         |  40 +++++++++++
+ tools/perf/util/pmu.c                  |  10 ---
+ tools/perf/util/pmu.h                  |  10 +++
+ tools/perf/util/string.c               |  24 -------
+ 8 files changed, 199 insertions(+), 58 deletions(-)
+
 -- 
 1.8.3.2
 
