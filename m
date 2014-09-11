@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaIKR33 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:29:29 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:46383 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822AbaIKR31 (ORCPT
+	id S1752935AbaIKRa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:30:59 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:37224 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaIKRa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:29:27 -0400
+	Thu, 11 Sep 2014 13:30:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <5411DA67.2040402@arm.com>
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
-	<20140911164710.GW6158@arm.com>
-	<5411D528.4050605@arm.com>
-	<CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
-	<5411DA67.2040402@arm.com>
-Date: Thu, 11 Sep 2014 10:29:25 -0700
-X-Google-Sender-Auth: nDXl0NrxDSpTWKaiVdisuLxfK6w
-Message-ID: <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-From: Doug Anderson <dianders@chromium.org>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <ghioku5l29.fsf@lena.gouders.net>
+References: <ghiol53r9u.fsf@lena.gouders.net> <CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
+ <ghwq9k3m6z.fsf@lena.gouders.net> <CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
+ <ghioku5l29.fsf@lena.gouders.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 11 Sep 2014 11:30:35 -0600
+Message-ID: <CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+To: Dirk Gouders <dirk@gouders.net>
+Cc: Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc,
+[+cc linux-pci]
 
-On Thu, Sep 11, 2014 at 10:22 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> We would need to run this code potentially at processor bringup and
->> after suspend/resume, but that seems possible too.
+
+On Thu, Sep 11, 2014 at 7:43 AM, Dirk Gouders <dirk@gouders.net> wrote:
+> Andreas Noever <andreas.noever@gmail.com> writes:
 >
-> Note that this would be an ARMv7 only thing (you can't do that on ARMv8,
-> at all).
-
-Yes, of course.
-
-
->> Is the transition to monitor mode and back simple?  Where would you
->> suggest putting this code?  It would definitely need to be pretty
->> early.  We'd also need to be able to detect that we're in Secure SVC
->> and not mess up anyone else who happened to boot in Non Secure SVC.
+>> On Wed, Sep 3, 2014 at 2:47 PM, Dirk Gouders <dirk@gouders.net> wrote:
+>>> Andreas Noever <andreas.noever@gmail.com> writes:
+>>>
+>>>> On Wed, Sep 3, 2014 at 12:57 PM, Dirk Gouders <dirk@gouders.net> wrote:
+>>>>> On a Tyan VX50 (B4985) I ran into problems when updating the kernel: the
+>>>>> PCI FC Adapter is no longer recognized.
+>>>>
+>>>> Can you provide the output of lspci -vvv and the output of dmesg from
+>>>> a working boot? Which card is the one that is not recognized?
+>>>
+>>> Sure, the card that disappeared is:
+>>>
+>>> 0a:00.0 Fibre Channel: LSI Logic / Symbios Logic FC949ES Fibre Channel Adapter (rev 02)
+>>
+>> As far as I can tell the following is happening:
+>> The root bus resource window (advertised by the bios?) is to small:
+>> pci_bus 0000:00: root bus resource [bus 00-07]
+>> Previously we didn't really care. There is a resource conflict but we
+>> ignored it:
+>> pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07]
+>> (conflicts with (null) [bus 00-07])
+>> With the patch we mark the bridge as broken and reassign the bus to 06:
+>> pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
+>> pci 0000:00:0e.0: PCI bridge to [bus 06-07]
+>> pci 0000:00:0e.0:   bridge window [io  0x3000-0x3fff]
+>> pci 0000:00:0e.0:   bridge window [mem 0xd4200000-0xd42fffff]
+>> pci_bus 0000:06: busn_res: [bus 06-07] end is updated to 06
+>>
+>> We still scan for children but nothing shows up ("PCI bridge to" is
+>> from pci_scan_child_bus -> pcibios_fixup_bus -> pci_read_bridge_base,
+>> after pci_scan_slot). I have no idea why the device does not respond.
 >
-> This would have to live in some very early platform-specific code. The
-> ugly part is that you cannot find out what world you're in (accessing
-> SCR is going to send you to UNDEF-land if accessed from NS).
+> Andreas,
+>
+> I found an identical FC Adapter here (backup) and was hoping to be able to
+> setup a test-machine where I can easily reproduce the problem, but
+> on that machine, the problem does not occur. So, I have to stick to the
+> busy machine for testing and diagnosis.
+>
+> What I further did was rebooting the problematic machine and
+> enabling more messages (dyndbg="file drivers/pci/* +pf") with
+> the working and problematic kernel; the dmesg output is attached.
 
-Yup, so the question is: would such code be accepted upstream, or are
-we going to embark on a big job for someone to figure out how to do
-this only to get NAKed?
+Dirk,
 
-If there was some indication that folks would take this, I think we
-might be able to get it coded up.  If someone else wanted to volunteer
-to code it that would make me even happier, but maybe that's pushing
-my luck.  ;)
+Thanks for following up on this.  It had fallen off my radar, so I
+opened https://bugzilla.kernel.org/show_bug.cgi?id=84281 to make sure
+I don't forget again.  Please continue the debug discussion here in
+email.
 
-
-> If I was suicidal, I'd suggest you could pass a parameter to the command
-> line, interpreted by the timer code... But I since I'm not, let's
-> pretend I haven't said anything... ;-)
-
-I did this in the past (again, see Sonny's thread), but didn't
-consider myself knowledgeable to know if that was truly a good test:
-
-       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
-       pr_info("DOUG: val is %#010x", val);
-       val |= (1 << 2);
-       asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
-       val = 0xffffffff;
-       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
-       pr_info("DOUG: val is %#010x", val);
-
-The idea being that if you can make modifications to the SCR register
-(and see your changes take effect) then you must be in secure mode.
-In my case the first printout was 0x0 and the second was 0x4.
-
--Doug
+Bjorn
