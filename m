@@ -1,132 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaIKLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:34:56 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:43972 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753507AbaIKLey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:34:54 -0400
+	id S1754692AbaIKLfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:35:47 -0400
+Received: from sauhun.de ([89.238.76.85]:51795 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753507AbaIKLfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 07:35:45 -0400
+Date: Thu, 11 Sep 2014 13:35:48 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+Message-ID: <20140911113548.GB5149@katana>
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+ <540ED495.20609@collabora.co.uk>
+ <20140910092832.GM30307@lee--X1>
+ <1410422429.2857.16.camel@collabora.co.uk>
+ <54115F6E.3010007@collabora.co.uk>
+ <5411693A.3050300@itdev.co.uk>
+ <20140911110829.GA5149@katana>
+ <54118687.8040802@collabora.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140911110846.D152DC408F0@trevor.secretlab.ca>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <1409583475-6978-12-git-send-email-hanjun.guo@linaro.org> <20140911110846.D152DC408F0@trevor.secretlab.ca>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 11 Sep 2014 12:34:33 +0100
-X-Google-Sender-Auth: zmfRFbL0MIDVdKhtwQvMMjHDArs
-Message-ID: <CACxGe6vYKyZu0txFZB+HDJaC3onDfwCvXJ44kWCBcXoqLsTvxQ@mail.gmail.com>
-Subject: Re: [PATCH v3 11/17] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and
- register device's gsi
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
+Content-Disposition: inline
+In-Reply-To: <54118687.8040802@collabora.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:08 PM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Mon,  1 Sep 2014 22:57:49 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->> Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
->> used, and then register device's gsi with the core IRQ subsystem.
->>
->> acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
->> since gsi is unique in the system, so use hwirq number directly
->> for the mapping.
->>
->> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
->> ---
->>  arch/arm64/kernel/acpi.c |   73 ++++++++++++++++++++++++++++++++++++++++++++++
->>  drivers/acpi/bus.c       |    3 ++
->>  include/linux/acpi.h     |    1 +
->>  3 files changed, 77 insertions(+)
->>
->> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
->> index 35dff11..354b912 100644
->> --- a/arch/arm64/kernel/acpi.c
->> +++ b/arch/arm64/kernel/acpi.c
->> @@ -37,6 +37,12 @@ EXPORT_SYMBOL(acpi_pci_disabled);
->>  static int enabled_cpus;     /* Processors (GICC) with enabled flag in MADT */
->>
->>  /*
->> + * Since we're on ARM, the default interrupt routing model
->> + * clearly has to be GIC.
->> + */
->> +enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
->> +
->> +/*
->>   * __acpi_map_table() will be called before page_init(), so early_ioremap()
->>   * or early_memremap() should be called here to for ACPI table mapping.
->>   */
->> @@ -194,6 +200,73 @@ void __init acpi_smp_init_cpus(void)
->>       pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
->>  }
->>
->> +int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
->> +{
->> +     *irq = irq_find_mapping(NULL, gsi);
->> +
->> +     return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
->
-> Why is this exported? x86 exports it, but ia64 does not. There aren't
-> very many callers, and none of them can be built as a module AFAICS.
->
->> +
->> +/*
->> + * success: return IRQ number (>0)
->> + * failure: return =< 0
->> + */
->> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
->> +{
->> +     unsigned int irq;
->> +     unsigned int irq_type;
->> +
->> +     /*
->> +      * ACPI have no bindings to indicate SPI or PPI, so we
->> +      * use different mappings from DT in ACPI.
->> +      *
->> +      * For FDT
->> +      * PPI interrupt: in the range [0, 15];
->> +      * SPI interrupt: in the range [0, 987];
->> +      *
->> +      * For ACPI, GSI should be unique so using
->> +      * the hwirq directly for the mapping:
->> +      * PPI interrupt: in the range [16, 31];
->> +      * SPI interrupt: in the range [32, 1019];
->> +      */
->
-> Hmmm, so doing it this way means that DT systems will have a different
-> irq_domain setup compared with ACPI systems. I'm not convinced we want
-> to do that, but I need to look at the code that sets up the new domains
-> before I comment further...
 
-Okay, nevermind. I looked at the setup code. This isn't an issue of
-the irq domain being set up differently, but rather the binding
-translation operates differently between DT and ACPI. ACPI used a
-single integer encapsulating PPI and SPI which just happens to line up
-with the hwirq numbers, whereas DT uses a [type,number] tuple that
-needs translating into the hwirq. This code is fine.
+--dc+cDN39EJAMEtIO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-g.
+
+> > This is a workaround. It would make sense, however, to add it because we
+> > want to support i2c_board_info structures.
+> >=20
+>=20
+> I think it really depends if an IP block can be used on non-DT platforms
+> (which I think is true for this trackpad) but if a driver is for an IP bl=
+ock
+> that can only be used on a DT-only platform (e.g: a PMIC that is controll=
+ed
+> over I2C and is only compatible with a DT-only SoC) then I don't think we=
+ need
+> to support the i2c_board_info structure and can get rid of the I2C ID tab=
+le on
+> these drivers once Lee series land.
+
+That is exactly what I meant. It should be only added if there is a
+reason other than "workaround". If you say, it doesn't make sense on
+non-DT, then it should not be added.
+
+
+--dc+cDN39EJAMEtIO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUEYkTAAoJEBQN5MwUoCm2LhYQAJziqMlFB0VpGXDHW4jwJLne
+ZNO9Zs65dd1TG+sUJK+jSCGaWeO6BOdNU4AdDHzAIvouKrjUou5BaenD3L7z8nv5
+VjqWLL8E3h1ip2QRJmtds0KsuZBFkYgEOI6AxiJ7NnOgSTSMI7/wDkB08/HdFNu7
+GEEfMIo9rftaChPwss/kuAQ3LOVMXvIQ721k8Fy2yWVQ6a6dwS0kZJTiWtVR1ZnT
+E3ObOESY43+OsRJcskiYN740Aq1cyf9l6PjmKaHzBspE/ZEPQTDmaF1gwtYnF5Fp
+AOTabZit69orHS41WXTaB34fnDqp3Qz+pA7T1OnuVoGo9ZjvbnvCph48Elm8hPeh
+U5cq4FdF8/9nHlZYnfDmDMjI6CQzA+EapFAzp+6XMuVvIuCu60TXNRpB2xeEaPmZ
+jMi3WYC/2VdtB+DOHJkrVpzCKYgNc1mELz8tAVwP4qMsvBTvs0F5xRkuxLzXdXn3
+8pItbVd2cS+/7N+AAa5jXbS4Jc1PlKdU24dLdl7YZCvohLmkoDhiNlVuuTWdD1a+
+2iTmvIMj7GI0OJdfkWIWu1Uw9dt3RIoEbg4BLIIlP7yPiYjyemkaehphZO25MFo7
+akYjmxvqQPlofcJnsCCRqwjx97AQ4b3dndYBVUIEayI34dVfiR7bI9pEzCkTf/sr
+ZPd2zEOB99WvmA3BP+75
+=5Osf
+-----END PGP SIGNATURE-----
+
+--dc+cDN39EJAMEtIO--
