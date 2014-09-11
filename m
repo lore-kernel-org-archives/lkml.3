@@ -1,112 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaIKW3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:29:34 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:64308 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaIKW3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:29:31 -0400
+	id S1752797AbaIKWcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:32:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54042 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751105AbaIKWco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 18:32:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,508,1406617200"; 
+   d="scan'208";a="601705001"
+Message-ID: <5412230A.6090805@intel.com>
+Date: Thu, 11 Sep 2014 15:32:42 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-	<541013CE.6020307@redhat.com>
-	<CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
-	<5411FC42.3070505@redhat.com>
-	<CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
-	<CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
-Date: Thu, 11 Sep 2014 15:29:30 -0700
-Message-ID: <CAMEtUuyzOgCZutgsAXs60BO0=0WJGpVAeTYN2hf0Bh1sZ5PMVg@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>, Qiaowei Ren <qiaowei.ren@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409120015030.4178@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 2:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+On 09/11/2014 03:18 PM, Thomas Gleixner wrote:
+> On Thu, 11 Sep 2014, Qiaowei Ren wrote:
+>> This patch sets bound violation fields of siginfo struct in #BR
+>> exception handler by decoding the user instruction and constructing
+>> the faulting pointer.
 >>
->> the verifier log contains full trace. Last unsafe instruction + error
->> in many cases is useless. What we found empirically from using
->> it over last 2 years is that developers have different learning curve
->> to adjust to 'safe' style of C. Pretty much everyone couldn't
->> figure out why program is rejected based on last error. Therefore
->> verifier emits full log. From the 1st insn all the way till the last
->> 'unsafe' instruction. So the log is multiline output.
->> 'Understanding eBPF verifier messages' section of
->> Documentation/networking/filter.txt provides few trivial
->> examples of these multiline messages.
->> Like for the program:
->>   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
->>   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
->>   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
->>   BPF_LD_MAP_FD(BPF_REG_1, 0),
->>   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
->>   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
->>   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
->>   BPF_EXIT_INSN(),
->> the verifier log_buf is:
->>   0: (7a) *(u64 *)(r10 -8) = 0
->>   1: (bf) r2 = r10
->>   2: (07) r2 += -8
->>   3: (b7) r1 = 0
->>   4: (85) call 1
->>   5: (15) if r0 == 0x0 goto pc+1
->>    R0=map_ptr R10=fp
->>   6: (7a) *(u64 *)(r0 +4) = 0
->>   misaligned access off 4 size 8
->>
->> It will surely change over time as verifier becomes smarter,
->> supports new types, optimizations and so on.
->> So this log is not an ABI. It's for humans to read.
->> The log explains _how_ verifier came to conclusion
->> that the program is unsafe.
->
-> Given that you've already arranged (I think) for the verifier to be
-> compilable in the kernel and in userspace, would it make more sense to
-> have the kernel version just say yes or no and to make it easy for
-> user code to retry verification in userspace if they want a full
-> explanation?
+>> This patch does't use the generic decoder, and implements a limited
+>> special-purpose decoder to decode MPX instructions, simply because the
+>> generic decoder is very heavyweight not just in terms of performance
+>> but in terms of interface -- because it has to.
+> 
+> And why is that an argument to add another special purpose decoder?
 
-Good memory :) Long ago I had a hack where I compiled
-verifier.o for kernel and linked it with userspace wrappers to
-have the same verifier for userspace. It was very fragile.
-and maps were not separate objects and there were no fds.
-It's not feasible anymore, since different subsystems
-will configure different bpf_context and helper functions and
-verifier output is dynamic based on maps that were created.
-For example, if user's samples/bpf/sock_example.c does
-bpf_create_map(HASH, sizeof(key) * 2, ...);
-instead of
-bpf_create_map(HASH, sizeof(key), ...);
-the same program will be rejected in first case and will be
-accepted in the second, because map sizes and ebpf
-program expectations are mismatching.
-For the 1st case verifier will complain that program is
-trying to pass uninitialized stack into bpf_lookup(key,...)
-method or stack may be out of bounds.
-Human insight is needed to understand what is going on.
+Peter asked for it to be done this way specifically:
 
-I think more important is that source of truth needs to be
-in one place == kernel. If we have two verifiers they will
-diverge sooner or later and cause confusion for users.
-I think as long as we document that verifier log
-messages are not cast in stone and will change, we're fine.
-I consider them as continuation of compiler warnings/errors.
-They are meant for humans and do change from time to time.
+	https://lkml.org/lkml/2014/6/19/411
+
