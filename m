@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbaIKLtK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:49:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533AbaIKLtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:49:08 -0400
-Date: Thu, 11 Sep 2014 13:48:25 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC 00/14] perf pollfd v3
-Message-ID: <20140911114825.GC13634@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <20140911113336.GB13634@krava.brq.redhat.com>
+	id S1754581AbaIKLw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:52:59 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:59970 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371AbaIKLw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 07:52:57 -0400
+Message-ID: <54118D13.3010608@atmel.com>
+Date: Thu, 11 Sep 2014 13:52:51 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911113336.GB13634@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Johan Hovold <johan@kernel.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [PATCH v3 0/8] rtc: at91sam9: add DT support
+References: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>	<20140911093942.GA12295@localhost> <20140911120659.14daa624@bbrezillon>
+In-Reply-To: <20140911120659.14daa624@bbrezillon>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 01:33:36PM +0200, Jiri Olsa wrote:
+On 11/09/2014 12:06, Boris BREZILLON :
+> On Thu, 11 Sep 2014 11:39:42 +0200
+> Johan Hovold <johan@kernel.org> wrote:
+> 
+>> On Thu, Sep 11, 2014 at 10:55:59AM +0200, Boris BREZILLON wrote:
+>>
+>>> Johan, let me know if this version addresses part of your concerns.
+>>
+>> Looks good to me. I just have a few minor comments on two of the patches.
+>>
+>>> I'm open to any suggestion/rework to address other previously discussed
+>>> issues, as long as it does not end up in a dead-end (like the discussion
+>>> you had last year):
+>>>  - the fact that the RTT block could be used for something that is not
+>>>    an RTC
+>>>  - the fact that referencing the GPBR node and defining a GPBR register
+>>>    number to store RTC time info could be considered as an HW config and
+>>>    not an HW description and thus should not be described in the DT
+>>
+>> No doubt.
+> 
+> Okay then. Any suggestion to do otherwise ?
+> Alexandre suggested to pass the GPBR register number through a module
+> parameter, and retrieve the GPBR syscon by searching for a gpbr node
+> (or atmel,at91sam9260-gpbr compatible node) in the device tree.
+> 
+> I'm not a big fan of this solution, as it implies passing driver
+> specific config to the global cmdline (and we'll have to handle the
+> 9263 case where 2 RTT blocks are availables).
 
-SNIP
+Nope, I don't like messing with the cmdline for something like that.
 
-> #20 0x0000000000465e72 in perf_evsel__free_fd (evsel=0x20af190) at util/evsel.c:786
-> #21 perf_evsel__close (evsel=evsel@entry=0x20af190, ncpus=<optimized out>, nthreads=nthreads@entry=1) at util/evsel.c:1139
-> #22 0x000000000045f77d in perf_evlist__close (evlist=0x20ae8b0) at util/evlist.c:1148
-> #23 perf_evlist__delete (evlist=0x20ae8b0) at util/evlist.c:114
-> #24 0x000000000042b878 in cmd_record (argc=<optimized out>, argv=<optimized out>, prefix=<optimized out>) at builtin-record.c:967
-> #25 0x000000000041c455 in run_builtin (p=p@entry=0x815e70 <commands+144>, argc=argc@entry=2, argv=argv@entry=0x7fff5c077c50) at perf.c:331
-> #26 0x000000000041bc70 in handle_internal_command (argv=0x7fff5c077c50, argc=2) at perf.c:390
-> #27 run_argv (argv=0x7fff5c0779d0, argcp=0x7fff5c0779dc) at perf.c:434
-> #28 main (argc=2, argv=0x7fff5c077c50) at perf.c:549
+atmel,rtt-rtc-time-reg = <&gpbr 0x0>;
+is perfectly fine for me.
 
-so the reason was that my fd lib stuff did not get rebuilt..
-
-you probably want to add attached change, before there's the
-fix for the apik library
-
-jirka
-
-
----
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 9ce194fc00a0..726a31a18125 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -769,7 +769,7 @@ $(LIBTRACEEVENT)-clean:
- install-traceevent-plugins: $(LIBTRACEEVENT)
- 	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
- 
--LIBAPIKFS_SOURCES = $(wildcard $(LIB_PATH)fs/*.[ch])
-+LIBAPIKFS_SOURCES = $(wildcard $(LIB_PATH)fs/*.[ch] $(LIB_PATH)fd/*.[ch])
- 
- # if subdir is set, we've been called from above so target has been built
- # already
+Bye,
+-- 
+Nicolas Ferre
