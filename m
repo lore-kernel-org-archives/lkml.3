@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840AbaIKUTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:19:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43092 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165AbaIKUTq (ORCPT
+	id S1757005AbaIKUYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:24:04 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:60878 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436AbaIKUYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:19:46 -0400
-Date: Thu, 11 Sep 2014 13:19:45 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: Robert Baldyga <r.baldyga@samsung.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+	Thu, 11 Sep 2014 16:24:00 -0400
+Date: Thu, 11 Sep 2014 13:23:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tejun Heo <tj@kernel.org>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Message-ID: <20140911201945.GA7349@kroah.com>
-References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844D6693@US01WEMBX2.internal.synopsys.com>
+        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Cas ey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+Message-ID: <20140911202354.GA2598@core.coreip.homeip.net>
+References: <20140905174925.GA12991@mtj.dyndns.org>
+ <20140909224143.GB3154@mtj.dyndns.org>
+ <1410302783.13298.50.camel@jarvis.lan>
+ <5762134.BLS0EbmNJd@dtor-glaptop>
+ <1410465565.10549.19.camel@jarvis>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844D6693@US01WEMBX2.internal.synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410465565.10549.19.camel@jarvis>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 07:11:20PM +0000, Paul Zimmerman wrote:
-> > From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> > Sent: Thursday, September 11, 2014 5:53 AM
-> > 
-> > These two patches breaks dwc2 driver. The first one causes build break,
-> > the second breaks gadget at Samsung platforms.
-> > 
-> > Best regards
-> > Robert Baldyga
-> > 
-> > Robert Baldyga (2):
-> >   Revert "usb: dwc2: Update Kconfig to support dual-role"
-> >   Revert "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
-> > 
-> >  drivers/usb/dwc2/Kconfig    | 63 +++++++++++++++++++--------------------------
-> >  drivers/usb/dwc2/Makefile   | 21 +++++++--------
-> >  drivers/usb/dwc2/gadget.c   |  1 +
-> >  drivers/usb/dwc2/platform.c |  1 -
-> >  4 files changed, 38 insertions(+), 48 deletions(-)
+On Thu, Sep 11, 2014 at 12:59:25PM -0700, James Bottomley wrote:
 > 
-> Yep, I can confirm the build breakage. Greg, we should revert these two
-> before you send your update for the next -rc, if it's not too late.
+> On Tue, 2014-09-09 at 16:01 -0700, Dmitry Torokhov wrote:
+> > On Tuesday, September 09, 2014 03:46:23 PM James Bottomley wrote:
+> > > On Wed, 2014-09-10 at 07:41 +0900, Tejun Heo wrote:
+> > > > 
+> > > > The thing is that we have to have dynamic mechanism to listen for
+> > > > device attachments no matter what and such mechanism has been in place
+> > > > for a long time at this point.  The synchronous wait simply doesn't
+> > > > serve any purpose anymore and kinda gets in the way in that it makes
+> > > > it a possibly extremely slow process to tell whether loading of a
+> > > > module succeeded or not because the wait for the initial round of
+> > > > probe is piggybacked.
+> > > 
+> > > OK, so we just fire and forget in userland ... why bother inventing an
+> > > elaborate new infrastructure in the kernel to do exactly what
+> > > 
+> > > modprobe <mod> &
+> > > 
+> > > would do?
+> > 
+> > Just so we do not forget: we also want the no-modules case to also be able
+> > to probe asynchronously so that a slow device does not stall kernel booting.
 > 
-> Dinh, before resending the series, please test that each individual
-> patch does not break the build.
+> Yes, but we mostly do this anyway.  SCSI for instance does asynchronous
+> scanning of attached devices (once the cards are probed)
 
-I tested and didn't see the build breakage on my end, but I don't
-test-build arm stuff...
+What would it do it card was a bit slow to probe?
 
-Anyway, this is in the usb-next branch, not usb-linus, right?
+> but has a sync
+> point for ordering.
 
-thanks,
+Quite often we do not really care about ordering of devices. I mean,
+does it matter if your mouse is discovered before your keyboard or
+after?
 
-greg k-h
+>
+> The problem of speeding up boot is different from the one of init
+> processes killing modprobes.
+
+Right. One is systemd doing stupid things, another is kernel could be
+smarter.
+
+>  There are elements in common, but by and
+> large the biggest headaches at least in large device number boots have
+> already been tackled by the enterprise crowd (they don't like their
+> S390's or 1024 core NUMA systems taking half an hour to come up).
+
+Please do not position this as a mostly solved large systems problem,
+For us it is touchpad detection stalling kernel for 0.5-1 sec. Which is
+a lot given that we boot in seconds.
+
+Thanks.
+
+-- 
+Dmitry
