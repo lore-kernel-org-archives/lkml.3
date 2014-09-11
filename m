@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956AbaIKQR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:17:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59699 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaIKQR0 (ORCPT
+	id S1757060AbaIKQRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:17:35 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:28884 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756976AbaIKQRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:17:26 -0400
-Message-ID: <5411CAE7.9010108@ti.com>
-Date: Thu, 11 Sep 2014 12:16:39 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 11 Sep 2014 12:17:33 -0400
+Message-ID: <5411CB17.1060608@atmel.com>
+Date: Thu, 11 Sep 2014 18:17:27 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: keystone: dts: fix bindings for pcie and usb clock
- nodes
-References: <1410450009-19892-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1410450009-19892-1-git-send-email-m-karicheri2@ti.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
+References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com> <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 September 2014 11:40 AM, Murali Karicheri wrote:
-> Fix incorrect clock names for usb1, pcie1 and domain register
-> offset for pcie1 clock nodes on K2E EVM
+On 11/09/2014 17:54, Alexandre Belloni :
+> Add sama5d4 support to irq-atmel-aic5.
 > 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 > ---
-Thanks Murali. I will queue this up.
+> Cc: Jason Cooper <jason@lakedaemon.net>
 
->  arch/arm/boot/dts/k2e-clocks.dtsi |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+Supposed to be before the "---" ;-)
+
+>  drivers/irqchip/irq-atmel-aic5.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
 > 
-> diff --git a/arch/arm/boot/dts/k2e-clocks.dtsi b/arch/arm/boot/dts/k2e-clocks.dtsi
-> index 598afe9..4773d6a 100644
-> --- a/arch/arm/boot/dts/k2e-clocks.dtsi
-> +++ b/arch/arm/boot/dts/k2e-clocks.dtsi
-> @@ -40,7 +40,7 @@ clocks {
->  		#clock-cells = <0>;
->  		compatible = "ti,keystone,psc-clock";
->  		clocks = <&chipclk16>;
-> -		clock-output-names = "usb";
-> +		clock-output-names = "usb1";
->  		reg = <0x02350004 0xb00>, <0x02350000 0x400>;
->  		reg-names = "control", "domain";
->  		domain-id = <0>;
-> @@ -60,8 +60,8 @@ clocks {
->  		#clock-cells = <0>;
->  		compatible = "ti,keystone,psc-clock";
->  		clocks = <&chipclk12>;
-> -		clock-output-names = "pcie";
-> -		reg = <0x0235006c 0xb00>, <0x02350000 0x400>;
-> +		clock-output-names = "pcie1";
-> +		reg = <0x0235006c 0xb00>, <0x02350048 0x400>;
->  		reg-names = "control", "domain";
->  		domain-id = <18>;
->  	};
+> diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
+> index dc7d98607a89..a11aae8fb006 100644
+> --- a/drivers/irqchip/irq-atmel-aic5.c
+> +++ b/drivers/irqchip/irq-atmel-aic5.c
+> @@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
+>  
+>  static const struct of_device_id __initdata aic5_irq_fixups[] = {
+>  	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
+> +	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
+>  	{ /* sentinel */ },
+>  };
+>  
+> @@ -349,3 +350,12 @@ static int __init sama5d3_aic5_of_init(struct device_node *node,
+>  	return aic5_of_init(node, parent, NR_SAMA5D3_IRQS);
+>  }
+>  IRQCHIP_DECLARE(sama5d3_aic5, "atmel,sama5d3-aic", sama5d3_aic5_of_init);
+> +
+> +#define NR_SAMA5D4_IRQS		68
+> +
+> +static int __init sama5d4_aic5_of_init(struct device_node *node,
+> +				       struct device_node *parent)
+> +{
+> +	return aic5_of_init(node, parent, NR_SAMA5D4_IRQS);
+> +}
+> +IRQCHIP_DECLARE(sama5d4_aic5, "atmel,sama5d4-aic", sama5d4_aic5_of_init);
 > 
 
+
+-- 
+Nicolas Ferre
