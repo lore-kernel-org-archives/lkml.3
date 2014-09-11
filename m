@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaIKMgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:36:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51697 "EHLO
+	id S1755744AbaIKMid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:38:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51704 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755480AbaIKMeJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755469AbaIKMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:09 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Axel Lin" <axel.lin@ingics.com>, "Jean Delvare" <jdelvare@suse.de>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
+        "Sylwester Nawrocki" <s.nawrocki@samsung.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.434551488@decadent.org.uk>
+Message-ID: <lsq.1410438733.420946282@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 018/131] hwmon: (smsc47m192) Fix temperature limit and
- vrm write operations
+Subject: [PATCH 3.2 002/131] ASoC: samsung: Correct I2S DAI suspend/resume ops
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,54 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-commit 043572d5444116b9d9ad8ae763cf069e7accbc30 upstream.
+commit d3d4e5247b013008a39e4d5f69ce4c60ed57f997 upstream.
 
-Temperature limit clamps are applied after converting the temperature
-from milli-degrees C to degrees C, so either the clamp limit needs
-to be specified in degrees C, not milli-degrees C, or clamping must
-happen before converting to degrees C. Use the latter method to avoid
-overflows.
+We should save/restore relevant I2S registers regardless of
+the dai->active flag, otherwise some settings are being lost
+after system suspend/resume cycle. E.g. I2S slave mode set only
+during dai initialization is not preserved and the device ends
+up in master mode after system resume.
 
-vrm is an u8, so the written value needs to be limited to [0, 255].
-
-Cc: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-[bwh: Backported to 3.2:
- - Driver is not using clamp_val(); keep using SENSORS_LIMIT() for consistency
- - Driver is not using kstrtoul(); make the minimum change to set_vrm() so
-   we can validate the value before assigning]
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/smsc47m192.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/soc/samsung/i2s.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/drivers/hwmon/smsc47m192.c
-+++ b/drivers/hwmon/smsc47m192.c
-@@ -84,7 +84,7 @@ static inline u8 IN_TO_REG(unsigned long
-    REG: 1C/bit, two's complement */
- static inline s8 TEMP_TO_REG(int val)
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -824,11 +824,9 @@ static int i2s_suspend(struct snd_soc_da
  {
--	return SENSORS_LIMIT(SCALE(val, 1, 1000), -128000, 127000);
-+	return SCALE(SENSORS_LIMIT(val, -128000, 127000), 1, 1000);
- }
+ 	struct i2s_dai *i2s = to_info(dai);
  
- static inline int TEMP_FROM_REG(s8 val)
-@@ -349,7 +349,13 @@ static ssize_t set_vrm(struct device *de
- 		const char *buf, size_t count)
- {
- 	struct smsc47m192_data *data = dev_get_drvdata(dev);
--	data->vrm = simple_strtoul(buf, NULL, 10);
-+	unsigned long val;
-+
-+	val = simple_strtoul(buf, NULL, 10);
-+	if (val > 255)
-+		return -EINVAL;
-+ 
-+	data->vrm = val;
- 	return count;
+-	if (dai->active) {
+-		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
+-		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
+-		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+-	}
++	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
++	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
++	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+ 
+ 	return 0;
  }
- static DEVICE_ATTR(vrm, S_IRUGO | S_IWUSR, show_vrm, set_vrm);
+@@ -837,11 +835,9 @@ static int i2s_resume(struct snd_soc_dai
+ {
+ 	struct i2s_dai *i2s = to_info(dai);
+ 
+-	if (dai->active) {
+-		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
+-		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
+-		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+-	}
++	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
++	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
++	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+ 
+ 	return 0;
+ }
 
