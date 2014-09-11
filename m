@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaIKPGd (ORCPT <rfc822;w@1wt.eu>);
+	id S1756053AbaIKPGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:06:35 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47308 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751649AbaIKPGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 11:06:33 -0400
-Received: from mail-bn1on0059.outbound.protection.outlook.com ([157.56.110.59]:53120
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751649AbaIKPGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:06:31 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Sep 2014 11:06:31 EDT
-Date: Thu, 11 Sep 2014 16:51:09 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Robert Richter <rric@kernel.org>, Will Deacon <will.deacon@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Radha Mohan Chintakuntla" <rchintakuntla@cavium.com>,
-        Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] arm64, thunder: Add initial dts for Cavium
- Thunder SoC
-Message-ID: <20140911145109.GJ10622@rric.localhost>
-References: <1409903205-2762-1-git-send-email-rric@kernel.org>
- <1409903205-2762-3-git-send-email-rric@kernel.org>
- <5017180.kZRPNE71Sv@wuerfel>
+Date: Thu, 11 Sep 2014 17:06:31 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: atmel-aic5: sama5d3 has 48 IRQs
+Message-ID: <20140911170631.58a47ff9@bbrezillon>
+In-Reply-To: <1410446511-29477-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410446511-29477-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5017180.kZRPNE71Sv@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [78.53.80.73]
-X-ClientProxiedBy: DB4PR07CA037.eurprd07.prod.outlook.com (10.242.229.47) To
- SN2PR0701MB813.namprd07.prod.outlook.com (25.160.16.147)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03319F6FEF
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6069001)(6009001)(24454002)(199003)(189002)(51704005)(46406003)(97756001)(74502001)(33656002)(90102001)(106356001)(74662001)(77096002)(83506001)(76482001)(85306004)(20776003)(4396001)(19580395003)(76176999)(92566001)(80022001)(102836001)(85852003)(50466002)(95666004)(31966008)(66066001)(54356999)(42186005)(79102001)(64706001)(107046002)(86362001)(99396002)(77982001)(81542001)(105586002)(83072002)(101416001)(76506005)(23726002)(110136001)(97736003)(87976001)(83322001)(47776003)(50986999)(92726001)(21056001)(46102001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR0701MB813;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
+On Thu, 11 Sep 2014 16:41:51 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-On 05.09.14 13:21:48, Arnd Bergmann wrote:
-> On Friday 05 September 2014 09:46:43 Robert Richter wrote:
-> > diff --git a/arch/arm64/boot/dts/thunder-88xx.dts b/arch/arm64/boot/dts/thunder-88xx.dts
-> > new file mode 100644
-> > index 000000000000..4cc1d059d2d9
-> > --- /dev/null
-> > +++ b/arch/arm64/boot/dts/thunder-88xx.dts
+> The FUSE and RAM controllers don't have any connected IRQs, reducing the number
+> of IRQs to 48.
 > 
-> Most people end up having a soc.dtsi file and a board.dsi file including
-> the former and adding the machine-specific properties.
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-thanks for your feedback on the dts file. I already included your
-suggestion into the patches and split the files.
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
--Robert
+> ---
+>  drivers/irqchip/irq-atmel-aic5.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
+> index 04fe2c1b5178..dc7d98607a89 100644
+> --- a/drivers/irqchip/irq-atmel-aic5.c
+> +++ b/drivers/irqchip/irq-atmel-aic5.c
+> @@ -341,7 +341,7 @@ static int __init aic5_of_init(struct device_node *node,
+>  	return 0;
+>  }
+>  
+> -#define NR_SAMA5D3_IRQS		50
+> +#define NR_SAMA5D3_IRQS		48
+>  
+>  static int __init sama5d3_aic5_of_init(struct device_node *node,
+>  				       struct device_node *parent)
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
