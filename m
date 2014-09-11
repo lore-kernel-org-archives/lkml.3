@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaIKOMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:12:05 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:46960 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475AbaIKOMD (ORCPT
+	id S1755557AbaIKOM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:12:29 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:39211 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921AbaIKOM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:12:03 -0400
-Date: Thu, 11 Sep 2014 16:04:48 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Message-ID: <20140911140448.GJ22042@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
- <20140910132417.GF25219@dhcp22.suse.cz>
- <20140911130840.GH22042@dhcp22.suse.cz>
- <2362560.tfnxFWQpxu@vostro.rjw.lan>
+	Thu, 11 Sep 2014 10:12:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2362560.tfnxFWQpxu@vostro.rjw.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
+References: <20140908181524.GA11839@www.outflux.net>
+	<20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+	<CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
+Date: Thu, 11 Sep 2014 07:12:24 -0700
+X-Google-Sender-Auth: QBUW1g11vfH6l9fYejXgNXMDoMw
+Message-ID: <CAGXu5jKndemuqx=uFXSSEgD9v2U4b4E8Eh6O=FFNw+GL7fixxA@mail.gmail.com>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Kees Cook <keescook@chromium.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        linux-doc <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-09-14 16:17:56, Rafael J. Wysocki wrote:
-[...]
-> And I'm still wondering if the OOM killer may be made avoid killing frozen
-> tasks.
+On Thu, Sep 11, 2014 at 12:19 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Thu, Sep 11, 2014 at 12:52 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>> On Mon, 8 Sep 2014 11:15:24 -0700 Kees Cook <keescook@chromium.org> wrote:
+>>
+>>> Check for misspellings, based on Debian's lintian list. Several false
+>>> positives were removed, and several additional words added that were
+>>> common in the kernel:
+>>>
+>>>       backword backwords
+>>>       invalide valide
+>>>       recieves
+>>>       singed unsinged
+>>>
+>>> While going back and fixing existing spelling mistakes isn't a high
+>>> priority, it'd be nice to try to catch them before they hit the tree.
+>>
+>> I have a feeling this is going to be a rat hole and that
+>> scripts/spelling.txt will grow to consume the planet.  Oh well, whatev.
+>
+> What about making checkpatch use the codespell dictionay if codespell
+> is installed?
+>
+> Codespell is in Ubuntu 14.04LTS (but not in 12.04LTS).
 
-This is really tricky. OOM killer aims at the biggest memory hog. We
-shouldn't ignore it just because it hides into the fridge... So even
-if we "fix" oom killer to ignore frozen tasks (which is inherently
-racy btw.) then we have a potential problem of freezer abuse (e.g. in
-container environments). So I strongly believe that the OOM killer has
-to be able to kill a frozen tasks.
+It's probably not a bad idea, but given the level of pruning that's
+been needed already to keep down the false positive rate, I'm nervous
+about a larger "general" corpus.
+
+-Kees
+
 -- 
-Michal Hocko
-SUSE Labs
+Kees Cook
+Chrome OS Security
