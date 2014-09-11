@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaIKVwH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:52:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43730 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaIKVwF (ORCPT
+	id S1754254AbaIKVyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:54:33 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:48621 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaIKVyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:52:05 -0400
-Date: Thu, 11 Sep 2014 23:52:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Darren Hart <darren@dvhart.com>
-Subject: Re: futex_wait_setup sleeping while atomic bug.
-In-Reply-To: <20140911151040.GB3008@redhat.com>
-Message-ID: <alpine.DEB.2.10.1409112318500.4178@nanos>
-References: <20140911151040.GB3008@redhat.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 11 Sep 2014 17:54:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+In-Reply-To: <CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+ <541013CE.6020307@redhat.com> <CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
+ <5411FC42.3070505@redhat.com> <CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 11 Sep 2014 14:54:09 -0700
+Message-ID: <CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Dave Jones wrote:
+On Thu, Sep 11, 2014 at 1:33 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Thu, Sep 11, 2014 at 12:47 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>> On 09/10/2014 07:32 PM, Alexei Starovoitov wrote:
+>>>
+>>> On Wed, Sep 10, 2014 at 2:03 AM, Daniel Borkmann <dborkman@redhat.com>
+>>> wrote:
+>>>>>
+>>>>>              struct { /* anonymous struct used by BPF_PROG_LOAD command
+>>>>> */
+>>>>>                  enum bpf_prog_type    prog_type;
+>>>>>                  __u32                 insn_cnt;
+>>>>>                  const struct bpf_insn *insns;
+>>>>>                  const char            *license;
+>>>>>                  __u32                 log_level; /* verbosity level of
+>>>>> eBPF verifier */
+>>>>>                  __u32                 log_size;  /* size of user buffer
+>>>>> */
+>>>>>                  void                  *log_buf;  /* user supplied
+>>>>> buffer
+>>>>> */
+>>>>
+>>>>
+>>>>
+>>>> What is log buffer? Would that mean the verifier will return an error
+>>>> string if the program will not pass it, or if not, what other data?
+>>>> I think the man page is missing how to examine the returned verifier
+>>>> log buffer data.
+>>>
+>>>
+>>> yes. it's an error log (as text string for humans) from verifier.
+>>
+>> I was confused due to the void pointer. But that also means that the text
+>
+> ahh. ok. will change it to 'char *' then.
+>
+>> string becomes part of the ABI; aren't eBPF specific error codes (perhaps
+>> a tuple of [line + error code]), though ugly as well, but perhaps the better
+>> solution to this [which user space can then map to an actual string]?
+>
+> the verifier log contains full trace. Last unsafe instruction + error
+> in many cases is useless. What we found empirically from using
+> it over last 2 years is that developers have different learning curve
+> to adjust to 'safe' style of C. Pretty much everyone couldn't
+> figure out why program is rejected based on last error. Therefore
+> verifier emits full log. From the 1st insn all the way till the last
+> 'unsafe' instruction. So the log is multiline output.
+> 'Understanding eBPF verifier messages' section of
+> Documentation/networking/filter.txt provides few trivial
+> examples of these multiline messages.
+> Like for the program:
+>   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
+>   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
+>   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
+>   BPF_LD_MAP_FD(BPF_REG_1, 0),
+>   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
+>   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
+>   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
+>   BPF_EXIT_INSN(),
+> the verifier log_buf is:
+>   0: (7a) *(u64 *)(r10 -8) = 0
+>   1: (bf) r2 = r10
+>   2: (07) r2 += -8
+>   3: (b7) r1 = 0
+>   4: (85) call 1
+>   5: (15) if r0 == 0x0 goto pc+1
+>    R0=map_ptr R10=fp
+>   6: (7a) *(u64 *)(r0 +4) = 0
+>   misaligned access off 4 size 8
+>
+> It will surely change over time as verifier becomes smarter,
+> supports new types, optimizations and so on.
+> So this log is not an ABI. It's for humans to read.
+> The log explains _how_ verifier came to conclusion
+> that the program is unsafe.
 
-> Hit this overnight on Linus tree from yesterday.
-> 
-> BUG: sleeping function called from invalid context at include/linux/freezer.h:56
-> in_atomic(): 1, irqs_disabled(): 0, pid: 31948, name: trinity-c121
-> Preemption disabled at:[<ffffffffb90f2512>] futex_wait_setup+0xb2/0x140
+Given that you've already arranged (I think) for the verifier to be
+compilable in the kernel and in userspace, would it make more sense to
+have the kernel version just say yes or no and to make it easy for
+user code to retry verification in userspace if they want a full
+explanation?
 
-Huch? So we are in a preempt disabled region in futex_wait_setup and
-we get interrupted and end up in the signal delivery path?
-
-I really love that futex stuff....
-
-But fortunately the preemption disabled hint made it into mainline so
-looking at the callsites of futex_wait_setup() makes it pretty clear
-where the shit hits the fan. Patch below.
-
-Thanks,
-
-	tglx
-
-------------------->
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 11 Sep 2014 23:44:35 +0200
-Subject: futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-
-futex_wait_requeue_pi() calls futex_wait_setup(). If
-futex_wait_setup() succeeds it returns with hb->lock held and
-preemption disabled. Now the sanity check after this does:
-
-        if (match_futex(&q.key, &key2)) {
-	   	ret = -EINVAL;
-		goto out_put_keys;
-	}
-
-which releases the keys but does not release hb->lock. So we happily
-return to user space with hb->lock held and therefor preemption
-disabled.
-
-Unlock hb->lock before taking the exit route.
-
-Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
-diff --git a/kernel/futex.c b/kernel/futex.c
-index d3a9d946d0b7..815d7af2ffe8 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2592,6 +2592,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * shared futexes. We need to compare the keys:
- 	 */
- 	if (match_futex(&q.key, &key2)) {
-+		queue_unlock(hb);
- 		ret = -EINVAL;
- 		goto out_put_keys;
- 	}
+--Andy
