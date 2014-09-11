@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109AbaIKBAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 21:00:00 -0400
-Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:17675
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754089AbaIKA75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:59:57 -0400
-X-Greylist: delayed 1033 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 20:59:57 EDT
-Date: Thu, 11 Sep 2014 08:26:43 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
-        <yoshihiro.shimoda.uh@renesas.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 8/9] usb: chipidea: move usb_otg into struct ci_hdrc
-Message-ID: <20140911002641.GB3609@peterchendt>
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
- <1409730040-14200-9-git-send-email-antoine.tenart@free-electrons.com>
+	id S1752747AbaIKBFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 21:05:05 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:40035 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaIKBFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 21:05:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1409730040-14200-9-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(24454002)(51704005)(81342001)(20776003)(64706001)(47776003)(105606002)(80022001)(85306004)(84676001)(86362001)(106466001)(81156004)(107046002)(81542001)(31966008)(83506001)(74662001)(79102001)(46406003)(76482001)(74502001)(85852003)(83072002)(77982001)(33656002)(97756001)(110136001)(95666004)(19580395003)(83322001)(19580405001)(68736004)(69596002)(102836001)(23726002)(44976005)(6806004)(4396001)(21056001)(92566001)(33716001)(97736003)(46102001)(87936001)(92726001)(57986006)(50466002)(26826002)(104016003)(99396002)(90102001)(54356999)(76176999)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB214;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03319F6FEF
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <7546673.Ir6ttItgPU@vostro.rjw.lan>
+References: <1410221424-20590-1-git-send-email-anupc@chromium.org>
+ <1610826.tK4V65ABJD@vostro.rjw.lan> <20140910233905.GA2439@google.com> <7546673.Ir6ttItgPU@vostro.rjw.lan>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Wed, 10 Sep 2014 18:04:41 -0700
+X-Google-Sender-Auth: r4b44EF4244tmu5Zqwpwmg82Cdo
+Message-ID: <CANMivWa_kowDefkvLHpY=JoB9JejiJWBZL7fNqeuwQfcMu+hhQ@mail.gmail.com>
+Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
+ via sysfs.
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Anup Chenthamarakshan <anupc@chromium.org>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 03, 2014 at 09:40:39AM +0200, Antoine Tenart wrote:
-> Move the usb_otg member from struct usb_phy to struct ci_hdrc. Rework
-> its initialization taking in account this modification.
-> 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/ci.h      |  1 +
->  drivers/usb/chipidea/host.c    |  5 +++--
->  drivers/usb/chipidea/otg_fsm.c | 16 +++-------------
->  3 files changed, 7 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> index b2caa1772712..dac5ab6adfa2 100644
-> --- a/drivers/usb/chipidea/ci.h
-> +++ b/drivers/usb/chipidea/ci.h
-> @@ -177,6 +177,7 @@ struct ci_hdrc {
->  	struct ci_role_driver		*roles[CI_ROLE_END];
->  	enum ci_role			role;
->  	bool				is_otg;
-> +	struct usb_otg			otg;
->  	struct otg_fsm			fsm;
->  	struct ci_otg_fsm_timer_list	*fsm_timer;
->  	struct work_struct		work;
-> diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-> index 0b67d78dd953..4fcebb6a6d14 100644
-> --- a/drivers/usb/chipidea/host.c
-> +++ b/drivers/usb/chipidea/host.c
-> @@ -85,10 +85,11 @@ static int host_start(struct ci_hdrc *ci)
->  	if (ret) {
->  		goto disable_reg;
->  	} else {
-> -		struct usb_otg *otg = ci->usb_phy->otg;
-> +		struct usb_otg *otg = &ci->otg;
->  
->  		ci->hcd = hcd;
-> -		if (otg) {
-> +
-> +		if (ci_otg_is_fsm_mode(ci)) {
->  			otg->host = &hcd->self;
->  			hcd->self.otg_port = 1;
->  		}
-> diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-> index 8a64ce87364e..862d7cb01b92 100644
-> --- a/drivers/usb/chipidea/otg_fsm.c
-> +++ b/drivers/usb/chipidea/otg_fsm.c
-> @@ -778,20 +778,10 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
->  int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
->  {
->  	int retval = 0;
-> -	struct usb_otg *otg;
->  
-> -	otg = devm_kzalloc(ci->dev,
-> -			sizeof(struct usb_otg), GFP_KERNEL);
-> -	if (!otg) {
-> -		dev_err(ci->dev,
-> -		"Failed to allocate usb_otg structure for ci hdrc otg!\n");
-> -		return -ENOMEM;
-> -	}
-> -
-> -	otg->usb_phy = ci->usb_phy;
-> -	otg->gadget = &ci->gadget;
-> -	ci->fsm.otg = otg;
-> -	ci->usb_phy->otg = ci->fsm.otg;
-> +	ci->otg.usb_phy = ci->usb_phy;
-> +	ci->otg.gadget = &ci->gadget;
-> +	ci->fsm.otg = &ci->otg;
->  	ci->fsm.power_up = 1;
->  	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
->  	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
-> -- 
+On Wed, Sep 10, 2014 at 5:04 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, September 10, 2014 04:39:05 PM Anup Chenthamarakshan wrote:
+>> On Thu, Sep 11, 2014 at 12:49:48AM +0200, Rafael J. Wysocki wrote:
+>> > On Wednesday, September 10, 2014 03:15:08 PM Anup Chenthamarakshan wrote:
+>> > >
+>> > > Tools like powertop and turbostat are not present by default on all systems,
+>> > > so it is not always possible to use them :(
+>> >
+>> > Which systems are you referring to in particular?
+>>
+>> We're testing on Chrome OS devices (Chromebooks).
+>
+> How big of a deal is it to install the tools mentioned above on such a system?
+>
+> At least turbostat is shipped with the kernel source.
 
-Acked-by: Peter Chen <peter.chen@freescale.com>
+Given the web browser based front end of Chrome OS, installing these
+tools will only get us so far -- if the system is in developer mode,
+the tools are accessible but when the system is in normal (verified
+boot mode) these tools cannot be launched directly.
+
+We are in the process of switching Chrome OS x86 kernels from ondemand
+governor to intel_pstate.  When debugging power consumption issues,
+losing the ability to easily get CPU frequency related information as
+a side-effect of this switch is less than ideal.
+
+We are happy to spin this patch to expose aperf/mperf based CPU
+frequency information if you think that is the better route to take
+longer term.
+
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+
+
 
 -- 
-Best Regards,
-Peter Chen
+Sameer
