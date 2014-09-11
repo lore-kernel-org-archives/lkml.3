@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaIKGlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 02:41:32 -0400
-Received: from mail.neotion.com ([5.39.84.84]:55047 "EHLO mail.neotion.com"
+	id S1752791AbaIKGlh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 02:41:37 -0400
+Received: from mail.neotion.com ([5.39.84.84]:50204 "EHLO mail.neotion.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394AbaIKGla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 02:41:30 -0400
-Message-ID: <54114362.2080709@neotion.com>
-Date: Thu, 11 Sep 2014 08:38:26 +0200
+	id S1752739AbaIKGld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 02:41:33 -0400
+Message-ID: <54114365.4090101@neotion.com>
+Date: Thu, 11 Sep 2014 08:38:29 +0200
 From: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
@@ -16,8 +16,8 @@ CC: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
         Jaehoon Chung <jh80.chung@samsung.com>,
         linux-mmc <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 0002/0003] mmc: Replace "enhanced_area_en" attribute by
- "partition_setting_completed"
+Subject: [PATCH v4 0003/0003] mmc: Checks EXT_CSD_PARTITION_SETTING_COMPLETED
+ before partitions computation
 References: <53C7E45E.2060102@neotion.com>	<CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>	<53EB2DC3.2080002@neotion.com>	<CAPDyKFpjYqVUZ8GHB76gD8pOx_eMg9ecvbWrMEfbhEd5ffk7mw@mail.gmail.com>	<53ECB95F.2030207@neotion.com> <CAPDyKFp2ekmucHVzMWxeKfyTmuFKTXAYwUEpL5QxvEh8AjFopg@mail.gmail.com> <53F1FBA3.6060108@neotion.com>
 In-Reply-To: <53F1FBA3.6060108@neotion.com>
 Content-Type: text/plain; charset=utf-8
@@ -26,77 +26,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace ext_csd "enhanced_area_en" attribute by
- "partition_setting_completed". It was used whether or
- not enhanced user area is defined and without checks of
- EXT_CSD_PARTITION_SETTING_COMPLETED bit.
+Checks EXT_CSD_PARTITION_SETTING_COMPLETED bit before
+ computing enhanced user area offset and size, and
+ adding mmc general purpose partitions. The two needs
+ EXT_CSD_PARTITION_SETTING_COMPLETED bit be set to be
+ valid (as described in JEDEC standard).
 
 Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
 ---
- drivers/mmc/core/mmc.c   |    9 ++++++++-
- include/linux/mmc/card.h |    2 +-
- include/linux/mmc/mmc.h  |    2 ++
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/mmc/core/mmc.c |   84 +++++++++++++++++++++++++-----------------------
+ 1 file changed, 44 insertions(+), 40 deletions(-)
 
 diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 77b4cf3..3578e35 100644
+index 3578e35..a60685a 100644
 --- a/drivers/mmc/core/mmc.c
 +++ b/drivers/mmc/core/mmc.c
-@@ -488,6 +488,13 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
- 		ext_csd[EXT_CSD_TRIM_MULT];
- 	card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 	if (card->ext_csd.rev >= 4) {
-+		if (ext_csd[EXT_CSD_PARTITION_SETTING_COMPLETED] &
-+		    EXT_CSD_PART_SETTING_COMPLETED) {
-+			card->ext_csd.partition_setting_completed = 1;
-+		} else {
-+			card->ext_csd.partition_setting_completed = 0;
-+		}
+@@ -300,7 +300,13 @@ static void mmc_select_card_type(struct mmc_card *card)
+
+ static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
+ {
+-	u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
++	u8 hc_erase_grp_sz, hc_wp_grp_sz;
 +
- 		mmc_manage_enhanced_area(card, ext_csd);
++	/*
++	 * Disable these attributes by default
++	 */
++	card->ext_csd.enhanced_area_offset = -EINVAL;
++	card->ext_csd.enhanced_area_size = -EINVAL;
 
- 		mmc_manage_gp_partitions(card, ext_csd);
-@@ -1324,7 +1331,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
- 	 * If enhanced_area_en is TRUE, host needs to enable ERASE_GRP_DEF
- 	 * bit.  This bit will be lost every time after a reset or power off.
+ 	/*
+ 	 * Enhanced area feature support -- check whether the eMMC
+@@ -309,44 +315,41 @@ static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
  	 */
--	if (card->ext_csd.enhanced_area_en ||
-+	if (card->ext_csd.partition_setting_completed ||
- 	    (card->ext_csd.rev >= 3 && (host->caps2 & MMC_CAP2_HC_ERASE_SZ))) {
- 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
- 				 EXT_CSD_ERASE_GROUP_DEF, 1,
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index d424b9d..38175be 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -74,7 +74,7 @@ struct mmc_ext_csd {
- 	unsigned int		sec_trim_mult;	/* Secure trim multiplier  */
- 	unsigned int		sec_erase_mult;	/* Secure erase multiplier */
- 	unsigned int		trim_timeout;		/* In milliseconds */
--	bool			enhanced_area_en;	/* enable bit */
-+	bool			partition_setting_completed;	/* enable bit */
- 	unsigned long long	enhanced_area_offset;	/* Units: Byte */
- 	unsigned int		enhanced_area_size;	/* Units: KB */
- 	unsigned int		cache_size;		/* Units: KB */
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 64ec963..78753bc 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -281,6 +281,7 @@ struct _mmc_csd {
- #define EXT_CSD_EXP_EVENTS_CTRL		56	/* R/W, 2 bytes */
- #define EXT_CSD_DATA_SECTOR_SIZE	61	/* R */
- #define EXT_CSD_GP_SIZE_MULT		143	/* R/W */
-+#define EXT_CSD_PARTITION_SETTING_COMPLETED 155	/* R/W */
- #define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
- #define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
- #define EXT_CSD_HPI_MGMT		161	/* R/W */
-@@ -349,6 +350,7 @@ struct _mmc_csd {
- #define EXT_CSD_PART_CONFIG_ACC_RPMB	(0x3)
- #define EXT_CSD_PART_CONFIG_ACC_GP0	(0x4)
+ 	if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
+ 	    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
+-		hc_erase_grp_sz =
+-			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+-		hc_wp_grp_sz =
+-			ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
++		if (card->ext_csd.partition_setting_completed) {
++			hc_erase_grp_sz =
++				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
++			hc_wp_grp_sz =
++				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
 
-+#define EXT_CSD_PART_SETTING_COMPLETED	(0x1)
- #define EXT_CSD_PART_SUPPORT_PART_EN	(0x1)
+-		card->ext_csd.enhanced_area_en = 1;
+-		/*
+-		 * calculate the enhanced data area offset, in bytes
+-		 */
+-		card->ext_csd.enhanced_area_offset =
+-			(ext_csd[139] << 24) + (ext_csd[138] << 16) +
+-			(ext_csd[137] << 8) + ext_csd[136];
+-		if (mmc_card_blockaddr(card))
+-			card->ext_csd.enhanced_area_offset <<= 9;
+-		/*
+-		 * calculate the enhanced data area size, in kilobytes
+-		 */
+-		card->ext_csd.enhanced_area_size =
+-			(ext_csd[142] << 16) + (ext_csd[141] << 8) +
+-			ext_csd[140];
+-		card->ext_csd.enhanced_area_size *=
+-			(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
+-		card->ext_csd.enhanced_area_size <<= 9;
+-	} else {
+-		/*
+-		 * If the enhanced area is not enabled, disable these
+-		 * device attributes.
+-		 */
+-		card->ext_csd.enhanced_area_offset = -EINVAL;
+-		card->ext_csd.enhanced_area_size = -EINVAL;
++			/*
++			 * calculate the enhanced data area offset, in bytes
++			 */
++			card->ext_csd.enhanced_area_offset =
++				(ext_csd[139] << 24) + (ext_csd[138] << 16) +
++				(ext_csd[137] << 8) + ext_csd[136];
++			if (mmc_card_blockaddr(card))
++				card->ext_csd.enhanced_area_offset <<= 9;
++			/*
++			 * calculate the enhanced data area size, in kilobytes
++			 */
++			card->ext_csd.enhanced_area_size =
++				(ext_csd[142] << 16) + (ext_csd[141] << 8) +
++				ext_csd[140];
++			card->ext_csd.enhanced_area_size *=
++				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
++			card->ext_csd.enhanced_area_size <<= 9;
++		} else {
++			pr_warn("%s: defines enhanced area without partition setting complete\n",
++				mmc_hostname(card->host));
++		}
+ 	}
+ }
 
- #define EXT_CSD_CMD_SET_NORMAL		(1<<0)
+ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
+ {
+-	unsigned int part_size;
+-	u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
+ 	int idx;
++	u8 hc_erase_grp_sz, hc_wp_grp_sz;
++	unsigned int part_size;
+
+ 	/*
+ 	 * General purpose partition feature support --
+@@ -355,20 +358,21 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
+ 	 */
+ 	if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
+ 	    EXT_CSD_PART_SUPPORT_PART_EN) {
+-		if (card->ext_csd.enhanced_area_en != 1) {
+-			hc_erase_grp_sz =
+-				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
+-			hc_wp_grp_sz =
+-				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+-
+-			card->ext_csd.enhanced_area_en = 1;
+-		}
++		hc_erase_grp_sz =
++			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
++		hc_wp_grp_sz =
++			ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+
+ 		for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
+ 			if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3] &&
+ 			    !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1] &&
+ 			    !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2])
+ 				continue;
++			if (card->ext_csd.partition_setting_completed == 0) {
++				pr_warn("%s: has partition size defined without partition complete\n",
++					mmc_hostname(card->host));
++				break;
++			}
+ 			part_size =
+ 				(ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2]
+ 				<< 16) +
 -- 
 1.7.9.5
