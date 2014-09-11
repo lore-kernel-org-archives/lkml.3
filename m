@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaIKXkH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:40:07 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:33375 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaIKXkF (ORCPT
+	id S1754734AbaIKXkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:40:18 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:49553 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594AbaIKXkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:40:05 -0400
-Date: Thu, 11 Sep 2014 18:39:58 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: Piotr Karbowski <piotr.karbowski@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: /proc/<pid>/exe symlink behavior change in >=3.15.
-Message-ID: <20140911183958.1e45b99e@as>
-In-Reply-To: <20140907075607.GA11240@mguzik>
-References: <540B8040.5010206@gmail.com>
-	<20140907075607.GA11240@mguzik>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Sep 2014 19:40:13 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: lustre: Cleanup src/dst comparisons in obdo_cmp_md()
+Date: Thu, 11 Sep 2014 18:38:25 -0500
+Message-Id: <1410478705-5052-1-git-send-email-gdonald@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Sep 2014 09:56:08 +0200
-Mateusz Guzik <mguzik@redhat.com> wrote:
+Cleanup obdo_cmp_md() src/dst comparisons using bitwise OR assignments
 
-> On Sat, Sep 06, 2014 at 11:44:32PM +0200, Piotr Karbowski wrote:
-> > Hi,
-> > 
-> > Starting with kernel 3.15 the 'exe' symlink under /proc/<pid>/ acts diffrent
-> > than it used to in all the pre-3.15 kernels.
-> > 
-> > The usecase:
-> > 
-> > run /root/testbin (app that just sleeps)
-> > cp /root/testbin /root/testbin.new
-> > mv /root/testbin.new /root/testbin
-> > ls -al /proc/`pidof testbin`/exe
-> > 
-> > <=3.14: /root/testbin (deleted)
-> > >=3.15: /root/testbin.new (deleted)
-> > 
-> > Was the change intentional? It does render my system unusable and I failed
-> > to find a information about such change in the ChangeLog.
-> > 
-> 
-> It looks like this was already broken for "long" (> DNAME_INLINE_LEN)
-> names.
-> 
-> Short names share the problem since da1ce0670c14d8 "vfs: add
-> cross-rename".
-> 
-> The following change to switch_names is the culprit:
-> 
-> -       memcpy(dentry->d_iname, target->d_name.name,
-> -                   target->d_name.len + 1);
-> -       dentry->d_name.len = target->d_name.len;
-> -       return;
-> +       unsigned int i;
-> +       BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-> +       for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
-> +     		  swap(((long *) &dentry->d_iname)[i],
-> +  			((long *) &target->d_iname)[i]);
-> +       }
-> 
-> 
-> Dentries can have names from embedded structure or from an external buffer.
-> 
-> If you take a look around you will see the code just swaps pointers for
-> "both external" case. But this results in the same behavoiur you are seeing.
-> 
+Suggested-by: Joe Perches <joe@perches.com>
+Signed-off-by: Greg Donald <gdonald@gmail.com>
+---
+ drivers/staging/lustre/lustre/obdclass/obdo.c | 32 +++++++++++++--------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-Looks like the real problem here is that __d_materialise_dentry() needs the
-old behavior of switch_names() . At least that's how it got fixed in grsecurity.
+diff --git a/drivers/staging/lustre/lustre/obdclass/obdo.c b/drivers/staging/lustre/lustre/obdclass/obdo.c
+index b97433e..307ffe3 100644
+--- a/drivers/staging/lustre/lustre/obdclass/obdo.c
++++ b/drivers/staging/lustre/lustre/obdclass/obdo.c
+@@ -162,38 +162,38 @@ int obdo_cmp_md(struct obdo *dst, struct obdo *src, u32 compare)
+ 	int res = 0;
+ 
+ 	if (compare & OBD_MD_FLATIME)
+-		res = (res || (dst->o_atime != src->o_atime));
++		res |= dst->o_atime != src->o_atime;
+ 	if (compare & OBD_MD_FLMTIME)
+-		res = (res || (dst->o_mtime != src->o_mtime));
++		res |= dst->o_mtime != src->o_mtime;
+ 	if (compare & OBD_MD_FLCTIME)
+-		res = (res || (dst->o_ctime != src->o_ctime));
++		res |= dst->o_ctime != src->o_ctime;
+ 	if (compare & OBD_MD_FLSIZE)
+-		res = (res || (dst->o_size != src->o_size));
++		res |= dst->o_size != src->o_size;
+ 	if (compare & OBD_MD_FLBLOCKS) /* allocation of space */
+-		res = (res || (dst->o_blocks != src->o_blocks));
++		res |= dst->o_blocks != src->o_blocks;
+ 	if (compare & OBD_MD_FLBLKSZ)
+-		res = (res || (dst->o_blksize != src->o_blksize));
++		res |= dst->o_blksize != src->o_blksize;
+ 	if (compare & OBD_MD_FLTYPE)
+-		res = (res || (((dst->o_mode ^ src->o_mode) & S_IFMT) != 0));
++		res |= ((dst->o_mode ^ src->o_mode) & S_IFMT) != 0;
+ 	if (compare & OBD_MD_FLMODE)
+-		res = (res || (((dst->o_mode ^ src->o_mode) & ~S_IFMT) != 0));
++		res |= ((dst->o_mode ^ src->o_mode) & ~S_IFMT) != 0;
+ 	if (compare & OBD_MD_FLUID)
+-		res = (res || (dst->o_uid != src->o_uid));
++		res |= dst->o_uid != src->o_uid;
+ 	if (compare & OBD_MD_FLGID)
+-		res = (res || (dst->o_gid != src->o_gid));
++		res |= dst->o_gid != src->o_gid;
+ 	if (compare & OBD_MD_FLFLAGS)
+-		res = (res || (dst->o_flags != src->o_flags));
++		res |= dst->o_flags != src->o_flags;
+ 	if (compare & OBD_MD_FLNLINK)
+-		res = (res || (dst->o_nlink != src->o_nlink));
++		res |= dst->o_nlink != src->o_nlink;
+ 	if (compare & OBD_MD_FLFID) {
+-		res = (res || (dst->o_parent_seq != src->o_parent_seq));
+-		res = (res || (dst->o_parent_ver != src->o_parent_ver));
++		res |= dst->o_parent_seq != src->o_parent_seq;
++		res |= dst->o_parent_ver != src->o_parent_ver;
+ 	}
+ 	if (compare & OBD_MD_FLGENER)
+-		res = (res || (dst->o_parent_oid != src->o_parent_oid));
++		res |= dst->o_parent_oid != src->o_parent_oid;
+ 	/* XXX Don't know if these should be included here - wasn't previously
+ 	if ( compare & OBD_MD_FLINLINE )
+-		res = (res || memcmp(dst->o_inline, src->o_inline));
++		res |= memcmp(dst->o_inline, src->o_inline);
+ 	*/
+ 	return res;
+ }
+-- 
+1.9.1
+
