@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801AbaIKNQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:16:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51503 "EHLO
+	id S1755402AbaIKNQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:16:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51512 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755373AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755375AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Richard Weinberger" <richard@nod.at>,
-        "Ingo Molnar" <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Date: Thu, 11 Sep 2014 13:32:14 +0100
-Message-ID: <lsq.1410438734.656065065@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Kirill Tkhai" <tkhai@yandex.ru>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.828546106@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 127/131] x86, espfix: Make espfix64 a Kconfig option,
- fix UML
+Subject: [PATCH 3.2 109/131] sparc64: Make itc_sync_lock raw
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,76 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Kirill Tkhai <tkhai@yandex.ru>
 
-commit 197725de65477bc8509b41388157c1a2283542bb upstream.
+[ Upstream commit 49b6c01f4c1de3b5e5427ac5aba80f9f6d27837a ]
 
-Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
-build which had broken due to the non-existence of init_espfix_bsp()
-in UML: since UML uses its own Kconfig, this option does not appear in
-the UML build.
+One more place where we must not be able
+to be preempted or to be interrupted in RT.
 
-This also makes it possible to make support for 16-bit segments a
-configuration option, for the people who want to minimize the size of
-the kernel.
+Always actually disable interrupts during
+synchronization cycle.
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Richard Weinberger <richard@nod.at>
-Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/Kconfig          | 4 ++++
- arch/x86/kernel/Makefile  | 2 +-
- arch/x86/kernel/smpboot.c | 2 +-
- init/main.c               | 2 +-
- 4 files changed, 7 insertions(+), 3 deletions(-)
+ arch/sparc/kernel/smp_64.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -901,6 +901,10 @@ config VM86
- 	  XFree86 to initialize some video cards via BIOS. Disabling this
- 	  option saves about 6k.
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index e21d3c0d..ffd1245 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -151,7 +151,7 @@ void cpu_panic(void)
+ #define NUM_ROUNDS	64	/* magic value */
+ #define NUM_ITERS	5	/* likewise */
  
-+config X86_ESPFIX64
-+	def_bool y
-+	depends on X86_64
-+
- config TOSHIBA
- 	tristate "Toshiba Laptop support"
- 	depends on X86_32
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -27,7 +27,7 @@ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i3
- obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
- obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
- obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
--obj-$(CONFIG_X86_64)	+= espfix_64.o
-+obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
- obj-y			+= bootflag.o e820.o
- obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
- obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -268,7 +268,7 @@ notrace static void __cpuinit start_seco
- 	/*
- 	 * Enable the espfix hack for this CPU
- 	 */
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	init_espfix_ap();
- #endif
+-static DEFINE_SPINLOCK(itc_sync_lock);
++static DEFINE_RAW_SPINLOCK(itc_sync_lock);
+ static unsigned long go[SLAVE + 1];
  
---- a/init/main.c
-+++ b/init/main.c
-@@ -610,7 +610,7 @@ asmlinkage void __init start_kernel(void
- 	if (efi_enabled(EFI_RUNTIME_SERVICES))
- 		efi_enter_virtual_mode();
- #endif
--#ifdef CONFIG_X86_64
-+#ifdef CONFIG_X86_ESPFIX64
- 	/* Should be run before the first non-init thread is created */
- 	init_espfix_bsp();
- #endif
+ #define DEBUG_TICK_SYNC	0
+@@ -259,7 +259,7 @@ static void smp_synchronize_one_tick(int cpu)
+ 	go[MASTER] = 0;
+ 	membar_safe("#StoreLoad");
+ 
+-	spin_lock_irqsave(&itc_sync_lock, flags);
++	raw_spin_lock_irqsave(&itc_sync_lock, flags);
+ 	{
+ 		for (i = 0; i < NUM_ROUNDS*NUM_ITERS; i++) {
+ 			while (!go[MASTER])
+@@ -270,7 +270,7 @@ static void smp_synchronize_one_tick(int cpu)
+ 			membar_safe("#StoreLoad");
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&itc_sync_lock, flags);
++	raw_spin_unlock_irqrestore(&itc_sync_lock, flags);
+ }
+ 
+ #if defined(CONFIG_SUN_LDOMS) && defined(CONFIG_HOTPLUG_CPU)
 
