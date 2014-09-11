@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaIKKVR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:21:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61469 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272AbaIKKVP (ORCPT
+	id S1754184AbaIKKWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:22:54 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51043 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428AbaIKKWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:21:15 -0400
-Message-ID: <1410430870.32479.0.camel@phoenix>
-Subject: [PATCH 1/2] regulator: rk808: Remove unused variables
+	Thu, 11 Sep 2014 06:22:52 -0400
+Message-ID: <1410430968.32479.2.camel@phoenix>
+Subject: [PATCH 2/2] regulator: rk808: Fix missing of_node_put
 From: Axel Lin <axel.lin@ingics.com>
 To: Mark Brown <broonie@kernel.org>
 Cc: Chris Zhong <zyw@rock-chips.com>, Doug Anderson <dianders@chromium.org>,
         Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Sep 2014 18:21:10 +0800
+Date: Thu, 11 Sep 2014 18:22:48 +0800
+In-Reply-To: <1410430870.32479.0.camel@phoenix>
+References: <1410430870.32479.0.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
@@ -23,50 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also remove non-informative comment.
+1. Pass &pdev->dev rather than &client->dev to of_regulator_match, the *dev
+   argument is used for devres to ensure devm_of_regulator_put_matches() will
+   be called when unload the module.
+
+2. of_get_child_by_name() returns a node pointer with refcount incremented.
+   Thus add missing of_node_put(reg_np).
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/regulator/rk808-regulator.c | 26 --------------------------
- 1 file changed, 26 deletions(-)
+ drivers/regulator/rk808-regulator.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
-index d91f2b6..9557428 100644
+index 9557428..07b0eb4 100644
 --- a/drivers/regulator/rk808-regulator.c
 +++ b/drivers/regulator/rk808-regulator.c
-@@ -28,32 +28,6 @@
- #define RK808_BUCK4_VSEL_MASK	0xf
- #define RK808_LDO_VSEL_MASK	0x1f
+@@ -281,8 +281,9 @@ static int rk808_regulator_probe(struct platform_device *pdev)
+ 	if (!reg_np)
+ 		return -ENXIO;
  
--static const int buck_set_vol_base_addr[] = {
--	RK808_BUCK1_ON_VSEL_REG,
--	RK808_BUCK2_ON_VSEL_REG,
--	RK808_BUCK3_CONFIG_REG,
--	RK808_BUCK4_ON_VSEL_REG,
--};
--
--static const int buck_contr_base_addr[] = {
--	RK808_BUCK1_CONFIG_REG,
--	RK808_BUCK2_CONFIG_REG,
--	RK808_BUCK3_CONFIG_REG,
--	RK808_BUCK4_CONFIG_REG,
--};
--
--static const int ldo_set_vol_base_addr[] = {
--	RK808_LDO1_ON_VSEL_REG,
--	RK808_LDO2_ON_VSEL_REG,
--	RK808_LDO3_ON_VSEL_REG,
--	RK808_LDO4_ON_VSEL_REG,
--	RK808_LDO5_ON_VSEL_REG,
--	RK808_LDO6_ON_VSEL_REG,
--	RK808_LDO7_ON_VSEL_REG,
--	RK808_LDO8_ON_VSEL_REG,
--};
--
--/* rk808 voltage number */
- static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
- 	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
- };
+-	ret = of_regulator_match(&client->dev, reg_np, rk808_reg_matches,
++	ret = of_regulator_match(&pdev->dev, reg_np, rk808_reg_matches,
+ 				 RK808_NUM_REGULATORS);
++	of_node_put(reg_np);
+ 	if (ret < 0)
+ 		return ret;
+ 
 -- 
 1.9.1
 
