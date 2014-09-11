@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbaIKKja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:39:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112AbaIKKj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:39:29 -0400
-Message-ID: <54117BD3.5000506@redhat.com>
-Date: Thu, 11 Sep 2014 12:39:15 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751769AbaIKKkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:40:49 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42250 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaIKKks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 06:40:48 -0400
+Date: Thu, 11 Sep 2014 12:40:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>, matti.vaittinen@nsn.com,
+        robh+dt@kernel.org, akpm@linux-foundation.org,
+        ijc+devicetree@hellion.org.uk, a.zummo@towertech.it,
+        linux@roeck-us.net
+Cc: jason@lakedaemon.net
+Subject: rtc: bq32000: add trickle charger device tree binding
+Message-ID: <20140911104045.GA16478@amd>
 MIME-Version: 1.0
-To: tangchen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page
- on migration in vcpu_enter_guest().
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com> <541169AD.6060908@redhat.com> <5411776B.3070302@cn.fujitsu.com>
-In-Reply-To: <5411776B.3070302@cn.fujitsu.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 12:20, tangchen ha scritto:
->>>
->>> +    vmcs_write64(APIC_ACCESS_ADDR, hpa);
->> This has to be guarded by "if (!is_guest_mode(vcpu))".
-> 
-> Since we cannot get vcpu through kvm, I'd like to move this check to
-> vcpu_reload_apic_access_page() when
-> kvm_x86_ops->set_apic_access_page_addr()
-> is called.
+BQ32000 have "trickle chargers".  Introduce a device tree
+binding for specifying the trickle charger configuration for that.
 
-Good idea!  Though passing the vcpu to vmx_set_apic_access_page_addr
-would also work.
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-Paolo
+diff --git a/Documentation/devicetree/bindings/i2c/ti,bq32k.txt b/Documentation/devicetree/bindings/i2c/ti,bq32k.txt
+new file mode 100644
+index 0000000..e204906
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/ti,bq32k.txt
+@@ -0,0 +1,18 @@
++* TI BQ32000                I2C Serial Real-Time Clock
++
++Required properties:
++- compatible: Should contain "ti,bq32000".
++- reg: I2C address for chip
++
++Optional properties:
++- trickle-resistor-ohms : Selected resistor for trickle charger
++       Values usable are 1120 and 20180
++       Should be given if trickle charger should be enabled
++- trickle-diode-disable : Do not use internal trickle charger diode
++       Should be given if internal trickle charger diode should be disabled
++Example:
++       bq32000: rtc@68 {
++               compatible = "ti,bq32000";
++               trickle-resistor-ohms = <1120>;
++               reg = <0x68>;
++       };
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
