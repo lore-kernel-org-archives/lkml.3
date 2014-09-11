@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256AbaIKNrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:47:00 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46018 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaIKNq6 (ORCPT
+	id S1755286AbaIKNtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:49:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52864 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752623AbaIKNtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:46:58 -0400
-Message-ID: <1410443212.5187.59.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
- with a '.'
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
-        keyrings <keyrings@linux-nfs.org>,
+	Thu, 11 Sep 2014 09:49:24 -0400
+Date: Thu, 11 Sep 2014 14:49:22 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Date: Thu, 11 Sep 2014 09:46:52 -0400
-In-Reply-To: <CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
-References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
-	 <20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
-	 <1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com>
-	 <27732.1410437386@warthog.procyon.org.uk>
-	 <CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091113-8236-0000-0000-0000054FF639
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20140911134922.GG6158@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <20140911132935.068DCC408F6@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911132935.068DCC408F6@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 15:27 +0300, Dmitry Kasatkin wrote: 
-> On 11 September 2014 15:09, David Howells <dhowells@redhat.com> wrote:
-> > Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >
-> >> On Wed, 2014-09-10 at 19:36 -0400, Mimi Zohar wrote:
-> >> > On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote:
-> >> > > Reinstate the generation of EPERM for a key type name beginning with a
-> >> > > '.' in a userspace call.  Types whose name begins with a '.' are
-> >> > > internal only.
-> >>
-> >> After re-reading your comment and looking at the different types,
-> >> testing for dot prefixed types now makes sense.  Both dot prefixed types
-> >> and keyring names are reserved for the kernel.
-> >
-> > Are you withdrawing your objection, then?
+Hi Grant,
 
-The misunderstanding was based on being told that dot prefixed keyrings
-were protected, but in fact the only dot prefix code was here in
-key_get_type_from_user().
+On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
+> On Mon,  1 Sep 2014 22:57:38 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> > ACPI 5.1 has been released and now be freely available for
+> > download [1]. It fixed some major gaps to run ACPI on ARM,
+> > this patch just follow the ACPI 5.1 spec and prepare the
+> > code to run ACPI on ARM64.
+> > 
+> > ACPI 5.1 has some major changes for the following tables and
+> > method which are essential for ARM platforms:
+> > 1) MADT table updates.
+> > 2) FADT updates for PSCI
+> > 3) GTDT
+> > 
+> > This patch set is the ARM64 ACPI core patches covered MADT, FADT
+> > and GTDT, platform board specific drivers are not covered by this
+> > patch set, but we provide drivers for Juno to boot with ACPI only
+> > in the follwing patch set for review purpose.
 
-The concept of dot prefixing should probably be documented either in the
-code and/or documentation.  At this point, both types and keyring names
-are reserved.
+[...]
 
-Mimi
+> I've read through this entire series now. In my mind, aside from a few
+> comments that I know you're addressing, this is ready.  The hooks into
+> arm64 core code are not terribly invasive, it is nicely organized and
+> manageable. Get the next version out ASAP, but I would also like to see
+> the diffs from this version to the next so I don't need to review the
+> entire series again.
+> 
+> Regarding the requests to refactor ACPICA to work better for ARM. I
+> completely agree that it should be done, but I do not think it should be
+> a prerequisite to getting this core support merged. That kind of
+> refactoring is far easier to justify when it has immediate improvement
+> on the mainline codebase, and it gives us a working baseline to test
+> against. Doing it the other way around just makes things harder.
+> 
+> I would really like to see the next version of this series go into
+> linux-next. I think this is ready for some wider exposure. Have you got
+> a branch being pulled into Fengguang's autobuilder yet?
 
+Apart from build testing, what does this wider exposure achieve? Is there a
+platform available that would be able to boot Linux (to a meaingful state)
+with this patch series alone?
+
+I'm mindful of merging arch code that I'm unable to test, so I'd really
+rather it was merged along with the code (and a devicetree) for a platform
+that can use it.
+
+Will
