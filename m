@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaIKJOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:14:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:47388 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174AbaIKJOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:14:50 -0400
-From: Wang Kai <morgan.wang@huawei.com>
-To: <rmk+kernel@arm.linux.org.uk>, <k.khlebnikov@samsung.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <kernel.openeuler@huawei.com>
-Subject: [PATCH] ARM:stacktrace: make stacktrace skip always right.
-Date: Thu, 11 Sep 2014 17:02:23 +0800
-Message-ID: <1410426143-9455-1-git-send-email-morgan.wang@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
+	id S1753224AbaIKJRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:17:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaIKJRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:17:44 -0400
+Message-ID: <541168AB.9070101@redhat.com>
+Date: Thu, 11 Sep 2014 11:17:31 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 3/7] kvm: Make init_rmode_identity_map() return 0 on
+ success.
+References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-4-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1410413886-32213-4-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is for commit 3683f44c42e991d313dc301504ee0fca1aeb8580,
-that makes stacktrace NOT begin from stacktrace self function,
-which are: __save_stack_trace and save_stack_trace.
+Il 11/09/2014 07:38, Tang Chen ha scritto:
+> In init_rmode_identity_map(), there two variables indicating the return
+> value, r and ret, and it return 0 on error, 1 on success. The function
+> is only called by vmx_create_vcpu(), and r is redundant.
+> 
+> This patch removes the redundant variable r, and make init_rmode_identity_map()
+> return 0 on success, -errno on failure.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  arch/x86/kvm/vmx.c | 25 +++++++++++--------------
+>  1 file changed, 11 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 953d529..63c4c3e 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -3939,45 +3939,42 @@ out:
+>  
+>  static int init_rmode_identity_map(struct kvm *kvm)
+>  {
+> -	int i, idx, r, ret = 0;
+> +	int i, idx, ret = 0;
+>  	pfn_t identity_map_pfn;
+>  	u32 tmp;
+>  
+>  	if (!enable_ept)
+> -		return 1;
+> +		return 0;
+>  
+>  	/* Protect kvm->arch.ept_identity_pagetable_done. */
+>  	mutex_lock(&kvm->slots_lock);
+>  
+> -	if (likely(kvm->arch.ept_identity_pagetable_done)) {
+> -		ret = 1;
+> +	if (likely(kvm->arch.ept_identity_pagetable_done))
+>  		goto out2;
+> -	}
+>  
+>  	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
+>  
+> -	r = alloc_identity_pagetable(kvm);
+> -	if (r)
+> +	ret = alloc_identity_pagetable(kvm);
+> +	if (ret)
+>  		goto out2;
+>  
+>  	idx = srcu_read_lock(&kvm->srcu);
+> -	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+> -	if (r < 0)
+> +	ret = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+> +	if (ret)
+>  		goto out;
+>  	/* Set up identity-mapping pagetable for EPT in real mode */
+>  	for (i = 0; i < PT32_ENT_PER_PAGE; i++) {
+>  		tmp = (i << 22) + (_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |
+>  			_PAGE_ACCESSED | _PAGE_DIRTY | _PAGE_PSE);
+> -		r = kvm_write_guest_page(kvm, identity_map_pfn,
+> +		ret = kvm_write_guest_page(kvm, identity_map_pfn,
+>  				&tmp, i * sizeof(tmp), sizeof(tmp));
+> -		if (r < 0)
+> +		if (ret)
+>  			goto out;
+>  	}
+>  	kvm->arch.ept_identity_pagetable_done = true;
+> -	ret = 1;
+> +
+>  out:
+>  	srcu_read_unlock(&kvm->srcu, idx);
+> -
+>  out2:
+>  	mutex_unlock(&kvm->slots_lock);
+>  	return ret;
+> @@ -7645,7 +7642,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+>  			kvm->arch.ept_identity_map_addr =
+>  				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
+>  		err = -ENOMEM;
+> -		if (!init_rmode_identity_map(kvm))
+> +		if (init_rmode_identity_map(kvm))
 
-But save_stack_trace will NOT have stacktrace information when build
-with '-O2', assemble code looks like below:
-   00000154 <save_stack_trace>:
-    154:   e1a0200d        mov     r2, sp
-    158:   e1a01000        mov     r1, r0
-    15c:   e3c23d7f        bic     r3, r2, #8128   ; 0x1fc0
-    160:   e3a02000        mov     r2, #0
-    164:   e3c3303f        bic     r3, r3, #63     ; 0x3f
-    168:   e593000c        ldr     r0, [r3, #12]
-    16c:   eaffffd0        b       b4 <__save_stack_trace>
+Please add "< 0" here.  I would also consider setting err to the return
+value of init_rmode_identity_map, and initializing it to -ENOMEM only
+after the "if".
 
-In this situation, the "data.skip +=2" operation will skip the last
-user call function, make user stacktrace strange/incorrect.
+Paolo
 
-To fix this, we have to make sure save_stack_trace has stacktrace info,
-then skip 2 function will be OK.
-
-Signed-off-by: Wang Kai <morgan.wang@huawei.com>
----
- arch/arm/kernel/stacktrace.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index 6582c4a..1eb1b5ae 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -134,6 +134,7 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- void save_stack_trace(struct stack_trace *trace)
- {
- 	__save_stack_trace(current, trace, 0);
-+	asm volatile("" : : : "memory");
- }
- EXPORT_SYMBOL_GPL(save_stack_trace);
- #endif
--- 
-1.8.5.5
+>  			goto free_vmcs;
 
