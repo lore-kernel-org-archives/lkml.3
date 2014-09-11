@@ -1,100 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaIKN3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:29:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51179 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaIKN3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:29:17 -0400
-Date: Thu, 11 Sep 2014 10:29:11 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
- cookie with each entry
-Message-ID: <20140911132911.GB10158@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-14-git-send-email-acme@kernel.org>
- <20140911103319.GA13634@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911103319.GA13634@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755051AbaIKN3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:29:52 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47780 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007AbaIKN3v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 09:29:51 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>
+Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Hanjun Guo <hanjun.guo@linaro.org>
+In-Reply-To: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+Date: Thu, 11 Sep 2014 14:29:34 +0100
+Message-Id: <20140911132935.068DCC408F6@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 11, 2014 at 12:33:19PM +0200, Jiri Olsa escreveu:
-> On Wed, Sep 10, 2014 at 11:08:48AM -0300, Arnaldo Carvalho de Melo wrote:
- 
-SNIP
-
-> > @@ -80,11 +94,17 @@ int fdarray__filter(struct fdarray *fda, short revents)
-> >  	for (fd = 0; fd < fda->nr; ++fd) {
-> > -		if (fda->entries[fd].revents & revents)
-> > +		if (fda->entries[fd].revents & revents) {
-> > +			if (entry_destructor)
-> > +				entry_destructor(fda, fd);
+On Mon,  1 Sep 2014 22:57:38 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> ACPI 5.1 has been released and now be freely available for
+> download [1]. It fixed some major gaps to run ACPI on ARM,
+> this patch just follow the ACPI 5.1 spec and prepare the
+> code to run ACPI on ARM64.
 > 
-> the desctructor callback could have the 'priv' as an argument
-> so we dont need to touch fdarray internals in upper layer
+> ACPI 5.1 has some major changes for the following tables and
+> method which are essential for ARM platforms:
+> 1) MADT table updates.
+> 2) FADT updates for PSCI
+> 3) GTDT
+> 
+> This patch set is the ARM64 ACPI core patches covered MADT, FADT
+> and GTDT, platform board specific drivers are not covered by this
+> patch set, but we provide drivers for Juno to boot with ACPI only
+> in the follwing patch set for review purpose.
+> 
+> We first introduce acpi.c and its related head file which are needed
+> by ACPI core, and then get RSDP to extract all the ACPI boot-time tables.
+> When all the boot-time tables (FADT, MADT, GTDT) are ready, then
+> parse them to init the sytem when booted. Specifically, 
+> a) we use FADT to init PSCI and use PSCI to boot SMP;
+> b) Use MADT for GIC init and SMP init;
+> c) GTDT for arch timer init.
+> 
+> This patch set is based on 3.17-rc2 and was tested by Graeme on Juno
+> and FVP base model boot with ACPI only OK, if you want to test them,
+> you can pull from acpi-5.1-v3 branch in leg/acpi repo:
+> git://git.linaro.org/leg/acpi/acpi.git
+> 
+> Updates since v2:
+>  - Refactor the code to make SMP/PSCI init with less sperated init
+>    path by Tomasz
+>  - make ACPI depend on EXPERT
+>  - Address lots of comments from Catalin, Sudeep, Geoff
+>  - Add Juno device ACPI driver patches for review
+> 
+> Updates since v1:
+>  - Set ACPI default off on ARM64 suggested by Olof;
+>  - Rebase the patch set on top of linux-next branch/linux-pm tree which
+>    includes the ACPICA for full ACPI 5.1 support.
+>  - Update the document as suggested;
+>  - Adress lots of comments from Mark, Sudeep, Randy, Naresh, Olof, Geoff
+>    and more...
+> 
+> [1]: http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
 
-I thought about that, but then I would have to pass as well the pollfd
-entry, that is not in priv, i.e. the callback may want to know exactly
-what were the POLL{RD,WR,HUP,ER) in fdarray->entryes[fd].revents.
+I've read through this entire series now. In my mind, aside from a few
+comments that I know you're addressing, this is ready.  The hooks into
+arm64 core code are not terribly invasive, it is nicely organized and
+manageable. Get the next version out ASAP, but I would also like to see
+the diffs from this version to the next so I don't need to review the
+entire series again.
 
-Yeah, sometimes it is good to avoid users touching the internals, but
-that doesn't need to be something set in stone, i.e. we can consider
-fda->revents and priv->priv to "public" :-)
+Regarding the requests to refactor ACPICA to work better for ARM. I
+completely agree that it should be done, but I do not think it should be
+a prerequisite to getting this core support merged. That kind of
+refactoring is far easier to justify when it has immediate improvement
+on the mainline codebase, and it gives us a working baseline to test
+against. Doing it the other way around just makes things harder.
 
-SNIP
- 
-> > +++ b/tools/lib/api/fd/array.h
-> > @@ -10,6 +10,7 @@ struct fdarray {
-> >  	struct pollfd *entries;
-> > +	int	      *priv;
- 
-> I like the idea of private pointer for each fd, but I think it should
-> be 'void*' to keep the library generic. The 'int*' is related only to
-> the evlist usage of this.
+I would really like to see the next version of this series go into
+linux-next. I think this is ready for some wider exposure. Have you got
+a branch being pulled into Fengguang's autobuilder yet?
 
-Right, from the changelog comment for this patch:
+g.
 
-------------------------------
-    We may need to have further info associated with each fdarray entry,
-in that case we'll make that int array a 'union fdarray_priv' one and
-put a pointer there so that users can stash whatever they want there.
-For now, an int is enough tho.
-------------------------------
+> 
+> Al Stone (3):
+>   ARM64 / ACPI: Get RSDP and ACPI boot-time tables
+>   ARM64 / ACPI: Introduce early_param for "acpi"
+>   ARM64 / ACPI: Select ACPI_REDUCED_HARDWARE_ONLY if ACPI is enabled on
+>     ARM64
+> 
+> Ashwin Chaugule (1):
+>   ACPI / table: Add new function to get table entries
+> 
+> Graeme Gregory (4):
+>   ARM64 / ACPI: Introduce lowlevel suspend function
+>   ARM64 / ACPI: If we chose to boot from acpi then disable FDT
+>   ARM64 / ACPI: Enable ARM64 in Kconfig
+>   Documentation: ACPI for ARM64
+> 
+> Hanjun Guo (8):
+>   ARM64: Move the init of cpu_logical_map(0) before
+>     unflatten_device_tree()
+>   ARM64 / ACPI: Make PCI optional for ACPI on ARM64
+>   ARM64 / ACPI: Parse FADT table to get PSCI flags for PSCI init
+>   ACPI / table: Print GIC information when MADT is parsed
+>   ARM64 / ACPI: Parse MADT for SMP initialization
+>   ACPI / processor: Make it possible to get CPU hardware ID via GICC
+>   ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and register device's gsi
+>   ARM64 / ACPI: Parse GTDT to initialize arch timer
+> 
+> Tomasz Nowicki (1):
+>   ARM64 / ACPI: Add GICv2 specific ACPI boot support
+> 
+>  Documentation/arm64/arm-acpi.txt     |  218 +++++++++++++++++++++
+>  Documentation/kernel-parameters.txt  |    3 +-
+>  arch/arm64/Kconfig                   |    3 +
+>  arch/arm64/include/asm/acenv.h       |   18 ++
+>  arch/arm64/include/asm/acpi.h        |  108 ++++++++++
+>  arch/arm64/include/asm/cpu_ops.h     |    1 +
+>  arch/arm64/include/asm/pci.h         |   11 ++
+>  arch/arm64/include/asm/psci.h        |    3 +-
+>  arch/arm64/include/asm/smp.h         |    5 +-
+>  arch/arm64/kernel/Makefile           |    1 +
+>  arch/arm64/kernel/acpi.c             |  359 ++++++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/cpu_ops.c          |    4 +-
+>  arch/arm64/kernel/irq.c              |    5 +
+>  arch/arm64/kernel/psci.c             |   78 +++++---
+>  arch/arm64/kernel/setup.c            |   23 ++-
+>  arch/arm64/kernel/smp.c              |    2 +-
+>  arch/arm64/kernel/time.c             |    7 +
+>  drivers/acpi/Kconfig                 |    6 +-
+>  drivers/acpi/Makefile                |    2 +-
+>  drivers/acpi/bus.c                   |    3 +
+>  drivers/acpi/internal.h              |    5 +
+>  drivers/acpi/processor_core.c        |   37 ++++
+>  drivers/acpi/tables.c                |  113 +++++++++--
+>  drivers/clocksource/arm_arch_timer.c |  117 +++++++++--
+>  drivers/irqchip/irq-gic.c            |  114 +++++++++++
+>  include/linux/acpi.h                 |    5 +
+>  include/linux/clocksource.h          |    6 +
+>  include/linux/irqchip/arm-gic-acpi.h |   33 ++++
+>  include/linux/pci.h                  |   37 +++-
+>  29 files changed, 1237 insertions(+), 90 deletions(-)
+>  create mode 100644 Documentation/arm64/arm-acpi.txt
+>  create mode 100644 arch/arm64/include/asm/acenv.h
+>  create mode 100644 arch/arm64/include/asm/acpi.h
+>  create mode 100644 arch/arm64/include/asm/pci.h
+>  create mode 100644 arch/arm64/kernel/acpi.c
+>  create mode 100644 include/linux/irqchip/arm-gic-acpi.h
+> 
+> -- 
+> 1.7.9.5
+> 
 
-I had it as:
-
-	struct fdarray {
-	...
-		union {
-			int 	idx;
-			void	*ptr;
-		} priv;
-	...
-	}
-
-But then I had no use whatsoever for the ->ptr one at this point, so I
-just nuked it, to keep _just_ what is used _right now_, and added the
-comment to the changelog :-)
-
-Heck, even the comment mentions "union fdarray_priv", because at one
-point I was passing that to the destructor, as you suggested, but then I
-removed it to an unnamed union, because passing just the index would
-allow access to ->priv[] and ->entries[].
-
-- Arnaldo
