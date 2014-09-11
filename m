@@ -1,129 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757358AbaIKQbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:31:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48358 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755845AbaIKQbE (ORCPT
+	id S1757371AbaIKQbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:31:19 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:58101 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901AbaIKQbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:31:04 -0400
-Date: Thu, 11 Sep 2014 18:31:01 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/7] ARM: at91: introduce basic SAMA5D4 support
-Message-ID: <20140911183101.7a82d291@free-electrons.com>
-In-Reply-To: <1410450852-1834-4-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1410450852-1834-4-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 11 Sep 2014 12:31:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <54117D3A.3010305@plexistor.com>
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>
+	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>
+	<540F2977.7010006@plexistor.com>
+	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>
+	<541050E5.60502@gmail.com>
+	<CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>
+	<54108ECA.6090200@plexistor.com>
+	<CAPcyv4gqyiTaSJY56ZrJh05kwh9O9sXNKOz40fGu5s_=eY=U6Q@mail.gmail.com>
+	<54117D3A.3010305@plexistor.com>
+Date: Thu, 11 Sep 2014 09:31:14 -0700
+Message-ID: <CAPcyv4io2P1TiXdnhQJMiWsYE5Rz+BiiAHqKZhDe5gh88PEWUA@mail.gmail.com>
+Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
+ memory driver
+From: Dan Williams <dan.j.williams@intel.com>
+To: Boaz Harrosh <boaz@plexistor.com>
+Cc: Boaz Harrosh <openosd@gmail.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Belloni,
+On Thu, Sep 11, 2014 at 3:45 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
+> On 09/11/2014 02:01 AM, Dan Williams wrote:
+> <>
+>>
+>> Imagine you want to deploy a policy like "use half of the memory
+>> provided by the dimm in slot3, i.e. the only one with a battery".
+>> That sort of thing gets unwieldy in a command line string compared to
+>> a description table format that we can update at will.
+>>
+>
+> Actually it is easy to do, why? I do this here in the lab all the time.
+> with a "command line" with this code you see here.
+>
+> [DDR3 NvDIMM which means I need memmap=16G\$32G on Kernel command line.
+>  Then: modprobe pmem map=8G@32G,4G@44G,...
+>  and so on Just as a simple example where 2/4-3/4 addresses are not used.
+>  You can have holes in the middle or what ever you want. This here is just
+>  a table in comma-separated format. If we need like flags in future we can
+>  extend the format to nn@ss:flags, but I do no have any 3rd column yet]
 
-On Thu, 11 Sep 2014 17:54:08 +0200, Alexandre Belloni wrote:
+The point I am getting at is not requiring a priori knowledge of the
+physical memory map of a system.  Rather, place holder variables to
+enable simple dynamic discovery.
 
-> +#ifdef CONFIG_CACHE_L2X0
-> +static void __init at91_init_l2cache(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
-> +	if (!np)
-> +		return;
-> +	of_node_put(np);
-> +
-> +	l2x0_of_init(0, ~0UL);
-> +}
-> +#else
-> +static inline void at91_init_l2cache(void) {}
-> +#endif
-> +
->  static void __init sama5_dt_device_init(void)
->  {
-> +	at91_init_l2cache();
+> And again I have in the pipe a dynamic interface added on top of
+> the module param one. So it will all be there soon. Without reverting
+> the old one.
 
-Following Russell's cleanup of the L2 cache code, I don't think this is
-necessary. The l2x0_of_init() function is automatically called for you
-in init_IRQ(), as long as one of the l2c_aux_mask or l2c_aux_val fields
-of your DT_MACHINE structure are non zero:
-
-void __init init_IRQ(void)
-{
-        int ret;
-
-        if (IS_ENABLED(CONFIG_OF) && !machine_desc->init_irq)
-                irqchip_init();
-        else
-                machine_desc->init_irq();
-
-        if (IS_ENABLED(CONFIG_OF) && IS_ENABLED(CONFIG_CACHE_L2X0) &&
-            (machine_desc->l2c_aux_mask || machine_desc->l2c_aux_val)) {
-                outer_cache.write_sec = machine_desc->l2c_write_sec;
-                ret = l2x0_of_init(machine_desc->l2c_aux_val,
-                                   machine_desc->l2c_aux_mask);
-                if (ret)
-                        pr_err("L2C: failed to init: %d\n", ret);
-        }
-}
-
-Also, l2x0_of_init() already has a stub definition when
-CONFIG_CACHE_L2X0 is not enabled, so the compile time conditional is
-not necessary.
-
-> +/* Firmware */
-> +extern void atmel_firmware_init(void);
-> +extern bool atmel_firmware_is_registered(void);
-
-What is this firmware?
-
-> diff --git a/arch/arm/mach-at91/include/mach/sama5d4.h b/arch/arm/mach-at91/include/mach/sama5d4.h
-> new file mode 100644
-> index 000000000000..af835e89d4c5
-> --- /dev/null
-> +++ b/arch/arm/mach-at91/include/mach/sama5d4.h
-> @@ -0,0 +1,35 @@
-> +/*
-> + * Chip-specific header file for the SAMA5D4 family
-> + *
-> + *  Copyright (C) 2013 Atmel Corporation,
-> + *                     Nicolas Ferre <nicolas.ferre@atmel.com>
-> + *
-> + * Common definitions.
-> + * Based on SAMA5D4 datasheet.
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +
-> +#ifndef SAMA5D4_H
-> +#define SAMA5D4_H
-> +
-> +/*
-> + * User Peripheral physical base addresses.
-> + */
-> +#define SAMA5D4_BASE_AIC	0xfc06e000 /* (AIC non-secure) Base Address */
-> +#define SAMA5D4_BASE_USART3	0xfc00c000 /* (USART3 non-secure) Base Address */
-> +#define SAMA5D4_BASE_PMC	0xf0018000 /* (PMC) Base Address */
-> +#define SAMA5D4_BASE_MPDDRC	0xf0010000 /* (MPDDRC) Base Address */
-> +#define SAMA5D4_BASE_PIOD	0xfc068000 /* (PIOD) Base Address */
-> +#define SAMA5D4_BASE_PIOE	0xfc06d000 /* (PIOE) Base Address */
-
-Are these definitions still all necessary? With the migration of most
-(all?) peripherals to the Device Tree, less and less of those
-definitions should be useful. For example, isn't the AIC fully
-described in the Device Tree now?
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Why start on step 2 when we haven't got agreement on step 1?
