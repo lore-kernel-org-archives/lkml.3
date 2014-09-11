@@ -1,157 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaIKI3e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:29:34 -0400
-Received: from [207.46.100.136] ([207.46.100.136]:13136 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752960AbaIKI3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:29:32 -0400
-Date: Thu, 11 Sep 2014 16:29:06 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Robin Gong <b38343@freescale.com>
-CC: <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1] ARM: imx6: add pm_power_off support for i.mx6 chips
-Message-ID: <20140911082905.GI18566@dragon>
-References: <1410417667-6436-1-git-send-email-b38343@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1410417667-6436-1-git-send-email-b38343@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(24454002)(51704005)(26826002)(81342001)(21056001)(102836001)(33656002)(81542001)(4396001)(83072002)(85852003)(80022001)(92566001)(92726001)(47776003)(87936001)(20776003)(64706001)(86362001)(23726002)(31966008)(74662001)(57986006)(90102001)(74502001)(6806004)(85306004)(19580395003)(83322001)(19580405001)(50466002)(44976005)(84676001)(83506001)(95666004)(68736004)(46406003)(33716001)(77982001)(97756001)(110136001)(54356999)(76176999)(50986999)(106466001)(76482001)(104016003)(46102001)(105606002)(107046002)(99396002)(97736003)(79102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB038;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03319F6FEF
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Shawn.Guo@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1753041AbaIKIWy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:22:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19347 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926AbaIKIWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:22:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="571628912"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [RFC Part1 v1 02/18] x86, irq: Kill fourth parameter of IO_APIC_get_PCI_irq_vector()
+Date: Thu, 11 Sep 2014 16:24:49 +0800
+Message-Id: <1410423905-26239-3-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 02:41:07PM +0800, Robin Gong wrote:
-> All chips of i.mx6 can be powered off by programming SNVS.
-> For example :
-> On i.mx6q-sabresd board, PMIC_ON_REQ connect with external
-> pmic ON/OFF pin, that will cause the whole PMIC powered off
-> except VSNVS. And system can restart once PMIC_ON_REQ goes
-> high by push POWRER key.
-> 
-> Signed-off-by: Robin Gong <b38343@freescale.com>
-> ---
->  arch/arm/mach-imx/common.h      |  1 +
->  arch/arm/mach-imx/mach-imx6q.c  |  2 ++
->  arch/arm/mach-imx/mach-imx6sl.c |  2 ++
->  arch/arm/mach-imx/mach-imx6sx.c |  2 ++
->  arch/arm/mach-imx/system.c      | 22 +++++++++++++++++++++-
->  5 files changed, 28 insertions(+), 1 deletion(-)
+Now the fourth parameter of IO_APIC_get_PCI_irq_vector() is useless,
+so kill it.  Assume it's only used by ibmphp PCI hotplug driver
+though IO_APIC_get_PCI_irq_vector() has been exported,
 
-I think we'd better add a little poweroff driver under
-drivers/power/reset/ rather than having it in platform code.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/hw_irq.h     |    2 +-
+ arch/x86/kernel/apic/io_apic.c    |   13 +++----------
+ arch/x86/pci/irq.c                |    6 ++----
+ drivers/pci/hotplug/ibmphp_core.c |    5 +----
+ 4 files changed, 7 insertions(+), 19 deletions(-)
 
-Shawn
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 4615906d83df..64330c2e172e 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -158,7 +158,7 @@ extern void send_cleanup_vector(struct irq_cfg *);
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ 			  unsigned int *dest_id);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin, struct io_apic_irq_attr *irq_attr);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+ extern void setup_ioapic_dest(void);
+ 
+ extern void enable_IO_APIC(void);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index f054c8803939..20e1be110ddb 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1179,8 +1179,7 @@ void mp_unmap_irq(int irq)
+  * Find a specific PCI IRQ entry.
+  * Not an __init, possibly needed by modules
+  */
+-int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+-				struct io_apic_irq_attr *irq_attr)
++int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin)
+ {
+ 	int irq, i, best_ioapic = -1, best_idx = -1;
+ 
+@@ -1234,14 +1233,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 		return -1;
+ 
+ out:
+-	irq = pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
+-			IOAPIC_MAP_ALLOC);
+-	if (irq > 0)
+-		set_io_apic_irq_attr(irq_attr, best_ioapic,
+-				     mp_irqs[best_idx].dstirq,
+-				     irq_trigger(best_idx),
+-				     irq_polarity(best_idx));
+-	return irq;
++	return pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
++			 IOAPIC_MAP_ALLOC);
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index a47e2dea0972..7765b3facd4b 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1200,14 +1200,12 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ #ifdef CONFIG_X86_IO_APIC
+ 			struct pci_dev *temp_dev;
+ 			int irq;
+-			struct io_apic_irq_attr irq_attr;
+ 
+ 			if (dev->irq_managed && dev->irq > 0)
+ 				return 0;
+ 
+ 			irq = IO_APIC_get_PCI_irq_vector(dev->bus->number,
+-						PCI_SLOT(dev->devfn),
+-						pin - 1, &irq_attr);
++						PCI_SLOT(dev->devfn), pin - 1);
+ 			/*
+ 			 * Busses behind bridges are typically not listed in the MP-table.
+ 			 * In this case we have to look up the IRQ based on the parent bus,
+@@ -1221,7 +1219,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 				pin = pci_swizzle_interrupt_pin(dev, pin);
+ 				irq = IO_APIC_get_PCI_irq_vector(bridge->bus->number,
+ 						PCI_SLOT(bridge->devfn),
+-						pin - 1, &irq_attr);
++						pin - 1);
+ 				if (irq >= 0)
+ 					dev_warn(&dev->dev, "using bridge %s "
+ 						 "INT %c to get IRQ %d\n",
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index f7b8684a7739..adb85e1726d1 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -155,13 +155,10 @@ int ibmphp_init_devno(struct slot **cur_slot)
+ 	for (loop = 0; loop < len; loop++) {
+ 		if ((*cur_slot)->number == rtable->slots[loop].slot &&
+ 		    (*cur_slot)->bus == rtable->slots[loop].bus) {
+-			struct io_apic_irq_attr irq_attr;
+-
+ 			(*cur_slot)->device = PCI_SLOT(rtable->slots[loop].devfn);
+ 			for (i = 0; i < 4; i++)
+ 				(*cur_slot)->irq[i] = IO_APIC_get_PCI_irq_vector((int) (*cur_slot)->bus,
+-						(int) (*cur_slot)->device, i,
+-						&irq_attr);
++						(int) (*cur_slot)->device, i);
+ 
+ 			debug("(*cur_slot)->irq[0] = %x\n",
+ 					(*cur_slot)->irq[0]);
+-- 
+1.7.10.4
 
-> 
-> diff --git a/arch/arm/mach-imx/common.h b/arch/arm/mach-imx/common.h
-> index 1dabf43..baca11a 100644
-> --- a/arch/arm/mach-imx/common.h
-> +++ b/arch/arm/mach-imx/common.h
-> @@ -62,6 +62,7 @@ void mxc_set_cpu_type(unsigned int type);
->  void mxc_restart(enum reboot_mode, const char *);
->  void mxc_arch_reset_init(void __iomem *);
->  void mxc_arch_reset_init_dt(void);
-> +void mxc_power_off_init(void);
->  int mx51_revision(void);
->  int mx53_revision(void);
->  void imx_set_aips(void __iomem *);
-> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-> index d51c6e9..3d6610d 100644
-> --- a/arch/arm/mach-imx/mach-imx6q.c
-> +++ b/arch/arm/mach-imx/mach-imx6q.c
-> @@ -270,6 +270,8 @@ static void __init imx6q_init_machine(void)
->  
->  	mxc_arch_reset_init_dt();
->  
-> +	mxc_power_off_init();
-> +
->  	parent = imx_soc_device_init();
->  	if (parent == NULL)
->  		pr_warn("failed to initialize soc device\n");
-> diff --git a/arch/arm/mach-imx/mach-imx6sl.c b/arch/arm/mach-imx/mach-imx6sl.c
-> index ed263a2..c07e6e8 100644
-> --- a/arch/arm/mach-imx/mach-imx6sl.c
-> +++ b/arch/arm/mach-imx/mach-imx6sl.c
-> @@ -50,6 +50,8 @@ static void __init imx6sl_init_machine(void)
->  
->  	mxc_arch_reset_init_dt();
->  
-> +	mxc_power_off_init();
-> +
->  	parent = imx_soc_device_init();
->  	if (parent == NULL)
->  		pr_warn("failed to initialize soc device\n");
-> diff --git a/arch/arm/mach-imx/mach-imx6sx.c b/arch/arm/mach-imx/mach-imx6sx.c
-> index 3de3b73..68ea070 100644
-> --- a/arch/arm/mach-imx/mach-imx6sx.c
-> +++ b/arch/arm/mach-imx/mach-imx6sx.c
-> @@ -20,6 +20,8 @@ static void __init imx6sx_init_machine(void)
->  
->  	mxc_arch_reset_init_dt();
->  
-> +	mxc_power_off_init();
-> +
->  	parent = imx_soc_device_init();
->  	if (parent == NULL)
->  		pr_warn("failed to initialize soc device\n");
-> diff --git a/arch/arm/mach-imx/system.c b/arch/arm/mach-imx/system.c
-> index d14c33f..925fb29 100644
-> --- a/arch/arm/mach-imx/system.c
-> +++ b/arch/arm/mach-imx/system.c
-> @@ -23,6 +23,7 @@
->  #include <linux/delay.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/pm.h>
->  
->  #include <asm/system_misc.h>
->  #include <asm/proc-fns.h>
-> @@ -32,7 +33,9 @@
->  #include "common.h"
->  #include "hardware.h"
->  
-> -static void __iomem *wdog_base;
-> +#define SNVS_LPCR               0x04
-> +
-> +static void __iomem *wdog_base, *snvs_base;
->  static struct clk *wdog_clk;
->  
->  /*
-> @@ -104,6 +107,23 @@ void __init mxc_arch_reset_init_dt(void)
->  		clk_prepare(wdog_clk);
->  }
->  
-> +static void power_off_snvs(void)
-> +{
-> +	 u32 value = readl(snvs_base + SNVS_LPCR);
-> +	/* set TOP and DP_EN bit */
-> +	writel(value | 0x60, snvs_base + SNVS_LPCR);
-> +}
-> +
-> +void __init mxc_power_off_init(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "fsl,sec-v4.0-mon-rtc-lp");
-> +	snvs_base = of_iomap(np, 0);
-> +	WARN_ON(!snvs_base);
-> +	pm_power_off = power_off_snvs;
-> +}
-> +
->  #ifdef CONFIG_CACHE_L2X0
->  void __init imx_init_l2cache(void)
->  {
-> -- 
-> 1.9.1
-> 
