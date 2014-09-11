@@ -1,84 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaIKUBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:01:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798AbaIKUBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:01:36 -0400
-Date: Thu, 11 Sep 2014 16:01:10 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
-Message-ID: <20140911200110.GA24699@redhat.com>
-References: <20140905183314.23690175@hananiah.suse.cz>
+	id S1756357AbaIKUCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:02:12 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35982 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756272AbaIKUCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 16:02:08 -0400
+Message-ID: <5411FFB6.2080702@hurleysoftware.com>
+Date: Thu, 11 Sep 2014 16:01:58 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905183314.23690175@hananiah.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>, David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+References: <20140712181328.GA8738@redhat.com>	<54079B70.4050200@hurleysoftware.com>	<1409785893.30640.118.camel@pasglop>	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>	<1409824374.4246.62.camel@pasglop>	<5408E458.3@zytor.com>	<54090AF4.7060406@hurleysoftware.com>	<54091B30.7080100@zytor.com>	<5409D76D.2070203@hurleysoftware.com>	<5409D9C0.7030403@zytor.com>	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>	<540DEE6C.2060904@zytor.com>	<540E3207.7090007@hurleysoftware.com> <20140911110411.2de01944@alan.etchedpixels.co.uk>
+In-Reply-To: <20140911110411.2de01944@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
-> On architectures that use percpu-vm, the percpu region is not guaranteed
-> to be contiguous in physical space.
-
-Petr,
-
-Which are those arches?
-
-> However, fs/proc/vmcore.c expects
-> all ELF notes to be contiguous. If the ELF note happens to occupy
-> two non-adjacent physical pages, part of the note may be read from an
-> incorrect memory location by the kdump kernel, resulting in failure to
-> initialize /proc/vmcore (if the content of the following physical page,
-> incorrectly interpreted as an ELF note specifies a large number), wrong
-> register values or other apparent random memory corruption.
+On 09/11/2014 06:04 AM, One Thousand Gnomes wrote:
+>>> Is *that* what we are talking about?  I was added to this conversation
+>>> in the middle where it had already generalized, so I had no idea.
+>>
+>> No, this is just what brought this craziness to my attention.
 > 
-> There is currently no mechanism to pass the virtual-to-physical mapping
-> of the percpu allocation to the kdump kernel. So, instead, I'm changing
-> the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
-> than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
-> is enough to make sure that the buffer cannot cross a page boundary,
-> effectively ensuring that the whole buffer is contiguous in physical
-> space.
+> None of it is craziness. It's the real world leaking into the crazy
+> delusional world of sequential programming. Machines are going to get
+> more not less parallel.
 > 
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> ---
->  kernel/kexec.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>> For example, byte- and short-sized circular buffers could not possibly
+>> be safe either, when the head nears the tail.
+>>
+>> Who has audited global storage and ensured that _every_ byte-sized write
+>> doesn't happen to be adjacent to some other storage that may not happen
+>> to be protected by the same (or any) lock?
 > 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 2bee072..cdab59d 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
->  static int __init crash_notes_memory_init(void)
->  {
->  	/* Allocate memory for saving cpu registers. */
-> -	crash_notes = alloc_percpu(note_buf_t);
-> +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
-> +				     roundup_pow_of_two(sizeof(note_buf_t)));
-
-I think some of the changelog should show up here as comment in short
-form. I don't think it is obvious that why we are using __alloc_percpu()
-and why aligning to nearst higher power of 2 is needed here. Please also
-mention here which arches run into issues.
-
-Thanks
-Vivek
-
->  	if (!crash_notes) {
->  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
->  		return -ENOMEM;
-> -- 
-> 1.8.4.5
+> Thats a meaningless question. Have you audited it all for correctness of
+> any other form. Have you mathematically verified the functionality as a
+> set of formal proofs ? If you can't prove its formally mathematically
+> functionally correct why are you worried about this ?
 > 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+> Alpha works, maybe it has a near theoretical race on that point. It's not
+> any worse than it was 15 years ago and nobody has really hit a problem
+> with it. So from that you can usefully infer that those buffer cases are
+> not proving a real problem.
+>
+> The tty locks together on the other hand are asking to hit it, and the
+> problem you were trying to fix were the ones that need set_bit() to make
+> the guarantees.
+
+So a problem that no one has ever complained about on _any_ arch is suddenly
+a problem on a subset of Alpha cpus, but a problem I know exists on Alpha
+isn't important because no one's filed a bug about it?
+
+The only Alpha person in this discussion has come out clearly in favor
+of dropping EV4/5 support.
+
+The fact is that the kernel itself is much more parallel than it was
+15 years ago, and that trend is going to continue. Paired with the fact
+that the Alpha is the least-parallel-friendly arch, makes improving
+parallelism and correctness even harder within kernel subsystems; harder
+than it has to be and harder than it should be.
+
+Linus has repeatedly stated that non-arch code should be as
+arch-independent as possible, so I believe that working around problems
+created by a cpu from 1995 _which no other arch exhibits_ is ludicrous.
+Especially in generic kernel code.
+
+That said, if the Alpha community wants to keep _actively_ supporting
+the Alpha arch, fine. They could be working toward solutions for
+making Alpha workarounds in generic kernel code unnecessary. If that means
+compiler changes, ok. If that means arch-independent macros, well, they
+can float that idea.
+
+Or if they're comfortable with the status quo, also fine. By that, I mean
+the Alpha arch gets no workarounds in generic kernel code, and if something
+goes a little sideways only on Alpha, that's to be expected.
+
+As Paul pointed out, a good first step would be for the Alpha community
+to contribute byte and short versions of smp_load_acquire() and
+smp_store_release() so that the rest of the kernel community can make
+forward progress on more parallelism without Alpha-only limitations.
+
+Regards,
+Peter Hurley
