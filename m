@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbaIKLbd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:31:33 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:48346 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaIKLbb (ORCPT
+	id S1754429AbaIKLbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:31:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50794 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279AbaIKLbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:31:31 -0400
+	Thu, 11 Sep 2014 07:31:33 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH 3.17-rc4 v5 0/6] arm: Implement arch_trigger_all_cpu_backtrace
-Date: Thu, 11 Sep 2014 12:31:12 +0100
-Message-Id: <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Daniel Thompson <daniel.thompson@linaro.org>
+Subject: [PATCH 3.17-rc4 v5 1/6] ARM: remove unused do_unexp_fiq() function
+Date: Thu, 11 Sep 2014 12:31:13 +0100
+Message-Id: <1410435078-28462-2-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
+In-Reply-To: <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
 References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
+ <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements arch_trigger_all_cpu_backtrace for arm.
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Non-maskable signalling relies on the kernel being able to access FIQ
-and therefore, for devices that implement TrustZone, it will work only on
-systems that boot the kernel in secure mode.
+do_unexp_fiq() has never been called by any code in the last 10 years,
+it's about time it was removed!
 
-Tested on Freescale iMX.6 (both via SysRq-l and by deliberately locking
-up the kernel with CONFIG_DEBUG_SPINLOCK=y).
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/kernel/traps.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Changes since v4:
-
-* Rebased on 3.17-rc4.
-
-* Removed a spurious line from the final "glue it together" patch
-  that broke the build.
-
-Changes since v3:
-
-* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
-  Pitre).
-
-* Really fix bad pt_regs pointer generation in __fiq_abt.
-
-* Remove fiq_safe_migration_lock and associated logic in
-  gic_raise_softirq() (review of Russell King)
-
-* Restructured to introduce the default FIQ handler first, before the
-  new features (review of Russell King).
-
-Changes since v2:
-
-* Removed redundant header guards from arch/arm64/include/asm/fiq.h
-  (review of Catalin Marinas).
-
-* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
-  Pitre).
-
-Changes since v1:
-
-* Restructured to sit nicely on a similar FYI patchset from Russell
-  King. It now effectively replaces the work in progress final patch
-  with something much more complete.
-
-* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
-  (review of Nicolas Pitre)
-
-* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
-  being acknowledged by the IRQ handler does still exist but should be
-  harmless because the IRQ handler will still wind up calling
-  ipi_cpu_backtrace().
-
-* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
-  becomes a platform feature (although the use of non-maskable
-  interrupts to implement it is best effort rather than guaranteed).
-
-* Better comments highlighting usage of RAZ/WI registers (and parts of
-  registers) in the GIC code.
-
-Changes *before* v1:
-
-* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
-  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
-  the new structure. For historic details see:
-        https://lkml.org/lkml/2014/9/2/227
-
-* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
-  In fixing this we also remove the useless indirection previously
-  found in the fiq_handler macro.
-
-* Make default fiq handler "always on" by migrating from fiq.c to
-  traps.c and replace do_unexp_fiq with the new handler (review
-  of Russell King).
-
-* Add arm64 version of fiq.h (review of Russell King)
-
-* Removed conditional branching and code from irq-gic.c, this is
-  replaced by much simpler code that relies on the GIC specification's
-  heavy use of read-as-zero/write-ignored (review of Russell King)
-
-
-Daniel Thompson (5):
-  arm: fiq: Replace default FIQ handler
-  arm64: Introduce dummy version of asm/fiq.h
-  irqchip: gic: Add support for IPI FIQ
-  ARM: add basic support for on-demand backtrace of other CPUs
-  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
-
-Russell King (1):
-  ARM: remove unused do_unexp_fiq() function
-
- arch/arm/include/asm/irq.h      |   5 ++
- arch/arm/include/asm/smp.h      |   3 +
- arch/arm/kernel/entry-armv.S    |  95 ++++++++++++++++++++++++---
- arch/arm/kernel/entry-header.S  |  47 ++++++++++++++
- arch/arm/kernel/setup.c         |   8 ++-
- arch/arm/kernel/smp.c           |  64 ++++++++++++++++++
- arch/arm/kernel/traps.c         |  32 ++++++++-
- arch/arm64/include/asm/fiq.h    |   8 +++
- drivers/irqchip/irq-gic.c       | 140 ++++++++++++++++++++++++++++++++++++++--
- include/linux/irqchip/arm-gic.h |   3 +
- 10 files changed, 386 insertions(+), 19 deletions(-)
- create mode 100644 arch/arm64/include/asm/fiq.h
-
---
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index c8e4bb7..a447dcc 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -460,12 +460,6 @@ die_sig:
+ 	arm_notify_die("Oops - undefined instruction", regs, &info, 0, 6);
+ }
+ 
+-asmlinkage void do_unexp_fiq (struct pt_regs *regs)
+-{
+-	printk("Hmm.  Unexpected FIQ received, but trying to continue\n");
+-	printk("You may have a hardware problem...\n");
+-}
+-
+ /*
+  * bad_mode handles the impossible case in the vectors.  If you see one of
+  * these, then it's extremely serious, and could mean you have buggy hardware.
+-- 
 1.9.3
 
