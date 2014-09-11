@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaIKR01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:26:27 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:64320 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaIKR0Z (ORCPT
+	id S1753374AbaIKR1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:27:11 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:59741 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaIKR1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:26:25 -0400
-Date: Thu, 11 Sep 2014 12:26:19 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Aaron Tomlin'" <atomlin@redhat.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "jcastillo@redhat.com" <jcastillo@redhat.com>,
-        "riel@redhat.com" <riel@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "mingo@kernel.com" <mingo@kernel.com>,
-        "bmr@redhat.com" <bmr@redhat.com>,
-        "prarit@redhat.com" <prarit@redhat.com>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "aneesh.kumar@linux.vnet.ibm.com" <aneesh.kumar@linux.vnet.ibm.com>,
-        "akpm@google.com" <akpm@google.com>, "jgh@redhat.com" <jgh@redhat.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "pzijlstr@redhat.com" <pzijlstr@redhat.com>
-Subject: Re: [PATCH v3 0/3] sched: Always check the integrity of the canary
-Message-ID: <20140911122619.51ed1918@as>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17490245@AcuExch.aculab.com>
-References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
-	<1410450088-18236-1-git-send-email-atomlin@redhat.com>
-	<063D6719AE5E284EB5DD2968C1650D6D17490245@AcuExch.aculab.com>
+	Thu, 11 Sep 2014 13:27:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140911161517.GA3190@worktop.ger.corp.intel.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org> <20140911161517.GA3190@worktop.ger.corp.intel.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Thu, 11 Sep 2014 19:26:48 +0200
+Message-ID: <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014 16:02:45 +0000
-David Laight <David.Laight@ACULAB.COM> wrote:
+On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
+>> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
+>> +                     struct lb_env *env)
+>>  {
+>> +     if ((sgs->group_capacity_orig * 100) >
+>> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+>> +             return 1;
+>> +
+>> +     if (sgs->sum_nr_running < sgs->group_weight)
+>> +             return 1;
+>>
+>> +     return 0;
+>> +}
+>>
+>> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
+>> +                     struct lb_env *env)
+>> +{
+>> +     if (sgs->sum_nr_running <= sgs->group_weight)
+>> +             return 0;
+>>
+>> +     if ((sgs->group_capacity_orig * 100) <
+>> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+>> +             return 1;
+>>
+>> +     return 0;
+>>  }
+>
+> I'm confused about the utilization vs capacity_orig. I see how we should
 
-> From: Aaron Tomlin
-> > Currently in the event of a stack overrun a call to schedule()
-> > does not check for this type of corruption. This corruption is
-> > often silent and can go unnoticed. However once the corrupted
-> > region is examined at a later stage, the outcome is undefined
-> > and often results in a sporadic page fault which cannot be
-> > handled.
-> > 
-> > The first patch adds a canary to init_task's end of stack.
-> > While the second patch provides a helper to determine the
-> > integrity of the canary. The third checks for a stack
-> > overrun and takes appropriate action since the damage
-> > is already done, there is no point in continuing.
-> 
-> Clearly you've just been 'bitten' by a kernel stack overflow.
-> But a simple 'canary' isn't going to find most of the overflows
-> and will give an incorrect 'sense of security'.
-> 
-> The canary will only work if the stack is densely written.
-> In practise the stack alignment rules create gaps, and the
-> most likely reason for overflow is a large on-stack buffer
-> that isn't actually written to.
-> 
-> The only real way to detect kernel stack overflow is to arrange
-> for an unmapped page beyond the stack.
-> That costs KVA, but not much else.
-> 
+1st point is that I should compare utilization vs capacity and not
+capacity_orig.
+I should have replaced capacity_orig by capacity in the functions
+above when i move the utilization statistic from
+rq->avg.runnable_avg_sum to cfs.usage_load_avg.
+rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
+cfs.usage_load_avg integrates only cfs tasks
 
-That doesn't work either, because the threadinfo sits between the end of the
-stack and the beginning of the next page, making it possible to corrupt critical
-data without running off the page.
+With this change, we don't need sgs->group_capacity_orig anymore but
+only sgs->group_capacity. So sgs->group_capacity_orig can be removed
+as it's no more used in the code as sg_capacity_factor has been
+removed
 
+> maybe scale things with the capacity when comparing between CPUs/groups,
+> but not on the same CPU/group.
+>
+> I would have expected something simple like:
+>
+> static inline bool group_has_capacity()
+> {
+>         /* Is there a spare cycle? */
+>         if (sgs->group_utilization < sgs->group_weight * SCHED_LOAD_SCALE)
+>                 return true;
+>
+>         /* Are there less tasks than logical CPUs? */
+>         if (sgs->sum_nr_running < sgs->group_weight)
+>                 return true;
+>
+>         return false;
+> }
+>
+> Where group_utilization a pure sum of running_avg.
+>
+> Now this has a hole when there are RT tasks on the system, in that case
+> the utilization will never hit 1, but we could fix that another way. I
+> don't think the capacity_orig thing is right.
