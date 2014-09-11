@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909AbaIKOJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:09:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12864 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752400AbaIKOCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:02:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="384738306"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC Part2 v1 02/21] genirq: Introduce helper functions to support stacked irq_chip
-Date: Thu, 11 Sep 2014 22:03:29 +0800
-Message-Id: <1410444228-3134-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1755238AbaIKOLB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:11:01 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51020 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaIKOLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:11:00 -0400
+Date: Thu, 11 Sep 2014 16:10:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140911141051.GK22042@dhcp22.suse.cz>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <2362560.tfnxFWQpxu@vostro.rjw.lan>
+ <20140911140448.GJ22042@dhcp22.suse.cz>
+ <1943936.s0DGHUisGb@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1943936.s0DGHUisGb@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we already support hierarchy irq_datas, so introduce several helpers
-to support stacked irq_chips.
+On Thu 11-09-14 16:26:56, Rafael J. Wysocki wrote:
+> On Thursday, September 11, 2014 04:04:48 PM Michal Hocko wrote:
+> > On Thu 11-09-14 16:17:56, Rafael J. Wysocki wrote:
+> > [...]
+> > > And I'm still wondering if the OOM killer may be made avoid killing frozen
+> > > tasks.
+> > 
+> > This is really tricky. OOM killer aims at the biggest memory hog. We
+> > shouldn't ignore it just because it hides into the fridge... So even
+> > if we "fix" oom killer to ignore frozen tasks (which is inherently
+> > racy btw.) then we have a potential problem of freezer abuse (e.g. in
+> > container environments). So I strongly believe that the OOM killer has
+> > to be able to kill a frozen tasks.
+> 
+> OK
+> 
+> Is the OOM killer the only place where TIF_MEMDIE is set?
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- include/linux/irq.h |    5 +++++
- kernel/irq/chip.c   |   18 ++++++++++++++++++
- 2 files changed, 23 insertions(+)
+Yes. To be precise, lowmemorykiller (staging android thingy), global OOM
+killer and memcg OOM killer. Any other users would be an abuse.
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 4b74565690ce..bfa027f6814a 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -433,6 +433,11 @@ extern void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc);
- extern void handle_bad_irq(unsigned int irq, struct irq_desc *desc);
- extern void handle_nested_irq(unsigned int irq);
- 
-+#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+extern void irq_chip_ack_parent(struct irq_data *data);
-+extern int irq_chip_retrigger_hierarchy(struct irq_data *data);
-+#endif
-+
- /* Handling of unhandled and spurious interrupts: */
- extern void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 			   irqreturn_t action_ret);
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 46bd5e2190c3..b8ee27efde73 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -821,3 +821,21 @@ void irq_cpu_offline(void)
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	}
- }
-+
-+#ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
-+void irq_chip_ack_parent(struct irq_data *data)
-+{
-+	data = data->parent_data;
-+	if (data && data->chip && data->chip->irq_ack)
-+		data->chip->irq_ack(data);
-+}
-+
-+int irq_chip_retrigger_hierarchy(struct irq_data *data)
-+{
-+	for (data = data->parent_data; data; data = data->parent_data)
-+		if (data->chip && data->chip->irq_retrigger)
-+			return data->chip->irq_retrigger(data);
-+
-+	return -ENOSYS;
-+}
-+#endif
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
