@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793AbaIKOtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:49:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22696 "EHLO
+	id S1755547AbaIKOtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:49:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41665 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752400AbaIKOtK (ORCPT
+	by vger.kernel.org with ESMTP id S1752434AbaIKOtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 10:49:10 -0400
-Message-Id: <20140911144744.907770249@goodmis.org>
+Message-Id: <20140911144908.056256622@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 11 Sep 2014 10:47:44 -0400
+Date: Thu, 11 Sep 2014 10:47:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 0/9] ftrace: 3.18 queue
-X-RR-Connecting-IP: 107.14.168.142:25
+Subject: [for-next][PATCH 3/9] ftrace: Set callback to ftrace_stub when no ops are registered
+References: <20140911144744.907770249@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0003-ftrace-Set-callback-to-ftrace_stub-when-no-ops-are-r.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-This is my current queue for 3.18. The main update is a rewrite of the
-trampoline accounting to get rid of the large memory usage needed
-when having a trampoline for all functions (the current method creates
-a descriptor for each function). The new way uses the current logic
-of the hash tables, where an empty hash can mean all functions and
-also the use of the notrace hash for all but a few functions.
+The clean up that adds the helper function ftrace_ops_get_func()
+caused the default function to not change when DYNAMIC_FTRACE was not
+set and no ftrace_ops were registered. Although static tracing is
+not very useful (not having DYNAMIC_FTRACE set), it is still supported
+and we don't want to break it.
 
-OFF TOPIC:
+Clean up the if statement even more to specifically have the default
+function call ftrace_stub when no ftrace_ops are registered. This
+fixes the small bug for static tracing as well as makes the code a
+bit more understandable.
 
-As some of you may know, I've recently been having chronic pain
-in my upper back, shoulder and down the arm. This has not let up, although
-the narcotic drugs and steroids I've been prescribed has helped a lot.
-Technically, I'm not suppose to be using a computer at all. But I couldn't
-help myself and spent a few minutes here and there working on getting
-these patches to pass all my tests. Note that I usually paid for that
-work with an hour or so of more pain down the arm. There is a good chance
-I will be having spinal surgery in the near future to remove the problem
-cervical discs and have those vertebra fused. Hopefully, I will be back
-to 100% shortly afterward. But until then, I will still be on hiatus from
-the community again. But hopefully not for too long.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-for-next
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index dabf734f909c..708aea493d96 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -254,17 +254,24 @@ static void update_ftrace_function(void)
+ 	ftrace_func_t func;
+ 
+ 	/*
++	 * Prepare the ftrace_ops that the arch callback will use.
++	 * If there's only one ftrace_ops registered, the ftrace_ops_list
++	 * will point to the ops we want.
++	 */
++	set_function_trace_op = ftrace_ops_list;
++
++	/* If there's no ftrace_ops registered, just call the stub function */
++	if (ftrace_ops_list == &ftrace_list_end) {
++		func = ftrace_stub;
++
++	/*
+ 	 * If we are at the end of the list and this ops is
+ 	 * recursion safe and not dynamic and the arch supports passing ops,
+ 	 * then have the mcount trampoline call the function directly.
+ 	 */
+-	if (ftrace_ops_list == &ftrace_list_end ||
+-	    (ftrace_ops_list->next == &ftrace_list_end)) {
+-
+-		/* Set the ftrace_ops that the arch callback uses */
+-		set_function_trace_op = ftrace_ops_list;
+-
++	} else if (ftrace_ops_list->next == &ftrace_list_end) {
+ 		func = ftrace_ops_get_func(ftrace_ops_list);
++
+ 	} else {
+ 		/* Just use the default ftrace_ops */
+ 		set_function_trace_op = &ftrace_list_end;
+-- 
+2.0.1
 
-Head SHA1: fb5a613b4f310d6d520daf295547ab35b0ac58a3
 
-
-Andreea-Cristina Bernat (1):
-      kernel: trace_syscalls: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-
-Dave Hansen (1):
-      tracing: generate RCU warnings even when tracepoints are disabled
-
-Steven Rostedt (Red Hat) (7):
-      ftrace: Add separate function for non recursive callbacks
-      ftrace: Add helper function ftrace_ops_get_func()
-      ftrace: Set callback to ftrace_stub when no ops are registered
-      ftrace: Remove freeing of old_hash from ftrace_hash_move()
-      ftrace: Grab any ops for a rec for enabled_functions output
-      ftrace: Annotate the ops operation on update
-      ftrace: Replace tramp_hash with old_*_hash to save space
-
-----
- include/linux/ftrace.h        |  10 +-
- include/linux/tracepoint.h    |  11 ++
- kernel/trace/ftrace.c         | 401 ++++++++++++++++++++++++------------------
- kernel/trace/trace_syscalls.c |   4 +-
- 4 files changed, 248 insertions(+), 178 deletions(-)
