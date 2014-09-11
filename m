@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaIKMn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:43:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51644 "EHLO
+	id S1755683AbaIKMoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:44:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51661 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755435AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755444AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guenter Roeck" <linux@roeck-us.net>,
-        "Axel Lin" <axel.lin@ingics.com>
+CC: akpm@linux-foundation.org, "Ronald Wahl" <ronald.wahl@raritan.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.384398996@decadent.org.uk>
+Message-ID: <lsq.1410438733.167801007@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 050/131] hwmon: (sis5595) Prevent overflow problem
- when writing large limits
+Subject: [PATCH 3.2 061/131] carl9170: fix sending URBs with wrong type
+ when using full-speed
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +32,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Ronald Wahl <ronald.wahl@raritan.com>
 
-commit cc336546ddca8c22de83720632431c16a5f9fe9a upstream.
+commit 671796dd96b6cd85b75fba9d3007bcf7e5f7c309 upstream.
 
-On platforms with sizeof(int) < sizeof(long), writing a temperature
-limit larger than MAXINT will result in unpredictable limit values
-written to the chip. Avoid auto-conversion from long to int to fix
-the problem.
+The driver assumes that endpoint 4 is always an interrupt endpoint.
+Unfortunately the type differs between high-speed and full-speed
+configurations while in the former case it is indeed an interrupt
+endpoint this is not true for the latter case - here it is a bulk
+endpoint. When sending URBs with the wrong type the kernel will
+generate a warning message including backtrace. In this specific
+case there will be a huge amount of warnings which can bring the system
+to freeze.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+To fix this we are now sending URBs to endpoint 4 using the type
+found in the endpoint descriptor.
+
+A side note: The carl9170 firmware currently specifies endpoint 4 as
+interrupt endpoint even in the full-speed configuration but this has
+no relevance because before this firmware is loaded the endpoint type
+is as described above and after the firmware is running the stick is not
+reenumerated and so the old descriptor is used.
+
+Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/sis5595.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/carl9170/carl9170.h |  1 +
+ drivers/net/wireless/ath/carl9170/usb.c      | 31 ++++++++++++++++++++++++----
+ 2 files changed, 28 insertions(+), 4 deletions(-)
 
---- a/drivers/hwmon/sis5595.c
-+++ b/drivers/hwmon/sis5595.c
-@@ -149,7 +149,7 @@ static inline int TEMP_FROM_REG(s8 val)
+--- a/drivers/net/wireless/ath/carl9170/carl9170.h
++++ b/drivers/net/wireless/ath/carl9170/carl9170.h
+@@ -265,6 +265,7 @@ struct ar9170 {
+ 	atomic_t rx_work_urbs;
+ 	atomic_t rx_pool_urbs;
+ 	kernel_ulong_t features;
++	bool usb_ep_cmd_is_bulk;
+ 
+ 	/* firmware settings */
+ 	struct completion fw_load_wait;
+--- a/drivers/net/wireless/ath/carl9170/usb.c
++++ b/drivers/net/wireless/ath/carl9170/usb.c
+@@ -614,9 +614,16 @@ int __carl9170_exec_cmd(struct ar9170 *a
+ 		goto err_free;
+ 	}
+ 
+-	usb_fill_int_urb(urb, ar->udev, usb_sndintpipe(ar->udev,
+-		AR9170_USB_EP_CMD), cmd, cmd->hdr.len + 4,
+-		carl9170_usb_cmd_complete, ar, 1);
++	if (ar->usb_ep_cmd_is_bulk)
++		usb_fill_bulk_urb(urb, ar->udev,
++				  usb_sndbulkpipe(ar->udev, AR9170_USB_EP_CMD),
++				  cmd, cmd->hdr.len + 4,
++				  carl9170_usb_cmd_complete, ar);
++	else
++		usb_fill_int_urb(urb, ar->udev,
++				 usb_sndintpipe(ar->udev, AR9170_USB_EP_CMD),
++				 cmd, cmd->hdr.len + 4,
++				 carl9170_usb_cmd_complete, ar, 1);
+ 
+ 	if (free_buf)
+ 		urb->transfer_flags |= URB_FREE_BUFFER;
+@@ -1025,9 +1032,10 @@ static void carl9170_usb_firmware_step2(
+ static int carl9170_usb_probe(struct usb_interface *intf,
+ 			      const struct usb_device_id *id)
  {
- 	return val * 830 + 52120;
- }
--static inline s8 TEMP_TO_REG(int val)
-+static inline s8 TEMP_TO_REG(long val)
- {
- 	int nval = SENSORS_LIMIT(val, -54120, 157530) ;
- 	return nval<0 ? (nval-5212-415)/830 : (nval-5212+415)/830;
++	struct usb_endpoint_descriptor *ep;
+ 	struct ar9170 *ar;
+ 	struct usb_device *udev;
+-	int err;
++	int i, err;
+ 
+ 	err = usb_reset_device(interface_to_usbdev(intf));
+ 	if (err)
+@@ -1043,6 +1051,21 @@ static int carl9170_usb_probe(struct usb
+ 	ar->intf = intf;
+ 	ar->features = id->driver_info;
+ 
++	/* We need to remember the type of endpoint 4 because it differs
++	 * between high- and full-speed configuration. The high-speed
++	 * configuration specifies it as interrupt and the full-speed
++	 * configuration as bulk endpoint. This information is required
++	 * later when sending urbs to that endpoint.
++	 */
++	for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; ++i) {
++		ep = &intf->cur_altsetting->endpoint[i].desc;
++
++		if (usb_endpoint_num(ep) == AR9170_USB_EP_CMD &&
++		    usb_endpoint_dir_out(ep) &&
++		    usb_endpoint_type(ep) == USB_ENDPOINT_XFER_BULK)
++			ar->usb_ep_cmd_is_bulk = true;
++	}
++
+ 	usb_set_intfdata(intf, ar);
+ 	SET_IEEE80211_DEV(ar->hw, &intf->dev);
+ 
 
