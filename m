@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaIKHKh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 03:10:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55734 "EHLO mx2.suse.de"
+	id S1752595AbaIKHNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 03:13:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17191 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014AbaIKHKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 03:10:36 -0400
-Date: Thu, 11 Sep 2014 17:10:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] rhashtable: remove duplicate comment.
-Message-ID: <20140911171019.223c287f@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751355AbaIKHNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 03:13:19 -0400
+Message-ID: <54114B21.1080102@redhat.com>
+Date: Thu, 11 Sep 2014 09:11:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/uz69dv/reeff2HaIMqg_6Bq"; protocol="application/pgp-signature"
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, gleb@kernel.org,
+        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com,
+        xiantao.zhang@intel.com, agraf@suse.de, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH] KVM: EVENTFD: remove inclusion of irq.h
+References: <1409560568-6911-1-git-send-email-eric.auger@linaro.org> <54044647.4030605@redhat.com> <20140911030932.GA2784@lvm>
+In-Reply-To: <20140911030932.GA2784@lvm>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/uz69dv/reeff2HaIMqg_6Bq
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Il 11/09/2014 05:09, Christoffer Dall ha scritto:
+> On Mon, Sep 01, 2014 at 12:11:19PM +0200, Paolo Bonzini wrote:
+>> Il 01/09/2014 10:36, Eric Auger ha scritto:
+>>> No more needed. irq.h would be void on ARM.
+>>>
+>>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>>>
+>>> ---
+>>>
+>>> I don't think irq.h is needed anymore since Paul Mackerras' work. However
+>>> I did not compile for all architectures.
+>>> ---
+>>>  virt/kvm/eventfd.c | 1 -
+>>>  1 file changed, 1 deletion(-)
+>>>
+>>> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+>>> index 3c5981c..0c712a7 100644
+>>> --- a/virt/kvm/eventfd.c
+>>> +++ b/virt/kvm/eventfd.c
+>>> @@ -36,7 +36,6 @@
+>>>  #include <linux/seqlock.h>
+>>>  #include <trace/events/kvm.h>
+>>>  
+>>> -#include "irq.h"
+>>>  #include "iodev.h"
+>>>  
+>>>  #ifdef CONFIG_HAVE_KVM_IRQFD
+>>>
+>>
+>> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+>>
+>> Christoffer, please include this via the ARM tree, together with ARM
+>> irqfd support.  Thanks,
+>>
+> Marc is dealing with the tree this week and the next so he can apply it
+> to kvmarm/queue.  Do you want it to wait and go with the irqfd patch
+> (which has dependencies not yet resolved) or should we just queue it?
 
+As you prefer.
 
-
-The second comment is identical to the earlier comment, just indented
-a bit. This is confusing, so remove it.
-
-Also expand that first comment to mention the splicing that happens.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-
-diff --git a/lib/rhashtable.c b/lib/rhashtable.c
-index a2c78810ebc1..8fd2f21d022a 100644
---- a/lib/rhashtable.c
-+++ b/lib/rhashtable.c
-@@ -309,15 +309,12 @@ int rhashtable_shrink(struct rhashtable *ht, gfp_t fl=
-ags)
-=20
- 	/* Link each bucket in the new table to the =EF=AC=81rst bucket
- 	 * in the old table that contains entries which will hash
--	 * to the new bucket.
-+	 * to the new bucket, and then splice in the second
-+	 * bucket from the old table.
- 	 */
- 	for (i =3D 0; i < ntbl->size; i++) {
- 		ntbl->buckets[i] =3D tbl->buckets[i];
-=20
--		/* Link each bucket in the new table to the =EF=AC=81rst bucket
--		 * in the old table that contains entries which will hash
--		 * to the new bucket.
--		 */
- 		for (pprev =3D &ntbl->buckets[i]; *pprev !=3D NULL;
- 		     pprev =3D &rht_dereference(*pprev, ht)->next)
- 			;
-
---Sig_/uz69dv/reeff2HaIMqg_6Bq
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVBFK2znsnt1WYoG5AQL4HRAAulKtQ+FXFUXMHLiyskEpjljXZIbd/qNn
-Wnz+Uk44yZoQ8RUSyYZbSZZU14YM6M6bcuR5w6/4U3XoXGyUZmBQOV82sU9HllUT
-lyQMfRJhFSpkfscmkRPvTIZHobARUDDoV76k+sKRwYG63yoZ19IAKg/NV8zOqo6X
-Bw042Yue8mi8mqdFsUdBYiM/Nd3g0WWYNe1RSpDv+GSomh0Wudjswegaq3oZsqGj
-7W1yoCkHdqXlzWWMcV8RtFT0421vUPzZB6CL494N36/BrVVAsSPZkAURDBRGd4KY
-i0Ua0bw9efjZrg4xpqx4iyPzFNI5JP/s0F0fbQCgbi2HkPXPQQ2pyTY0t/MXO9p1
-zKzUBLKjZaboR3GX0PLXX8eOTKdyAovmrrKB+74LLeEFFgP4A6SQ4xYCkUqbXau3
-CajS4mNMYJnvSIz4B52XvJHrbFNAFRBEivavL0oes0TCfFWILdfIz1hQD30PhtG/
-aBuLZ+SsvnAe4lWuc+uAHTdT9/hS/09xsydkBtfDdQjZLXDq1r7oORTMSbupetjN
-uMAjwnw1XMsvr2K7NuMs4aZtD4+/X5e/aWB+DCh5/2TvsUqraJEkAPp1AI7fVLdo
-0hOaRbnQJqWCPMri1I+YNw9PA05v9tWUyMhwCpToFwOEz4hevui5sxGa5Yr/0DpO
-saeTai3btsA=
-=pM7x
------END PGP SIGNATURE-----
-
---Sig_/uz69dv/reeff2HaIMqg_6Bq--
+Paolo
