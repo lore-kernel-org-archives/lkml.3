@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaIKMeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:34:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51476 "EHLO
+	id S1755140AbaIKMfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:35:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51887 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754992AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755498AbaIKMeM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:04 -0400
+	Thu, 11 Sep 2014 08:34:12 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Thu, 11 Sep 2014 13:32:14 +0100
-Message-ID: <lsq.1410438734.230798163@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        "Zhangjin Wu" <wuzhangjin@gmail.com>, linux-mips@linux-mips.org,
+        "Fuxin Zhang" <zhangfx@lemote.com>, "Binbin Zhou" <zhoubb@lemote.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Huacai Chen" <chenhc@lemote.com>, "John Crispin" <john@phrozen.org>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.213733521@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 130/131] x86/espfix/xen: Fix allocation of pages for
- paravirt  page tables
+Subject: [PATCH 3.2 029/131] MIPS: tlbex: Fix a missing statement for HUGETLB
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,57 +34,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
+commit 8393c524a25609a30129e4a8975cf3b91f6c16a5 upstream.
 
-init_espfix_ap() is currently off by one level when informing hypervisor
-that allocated pages will be used for ministacks' page tables.
+In commit 2c8c53e28f1 (MIPS: Optimize TLB handlers for Octeon CPUs)
+build_r4000_tlb_refill_handler() is modified. But it doesn't compatible
+with the original code in HUGETLB case. Because there is a copy & paste
+error and one line of code is missing. It is very easy to produce a bug
+with LTP's hugemmap05 test.
 
-The most immediate effect of this on a PV guest is that if
-'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
-will refuse to use it for a page table (which it shouldn't be anyway). This will
-result in warnings by both Xen and Linux.
-
-More importantly, a subsequent write to that page (again, by a PV guest) is
-likely to result in fatal page fault.
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/7496/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/espfix_64.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/mips/mm/tlbex.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/espfix_64.c
-+++ b/arch/x86/kernel/espfix_64.c
-@@ -175,7 +175,7 @@ void init_espfix_ap(void)
- 	if (!pud_present(pud)) {
- 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
- 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
- 			set_pud(&pud_p[n], pud);
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -1282,6 +1282,7 @@ static void __cpuinit build_r4000_tlb_re
  	}
-@@ -185,7 +185,7 @@ void init_espfix_ap(void)
- 	if (!pmd_present(pmd)) {
- 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
- 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
--		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
-+		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
- 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
- 			set_pmd(&pmd_p[n], pmd);
- 	}
-@@ -193,7 +193,6 @@ void init_espfix_ap(void)
- 	pte_p = pte_offset_kernel(&pmd, addr);
- 	stack_page = (void *)__get_free_page(GFP_KERNEL);
- 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
--	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
- 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
- 		set_pte(&pte_p[n*PTE_STRIDE], pte);
- 
+ #ifdef CONFIG_HUGETLB_PAGE
+ 	uasm_l_tlb_huge_update(&l, p);
++	UASM_i_LW(&p, K0, 0, K1);
+ 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
+ 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
+ 				   htlb_info.restore_scratch);
 
