@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaIKNAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51548 "EHLO
+	id S1753266AbaIKNAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51553 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755390AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755393AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lv Zheng" <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
+        "Chris Evans" <cevans@google.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.869697595@decadent.org.uk>
+Message-ID: <lsq.1410438733.563804636@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 086/131] ACPI / EC: Add support to disallow QR_EC to
- be issued when SCI_EVT isn't set
+Subject: [PATCH 3.2 081/131] isofs: Fix unbounded recursion when
+ processing relocated directories
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,81 +32,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08 upstream.
+commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4 upstream.
 
-There is a platform refusing to respond QR_EC when SCI_EVT isn't set
-(Acer Aspire V5-573G).
+We did not check relocated directory in any way when processing Rock
+Ridge 'CL' tag. Thus a corrupted isofs image can possibly have a CL
+entry pointing to another CL entry leading to possibly unbounded
+recursion in kernel code and thus stack overflow or deadlocks (if there
+is a loop created from CL entries).
 
-Currently, we rely on the behaviour that the EC firmware can respond
-something (for example, 0x00 to indicate "no outstanding events") to
-QR_EC even when SCI_EVT is not set, but the reporter has complained
-about AC/battery pluging/unpluging and video brightness change delay
-on that platform.
+Fix the problem by not allowing CL entry to point to a directory entry
+with CL entry (such use makes no good sense anyway) and by checking
+whether CL entry doesn't point to itself.
 
-This is because the work item that has issued QR_EC has to wait until
-timeout in this case, and the _Qxx method evaluation work item queued
-after QR_EC one is delayed.
-
-It sounds reasonable to fix this issue by:
- 1. Implementing SCI_EVT sanity check before issuing QR_EC in the EC
-    driver's main state machine.
- 2. Moving QR_EC issuing out of the work queue used by _Qxx evaluation
-    to a seperate IRQ handling thread.
-
-This patch fixes this issue using solution 1.
-
-By disallowing QR_EC to be issued when SCI_EVT isn't set, we are able to
-handle such platform in the EC driver's main state machine. This patch
-enhances the state machine in this way to survive with such malfunctioning
-EC firmware.
-
-Note that this patch can also fix CLEAR_ON_RESUME quirk which also relies
-on the assumption that the platforms are able to respond even when SCI_EVT
-isn't set.
-
-Fixes: c0d653412fc8 ACPI / EC: Fix race condition in ec_transaction_completed()
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
-Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Chris Evans <cevans@google.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/ec.c | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ fs/isofs/inode.c | 15 ++++++++-------
+ fs/isofs/isofs.h | 23 +++++++++++++++++++----
+ fs/isofs/rock.c  | 39 ++++++++++++++++++++++++++++-----------
+ 3 files changed, 55 insertions(+), 22 deletions(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -193,6 +193,8 @@ static bool advance_transaction(struct a
- 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
- 				if (t->rlen == t->ri) {
- 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+					if (t->command == ACPI_EC_COMMAND_QUERY)
-+						pr_debug("hardware QR_EC completion\n");
- 					wakeup = true;
- 				}
- 			} else
-@@ -204,7 +206,20 @@ static bool advance_transaction(struct a
- 		}
- 		return wakeup;
- 	} else {
--		if ((status & ACPI_EC_FLAG_IBF) == 0) {
-+		/*
-+		 * There is firmware refusing to respond QR_EC when SCI_EVT
-+		 * is not set, for which case, we complete the QR_EC
-+		 * without issuing it to the firmware.
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
-+		 */
-+		if (!(status & ACPI_EC_FLAG_SCI) &&
-+		    (t->command == ACPI_EC_COMMAND_QUERY)) {
-+			t->flags |= ACPI_EC_COMMAND_POLL;
-+			t->rdata[t->ri++] = 0x00;
-+			t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+			pr_debug("software QR_EC completion\n");
-+			wakeup = true;
-+		} else if ((status & ACPI_EC_FLAG_IBF) == 0) {
- 			acpi_ec_write_cmd(ec, t->command);
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
+--- a/fs/isofs/inode.c
++++ b/fs/isofs/inode.c
+@@ -68,7 +68,7 @@ static void isofs_put_super(struct super
+ 	return;
+ }
+ 
+-static int isofs_read_inode(struct inode *);
++static int isofs_read_inode(struct inode *, int relocated);
+ static int isofs_statfs (struct dentry *, struct kstatfs *);
+ 
+ static struct kmem_cache *isofs_inode_cachep;
+@@ -1263,7 +1263,7 @@ out_toomany:
+ 	goto out;
+ }
+ 
+-static int isofs_read_inode(struct inode *inode)
++static int isofs_read_inode(struct inode *inode, int relocated)
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	struct isofs_sb_info *sbi = ISOFS_SB(sb);
+@@ -1408,7 +1408,7 @@ static int isofs_read_inode(struct inode
+ 	 */
+ 
+ 	if (!high_sierra) {
+-		parse_rock_ridge_inode(de, inode);
++		parse_rock_ridge_inode(de, inode, relocated);
+ 		/* if we want uid/gid set, override the rock ridge setting */
+ 		if (sbi->s_uid_set)
+ 			inode->i_uid = sbi->s_uid;
+@@ -1487,9 +1487,10 @@ static int isofs_iget5_set(struct inode
+  * offset that point to the underlying meta-data for the inode.  The
+  * code below is otherwise similar to the iget() code in
+  * include/linux/fs.h */
+-struct inode *isofs_iget(struct super_block *sb,
+-			 unsigned long block,
+-			 unsigned long offset)
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated)
+ {
+ 	unsigned long hashval;
+ 	struct inode *inode;
+@@ -1511,7 +1512,7 @@ struct inode *isofs_iget(struct super_bl
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	if (inode->i_state & I_NEW) {
+-		ret = isofs_read_inode(inode);
++		ret = isofs_read_inode(inode, relocated);
+ 		if (ret < 0) {
+ 			iget_failed(inode);
+ 			inode = ERR_PTR(ret);
+--- a/fs/isofs/isofs.h
++++ b/fs/isofs/isofs.h
+@@ -107,7 +107,7 @@ extern int iso_date(char *, int);
+ 
+ struct inode;		/* To make gcc happy */
+ 
+-extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *);
++extern int parse_rock_ridge_inode(struct iso_directory_record *, struct inode *, int relocated);
+ extern int get_rock_ridge_filename(struct iso_directory_record *, char *, struct inode *);
+ extern int isofs_name_translate(struct iso_directory_record *, char *, struct inode *);
+ 
+@@ -118,9 +118,24 @@ extern struct dentry *isofs_lookup(struc
+ extern struct buffer_head *isofs_bread(struct inode *, sector_t);
+ extern int isofs_get_blocks(struct inode *, sector_t, struct buffer_head **, unsigned long);
+ 
+-extern struct inode *isofs_iget(struct super_block *sb,
+-                                unsigned long block,
+-                                unsigned long offset);
++struct inode *__isofs_iget(struct super_block *sb,
++			   unsigned long block,
++			   unsigned long offset,
++			   int relocated);
++
++static inline struct inode *isofs_iget(struct super_block *sb,
++				       unsigned long block,
++				       unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 0);
++}
++
++static inline struct inode *isofs_iget_reloc(struct super_block *sb,
++					     unsigned long block,
++					     unsigned long offset)
++{
++	return __isofs_iget(sb, block, offset, 1);
++}
+ 
+ /* Because the inode number is no longer relevant to finding the
+  * underlying meta-data for an inode, we are free to choose a more
+--- a/fs/isofs/rock.c
++++ b/fs/isofs/rock.c
+@@ -288,12 +288,16 @@ eio:
+ 	goto out;
+ }
+ 
++#define RR_REGARD_XA 1
++#define RR_RELOC_DE 2
++
+ static int
+ parse_rock_ridge_inode_internal(struct iso_directory_record *de,
+-				struct inode *inode, int regard_xa)
++				struct inode *inode, int flags)
+ {
+ 	int symlink_len = 0;
+ 	int cnt, sig;
++	unsigned int reloc_block;
+ 	struct inode *reloc;
+ 	struct rock_ridge *rr;
+ 	int rootflag;
+@@ -305,7 +309,7 @@ parse_rock_ridge_inode_internal(struct i
+ 
+ 	init_rock_state(&rs, inode);
+ 	setup_rock_ridge(de, inode, &rs);
+-	if (regard_xa) {
++	if (flags & RR_REGARD_XA) {
+ 		rs.chr += 14;
+ 		rs.len -= 14;
+ 		if (rs.len < 0)
+@@ -485,12 +489,22 @@ repeat:
+ 					"relocated directory\n");
+ 			goto out;
+ 		case SIG('C', 'L'):
+-			ISOFS_I(inode)->i_first_extent =
+-			    isonum_733(rr->u.CL.location);
+-			reloc =
+-			    isofs_iget(inode->i_sb,
+-				       ISOFS_I(inode)->i_first_extent,
+-				       0);
++			if (flags & RR_RELOC_DE) {
++				printk(KERN_ERR
++				       "ISOFS: Recursive directory relocation "
++				       "is not supported\n");
++				goto eio;
++			}
++			reloc_block = isonum_733(rr->u.CL.location);
++			if (reloc_block == ISOFS_I(inode)->i_iget5_block &&
++			    ISOFS_I(inode)->i_iget5_offset == 0) {
++				printk(KERN_ERR
++				       "ISOFS: Directory relocation points to "
++				       "itself\n");
++				goto eio;
++			}
++			ISOFS_I(inode)->i_first_extent = reloc_block;
++			reloc = isofs_iget_reloc(inode->i_sb, reloc_block, 0);
+ 			if (IS_ERR(reloc)) {
+ 				ret = PTR_ERR(reloc);
+ 				goto out;
+@@ -637,9 +651,11 @@ static char *get_symlink_chunk(char *rpn
+ 	return rpnt;
+ }
+ 
+-int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode)
++int parse_rock_ridge_inode(struct iso_directory_record *de, struct inode *inode,
++			   int relocated)
+ {
+-	int result = parse_rock_ridge_inode_internal(de, inode, 0);
++	int flags = relocated ? RR_RELOC_DE : 0;
++	int result = parse_rock_ridge_inode_internal(de, inode, flags);
+ 
+ 	/*
+ 	 * if rockridge flag was reset and we didn't look for attributes
+@@ -647,7 +663,8 @@ int parse_rock_ridge_inode(struct iso_di
+ 	 */
+ 	if ((ISOFS_SB(inode->i_sb)->s_rock_offset == -1)
+ 	    && (ISOFS_SB(inode->i_sb)->s_rock == 2)) {
+-		result = parse_rock_ridge_inode_internal(de, inode, 14);
++		result = parse_rock_ridge_inode_internal(de, inode,
++							 flags | RR_REGARD_XA);
+ 	}
+ 	return result;
+ }
 
