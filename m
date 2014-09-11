@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaIKECz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 00:02:55 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:57542 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaIKECy (ORCPT
+	id S1752333AbaIKEEL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 00:04:11 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:42788 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaIKEEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 00:02:54 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "dsd@gentoo.org" <dsd@gentoo.org>,
-        "kune@deine-taler.de" <kune@deine-taler.de>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
-Thread-Topic: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
-Thread-Index: AQHPvfy4VhjwVefflUWmSbacV2I4ZZv7bmfA
-Date: Thu, 11 Sep 2014 04:02:49 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF4D490@EU-MBX-02.mgc.mentorg.com>
-References: <1407827133-29493-1-git-send-email-sanjeev_sharma@mentor.com>
-	 <FDC088D3B5555644AE135ED28A7ABDE94DF2FDC2@EU-MBX-02.mgc.mentorg.com>
-	 (sfid-20140819_083957_833442_DEE44B0A)
- <1408707084.4349.0.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1408707084.4349.0.camel@jlt4.sipsolutions.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 11 Sep 2014 00:04:08 -0400
 MIME-Version: 1.0
+In-Reply-To: <1410401092-8355-1-git-send-email-zyw@rock-chips.com>
+References: <1410401092-8355-1-git-send-email-zyw@rock-chips.com>
+Date: Wed, 10 Sep 2014 21:04:07 -0700
+X-Google-Sender-Auth: G-ySbdurz9GqOpoMGfKPMa44g00
+Message-ID: <CAD=FV=UHgyUgzqqbmGWnsjKxbbZcUMC__qfebbHAuj9EkJu18Q@mail.gmail.com>
+Subject: Re: [PATCH] RTC: RK808: remove tm_def structure
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        zhangqing <zhangqing@rock-chips.com>, xxx <xxx@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8B430Fg020974
 
------Original Message-----
-From: Johannes Berg [mailto:johannes@sipsolutions.net] 
-Sent: Friday, August 22, 2014 5:01 PM
-To: Sharma, Sanjeev
-Cc: dsd@gentoo.org; kune@deine-taler.de; linville@tuxdriver.com; linux-wireless@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+Chris,
 
-On Tue, 2014-08-19 at 06:39 +0000, Sharma, Sanjeev wrote:
-> Ping for review the patch.
+On Wed, Sep 10, 2014 at 7:04 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-> Make sure it compiles ...
+It's good to add a description, like:
 
-Any update on this patch ?
+If the date/time is invalid at bootup, there's no reason to set it to
+a bogus value.  We can just let the data and time be invalid until
+someone makes it valid.
 
-Regards
-Sanjeev Sharma
+> ---
+>
+>  drivers/rtc/rtc-rk808.c |   17 ++---------------
+>  1 file changed, 2 insertions(+), 15 deletions(-)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Other than the lack of description, this looks great.  It applies atop
+Andrew's patch to make tm_dev "static" and works like a charm.
+
+I tested by hacking the device with:
+  i2cset -f -y 0 0x1b 0x10 0xc1
+  i2cset -f -y 0 0x1b 3 0x32
+  i2cset -f -y 0 0x1b 0x10 0xc0
+
+That made it think it was the 32nd day of the month.  I then rebooted and saw:
+  [    3.371853] rk808-rtc rk808-rtc: invalid date/time
+  [    3.379115] rk808-rtc rk808-rtc: rtc core: registered rk808-rtc as rtc0
+  [    5.411574] rk808-rtc rk808-rtc: hctosys: invalid date/time
+
+I was still able to set the clock.  Once I did it worked fine.
+
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
