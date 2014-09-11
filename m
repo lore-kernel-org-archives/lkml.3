@@ -1,104 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757098AbaIKPwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:52:20 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59251 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842AbaIKPwP (ORCPT
+	id S1757125AbaIKPwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:52:49 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:53275 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416AbaIKPtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:52:15 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: olof@lixom.net
-Cc: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] clocksource: arch_timer: Allow the device tree to specify the physical timer
-Date: Thu, 11 Sep 2014 08:52:07 -0700
-Message-Id: <1410450727-8182-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Thu, 11 Sep 2014 11:49:42 -0400
+From: mathieu.poirier@linaro.org
+To: will.deacon@arm.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org
+Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        panchaxari.prasannamurthy@linaro.org, kaixu.xia@linaro.org,
+        marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
+        robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dsaxena@linaro.org, mathieu.poirier@linaro.org
+Subject: [PATCH 03/11 v6] coresight-tpiu: add CoreSight TPIU driver
+Date: Thu, 11 Sep 2014 09:49:10 -0600
+Message-Id: <1410450558-12358-4-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some 32-bit (ARMv7) systems are architected like this:
+From: Pratik Patel <pratikp@codeaurora.org>
 
-* The firmware doesn't know and doesn't care about hypervisor mode and
-  we don't want to add the complexity of hypervisor there.
+This driver manages CoreSight TPIU (Trace Port Interface Unit)
+which acts as a sink. TPIU is typically connected to some offchip
+hardware hosting a storage buffer.
 
-* The firmware isn't involved in SMP bringup or resume.
-
-* The ARCH timer come up with an uninitialized offset between the
-  virtual and physical counters.  Each core gets a different random
-  offset.
-
-On systems like the above, it doesn't make sense to use the virtual
-counter.  There's nobody managing the offset and each time a core goes
-down and comes back up it will get reinitialized to some other random
-value.
-
-Let's add a property to the device tree to say that we shouldn't use
-the virtual timer.  Firmware could potentially remove this property
-before passing the device tree to the kernel if it really wants the
-kernel to use a virtual timer.
-
-Note that it's been said that ARM64 (ARMv8) systems the firmware and
-kernel really can't be architected as described above.  That means
-using the physical timer like this really only makes sense for ARMv7
-systems.
-
-In order for this patch to do anything useful, we also need Sonny's
-patch at <https://patchwork.kernel.org/patch/4790921/>
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
+Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
- drivers/clocksource/arm_arch_timer.c                 | 3 +++
- 2 files changed, 9 insertions(+)
+ drivers/coresight/Makefile         |   2 +-
+ drivers/coresight/coresight-tpiu.c | 218 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 219 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-tpiu.c
 
-diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-index 37b2caf..876d32b 100644
---- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-+++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-@@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
- - always-on : a boolean property. If present, the timer is powered through an
-   always-on power domain, therefore it never loses context.
- 
-+** Optional properties:
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index 16e26c5..540df99 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -3,4 +3,4 @@
+ #
+ obj-$(CONFIG_CORESIGHT) += coresight.o
+ obj-$(CONFIG_OF) += of_coresight.o
+-obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o
++obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
+diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
+new file mode 100644
+index 0000000..c497afe
+--- /dev/null
++++ b/drivers/coresight/coresight-tpiu.c
+@@ -0,0 +1,218 @@
++/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+- arm,use-physical-timer : Don't ever use the virtual timer, just use the
-+  physical one.  Not supported for ARM64.
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
 +
++#include "coresight-priv.h"
 +
- Example:
- 
- 	timer {
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 5163ec1..8ca07a9 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -649,6 +649,9 @@ static void __init arch_timer_init(struct device_node *np)
- 		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
- 	arch_timer_detect_rate(NULL, np);
- 
-+	if (of_property_read_bool(np, "arm,use-physical-timer"))
-+		arch_timer_use_virtual = false;
++#define TPIU_SUPP_PORTSZ	0x000
++#define TPIU_CURR_PORTSZ	0x004
++#define TPIU_SUPP_TRIGMODES	0x100
++#define TPIU_TRIG_CNTRVAL	0x104
++#define TPIU_TRIG_MULT		0x108
++#define TPIU_SUPP_TESTPATM	0x200
++#define TPIU_CURR_TESTPATM	0x204
++#define TPIU_TEST_PATREPCNTR	0x208
++#define TPIU_FFSR		0x300
++#define TPIU_FFCR		0x304
++#define TPIU_FSYNC_CNTR		0x308
++#define TPIU_EXTCTL_INPORT	0x400
++#define TPIU_EXTCTL_OUTPORT	0x404
++#define TPIU_ITTRFLINACK	0xee4
++#define TPIU_ITTRFLIN		0xee8
++#define TPIU_ITATBDATA0		0xeec
++#define TPIU_ITATBCTR2		0xef0
++#define TPIU_ITATBCTR1		0xef4
++#define TPIU_ITATBCTR0		0xef8
 +
- 	/*
- 	 * If HYP mode is available, we know that the physical timer
- 	 * has been configured to be accessible from PL1. Use it, so
++/** register definition **/
++/* FFCR - 0x304 */
++#define FFCR_FON_MAN		BIT(6)
++
++/**
++ * @base:	memory mapped base address for this component.
++ * @dev:	the device entity associated to this component.
++ * @csdev:	component vitals needed by the framework.
++ * @clk:	the clock this component is associated to.
++ */
++struct tpiu_drvdata {
++	void __iomem		*base;
++	struct device		*dev;
++	struct coresight_device	*csdev;
++	struct clk		*clk;
++};
++
++static void tpiu_enable_hw(struct tpiu_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	/* TODO: fill this up */
++
++	CS_LOCK(drvdata->base);
++}
++
++static int tpiu_enable(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	int ret;
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	tpiu_enable_hw(drvdata);
++
++	dev_info(drvdata->dev, "TPIU enabled\n");
++	return 0;
++}
++
++static void tpiu_disable_hw(struct tpiu_drvdata *drvdata)
++{
++	CS_UNLOCK(drvdata->base);
++
++	/* clear formatter controle reg. */
++	writel_relaxed(0x0, drvdata->base + TPIU_FFCR);
++	/* generate manual flush */
++	writel_relaxed(FFCR_FON_MAN, drvdata->base + TPIU_FFCR);
++
++	CS_LOCK(drvdata->base);
++}
++
++static void tpiu_disable(struct coresight_device *csdev)
++{
++	struct tpiu_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++
++	tpiu_disable_hw(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "TPIU disabled\n");
++}
++
++static const struct coresight_ops_sink tpiu_sink_ops = {
++	.enable		= tpiu_enable,
++	.disable	= tpiu_disable,
++};
++
++static const struct coresight_ops tpiu_cs_ops = {
++	.sink_ops	= &tpiu_sink_ops,
++};
++
++static int tpiu_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	int ret;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct tpiu_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
++
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++		adev->dev.platform_data = pdata;
++	}
++
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	/* Disable tpiu to support older devices */
++	tpiu_disable_hw(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++
++	desc->type = CORESIGHT_DEV_TYPE_SINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_PORT;
++	desc->ops = &tpiu_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->owner = THIS_MODULE;
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev))
++		return PTR_ERR(drvdata->csdev);
++
++	dev_info(dev, "TPIU initialized\n");
++	return 0;
++}
++
++static int tpiu_remove(struct amba_device *adev)
++{
++	struct tpiu_drvdata *drvdata = amba_get_drvdata(adev);
++
++	coresight_unregister(drvdata->csdev);
++	return 0;
++}
++
++static struct amba_id tpiu_ids[] = {
++	{
++		.id	= 0x0003b912,
++		.mask	= 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver tpiu_driver = {
++	.drv = {
++		.name	= "coresight-tpiu",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= tpiu_probe,
++	.remove		= tpiu_remove,
++	.id_table	= tpiu_ids,
++};
++
++static int __init tpiu_init(void)
++{
++	return amba_driver_register(&tpiu_driver);
++}
++module_init(tpiu_init);
++
++static void __exit tpiu_exit(void)
++{
++	amba_driver_unregister(&tpiu_driver);
++}
++module_exit(tpiu_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.1
 
