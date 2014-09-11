@@ -1,49 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147AbaIKUnC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:43:02 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44349 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167AbaIKUnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:43:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
-References: <ghiol53r9u.fsf@lena.gouders.net>
-	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
-	<ghwq9k3m6z.fsf@lena.gouders.net>
-	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
-	<ghioku5l29.fsf@lena.gouders.net>
-	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
-	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
-Date: Thu, 11 Sep 2014 13:42:59 -0700
-X-Google-Sender-Auth: RbYPJYYOIM53E9aiZuWF-iW3oFc
-Message-ID: <CA+55aFx_Kgb6FcOoyQOb=7ud9VL4T3g2EoeOhuPAHUPa-+eG+A@mail.gmail.com>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Dirk Gouders <dirk@gouders.net>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S932173AbaIKUne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:43:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43569 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932149AbaIKUnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 16:43:33 -0400
+Date: Thu, 11 Sep 2014 22:43:30 +0200
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
+Message-ID: <20140911224330.0cec9b4c@hananiah.suse.cz>
+In-Reply-To: <20140911200110.GA24699@redhat.com>
+References: <20140905183314.23690175@hananiah.suse.cz>
+	<20140911200110.GA24699@redhat.com>
+Organization: SUSE Linux, s.r.o.
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->
-> This is amd two node systems. amd_bus.c tell us bus [00, 7f] is from
-> first socket, but _OSC says only [0,7] is from first socket.
+On Thu, 11 Sep 2014 16:01:10 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-That might also explain why Dirk doesn't see it on his other machine.
-The other machine doesn't have a buggy ACPI table bus limit.
+> On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
+> > On architectures that use percpu-vm, the percpu region is not guaranteed
+> > to be contiguous in physical space.
+> 
+> Petr,
+> 
+> Which are those arches?
 
-So yeah, trusting actual hw more than the _OSC entry sounds like the
-fix. I don't understand why hardware designers seem to think that ACPI
-is a good model, when it would have been so much better to just
-introduce hardware standards instead.
+All except nommu. Actually, percpu-km will be used instead even on MMU
+if SMP is disabled, but since SMP is pretty standard now, I guess the
+vast majority of all kernels out there is affected. ;-)
 
-Oh well. I guess that boat sailed long long ago.
+> > However, fs/proc/vmcore.c expects
+> > all ELF notes to be contiguous. If the ELF note happens to occupy
+> > two non-adjacent physical pages, part of the note may be read from an
+> > incorrect memory location by the kdump kernel, resulting in failure to
+> > initialize /proc/vmcore (if the content of the following physical page,
+> > incorrectly interpreted as an ELF note specifies a large number), wrong
+> > register values or other apparent random memory corruption.
+> > 
+> > There is currently no mechanism to pass the virtual-to-physical mapping
+> > of the percpu allocation to the kdump kernel. So, instead, I'm changing
+> > the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
+> > than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
+> > is enough to make sure that the buffer cannot cross a page boundary,
+> > effectively ensuring that the whole buffer is contiguous in physical
+> > space.
+> > 
+> > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> > ---
+> >  kernel/kexec.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index 2bee072..cdab59d 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+> >  static int __init crash_notes_memory_init(void)
+> >  {
+> >  	/* Allocate memory for saving cpu registers. */
+> > -	crash_notes = alloc_percpu(note_buf_t);
+> > +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
+> > +				     roundup_pow_of_two(sizeof(note_buf_t)));
+> 
+> I think some of the changelog should show up here as comment in short
+> form. I don't think it is obvious that why we are using __alloc_percpu()
+> and why aligning to nearst higher power of 2 is needed here. Please also
+> mention here which arches run into issues.
 
-             Linus
+OK, I'll add it as a comment in the code. I'll see if I can make it
+short but still understandable.
+
+Thanks,
+Petr Tesarik
+
+> Thanks
+> Vivek
+> 
+> >  	if (!crash_notes) {
+> >  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
+> >  		return -ENOMEM;
+> > -- 
+> > 1.8.4.5
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+
