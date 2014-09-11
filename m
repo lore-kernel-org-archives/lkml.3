@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821AbaIKPoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:44:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47021 "EHLO mx1.redhat.com"
+	id S1756878AbaIKPoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:44:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49785 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaIKPoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:44:08 -0400
+	id S1750852AbaIKPoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:44:11 -0400
 From: Aaron Tomlin <atomlin@redhat.com>
 To: peterz@infradead.org
 Cc: mingo@redhat.com, mingo@kernel.com, dzickus@redhat.com, bmr@redhat.com,
@@ -15,9 +15,9 @@ Cc: mingo@redhat.com, mingo@kernel.com, dzickus@redhat.com, bmr@redhat.com,
         x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
         aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
         akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: [PATCH v3 2/3] sched: Add helper for task stack page overrun checking
-Date: Thu, 11 Sep 2014 16:41:27 +0100
-Message-Id: <1410450088-18236-3-git-send-email-atomlin@redhat.com>
+Subject: [PATCH v3 3/3] sched: BUG when stack end location is over written
+Date: Thu, 11 Sep 2014 16:41:28 +0100
+Message-Id: <1410450088-18236-4-git-send-email-atomlin@redhat.com>
 In-Reply-To: <1410450088-18236-1-git-send-email-atomlin@redhat.com>
 References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
  <1410450088-18236-1-git-send-email-atomlin@redhat.com>
@@ -25,87 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This facility is used in a few places so let's introduce
-a helper function to improve code readability.
+Currently in the event of a stack overrun a call to schedule()
+does not check for this type of corruption. This corruption is
+often silent and can go unnoticed. However once the corrupted
+region is examined at a later stage, the outcome is undefined
+and often results in a sporadic page fault which cannot be
+handled.
+
+This patch checks for a stack overrun and takes appropriate
+action since the damage is already done, there is no point
+in continuing.
 
 Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 ---
- arch/powerpc/mm/fault.c    | 4 +---
- arch/x86/mm/fault.c        | 4 +---
- include/linux/sched.h      | 2 ++
- kernel/trace/trace_stack.c | 2 +-
- 4 files changed, 5 insertions(+), 7 deletions(-)
+ kernel/sched/core.c |  3 +++
+ lib/Kconfig.debug   | 12 ++++++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 35d0760c..99b2f27 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -507,7 +507,6 @@ bail:
- void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..0b70b73 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
+  */
+ static inline void schedule_debug(struct task_struct *prev)
  {
- 	const struct exception_table_entry *entry;
--	unsigned long *stackend;
++#ifdef CONFIG_SCHED_STACK_END_CHECK
++	BUG_ON(unlikely(task_stack_end_corrupted(prev)))
++#endif
+ 	/*
+ 	 * Test if we are atomic. Since do_exit() needs to call into
+ 	 * schedule() atomically, we ignore that path. Otherwise whine
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a285900..2a8280a 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -824,6 +824,18 @@ config SCHEDSTATS
+ 	  application, you can say N to avoid the very slight overhead
+ 	  this adds.
  
- 	/* Are we prepared to handle this fault?  */
- 	if ((entry = search_exception_tables(regs->nip)) != NULL) {
-@@ -536,8 +535,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
- 	printk(KERN_ALERT "Faulting instruction address: 0x%08lx\n",
- 		regs->nip);
- 
--	stackend = end_of_stack(current);
--	if (*stackend != STACK_END_MAGIC)
-+	if (task_stack_end_corrupted(current))
- 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
- 
- 	die("Kernel access of bad area", regs, sig);
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index bc23a70..6240bc7 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -648,7 +648,6 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 	   unsigned long address, int signal, int si_code)
- {
- 	struct task_struct *tsk = current;
--	unsigned long *stackend;
- 	unsigned long flags;
- 	int sig;
- 
-@@ -708,8 +707,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 
- 	show_fault_oops(regs, error_code, address);
- 
--	stackend = end_of_stack(tsk);
--	if (*stackend != STACK_END_MAGIC)
-+	if (task_stack_end_corrupted(tsk))
- 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
- 
- 	tsk->thread.cr2		= address;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7ef34b7..a80e35d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2615,6 +2615,8 @@ static inline unsigned long *end_of_stack(struct task_struct *p)
- }
- 
- #endif
-+#define task_stack_end_corrupted(task) \
-+		(*(end_of_stack(task)) != STACK_END_MAGIC)
- 
- static inline int object_is_on_stack(void *obj)
- {
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 1636e41..16eddb3 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -170,7 +170,7 @@ check_stack(unsigned long ip, unsigned long *stack)
- 			i++;
- 	}
- 
--	if (*end_of_stack(current) != STACK_END_MAGIC) {
-+	if (task_stack_end_corrupted(current)) {
- 		print_max_stack();
- 		BUG();
- 	}
++config SCHED_STACK_END_CHECK
++	bool "Detect stack corruption on calls to schedule()"
++	depends on DEBUG_KERNEL
++	default y
++	help
++	  This option checks for a stack overrun on calls to schedule().
++	  If the stack end location is found to be over written always panic as
++	  the content of the corrupted region can no longer be trusted.
++	  This is to ensure no erroneous behaviour occurs which could result in
++	  data corruption or a sporadic crash at a later stage once the region
++	  is examined. The runtime overhead introduced is minimal.
++
+ config TIMER_STATS
+ 	bool "Collect kernel timers statistics"
+ 	depends on DEBUG_KERNEL && PROC_FS
 -- 
 1.9.3
 
