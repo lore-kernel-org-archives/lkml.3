@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352AbaIKUmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:42:44 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:38234 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167AbaIKUmm (ORCPT
+	id S932147AbaIKUnC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:43:02 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:44349 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756167AbaIKUnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:42:42 -0400
+	Thu, 11 Sep 2014 16:43:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140911202354.GA2598@core.coreip.homeip.net>
-References: <20140905174925.GA12991@mtj.dyndns.org> <20140909224143.GB3154@mtj.dyndns.org>
- <1410302783.13298.50.camel@jarvis.lan> <5762134.BLS0EbmNJd@dtor-glaptop>
- <1410465565.10549.19.camel@jarvis> <20140911202354.GA2598@core.coreip.homeip.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 11 Sep 2014 13:42:20 -0700
-X-Google-Sender-Auth: rHHi-JzsG42VDGbZCF4F9Rto2p8
-Message-ID: <CAB=NE6XfUAm=iVr=qfu5i9QW7BpViXfJ6wsmEZOOmS=rBF1bdA@mail.gmail.com>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>, Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Cas ey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
+References: <ghiol53r9u.fsf@lena.gouders.net>
+	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
+	<ghwq9k3m6z.fsf@lena.gouders.net>
+	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
+	<ghioku5l29.fsf@lena.gouders.net>
+	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
+	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
+Date: Thu, 11 Sep 2014 13:42:59 -0700
+X-Google-Sender-Auth: RbYPJYYOIM53E9aiZuWF-iW3oFc
+Message-ID: <CA+55aFx_Kgb6FcOoyQOb=7ud9VL4T3g2EoeOhuPAHUPa-+eG+A@mail.gmail.com>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Dirk Gouders <dirk@gouders.net>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 1:23 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
+On Thu, Sep 11, 2014 at 12:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
 >
->>  There are elements in common, but by and
->> large the biggest headaches at least in large device number boots have
->> already been tackled by the enterprise crowd (they don't like their
->> S390's or 1024 core NUMA systems taking half an hour to come up).
->
-> Please do not position this as a mostly solved large systems problem,
-> For us it is touchpad detection stalling kernel for 0.5-1 sec. Which is
-> a lot given that we boot in seconds.
+> This is amd two node systems. amd_bus.c tell us bus [00, 7f] is from
+> first socket, but _OSC says only [0,7] is from first socket.
 
-Dmitry, would working on top of the aysnc series be reasonable? Then
-we could address these as separate things which we'd build on top of.
-The one aspect I see us needing to share is the "async probe universe
-is OK" flag.
+That might also explain why Dirk doesn't see it on his other machine.
+The other machine doesn't have a buggy ACPI table bus limit.
 
- Luis
+So yeah, trusting actual hw more than the _OSC entry sounds like the
+fix. I don't understand why hardware designers seem to think that ACPI
+is a good model, when it would have been so much better to just
+introduce hardware standards instead.
+
+Oh well. I guess that boat sailed long long ago.
+
+             Linus
