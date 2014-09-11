@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783AbaIKMr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:47:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51622 "EHLO
+	id S1755589AbaIKMrz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:47:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755428AbaIKMeG (ORCPT
+	by vger.kernel.org with ESMTP id S1755420AbaIKMeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -16,9 +16,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
         "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.547227344@decadent.org.uk>
+Message-ID: <lsq.1410438733.891623092@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 058/131] ring-buffer: Up rb_iter_peek() loop count to 3
+Subject: [PATCH 3.2 059/131] ring-buffer: Always reset iterator to reader page
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,85 +33,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 021de3d904b88b1771a3a2cfc5b75023c391e646 upstream.
+commit 651e22f2701b4113989237c3048d17337dd2185c upstream.
 
-After writting a test to try to trigger the bug that caused the
-ring buffer iterator to become corrupted, I hit another bug:
+When performing a consuming read, the ring buffer swaps out a
+page from the ring buffer with a empty page and this page that
+was swapped out becomes the new reader page. The reader page
+is owned by the reader and since it was swapped out of the ring
+buffer, writers do not have access to it (there's an exception
+to that rule, but it's out of scope for this commit).
 
- WARNING: CPU: 1 PID: 5281 at kernel/trace/ring_buffer.c:3766 rb_iter_peek+0x113/0x238()
- Modules linked in: ipt_MASQUERADE sunrpc [...]
- CPU: 1 PID: 5281 Comm: grep Tainted: G        W     3.16.0-rc3-test+ #143
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-  0000000000000000 ffffffff81809a80 ffffffff81503fb0 0000000000000000
-  ffffffff81040ca1 ffff8800796d6010 ffffffff810c138d ffff8800796d6010
-  ffff880077438c80 ffff8800796d6010 ffff88007abbe600 0000000000000003
- Call Trace:
-  [<ffffffff81503fb0>] ? dump_stack+0x4a/0x75
-  [<ffffffff81040ca1>] ? warn_slowpath_common+0x7e/0x97
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c14df>] ? ring_buffer_iter_peek+0x2d/0x5c
-  [<ffffffff810c6f73>] ? tracing_iter_reset+0x6e/0x96
-  [<ffffffff810c74a3>] ? s_start+0xd7/0x17b
-  [<ffffffff8112b13e>] ? kmem_cache_alloc_trace+0xda/0xea
-  [<ffffffff8114cf94>] ? seq_read+0x148/0x361
-  [<ffffffff81132d98>] ? vfs_read+0x93/0xf1
-  [<ffffffff81132f1b>] ? SyS_read+0x60/0x8e
-  [<ffffffff8150bf9f>] ? tracesys+0xdd/0xe2
+When reading the "trace" file, it is a non consuming read, which
+means that the data in the ring buffer will not be modified.
+When the trace file is opened, a ring buffer iterator is allocated
+and writes to the ring buffer are disabled, such that the iterator
+will not have issues iterating over the data.
 
-Debugging this bug, which triggers when the rb_iter_peek() loops too
-many times (more than 2 times), I discovered there's a case that can
-cause that function to legitimately loop 3 times!
+Although the ring buffer disabled writes, it does not disable other
+reads, or even consuming reads. If a consuming read happens, then
+the iterator is reset and starts reading from the beginning again.
 
-rb_iter_peek() is different than rb_buffer_peek() as the rb_buffer_peek()
-only deals with the reader page (it's for consuming reads). The
-rb_iter_peek() is for traversing the buffer without consuming it, and as
-such, it can loop for one more reason. That is, if we hit the end of
-the reader page or any page, it will go to the next page and try again.
+My tests would sometimes trigger this bug on my i386 box:
 
-That is, we have this:
+WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
+Modules linked in:
+CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+ 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
+ f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
+ ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
+Call Trace:
+ [<c18796b3>] dump_stack+0x4b/0x75
+ [<c103a0e3>] warn_slowpath_common+0x7e/0x95
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c103a185>] warn_slowpath_fmt+0x33/0x35
+ [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
+ [<c10bed04>] trace_find_cmdline+0x40/0x64
+ [<c10c3c16>] trace_print_context+0x27/0xec
+ [<c10c4360>] ? trace_seq_printf+0x37/0x5b
+ [<c10c0b15>] print_trace_line+0x319/0x39b
+ [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
+ [<c10c13b1>] s_show+0x192/0x1ab
+ [<c10bfd9a>] ? s_next+0x5a/0x7c
+ [<c112e76e>] seq_read+0x267/0x34c
+ [<c1115a25>] vfs_read+0x8c/0xef
+ [<c112e507>] ? seq_lseek+0x154/0x154
+ [<c1115ba2>] SyS_read+0x54/0x7f
+ [<c188488e>] syscall_call+0x7/0xb
+---[ end trace 3f507febd6b4cc83 ]---
+>>>> ##### CPU 1 buffer started ####
 
- 1. iter->head > iter->head_page->page->commit
-    (rb_inc_iter() which moves the iter to the next page)
-    try again
+Which was the __trace_find_cmdline() function complaining about the pid
+in the event record being negative.
 
- 2. event = rb_iter_head_event()
-    event->type_len == RINGBUF_TYPE_TIME_EXTEND
-    rb_advance_iter()
-    try again
+After adding more test cases, this would trigger more often. Strangely
+enough, it would never trigger on a single test, but instead would trigger
+only when running all the tests. I believe that was the case because it
+required one of the tests to be shutting down via delayed instances while
+a new test started up.
 
- 3. read the event.
+After spending several days debugging this, I found that it was caused by
+the iterator becoming corrupted. Debugging further, I found out why
+the iterator became corrupted. It happened with the rb_iter_reset().
 
-But we never get to 3, because the count is greater than 2 and we
-cause the WARNING and return NULL.
+As consuming reads may not read the full reader page, and only part
+of it, there's a "read" field to know where the last read took place.
+The iterator, must also start at the read position. In the rb_iter_reset()
+code, if the reader page was disconnected from the ring buffer, the iterator
+would start at the head page within the ring buffer (where writes still
+happen). But the mistake there was that it still used the "read" field
+to start the iterator on the head page, where it should always start
+at zero because readers never read from within the ring buffer where
+writes occur.
 
-Up the counter to 3.
+I originally wrote a patch to have it set the iter->head to 0 instead
+of iter->head_page->read, but then I questioned why it wasn't always
+setting the iter to point to the reader page, as the reader page is
+still valid.  The list_empty(reader_page->list) just means that it was
+successful in swapping out. But the reader_page may still have data.
 
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+There was a bug report a long time ago that was not reproducible that
+had something about trace_pipe (consuming read) not matching trace
+(iterator read). This may explain why that happened.
+
+Anyway, the correct answer to this bug is to always use the reader page
+an not reset the iterator to inside the writable ring buffer.
+
+Fixes: d769041f8653 "ring_buffer: implement new locking"
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2: drop inapplicable spelling correction]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
+ kernel/trace/ring_buffer.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
+
 --- a/kernel/trace/ring_buffer.c
 +++ b/kernel/trace/ring_buffer.c
-@@ -3246,12 +3246,14 @@ rb_iter_peek(struct ring_buffer_iter *it
- 		return NULL;
+@@ -2843,21 +2843,16 @@ static void rb_iter_reset(struct ring_bu
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
  
- 	/*
--	 * We repeat when a time extend is encountered.
--	 * Since the time extend is always attached to a data event,
--	 * we should never loop more than once.
--	 * (We never hit the following condition more than twice).
-+	 * We repeat when a time extend is encountered or we hit
-+	 * the end of the page. Since the time extend is always attached
-+	 * to a data event, we should never loop more than three times.
-+	 * Once for going to next page, once on time extend, and
-+	 * finally once to get the event.
-+	 * (We never hit the following condition more than thrice).
- 	 */
--	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 2))
-+	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 3))
- 		return NULL;
+ 	/* Iterator usage is expected to have record disabled */
+-	if (list_empty(&cpu_buffer->reader_page->list)) {
+-		iter->head_page = rb_set_head_page(cpu_buffer);
+-		if (unlikely(!iter->head_page))
+-			return;
+-		iter->head = iter->head_page->read;
+-	} else {
+-		iter->head_page = cpu_buffer->reader_page;
+-		iter->head = cpu_buffer->reader_page->read;
+-	}
++	iter->head_page = cpu_buffer->reader_page;
++	iter->head = cpu_buffer->reader_page->read;
++
++	iter->cache_reader_page = iter->head_page;
++	iter->cache_read = iter->head;
++
+ 	if (iter->head)
+ 		iter->read_stamp = cpu_buffer->read_stamp;
+ 	else
+ 		iter->read_stamp = iter->head_page->page->time_stamp;
+-	iter->cache_reader_page = cpu_buffer->reader_page;
+-	iter->cache_read = cpu_buffer->read;
+ }
  
- 	if (rb_per_cpu_empty(cpu_buffer))
+ /**
 
