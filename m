@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496AbaIKMxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:53:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51571 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755404AbaIKMeF (ORCPT
+	id S1751935AbaIKM4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:56:14 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:18824 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaIKM4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:05 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Sep 2014 08:56:11 -0400
+Message-ID: <54119BE8.5020605@imgtec.com>
+Date: Thu, 11 Sep 2014 13:56:08 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Arjun Sreedharan" <arjun024@gmail.com>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.681563754@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 075/131] pata_scc: propagate return value of
- scc_wait_after_reset
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, <linux-mips@linux-mips.org>,
+        <nbd@openwrt.org>, <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
+        <david.daney@cavium.com>, <linux-kernel@vger.kernel.org>,
+        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
+        <macro@linux-mips.org>, <manuel.lauss@gmail.com>,
+        <jerinjacobk@gmail.com>, <chenhc@lemote.com>, <blogic@openwrt.org>
+Subject: Re: [PATCH V2] MIPS: bugfix of coherentio variable default setup
+References: <20140908191002.13852.47842.stgit@linux-yegoshin>
+In-Reply-To: <20140908191002.13852.47842.stgit@linux-yegoshin>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On 08/09/14 20:10, Leonid Yegoshin wrote:
+> diff --git a/arch/mips/include/asm/mach-generic/dma-coherence.h b/arch/mips/include/asm/mach-generic/dma-coherence.h
+> index 7629c35..b4563df 100644
+> --- a/arch/mips/include/asm/mach-generic/dma-coherence.h
+> +++ b/arch/mips/include/asm/mach-generic/dma-coherence.h
+> @@ -49,7 +49,12 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
+>  
+>  static inline int plat_device_is_coherent(struct device *dev)
+>  {
+> -	return coherentio;
+> +#ifdef CONFIG_DMA_COHERENT
+> +	return 1;
 
-------------------
+if DMA_COHERENT=y (which seems to imply DMA_MAYBE_COHERENT=n),
+coherentio is already defined as 1 in
+arch/mips/include/asm/dma-coherent.h, so I don't think you need this case.
 
-From: Arjun Sreedharan <arjun024@gmail.com>
+> +#else
+> +	return (coherentio > 0);
+> +#endif
+> +
 
-commit 4dc7c76cd500fa78c64adfda4b070b870a2b993c upstream.
+No need for a new blank line here
 
-scc_bus_softreset not necessarily should return zero.
-Propagate the error code.
+>  }
 
-Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/ata/pata_scc.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+...
 
---- a/drivers/ata/pata_scc.c
-+++ b/drivers/ata/pata_scc.c
-@@ -586,7 +586,7 @@ static int scc_wait_after_reset(struct a
-  *	Note: Original code is ata_bus_softreset().
-  */
- 
--static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-+static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
-                                       unsigned long deadline)
- {
- 	struct ata_ioports *ioaddr = &ap->ioaddr;
-@@ -600,9 +600,7 @@ static unsigned int scc_bus_softreset(st
- 	udelay(20);
- 	out_be32(ioaddr->ctl_addr, ap->ctl);
- 
--	scc_wait_after_reset(&ap->link, devmask, deadline);
--
--	return 0;
-+	return scc_wait_after_reset(&ap->link, devmask, deadline);
- }
- 
- /**
-@@ -619,7 +617,8 @@ static int scc_softreset(struct ata_link
- {
- 	struct ata_port *ap = link->ap;
- 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
--	unsigned int devmask = 0, err_mask;
-+	unsigned int devmask = 0;
-+	int rc;
- 	u8 err;
- 
- 	DPRINTK("ENTER\n");
-@@ -635,9 +634,9 @@ static int scc_softreset(struct ata_link
- 
- 	/* issue bus reset */
- 	DPRINTK("about to softreset, devmask=%x\n", devmask);
--	err_mask = scc_bus_softreset(ap, devmask, deadline);
--	if (err_mask) {
--		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
-+	rc = scc_bus_softreset(ap, devmask, deadline);
-+	if (rc) {
-+		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
- 		return -EIO;
- 	}
- 
+> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+> index 44b6dff..42c819a 100644
+> --- a/arch/mips/mm/dma-default.c
+> +++ b/arch/mips/mm/dma-default.c
+> @@ -24,7 +24,7 @@
+>  #include <dma-coherence.h>
+>  
+>  #ifdef CONFIG_DMA_MAYBE_COHERENT
+> -int coherentio = 0;	/* User defined DMA coherency from command line. */
+> +int coherentio = -1;    /* User defined DMA coherency is not defined yet. */
 
+Please avoid unnecessarily turned tabs into spaces. It makes files
+inconsistent.
+
+Other than that and Markos' style comment it looks reasonable to me.
+
+Cheers
+James
