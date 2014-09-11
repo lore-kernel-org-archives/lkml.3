@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974AbaIKWUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:20:00 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:46533 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852AbaIKWT4 (ORCPT
+	id S1752552AbaIKWWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:22:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44148 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaIKWWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:19:56 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gary.zambrano@qlogic.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH Resend] drivers: net: b44: Fix typo in returning multicast stats
-Date: Thu, 11 Sep 2014 23:19:49 +0100
-Message-Id: <1410473989-2049-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Thu, 11 Sep 2014 18:22:43 -0400
+Date: Thu, 11 Sep 2014 15:22:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH/RFC 1/2] lib: string: Remove duplicated function
+Message-Id: <20140911152241.22ce7f1ebecef7ce7e01b112@linux-foundation.org>
+In-Reply-To: <1409124962-11527-2-git-send-email-linux@rasmusvillemoes.dk>
+References: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
+	<1409124962-11527-2-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nstat->multicast refers to received packets, not transmitted as
-is returned here. Change it so that received packet stats are
-given.
+On Wed, 27 Aug 2014 09:36:01 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
+> lib/string.c contains two functions, strnicmp and strncasecmp, which
+> do roughly the same thing, namely compare two strings
+> case-insensitively up to a given bound. They have slightly different
+> implementations, but the only important difference is that strncasecmp
+> doesn't handle len==0 appropriately; it effectively becomes strcasecmp
+> in that case. strnicmp correctly says that two strings are always
+> equal in their first 0 characters.
+> 
+> strncasecmp is the POSIX name for this functionality. So rename the
+> non-broken function to the standard name. To minimize the impact on
+> the rest of the kernel (and since both are exported to modules), make
+> strnicmp a wrapper for strncasecmp.
 
-changing to send to alternate address for Gary Zambrano, maintainers entry bounced.
+I guess it's safe to assume that nobody was depending on the
+strncasecmp() bug.
 
- drivers/net/ethernet/broadcom/b44.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The existing strnicmp() implementation is rather verbose, but I expect
+that avoiding the tolower() cost where possible makes sense.
 
-diff --git a/drivers/net/ethernet/broadcom/b44.c b/drivers/net/ethernet/broadcom/b44.c
-index 4a7028d..d588136 100644
---- a/drivers/net/ethernet/broadcom/b44.c
-+++ b/drivers/net/ethernet/broadcom/b44.c
-@@ -1697,7 +1697,7 @@ static struct rtnl_link_stats64 *b44_get_stats64(struct net_device *dev,
- 				     hwstat->tx_underruns +
- 				     hwstat->tx_excessive_cols +
- 				     hwstat->tx_late_cols);
--		nstat->multicast  = hwstat->tx_multicast_pkts;
-+		nstat->multicast  = hwstat->rx_multicast_pkts;
- 		nstat->collisions = hwstat->tx_total_cols;
- 
- 		nstat->rx_length_errors = (hwstat->rx_oversize_pkts +
--- 
-2.1.0
+Yes, please prepare the strnicmp()->strncasecmp() patches and let's get
+them merged up.  After a kernel release or two we can zap the
+back-compat wrapper.
 
+
+And it isn't just "out of tree modules" that we should be concerned
+about - we'll commonly find that "to be in tree" code is using
+interfaces which we're trying to alter or remove, so it takes a cycle
+or two to get everything propagated.  Most of this code can be found in
+linux-next.
