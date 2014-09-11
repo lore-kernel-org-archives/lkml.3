@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaIKGIm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 02:08:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43814 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226AbaIKGIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 02:08:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="601279509"
-Message-ID: <54113C60.2080501@linux.intel.com>
-Date: Thu, 11 Sep 2014 14:08:32 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752501AbaIKGPG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 02:15:06 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40204 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119AbaIKGPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 02:15:03 -0400
+Message-ID: <54113DDD.1030804@linux.vnet.ibm.com>
+Date: Thu, 11 Sep 2014 11:44:53 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch v4 12/16] x86, irq, ACPI: Implement interface to support
- ACPI based IOAPIC hot-addition
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-13-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091417120.11037@nanos> <540FC1C2.40100@linux.intel.com> <alpine.DEB.2.10.1409102202530.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409102202530.4178@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
+CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
+        Paul.Clothier@imgtec.com, palves@redhat.com, oleg@redhat.com,
+        dhowells@redhat.com, davej@redhat.com, davem@davemloft.net,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Sam Bobroff <sam.bobroff@au1.ibm.com>
+Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
+References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091106-8878-0000-0000-000000DF0CF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/23/2014 08:45 PM, Anshuman Khandual wrote:
+> 	This patch series adds five new ELF core note sections which can be
+> used with existing ptrace request PTRACE_GETREGSET/SETREGSET for accessing
+> various transactional memory and miscellaneous register sets on PowerPC
+> platform. Please find a test program exploiting these new ELF core note
+> types on a POWER8 system.
+> 
+> RFC: https://lkml.org/lkml/2014/4/1/292
+> V1:  https://lkml.org/lkml/2014/4/2/43
+> V2:  https://lkml.org/lkml/2014/5/5/88
+> 
+> Changes in V3
+> =============
+> (1) Added two new error paths in every TM related get/set functions when regset
+>     support is not present on the system (ENODEV) or when the process does not
+>     have any transaction active (ENODATA) in the context
+> 
+> (2) Installed the active hooks for all the newly added regset core note types
+> 
+> Changes in V2
+> =============
+> (1) Removed all the power specific ptrace requests corresponding to new NT_PPC_*
+>     elf core note types. Now all the register sets can be accessed from ptrace
+>     through PTRACE_GETREGSET/PTRACE_SETREGSET using the individual NT_PPC* core
+>     note type instead
+> (2) Fixed couple of attribute values for REGSET_TM_CGPR register set
+> (3) Renamed flush_tmreg_to_thread as flush_tmregs_to_thread
+> (4) Fixed 32 bit checkpointed GPR support
+> (5) Changed commit messages accordingly
+> 
+> Outstanding Issues
+> ==================
+> (1) Running DSCR register value inside a transaction does not seem to be saved
+>     at thread.dscr when the process stops for ptrace examination.
 
+Hey Sam and Suka,
 
-On 2014/9/11 4:06, Thomas Gleixner wrote:
-> On Wed, 10 Sep 2014, Jiang Liu wrote:
->>>>  int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->>>> @@ -3867,8 +3873,15 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->>>>  	}
->>>>  	for_each_ioapic(ioapic)
->>>>  		if (ioapics[ioapic].mp_config.apicaddr == address) {
->>>> -			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
->>>> -				address, ioapic);
->>>> +			/*
->>>> +			 * IOAPIC unit may also be visible in PCI scope.
->>>> +			 * When ioapic PCI driver's probe() is called,
->>>> +			 * the IOAPIC unit may have already been initialized
->>>> +			 * at boot time.
->>>> +			 */
->>>> +			if (!ioapic_initialized)
->>>> +				pr_warn("address 0x%x conflicts with IOAPIC%d\n",
->>>> +					address, ioapic);
->>>
->>> Hmm. This smells fishy. Why do we allow multiple initializations of
->>> the same IOAPIC in the first place. Either it's done via ACPI or via
->>> PCI, but not both.
->> The ACPI subsystem will register and initialize all IOAPICs when walking
->> ACPI MADT table during boot, before initializing PCI subsystem.
->> Later when binding ioapic PCI driver to IOAPIC PCI device, it will try
->> to register the IOAPIC device again.
->>
->> After this patchset is applied, we could remove the !ioapic_initialized
->> check. We check acpi_ioapic_register() before calling
->> acpi_register_ioapic(). So the check becomes redundant.
->> Or we could remove the temporary code from this patch.
-> 
-> How about removing the disfunctional ioapic PCI driver first and then
-> implementing the whole thing cleanly?
->  
->>>
->>>>  			return -EEXIST;
->>>>  		}
->>>>  
->>>> @@ -3918,6 +3931,14 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
->>>>  	ioapics[idx].irqdomain = NULL;
->>>>  	ioapics[idx].irqdomain_cfg = *cfg;
->>>>  
->>>> +	if (ioapic_initialized) {
->>>
->>> I have a hard time to understand this conditional. Why can't we do
->>> that unconditionally?
->> How about following comments?
->> /*
->>  * If mp_register_ioapic() is called during early boot stage when
->>  * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
->>  * we are still using bootmem allocator. So delay it to setup_IO_APIC().
->>  */
-> 
-> Fine, but then the "if (ioapic_initialized)" conditional still does
-> not make sense. We surely have some global non ioapic specific
-> indicator that bootmem is done and the proper memory allocator is
-> available, right?
-Maybe a good name helps here. How about
-bool hotplug = !!ioapic_initialized;
+Thanks for reviewing this patch series. I was busy with some other work
+for last couple of months. Went through your comments, will get back to
+this patch series in some time and work on the comments.
 
-if (hotplug)
-	mp_irqdomain_create(idx);
+Thanks again.
 
-Regards!
-Gerry	
+Regards
+Anshuman
 
-> 
-> Aside of that is there a point to walk those tables before we actually
-> can make any use of their content?
-> 
-> Thanks,
-> 
-> 	tglx
-> 
