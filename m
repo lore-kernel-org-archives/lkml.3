@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612AbaIKJ2V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:28:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38454 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaIKJ2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:28:17 -0400
-Date: Thu, 11 Sep 2014 11:27:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [RFC Part1 v1 07/18] x86, irq: Introduce helpers to access struct
- irq_cfg
-In-Reply-To: <1410423905-26239-8-git-send-email-jiang.liu@linux.intel.com>
-Message-ID: <alpine.DEB.2.10.1409111126410.4178@nanos>
-References: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com> <1410423905-26239-8-git-send-email-jiang.liu@linux.intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1753751AbaIKJ2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:28:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752745AbaIKJ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:28:19 -0400
+Message-ID: <54116B26.4070505@redhat.com>
+Date: Thu, 11 Sep 2014 11:28:06 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/7] kvm, mem-hotplug: Reload L1's apic access page
+ on migration when L2 is running.
+References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-6-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1410413886-32213-6-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Jiang Liu wrote:
-
-> Change irq_cfg() from static to extern, also introduce helper function
-> irqd_cfg(). Later we could rewrite these two helpers when enabling
-> hierarchy irqdomain.
+Il 11/09/2014 07:38, Tang Chen ha scritto:
+> This patch only handle "L1 and L2 vm share one apic access page" situation.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> When L1 vm is running, if the shared apic access page is migrated, mmu_notifier will
+> request all vcpus to exit to L0, and reload apic access page physical address for
+> all the vcpus' vmcs (which is done by patch 5/6). And when it enters L2 vm, L2's vmcs
+> will be updated in prepare_vmcs02() called by nested_vm_run(). So we need to do
+> nothing.
+> 
+> When L2 vm is running, if the shared apic access page is migrated, mmu_notifier will
+> request all vcpus to exit to L0, and reload apic access page physical address for
+> all L2 vmcs. And this patch requests apic access page reload in L2->L1 vmexit.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > ---
->  arch/x86/include/asm/hw_irq.h  |    2 ++
->  arch/x86/kernel/apic/io_apic.c |    7 ++++++-
->  2 files changed, 8 insertions(+), 1 deletion(-)
+>  arch/x86/kvm/vmx.c  | 7 +++++++
+>  virt/kvm/kvm_main.c | 1 +
+>  2 files changed, 8 insertions(+)
 > 
-> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-> index 18e8717bf644..f457fcd0f3ba 100644
-> --- a/arch/x86/include/asm/hw_irq.h
-> +++ b/arch/x86/include/asm/hw_irq.h
-> @@ -132,6 +132,8 @@ struct irq_cfg {
->  	};
->  };
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index da6d55d..e7704b2 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -8796,6 +8796,13 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+>  	}
 >  
-> +extern struct irq_cfg *irq_cfg(unsigned int irq);
-> +extern struct irq_cfg *irqd_cfg(struct irq_data *irq_data);
->  extern void setup_vector_irq(int cpu);
->  extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
->  extern void send_cleanup_vector(struct irq_cfg *);
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index ee3d3ff521a3..9b048c239dd4 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -281,11 +281,16 @@ int __init arch_early_irq_init(void)
->  	return 0;
->  }
->  
-> -static inline struct irq_cfg *irq_cfg(unsigned int irq)
-> +struct irq_cfg *irq_cfg(unsigned int irq)
+>  	/*
+> +	 * Do not call kvm_reload_apic_access_page() because we are now
+> +	 * running, mmu_notifier will force to reload the page's hpa for L2
+> +	 * vmcs. Need to reload it for L1 before entering L1.
+> +	 */
+> +	kvm_reload_apic_access_page(vcpu->kvm);
+
+That would kill performance for large L1 hosts.
+vcpu_reload_apic_access_page should be enough (please rename it to
+kvm_vcpu_reload_apic_access_page in patch 4, and export it).
+
+Paolo
+
+> +	/*
+>  	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
+>  	 * finished a VMLAUNCH or VMRESUME instruction, so we need to set the
+>  	 * success or failure flag accordingly.
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index d8280de..784127e 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -214,6 +214,7 @@ void kvm_reload_apic_access_page(struct kvm *kvm)
 >  {
->  	return irq_get_chip_data(irq);
+>  	make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
 >  }
+> +EXPORT_SYMBOL_GPL(kvm_reload_apic_access_page);
 >  
-> +struct irq_cfg *irqd_cfg(struct irq_data *irq_data)
-> +{
-> +	return irq_data->chip_data;
-> +}
+>  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
+>  {
+> 
 
-We can make those inlines. There is no point to have that as global
-functions.
-
-Thanks,
-
-	tglx
