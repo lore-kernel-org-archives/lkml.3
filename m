@@ -1,228 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081AbaIKAxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 20:53:51 -0400
-Received: from ozlabs.org ([103.22.144.67]:45251 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533AbaIKAwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:52:40 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, "netdev" <netdev@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH 2/3] virtio_ring: assume sgs are always well-formed.
-Date: Thu, 11 Sep 2014 10:17:37 +0930
-Message-Id: <1410396458-1165-3-git-send-email-rusty@rustcorp.com.au>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410396458-1165-1-git-send-email-rusty@rustcorp.com.au>
-References: <1410396458-1165-1-git-send-email-rusty@rustcorp.com.au>
+	id S1754085AbaIKA7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 20:59:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48520 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbaIKA7v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 20:59:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <4693A34300ED74418DB0F7454C3D19DA16A99994@G5W2736.americas.hpqcorp.net>
+References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
+	<540FC7C8.1070904@gmail.com>
+	<CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
+	<4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
+	<CACVXFVPen-__38-XGHAe2Yxb0CGVLr3sGxQXvvk=Zkwzn-A_gA@mail.gmail.com>
+	<4693A34300ED74418DB0F7454C3D19DA16A99994@G5W2736.americas.hpqcorp.net>
+Date: Thu, 11 Sep 2014 08:59:46 +0800
+Message-ID: <CACVXFVN9KUzMQQcUGGFfg5TG2EK3B+GO2ciuC5pQb4NHaa8h_w@mail.gmail.com>
+Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+From: Ming Lei <ming.lei@canonical.com>
+To: "Patel, Gaurav" <gspatel@hp.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We used to have several callers which just used arrays.  They're
-gone, so we can use sg_next() everywhere, simplifying the code.
+On Thu, Sep 11, 2014 at 8:45 AM, Patel, Gaurav <gspatel@hp.com> wrote:
+> I will try to update kernel on Ubuntu to 2.6.32 and run the test.
+>
+> I was not able to install 3.16 ubuntu kernel on RrdHat.
 
-On my laptop, this slowed down vring_bench by 15%:
+I didn't ask you to install 3.16 ubuntu kernel on Redhat, and you just
+need to install upstream 3.16 kernel, :-)
 
-vring_bench before:
-	936153354-967745359(9.44739e+08+/-6.1e+06)ns
-vring_bench after:
-	1061485790-1104800648(1.08254e+09+/-6.6e+06)ns
-
-However, a more realistic test using pktgen on a AMD FX(tm)-8320 saw
-a few percent improvement:
-
-pktgen before:
-  767390-792966(785159+/-6.5e+03)pps 356-367(363.75+/-2.9)Mb/sec (356068960-367936224(3.64314e+08+/-3e+06)bps) errors: 0
-
-pktgen after:
-   787781-796334(793165+/-2.4e+03)pps 365-369(367.5+/-1.2)Mb/sec (365530384-369498976(3.68028e+08+/-1.1e+06)bps) errors: 0
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
- drivers/virtio/virtio_ring.c | 68 +++++++++++++-------------------------------
- 1 file changed, 19 insertions(+), 49 deletions(-)
-
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 4d08f45a9c29..374399c62080 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -99,28 +99,10 @@ struct vring_virtqueue
- 
- #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
- 
--static inline struct scatterlist *sg_next_chained(struct scatterlist *sg,
--						  unsigned int *count)
--{
--	return sg_next(sg);
--}
--
--static inline struct scatterlist *sg_next_arr(struct scatterlist *sg,
--					      unsigned int *count)
--{
--	if (--(*count) == 0)
--		return NULL;
--	return sg + 1;
--}
--
- /* Set up an indirect table of descriptors and add it to the queue. */
- static inline int vring_add_indirect(struct vring_virtqueue *vq,
- 				     struct scatterlist *sgs[],
--				     struct scatterlist *(*next)
--				       (struct scatterlist *, unsigned int *),
- 				     unsigned int total_sg,
--				     unsigned int total_out,
--				     unsigned int total_in,
- 				     unsigned int out_sgs,
- 				     unsigned int in_sgs,
- 				     gfp_t gfp)
-@@ -144,7 +126,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
- 	/* Transfer entries from the sg lists into the indirect page */
- 	i = 0;
- 	for (n = 0; n < out_sgs; n++) {
--		for (sg = sgs[n]; sg; sg = next(sg, &total_out)) {
-+		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
- 			desc[i].flags = VRING_DESC_F_NEXT;
- 			desc[i].addr = sg_phys(sg);
- 			desc[i].len = sg->length;
-@@ -153,7 +135,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
- 		}
- 	}
- 	for (; n < (out_sgs + in_sgs); n++) {
--		for (sg = sgs[n]; sg; sg = next(sg, &total_in)) {
-+		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
- 			desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
- 			desc[i].addr = sg_phys(sg);
- 			desc[i].len = sg->length;
-@@ -186,10 +168,7 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
- 
- static inline int virtqueue_add(struct virtqueue *_vq,
- 				struct scatterlist *sgs[],
--				struct scatterlist *(*next)
--				  (struct scatterlist *, unsigned int *),
--				unsigned int total_out,
--				unsigned int total_in,
-+				unsigned int total_sg,
- 				unsigned int out_sgs,
- 				unsigned int in_sgs,
- 				void *data,
-@@ -197,7 +176,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
- 	struct scatterlist *sg;
--	unsigned int i, n, avail, uninitialized_var(prev), total_sg;
-+	unsigned int i, n, avail, uninitialized_var(prev);
- 	int head;
- 
- 	START_USE(vq);
-@@ -222,13 +201,10 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- 	}
- #endif
- 
--	total_sg = total_in + total_out;
--
- 	/* If the host supports indirect descriptor tables, and we have multiple
- 	 * buffers, then go indirect. FIXME: tune this threshold */
- 	if (vq->indirect && total_sg > 1 && vq->vq.num_free) {
--		head = vring_add_indirect(vq, sgs, next, total_sg, total_out,
--					  total_in,
-+		head = vring_add_indirect(vq, sgs, total_sg, 
- 					  out_sgs, in_sgs, gfp);
- 		if (likely(head >= 0))
- 			goto add_head;
-@@ -254,7 +230,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- 
- 	head = i = vq->free_head;
- 	for (n = 0; n < out_sgs; n++) {
--		for (sg = sgs[n]; sg; sg = next(sg, &total_out)) {
-+		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
- 			vq->vring.desc[i].flags = VRING_DESC_F_NEXT;
- 			vq->vring.desc[i].addr = sg_phys(sg);
- 			vq->vring.desc[i].len = sg->length;
-@@ -263,7 +239,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
- 		}
- 	}
- 	for (; n < (out_sgs + in_sgs); n++) {
--		for (sg = sgs[n]; sg; sg = next(sg, &total_in)) {
-+		for (sg = sgs[n]; sg; sg = sg_next(sg)) {
- 			vq->vring.desc[i].flags = VRING_DESC_F_NEXT|VRING_DESC_F_WRITE;
- 			vq->vring.desc[i].addr = sg_phys(sg);
- 			vq->vring.desc[i].len = sg->length;
-@@ -324,29 +300,23 @@ int virtqueue_add_sgs(struct virtqueue *_vq,
- 		      void *data,
- 		      gfp_t gfp)
- {
--	unsigned int i, total_out, total_in;
-+	unsigned int i, total_sg = 0;
- 
- 	/* Count them first. */
--	for (i = total_out = total_in = 0; i < out_sgs; i++) {
--		struct scatterlist *sg;
--		for (sg = sgs[i]; sg; sg = sg_next(sg))
--			total_out++;
--	}
--	for (; i < out_sgs + in_sgs; i++) {
-+	for (i = 0; i < out_sgs + in_sgs; i++) {
- 		struct scatterlist *sg;
- 		for (sg = sgs[i]; sg; sg = sg_next(sg))
--			total_in++;
-+			total_sg++;
- 	}
--	return virtqueue_add(_vq, sgs, sg_next_chained,
--			     total_out, total_in, out_sgs, in_sgs, data, gfp);
-+	return virtqueue_add(_vq, sgs, total_sg, out_sgs, in_sgs, data, gfp);
- }
- EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
- 
- /**
-  * virtqueue_add_outbuf - expose output buffers to other end
-  * @vq: the struct virtqueue we're talking about.
-- * @sgs: array of scatterlists (need not be terminated!)
-- * @num: the number of scatterlists readable by other side
-+ * @sg: scatterlist (must be well-formed and terminated!)
-+ * @num: the number of entries in @sg readable by other side
-  * @data: the token identifying the buffer.
-  * @gfp: how to do memory allocations (if necessary).
-  *
-@@ -356,19 +326,19 @@ EXPORT_SYMBOL_GPL(virtqueue_add_sgs);
-  * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
-  */
- int virtqueue_add_outbuf(struct virtqueue *vq,
--			 struct scatterlist sg[], unsigned int num,
-+			 struct scatterlist *sg, unsigned int num,
- 			 void *data,
- 			 gfp_t gfp)
- {
--	return virtqueue_add(vq, &sg, sg_next_arr, num, 0, 1, 0, data, gfp);
-+	return virtqueue_add(vq, &sg, num, 1, 0, data, gfp);
- }
- EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
- 
- /**
-  * virtqueue_add_inbuf - expose input buffers to other end
-  * @vq: the struct virtqueue we're talking about.
-- * @sgs: array of scatterlists (need not be terminated!)
-- * @num: the number of scatterlists writable by other side
-+ * @sg: scatterlist (must be well-formed and terminated!)
-+ * @num: the number of entries in @sg writable by other side
-  * @data: the token identifying the buffer.
-  * @gfp: how to do memory allocations (if necessary).
-  *
-@@ -378,11 +348,11 @@ EXPORT_SYMBOL_GPL(virtqueue_add_outbuf);
-  * Returns zero or a negative error (ie. ENOSPC, ENOMEM, EIO).
-  */
- int virtqueue_add_inbuf(struct virtqueue *vq,
--			struct scatterlist sg[], unsigned int num,
-+			struct scatterlist *sg, unsigned int num,
- 			void *data,
- 			gfp_t gfp)
- {
--	return virtqueue_add(vq, &sg, sg_next_arr, 0, num, 0, 1, data, gfp);
-+	return virtqueue_add(vq, &sg, num, 0, 1, data, gfp);
- }
- EXPORT_SYMBOL_GPL(virtqueue_add_inbuf);
- 
--- 
-1.9.1
-
+>
+> Thanks,
+> Gaurav Patel
+> Email: Gspatel@hp.com
+> Cell # 832-382-5550
+>
+> -----Original Message-----
+> From: Ming Lei [mailto:ming.lei@canonical.com]
+> Sent: Wednesday, September 10, 2014 6:01 PM
+> To: Patel, Gaurav
+> Cc: Robert Hancock; linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List
+> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+>
+> On Thu, Sep 11, 2014 at 12:11 AM, Patel, Gaurav <gspatel@hp.com> wrote:
+>>
+>> ">> When we use hdparm to download firmware on system with Marvell
+>>>> 88SE9125 SATA controller, it returns failure always and it has been
+>>>> observed in several systems:"
+>>
+>>  [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).
+>
+> But RedHat65 ships a 2.6.32 kernel as you said, and you can test the stable
+> 2.6.32 kernel on one ubuntu release too.
+>
+> As far as I can tell, the problem is very probably related with kernel, that is why I suggest you to test upstream kernel and run 'git bisect' later to find the commit which caused the regression.
+>
+> But looks you have simply install problem.
+>
+> Thanks,
+>
+>
+>>
+>> Thanks,
+>> Gaurav Patel
+>> Email: Gspatel@hp.com
+>> Cell # 832-382-5550
+>>
+>>
+>> -----Original Message-----
+>> From: Ming Lei [mailto:ming.lei@canonical.com]
+>> Sent: Wednesday, September 10, 2014 1:34 AM
+>> To: Robert Hancock
+>> Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List;
+>> Patel, Gaurav
+>> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
+>> controller
+>>
+>> On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>>> On 01/09/14 02:22 AM, Ming Lei wrote:
+>>>>
+>>>> Hi Guys,
+>>>>
+>>>> When we use hdparm to download firmware on system with Marvell
+>>>> 88SE9125 SATA controller, it returns failure always and it has been
+>>>> observed in several systems:
+>>>>
+>>>> #hdparm --fwdownload-mode7 fw.bin
+>>>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
+>>>>
+>>>> /dev/sda:
+>>>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
+>>>> FAILED: Input/output error
+>>>
+>>>
+>>> Any errors in dmesg after doing this?
+>>
+>> No any failure log from kernel.
+>>
+>> Thanks,
