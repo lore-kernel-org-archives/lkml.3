@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945AbaIKM6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:58:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51564 "EHLO
+	id S1755501AbaIKM6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:58:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51559 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755402AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755394AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>,
-        "Ben Hawkes" <hawkes@google.com>
+CC: akpm@linux-foundation.org,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.945253532@decadent.org.uk>
+Message-ID: <lsq.1410438733.769745807@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 082/131] HID: logitech: perform bounds checking on
- device_id early enough
+Subject: [PATCH 3.2 087/131] USB: sisusb: add device id for Magic Control
+ USB video
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,58 +33,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Stephen Hemminger <stephen@networkplumber.org>
 
-commit ad3e14d7c5268c2e24477c6ef54bbdf88add5d36 upstream.
+commit 5b6b80aeb21091ed3030b9b6aae597d81326f1aa upstream.
 
-device_index is a char type and the size of paired_dj_deivces is 7
-elements, therefore proper bounds checking has to be applied to
-device_index before it is used.
+I have a j5 create (JUA210) USB 2 video device and adding it device id
+to SIS USB video gets it to work.
 
-We are currently performing the bounds checking in
-logi_dj_recv_add_djhid_device(), which is too late, as malicious device
-could send REPORT_TYPE_NOTIF_DEVICE_UNPAIRED early enough and trigger the
-problem in one of the report forwarding functions called from
-logi_dj_raw_event().
-
-Fix this by performing the check at the earliest possible ocasion in
-logi_dj_raw_event().
-
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-logitech-dj.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/usb/misc/sisusbvga/sisusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -230,13 +230,6 @@ static void logi_dj_recv_add_djhid_devic
- 		return;
- 	}
- 
--	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
--	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&djrcv_hdev->dev, "%s: invalid device index:%d\n",
--			__func__, dj_report->device_index);
--		return;
--	}
--
- 	if (djrcv_dev->paired_dj_devices[dj_report->device_index]) {
- 		/* The device is already known. No need to reallocate it. */
- 		dbg_hid("%s: device is already known\n", __func__);
-@@ -713,6 +706,12 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
-+	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
-+		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+				__func__, dj_report->device_index);
-+		return false;
-+	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
- 	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -3248,6 +3248,7 @@ static const struct usb_device_id sisusb
+ 	{ USB_DEVICE(0x0711, 0x0918) },
+ 	{ USB_DEVICE(0x0711, 0x0920) },
+ 	{ USB_DEVICE(0x0711, 0x0950) },
++	{ USB_DEVICE(0x0711, 0x5200) },
+ 	{ USB_DEVICE(0x182d, 0x021c) },
+ 	{ USB_DEVICE(0x182d, 0x0269) },
+ 	{ }
 
