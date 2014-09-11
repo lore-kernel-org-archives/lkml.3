@@ -1,157 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171AbaIKQFT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:05:19 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:41012 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145AbaIKQFP (ORCPT
+	id S1757187AbaIKQFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:05:32 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:63503 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756156AbaIKQF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:05:15 -0400
+	Thu, 11 Sep 2014 12:05:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJaML_S+6LUn1uPLrScXxUJL+1N1B+Fa08ioxKt933nCw@mail.gmail.com>
-References: <1409781429-27593-1-git-send-email-keescook@chromium.org>
-	<1409781429-27593-4-git-send-email-keescook@chromium.org>
-	<20140904170349.GL7156@arm.com>
-	<CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
-	<20140904172748.GO7156@arm.com>
-	<20140908191634.GV5598@outflux.net>
-	<20140908215506.GA4759@dator>
-	<CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
-	<20140909123829.GK1754@arm.com>
-	<CAGXu5jJoW-B7WwuFUhbN4e1aL-HVxa9x4da9hB9DcCGEXVLgzw@mail.gmail.com>
-	<20140910175126.GJ1710@arm.com>
-	<CAGXu5jJaML_S+6LUn1uPLrScXxUJL+1N1B+Fa08ioxKt933nCw@mail.gmail.com>
-Date: Thu, 11 Sep 2014 09:05:14 -0700
-X-Google-Sender-Auth: A3CxzlvK0vm_by9OrcygAFsVq00
-Message-ID: <CAGXu5jJ_wLsKOuVgbS7cb+k-nyA=8XpaMYwov0o3hdFdyjaCmA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
-From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Rabin Vincent <rabin@rab.in>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Liu hua <sdu.liu@huawei.com>,
-        Nikolay Borisov <Nikolay.Borisov@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Doug Anderson <dianders@google.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+X-Originating-IP: [2620:0:1000:fd28:d59f:629b:bb3e:ba7e]
+In-Reply-To: <20140911132935.068DCC408F6@trevor.secretlab.ca>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	<20140911132935.068DCC408F6@trevor.secretlab.ca>
+Date: Thu, 11 Sep 2014 09:05:25 -0700
+Message-ID: <CAOesGMhQXSTb_c_fDcVGubkUkoPVvikm3k7W8sOCZJNwqmqBUg@mail.gmail.com>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+From: Olof Johansson <olof@lixom.net>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 8:27 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Wed, Sep 10, 2014 at 10:51 AM, Will Deacon <will.deacon@arm.com> wrote:
->> Hi Kees,
+On Thu, Sep 11, 2014 at 6:29 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Mon,  1 Sep 2014 22:57:38 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>> ACPI 5.1 has been released and now be freely available for
+>> download [1]. It fixed some major gaps to run ACPI on ARM,
+>> this patch just follow the ACPI 5.1 spec and prepare the
+>> code to run ACPI on ARM64.
 >>
->> On Tue, Sep 09, 2014 at 03:33:11PM +0100, Kees Cook wrote:
->>> On Tue, Sep 9, 2014 at 5:38 AM, Will Deacon <will.deacon@arm.com> wrote:
->>> > On Mon, Sep 08, 2014 at 11:40:43PM +0100, Kees Cook wrote:
->>> >> Ah, so it was, yes! Will, which version of this logic would you prefer?
->>> >
->>> > I still don't think we're solving the general problem here -- we're actually
->>> > just making the ftrace case work. It is perfectly possible for another CPU
->>> > to undergo a TLB miss and refill whilst the page table is being modified by
->>> > the CPU with preemption disabled. In this case, a local tlb flush won't
->>> > invalidate that entry on the other core, and we have no way of knowing when
->>> > the original permissions are actually observed across the system.
->>>
->>> The fixmap is used by anything doing patching _except_ ftrace,
->>> actually. It's used by jump labels, kprobes, and kgdb. This code is
->>> the general case. Access to set_fixmap is done via the kernel patching
->>> interface: patch_text().
->>>
->>> Right now, the patch_text interface checks cache_ops_need_broadcast(),
->>> and conditionally runs under stop_machine(). We could make this
->>> unconditional, and we'll avoid any problem with TLB misses on another
->>> CPU.
+>> ACPI 5.1 has some major changes for the following tables and
+>> method which are essential for ARM platforms:
+>> 1) MADT table updates.
+>> 2) FADT updates for PSCI
+>> 3) GTDT
 >>
->> Yes, it we always use stop_machine, that solves the TLB broadcast problem
->> and we could do that if CONFIG_ARM_ERRATA_798181 is set.
->
-> Okay, sounds good.
->
+>> This patch set is the ARM64 ACPI core patches covered MADT, FADT
+>> and GTDT, platform board specific drivers are not covered by this
+>> patch set, but we provide drivers for Juno to boot with ACPI only
+>> in the follwing patch set for review purpose.
 >>
->>> > So I think we need to figure out a way to invalidate the TLB properly. What
->>> > do architectures that use IPIs for TLB broadcasting do (x86, some powerpc,
->>> > mips, ...)? They must have exactly the same problem.
->>>
->>> I don't think this should be done at the set_fixmap level, as it is
->>> more a primitive. I think making sure patch_text() always works would
->>> be best. What do you think of using an unconditional stop_machine()
->>> instead?
+>> We first introduce acpi.c and its related head file which are needed
+>> by ACPI core, and then get RSDP to extract all the ACPI boot-time tables.
+>> When all the boot-time tables (FADT, MADT, GTDT) are ready, then
+>> parse them to init the sytem when booted. Specifically,
+>> a) we use FADT to init PSCI and use PSCI to boot SMP;
+>> b) Use MADT for GIC init and SMP init;
+>> c) GTDT for arch timer init.
 >>
->> Why not move the TLB invalidation into patch_text, then we can do
->> stop_machine if IS_ENABLED(CONFIG_ARM_ERRATA_798181) ||
->> tlb_ops_need_broadcast()?
+>> This patch set is based on 3.17-rc2 and was tested by Graeme on Juno
+>> and FVP base model boot with ACPI only OK, if you want to test them,
+>> you can pull from acpi-5.1-v3 branch in leg/acpi repo:
+>> git://git.linaro.org/leg/acpi/acpi.git
+>>
+>> Updates since v2:
+>>  - Refactor the code to make SMP/PSCI init with less sperated init
+>>    path by Tomasz
+>>  - make ACPI depend on EXPERT
+>>  - Address lots of comments from Catalin, Sudeep, Geoff
+>>  - Add Juno device ACPI driver patches for review
+>>
+>> Updates since v1:
+>>  - Set ACPI default off on ARM64 suggested by Olof;
+>>  - Rebase the patch set on top of linux-next branch/linux-pm tree which
+>>    includes the ACPICA for full ACPI 5.1 support.
+>>  - Update the document as suggested;
+>>  - Adress lots of comments from Mark, Sudeep, Randy, Naresh, Olof, Geoff
+>>    and more...
+>>
+>> [1]: http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
 >
-> The (local) TLB flush needs to happen for patch_text to do its work,
-> so I'd rather it stay in set_fixmap, otherwise the flush calls will
-> have to follow each call of set_fixmap.
+> I've read through this entire series now. In my mind, aside from a few
+> comments that I know you're addressing, this is ready.  The hooks into
+> arm64 core code are not terribly invasive, it is nicely organized and
+> manageable. Get the next version out ASAP, but I would also like to see
+> the diffs from this version to the next so I don't need to review the
+> entire series again.
+
+I'm going to take a pass on the next version of the series that will
+get posted; I've been a bit too busy to pay close attention to the
+series the last few weeks and I might as well wait until the next
+version at this rate.
+
+> Regarding the requests to refactor ACPICA to work better for ARM. I
+> completely agree that it should be done, but I do not think it should be
+> a prerequisite to getting this core support merged. That kind of
+> refactoring is far easier to justify when it has immediate improvement
+> on the mainline codebase, and it gives us a working baseline to test
+> against. Doing it the other way around just makes things harder.
 >
-> Is there a reason tlb_ops_need_broadcast() doesn't check
-> IS_ENABLED(CONFIG_ARM_ERRATA_798181) itself?
+> I would really like to see the next version of this series go into
+> linux-next. I think this is ready for some wider exposure. Have you got
+> a branch being pulled into Fengguang's autobuilder yet?
 
-Actually, this doesn't make sense. If we're using
-local_flush_tlb_kernel_range() in set_fixmap, we must always run under
-stop_machine. The needs-broadcast case is solved by using
-local_flush_tlb_kernel_range(), and the TLB-miss-on-other-CPU case is
-solved by using stop_machine(). This is how the ftrace case work,
-though not via fixmap.
+That's not how -next works. We only add code to -next that is targeted
+to the upcoming release, we certainly don't add it to get "wider
+exposure". If the code is ready then it can go in, but that's not the
+case at this time.
 
-Since we need to flush the TLB on each fixmap change during
-patch_text(), if we want to make the local_flush_tlb_... optionally
-use flush_tlb_... to avoid calling stop_machine in the
-does't-need-broadcast case, then we'd be checking in multiple places,
-making this code overly complex for this rare operation. Is there a
-good reason to complicate this code to avoid stop_machine()?
-
-I think we should just do this:
-
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af47733..5038960e3c55 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -60,16 +125,5 @@ void __kprobes patch_text(void *addr, unsigned int insn)
-                .insn = insn,
-        };
-
--       if (cache_ops_need_broadcast()) {
--               stop_machine(patch_text_stop_machine, &patch, cpu_online_mask);
--       } else {
--               bool straddles_word = IS_ENABLED(CONFIG_THUMB2_KERNEL)
--                                     && __opcode_is_thumb32(insn)
--                                     && ((uintptr_t)addr & 2);
--
--               if (straddles_word)
--                       stop_machine(patch_text_stop_machine, &patch, NULL);
--               else
--                       __patch_text(addr, insn);
--       }
-+       stop_machine(patch_text_stop_machine, &patch, NULL);
- }
+For "wider exposure" -- who do you have in mind? Everybody that's
+currently got hardware relevant for this already needs out-of-tree
+patches, so getting it into -next doesn't add any exposure. Doesn't
+Linaro do kernel builds and publish trees for this reason already?
 
 
--Kees
-
->> Then that just leaves ftrace.
->
-> ftrace is already covered by stop_machine. Is there something I missing there?
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
--- 
-Kees Cook
-Chrome OS Security
+-Olof
