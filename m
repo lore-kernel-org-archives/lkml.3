@@ -1,142 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687AbaIKPjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:39:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56847 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943AbaIKPjN (ORCPT
+	id S1756666AbaIKPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:40:26 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:49738 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751146AbaIKPkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:39:13 -0400
-Date: Thu, 11 Sep 2014 17:39:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-Message-ID: <20140911153910.GZ3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+	Thu, 11 Sep 2014 11:40:25 -0400
+Message-ID: <5411C264.8000105@hurleysoftware.com>
+Date: Thu, 11 Sep 2014 11:40:20 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
+References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com> <20140911000343.GA5328@kroah.com> <5410E8A2.5030802@hurleysoftware.com> <20140911002410.GA11732@kroah.com> <5410F08D.10707@hurleysoftware.com> <20140911135610.GD15632@thunk.org>
+In-Reply-To: <20140911135610.GD15632@thunk.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
-> The scheduler tries to compute how many tasks a group of CPUs can handle by
-> assuming that a task's load is SCHED_LOAD_SCALE and a CPU capacity is
-> SCHED_CAPACITY_SCALE.
-> We can now have a better idea of the capacity of a group of CPUs and of the
-> utilization of this group thanks to the rework of group_capacity_orig and the
-> group_utilization. We can now deduct how many capacity is still available.
+On 09/11/2014 09:56 AM, Theodore Ts'o wrote:
+> On Wed, Sep 10, 2014 at 08:45:01PM -0400, Peter Hurley wrote:
+>>> I'm all for working around broken hardware in the kernel, but this seems
+>>> like a very old issue, if it's even one at all, that we would be
+>>> changing for no one who has reported it (that I know of...)
+>>
+>> How to unwedge a terminal comes up from time to time.
 > 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
+> Are you trying to unwedge a terminal using hardware flow control, or
+> software flow control?
 
-A few minor changes I did while going through it.
+For unwedging software flow control.
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5669,7 +5669,7 @@ struct sg_lb_stats {
- 	unsigned int idle_cpus;
- 	unsigned int group_weight;
- 	enum group_type group_type;
--	int group_out_of_capacity;
-+	int group_no_capacity;
- #ifdef CONFIG_NUMA_BALANCING
- 	unsigned int nr_numa_running;
- 	unsigned int nr_preferred_running;
-@@ -5931,37 +5931,37 @@ static inline int sg_imbalanced(struct s
- 	return group->sgc->imbalance;
- }
- 
--static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
--			struct lb_env *env)
-+static inline bool
-+group_has_capacity(struct lb_env *env, struct sg_lb_stats *sgs)
- {
- 	if ((sgs->group_capacity_orig * 100) >
- 			(sgs->group_utilization * env->sd->imbalance_pct))
--		return 1;
-+		return true;
- 
- 	if (sgs->sum_nr_running < sgs->group_weight)
--		return 1;
-+		return true;
- 
--	return 0;
-+	return false;
- }
- 
--static inline int group_is_overloaded(struct sg_lb_stats *sgs,
--			struct lb_env *env)
-+static inline bool
-+group_is_overloaded(struct lb_env *env, struct sg_lb_stats *sgs)
- {
- 	if (sgs->sum_nr_running <= sgs->group_weight)
--		return 0;
-+		return false;
- 
- 	if ((sgs->group_capacity_orig * 100) <
- 			(sgs->group_utilization * env->sd->imbalance_pct))
--		return 1;
-+		return true;
- 
--	return 0;
-+	return false;
- }
- 
--static enum group_type
--group_classify(struct sched_group *group, struct sg_lb_stats *sgs,
--			struct lb_env *env)
-+static enum group_type group_classify(struct lb_env *env,
-+				      struct sched_group *group,
-+				      struct sg_lb_stats *sgs)
- {
--	if (group_is_overloaded(sgs, env))
-+	if (group_is_overloaded(env, sgs))
- 		return group_overloaded;
- 
- 	if (sg_imbalanced(group))
-@@ -6024,9 +6024,8 @@ static inline void update_sg_lb_stats(st
- 
- 	sgs->group_weight = group->group_weight;
- 
--	sgs->group_type = group_classify(group, sgs, env);
--
--	sgs->group_out_of_capacity = group_is_overloaded(sgs, env);
-+	sgs->group_type = group_classify(env, group, sgs);
-+	sgs->group_no_capacity = group_is_overloaded(env, sgs);
- }
- 
- /**
-@@ -6157,9 +6156,9 @@ static inline void update_sd_lb_stats(st
- 		 * with a large weight task outweighs the tasks on the system).
- 		 */
- 		if (prefer_sibling && sds->local &&
--		    group_has_free_capacity(&sds->local_stat, env)) {
-+		    group_has_capacity(env, &sds->local_stat)) {
- 			if (sgs->sum_nr_running > 1)
--				sgs->group_out_of_capacity = 1;
-+				sgs->group_no_capacity = 1;
- 			sgs->group_capacity = min(sgs->group_capacity,
- 						SCHED_CAPACITY_SCALE);
- 		}
-@@ -6430,9 +6429,8 @@ static struct sched_group *find_busiest_
- 		goto force_balance;
- 
- 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
--	if (env->idle == CPU_NEWLY_IDLE &&
--			group_has_free_capacity(local, env) &&
--			busiest->group_out_of_capacity)
-+	if (env->idle == CPU_NEWLY_IDLE && group_has_capacity(env, local) &&
-+	    busiest->group_no_capacity)
- 		goto force_balance;
- 
- 	/*
+Like you point out, unwedging hardware flow control would be more complicated
+and less predictable.
+
+> For software flow control, this is a guarantee that we can make wrt to
+> the behavior of tcflow().  For hardware flow control, we can't make
+> any guarantees, whether it's with tcflow(TCOON) or tcflow(TCOOF);
+> tcflow(TCOON). 
+> 
+>> It's possible that this may cause userspace breakage. Some app
+>> may call tcflow(TCOON) thus accidently overriding the flow control
+>> state when it would have had no effect before.
+> 
+> It's very likely that an application that would be using tcflow() at
+> all would first be sending a TCOOFF, and then sending a TCOON.  So
+> this doesn't worry me that much.
+> 
+> Indeed, given that the definition of how TCION and TCIOFF is worded
+> (send a START or STOP command), it's completely reasonable to
+> interpret TCOON and TCOOFF as emulating what would happen if the
+> system received a START or STOP command.  (Note though that part of
+> this is that Posix doesn't define CRTSCTS, so POSIX is entirely silent
+> on the subject of hardware flow control).
+
+This is the basic interpretation I assumed, and most of what the tty core
+already did.
+
+Regards,
+Peter Hurley
