@@ -1,131 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaIKD7P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 23:59:15 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:37000 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbaIKD7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 23:59:13 -0400
-Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
-From: Ching Huang <ching2048@areca.com.tw>
-To: Christoph Hellwig <hch@infradead.org>, Tomas Henzl <thenzl@redhat.com>
-Cc: jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <541020CB.8010302@redhat.com>
-References: <1408433122.4748.73.camel@Centos6.3-64>
-	 <53FDE490.1070201@redhat.com> <1409240809.4762.259.camel@Centos6.3-64>
-	 <53FF2544.8020601@redhat.com> <20140909163057.GA25745@infradead.org>
-	 <541020CB.8010302@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Sep 2014 11:59:10 +0800
-Message-ID: <1410407950.4753.18.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+	id S1751501AbaIKEC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 00:02:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32865 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704AbaIKEC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 00:02:28 -0400
+Message-ID: <54111E99.7080309@zytor.com>
+Date: Wed, 10 Sep 2014 21:01:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>, x86@kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
+In-Reply-To: <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 11:58 +0200, Tomas Henzl wrote:
-> On 09/09/2014 06:30 PM, Christoph Hellwig wrote:
-> > Ching,
-> >
-> > do you have a chance to address Thomas second concern below?  As
-> > far as I can tell (Thomas, please correct me) that's the last
-> > outstanding concern, and I'd really like to merge the arcmsr updates
-> > for the Linux 3.18 merge window.
+On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
+> This patch add arch specific code for kernel address sanitizer.
 > 
-> Correct, still awaiting a response.
+> 16TB of virtual addressed used for shadow memory.
+> It's located in range [0xffff800000000000 - 0xffff900000000000]
+> Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
+> to 0xffff900000000000.
 
-Christoph, Tomas,
+NAK on this.
 
-Sorry for the late reply.
+0xffff880000000000 is the lowest usable address because we have agreed
+to leave 0xffff800000000000-0xffff880000000000 for the hypervisor or
+other non-OS uses.
 
-I think I misunderstand Tomas' meaning.
-The spin lock in arcmsr_hbaD_polling_ccbdone() is necessary to protect doneq_index and have to be modified as following.
+Bumping PAGE_OFFSET seems needlessly messy, why not just designate a
+zone higher up in memory?
 
-static int arcmsr_hbaD_polling_ccbdone(struct AdapterControlBlock *acb,
-				struct CommandControlBlock *poll_ccb)
-{
-	bool error;
-	uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
-	int rtn, doneq_index, index_stripped, outbound_write_pointer, toggle;
-	unsigned long flags;
-	struct ARCMSR_CDB *arcmsr_cdb;
-	struct CommandControlBlock *pCCB;
-	struct MessageUnit_D *pmu = acb->pmuD;
-
-polling_hbaD_ccb_retry:
-	poll_count++;
-	while (1) {
-		spin_lock_irqsave(&acb->doneq_lock, flags);
-		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
-		doneq_index = pmu->doneq_index;
-		if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
-			spin_unlock_irqrestore(&acb->doneq_lock, flags);
-			if (poll_ccb_done) {
-				rtn = SUCCESS;
-				break;
-			} else {
-				msleep(25);
-				if (poll_count > 40) {
-					rtn = FAILED;
-					break;
-				}
-				goto polling_hbaD_ccb_retry;
-			}
-		}
-		toggle = doneq_index & 0x4000;
-		index_stripped = (doneq_index & 0xFFF) + 1;
-		index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
-		pmu->doneq_index = index_stripped ? (index_stripped | toggle) :
-			((index_stripped + 1) | (toggle ^ 0x4000));
-		spin_unlock_irqrestore(&acb->doneq_lock, flags);
-		doneq_index = pmu->doneq_index;
-		flag_ccb = pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;
-		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
-		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset +
-			ccb_cdb_phy);
-		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock,
-			arcmsr_cdb);
-		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
-		if ((pCCB->acb != acb) ||
-			(pCCB->startdone != ARCMSR_CCB_START)) {
-			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
-				pr_notice("arcmsr%d: scsi id = %d "
-					"lun = %d ccb = '0x%p' poll command "
-					"abort successfully\n"
-					, acb->host->host_no
-					, pCCB->pcmd->device->id
-					, (u32)pCCB->pcmd->device->lun
-					, pCCB);
-				pCCB->pcmd->result = DID_ABORT << 16;
-				arcmsr_ccb_complete(pCCB);
-				continue;
-			}
-			pr_notice("arcmsr%d: polling an illegal "
-				"ccb command done ccb = '0x%p' "
-				"ccboutstandingcount = %d\n"
-				, acb->host->host_no
-				, pCCB
-				, atomic_read(&acb->ccboutstandingcount));
-			continue;
-		}
-		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
-			? true : false;
-		arcmsr_report_ccb_state(acb, pCCB, error);
-	}
-	return rtn;
-}
-
-
-> 
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+	-hpa
 
