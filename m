@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaIKNTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:19:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51492 "EHLO
+	id S1756123AbaIKNVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:21:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51489 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755363AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1754965AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Christopher Alexander Tobias Schulze" <cat.schulze@alice-dsl.net>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "James Bottomley" <JBottomley@Parallels.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "Steven Haber" <steven@qumulo.com>, "Christoph Hellwig" <hch@lst.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.171064389@decadent.org.uk>
+Message-ID: <lsq.1410438733.124853117@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 117/131] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
+Subject: [PATCH 3.2 012/131] scsi: handle flush errors properly
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,72 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+From: James Bottomley <JBottomley@Parallels.com>
 
-[ Upstream commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 ]
+commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54 upstream.
 
-Fix regression in bbc i2c temperature and fan control on some Sun systems
-that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
-being present on the (second) i2c bus where the temperature sensors and fan
-control are located. (The check for the number of resources was removed when
-the driver was ported to a pure OF driver in mid 2008.)
+Flush commands don't transfer data and thus need to be special cased
+in the I/O completion handler so that we can propagate errors to
+the block layer and filesystem.
 
-Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Steven Haber <steven@qumulo.com>
+Tested-by: Steven Haber <steven@qumulo.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/sbus/char/bbc_envctrl.c |  6 ++++++
- drivers/sbus/char/bbc_i2c.c     | 11 ++++++++---
- 2 files changed, 14 insertions(+), 3 deletions(-)
+ drivers/scsi/scsi_lib.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
-index 160e751..0787b97 100644
---- a/drivers/sbus/char/bbc_envctrl.c
-+++ b/drivers/sbus/char/bbc_envctrl.c
-@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!tp)
- 		return;
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -793,6 +793,14 @@ void scsi_io_completion(struct scsi_cmnd
+ 			scsi_next_command(cmd);
+ 			return;
+ 		}
++	} else if (blk_rq_bytes(req) == 0 && result && !sense_deferred) {
++		/*
++		 * Certain non BLOCK_PC requests are commands that don't
++		 * actually transfer anything (FLUSH), so cannot use
++		 * good_bytes != blk_rq_bytes(req) as the signal for an error.
++		 * This sets the error explicitly for the problem case.
++		 */
++		error = __scsi_error_from_host_byte(cmd, result);
+ 	}
  
-+	INIT_LIST_HEAD(&tp->bp_list);
-+	INIT_LIST_HEAD(&tp->glob_list);
-+
- 	tp->client = bbc_i2c_attach(bp, op);
- 	if (!tp->client) {
- 		kfree(tp);
-@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2c_bus *bp, struct platform_device *op,
- 	if (!fp)
- 		return;
- 
-+	INIT_LIST_HEAD(&fp->bp_list);
-+	INIT_LIST_HEAD(&fp->glob_list);
-+
- 	fp->client = bbc_i2c_attach(bp, op);
- 	if (!fp->client) {
- 		kfree(fp);
-diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
-index 5426682..7179f72 100644
---- a/drivers/sbus/char/bbc_i2c.c
-+++ b/drivers/sbus/char/bbc_i2c.c
-@@ -301,13 +301,18 @@ static struct bbc_i2c_bus * __init attach_one_i2c(struct platform_device *op, in
- 	if (!bp)
- 		return NULL;
- 
-+	INIT_LIST_HEAD(&bp->temps);
-+	INIT_LIST_HEAD(&bp->fans);
-+
- 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
- 	if (!bp->i2c_control_regs)
- 		goto fail;
- 
--	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
--	if (!bp->i2c_bussel_reg)
--		goto fail;
-+	if (op->num_resources == 2) {
-+		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
-+		if (!bp->i2c_bussel_reg)
-+			goto fail;
-+	}
- 
- 	bp->waiting = 0;
- 	init_waitqueue_head(&bp->wq);
+ 	/* no bidi support for !REQ_TYPE_BLOCK_PC yet */
 
