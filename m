@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964AbaIKMlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:41:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51669 "EHLO
+	id S1755950AbaIKMlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:41:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51666 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755448AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755449AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Oliver Neukum" <oneukum@suse.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Patrick Riphagen" <patrick.riphagen@xsens.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <johan@kernel.org>,
+        "Frans Klaver" <frans.klaver@xsens.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.311955030@decadent.org.uk>
+Message-ID: <lsq.1410438733.163751165@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 015/131] usbcore: don't log on consecutive debounce
- failures of the same port
+Subject: [PATCH 3.2 046/131] USB: serial: ftdi_sio: Add support for new
+ Xsens devices
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +34,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Patrick Riphagen <patrick.riphagen@xsens.com>
 
-commit 5ee0f803cc3a0738a63288e4a2f453c85889fbda upstream.
+commit 4bdcde358b4bda74e356841d351945ca3f2245dd upstream.
 
-Some laptops have an internal port for a BT device which picks
-up noise when the kill switch is used, but not enough to trigger
-printk_rlimit(). So we shouldn't log consecutive faults of this kind.
+This adds support for new Xsens devices, using Xsens' own Vendor ID.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Patrick Riphagen <patrick.riphagen@xsens.com>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Cc: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Error message already includes the port number]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 3 +++
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3354,6 +3354,7 @@ static void hub_port_connect_change(stru
- 			le16_to_cpu(hub->descriptor->wHubCharacteristics);
- 	struct usb_device *udev;
- 	int status, i;
-+	static int unreliable_port = -1;
- 
- 	dev_dbg (hub_dev,
- 		"port %d, status %04x, change %04x, %s\n",
-@@ -3415,10 +3416,11 @@ static void hub_port_connect_change(stru
- 				USB_PORT_STAT_C_ENABLE)) {
- 		status = hub_port_debounce(hub, port1);
- 		if (status < 0) {
--			if (printk_ratelimit())
-+			if (port1 != unreliable_port && printk_ratelimit())
- 				dev_err(hub_dev, "connect-debounce failed, "
- 						"port %d disabled\n", port1);
- 			portstatus &= ~USB_PORT_STAT_CONNECTION;
-+			unreliable_port = port1;
- 		} else {
- 			portstatus = status;
- 		}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -684,6 +684,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+ 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -140,6 +140,9 @@
+ /*
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
++#define XSENS_VID		0x2639
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_MTW_PID		0x0200	/* Xsens MTw */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 
