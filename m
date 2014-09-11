@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843AbaIKPtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:49:47 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39208 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768AbaIKPto (ORCPT
+	id S1756764AbaIKPtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:49:51 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:47669 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848AbaIKPts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:49:44 -0400
+	Thu, 11 Sep 2014 11:49:48 -0400
 From: mathieu.poirier@linaro.org
 To: will.deacon@arm.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org
 Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
@@ -16,9 +16,9 @@ Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
         robbelibobban@gmail.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dsaxena@linaro.org, mathieu.poirier@linaro.org
-Subject: [PATCH 04/11 v6] coresight-etb: add CoreSight ETB driver
-Date: Thu, 11 Sep 2014 09:49:11 -0600
-Message-Id: <1410450558-12358-5-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH 06/11 v6] coresight-replicator: add CoreSight Replicator driver
+Date: Thu, 11 Sep 2014 09:49:13 -0600
+Message-Id: <1410450558-12358-7-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
@@ -28,35 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-This driver manages CoreSight ETB (Embedded Trace Buffer) which
-acts as a circular buffer sink collecting generated trace data.
+This driver manages non-configurable CoreSight Replicator that
+takes a single input trace data stream and replicates it to
+produce two identical trace data output streams. Replicators
+are typically used to route single interleaved trace data
+stream to two or more sinks.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Panchaxari Prasannamurthy <panchaxari.prasannamurthy@linaro.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile          |   3 +-
- drivers/coresight/coresight-etb10.c | 536 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 538 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-etb10.c
+ drivers/coresight/Makefile               |   3 +-
+ drivers/coresight/coresight-replicator.c | 153 +++++++++++++++++++++++++++++++
+ 2 files changed, 155 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/coresight/coresight-replicator.c
 
 diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 540df99..5dd3d98 100644
+index 26a07e1..3a32c06 100644
 --- a/drivers/coresight/Makefile
 +++ b/drivers/coresight/Makefile
-@@ -3,4 +3,5 @@
- #
+@@ -4,4 +4,5 @@
  obj-$(CONFIG_CORESIGHT) += coresight.o
  obj-$(CONFIG_OF) += of_coresight.o
--obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o
-+obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
-+					   coresight-etb10.o
-diff --git a/drivers/coresight/coresight-etb10.c b/drivers/coresight/coresight-etb10.c
+ obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
+-					   coresight-etb10.o coresight-funnel.o
++					   coresight-etb10.o coresight-funnel.o \
++					   coresight-replicator.o
+diff --git a/drivers/coresight/coresight-replicator.c b/drivers/coresight/coresight-replicator.c
 new file mode 100644
-index 0000000..459e485
+index 0000000..24286c6
 --- /dev/null
-+++ b/drivers/coresight/coresight-etb10.c
-@@ -0,0 +1,536 @@
++++ b/drivers/coresight/coresight-replicator.c
+@@ -0,0 +1,153 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -72,527 +75,144 @@ index 0000000..459e485
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/types.h>
 +#include <linux/device.h>
++#include <linux/platform_device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+#include <linux/uaccess.h>
 +#include <linux/slab.h>
-+#include <linux/spinlock.h>
 +#include <linux/clk.h>
-+#include <linux/seq_file.h>
++#include <linux/of.h>
 +#include <linux/coresight.h>
-+#include <linux/amba/bus.h>
 +
 +#include "coresight-priv.h"
 +
-+#define ETB_RAM_DEPTH_REG	0x004
-+#define ETB_STATUS_REG		0x00c
-+#define ETB_RAM_READ_DATA_REG	0x010
-+#define ETB_RAM_READ_POINTER	0x014
-+#define ETB_RAM_WRITE_POINTER	0x018
-+#define ETB_TRG			0x01c
-+#define ETB_CTL_REG		0x020
-+#define ETB_RWD_REG		0x024
-+#define ETB_FFSR		0x300
-+#define ETB_FFCR		0x304
-+#define ETB_ITMISCOP0		0xee0
-+#define ETB_ITTRFLINACK		0xee4
-+#define ETB_ITTRFLIN		0xee8
-+#define ETB_ITATBDATA0		0xeeC
-+#define ETB_ITATBCTR2		0xef0
-+#define ETB_ITATBCTR1		0xef4
-+#define ETB_ITATBCTR0		0xef8
-+
-+/** register description **/
-+/* STS - 0x00C */
-+#define ETB_STATUS_RAM_FULL	BIT(0)
-+/* CTL - 0x020 */
-+#define ETB_CTL_CAPT_EN		BIT(0)
-+/* FFCR - 0x304 */
-+#define ETB_FFCR_EN_FTC		BIT(0)
-+#define ETB_FFCR_FON_MAN	BIT(6)
-+#define ETB_FFCR_STOP_FI	BIT(12)
-+#define ETB_FFCR_STOP_TRIGGER	BIT(13)
-+
-+#define ETB_FFCR_BIT		6
-+#define ETB_FFSR_BIT		1
-+#define ETB_FRAME_SIZE_WORDS	4
-+
-+/**
-+ * @base:	memory mapped base address for this component.
-+ * @dev:	the device entity associated to this component.
-+ * @csdev:	component vitals needed by the framework.
-+ * @miscdev:	specifics to handle "/dev/xyz.etb" entry.
-+ * @clk:	the clock this component is associated to.
-+ * @spinlock:	only one at a time pls.
-+ * @in_use:	synchronise user space access to etb buffer.
-+ * @buf:	area of memory where ETB buffer content gets sent.
-+ * @buffer_depth: size of @buf.
-+ * @enable:	this ETB is being used.
-+ * @trigger_cntr: amount of words to store after a trigger.
-+ */
-+struct etb_drvdata {
-+	void __iomem		*base;
++struct replicator_drvdata {
 +	struct device		*dev;
 +	struct coresight_device	*csdev;
-+	struct miscdevice	miscdev;
-+	struct clk		*clk;
-+	spinlock_t		spinlock;
-+	atomic_t		in_use;
-+	u8			*buf;
-+	u32			buffer_depth;
-+	bool			enable;
-+	u32			trigger_cntr;
 +};
 +
-+static unsigned int etb_get_buffer_depth(struct etb_drvdata *drvdata)
++static int replicator_enable(struct coresight_device *csdev, int inport,
++			     int outport)
 +{
-+	int ret;
-+	u32 depth = 0;
++	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	/* RO registers don't need locking */
-+	depth = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+	return depth;
-+}
-+
-+static void etb_enable_hw(struct etb_drvdata *drvdata)
-+{
-+	int i;
-+	u32 depth;
-+
-+	CS_UNLOCK(drvdata->base);
-+
-+	depth = drvdata->buffer_depth;
-+	/* reset write RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
-+	/* clear entire RAM buffer */
-+	for (i = 0; i < depth; i++)
-+		writel_relaxed(0x0, drvdata->base + ETB_RWD_REG);
-+
-+	/* reset write RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_WRITE_POINTER);
-+	/* reset read RAM pointer address */
-+	writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	writel_relaxed(drvdata->trigger_cntr, drvdata->base + ETB_TRG);
-+	writel_relaxed(ETB_FFCR_EN_FTC | ETB_FFCR_STOP_TRIGGER,
-+		       drvdata->base + ETB_FFCR);
-+	/* ETB trace capture enable */
-+	writel_relaxed(ETB_CTL_CAPT_EN, drvdata->base + ETB_CTL_REG);
-+
-+	CS_LOCK(drvdata->base);
-+}
-+
-+static int etb_enable(struct coresight_device *csdev)
-+{
-+	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+	int ret;
-+	unsigned long flags;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	etb_enable_hw(drvdata);
-+	drvdata->enable = true;
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	dev_info(drvdata->dev, "ETB enabled\n");
++	dev_info(drvdata->dev, "REPLICATOR enabled\n");
 +	return 0;
 +}
 +
-+static void etb_disable_hw(struct etb_drvdata *drvdata)
++static void replicator_disable(struct coresight_device *csdev, int inport,
++			       int outport)
 +{
-+	u32 ffcr;
++	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
-+	CS_UNLOCK(drvdata->base);
-+
-+	ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
-+	/* stop formatter when a stop has completed */
-+	ffcr |= ETB_FFCR_STOP_FI;
-+	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
-+	/* manually generate a flush of the system */
-+	ffcr |= ETB_FFCR_FON_MAN;
-+	writel_relaxed(ffcr, drvdata->base + ETB_FFCR);
-+
-+	coresight_timeout(drvdata->base, ETB_FFCR, ETB_FFCR_BIT, 0);
-+
-+	/* disable trace capture */
-+	writel_relaxed(0x0, drvdata->base + ETB_CTL_REG);
-+
-+	coresight_timeout(drvdata->base, ETB_FFSR, ETB_FFSR_BIT, 1);
-+	CS_LOCK(drvdata->base);
++	dev_info(drvdata->dev, "REPLICATOR disabled\n");
 +}
 +
-+static void etb_dump_hw(struct etb_drvdata *drvdata)
++static char *replicator_fix_name(struct device *dev, int id)
 +{
-+	int i;
-+	u8 *buf_ptr;
-+	u32 read_data, depth;
-+	u32 read_ptr, write_ptr;
-+	u32 frame_off, frame_endoff;
++	char *name;
++	int ret, size;
 +
-+	CS_UNLOCK(drvdata->base);
++	size = (sizeof(u64) * 2) + strlen(".replicator") + 1;
++	name = devm_kzalloc(dev, size, GFP_KERNEL);
++	if (!name)
++		return NULL;
 +
-+	read_ptr = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
-+	write_ptr = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
++	ret = scnprintf(name, size, "%08x.replicator", id);
 +
-+	frame_off = write_ptr % ETB_FRAME_SIZE_WORDS;
-+	frame_endoff = ETB_FRAME_SIZE_WORDS - frame_off;
-+	if (frame_off) {
-+		dev_err(drvdata->dev,
-+			"write_ptr: %lu not aligned to formatter frame size\n",
-+			(unsigned long)write_ptr);
-+		dev_err(drvdata->dev, "frameoff: %lu, frame_endoff: %lu\n",
-+			(unsigned long)frame_off, (unsigned long)frame_endoff);
-+		write_ptr += frame_endoff;
-+	}
-+
-+	if ((readl_relaxed(drvdata->base + ETB_STATUS_REG)
-+		      & ETB_STATUS_RAM_FULL) == 0)
-+		writel_relaxed(0x0, drvdata->base + ETB_RAM_READ_POINTER);
-+	else
-+		writel_relaxed(write_ptr, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	depth = drvdata->buffer_depth;
-+	buf_ptr = drvdata->buf;
-+	for (i = 0; i < depth; i++) {
-+		read_data = readl_relaxed(drvdata->base +
-+					  ETB_RAM_READ_DATA_REG);
-+		*buf_ptr++ = read_data >> 0;
-+		*buf_ptr++ = read_data >> 8;
-+		*buf_ptr++ = read_data >> 16;
-+		*buf_ptr++ = read_data >> 24;
-+	}
-+
-+	if (frame_off) {
-+		buf_ptr -= (frame_endoff * 4);
-+		for (i = 0; i < frame_endoff; i++) {
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+			*buf_ptr++ = 0x0;
-+		}
-+	}
-+
-+	writel_relaxed(read_ptr, drvdata->base + ETB_RAM_READ_POINTER);
-+
-+	CS_LOCK(drvdata->base);
++	return name;
 +}
 +
-+static void etb_disable(struct coresight_device *csdev)
-+{
-+	struct etb_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	etb_disable_hw(drvdata);
-+	etb_dump_hw(drvdata);
-+	drvdata->enable = false;
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	dev_info(drvdata->dev, "ETB disabled\n");
-+}
-+
-+static const struct coresight_ops_sink etb_sink_ops = {
-+	.enable		= etb_enable,
-+	.disable	= etb_disable,
++static const struct coresight_ops_link replicator_link_ops = {
++	.enable		= replicator_enable,
++	.disable	= replicator_disable,
 +};
 +
-+static const struct coresight_ops etb_cs_ops = {
-+	.sink_ops	= &etb_sink_ops,
++static const struct coresight_ops replicator_cs_ops = {
++	.link_ops	= &replicator_link_ops,
 +};
 +
-+static void etb_dump(struct etb_drvdata *drvdata)
++static int replicator_probe(struct platform_device *pdev)
 +{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	if (drvdata->enable) {
-+		etb_disable_hw(drvdata);
-+		etb_dump_hw(drvdata);
-+		etb_enable_hw(drvdata);
-+	}
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	dev_info(drvdata->dev, "ETB dumped\n");
-+}
-+
-+static int etb_open(struct inode *inode, struct file *file)
-+{
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+
-+	if (atomic_cmpxchg(&drvdata->in_use, 0, 1))
-+		return -EBUSY;
-+
-+	dev_dbg(drvdata->dev, "%s: successfully opened\n", __func__);
-+	return 0;
-+}
-+
-+static ssize_t etb_read(struct file *file, char __user *data,
-+				size_t len, loff_t *ppos)
-+{
-+	u32 depth;
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+
-+	etb_dump(drvdata);
-+
-+	depth = drvdata->buffer_depth;
-+	if (*ppos + len > depth * 4)
-+		len = depth * 4 - *ppos;
-+
-+	if (copy_to_user(data, drvdata->buf + *ppos, len)) {
-+		dev_dbg(drvdata->dev, "%s: copy_to_user failed\n", __func__);
-+		return -EFAULT;
-+	}
-+
-+	*ppos += len;
-+
-+	dev_dbg(drvdata->dev, "%s: %d bytes copied, %d bytes left\n",
-+		__func__, len, (int) (depth * 4 - *ppos));
-+	return len;
-+}
-+
-+static int etb_release(struct inode *inode, struct file *file)
-+{
-+	struct etb_drvdata *drvdata = container_of(file->private_data,
-+						   struct etb_drvdata, miscdev);
-+	atomic_set(&drvdata->in_use, 0);
-+
-+	dev_dbg(drvdata->dev, "%s: released\n", __func__);
-+	return 0;
-+}
-+
-+static const struct file_operations etb_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= etb_open,
-+	.read		= etb_read,
-+	.release	= etb_release,
-+	.llseek		= no_llseek,
-+};
-+
-+static ssize_t debugfs_status_show(struct seq_file *f, void *ptr)
-+{
-+	int ret;
-+	unsigned long flags;
-+	u32 etb_rdr, etb_sr, etb_rrp, etb_rwp;
-+	u32 etb_trg, etb_cr, etb_ffsr, etb_ffcr;
-+	struct etb_drvdata *drvdata = f->private;
-+
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		goto out;
-+
-+	spin_lock_irqsave(&drvdata->spinlock, flags);
-+	CS_UNLOCK(drvdata->base);
-+
-+	etb_rdr = readl_relaxed(drvdata->base + ETB_RAM_DEPTH_REG);
-+	etb_sr = readl_relaxed(drvdata->base + ETB_STATUS_REG);
-+	etb_rrp = readl_relaxed(drvdata->base + ETB_RAM_READ_POINTER);
-+	etb_rwp = readl_relaxed(drvdata->base + ETB_RAM_WRITE_POINTER);
-+	etb_trg = readl_relaxed(drvdata->base + ETB_TRG);
-+	etb_cr = readl_relaxed(drvdata->base + ETB_CTL_REG);
-+	etb_ffsr = readl_relaxed(drvdata->base + ETB_FFSR);
-+	etb_ffcr = readl_relaxed(drvdata->base + ETB_FFCR);
-+
-+	CS_LOCK(drvdata->base);
-+	spin_unlock_irqrestore(&drvdata->spinlock, flags);
-+
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	seq_printf(f,
-+		   "Depth:\t\t0x%x\n"
-+		   "Status:\t\t0x%x\n"
-+		   "RAM read ptr:\t0x%x\n"
-+		   "RAM wrt ptr:\t0x%x\n"
-+		   "Trigger cnt:\t0x%x\n"
-+		   "Control:\t0x%x\n"
-+		   "Flush status:\t0x%x\n"
-+		   "Flush ctrl:\t0x%x\n",
-+		   etb_rdr, etb_sr, etb_rrp, etb_rwp,
-+		   etb_trg, etb_cr, etb_ffsr, etb_ffcr);
-+out:
-+	return 0;
-+}
-+
-+static int debugfs_status_show_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, debugfs_status_show, inode->i_private);
-+}
-+
-+static const struct file_operations debugfs_status_ops = {
-+	.open = debugfs_status_show_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static const struct coresight_ops_entry debugfs_status_entry = {
-+	.name = "status",
-+	.mode = S_IRUGO,
-+	.ops = &debugfs_status_ops,
-+};
-+
-+static ssize_t debugfs_trigger_cntr_get(void *data, u64 *val)
-+{
-+	struct etb_drvdata *drvdata = data;
-+
-+	*val = drvdata->trigger_cntr;
-+	return 0;
-+}
-+
-+static ssize_t debugfs_trigger_cntr_set(void *data, u64 val)
-+{
-+	struct etb_drvdata *drvdata = data;
-+
-+	drvdata->trigger_cntr = val;
-+	return 0;
-+}
-+CORESIGHT_DEBUGFS_ENTRY(debugfs_trigger_cntr, "trigger_cntr",
-+			S_IRUGO | S_IWUSR, debugfs_trigger_cntr_get,
-+			debugfs_trigger_cntr_set, "%llx\n");
-+
-+static const struct coresight_ops_entry *etb_attr_grps[] = {
-+	&debugfs_trigger_cntr_entry,
-+	&debugfs_status_entry,
-+	NULL,
-+};
-+
-+static int etb_probe(struct amba_device *adev, const struct amba_id *id)
-+{
-+	int ret;
-+	void __iomem *base;
-+	struct device *dev = &adev->dev;
++	struct device *dev = &pdev->dev;
 +	struct coresight_platform_data *pdata = NULL;
-+	struct etb_drvdata *drvdata;
-+	struct resource *res = &adev->res;
++	struct replicator_drvdata *drvdata;
 +	struct coresight_desc *desc;
-+	struct device_node *np = adev->dev.of_node;
++	struct device_node *np = pdev->dev.of_node;
 +
 +	if (np) {
 +		pdata = of_get_coresight_platform_data(dev, np);
 +		if (IS_ERR(pdata))
 +			return PTR_ERR(pdata);
-+		adev->dev.platform_data = pdata;
++		pdev->dev.platform_data = pdata;
++
++		pdata->name = replicator_fix_name(dev, pdata->id);
++		if (!pdata->name)
++			return -EINVAL;
 +	}
 +
 +	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
 +	if (!drvdata)
 +		return -ENOMEM;
 +
-+	drvdata->dev = &adev->dev;
-+	dev_set_drvdata(dev, drvdata);
-+
-+	/* validity for the resource is already checked by the AMBA core */
-+	base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	drvdata->base = base;
-+
-+	spin_lock_init(&drvdata->spinlock);
-+
-+	drvdata->clk = adev->pclk;
-+	ret = clk_prepare_enable(drvdata->clk);
-+	if (ret)
-+		return ret;
-+
-+	drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
-+	clk_disable_unprepare(drvdata->clk);
-+
-+	if (drvdata->buffer_depth < 0)
-+		return -EINVAL;
-+
-+	drvdata->buf = devm_kzalloc(dev,
-+				    drvdata->buffer_depth * 4, GFP_KERNEL);
-+	if (!drvdata->buf)
-+		return -ENOMEM;
++	drvdata->dev = &pdev->dev;
++	platform_set_drvdata(pdev, drvdata);
 +
 +	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 +	if (!desc)
 +		return -ENOMEM;
 +
-+	desc->type = CORESIGHT_DEV_TYPE_SINK;
-+	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_SINK_BUFFER;
-+	desc->ops = &etb_cs_ops;
-+	desc->pdata = pdata;
-+	desc->dev = dev;
-+	desc->debugfs_ops = etb_attr_grps;
++	desc->type = CORESIGHT_DEV_TYPE_LINK;
++	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_LINK_SPLIT;
++	desc->ops = &replicator_cs_ops;
++	desc->pdata = pdev->dev.platform_data;
++	desc->dev = &pdev->dev;
 +	desc->owner = THIS_MODULE;
 +	drvdata->csdev = coresight_register(desc);
 +	if (IS_ERR(drvdata->csdev))
 +		return PTR_ERR(drvdata->csdev);
 +
-+	drvdata->miscdev.name = pdata->name;
-+	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-+	drvdata->miscdev.fops = &etb_fops;
-+	ret = misc_register(&drvdata->miscdev);
-+	if (ret)
-+		goto err_misc_register;
-+
-+	dev_info(dev, "ETB initialized\n");
++	dev_info(dev, "REPLICATOR initialized\n");
 +	return 0;
-+
-+err_misc_register:
-+	coresight_unregister(drvdata->csdev);
-+	return ret;
 +}
 +
-+static int etb_remove(struct amba_device *adev)
++static int replicator_remove(struct platform_device *pdev)
 +{
-+	struct etb_drvdata *drvdata = amba_get_drvdata(adev);
++	struct replicator_drvdata *drvdata = platform_get_drvdata(pdev);
 +
-+	misc_deregister(&drvdata->miscdev);
 +	coresight_unregister(drvdata->csdev);
 +	return 0;
 +}
 +
-+static struct amba_id etb_ids[] = {
-+	{
-+		.id	= 0x0003b907,
-+		.mask	= 0x0003ffff,
-+	},
-+	{ 0, 0},
++static struct of_device_id replicator_match[] = {
++	{.compatible = "arm,coresight-replicator"},
++	{}
 +};
 +
-+static struct amba_driver etb_driver = {
-+	.drv = {
-+		.name	= "coresight-etb10",
++static struct platform_driver replicator_driver = {
++	.probe          = replicator_probe,
++	.remove         = replicator_remove,
++	.driver         = {
++		.name   = "coresight-replicator",
 +		.owner	= THIS_MODULE,
++		.of_match_table = replicator_match,
 +	},
-+	.probe		= etb_probe,
-+	.remove		= etb_remove,
-+	.id_table	= etb_ids,
 +};
 +
-+static int __init etb_init(void)
++static int __init replicator_init(void)
 +{
-+	return amba_driver_register(&etb_driver);
++	return platform_driver_register(&replicator_driver);
 +}
-+module_init(etb_init);
++module_init(replicator_init);
 +
-+static void __exit etb_exit(void)
++static void __exit replicator_exit(void)
 +{
-+	amba_driver_unregister(&etb_driver);
++	platform_driver_unregister(&replicator_driver);
 +}
-+module_exit(etb_exit);
++module_exit(replicator_exit);
 +
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Embedded Trace Buffer driver");
++MODULE_DESCRIPTION("CoreSight Replicator driver");
 -- 
 1.9.1
 
