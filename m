@@ -1,128 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaIKBiO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 21:38:14 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:59389 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaIKBiN (ORCPT
+	id S1751649AbaIKCF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 22:05:58 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52383 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250AbaIKCF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 21:38:13 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Wed, 10 Sep 2014 21:38:11 -0400
-To: Mugunthan V N <mugunthanvnm@ti.com>
-Cc: bcousson@baylibre.com, tony@atomide.com, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] ARM: dts: dra7: Add CPSW and MDIO module nodes
- for dra7
-Message-ID: <20140911013811.GB17692@csclub.uwaterloo.ca>
-References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com>
- <1410356247-25925-2-git-send-email-mugunthanvnm@ti.com>
+	Wed, 10 Sep 2014 22:05:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <54110339.6000702@jp.fujitsu.com>
+Date: Thu, 11 Sep 2014 11:04:41 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410356247-25925-2-git-send-email-mugunthanvnm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+References: <20140904143055.GA20099@esperanza> <5408E1CD.3090004@jp.fujitsu.com> <20140905082846.GA25641@esperanza> <5409C6BB.7060009@jp.fujitsu.com> <20140905160029.GF25641@esperanza> <540A4420.2030504@jp.fujitsu.com> <20140908110131.GA11812@esperanza> <540DB4EC.6060100@jp.fujitsu.com> <20140909103943.GA29897@esperanza>
+In-Reply-To: <20140909103943.GA29897@esperanza>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 07:07:26PM +0530, Mugunthan V N wrote:
-> Add CPSW and MDIO related device tree data for DRA7XX and made as status
-> disabled. Phy-id, pinmux for active and sleep state needs to be added in
-> board dts files and enable the CPSW device.
-> 
-> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-> ---
->  arch/arm/boot/dts/dra7.dtsi | 59 +++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 59 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index d678152..8d79321 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -34,6 +34,8 @@
->  		serial3 = &uart4;
->  		serial4 = &uart5;
->  		serial5 = &uart6;
-> +		ethernet0 = &cpsw_emac0;
-> +		ethernet1 = &cpsw_emac1;
->  	};
->  
->  	timer {
-> @@ -1262,6 +1264,63 @@
->  			ti,irqs-skip = <10 133 139 140>;
->  			ti,irqs-safe-map = <0>;
->  		};
-> +
-> +		mac: ethernet@4a100000 {
-> +			compatible = "ti,cpsw";
-> +			ti,hwmods = "gmac";
-> +			cpdma_channels = <8>;
-> +			ale_entries = <1024>;
-> +			bd_ram_size = <0x2000>;
-> +			no_bd_ram = <0>;
-> +			rx_descs = <64>;
-> +			mac_control = <0x20>;
-> +			slaves = <2>;
+(2014/09/09 19:39), Vladimir Davydov wrote:
 
-How am I supposed to override this in the board dtb when my board only
-uses 1 slave?
+>> For your purpose, you need to implement your method in system-wide way.
+>> It seems crazy to set per-cgroup-anon-limit for avoding system-wide-oom.
+>> You'll need help of system-wide-cgroup-configuration-middleware even if
+>> you have a method in a cgroup. If you say logic should be in OS kernel,
+>> please implement it in a system wide logic rather than cgroup.
+>
+> What if on global pressure a memory cgroup exceeding its soft limit is
+> being reclaimed, but not fast enough, because it has a lot of anon
+> memory? The global OOM won't be triggered then, because there's still
+> progress, but the system will experience hard pressure due to the
+> reclaimer runs. How can we detect if we should kill the container or
+> not? It smells like one more heuristic to vmscan, IMO.
 
-> +			active_slave = <0>;
-> +			cpts_clock_mult = <0x80000000>;
-> +			cpts_clock_shift = <29>;
-> +			reg = <0x48484000 0x1000
-> +			       0x48485200 0x2E00>;
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			/*
-> +			 * rx_thresh_pend
-> +			 * rx_pend
-> +			 * tx_pend
-> +			 * misc_pend
-> +			 */
-> +			interrupts = <GIC_SPI 334 IRQ_TYPE_LEVEL_HIGH>,
-> +				     <GIC_SPI 335 IRQ_TYPE_LEVEL_HIGH>,
-> +				     <GIC_SPI 336 IRQ_TYPE_LEVEL_HIGH>,
-> +				     <GIC_SPI 337 IRQ_TYPE_LEVEL_HIGH>;
-> +			ranges;
-> +			status = "disabled";
-> +
-> +			davinci_mdio: mdio@48485000 {
-> +				compatible = "ti,davinci_mdio";
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +				ti,hwmods = "davinci_mdio";
-> +				bus_freq = <1000000>;
-> +				reg = <0x48485000 0x100>;
-> +			};
-> +
-> +			cpsw_emac0: slave@48480200 {
-> +				/* Filled in by U-Boot */
-> +				mac-address = [ 00 00 00 00 00 00 ];
-> +			};
-> +
-> +			cpsw_emac1: slave@48480300 {
-> +				/* Filled in by U-Boot */
-> +				mac-address = [ 00 00 00 00 00 00 ];
-> +			};
 
-Should I then be setting this to disabled from my board file?  Or does
-the disabled for the ethernet overall take care of that?
+That's you are trying to implement by per-cgroup-anon+swap-limit, the difference
+is heuristics by system designer at container creation or heuristics by kernel in
+the dynamic way.
 
-> +			phy_sel: cpsw-phy-sel@4a002554 {
-> +				compatible = "ti,dra7xx-cpsw-phy-sel";
-> +				reg= <0x4a002554 0x4>;
-> +				reg-names = "gmii-sel";
-> +			};
+I said it should be done by system/cloud-container-scheduler based on notification.
 
-I guess the board file would have to disable that too (we won't have a
-phy given we are connecting to a switch chip).
+But okay, let me think of kernel help in global reclaim.
 
-> +		};
-> +
->  	};
->  };
+  - Assume "priority" is a value calculated by "usage - soft limit".
 
--- 
-Len Sorensen
+  - weighted kswapd/direct reclaim
+    => Based on priority of each threads/cgroup,  increase "wait" in direct reclaim
+       if it's contended.
+       Low prio container will sleep longer until memory contention is fixed.
+
+  - weighted anon allocation
+    similar to above, if memory is contended, page fault speed should be weighted
+    based on priority(softlimit).
+
+  - off cpu direct-reclaim
+    run direct recalim in workqueue with cpu mask. the cpu mask is a global setting
+    per numa node, which determines cpus available for being used to reclaim memory.
+    "How to wait" may affect the performance of system but this can allow masked cpus
+    to be used for more important jobs.
+
+All of them will give a container-manager time to consinder next action.
+
+Anyway, if swap is slow but necessary, you can use faster swap, now.
+It's a good age.
+
+Thanks,
+-Kame
+
+
