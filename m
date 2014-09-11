@@ -1,55 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaIKAEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 20:04:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59074 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaIKAEc (ORCPT
+	id S1753155AbaIKAKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 20:10:39 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:42898 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaIKAKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:04:32 -0400
-Date: Wed, 10 Sep 2014 17:03:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-Message-ID: <20140911000343.GA5328@kroah.com>
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
+	Wed, 10 Sep 2014 20:10:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140910150843.78d9416ae0dada8fccf8063a@linux-foundation.org>
+References: <1410311886-4579-1-git-send-email-zyw@rock-chips.com>
+	<1410311886-4579-2-git-send-email-zyw@rock-chips.com>
+	<20140910134411.8128acce79f2423d4448e8f4@linux-foundation.org>
+	<CAD=FV=V4-dHpKwRqewCr7ujDdRYiMiUcRuJAS7C602EyCMnPFQ@mail.gmail.com>
+	<20140910150843.78d9416ae0dada8fccf8063a@linux-foundation.org>
+Date: Wed, 10 Sep 2014 17:10:36 -0700
+X-Google-Sender-Auth: ZmAyO4FkCiBbtUIZPuTZhIaUlZc
+Message-ID: <CAD=FV=VPgU9YwoAecGAVcEe8H2YaA=vPZJUwnjmzhFCZxBXuqw@mail.gmail.com>
+Subject: Re: [PATCH v10 1/3] RTC: RK808: add RTC driver for RK808
+From: Doug Anderson <dianders@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Mike Turquette <mturquette@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rtc-linux@googlegroups.com, Grant Likely <grant.likely@linaro.org>,
+        Lin Huang <hl@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, zhangqing <zhangqing@rock-chips.com>,
+        xxx <xxx@rock-chips.com>, Olof Johansson <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Dmitry Torokhov <dtor@chromium.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kever Yang <kever.yang@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 05:28:19PM -0400, Peter Hurley wrote:
-> This patch changes user-space behavior (for the better) but I'm not sure
-> that it's consequence-free. Also, it might not be enough to unwedge the
-> terminal if the driver got its own flow control state mangled.
-> 
-> Thoughts?
-> 
-> --- >% ---
-> Subject: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-> 
-> If terminal flow has been stopped, the terminal can be unwedged
-> by:
-> 	tcflow(fd, TCOOFF);
-> 	tcflow(fd, TCOON);
-> This works because tcflow(TCOOFF) ensures that ->flow_stopped is set,
-> which allows tcflow(TCOON) to override the terminal flow state in
-> __start_tty().
-> 
-> Instead, allow unwedging with only:
->         tcflow(fd, TCOON);
-> by disregarding the existing ->flow_stopped state.
+Andrew,
 
-I don't see the benifit here, what are you trying to solve?  Sending one
-extra tcflow command?
+On Wed, Sep 10, 2014 at 3:08 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 10 Sep 2014 14:37:13 -0700 Doug Anderson <dianders@chromium.org> wrote:
+>
+>> Andrew,
+>>
+>> On Wed, Sep 10, 2014 at 1:44 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Wed, 10 Sep 2014 09:18:04 +0800 Chris Zhong <zyw@rock-chips.com> wrote:
+>> >
+>> >> Adding RTC driver for supporting RTC device present inside RK808 PMIC.
+>> >>
+>> >> ...
+>> >>
+>> >> +     ret = rtc_valid_tm(&tm);
+>> >> +     if (ret) {
+>> >> +             dev_warn(&pdev->dev, "invalid date/time and init time\n");
+>> >> +             rk808_rtc_set_time(&pdev->dev, &tm_def);
+>> >> +     }
+>> >
+>> > This is somewhat unusual.  Most drivers will emit a warning and give up
+>> > when they find the time is wrong.  Why is this driver different and is
+>> > this desirable behaviour?
+>>
+>> When you say "give up", what does that mean?  I assume the driver
+>> should keep initting, right?  Then the user can go in and set a time
+>> later...
+>
+> I think I was misreading current drivers a bit.  rtc-cmos.c will go in
+> and set a dummy time but regular low-level drivers don't sanity-check
+> the time at all at setup time.
+>
+>>
+>> I did test things with just removing this chunk of code.  You get some
+>> yells at bootup if you put a bogus time in there:
+>>
+>> [    2.987590] rk808-rtc rk808-rtc: invalid date/time and init time
+>> [    3.013148] rk808-rtc rk808-rtc: rtc core: registered rk808-rtc as rtc0
+>> [    4.586115] rk808-rtc rk808-rtc: hctosys: invalid date/time
+>>
+>> ...but if you later set a valid time then everything is fine.  That
+>> seems reasonable behavior to me, so I guess we could just remove this
+>> whole chunk?  It appears that after a normal bootup the date/time is
+>> something valid.
+>
+> hm.  Having an invalid time is perhaps better than having a valid but
+> incorrect time.
 
-thanks,
+OK.  It's an easy patch to remove this.  Chris: do you want to test
+that too and post it, or do you want me to?  Basically just remove:
 
-greg k-h
+  rk808_rtc_set_time(&pdev->dev, &tm_def);
+
+...and of course then remove the tm_def structure and take braces off
+the "if".  I think everything works if you do that.  We need to make
+sure to base on the patch Andrew talked about about making the
+structure static (the new patch would remove the structure completely,
+but nice not to get a merge conflict).
+
+-Doug
