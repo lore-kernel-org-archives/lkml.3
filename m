@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaIKQS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:18:56 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:49537 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427AbaIKQSz (ORCPT
+	id S1757134AbaIKQTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:19:33 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:29047 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630AbaIKQTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:18:55 -0400
+	Thu, 11 Sep 2014 12:19:32 -0400
+Message-ID: <5411CB8F.4070006@atmel.com>
+Date: Thu, 11 Sep 2014 18:19:27 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140911093130.GC4411@dhcp-16-116.nay.redhat.com>
-References: <1409926097-2101-1-git-send-email-bhe@redhat.com>
-	<1409926097-2101-2-git-send-email-bhe@redhat.com>
-	<CAGXu5j+ih52B+ert+OF2wtm07wZDS_u6S0H7bwfycpJuBXT2_w@mail.gmail.com>
-	<20140909062416.GA2872@dhcp-16-105.nay.redhat.com>
-	<CAGXu5jJ+oUGszKUX12cqJ9RQBXCzO9j9e-5gBDmTH-cF80=xNg@mail.gmail.com>
-	<20140909192813.GB9435@redhat.com>
-	<20140910072115.GA31685@dhcp-16-116.nay.redhat.com>
-	<20140910143019.GA3771@redhat.com>
-	<CAGXu5jLTd=xvhjiSGsp5FiT7w0cSctZF2KPOvfU=1_R8Up-97w@mail.gmail.com>
-	<20140911093130.GC4411@dhcp-16-116.nay.redhat.com>
-Date: Thu, 11 Sep 2014 09:18:54 -0700
-X-Google-Sender-Auth: CXyveDyE4YVg6nSdQfM4O8obfQs
-Message-ID: <CAGXu5jJxUEFjp2MbLjCgC1u5=-ZGtkFjc+30Ra9aAM=JJkMb_g@mail.gmail.com>
-Subject: Re: [PATCH 1/4] kaslr: check user's config too when handle relocations
-From: Kees Cook <keescook@chromium.org>
-To: Baoquan He <bhe@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Deutschmann <whissi@whissi.de>, Dave Young <dyoung@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, WANG Chao <chaowang@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/7] ARM: at91: add sama5d4 support to sama5_defconfig
+References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com> <1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 2:31 AM, Baoquan He <bhe@redhat.com> wrote:
-> On 09/10/14 at 07:41am, Kees Cook wrote:
->> On Wed, Sep 10, 2014 at 7:30 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > So I would suggest that test and repost the other patch with proper changelog
->> > and that might be sufficient for now. Only other thing we will need is
->> > Kees's patch for avoiding setup data regions in kaslr.
->>
->> If someone can confirm that my patch works, I can request x86 pull it.
->>
->> Currently living here:
->> https://git.kernel.org/cgit/linux/kernel/git/kees/linux.git/log/?h=kaslr
->
-> Hi Kees,
->
-> I tested your patch, it works. The way is like below:
->
-> I changed kexec-tools to make all add_buffer doing from down to top.
-> Then all stuff including kernel, initrd, setupda, cmdline, realmode_data
-> all are put inside 0~1G. And set E820_MAX to 10, since on my pc there are 17
-> memoery regions, then 7 memory regions are added into setup_data as a
-> blob. Then copy arch/x86/boot/printf.c to arch/x86/boot/compressed/ and
-> make it work. From printing message, the setup data is checking each
-> time when a memory slot is added.
+On 11/09/2014 17:54, Alexandre Belloni :
+> Add sama5d4 to sama5_defconfig to build kernel booting on both sama5d3 and
+> samad4.
+> 
+> Note that earlyprintk can only be working for one or the other.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/configs/sama5_defconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+> index 96c15b775d57..a6c2409c4e14 100644
+> --- a/arch/arm/configs/sama5_defconfig
+> +++ b/arch/arm/configs/sama5_defconfig
+> @@ -19,6 +19,7 @@ CONFIG_MODULE_FORCE_UNLOAD=y
+>  CONFIG_ARCH_AT91=y
+>  CONFIG_SOC_SAM_V7=y
+>  CONFIG_SOC_SAMA5D3=y
+> +CONFIG_SOC_SAMA5D4=y
+>  CONFIG_MACH_SAMA5_DT=y
+>  CONFIG_AEABI=y
+>  CONFIG_UACCESS_WITH_MEMCPY=y
+> @@ -66,7 +67,6 @@ CONFIG_MTD=y
+>  CONFIG_MTD_CMDLINE_PARTS=y
+>  CONFIG_MTD_BLOCK=y
+>  CONFIG_MTD_CFI=y
+> -CONFIG_MTD_M25P80=y
 
-Great! Thanks very much! I'll send the patch to Peter now.
+Well I would keep this one...
 
--Kees
+>  CONFIG_MTD_NAND=y
+>  CONFIG_MTD_NAND_ATMEL=y
+>  CONFIG_MTD_SPI_NOR=y
+> 
+
 
 -- 
-Kees Cook
-Chrome OS Security
+Nicolas Ferre
