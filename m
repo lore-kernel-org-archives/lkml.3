@@ -1,109 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085AbaIKA7x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 20:59:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48520 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaIKA7v convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:59:51 -0400
+	id S1754126AbaIKBAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 21:00:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:32966 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765AbaIKA74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 20:59:56 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>,
+        "netdev" <netdev@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Rusty away 18th September -- 11th October
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 11 Sep 2014 10:26:52 +0930
+Message-ID: <87oaunht4b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <4693A34300ED74418DB0F7454C3D19DA16A99994@G5W2736.americas.hpqcorp.net>
-References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
-	<540FC7C8.1070904@gmail.com>
-	<CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
-	<4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
-	<CACVXFVPen-__38-XGHAe2Yxb0CGVLr3sGxQXvvk=Zkwzn-A_gA@mail.gmail.com>
-	<4693A34300ED74418DB0F7454C3D19DA16A99994@G5W2736.americas.hpqcorp.net>
-Date: Thu, 11 Sep 2014 08:59:46 +0800
-Message-ID: <CACVXFVN9KUzMQQcUGGFfg5TG2EK3B+GO2ciuC5pQb4NHaa8h_w@mail.gmail.com>
-Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
-From: Ming Lei <ming.lei@canonical.com>
-To: "Patel, Gaurav" <gspatel@hp.com>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 8:45 AM, Patel, Gaurav <gspatel@hp.com> wrote:
-> I will try to update kernel on Ubuntu to 2.6.32 and run the test.
->
-> I was not able to install 3.16 ubuntu kernel on RrdHat.
+Hi all,
 
-I didn't ask you to install 3.16 ubuntu kernel on Redhat, and you just
-need to install upstream 3.16 kernel, :-)
+        Probably won't read mail.  Linus, I'll have pull requests early
+next week; if there's anything needed I'm sure Michael Tsirkin can
+handle it.
 
->
-> Thanks,
-> Gaurav Patel
-> Email: Gspatel@hp.com
-> Cell # 832-382-5550
->
-> -----Original Message-----
-> From: Ming Lei [mailto:ming.lei@canonical.com]
-> Sent: Wednesday, September 10, 2014 6:01 PM
-> To: Patel, Gaurav
-> Cc: Robert Hancock; linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List
-> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
->
-> On Thu, Sep 11, 2014 at 12:11 AM, Patel, Gaurav <gspatel@hp.com> wrote:
->>
->> ">> When we use hdparm to download firmware on system with Marvell
->>>> 88SE9125 SATA controller, it returns failure always and it has been
->>>> observed in several systems:"
->>
->>  [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).
->
-> But RedHat65 ships a 2.6.32 kernel as you said, and you can test the stable
-> 2.6.32 kernel on one ubuntu release too.
->
-> As far as I can tell, the problem is very probably related with kernel, that is why I suggest you to test upstream kernel and run 'git bisect' later to find the commit which caused the regression.
->
-> But looks you have simply install problem.
->
-> Thanks,
->
->
->>
->> Thanks,
->> Gaurav Patel
->> Email: Gspatel@hp.com
->> Cell # 832-382-5550
->>
->>
->> -----Original Message-----
->> From: Ming Lei [mailto:ming.lei@canonical.com]
->> Sent: Wednesday, September 10, 2014 1:34 AM
->> To: Robert Hancock
->> Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List;
->> Patel, Gaurav
->> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
->> controller
->>
->> On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->>> On 01/09/14 02:22 AM, Ming Lei wrote:
->>>>
->>>> Hi Guys,
->>>>
->>>> When we use hdparm to download firmware on system with Marvell
->>>> 88SE9125 SATA controller, it returns failure always and it has been
->>>> observed in several systems:
->>>>
->>>> #hdparm --fwdownload-mode7 fw.bin
->>>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
->>>>
->>>> /dev/sda:
->>>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
->>>> FAILED: Input/output error
->>>
->>>
->>> Any errors in dmesg after doing this?
->>
->> No any failure log from kernel.
->>
->> Thanks,
+Cheers,
+Rusty.
+PS.  England and Italy for a holiday; my daughter chose them (somehow I
+     forgot to inform her of the existence of Euro Disney...)
