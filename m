@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870AbaIKIWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:22:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19347 "EHLO mga09.intel.com"
+	id S1753174AbaIKIW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:22:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19391 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111AbaIKIW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:22:27 -0400
+	id S1753056AbaIKIWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:22:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="571628834"
+   d="scan'208";a="571629031"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -24,85 +24,95 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [RFC Part1 v1 00/18] Prepare for enabling hierarchy irqdomain on x86
-Date: Thu, 11 Sep 2014 16:24:47 +0800
-Message-Id: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC Part1 v1 06/18] x86, irq: Protect __clear_irq_vector() with vector_lock
+Date: Thu, 11 Sep 2014 16:24:53 +0800
+Message-Id: <1410423905-26239-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We plan to restructure x86 interrupt code based on hierarchy irqdomain,
-that is to build irqdomains for CPU vector, interrupt remapping unit,
-IOAPIC, MSI and HPET etc and orgonize those irqdomains in hierarchy mode.
+Function __clear_irq_vector() accesses vector related data structure,
+so protect it with vector_lock. Also rename it as clear_irq_vector().
 
-This patchset is preparation work to enable hierarchy irqdomain on x86
-platforms. It splits out code for vector management, MSI, HTIRQ from
-ioapic.c into separate files. It also introduces some helper functions
-to access irq_cfg, which will ease transition to hierarchy irqdomain
-later.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-It's based on patchset at:
-https://lkml.org/lkml/2014/9/11/97
-
-And you may access it at:
-https://github.com/jiangliu/linux.git irqdomain/p1v1
-
-Jiang Liu (17):
-  x86, irq, ACPI: Fix building warning of unused code
-  x86, irq: Kill fourth parameter of IO_APIC_get_PCI_irq_vector()
-  x86, irq: Refine hw_irq.h to prepare for irqdomain support
-  x86, irq: Rename local APIC related functions in io_apic.c as
-    apic_xxx()
-  x86, irq: Protect __clear_irq_vector() with vector_lock
-  x86, irq: Introduce helpers to access struct irq_cfg
-  x86, irq: Move local APIC related code from io_apic.c into vector.c
-  x86, irq: Replace printk(KERN_LVL) with pr_lvl() utilities
-  x86, irq: Move PCI MSI related code from io_apic.c into msi.c
-  x86, irq: Move HT IRQ related code from io_apic.c into htirq.c
-  x86, irq: Move IOAPIC related declarations from hw_irq.h into
-    io_apic.h
-  x86, irq: Move IRQ initialization routines from io_apic.c into
-    vector.c
-  x86, irq: Make MSI and HT_IRQ indepenent of X86_IO_APIC
-  x86, irq: Use helpers to access irq_cfg data structure associated
-    with IRQ
-  x86: irq_remapping: Use helpers to access irq_cfg data structure
-    associated with IRQ
-  iommu/vt-d: Use helpers to access irq_cfg data structure associated
-    with IRQ
-  iommu/amd: Use helpers to access irq_cfg data structure associated
-    with IRQ
-
-Yinghai Lu (1):
-  x86, irq: Convert irq_2_pin list to generic list
-
- arch/x86/Kconfig                    |    6 +-
- arch/x86/include/asm/hw_irq.h       |   76 +--
- arch/x86/include/asm/io_apic.h      |   29 +-
- arch/x86/include/asm/pci.h          |    3 +
- arch/x86/kernel/acpi/boot.c         |    2 +
- arch/x86/kernel/apic/Makefile       |    4 +-
- arch/x86/kernel/apic/htirq.c        |  106 ++++
- arch/x86/kernel/apic/io_apic.c      | 1096 ++---------------------------------
- arch/x86/kernel/apic/msi.c          |  283 +++++++++
- arch/x86/kernel/apic/vector.c       |  716 +++++++++++++++++++++++
- arch/x86/kernel/irqinit.c           |   22 -
- arch/x86/pci/irq.c                  |    6 +-
- arch/x86/platform/uv/uv_irq.c       |    6 +-
- drivers/iommu/amd_iommu.c           |   14 +-
- drivers/iommu/intel_irq_remapping.c |   10 +-
- drivers/iommu/irq_remapping.c       |    6 +-
- drivers/pci/Kconfig                 |    2 +-
- drivers/pci/hotplug/ibmphp_core.c   |    5 +-
- 18 files changed, 1226 insertions(+), 1166 deletions(-)
- create mode 100644 arch/x86/kernel/apic/htirq.c
- create mode 100644 arch/x86/kernel/apic/msi.c
- create mode 100644 arch/x86/kernel/apic/vector.c
-
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 814527753563..ee3d3ff521a3 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1349,10 +1349,12 @@ int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+ 	return err;
+ }
+ 
+-static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
++static void clear_irq_vector(int irq, struct irq_cfg *cfg)
+ {
+ 	int cpu, vector;
++	unsigned long flags;
+ 
++	raw_spin_lock_irqsave(&vector_lock, flags);
+ 	BUG_ON(!cfg->vector);
+ 
+ 	vector = cfg->vector;
+@@ -1362,8 +1364,11 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 	cfg->vector = 0;
+ 	cpumask_clear(cfg->domain);
+ 
+-	if (likely(!cfg->move_in_progress))
++	if (likely(!cfg->move_in_progress)) {
++		raw_spin_unlock_irqrestore(&vector_lock, flags);
+ 		return;
++	}
++
+ 	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
+ 		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
+@@ -1373,6 +1378,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 		}
+ 	}
+ 	cfg->move_in_progress = 0;
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
+ }
+ 
+ void __setup_vector_irq(int cpu)
+@@ -1499,7 +1505,7 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+ 					 &dest)) {
+ 		pr_warn("Failed to obtain apicid for ioapic %d, pin %d\n",
+ 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
+-		__clear_irq_vector(irq, cfg);
++		clear_irq_vector(irq, cfg);
+ 
+ 		return;
+ 	}
+@@ -1513,7 +1519,7 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+ 	if (x86_io_apic_ops.setup_entry(irq, &entry, dest, cfg->vector, attr)) {
+ 		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
+ 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
+-		__clear_irq_vector(irq, cfg);
++		clear_irq_vector(irq, cfg);
+ 
+ 		return;
+ 	}
+@@ -3082,12 +3088,9 @@ int arch_setup_hwirq(unsigned int irq, int node)
+ void arch_teardown_hwirq(unsigned int irq)
+ {
+ 	struct irq_cfg *cfg = irq_cfg(irq);
+-	unsigned long flags;
+ 
+ 	free_remapped_irq(irq);
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	__clear_irq_vector(irq, cfg);
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
++	clear_irq_vector(irq, cfg);
+ 	free_irq_cfg(irq, cfg);
+ }
+ 
 -- 
 1.7.10.4
 
