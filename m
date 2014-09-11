@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876AbaIKQpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:45:18 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29837 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaIKQpP (ORCPT
+	id S1756994AbaIKQqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:46:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48486 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752786AbaIKQqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:45:15 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-77-5411d1974bf0
-Message-id: <1410453908.8852.9.camel@AMDC723>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
- generic_pm_domain-s
-From: Maciej Matraszek <m.matraszek@samsung.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Date: Thu, 11 Sep 2014 18:45:08 +0200
-In-reply-to: <CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
- <CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xK7rTLwqGGExYZGmxccZ6Votnt/Yy
-	WTQvXs9m8fqFocWsKUDe5V1z2Cw+9x5htJjzZwqzxd1TR9kszpy+xOrA5bF4z0smj0OHOxg9
-	9s9dw+6x5Wo7i0ffllWMHitWf2f3+LxJLoA9issmJTUnsyy1SN8ugSujf2ojY8FzyYrbresZ
-	Gxhf83cxcnJICJhIPD33hh3CFpO4cG89G4gtJLCUUeLn9+wuRi4g+zOjxPI9M5lBErwCuhL7
-	t65hBLGFBcIk/vRvZgWx2QQMJDb/62fpYuTgEAGqmfOTCaSXWWAes8Svrb1gvSwCqhJ/dlxl
-	ArE5BYIlXjVOZoZY0McoceNSJ9ggZgF1iUnzFjGDDJIQUJZo7HeD2Cso8WPyPRaIEnmJzWve
-	Mk9gFJiFpGMWkrJZSMoWMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJii87GBcfszrE
-	KMDBqMTDW3iRP0SINbGsuDL3EKMEB7OSCK/zQsEQId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzi
-	rr4n1UWljrhVXA/V/bHpj8K7t0d3yvvVywnYLr15z2jaDifzFZPfL1rvzPNiY3pSzvq4vLLl
-	28OPzr+kv6VectrOeQZyhhe19T/JP30gqJe63+e5gMWKulNsKRFNfuEdlZJn//V31rk6p0zs
-	mlLqsjsl7nUwx3FNRqYSNtsmMXkhaRPVWCWW4oxEQy3mouJEAGanv81oAgAA
+	Thu, 11 Sep 2014 12:46:54 -0400
+Date: Thu, 11 Sep 2014 18:46:51 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
+Message-ID: <20140911184651.7d81c238@free-electrons.com>
+In-Reply-To: <20140911162727.GA3131@piout.net>
+References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+	<20140911182411.0366ad98@free-electrons.com>
+	<20140911162727.GA3131@piout.net>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert!
+Dear Alexandre Belloni,
 
-On Thu, 2014-09-11 at 10:51 +0200, Geert Uytterhoeven wrote:
-> Hi Maciej,
+On Thu, 11 Sep 2014 18:27:27 +0200, Alexandre Belloni wrote:
+> > Sorry for the nitpick, but this seems to lack an updated to the DT
+> > binding documentation, to add the new compatible string.
+> > 
 > 
-> On Wed, Sep 10, 2014 at 1:28 PM, Maciej Matraszek
-> <m.matraszek@samsung.com> wrote:
-> > Add /sys/kernel/debug/pm_genpd/pm_genpd_summary file, which
-> > lists power domains in the system, their statuses and attached devices,
-> > resembling /sys/kernel/debug/clk/clk_summary.
-> >
-> > Currently it is impossible to inspect (from userland) whether
-> > a power domain is on or off. And, if it is on, which device blocks it
-> > from powering down. This change allows developers working on
-> > embedded devices power efficiency to list all necessary information
-> > about generic power domains in one place.
-> 
-> Thanks, this is _very_ useful!
-> 
-> > The content of pm_genpd/pm_genpd_summary file is generated by iterating
-> > over all generic power domain in the system, and, for each,
-> > over registered devices.
-> 
-> ... and over the subdomains, if present.
-> 
-> I can confirm that part is working, too, cfr. the slaves column on r8a7740
-> 
->     domain                      status         slaves
->            /device                                      runtime status
-> ----------------------------------------------------------------------
-> a4su                            off
-> a3sg                            off
-> a3sm                            on
-> a3sp                            on
->     /devices/e6600000.pwm                               suspended
->     /devices/e6c50000.serial                            active
->     /devices/e6850000.sd                                suspended
->     /devices/e6bd0000.mmc                               active
-> a4s                             on               a3sp, a3sm, a3sg
->     /devices/e6900000.irqpin                            unsupported
->     /devices/e6900004.irqpin                            unsupported
->     /devices/e6900008.irqpin                            unsupported
->     /devices/e690000c.irqpin                            unsupported
->     /devices/e9a00000.ethernet                          active
-> a3rv                            off
-> a4r                             off              a3rv
->     /devices/fff20000.i2c                               suspended
-> a4lc                            off
-> c5                              on               a4lc, a4r, a4s, a4su
->     /devices/e6050000.pfc                               unsupported
->     /devices/e6138000.timer                             active
+> The Atmel SoC compatibles are not actually documented anywhere, yet...
 
-> > Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
-> 
-> Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Sorry, I pointed the wrong piece of code. I should have pointed out:
 
-Thanks for testing, Geert, I'm glad you like it :)!
-BTW Can I use your output as example in the commit message for v2?
-It's much more informative (though 'runtime status' alignment seems
-odd).
+IRQCHIP_DECLARE(sama5d4_aic5, "atmel,sama5d4-aic", sama5d4_aic5_of_init);
 
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-
+Thomas
 -- 
-Maciej Matraszek
-Samsung R&D Institute Poland
-Samsung Electronics
-
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
