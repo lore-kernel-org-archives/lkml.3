@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaIKKDq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:03:46 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:63472 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366AbaIKKDo (ORCPT
+	id S1754064AbaIKKE5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:04:57 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41859 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915AbaIKKEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:03:44 -0400
-Message-ID: <5411737D.4070801@imgtec.com>
-Date: Thu, 11 Sep 2014 11:03:41 +0100
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 11 Sep 2014 06:04:55 -0400
+Date: Thu, 11 Sep 2014 11:04:11 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140911110411.2de01944@alan.etchedpixels.co.uk>
+In-Reply-To: <540E3207.7090007@hurleysoftware.com>
+References: <20140712181328.GA8738@redhat.com>
+	<54079B70.4050200@hurleysoftware.com>
+	<1409785893.30640.118.camel@pasglop>
+	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
+	<1409824374.4246.62.camel@pasglop>
+	<5408E458.3@zytor.com>
+	<54090AF4.7060406@hurleysoftware.com>
+	<54091B30.7080100@zytor.com>
+	<5409D76D.2070203@hurleysoftware.com>
+	<5409D9C0.7030403@zytor.com>
+	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+	<540DEE6C.2060904@zytor.com>
+	<540E3207.7090007@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, <linux-mips@linux-mips.org>,
-        <nbd@openwrt.org>, <james.hogan@imgtec.com>, <jchandra@broadcom.com>,
-        <paul.burton@imgtec.com>, <david.daney@cavium.com>,
-        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <macro@linux-mips.org>, <manuel.lauss@gmail.com>,
-        <jerinjacobk@gmail.com>, <chenhc@lemote.com>, <blogic@openwrt.org>
-Subject: Re: [PATCH V2] MIPS: bugfix of coherentio variable default setup
-References: <20140908191002.13852.47842.stgit@linux-yegoshin>
-In-Reply-To: <20140908191002.13852.47842.stgit@linux-yegoshin>
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leonid,
+> > Is *that* what we are talking about?  I was added to this conversation
+> > in the middle where it had already generalized, so I had no idea.
+> 
+> No, this is just what brought this craziness to my attention.
 
-On 09/08/2014 08:10 PM, Leonid Yegoshin wrote:
-> Patch commit b6d92b4a6bdb880b39789c677b952c53a437028d
-> 
->     MIPS: Add option to disable software I/O coherency.
-> 
->     Some MIPS controllers have hardware I/O coherency. This patch
->     detects those and turns off software coherency. A new kernel
->     command line option also allows the user to manually turn
->     software coherency on or off.
-> 
-> in fact enforces L2 cache flushes even on systems with IOCU.
-> The default value of coherentio is 0 and is not changed even with IOCU.
-> It is a serious performance problem because it destroys all IOCU performance
-> advantages.
-> 
-> It is fixed by setting coherentio to tri-state with default value as (-1) and
-> setup a final value during platform coherency setup.
-> 
-> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-> [...]
-> diff --git a/arch/mips/mti-malta/malta-setup.c b/arch/mips/mti-malta/malta-setup.c
-> index db7c9e5..48039fd 100644
-> --- a/arch/mips/mti-malta/malta-setup.c
-> +++ b/arch/mips/mti-malta/malta-setup.c
-> @@ -147,13 +147,17 @@ static void __init plat_setup_iocoherency(void)
->  	if (plat_enable_iocoherency()) {
->  		if (coherentio == 0)
->  			pr_info("Hardware DMA cache coherency disabled\n");
-> -		else
-> +		else {
-> +			coherentio = 1;
->  			pr_info("Hardware DMA cache coherency enabled\n");
-> +		}
->  	} else {
->  		if (coherentio == 1)
->  			pr_info("Hardware DMA cache coherency unsupported, but enabled from command line!\n");
-> -		else
-> +		else {
-> +			coherentio = 0;
->  			pr_info("Software DMA cache coherency enabled\n");
-> +		}
+None of it is craziness. It's the real world leaking into the crazy
+delusional world of sequential programming. Machines are going to get
+more not less parallel.
 
-This is not acceptable coding style for the kernel. See
-Documentation/CodingStyle, Chapter 3. Since you are adding braces in the
-"else" case, you should also add them in the "if" case as well.
+> For example, byte- and short-sized circular buffers could not possibly
+> be safe either, when the head nears the tail.
+> 
+> Who has audited global storage and ensured that _every_ byte-sized write
+> doesn't happen to be adjacent to some other storage that may not happen
+> to be protected by the same (or any) lock?
 
--- 
-markos
+Thats a meaningless question. Have you audited it all for correctness of
+any other form. Have you mathematically verified the functionality as a
+set of formal proofs ? If you can't prove its formally mathematically
+functionally correct why are you worried about this ?
+
+Alpha works, maybe it has a near theoretical race on that point. It's not
+any worse than it was 15 years ago and nobody has really hit a problem
+with it. So from that you can usefully infer that those buffer cases are
+not proving a real problem.
+
+The tty locks together on the other hand are asking to hit it, and the
+problem you were trying to fix were the ones that need set_bit() to make
+the guarantees.
+
+Alan
