@@ -1,140 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511AbaIKVQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:16:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757498AbaIKVQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:16:31 -0400
-Date: Thu, 11 Sep 2014 14:16:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
-        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
-        hughd@google.com, vbabka@suse.cz, walken@google.com,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: introduce VM_BUG_ON_MM
-Message-Id: <20140911141629.e24f7fa5a2ec2401d4f3b429@linux-foundation.org>
-In-Reply-To: <1410032326-4380-2-git-send-email-sasha.levin@oracle.com>
-References: <1410032326-4380-1-git-send-email-sasha.levin@oracle.com>
-	<1410032326-4380-2-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757531AbaIKVRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:17:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757516AbaIKVRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:17:03 -0400
+Date: Thu, 11 Sep 2014 17:16:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
+Message-ID: <20140911211637.GF17140@redhat.com>
+References: <20140905183314.23690175@hananiah.suse.cz>
+ <20140911200110.GA24699@redhat.com>
+ <20140911224330.0cec9b4c@hananiah.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911224330.0cec9b4c@hananiah.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  6 Sep 2014 15:38:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> Very similar to VM_BUG_ON_PAGE and VM_BUG_ON_VMA, dump struct_mm
-> when the bug is hit.
+On Thu, Sep 11, 2014 at 10:43:30PM +0200, Petr Tesarik wrote:
+> On Thu, 11 Sep 2014 16:01:10 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
 > 
-> ...
->
-> +void dump_mm(const struct mm_struct *mm)
-> +{
-> +	printk(KERN_ALERT
+> > On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
+> > > On architectures that use percpu-vm, the percpu region is not guaranteed
+> > > to be contiguous in physical space.
+> > 
+> > Petr,
+> > 
+> > Which are those arches?
+> 
+> All except nommu. Actually, percpu-km will be used instead even on MMU
+> if SMP is disabled, but since SMP is pretty standard now, I guess the
+> vast majority of all kernels out there is affected. ;-)
 
-I'm not sure why we should use KERN_ALERT here - KERN_EMERG is for
-"system is unusable", which is a fair descrition of a post-BUG kernel,
-yes?
+Hi Petr,
 
-> +		"mm %p mmap %p seqnum %d task_size %lu\n"
-> +#ifdef CONFIG_MMU
-> +		"get_unmapped_area %p\n"
-> +#endif
+To make sure I understand it correctly I will just summarize what you
+said.
 
-This printk is rather hilarious.  I can't think of a better way apart
-from a great string of individual printks.
+alloc_percpu() code does not guarantee that an object will be on physically
+contiguous pages if object crosses page boundary. That's why we are forcing
+allocation of object aligned to nearest higher power of two boundary of
+object size and that way object will always be on same page (as long as object
+is not bigger than a page).
 
-And maybe we should use individual printks - dump_mm() presently uses
-114 bytes of stack for that printk and that's somewhat of a concern
-considering the situations when it will be called.
+Is that a fair summary?
 
-
-How's this look?
-
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm/debug.c: use pr_emerg()
-
-- s/KERN_ALERT/pr_emerg/: we're going BUG so let's maximize the changes
-  of getting the message out.
-
-- convert debug.c to pr_foo()
-
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- mm/debug.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
-
-diff -puN mm/debug.c~mm-debugc-use-pr_emerg mm/debug.c
---- a/mm/debug.c~mm-debugc-use-pr_emerg
-+++ a/mm/debug.c
-@@ -57,7 +57,7 @@ static void dump_flags(unsigned long fla
- 	unsigned long mask;
- 	int i;
+Thanks
+Vivek
  
--	printk(KERN_ALERT "flags: %#lx(", flags);
-+	pr_emerg("flags: %#lx(", flags);
- 
- 	/* remove zone id */
- 	flags &= (1UL << NR_PAGEFLAGS) - 1;
-@@ -69,24 +69,23 @@ static void dump_flags(unsigned long fla
- 			continue;
- 
- 		flags &= ~mask;
--		printk("%s%s", delim, names[i].name);
-+		pr_cont("%s%s", delim, names[i].name);
- 		delim = "|";
- 	}
- 
- 	/* check for left over flags */
- 	if (flags)
--		printk("%s%#lx", delim, flags);
-+		pr_cont("%s%#lx", delim, flags);
- 
--	printk(")\n");
-+	pr_cont(")\n");
- }
- 
- void dump_page_badflags(struct page *page, const char *reason,
- 		unsigned long badflags)
- {
--	printk(KERN_ALERT
--	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
--		page, atomic_read(&page->_count), page_mapcount(page),
--		page->mapping, page->index);
-+	pr_emerg("page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
-+		  page, atomic_read(&page->_count), page_mapcount(page),
-+		  page->mapping, page->index);
- 	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
- 	dump_flags(page->flags, pageflag_names, ARRAY_SIZE(pageflag_names));
- 	if (reason)
-@@ -152,8 +151,7 @@ static const struct trace_print_flags vm
- 
- void dump_vma(const struct vm_area_struct *vma)
- {
--	printk(KERN_ALERT
--		"vma %p start %p end %p\n"
-+	pr_emerg("vma %p start %p end %p\n"
- 		"next %p prev %p mm %p\n"
- 		"prot %lx anon_vma %p vm_ops %p\n"
- 		"pgoff %lx file %p private_data %p\n",
-@@ -168,8 +166,7 @@ EXPORT_SYMBOL(dump_vma);
- 
- void dump_mm(const struct mm_struct *mm)
- {
--	printk(KERN_ALERT
--		"mm %p mmap %p seqnum %d task_size %lu\n"
-+	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
- #ifdef CONFIG_MMU
- 		"get_unmapped_area %p\n"
- #endif
-_
-
+> 
+> > > However, fs/proc/vmcore.c expects
+> > > all ELF notes to be contiguous. If the ELF note happens to occupy
+> > > two non-adjacent physical pages, part of the note may be read from an
+> > > incorrect memory location by the kdump kernel, resulting in failure to
+> > > initialize /proc/vmcore (if the content of the following physical page,
+> > > incorrectly interpreted as an ELF note specifies a large number), wrong
+> > > register values or other apparent random memory corruption.
+> > > 
+> > > There is currently no mechanism to pass the virtual-to-physical mapping
+> > > of the percpu allocation to the kdump kernel. So, instead, I'm changing
+> > > the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
+> > > than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
+> > > is enough to make sure that the buffer cannot cross a page boundary,
+> > > effectively ensuring that the whole buffer is contiguous in physical
+> > > space.
+> > > 
+> > > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> > > ---
+> > >  kernel/kexec.c | 3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > > index 2bee072..cdab59d 100644
+> > > --- a/kernel/kexec.c
+> > > +++ b/kernel/kexec.c
+> > > @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+> > >  static int __init crash_notes_memory_init(void)
+> > >  {
+> > >  	/* Allocate memory for saving cpu registers. */
+> > > -	crash_notes = alloc_percpu(note_buf_t);
+> > > +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
+> > > +				     roundup_pow_of_two(sizeof(note_buf_t)));
+> > 
+> > I think some of the changelog should show up here as comment in short
+> > form. I don't think it is obvious that why we are using __alloc_percpu()
+> > and why aligning to nearst higher power of 2 is needed here. Please also
+> > mention here which arches run into issues.
+> 
+> OK, I'll add it as a comment in the code. I'll see if I can make it
+> short but still understandable.
+> 
+> Thanks,
+> Petr Tesarik
+> 
+> > Thanks
+> > Vivek
+> > 
+> > >  	if (!crash_notes) {
+> > >  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
+> > >  		return -ENOMEM;
+> > > -- 
+> > > 1.8.4.5
+> > > 
+> > > _______________________________________________
+> > > kexec mailing list
+> > > kexec@lists.infradead.org
+> > > http://lists.infradead.org/mailman/listinfo/kexec
+> > 
+> > _______________________________________________
+> > kexec mailing list
+> > kexec@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/kexec
