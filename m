@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559AbaIKULW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:11:22 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:34838 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754780AbaIKULV convert rfc822-to-8bit (ORCPT
+	id S1756675AbaIKUQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:16:12 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:40474 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaIKUQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:11:21 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>
-CC: Robert Baldyga <r.baldyga@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Topic: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Index: AQHPzb9uAjbYlQN8gkubjUs9hysZ/5v8S7ZQgAACbVA=
-Date: Thu, 11 Sep 2014 20:09:36 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844D66E5@US01WEMBX2.internal.synopsys.com>
-References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Sep 2014 16:16:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <87oaunht4b.fsf@rustcorp.com.au>
+References: <87oaunht4b.fsf@rustcorp.com.au>
+Date: Thu, 11 Sep 2014 13:16:09 -0700
+X-Google-Sender-Auth: 66r8l-ufLqJo_y4peRU-iCxbtH8
+Message-ID: <CA+55aFygkQwbfk9m69ca6pnh6f1AzOiD-gUHBrzqPAmr9H0ouw@mail.gmail.com>
+Subject: Re: Rusty away 18th September -- 11th October
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>, "Michael S. Tsirkin" <mst@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Paul Zimmerman
-> Sent: Thursday, September 11, 2014 12:11 PM
-> 
-> > From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> > Sent: Thursday, September 11, 2014 5:53 AM
-> >
-> > These two patches breaks dwc2 driver. The first one causes build break,
-> > the second breaks gadget at Samsung platforms.
-> >
-> > Best regards
-> > Robert Baldyga
-> >
-> > Robert Baldyga (2):
-> >   Revert "usb: dwc2: Update Kconfig to support dual-role"
-> >   Revert "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
-> >
-> >  drivers/usb/dwc2/Kconfig    | 63 +++++++++++++++++++--------------------------
-> >  drivers/usb/dwc2/Makefile   | 21 +++++++--------
-> >  drivers/usb/dwc2/gadget.c   |  1 +
-> >  drivers/usb/dwc2/platform.c |  1 -
-> >  4 files changed, 38 insertions(+), 48 deletions(-)
-> 
-> Yep, I can confirm the build breakage. Greg, we should revert these two
-> before you send your update for the next -rc, if it's not too late.
-> 
-> Dinh, before resending the series, please test that each individual
-> patch does not break the build.
+On Wed, Sep 10, 2014 at 5:56 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>         Probably won't read mail.  Linus, I'll have pull requests early
+> next week; if there's anything needed I'm sure Michael Tsirkin can
+> handle it.
 
-FYI, I see the build breakage when using ARM multi_v7_defconfig,
-with the mass-storage gadget enabled and dwc2 enabled for
-peripheral-only mode:
+So according to "normal timing", I would do the 3.17 release about
+three weeks from now, Oct 5th, and you would indeed be gone beginning
+of the next merge window.
 
-  CC      init/version.o
-  LD      init/built-in.o
-drivers/built-in.o: In function `dwc2_hc_set_even_odd_frame':
-:(.text+0x21ca0c): undefined reference to `dwc2_hcd_get_frame_number'
-drivers/built-in.o: In function `dwc2_handle_common_intr':
-:(.text+0x21f5dc): undefined reference to `dwc2_hcd_start'
-:(.text+0x21f660): undefined reference to `dwc2_hcd_start'
-:(.text+0x21f7c4): undefined reference to `dwc2_hcd_start'
-:(.text+0x21f974): undefined reference to `dwc2_hcd_disconnect'
+However, Oct 5th is also when I leave for LinuxCon EU, and while I am
+willing to sometimes do the second week of the merge window while
+traveling, doing the first week is just very impractical for me.
+That's when most of the big pull requests get merged, and when I want
+to do lots of allmodconfig builds etc, so doing it on the road is just
+not worth it.
 
--- 
-Paul
+So right now my options are that
+ (a) I can release 3.17 a week early (ie forego a rc7 entirely, and do
+the final 3.17 late September) and then just do the second week while
+traveling - something I've done many times or
+ (b) just delay the merge window until after I come back (and whether
+that then delays 3.17 or not is a largely independent issue).
 
+3.17 looks fine so far, and so maybe "skip rc7" is an option. It is
+the less likely one, I feel. I won't know until it happens, though.
+
+So having the pull request available early for next merge window is
+certainly much appreciated, but it may well be that you'll be back by
+the time I actually open it.
+
+I really have been cursed this year timing-wise wrt releases and
+travel. I haven't even traveled any more than previous years, but for
+some reason my travel dates have just been hitting the release dates
+constantly.
+
+> PS.  England and Italy for a holiday; my daughter chose them (somehow I
+>      forgot to inform her of the existence of Euro Disney...)
+
+Have fun.
+
+            Linus
