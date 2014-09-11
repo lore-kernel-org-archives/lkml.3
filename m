@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199AbaIKM6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:58:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51566 "EHLO
+	id S1754542AbaIKM63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:58:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51572 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755400AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755406AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ben Hawkes" <hawkes@google.com>,
-        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>,
-        "Jiri Kosina" <jkosina@suse.cz>
+CC: akpm@linux-foundation.org,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        "Neil Horman" <nhorman@tuxdriver.com>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Dave Jones" <davej@redhat.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.559364587@decadent.org.uk>
+Message-ID: <lsq.1410438733.178965058@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 083/131] HID: fix a couple of off-by-ones
+Subject: [PATCH 3.2 107/131] sctp: fix possible seqlock seadlock in 
+ sctp_packet_transmit()
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,99 +36,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 4ab25786c87eb20857bbb715c3ae34ec8fd6a214 upstream.
+[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
 
-There are a few very theoretical off-by-one bugs in report descriptor size
-checking when performing a pre-parsing fixup. Fix those.
+Dave reported following splat, caused by improper use of
+IP_INC_STATS_BH() in process context.
 
-Reported-by: Ben Hawkes <hawkes@google.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
+caller is __this_cpu_preempt_check+0x13/0x20
+CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
+ ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
+ 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
+ ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
+Call Trace:
+ [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
+ [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
+ [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
+ [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
+ [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
+ [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
+ [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
+ [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
+ [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
+ [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
+ [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
+ [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
+ [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
+ [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
+ [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
+ [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
+ [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
+ [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
+ [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
+ [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
+ [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
+ [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
+ [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+
+This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
+seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
+deadlock in ip6_finish_output2")
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-cherry.c   | 2 +-
- drivers/hid/hid-kye.c      | 2 +-
- drivers/hid/hid-lg.c       | 4 ++--
- drivers/hid/hid-monterey.c | 2 +-
- drivers/hid/hid-petalynx.c | 2 +-
- drivers/hid/hid-sunplus.c  | 2 +-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+ net/sctp/output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-cherry.c
-+++ b/drivers/hid/hid-cherry.c
-@@ -29,7 +29,7 @@
- static __u8 *ch_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 17 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
-+	if (*rsize >= 18 && rdesc[11] == 0x3c && rdesc[12] == 0x02) {
- 		hid_info(hdev, "fixing up Cherry Cymotion report descriptor\n");
- 		rdesc[11] = rdesc[16] = 0xff;
- 		rdesc[12] = rdesc[17] = 0x03;
---- a/drivers/hid/hid-kye.c
-+++ b/drivers/hid/hid-kye.c
-@@ -26,7 +26,7 @@
- static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 74 &&
-+	if (*rsize >= 75 &&
- 		rdesc[61] == 0x05 && rdesc[62] == 0x08 &&
- 		rdesc[63] == 0x19 && rdesc[64] == 0x08 &&
- 		rdesc[65] == 0x29 && rdesc[66] == 0x0f &&
---- a/drivers/hid/hid-lg.c
-+++ b/drivers/hid/hid-lg.c
-@@ -111,14 +111,14 @@ static __u8 *lg_report_fixup(struct hid_
- {
- 	unsigned long quirks = (unsigned long)hid_get_drvdata(hdev);
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index cf3e22c..5bd9aa9 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -587,7 +587,7 @@ out:
+ 	return err;
+ no_route:
+ 	kfree_skb(nskb);
+-	IP_INC_STATS_BH(&init_net, IPSTATS_MIB_OUTNOROUTES);
++	IP_INC_STATS(&init_net, IPSTATS_MIB_OUTNOROUTES);
  
--	if ((quirks & LG_RDESC) && *rsize >= 90 && rdesc[83] == 0x26 &&
-+	if ((quirks & LG_RDESC) && *rsize >= 91 && rdesc[83] == 0x26 &&
- 			rdesc[84] == 0x8c && rdesc[85] == 0x02) {
- 		hid_info(hdev,
- 			 "fixing up Logitech keyboard report descriptor\n");
- 		rdesc[84] = rdesc[89] = 0x4d;
- 		rdesc[85] = rdesc[90] = 0x10;
- 	}
--	if ((quirks & LG_RDESC_REL_ABS) && *rsize >= 50 &&
-+	if ((quirks & LG_RDESC_REL_ABS) && *rsize >= 51 &&
- 			rdesc[32] == 0x81 && rdesc[33] == 0x06 &&
- 			rdesc[49] == 0x81 && rdesc[50] == 0x06) {
- 		hid_info(hdev,
---- a/drivers/hid/hid-monterey.c
-+++ b/drivers/hid/hid-monterey.c
-@@ -25,7 +25,7 @@
- static __u8 *mr_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 30 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
-+	if (*rsize >= 31 && rdesc[29] == 0x05 && rdesc[30] == 0x09) {
- 		hid_info(hdev, "fixing up button/consumer in HID report descriptor\n");
- 		rdesc[30] = 0x0c;
- 	}
---- a/drivers/hid/hid-petalynx.c
-+++ b/drivers/hid/hid-petalynx.c
-@@ -26,7 +26,7 @@
- static __u8 *pl_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 60 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
-+	if (*rsize >= 62 && rdesc[39] == 0x2a && rdesc[40] == 0xf5 &&
- 			rdesc[41] == 0x00 && rdesc[59] == 0x26 &&
- 			rdesc[60] == 0xf9 && rdesc[61] == 0x00) {
- 		hid_info(hdev, "fixing up Petalynx Maxter Remote report descriptor\n");
---- a/drivers/hid/hid-sunplus.c
-+++ b/drivers/hid/hid-sunplus.c
-@@ -25,7 +25,7 @@
- static __u8 *sp_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int *rsize)
- {
--	if (*rsize >= 107 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
-+	if (*rsize >= 112 && rdesc[104] == 0x26 && rdesc[105] == 0x80 &&
- 			rdesc[106] == 0x03) {
- 		hid_info(hdev, "fixing up Sunplus Wireless Desktop report descriptor\n");
- 		rdesc[105] = rdesc[110] = 0x03;
+ 	/* FIXME: Returning the 'err' will effect all the associations
+ 	 * associated with a socket, although only one of the paths of the
 
