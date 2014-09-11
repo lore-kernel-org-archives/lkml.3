@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756281AbaIKPPD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:15:03 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:56372 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756227AbaIKPPA (ORCPT
+	id S1756366AbaIKPPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:15:15 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:63335 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbaIKPPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:15:00 -0400
+	Thu, 11 Sep 2014 11:15:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Yang Yingliang <yangyingliang@huawei.com>, linux-kernel@vger.kernel.org,
+        catalin.marinas@arm.com, will.deacon@arm.com
+Subject: Re: [PATCH] arm64: add guard macro of unistd.h to prevent double inclusion
+Date: Thu, 11 Sep 2014 17:14:36 +0200
+Message-ID: <3578303.U9ScbKhEK5@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1410235185-16652-1-git-send-email-yangyingliang@huawei.com>
+References: <1410235185-16652-1-git-send-email-yangyingliang@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <5411B5D6.9010201@gmail.com>
-References: <53F5310A.5080503@gmail.com> <CALCETrX2qwvzmeoVcLFLxEK=1Fv+f0Ri0TouzzvbN_rgDjka4A@mail.gmail.com>
- <540F0810.7030408@gmail.com> <87ppf4n5ib.fsf@x220.int.ebiederm.org> <5411B5D6.9010201@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 11 Sep 2014 08:14:36 -0700
-Message-ID: <CALCETrV1EtrzfEhS55ToPD5VTbY9VjmmOA6bv2H9PGGQ-G=WGA@mail.gmail.com>
-Subject: Re: For review: user_namespace(7) man page
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:lGuhKRrZhmYlmczF0cc4DRy75/MHGFQ2eGKMxB5pLHz
+ I2oad37QzYZmUcIXK2JqLPlL3Bn/Um4AUsn2mHdY9pWlmqeHqx
+ GwwWCYDoFs/jxqxHY0zZow44Wz3bhaG2bODrMDpSTMzkqPPnHs
+ TJCYJDiuFNwtZQh6U3ev+qhfs08I3vRz8iv/uSHROjKC1U5y6W
+ ujI1gdddcQeeKVpRalE+49s6nYh7A2ZzuUTSrQsN1L8gzMZtwK
+ wYULn0L4wYitUcKtbdVU5VU+/pBPxyjcG1KSqua1LwAMxKNwxB
+ aRbUOOKQ418lSj3vNvES0XIuW3xVAMShUSJIIdKAusAKxtkJoI
+ oWmuMd3VZMr/A2a8BKYQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 7:46 AM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> Hi Eric,
->
-> On 09/09/2014 09:05 AM, Eric W. Biederman wrote:
->> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>
->>> Hi Andy, and Eric,
->>>>>        1. The  writing  process  must  have  the CAP_SETUID (CAP_SETGID)
->>>>>           capability in the user namespace of the process pid.
->>>>
->>>> This checked for the opening process (and I don't actually remember
->>>> whether it's checked for the writing process).
->>>
->>> Eric, can you comment?
->>
->> We have to check for the opening processes and that changes was made
->> after I implemented my interface. Pieces of the code appear to also
->> examine the writing process and verify everything applies to it as well.
->>
->> I goofed when I designed the interface originall and had not realized
->> what a classic design error it can be to not restrict by the opening
->> process.
->
-> So, I still need some help here. Should the sentence above just read:
->
->         1. The  *opening*  process  must  have  the CAP_SETUID (CAP_SETGID)
->            capability in the user namespace of the process pid.
+On Tuesday 09 September 2014 11:59:45 Yang Yingliang wrote:
+> Add guard macros in both uapi/asm/unistd.h and asm/unistd.h.
+> 
+> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+> ---
+>  arch/arm64/include/asm/unistd.h      | 5 +++++
+>  arch/arm64/include/uapi/asm/unistd.h | 5 +++++
+>  2 files changed, 10 insertions(+)
 
-I think this is sufficient.
+This will lead to an empty system call table, because asm/unistd.h
+is intentionally included multiple times in order to get both the
+syscall definition and the macros, which are defined in pairs in
+this file.
 
->
-> or must something also be said about the writing process? (If so, i'd
-> appreciate a completely formed sentence or two that I can just drop into
-> the man page..)
+How did you come up with this patch?
 
-There might be a restriction there, too, but I think it could be
-removed, and I also think that it's unlikely that anyone will
-encounter it.
+	Arnd
 
---Andy
+> diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+> index 6d2bf41..21a7dec 100644
+> --- a/arch/arm64/include/asm/unistd.h
+> +++ b/arch/arm64/include/asm/unistd.h
+> @@ -13,6 +13,9 @@
+>   * You should have received a copy of the GNU General Public License
+>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>   */
+> +#ifndef __ASM_ARM64_UNISTD_H
+> +#define __ASM_ARM64_UNISTD_H
+> +
+>  #ifdef CONFIG_COMPAT
+>  #define __ARCH_WANT_COMPAT_SYS_GETDENTS64
+>  #define __ARCH_WANT_COMPAT_STAT64
+> @@ -48,3 +51,5 @@
+>  #include <uapi/asm/unistd.h>
+>  
+>  #define NR_syscalls (__NR_syscalls)
+> +
+> +#endif /* __ASM_ARM64_UNISTD_H */
+> diff --git a/arch/arm64/include/uapi/asm/unistd.h b/arch/arm64/include/uapi/asm/unistd.h
+> index 1caadc2..ab72cac 100644
+> --- a/arch/arm64/include/uapi/asm/unistd.h
+> +++ b/arch/arm64/include/uapi/asm/unistd.h
+> @@ -13,4 +13,9 @@
+>   * You should have received a copy of the GNU General Public License
+>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>   */
+> +#ifndef _UAPI__ASM_ARM64_UNISTD_H
+> +#define _UAPI__ASM_ARM64_UNISTD_H
+> +
+>  #include <asm-generic/unistd.h>
+> +
+> +#endif /* _UAPI__ASM_ARM64_UNISTD_H */
+> 
+
