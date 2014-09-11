@@ -1,179 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaIKPot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022AbaIKPoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:44:07 -0400
-From: Aaron Tomlin <atomlin@redhat.com>
-To: peterz@infradead.org
-Cc: mingo@redhat.com, mingo@kernel.com, dzickus@redhat.com, bmr@redhat.com,
-        jcastillo@redhat.com, atomlin@redhat.com, oleg@redhat.com,
-        pzijlstr@redhat.com, riel@redhat.com, prarit@redhat.com,
-        jgh@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        x86@kernel.org, rostedt@goodmis.org, hannes@cmpxchg.org,
-        aneesh.kumar@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        akpm@google.com, linuxppc-dev@lists.ozlabs.org, minchan@kernel.org
-Subject: [PATCH v3 1/3] init/main.c: Give init_task a canary
-Date: Thu, 11 Sep 2014 16:41:26 +0100
-Message-Id: <1410450088-18236-2-git-send-email-atomlin@redhat.com>
-In-Reply-To: <1410450088-18236-1-git-send-email-atomlin@redhat.com>
-References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
- <1410450088-18236-1-git-send-email-atomlin@redhat.com>
+	id S1756596AbaIKPrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:47:22 -0400
+Received: from [157.56.110.55] ([157.56.110.55]:57312 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755551AbaIKPrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:47:17 -0400
+Date: Thu, 11 Sep 2014 10:40:58 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E98F982@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.02.1409111039210.19272@atx-linux-37>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com> <1410286081-16653-2-git-send-email-alvin.chen@intel.com> <alpine.DEB.2.02.1409101353500.2790@atx-linux-37>  <4656BEB6164FC34F8171C6538F1A595B2E98F982@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR05CA0058.namprd05.prod.outlook.com (10.141.20.28) To
+ BL2PR03MB305.namprd03.prod.outlook.com (10.141.68.13)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(51704005)(52604005)(164054003)(24454002)(77096002)(92726001)(53416004)(83072002)(69596002)(50466002)(19580395003)(83322001)(76482001)(107046002)(95666004)(81342001)(86362001)(46102001)(4396001)(93886004)(101416001)(85306004)(86152002)(92566001)(85852003)(42186005)(90102001)(23726002)(97736003)(31966008)(74502001)(83506001)(74662001)(33716001)(66066001)(105586002)(80022001)(77982001)(79102001)(20776003)(21056001)(110136001)(81542001)(99396002)(106356001)(81156004)(76176999)(54356999)(50986999)(46406003)(47776003)(87976001)(102836001)(64706001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB305;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tasks get their end of stack set to STACK_END_MAGIC with the
-aim to catch stack overruns. Currently this feature does not
-apply to init_task. This patch removes this restriction.
+On Thu, 11 Sep 2014, Chen, Alvin wrote:
 
-Note that a similar patch was posted by Prarit Bhargava [1]
-some time ago but was never merged.
+> > >
+> > > Hi Alvin,
+> > >
+> > > I did a quick test and this looks like it works for me (with device tree).
+> > > I had a couple of small fixes below.
+> > It is very appreciated to help testing.
 
-[1]: http://marc.info/?l=linux-kernel&m=127144305403241&w=2
+Sure.  Thanks for adding features to the driver!
 
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
----
- arch/powerpc/mm/fault.c    |  3 +--
- arch/x86/mm/fault.c        |  3 +--
- include/linux/sched.h      |  2 ++
- init/main.c                |  1 +
- kernel/fork.c              | 12 +++++++++---
- kernel/trace/trace_stack.c |  4 +---
- 6 files changed, 15 insertions(+), 10 deletions(-)
+> > 
+> > 
+> > > Alan
+> > >
+> > > >
+> > > > -	port->bgc.gc.ngpio = ngpio;
+> > > > -	port->bgc.gc.of_node = port_np;
+> > > > +#ifdef CONFIG_OF_GPIO
+> > > > +	port->bgc.gc.of_node = pp->node;
+> > > > +#endif
+> > >
+> > > Please use 'if (IS_ENABLED(CONFIG_OF_GPIO)) as a conditional as you do
+> > > elsewhere.
+> > OK.
+> > 
+> Alan, I just do a quick test, here we can't use 'IS_ENABLED', it can't be compiled without OF_GPIO set.
+> Because 'gc.of_node' is not defined without 'OF_GPIO'. You can refer the structure of 'gc'.
+> 
 
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 51ab9e7..35d0760c 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -30,7 +30,6 @@
- #include <linux/kprobes.h>
- #include <linux/kdebug.h>
- #include <linux/perf_event.h>
--#include <linux/magic.h>
- #include <linux/ratelimit.h>
- #include <linux/context_tracking.h>
- 
-@@ -538,7 +537,7 @@ void bad_page_fault(struct pt_regs *regs, unsigned long address, int sig)
- 		regs->nip);
- 
- 	stackend = end_of_stack(current);
--	if (current != &init_task && *stackend != STACK_END_MAGIC)
-+	if (*stackend != STACK_END_MAGIC)
- 		printk(KERN_ALERT "Thread overran stack, or stack corrupted\n");
- 
- 	die("Kernel access of bad area", regs, sig);
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index a241946..bc23a70 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -3,7 +3,6 @@
-  *  Copyright (C) 2001, 2002 Andi Kleen, SuSE Labs.
-  *  Copyright (C) 2008-2009, Red Hat Inc., Ingo Molnar
-  */
--#include <linux/magic.h>		/* STACK_END_MAGIC		*/
- #include <linux/sched.h>		/* test_thread_flag(), ...	*/
- #include <linux/kdebug.h>		/* oops_begin/end, ...		*/
- #include <linux/module.h>		/* search_exception_table	*/
-@@ -710,7 +709,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 	show_fault_oops(regs, error_code, address);
- 
- 	stackend = end_of_stack(tsk);
--	if (tsk != &init_task && *stackend != STACK_END_MAGIC)
-+	if (*stackend != STACK_END_MAGIC)
- 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
- 
- 	tsk->thread.cr2		= address;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 5c2c885..7ef34b7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -57,6 +57,7 @@ struct sched_param {
- #include <linux/llist.h>
- #include <linux/uidgid.h>
- #include <linux/gfp.h>
-+#include <linux/magic.h>
- 
- #include <asm/processor.h>
- 
-@@ -2636,6 +2637,7 @@ static inline unsigned long stack_not_used(struct task_struct *p)
- 	return (unsigned long)n - (unsigned long)end_of_stack(p);
- }
- #endif
-+extern void set_task_stack_end_magic(struct task_struct *tsk);
- 
- /* set thread flags in other task's structures
-  * - see asm/thread_info.h for TIF_xxxx flags available
-diff --git a/init/main.c b/init/main.c
-index bb1aed9..5fc3fc7 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -508,6 +508,7 @@ asmlinkage __visible void __init start_kernel(void)
- 	 * lockdep hash:
- 	 */
- 	lockdep_init();
-+	set_task_stack_end_magic(&init_task);
- 	smp_setup_processor_id();
- 	debug_objects_early_init();
- 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0cf9cdb..adf9583 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -294,11 +294,18 @@ int __weak arch_dup_task_struct(struct task_struct *dst,
- 	return 0;
- }
- 
-+void set_task_stack_end_magic(struct task_struct *tsk)
-+{
-+	unsigned long *stackend;
-+
-+	stackend = end_of_stack(tsk);
-+	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-+}
-+
- static struct task_struct *dup_task_struct(struct task_struct *orig)
- {
- 	struct task_struct *tsk;
- 	struct thread_info *ti;
--	unsigned long *stackend;
- 	int node = tsk_fork_get_node(orig);
- 	int err;
- 
-@@ -328,8 +335,7 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 	setup_thread_stack(tsk, orig);
- 	clear_user_return_notifier(tsk);
- 	clear_tsk_need_resched(tsk);
--	stackend = end_of_stack(tsk);
--	*stackend = STACK_END_MAGIC;	/* for overflow detection */
-+	set_task_stack_end_magic(tsk);
- 
- #ifdef CONFIG_CC_STACKPROTECTOR
- 	tsk->stack_canary = get_random_int();
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 8a4e5cb..1636e41 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -13,7 +13,6 @@
- #include <linux/sysctl.h>
- #include <linux/init.h>
- #include <linux/fs.h>
--#include <linux/magic.h>
- 
- #include <asm/setup.h>
- 
-@@ -171,8 +170,7 @@ check_stack(unsigned long ip, unsigned long *stack)
- 			i++;
- 	}
- 
--	if ((current != &init_task &&
--		*(end_of_stack(current)) != STACK_END_MAGIC)) {
-+	if (*end_of_stack(current) != STACK_END_MAGIC) {
- 		print_max_stack();
- 		BUG();
- 	}
--- 
-1.9.3
+That makes sense.
+
+Thanks,
+Alan
 
