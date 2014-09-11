@@ -1,167 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494AbaIKVQB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:16:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39425 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753928AbaIKVPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:15:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,507,1406617200"; 
-   d="scan'208";a="598291747"
-Subject: [PATCH 3/3] x86: add more disabled features
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        fenghua.yu@intel.com, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com, bp@suse.de
-From: Dave Hansen <dave@sr71.net>
-Date: Thu, 11 Sep 2014 14:15:24 -0700
-References: <20140911211510.D032EC3B@viggo.jf.intel.com>
-In-Reply-To: <20140911211510.D032EC3B@viggo.jf.intel.com>
-Message-Id: <20140911211524.C0EC332A@viggo.jf.intel.com>
+	id S1757511AbaIKVQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:16:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757498AbaIKVQb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:16:31 -0400
+Date: Thu, 11 Sep 2014 14:16:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
+        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
+        hughd@google.com, vbabka@suse.cz, walken@google.com,
+        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] mm: introduce VM_BUG_ON_MM
+Message-Id: <20140911141629.e24f7fa5a2ec2401d4f3b429@linux-foundation.org>
+In-Reply-To: <1410032326-4380-2-git-send-email-sasha.levin@oracle.com>
+References: <1410032326-4380-1-git-send-email-sasha.levin@oracle.com>
+	<1410032326-4380-2-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat,  6 Sep 2014 15:38:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> Very similar to VM_BUG_ON_PAGE and VM_BUG_ON_VMA, dump struct_mm
+> when the bug is hit.
+> 
+> ...
+>
+> +void dump_mm(const struct mm_struct *mm)
+> +{
+> +	printk(KERN_ALERT
 
-The original motivation for these patches was for an Intel CPU
-feature called MPX.  The patch to add a disabled feature for it
-will go in with the other parts of the support.
+I'm not sure why we should use KERN_ALERT here - KERN_EMERG is for
+"system is unusable", which is a fair descrition of a post-BUG kernel,
+yes?
 
-But, in the meantime, there are a few other features than MPX
-that we can make assumptions about at compile-time based on
-compile options.  Add them to disabled-features.h and check them
-with cpu_feature_enabled().
+> +		"mm %p mmap %p seqnum %d task_size %lu\n"
+> +#ifdef CONFIG_MMU
+> +		"get_unmapped_area %p\n"
+> +#endif
 
-Note that this gets rid of the last things that needed an #ifdef
-CONFIG_X86_64 in cpufeature.h.  Yay!
+This printk is rather hilarious.  I can't think of a better way apart
+from a great string of individual printks.
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Acked-by: Borislav Petkov <bp@suse.de>
+And maybe we should use individual printks - dump_mm() presently uses
+114 bytes of stack for that printk and that's somewhat of a concern
+considering the situations when it will be called.
+
+
+How's this look?
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: mm/debug.c: use pr_emerg()
+
+- s/KERN_ALERT/pr_emerg/: we're going BUG so let's maximize the changes
+  of getting the message out.
+
+- convert debug.c to pr_foo()
+
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
 
- b/arch/x86/include/asm/cpufeature.h        |   20 --------------------
- b/arch/x86/include/asm/disabled-features.h |   16 ++++++++++++++--
- b/arch/x86/kernel/cpu/common.c             |    2 +-
- b/arch/x86/kernel/cpu/mtrr/main.c          |    6 +++---
- 4 files changed, 18 insertions(+), 26 deletions(-)
+ mm/debug.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
-diff -puN arch/x86/include/asm/cpufeature.h~x86-disabled_features-addmore arch/x86/include/asm/cpufeature.h
---- a/arch/x86/include/asm/cpufeature.h~x86-disabled_features-addmore	2014-09-11 14:11:32.541086689 -0700
-+++ b/arch/x86/include/asm/cpufeature.h	2014-09-11 14:11:32.550087101 -0700
-@@ -324,7 +324,6 @@ extern const char * const x86_bug_flags[
- } while (0)
+diff -puN mm/debug.c~mm-debugc-use-pr_emerg mm/debug.c
+--- a/mm/debug.c~mm-debugc-use-pr_emerg
++++ a/mm/debug.c
+@@ -57,7 +57,7 @@ static void dump_flags(unsigned long fla
+ 	unsigned long mask;
+ 	int i;
  
- #define cpu_has_fpu		boot_cpu_has(X86_FEATURE_FPU)
--#define cpu_has_vme		boot_cpu_has(X86_FEATURE_VME)
- #define cpu_has_de		boot_cpu_has(X86_FEATURE_DE)
- #define cpu_has_pse		boot_cpu_has(X86_FEATURE_PSE)
- #define cpu_has_tsc		boot_cpu_has(X86_FEATURE_TSC)
-@@ -343,9 +342,6 @@ extern const char * const x86_bug_flags[
- #define cpu_has_avx2		boot_cpu_has(X86_FEATURE_AVX2)
- #define cpu_has_ht		boot_cpu_has(X86_FEATURE_HT)
- #define cpu_has_nx		boot_cpu_has(X86_FEATURE_NX)
--#define cpu_has_k6_mtrr		boot_cpu_has(X86_FEATURE_K6_MTRR)
--#define cpu_has_cyrix_arr	boot_cpu_has(X86_FEATURE_CYRIX_ARR)
--#define cpu_has_centaur_mcr	boot_cpu_has(X86_FEATURE_CENTAUR_MCR)
- #define cpu_has_xstore		boot_cpu_has(X86_FEATURE_XSTORE)
- #define cpu_has_xstore_enabled	boot_cpu_has(X86_FEATURE_XSTORE_EN)
- #define cpu_has_xcrypt		boot_cpu_has(X86_FEATURE_XCRYPT)
-@@ -380,22 +376,6 @@ extern const char * const x86_bug_flags[
- #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
- #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+-	printk(KERN_ALERT "flags: %#lx(", flags);
++	pr_emerg("flags: %#lx(", flags);
  
--#ifdef CONFIG_X86_64
--
--#undef  cpu_has_vme
--#define cpu_has_vme		0
--
--#undef  cpu_has_k6_mtrr
--#define cpu_has_k6_mtrr		0
--
--#undef  cpu_has_cyrix_arr
--#define cpu_has_cyrix_arr	0
--
--#undef  cpu_has_centaur_mcr
--#define cpu_has_centaur_mcr	0
--
--#endif /* CONFIG_X86_64 */
--
- #if __GNUC__ >= 4
- extern void warn_pre_alternatives(void);
- extern bool __static_cpu_has_safe(u16 bit);
-diff -puN arch/x86/include/asm/disabled-features.h~x86-disabled_features-addmore arch/x86/include/asm/disabled-features.h
---- a/arch/x86/include/asm/disabled-features.h~x86-disabled_features-addmore	2014-09-11 14:11:32.543086781 -0700
-+++ b/arch/x86/include/asm/disabled-features.h	2014-09-11 14:11:32.550087101 -0700
-@@ -10,13 +10,25 @@
-  * cpu_feature_enabled().
-  */
+ 	/* remove zone id */
+ 	flags &= (1UL << NR_PAGEFLAGS) - 1;
+@@ -69,24 +69,23 @@ static void dump_flags(unsigned long fla
+ 			continue;
  
-+#ifdef CONFIG_X86_64
-+# define DISABLE_VME		(1<<(X86_FEATURE_VME & 31))
-+# define DISABLE_K6_MTRR	(1<<(X86_FEATURE_K6_MTRR & 31))
-+# define DISABLE_CYRIX_ARR	(1<<(X86_FEATURE_CYRIX_ARR & 31))
-+# define DISABLE_CENTAUR_MCR	(1<<(X86_FEATURE_CENTAUR_MCR & 31))
-+#else
-+# define DISABLE_VME		0
-+# define DISABLE_K6_MTRR	0
-+# define DISABLE_CYRIX_ARR	0
-+# define DISABLE_CENTAUR_MCR	0
-+#endif /* CONFIG_X86_64 */
-+
- /*
-  * Make sure to add features to the correct mask
-  */
--#define DISABLED_MASK0	0
-+#define DISABLED_MASK0	(DISABLE_VME)
- #define DISABLED_MASK1	0
- #define DISABLED_MASK2	0
--#define DISABLED_MASK3	0
-+#define DISABLED_MASK3	(DISABLE_CYRIX_ARR|DISABLE_CENTAUR_MCR|DISABLE_K6_MTRR)
- #define DISABLED_MASK4	0
- #define DISABLED_MASK5	0
- #define DISABLED_MASK6	0
-diff -puN arch/x86/kernel/cpu/common.c~x86-disabled_features-addmore arch/x86/kernel/cpu/common.c
---- a/arch/x86/kernel/cpu/common.c~x86-disabled_features-addmore	2014-09-11 14:11:32.545086872 -0700
-+++ b/arch/x86/kernel/cpu/common.c	2014-09-11 14:11:32.562087651 -0700
-@@ -1391,7 +1391,7 @@ void cpu_init(void)
+ 		flags &= ~mask;
+-		printk("%s%s", delim, names[i].name);
++		pr_cont("%s%s", delim, names[i].name);
+ 		delim = "|";
+ 	}
  
- 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 	/* check for left over flags */
+ 	if (flags)
+-		printk("%s%#lx", delim, flags);
++		pr_cont("%s%#lx", delim, flags);
  
--	if (cpu_has_vme || cpu_has_tsc || cpu_has_de)
-+	if (cpu_feature_enabled(X86_FEATURE_VME) || cpu_has_tsc || cpu_has_de)
- 		clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+-	printk(")\n");
++	pr_cont(")\n");
+ }
  
- 	load_current_idt();
-diff -puN arch/x86/kernel/cpu/mtrr/main.c~x86-disabled_features-addmore arch/x86/kernel/cpu/mtrr/main.c
---- a/arch/x86/kernel/cpu/mtrr/main.c~x86-disabled_features-addmore	2014-09-11 14:11:32.546086917 -0700
-+++ b/arch/x86/kernel/cpu/mtrr/main.c	2014-09-11 14:11:32.563087697 -0700
-@@ -707,7 +707,7 @@ void __init mtrr_bp_init(void)
- 	} else {
- 		switch (boot_cpu_data.x86_vendor) {
- 		case X86_VENDOR_AMD:
--			if (cpu_has_k6_mtrr) {
-+			if (cpu_feature_enabled(X86_FEATURE_K6_MTRR)) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
- 				size_or_mask = SIZE_OR_MASK_BITS(32);
-@@ -715,14 +715,14 @@ void __init mtrr_bp_init(void)
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
--			if (cpu_has_centaur_mcr) {
-+			if (cpu_feature_enabled(X86_FEATURE_CENTAUR_MCR)) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
- 				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
--			if (cpu_has_cyrix_arr) {
-+			if (cpu_feature_enabled(X86_FEATURE_CYRIX_ARR)) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
- 				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
+ void dump_page_badflags(struct page *page, const char *reason,
+ 		unsigned long badflags)
+ {
+-	printk(KERN_ALERT
+-	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
+-		page, atomic_read(&page->_count), page_mapcount(page),
+-		page->mapping, page->index);
++	pr_emerg("page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
++		  page, atomic_read(&page->_count), page_mapcount(page),
++		  page->mapping, page->index);
+ 	BUILD_BUG_ON(ARRAY_SIZE(pageflag_names) != __NR_PAGEFLAGS);
+ 	dump_flags(page->flags, pageflag_names, ARRAY_SIZE(pageflag_names));
+ 	if (reason)
+@@ -152,8 +151,7 @@ static const struct trace_print_flags vm
+ 
+ void dump_vma(const struct vm_area_struct *vma)
+ {
+-	printk(KERN_ALERT
+-		"vma %p start %p end %p\n"
++	pr_emerg("vma %p start %p end %p\n"
+ 		"next %p prev %p mm %p\n"
+ 		"prot %lx anon_vma %p vm_ops %p\n"
+ 		"pgoff %lx file %p private_data %p\n",
+@@ -168,8 +166,7 @@ EXPORT_SYMBOL(dump_vma);
+ 
+ void dump_mm(const struct mm_struct *mm)
+ {
+-	printk(KERN_ALERT
+-		"mm %p mmap %p seqnum %d task_size %lu\n"
++	pr_emerg("mm %p mmap %p seqnum %d task_size %lu\n"
+ #ifdef CONFIG_MMU
+ 		"get_unmapped_area %p\n"
+ #endif
 _
+
