@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854AbaIKMjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:39:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51689 "EHLO
+	id S1755964AbaIKMlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:41:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51669 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755464AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755448AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Axel Lin" <axel.lin@ingics.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
+CC: akpm@linux-foundation.org, "Oliver Neukum" <oneukum@suse.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.502584958@decadent.org.uk>
+Message-ID: <lsq.1410438733.311955030@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 035/131] hwmon: (lm85) Fix various errors on attribute
- writes
+Subject: [PATCH 3.2 015/131] usbcore: don't log on consecutive debounce
+ failures of the same port
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,76 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 3248c3b771ddd9d31695da17ba350eb6e1b80a53 upstream.
+commit 5ee0f803cc3a0738a63288e4a2f453c85889fbda upstream.
 
-Temperature limit register writes did not account for negative numbers.
-As a result, writing -127000 resulted in -126000 written into the
-temperature limit register. This problem affected temp[1-3]_min,
-temp[1-3]_max, temp[1-3]_auto_temp_crit, and temp[1-3]_auto_temp_min.
+Some laptops have an internal port for a BT device which picks
+up noise when the kill switch is used, but not enough to trigger
+printk_rlimit(). So we shouldn't log consecutive faults of this kind.
 
-When writing pwm[1-3]_freq, a long variable was auto-converted into an int
-without range check. Wiring values larger than MAXINT resulted in unexpected
-register values.
-
-When writing temp[1-3]_auto_temp_max, an unsigned long variable was
-auto-converted into an int without range check. Writing values larger than
-MAXINT resulted in unexpected register values.
-
-vrm is an u8, so the written value needs to be limited to [0, 255].
-
-Cc: Axel Lin <axel.lin@ingics.com>
-Reviewed-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [bwh: Backported to 3.2:
- - Driver is not using clamp_val(); keep using SENSORS_LIMIT() for consistency
- - Driver is not using kstrtoul(); make the minimum change to store_vrm_reg()
-   so we can validate the value before assigning]
+ - Adjust context
+ - Error message already includes the port number]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/hwmon/lm85.c
-+++ b/drivers/hwmon/lm85.c
-@@ -157,7 +157,7 @@ static inline u16 FAN_TO_REG(unsigned lo
+ drivers/usb/core/hub.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3354,6 +3354,7 @@ static void hub_port_connect_change(stru
+ 			le16_to_cpu(hub->descriptor->wHubCharacteristics);
+ 	struct usb_device *udev;
+ 	int status, i;
++	static int unreliable_port = -1;
  
- /* Temperature is reported in .001 degC increments */
- #define TEMP_TO_REG(val)	\
--		SENSORS_LIMIT(SCALE(val, 1000, 1), -127, 127)
-+		DIV_ROUND_CLOSEST(SENSORS_LIMIT((val), -127000, 127000), 1000)
- #define TEMPEXT_FROM_REG(val, ext)	\
- 		SCALE(((val) << 4) + (ext), 16, 1000)
- #define TEMP_FROM_REG(val)	((val) * 1000)
-@@ -190,7 +190,7 @@ static const int lm85_range_map[] = {
- 	13300, 16000, 20000, 26600, 32000, 40000, 53300, 80000
- };
- 
--static int RANGE_TO_REG(int range)
-+static int RANGE_TO_REG(long range)
- {
- 	int i;
- 
-@@ -212,7 +212,7 @@ static const int adm1027_freq_map[8] = {
- 	11, 15, 22, 29, 35, 44, 59, 88
- };
- 
--static int FREQ_TO_REG(const int *map, int freq)
-+static int FREQ_TO_REG(const int *map, unsigned long freq)
- {
- 	int i;
- 
-@@ -443,7 +443,13 @@ static ssize_t store_vrm_reg(struct devi
- 		const char *buf, size_t count)
- {
- 	struct lm85_data *data = dev_get_drvdata(dev);
--	data->vrm = simple_strtoul(buf, NULL, 10);
-+	unsigned long val;
-+
-+	val = simple_strtoul(buf, NULL, 10);
-+	if (val > 255)
-+		return -EINVAL;
-+
-+	data->vrm = val;
- 	return count;
- }
- 
+ 	dev_dbg (hub_dev,
+ 		"port %d, status %04x, change %04x, %s\n",
+@@ -3415,10 +3416,11 @@ static void hub_port_connect_change(stru
+ 				USB_PORT_STAT_C_ENABLE)) {
+ 		status = hub_port_debounce(hub, port1);
+ 		if (status < 0) {
+-			if (printk_ratelimit())
++			if (port1 != unreliable_port && printk_ratelimit())
+ 				dev_err(hub_dev, "connect-debounce failed, "
+ 						"port %d disabled\n", port1);
+ 			portstatus &= ~USB_PORT_STAT_CONNECTION;
++			unreliable_port = port1;
+ 		} else {
+ 			portstatus = status;
+ 		}
 
