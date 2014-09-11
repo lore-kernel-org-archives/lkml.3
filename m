@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302AbaIKP4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:56:20 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47791 "EHLO
+	id S1757311AbaIKP4k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:56:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47784 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756921AbaIKPyT (ORCPT
+	with ESMTP id S1756862AbaIKPyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:54:19 -0400
+	Thu, 11 Sep 2014 11:54:18 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/7] ARM: at91: introduce basic SAMA5D4 support
-Date: Thu, 11 Sep 2014 17:54:08 +0200
-Message-Id: <1410450852-1834-4-git-send-email-alexandre.belloni@free-electrons.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 2/7] clk: at91: add a driver for the h32mx clock
+Date: Thu, 11 Sep 2014 17:54:07 +0200
+Message-Id: <1410450852-1834-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -23,267 +24,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/Kconfig.debug                    |  4 ++++
- arch/arm/mach-at91/Kconfig                | 18 ++++++++++++++++
- arch/arm/mach-at91/Makefile               |  1 +
- arch/arm/mach-at91/board-dt-sama5.c       | 19 ++++++++++++++++
- arch/arm/mach-at91/generic.h              |  4 ++++
- arch/arm/mach-at91/include/mach/cpu.h     |  9 ++++++++
- arch/arm/mach-at91/include/mach/sama5d4.h | 35 ++++++++++++++++++++++++++++++
- arch/arm/mach-at91/sama5d4.c              | 36 +++++++++++++++++++++++++++++++
- arch/arm/mach-at91/soc.h                  |  5 +++++
- 9 files changed, 131 insertions(+)
- create mode 100644 arch/arm/mach-at91/include/mach/sama5d4.h
- create mode 100644 arch/arm/mach-at91/sama5d4.c
+Cc: Mike Turquette <mturquette@linaro.org>
+ .../devicetree/bindings/clock/at91-clock.txt       |  15 +++
+ arch/arm/mach-at91/Kconfig                         |   3 +
+ drivers/clk/at91/Makefile                          |   1 +
+ drivers/clk/at91/clk-h32mx.c                       | 121 +++++++++++++++++++++
+ drivers/clk/at91/pmc.c                             |   6 +
+ drivers/clk/at91/pmc.h                             |   5 +
+ include/linux/clk/at91_pmc.h                       |   1 +
+ 7 files changed, 152 insertions(+)
+ create mode 100644 drivers/clk/at91/clk-h32mx.c
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54f8d17..7b44db208f10 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -101,6 +101,10 @@ choice
- 		bool "Kernel low-level debugging on 9263 and 9g45"
- 		depends on HAVE_AT91_DBGU1
+diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+index b3d544ca522a..c8dcbbd242e5 100644
+--- a/Documentation/devicetree/bindings/clock/at91-clock.txt
++++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+@@ -74,6 +74,9 @@ Required properties:
+ 	"atmel,at91sam9x5-clk-utmi":
+ 		at91 utmi clock
  
-+	config AT91_DEBUG_LL_DBGU2
-+		bool "Kernel low-level debugging on sama5d4"
-+		depends on HAVE_AT91_DBGU2
++	"atmel,sama5d4-clk-h32mx":
++		at91 h32mx clock
 +
- 	config DEBUG_BCM2835
- 		bool "Kernel low-level debugging on BCM2835 PL011 UART"
- 		depends on ARCH_BCM2835
+ Required properties for SCKC node:
+ - reg : defines the IO memory reserved for the SCKC.
+ - #size-cells : shall be 0 (reg is used to encode clk id).
+@@ -447,3 +450,15 @@ For example:
+ 		#clock-cells = <0>;
+ 		clocks = <&main>;
+ 	};
++
++Required properties for h32mx clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall be the master clock source phandle.
++
++For example:
++	h32ck: h32mxck {
++		#clock-cells = <0>;
++		compatible = "atmel,sama5d4-clk-h32mx";
++		clocks = <&mck>;
++	};
++
 diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index a2c8ecb10730..0e11013fea76 100644
+index 6eb3c658761d..a2c8ecb10730 100644
 --- a/arch/arm/mach-at91/Kconfig
 +++ b/arch/arm/mach-at91/Kconfig
-@@ -12,6 +12,9 @@ config HAVE_AT91_DBGU0
- config HAVE_AT91_DBGU1
+@@ -39,6 +39,9 @@ config AT91_SAM9_TIME
+ config HAVE_AT91_SMD
  	bool
  
-+config HAVE_AT91_DBGU2
++config HAVE_AT91_H64MX
 +	bool
 +
- config AT91_USE_OLD_CLK
+ config SOC_AT91SAM9
  	bool
- 
-@@ -104,6 +107,21 @@ config SOC_SAMA5D3
- 	help
- 	  Select this if you are using one of Atmel's SAMA5D3 family SoC.
- 	  This support covers SAMA5D31, SAMA5D33, SAMA5D34, SAMA5D35, SAMA5D36.
-+
-+config SOC_SAMA5D4
-+	bool "SAMA5D4 family"
-+	select SOC_SAMA5
-+	select HAVE_AT91_DBGU2
-+	select CLKSRC_MMIO
-+	select CACHE_L2X0
-+	select CACHE_PL310
-+	select HAVE_FB_ATMEL
-+	select HAVE_AT91_UTMI
-+	select HAVE_AT91_SMD
-+	select HAVE_AT91_USB_CLK
-+	select HAVE_AT91_H64MX
-+	help
-+	  Select this if you are using one of Atmel's SAMA5D4 family SoC.
- endif
- 
- if SOC_SAM_V4_V5
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 306c82b3d45c..82edd532c139 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -22,6 +22,7 @@ obj-$(CONFIG_SOC_AT91SAM9N12)	+= at91sam9n12.o
- obj-$(CONFIG_SOC_AT91SAM9X5)	+= at91sam9x5.o
- obj-$(CONFIG_SOC_AT91SAM9RL)	+= at91sam9rl.o
- obj-$(CONFIG_SOC_SAMA5D3)	+= sama5d3.o
-+obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
- 
- obj-$(CONFIG_ARCH_AT91RM9200)	+= at91rm9200_devices.o
- obj-$(CONFIG_ARCH_AT91SAM9260)	+= at91sam9260_devices.o
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 8c5814fa5325..3b43be41ddf8 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -20,6 +20,7 @@
- 
- #include <asm/setup.h>
- #include <asm/irq.h>
-+#include <asm/hardware/cache-l2x0.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/irq.h>
-@@ -35,8 +36,26 @@ static void __init sama5_dt_timer_init(void)
- 	at91sam926x_pit_init();
- }
- 
-+#ifdef CONFIG_CACHE_L2X0
-+static void __init at91_init_l2cache(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_compatible_node(NULL, NULL, "arm,pl310-cache");
-+	if (!np)
-+		return;
-+	of_node_put(np);
-+
-+	l2x0_of_init(0, ~0UL);
-+}
-+#else
-+static inline void at91_init_l2cache(void) {}
-+#endif
-+
- static void __init sama5_dt_device_init(void)
- {
-+	at91_init_l2cache();
-+
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index f42b0490ad98..733ac0eef839 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -84,3 +84,7 @@ extern int  __init at91_gpio_of_irq_setup(struct device_node *node,
- 					  struct device_node *parent);
- 
- extern u32 at91_get_extern_irq(void);
-+
-+/* Firmware */
-+extern void atmel_firmware_init(void);
-+extern bool atmel_firmware_is_registered(void);
-diff --git a/arch/arm/mach-at91/include/mach/cpu.h b/arch/arm/mach-at91/include/mach/cpu.h
-index 86c71debab5b..d77572e8cb15 100644
---- a/arch/arm/mach-at91/include/mach/cpu.h
-+++ b/arch/arm/mach-at91/include/mach/cpu.h
-@@ -86,6 +86,9 @@ enum at91_soc_type {
- 	/* SAMA5D3 */
- 	AT91_SOC_SAMA5D3,
- 
-+	/* SAMA5D4 */
-+	AT91_SOC_SAMA5D4,
-+
- 	/* Unknown type */
- 	AT91_SOC_UNKNOWN,
- };
-@@ -211,6 +214,12 @@ static inline int at91_soc_is_detected(void)
- #define cpu_is_sama5d3()	(0)
- #endif
- 
-+#ifdef CONFIG_SOC_SAMA5D4
-+#define cpu_is_sama5d4()	(at91_soc_initdata.type == AT91_SOC_SAMA5D4)
-+#else
-+#define cpu_is_sama5d4()	(0)
-+#endif
-+
- /*
-  * Since this is ARM, we will never run on any AVR32 CPU. But these
-  * definitions may reduce clutter in common drivers.
-diff --git a/arch/arm/mach-at91/include/mach/sama5d4.h b/arch/arm/mach-at91/include/mach/sama5d4.h
+ 	select AT91_SAM9_TIME
+diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+index 4998aee59267..b2d43ff8112b 100644
+--- a/drivers/clk/at91/Makefile
++++ b/drivers/clk/at91/Makefile
+@@ -9,3 +9,4 @@ obj-y += clk-system.o clk-peripheral.o clk-programmable.o
+ obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
+ obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
+ obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
++obj-$(CONFIG_HAVE_AT91_H64MX)		+= clk-h32mx.o
+diff --git a/drivers/clk/at91/clk-h32mx.c b/drivers/clk/at91/clk-h32mx.c
 new file mode 100644
-index 000000000000..af835e89d4c5
+index 000000000000..21a2f3630a43
 --- /dev/null
-+++ b/arch/arm/mach-at91/include/mach/sama5d4.h
-@@ -0,0 +1,35 @@
++++ b/drivers/clk/at91/clk-h32mx.c
+@@ -0,0 +1,121 @@
 +/*
-+ * Chip-specific header file for the SAMA5D4 family
++ * drivers/clk/at91/clk-h32mx.c
 + *
-+ *  Copyright (C) 2013 Atmel Corporation,
-+ *                     Nicolas Ferre <nicolas.ferre@atmel.com>
++ *  Copyright (C) 2014 Atmel
 + *
-+ * Common definitions.
-+ * Based on SAMA5D4 datasheet.
++ * Alexandre Belloni <alexandre.belloni@free-electrons.com>
 + *
-+ * Licensed under GPLv2 or later.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
 + */
 +
-+#ifndef SAMA5D4_H
-+#define SAMA5D4_H
-+
-+/*
-+ * User Peripheral physical base addresses.
-+ */
-+#define SAMA5D4_BASE_AIC	0xfc06e000 /* (AIC non-secure) Base Address */
-+#define SAMA5D4_BASE_USART3	0xfc00c000 /* (USART3 non-secure) Base Address */
-+#define SAMA5D4_BASE_PMC	0xf0018000 /* (PMC) Base Address */
-+#define SAMA5D4_BASE_MPDDRC	0xf0010000 /* (MPDDRC) Base Address */
-+#define SAMA5D4_BASE_PIOD	0xfc068000 /* (PIOD) Base Address */
-+#define SAMA5D4_BASE_PIOE	0xfc06d000 /* (PIOE) Base Address */
-+
-+/* Some other peripherals */
-+#define SAMA5D4_BASE_SYS2	SAMA5D4_BASE_PIOD
-+
-+/*
-+ * Internal Memory.
-+ */
-+#define SAMA5D4_NS_SRAM_BASE     0x00210000      /* Internal SRAM base address Non-Secure */
-+#define SAMA5D4_NS_SRAM_SIZE     (64 * SZ_1K)   /* Internal SRAM size Non-Secure part (64Kb) */
-+
-+#endif
-diff --git a/arch/arm/mach-at91/sama5d4.c b/arch/arm/mach-at91/sama5d4.c
-new file mode 100644
-index 000000000000..f81f11ed8deb
---- /dev/null
-+++ b/arch/arm/mach-at91/sama5d4.c
-@@ -0,0 +1,36 @@
-+/*
-+ *  Chip-specific setup code for the SAMA5D4 family
-+ *
-+ *  Copyright (C) 2013 Atmel Corporation,
-+ *                     Nicolas Ferre <nicolas.ferre@atmel.com>
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/dma-mapping.h>
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
 +#include <linux/clk/at91_pmc.h>
++#include <linux/delay.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/sched.h>
++#include <linux/wait.h>
 +
-+#include <asm/irq.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <mach/sama5d4.h>
-+#include <mach/cpu.h>
-+#include <mach/hardware.h>
++#include "pmc.h"
 +
-+#include "soc.h"
-+#include "generic.h"
-+#include "sam9_smc.h"
++struct clk_sama5d4_h32mx {
++	struct clk_hw hw;
++	struct at91_pmc *pmc;
++};
 +
-+/* --------------------------------------------------------------------
-+ *  Processor initialization
-+ * -------------------------------------------------------------------- */
++#define to_clk_sama5d4_h32mx(hw) container_of(hw, struct clk_sama5d4_h32mx, hw)
 +
-+static void __init sama5d4_map_io(void)
++static unsigned long clk_sama5d4_h32mx_recalc_rate(struct clk_hw *hw,
++						 unsigned long parent_rate)
 +{
-+	at91_init_sram(0, SAMA5D4_NS_SRAM_BASE, SAMA5D4_NS_SRAM_SIZE);
++	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
++
++	if (pmc_read(h32mxclk->pmc, AT91_PMC_MCKR) & AT91_PMC_H32MXDIV)
++		return parent_rate / 2;
++
++	if (parent_rate > 90000000)
++		pr_warn("H32 clock is too fast\n");
++	return parent_rate;
 +}
 +
-+AT91_SOC_START(sama5d4)
-+	.map_io = sama5d4_map_io,
-+AT91_SOC_END
-diff --git a/arch/arm/mach-at91/soc.h b/arch/arm/mach-at91/soc.h
-index ab983f2cc7dd..85ecd8ad9c53 100644
---- a/arch/arm/mach-at91/soc.h
-+++ b/arch/arm/mach-at91/soc.h
-@@ -25,6 +25,7 @@ extern struct at91_init_soc at91sam9rl_soc;
- extern struct at91_init_soc at91sam9x5_soc;
- extern struct at91_init_soc at91sam9n12_soc;
- extern struct at91_init_soc sama5d3_soc;
-+extern struct at91_init_soc sama5d4_soc;
- 
- #define AT91_SOC_START(_name)				\
- struct at91_init_soc __initdata _name##_soc		\
-@@ -75,3 +76,7 @@ static inline int at91_soc_is_enabled(void)
- #if !defined(CONFIG_SOC_SAMA5D3)
- #define sama5d3_soc	at91_boot_soc
- #endif
++static long clk_sama5d4_h32mx_round_rate(struct clk_hw *hw, unsigned long rate,
++				       unsigned long *parent_rate)
++{
++	unsigned long div;
 +
-+#if !defined(CONFIG_SOC_SAMA5D4)
-+#define sama5d4_soc	at91_boot_soc
++	if (rate > *parent_rate)
++		return *parent_rate;
++	div = *parent_rate / 2;
++	if (rate < div)
++		return div;
++
++	if (rate - div < *parent_rate - rate)
++		return div;
++
++	return *parent_rate;
++}
++
++static int clk_sama5d4_h32mx_set_rate(struct clk_hw *hw, unsigned long rate,
++				    unsigned long parent_rate)
++{
++	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
++	struct at91_pmc *pmc = h32mxclk->pmc;
++	u32 tmp;
++
++	if (parent_rate != rate && (parent_rate / 2) != rate)
++		return -EINVAL;
++
++	pmc_lock(pmc);
++	tmp = pmc_read(pmc, AT91_PMC_MCKR) & ~AT91_PMC_H32MXDIV;
++	if ((parent_rate / 2) == rate)
++		tmp |= AT91_PMC_H32MXDIV;
++	pmc_write(pmc, AT91_PMC_MCKR, tmp);
++	pmc_unlock(pmc);
++
++	return 0;
++}
++
++static const struct clk_ops h32mx_ops = {
++	.recalc_rate = clk_sama5d4_h32mx_recalc_rate,
++	.round_rate = clk_sama5d4_h32mx_round_rate,
++	.set_rate = clk_sama5d4_h32mx_set_rate,
++};
++
++void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
++				     struct at91_pmc *pmc)
++{
++	struct clk_sama5d4_h32mx *h32mxclk;
++	struct clk_init_data init;
++	const char *parent_name;
++	struct clk *clk;
++
++	h32mxclk = kzalloc(sizeof(*h32mxclk), GFP_KERNEL);
++	if (!h32mxclk)
++		return;
++
++	parent_name = of_clk_get_parent_name(np, 0);
++
++	init.name = np->name;
++	init.ops = &h32mx_ops;
++	init.parent_names = parent_name ? &parent_name : NULL;
++	init.num_parents = parent_name ? 1 : 0;
++	init.flags = CLK_SET_RATE_GATE;
++
++	h32mxclk->hw.init = &init;
++	h32mxclk->pmc = pmc;
++
++	clk = clk_register(NULL, &h32mxclk->hw);
++	if (!clk)
++		return;
++
++	of_clk_add_provider(np, of_clk_src_simple_get, clk);
++}
+diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
+index 524196bb35a5..0d98b3f2b780 100644
+--- a/drivers/clk/at91/pmc.c
++++ b/drivers/clk/at91/pmc.c
+@@ -337,6 +337,12 @@ static const struct of_device_id pmc_clk_ids[] __initconst = {
+ 		.data = of_at91sam9x5_clk_smd_setup,
+ 	},
+ #endif
++#if defined(CONFIG_HAVE_AT91_H64MX)
++	{
++		.compatible = "atmel,sama5d4-clk-h32mx",
++		.data = of_sama5d4_clk_h32mx_setup,
++	},
 +#endif
+ 	{ /*sentinel*/ }
+ };
+ 
+diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
+index 6c7625976113..52d2041fa3f6 100644
+--- a/drivers/clk/at91/pmc.h
++++ b/drivers/clk/at91/pmc.h
+@@ -120,4 +120,9 @@ extern void __init of_at91sam9x5_clk_smd_setup(struct device_node *np,
+ 					       struct at91_pmc *pmc);
+ #endif
+ 
++#if defined(CONFIG_HAVE_AT91_SMD)
++extern void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
++					      struct at91_pmc *pmc);
++#endif
++
+ #endif /* __PMC_H_ */
+diff --git a/include/linux/clk/at91_pmc.h b/include/linux/clk/at91_pmc.h
+index de4268d4987a..c8e3b3d1eded 100644
+--- a/include/linux/clk/at91_pmc.h
++++ b/include/linux/clk/at91_pmc.h
+@@ -125,6 +125,7 @@ extern void __iomem *at91_pmc_base;
+ #define		AT91_PMC_PLLADIV2	(1 << 12)		/* PLLA divisor by 2 [some SAM9 only] */
+ #define			AT91_PMC_PLLADIV2_OFF		(0 << 12)
+ #define			AT91_PMC_PLLADIV2_ON		(1 << 12)
++#define		AT91_PMC_H32MXDIV	BIT(24)
+ 
+ #define	AT91_PMC_USB		0x38			/* USB Clock Register [some SAM9 only] */
+ #define		AT91_PMC_USBS		(0x1 <<  0)		/* USB OHCI Input clock selection */
 -- 
 1.9.1
 
