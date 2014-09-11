@@ -1,79 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaIKX4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:56:12 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51502 "EHLO
+	id S1754949AbaIKX5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:57:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51606 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004AbaIKX4K (ORCPT
+	with ESMTP id S1753371AbaIKX46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:56:10 -0400
-Message-ID: <54123697.4070804@codeaurora.org>
-Date: Thu, 11 Sep 2014 16:56:07 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Doug Anderson <dianders@chromium.org>
-CC: Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com>	<5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com> <5411DF5D.8060906@arm.com>
-In-Reply-To: <5411DF5D.8060906@arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Sep 2014 19:56:58 -0400
+From: Joonwoo Park <joonwoop@codeaurora.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Joonwoo Park <joonwoop@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH/RFC] timer: make deferrable cpu unbound timers really not bound to a cpu
+Date: Thu, 11 Sep 2014 16:56:52 -0700
+Message-Id: <1410479812-31572-1-git-send-email-joonwoop@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/14 10:43, Marc Zyngier wrote:
->>> If I was suicidal, I'd suggest you could pass a parameter to the command
->>> line, interpreted by the timer code... But I since I'm not, let's
->>> pretend I haven't said anything... ;-)
->> I did this in the past (again, see Sonny's thread), but didn't
->> consider myself knowledgeable to know if that was truly a good test:
->>
->>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>        pr_info("DOUG: val is %#010x", val);
->>        val |= (1 << 2);
->>        asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
->>        val = 0xffffffff;
->>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>        pr_info("DOUG: val is %#010x", val);
->>
->> The idea being that if you can make modifications to the SCR register
->> (and see your changes take effect) then you must be in secure mode.
->> In my case the first printout was 0x0 and the second was 0x4.
-> The main issue is when you're *not* in secure mode. It is likely that
-> this will explode badly. This is why I suggested something that is set
-> by the bootloader (after all. it knows which mode it is booted in), and
-> that the timer driver can use when the CPU comes up.
+When a deferrable work (INIT_DEFERRABLE_WORK, etc.) is queued via
+queue_delayed_work() it's probably intended to run the work item on any
+CPU that isn't idle. However, we queue the work to run at a later time
+by starting a deferrable timer that binds to whatever CPU the work is
+queued on which is same with queue_delayed_work_on(smp_processor_id())
+effectively.
 
-Where does this platform jump to when a CPU comes up? Is it
-rockchip_secondary_startup()? I wonder if that path could have this
-little bit of assembly to poke the cntvoff in monitor mode and then jump
-to secondary_startup()? Before we boot any secondary CPUs we could also
-read the cntvoff for CPU0 in the platform specific layer (where we know
-we're running in secure mode) and then use that value as the "reset"
-value for the secondaries. Or does this platform boot up in secure mode
-some times and non-secure mode other times?
+As a result WORK_CPU_UNBOUND work items aren't really cpu unbound now.
+In fact this is perfectly fine with UP kernel and also won't affect much a
+system without dyntick with SMP kernel too as every cpus run timers
+periodically.  But on SMP systems with dyntick current implementation leads
+deferrable timers not very scalable because the timer's base which has
+queued the deferrable timer won't wake up till next non-deferrable timer
+expires even though there are possible other non idle cpus are running
+which are able to run expired deferrable timers.
 
+The deferrable work is a good example of the current implementation's
+victim like below.
+
+INIT_DEFERRABLE_WORK(&dwork, fn);
+CPU 0                                 CPU 1
+queue_delayed_work(wq, &dwork, HZ);
+    queue_delayed_work_on(WORK_CPU_UNBOUND);
+        ...
+	__mod_timer() -> queues timer to the
+			 current cpu's timer
+			 base.
+	...
+tick_nohz_idle_enter() -> cpu enters idle.
+A second later
+cpu 0 is now in idle.                 cpu 1 exits idle or wasn't in idle so
+                                      now it's in active but won't
+cpu 0 won't wake up till next         handle cpu unbound deferrable timer
+non-deferrable timer expires.         as it's in cpu 0's timer base.
+
+To make all cpu unbound deferrable timers are scalable, introduce a common
+timer base which is only for cpu unbound deferrable timers to make those
+are indeed cpu unbound so that can be scheduled by any of non idle cpus.
+This common timer fixes scalability issue of delayed work and all other cpu
+unbound deferrable timer using implementations.
+
+cc: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <john.stultz@linaro.org>
+CC: Tejun Heo <tj@kernel.org>
+Signed-off-by: Joonwoo Park <joonwoop@codeaurora.org>
+---
+ kernel/time/timer.c | 108 +++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 82 insertions(+), 26 deletions(-)
+
+diff --git a/kernel/time/timer.c b/kernel/time/timer.c
+index aca5dfe..655076b 100644
+--- a/kernel/time/timer.c
++++ b/kernel/time/timer.c
+@@ -93,6 +93,9 @@ struct tvec_base {
+ struct tvec_base boot_tvec_bases;
+ EXPORT_SYMBOL(boot_tvec_bases);
+ static DEFINE_PER_CPU(struct tvec_base *, tvec_bases) = &boot_tvec_bases;
++#ifdef CONFIG_SMP
++static struct tvec_base *tvec_base_deferral = &boot_tvec_bases;
++#endif
+ 
+ /* Functions below help us manage 'deferrable' flag */
+ static inline unsigned int tbase_get_deferrable(struct tvec_base *base)
+@@ -655,7 +658,14 @@ static inline void debug_assert_init(struct timer_list *timer)
+ static void do_init_timer(struct timer_list *timer, unsigned int flags,
+ 			  const char *name, struct lock_class_key *key)
+ {
+-	struct tvec_base *base = __raw_get_cpu_var(tvec_bases);
++	struct tvec_base *base;
++
++#ifdef CONFIG_SMP
++	if (flags & TIMER_DEFERRABLE)
++		base = tvec_base_deferral;
++	else
++#endif
++		base = __raw_get_cpu_var(tvec_bases);
+ 
+ 	timer->entry.next = NULL;
+ 	timer->base = (void *)((unsigned long)base | flags);
+@@ -777,26 +787,32 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ 
+ 	debug_activate(timer, expires);
+ 
+-	cpu = get_nohz_timer_target(pinned);
+-	new_base = per_cpu(tvec_bases, cpu);
++#ifdef CONFIG_SMP
++	if (base != tvec_base_deferral) {
++#endif
++		cpu = get_nohz_timer_target(pinned);
++		new_base = per_cpu(tvec_bases, cpu);
+ 
+-	if (base != new_base) {
+-		/*
+-		 * We are trying to schedule the timer on the local CPU.
+-		 * However we can't change timer's base while it is running,
+-		 * otherwise del_timer_sync() can't detect that the timer's
+-		 * handler yet has not finished. This also guarantees that
+-		 * the timer is serialized wrt itself.
+-		 */
+-		if (likely(base->running_timer != timer)) {
+-			/* See the comment in lock_timer_base() */
+-			timer_set_base(timer, NULL);
+-			spin_unlock(&base->lock);
+-			base = new_base;
+-			spin_lock(&base->lock);
+-			timer_set_base(timer, base);
++		if (base != new_base) {
++			/*
++			 * We are trying to schedule the timer on the local CPU.
++			 * However we can't change timer's base while it is
++			 * running, otherwise del_timer_sync() can't detect that
++			 * the timer's handler yet has not finished. This also
++			 * guarantees that the timer is serialized wrt itself.
++			 */
++			if (likely(base->running_timer != timer)) {
++				/* See the comment in lock_timer_base() */
++				timer_set_base(timer, NULL);
++				spin_unlock(&base->lock);
++				base = new_base;
++				spin_lock(&base->lock);
++				timer_set_base(timer, base);
++			}
+ 		}
++#ifdef CONFIG_SMP
+ 	}
++#endif
+ 
+ 	timer->expires = expires;
+ 	internal_add_timer(base, timer);
+@@ -1161,15 +1177,20 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
+ /**
+  * __run_timers - run all expired timers (if any) on this CPU.
+  * @base: the timer vector to be processed.
++ * @try: try and just return if base's lock already acquired.
+  *
+  * This function cascades all vectors and executes all expired timer
+  * vectors.
+  */
+-static inline void __run_timers(struct tvec_base *base)
++static inline void __run_timers(struct tvec_base *base, bool try)
+ {
+ 	struct timer_list *timer;
+ 
+-	spin_lock_irq(&base->lock);
++	if (!try)
++		spin_lock_irq(&base->lock);
++	else if (!spin_trylock_irq(&base->lock))
++		return;
++
+ 	if (catchup_timer_jiffies(base)) {
+ 		spin_unlock_irq(&base->lock);
+ 		return;
+@@ -1400,8 +1421,17 @@ static void run_timer_softirq(struct softirq_action *h)
+ 
+ 	hrtimer_run_pending();
+ 
++#ifdef CONFIG_SMP
++	if (time_after_eq(jiffies, tvec_base_deferral->timer_jiffies))
++		/*
++		 * if other cpu is handling cpu unbound deferrable timer base,
++		 * current cpu doesn't need to handle it so pass try=true.
++		 */
++		__run_timers(tvec_base_deferral, true);
++#endif
++
+ 	if (time_after_eq(jiffies, base->timer_jiffies))
+-		__run_timers(base);
++		__run_timers(base, false);
+ }
+ 
+ /*
+@@ -1537,7 +1567,7 @@ static int init_timers_cpu(int cpu)
+ {
+ 	int j;
+ 	struct tvec_base *base;
+-	static char tvec_base_done[NR_CPUS];
++	static char tvec_base_done[NR_CPUS + 1];
+ 
+ 	if (!tvec_base_done[cpu]) {
+ 		static char boot_done;
+@@ -1546,8 +1576,14 @@ static int init_timers_cpu(int cpu)
+ 			/*
+ 			 * The APs use this path later in boot
+ 			 */
+-			base = kzalloc_node(sizeof(*base), GFP_KERNEL,
+-					    cpu_to_node(cpu));
++			if (cpu != NR_CPUS)
++				base = kmalloc_node(sizeof(*base),
++						    GFP_KERNEL | __GFP_ZERO,
++						    cpu_to_node(cpu));
++			else
++				base = kmalloc(sizeof(*base),
++					       GFP_KERNEL | __GFP_ZERO);
++
+ 			if (!base)
+ 				return -ENOMEM;
+ 
+@@ -1556,7 +1592,13 @@ static int init_timers_cpu(int cpu)
+ 				kfree(base);
+ 				return -ENOMEM;
+ 			}
+-			per_cpu(tvec_bases, cpu) = base;
++
++			if (cpu != NR_CPUS)
++				per_cpu(tvec_bases, cpu) = base;
++#ifdef CONFIG_SMP
++			else
++				tvec_base_deferral = base;
++#endif
+ 		} else {
+ 			/*
+ 			 * This is for the boot CPU - we use compile-time
+@@ -1571,7 +1613,12 @@ static int init_timers_cpu(int cpu)
+ 		tvec_base_done[cpu] = 1;
+ 		base->cpu = cpu;
+ 	} else {
+-		base = per_cpu(tvec_bases, cpu);
++		if (cpu != NR_CPUS)
++			base = per_cpu(tvec_bases, cpu);
++#ifdef CONFIG_SMP
++		else
++			base = tvec_base_deferral;
++#endif
+ 	}
+ 
+ 
+@@ -1679,6 +1726,15 @@ void __init init_timers(void)
+ 			       (void *)(long)smp_processor_id());
+ 	BUG_ON(err != NOTIFY_OK);
+ 
++#ifdef CONFIG_SMP
++	/*
++	 * initialize cpu unbound deferrable timer base only when CONFIG_SMP.
++	 * UP kernel handles the timers with cpu 0 timer base.
++	 */
++	err = init_timers_cpu(NR_CPUS);
++	BUG_ON(err);
++#endif
++
+ 	init_timer_stats();
+ 	register_cpu_notifier(&timers_nb);
+ 	open_softirq(TIMER_SOFTIRQ, run_timer_softirq);
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
 
