@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaIKR1L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:27:11 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59741 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaIKR1J (ORCPT
+	id S1753474AbaIKR1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:27:33 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:56408 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaIKR1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:27:09 -0400
+	Thu, 11 Sep 2014 13:27:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140911161517.GA3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org> <20140911161517.GA3190@worktop.ger.corp.intel.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Thu, 11 Sep 2014 19:26:48 +0200
-Message-ID: <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1410453908.8852.9.camel@AMDC723>
+References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+	<CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
+	<1410453908.8852.9.camel@AMDC723>
+Date: Thu, 11 Sep 2014 19:27:29 +0200
+X-Google-Sender-Auth: x5sDVBtaeMgOQda_ah9MbSFgpH8
+Message-ID: <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
+Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct generic_pm_domain-s
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Maciej Matraszek <m.matraszek@samsung.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
->> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
->> +                     struct lb_env *env)
->>  {
->> +     if ((sgs->group_capacity_orig * 100) >
->> +                     (sgs->group_utilization * env->sd->imbalance_pct))
->> +             return 1;
->> +
->> +     if (sgs->sum_nr_running < sgs->group_weight)
->> +             return 1;
->>
->> +     return 0;
->> +}
->>
->> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
->> +                     struct lb_env *env)
->> +{
->> +     if (sgs->sum_nr_running <= sgs->group_weight)
->> +             return 0;
->>
->> +     if ((sgs->group_capacity_orig * 100) <
->> +                     (sgs->group_utilization * env->sd->imbalance_pct))
->> +             return 1;
->>
->> +     return 0;
->>  }
->
-> I'm confused about the utilization vs capacity_orig. I see how we should
+Hi Maciej,
 
-1st point is that I should compare utilization vs capacity and not
-capacity_orig.
-I should have replaced capacity_orig by capacity in the functions
-above when i move the utilization statistic from
-rq->avg.runnable_avg_sum to cfs.usage_load_avg.
-rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
-cfs.usage_load_avg integrates only cfs tasks
+On Thu, Sep 11, 2014 at 6:45 PM, Maciej Matraszek
+<m.matraszek@samsung.com> wrote:
+> BTW Can I use your output as example in the commit message for v2?
+> It's much more informative
 
-With this change, we don't need sgs->group_capacity_orig anymore but
-only sgs->group_capacity. So sgs->group_capacity_orig can be removed
-as it's no more used in the code as sg_capacity_factor has been
-removed
+Sure, no problem.
 
-> maybe scale things with the capacity when comparing between CPUs/groups,
-> but not on the same CPU/group.
->
-> I would have expected something simple like:
->
-> static inline bool group_has_capacity()
-> {
->         /* Is there a spare cycle? */
->         if (sgs->group_utilization < sgs->group_weight * SCHED_LOAD_SCALE)
->                 return true;
->
->         /* Are there less tasks than logical CPUs? */
->         if (sgs->sum_nr_running < sgs->group_weight)
->                 return true;
->
->         return false;
-> }
->
-> Where group_utilization a pure sum of running_avg.
->
-> Now this has a hole when there are RT tasks on the system, in that case
-> the utilization will never hit 1, but we could fix that another way. I
-> don't think the capacity_orig thing is right.
+> (though 'runtime status' alignment seems odd).
+
+What's wrong with it?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
