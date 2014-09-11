@@ -1,87 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaIKKNM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:13:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55175 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaIKKNK (ORCPT
+	id S1754185AbaIKKOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:14:35 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:33980 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaIKKOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:13:10 -0400
-Date: Thu, 11 Sep 2014 12:13:08 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher
- capacity
-Message-ID: <20140911101308.GU3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Thu, 11 Sep 2014 06:14:33 -0400
+From: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+To: viresh.kumar@linaro.org, benh@kernel.crashing.org
+Cc: linuxppc-dev@lists.ozlabs.org, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        David.Laight@ACULAB.COM,
+        Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3] cpufreq: powernv: Set the cpus to nominal frequency during reboot/kexec
+Date: Thu, 11 Sep 2014 15:43:43 +0530
+Message-Id: <1410430423-1246-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091110-2674-0000-0000-000001CC5BA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 01:06:51PM +0200, Vincent Guittot wrote:
+This patch ensures the cpus to kexec/reboot at nominal frequency.
+Nominal frequency is the highest cpu frequency on PowerPC at
+which the cores can run without getting throttled.
 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 18db43e..60ae1ce 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->  			return true;
->  	}
->  
-> +	/*
-> +	 * The group capacity is reduced probably because of activity from other
-> +	 * sched class or interrupts which use part of the available capacity
-> +	 */
-> +	if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
-> +				env->sd->imbalance_pct))
-> +		return true;
-> +
->  	return false;
->  }
->  
-> @@ -6534,13 +6542,23 @@ static int need_active_balance(struct lb_env *env)
->  	struct sched_domain *sd = env->sd;
->  
->  	if (env->idle == CPU_NEWLY_IDLE) {
-> +		int src_cpu = env->src_cpu;
->  
->  		/*
->  		 * ASYM_PACKING needs to force migrate tasks from busy but
->  		 * higher numbered CPUs in order to pack all tasks in the
->  		 * lowest numbered CPUs.
->  		 */
-> -		if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
-> +		if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
-> +			return 1;
-> +
-> +		/*
-> +		 * If the CPUs share their cache and the src_cpu's capacity is
-> +		 * reduced because of other sched_class or IRQs, we trig an
-> +		 * active balance to move the task
-> +		 */
-> +		if ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
-> +				sd->imbalance_pct))
->  			return 1;
->  	}
+If the host kernel had set the cpus to a low pstate and then it
+kexecs/reboots to a cpufreq disabled kernel it would cause the target
+kernel to perform poorly. It will also increase the boot up time of
+the target kernel. So set the cpus to high pstate, in this case to
+nominal frequency before rebooting to avoid such scenarios.
 
-Should you not also check -- in both cases -- that the destination is
-any better?
+The reboot notifier will set the cpus to nominal frequncy.
 
-Also, there's some obvious repetition going on there, maybe add a
-helper?
+Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+Changes v2->v3:
+We return EBUSY when cpufreq governor tries to change the frequency
+after rebooting is set to true. This results in console being flushed
+with error messages indicating failed attempts to change the
+frequency. So instead of returning EBUSY we return 0 to stop the
+governor from changing the frequency without alerting a failure to 
+do the same on reboot, as this  is not an errorneaos condition.
 
-Also, both sites should probably ensure they're operating in the
-non-saturated/overloaded scenario. Because as soon as we're completely
-saturated we want SMP nice etc. and that all already works right
-(presumably).
+Changes v1->v2:
+Invoke .target() driver callback to set the cpus to nominal frequency
+in reboot notifier, instead of calling cpufreq_suspend() as suggested
+by Viresh Kumar.
+Modified the commit message.
+
+ drivers/cpufreq/powernv-cpufreq.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
+index 379c083..f772a55 100644
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -26,6 +26,7 @@
+ #include <linux/cpufreq.h>
+ #include <linux/smp.h>
+ #include <linux/of.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/cputhreads.h>
+ #include <asm/firmware.h>
+@@ -35,6 +36,7 @@
+ #define POWERNV_MAX_PSTATES	256
+ 
+ static struct cpufreq_frequency_table powernv_freqs[POWERNV_MAX_PSTATES+1];
++static bool rebooting;
+ 
+ /*
+  * Note: The set of pstates consists of contiguous integers, the
+@@ -284,6 +286,15 @@ static void set_pstate(void *freq_data)
+ }
+ 
+ /*
++ * get_nominal_index: Returns the index corresponding to the nominal
++ * pstate in the cpufreq table
++ */
++static inline unsigned int get_nominal_index(void)
++{
++	return powernv_pstate_info.max - powernv_pstate_info.nominal;
++}
++
++/*
+  * powernv_cpufreq_target_index: Sets the frequency corresponding to
+  * the cpufreq table entry indexed by new_index on the cpus in the
+  * mask policy->cpus
+@@ -293,6 +304,9 @@ static int powernv_cpufreq_target_index(struct cpufreq_policy *policy,
+ {
+ 	struct powernv_smp_call_data freq_data;
+ 
++	if (unlikely(rebooting) && new_index != get_nominal_index())
++		return 0;
++
+ 	freq_data.pstate_id = powernv_freqs[new_index].driver_data;
+ 
+ 	/*
+@@ -317,6 +331,25 @@ static int powernv_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	return cpufreq_table_validate_and_show(policy, powernv_freqs);
+ }
+ 
++static int powernv_cpufreq_reboot_notifier(struct notifier_block *nb,
++				unsigned long action, void *unused)
++{
++	int cpu;
++	struct cpufreq_policy cpu_policy;
++
++	rebooting = true;
++	for_each_online_cpu(cpu) {
++		cpufreq_get_policy(&cpu_policy, cpu);
++		powernv_cpufreq_target_index(&cpu_policy, get_nominal_index());
++	}
++
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block powernv_cpufreq_reboot_nb = {
++	.notifier_call = powernv_cpufreq_reboot_notifier,
++};
++
+ static struct cpufreq_driver powernv_cpufreq_driver = {
+ 	.name		= "powernv-cpufreq",
+ 	.flags		= CPUFREQ_CONST_LOOPS,
+@@ -342,12 +375,14 @@ static int __init powernv_cpufreq_init(void)
+ 		return rc;
+ 	}
+ 
++	register_reboot_notifier(&powernv_cpufreq_reboot_nb);
+ 	return cpufreq_register_driver(&powernv_cpufreq_driver);
+ }
+ module_init(powernv_cpufreq_init);
+ 
+ static void __exit powernv_cpufreq_exit(void)
+ {
++	unregister_reboot_notifier(&powernv_cpufreq_reboot_nb);
+ 	cpufreq_unregister_driver(&powernv_cpufreq_driver);
+ }
+ module_exit(powernv_cpufreq_exit);
+-- 
+1.9.3
+
