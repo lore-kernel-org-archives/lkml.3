@@ -1,127 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaIKLFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:05:16 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:38266 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaIKLFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:05:14 -0400
+	id S1753663AbaIKLIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:08:22 -0400
+Received: from sauhun.de ([89.238.76.85]:51618 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738AbaIKLIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 07:08:20 -0400
+Date: Thu, 11 Sep 2014 13:08:29 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+Message-ID: <20140911110829.GA5149@katana>
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk>
+ <540ED495.20609@collabora.co.uk>
+ <20140910092832.GM30307@lee--X1>
+ <1410422429.2857.16.camel@collabora.co.uk>
+ <54115F6E.3010007@collabora.co.uk>
+ <5411693A.3050300@itdev.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <540DC356.5040907@samsung.com>
-References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com>
-	<476dc5c4-557d-467c-9583-201b10b7e1df@email.android.com>
-	<540DC356.5040907@samsung.com>
-Date: Thu, 11 Sep 2014 14:05:13 +0300
-Message-ID: <CAMoF9u1+6b_3So7hLQ9iLCeFye5nggJvganGdqpeNmvu+5HqPQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH 0/6] iio: Add sensorhub driver
-From: Octavian Purdila <tavi.purdila@gmail.com>
-To: Karol Wrona <k.wrona@samsung.com>
-Cc: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
+Content-Disposition: inline
+In-Reply-To: <5411693A.3050300@itdev.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 8, 2014 at 5:55 PM, Karol Wrona <k.wrona@samsung.com> wrote:
-> On 09/03/2014 09:52 PM, Jonathan Cameron wrote:
->>
->>
->> On September 3, 2014 3:55:44 PM GMT+01:00, Karol Wrona
->> <k.wrona@samsung.com> wrote:
->>>
->>> Hello,
->>>
->>> This patchset adds support for sensorhub. It is an external mcu which
->>> manages
->>> and collects data from several sensors i.e. on Galaxy Gear 2 watch.
->>>
->>> It contains:
->>> - spi driver for sensorhub device
->>> - DT binding for the device
->>> - IIO common utils for ssp sensors, a trigger module
->>> - IIO accelerometer driver
->>> - IIO gyroscope driver
->>>
->>> Generally this is an attempt to generalize sensors handling on some
->>> Samsung
->>> boards which have multiple sensors IC and also sensorhub does some data
->>> processing itself.
->>>
->>> I would like to get your opinion about such solution. The idea is that
->>> data communication layer gives control and data to proper IIO sensor
->>> devices.
->>> In this case I chose that sensor drivers are platform ones represented
->>> by
->>> child nodes of sensorhub in DT. These compatibles are used mainly to
->>> match
->>> sensor to driver. For example at this stage there is one accelerometer
->>> but on
->>> other board can have different one with changed data format etc. In
->>> this case
->>> ssp_accel_sensor driver could handle several physical devices of accel
->>> class.
->>> Unfortunately the firmware gives only an information about used sensor
->>> type,
->>> the driver can find out that there is an accelerometer on board but
->>> nothing
->>> specific about the sensor.
->>
->> Will look at this later... In the meantime..
->
-> Before code review I want to know your opinion if passing information
-> about sensors in that way is ok - It's a hack but currently the firmware
-> do not provide such information and I do not know if I will be able to
-> change it.
->>>
->>> Other question:
->>> The sensorhub can implement some devices which are non common for IIO
->>> and hard
->>> to standardise. These ones need two way communication (raw write will
->>> not be
->>> proper for that) and can produce data packets with flexible size to
->>> 2KB).
->>> I'm wondering if it is worth to look for solution in IIO and implement
->>> something like IIO_BULK sensor with no standard channel description
->>> or solve this problem using cdev. This is the reason why the part of
->>> the
->>> patchset is intended to be placed in misc.
->>
->> Out of curiosity, what are these other sensors, roughly?  If they are
->> popular I am
->>   sure there will be more out there soon!  Ideally we would work out how
->> to standardize these. So convince is it can't be
->>   done!
->
-> These are very specific for Galaxy Gear watch like movement detector,
-> pedometer,
-> put down motion etc. The functionalities are mainly implemented by sensorhub
-> firmware, these ones are not physical chips. My first idea was to use IIO
-> for typical
-> sensors only (I can have there a bunch of thermometers, accelerometers,
-> lightsensors ...)
-> and one cdev for others. In this case data interpretation would be done by
-> userspace.
-> So:
-> - these specific "sensors" will be only implemented on some Samsung's boards
-> and depend on firmware.
-> - there will be a lot of it  - most of them are represented by an integer
-> value but there
-> are some which can send much more data.
->
->
 
-Hi Karol,
+--n8g4imXOkfNTN/H1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With the addition of new sensor types in Android (pedometer,
-significant motion) and probably more to come in L-dessert, and with
-the proliferation of sensor hub solutions, I am sure that we are going
-to see more of these types of sensors coming.
 
-With that in mind, I think it is worth trying to standardize the new
-sensors at the kernel level. Having the data interpretation done in
-userspace is going to make it hard to write portable application
-across different sensors.
+Funny timing. I am just reviewing the series from Lee and also stumbled
+over modaliases, too...
+
+On Thu, Sep 11, 2014 at 10:19:54AM +0100, Nick Dyer wrote:
+> On 11/09/14 09:38, Javier Martinez Canillas wrote:
+> > To expand on what Sjoerd already said and just to be sure everyone is o=
+n the
+> > same page.
+> >=20
+> > The problem is that right now the driver reports the following modalias:
+> >=20
+> > # cat /sys/class/i2c-adapter/i2c-8/8-004b/modalias
+> > i2c:maxtouch
+> >=20
+> > but if you look at the module information, that is not a valid alias:
+> >=20
+> > # modinfo atmel_mxt_ts | grep alias
+> > alias:          i2c:mXT224
+> > alias:          i2c:atmel_mxt_tp
+> > alias:          i2c:atmel_mxt_ts
+> > alias:          i2c:qt602240_ts
+> > alias:          of:N*T*Catmel,maxtouch*
+> >=20
+> > which means that udev/kmod can't load the module automatically based on=
+ the
+> > alias information.
+> >=20
+> > The aliases are filled by both MODULE_DEVICE_TABLE(i2c, mxt_id) and
+> > MODULE_DEVICE_TABLE(of, mxt_of_match) so after Sjoerd's patch:
+> >=20
+> > # cat /sys/class/i2c-adapter/i2c-8/8-004b/modalias
+> > i2c:maxtouch
+> >=20
+> > # modinfo atmel_mxt_ts | grep alias
+> > alias:          i2c:mXT224
+> > alias:          i2c:maxtouch
+> > alias:          i2c:atmel_mxt_tp
+> > alias:          i2c:atmel_mxt_ts
+> > alias:          i2c:qt602240_ts
+> >=20
+> > which matches the reported uevent so the module will be auto-loaded.
+> >=20
+> > This is because the I2C subsystem hardcodes i2c:<client->name>, if you =
+look at
+> > drivers/i2c/i2c-core.c:
+> >=20
+> > /* uevent helps with hotplug: modprobe -q $(MODALIAS) */
+> > static int i2c_device_uevent(struct device *dev, struct kobj_uevent_env=
+ *env)
+> > {
+> > ...
+> >         if (add_uevent_var(env, "MODALIAS=3D%s%s",
+> >                            I2C_MODULE_PREFIX, client->name))
+> > ...
+> > }
+> >=20
+> > I've looked at Lee's series and AFAICT that remains the same so I second
+> > Sjoerd that module auto-loading will continue to be broken.
+
+I think the above code in the i2c core needs a fix. Will have a closer
+look after lunch.
+
+> The i2c aliases are a bit confusing. The original device the driver was
+> written for was called qt602240, which was renamed by Atmel to mXT224 when
+> the chip series was called "maXTouch". The driver now actually supports
+> many other chips which aren't listed (more than 20 devices that I've
+> personally tested). I could add them all, but it would be an extremely lo=
+ng
+> list. It may be preferable to use the generic name maXTouch.
+
+This is probably true for some more I2C devices. Like RTCs being
+compatible or, most prominent, EEPROMS. I don't want to have a list of
+all vendors producing 24c02s if they are all compatible. If generic
+entries are frowned upon, I'd agree on a "first come, first served" policy:
+Somebody provides one compatible-property with the vendor which happens
+to be on that board, and the others have to reuse that
+compatible-property since they are, well, compatible.
+
+> So I think the sensible thing to do here would be to add "maxtouch" to the
+> i2c list to fix the module autoload issue.
+
+This is a workaround. It would make sense, however, to add it because we
+want to support i2c_board_info structures.
+
+Regards,
+
+   Wolfram
+
+
+--n8g4imXOkfNTN/H1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUEYKsAAoJEBQN5MwUoCm2MisP/j6KMB98jM2SPQCfaOhxV5GD
+8e0Q8w3h5eqj6yZHP+Rb4YdKxcy8mvqDskifLBbnpVVOQEo7n9ANdX8iNKhmU16m
+e0BIakqL6BogcCb2A8R6796nHp3+f82tvLIIUQlnPdDT8JfAImu4eBbapLAXyN9L
+PjGPdohFDIY6zB+F1AyfRa27VDtMQEZ/xnV7G3NOgiFTiYAKyLXsFjvQl6iPfx06
+1LNlEUo6D+0DYMU7mj3r2OeWQQ1viymTdjPX1n08NZ2bZj7BtjM03pwkBxhub7q1
+hTCTuF7g08fDnsQi3o9oRJIK0lSrg75Sde681y+l14bfSuoIOUrsYWzhIMgCF+Am
+psOM1dS2juNwC1NZ0tGdq/TcHF/+KAR/DyL2xHndCHgc6dg+eJAH0B+soAvOJCnA
+dM1AeAyCH+6wY/KbRNuXQz+/kic4x/yc7oWFtqYX2rpFqEz37LQsa5360gsiP4Bz
+sUnWuWhFRyqs14qFFvO1jpGGmL95EkGSYJVrlnGMdm07YIDYsLSsOBT2tEFP4JZ+
+1ST+419kVg5lICuekEZuu0966wsY1vFBiIAwPid8f9HgUO/loUdrzPTVgfjcqFeQ
+ght74/8aku2zplK7C+FXDVHZEOWG5cNnGnGSVqxKKBXbO3vJuxvOvzJaA4G8fvNU
+LtHWsAp3mgguUbOCkMnK
+=ovMj
+-----END PGP SIGNATURE-----
+
+--n8g4imXOkfNTN/H1--
