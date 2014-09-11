@@ -1,102 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197AbaIKMsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:48:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51609 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755419AbaIKMeG (ORCPT
+	id S1756221AbaIKMtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:49:01 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:40325 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755192AbaIKMs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:06 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Sep 2014 08:48:58 -0400
+Message-ID: <54119A36.5000001@hurleysoftware.com>
+Date: Thu, 11 Sep 2014 08:48:54 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Mark Rutland" <mark.rutland@arm.com>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.265647652@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 091/131] ARM: 8128/1: abort: don't clear the exclusive
- monitors
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] tty: serial: core: Only invoke ->start_tx() if there
+ is data to send
+References: <1410377601-26794-1-git-send-email-bigeasy@linutronix.de> <5410AC1B.9000700@hurleysoftware.com> <5411576E.204@linutronix.de>
+In-Reply-To: <5411576E.204@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On 09/11/2014 04:03 AM, Sebastian Andrzej Siewior wrote:
+> On 09/10/2014 09:52 PM, Peter Hurley wrote:
+>> The serial core can't assume that start_tx() does not need invoking
+>> because hardware that can stop_tx() with data in the transmitter
+>> won't restart if the ring buffer is empty but data is still in the
+>> transmitter. [Note that the 16C950 port type does this in the 8250 driver.]
+> 
+> oh, not sure how I missed this… But now that I look at this, it is also
+> that ->x_char that could be use for flow control which would have to be
+> sent even with an empty xmit buffer.
+> And 8250 in DMA mode does not look at x_char at all. But it would be
+> better if it would, right? However if the TX side does a 2 KiB transfer
+> not sure what should be done…
 
-------------------
+Yeah, 8250 dma doesn't send x_char at all; at a minimum 8250 dma should
+at least send the x_char.
 
-From: Mark Rutland <mark.rutland@arm.com>
+The preferred solution is to:
+1. Stop DMA
+2. Enable interrupt mode, which will automatically send the x_char
+3. Restart DMA (presumably from the interrupt handler if UART_LSR_THRE)
 
-commit 85868313177700d20644263a782351262d2aff84 upstream.
+The issue is whether 8250 dma hardware in general can stop and restart
+dma without losing where the dma transfer was.
 
-The ARMv6 and ARMv7 early abort handlers clear the exclusive monitors
-upon entry to the kernel, but this is redundant:
-
-  - We clear the monitors on every exception return since commit
-    200b812d0084 ("Clear the exclusive monitor when returning from an
-    exception"), so this is not necessary to ensure the monitors are
-    cleared before returning from a fault handler.
-
-  - Any dummy STREX will target a temporary scratch area in memory, and
-    may succeed or fail without corrupting useful data. Its status value
-    will not be used.
-
-  - Any other STREX in the kernel must be preceded by an LDREX, which
-    will initialise the monitors consistently and will not depend on the
-    earlier state of the monitors.
-
-Therefore we have no reason to care about the initial state of the
-exclusive monitors when a data abort is taken, and clearing the monitors
-prior to exception return (as we already do) is sufficient.
-
-This patch removes the redundant clearing of the exclusive monitors from
-the early abort handlers.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/arm/mm/abort-ev6.S | 6 ------
- arch/arm/mm/abort-ev7.S | 6 ------
- 2 files changed, 12 deletions(-)
-
---- a/arch/arm/mm/abort-ev6.S
-+++ b/arch/arm/mm/abort-ev6.S
-@@ -17,12 +17,6 @@
-  */
- 	.align	5
- ENTRY(v6_early_abort)
--#ifdef CONFIG_CPU_V6
--	sub	r1, sp, #4			@ Get unused stack location
--	strex	r0, r1, [r1]			@ Clear the exclusive monitor
--#elif defined(CONFIG_CPU_32v6K)
--	clrex
--#endif
- 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
- 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
- /*
---- a/arch/arm/mm/abort-ev7.S
-+++ b/arch/arm/mm/abort-ev7.S
-@@ -13,12 +13,6 @@
-  */
- 	.align	5
- ENTRY(v7_early_abort)
--	/*
--	 * The effect of data aborts on on the exclusive access monitor are
--	 * UNPREDICTABLE. Do a CLREX to clear the state
--	 */
--	clrex
--
- 	mrc	p15, 0, r1, c5, c0, 0		@ get FSR
- 	mrc	p15, 0, r0, c6, c0, 0		@ get FAR
- 
-
+Regards,
+Peter Hurley
