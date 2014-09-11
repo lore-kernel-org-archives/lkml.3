@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaIKIl0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:41:26 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:51873 "EHLO
+	id S1753773AbaIKImO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:42:14 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:40520 "EHLO
 	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039AbaIKIhi (ORCPT
+	with ESMTP id S1753277AbaIKIhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:37:38 -0400
+	Thu, 11 Sep 2014 04:37:34 -0400
 From: Paul Burton <paul.burton@imgtec.com>
 To: <linux-mips@linux-mips.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Paul Burton <paul.burton@imgtec.com>
-Subject: [PATCH 08/10] MIPS: ELF: add definition for the .MIPS.abiflags section
-Date: Thu, 11 Sep 2014 08:30:21 +0100
-Message-ID: <1410420623-11691-9-git-send-email-paul.burton@imgtec.com>
+Subject: [PATCH 02/10] binfmt_elf: load interpreter program headers earlier
+Date: Thu, 11 Sep 2014 08:30:15 +0100
+Message-ID: <1410420623-11691-3-git-send-email-paul.burton@imgtec.com>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
 References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
@@ -24,62 +24,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New toolchains will generate a .MIPS.abiflags section, referenced by a
-new PT_MIPS_ABIFLAGS program header. This section will provide
-information about the requirements of the ELF, including the ISA level
-the code is built for, the ASEs it requires, the size of various
-registers and its expectations of the floating point mode. This patch
-introduces a definition of the structure of this section and the program
-header, for use in a subsequent patch.
+Load the program headers of an ELF interpreter early enough in
+load_elf_binary that they can be examined before it's too late to return
+an error from an exec syscall. This patch does not perform any such
+checking, it merely lays the groundwork for a further patch to do so.
+
+No functional change is intended.
 
 Signed-off-by: Paul Burton <paul.burton@imgtec.com>
 ---
- arch/mips/include/asm/elf.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ fs/binfmt_elf.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/arch/mips/include/asm/elf.h b/arch/mips/include/asm/elf.h
-index 9343529..bfa4bbd 100644
---- a/arch/mips/include/asm/elf.h
-+++ b/arch/mips/include/asm/elf.h
-@@ -28,6 +28,7 @@
- #define PT_MIPS_REGINFO		0x70000000
- #define PT_MIPS_RTPROC		0x70000001
- #define PT_MIPS_OPTIONS		0x70000002
-+#define PT_MIPS_ABIFLAGS	0x70000003
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 64ca110..61dabe0 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -447,9 +447,8 @@ out:
  
- /* Flags in the e_flags field of the header */
- #define EF_MIPS_NOREORDER	0x00000001
-@@ -174,6 +175,30 @@ typedef elf_greg_t elf_gregset_t[ELF_NGREG];
- typedef double elf_fpreg_t;
- typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
+ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 		struct file *interpreter, unsigned long *interp_map_addr,
+-		unsigned long no_base)
++		unsigned long no_base, struct elf_phdr *interp_elf_phdata)
+ {
+-	struct elf_phdr *elf_phdata;
+ 	struct elf_phdr *eppnt;
+ 	unsigned long load_addr = 0;
+ 	int load_addr_set = 0;
+@@ -467,17 +466,14 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 	if (!interpreter->f_op->mmap)
+ 		goto out;
  
-+struct mips_elf_abiflags_v0 {
-+	uint16_t version;	/* Version of flags structure */
-+	uint8_t isa_level;	/* The level of the ISA: 1-5, 32, 64 */
-+	uint8_t isa_rev;	/* The revision of ISA: 0 for MIPS V and below,
-+				   1-n otherwise */
-+	uint8_t gpr_size;	/* The size of general purpose registers */
-+	uint8_t cpr1_size;	/* The size of co-processor 1 registers */
-+	uint8_t cpr2_size;	/* The size of co-processor 2 registers */
-+	uint8_t fp_abi;		/* The floating-point ABI */
-+	uint32_t isa_ext;	/* Mask of processor-specific extensions */
-+	uint32_t ases;		/* Mask of ASEs used */
-+	uint32_t flags1;	/* Mask of general flags */
-+	uint32_t flags2;
-+};
+-	elf_phdata = load_elf_phdrs(interp_elf_ex, interpreter);
+-	if (!elf_phdata)
+-		goto out;
+-
+-	total_size = total_mapping_size(elf_phdata, interp_elf_ex->e_phnum);
++	total_size = total_mapping_size(interp_elf_phdata,
++					interp_elf_ex->e_phnum);
+ 	if (!total_size) {
+ 		error = -EINVAL;
+-		goto out_close;
++		goto out;
+ 	}
+ 
+-	eppnt = elf_phdata;
++	eppnt = interp_elf_phdata;
+ 	for (i = 0; i < interp_elf_ex->e_phnum; i++, eppnt++) {
+ 		if (eppnt->p_type == PT_LOAD) {
+ 			int elf_type = MAP_PRIVATE | MAP_DENYWRITE;
+@@ -504,7 +500,7 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 				*interp_map_addr = map_addr;
+ 			error = map_addr;
+ 			if (BAD_ADDR(map_addr))
+-				goto out_close;
++				goto out;
+ 
+ 			if (!load_addr_set &&
+ 			    interp_elf_ex->e_type == ET_DYN) {
+@@ -523,7 +519,7 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 			    eppnt->p_memsz > TASK_SIZE ||
+ 			    TASK_SIZE - eppnt->p_memsz < k) {
+ 				error = -ENOMEM;
+-				goto out_close;
++				goto out;
+ 			}
+ 
+ 			/*
+@@ -553,7 +549,7 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 		 */
+ 		if (padzero(elf_bss)) {
+ 			error = -EFAULT;
+-			goto out_close;
++			goto out;
+ 		}
+ 
+ 		/* What we have mapped so far */
+@@ -562,13 +558,10 @@ static unsigned long load_elf_interp(struct elfhdr *interp_elf_ex,
+ 		/* Map the last of the bss segment */
+ 		error = vm_brk(elf_bss, last_bss - elf_bss);
+ 		if (BAD_ADDR(error))
+-			goto out_close;
++			goto out;
+ 	}
+ 
+ 	error = load_addr;
+-
+-out_close:
+-	kfree(elf_phdata);
+ out:
+ 	return error;
+ }
+@@ -605,7 +598,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 	int load_addr_set = 0;
+ 	char * elf_interpreter = NULL;
+ 	unsigned long error;
+-	struct elf_phdr *elf_ppnt, *elf_phdata;
++	struct elf_phdr *elf_ppnt, *elf_phdata, *interp_elf_phdata = NULL;
+ 	unsigned long elf_bss, elf_brk;
+ 	int retval, i;
+ 	unsigned long elf_entry;
+@@ -729,6 +722,12 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 		/* Verify the interpreter has a valid arch */
+ 		if (!elf_check_arch(&loc->interp_elf_ex))
+ 			goto out_free_dentry;
 +
-+#define MIPS_ABI_FP_ANY		0	/* FP ABI doesn't matter */
-+#define MIPS_ABI_FP_DOUBLE	1	/* -mdouble-float */
-+#define MIPS_ABI_FP_SINGLE	2	/* -msingle-float */
-+#define MIPS_ABI_FP_SOFT	3	/* -msoft-float */
-+#define MIPS_ABI_FP_OLD_64	4	/* -mips32r2 -mfp64 */
-+#define MIPS_ABI_FP_XX		5	/* -mfpxx */
-+#define MIPS_ABI_FP_64		6	/* -mips32r2 -mfp64 */
-+#define MIPS_ABI_FP_64A		7	/* -mips32r2 -mfp64 -mno-odd-spreg */
-+
- #ifdef CONFIG_32BIT
++		/* Load the interpreter program headers */
++		interp_elf_phdata = load_elf_phdrs(&loc->interp_elf_ex,
++						   interpreter);
++		if (!interp_elf_phdata)
++			goto out_free_dentry;
+ 	}
  
- /*
+ 	/* Flush all traces of the currently running executable */
+@@ -912,7 +911,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 		elf_entry = load_elf_interp(&loc->interp_elf_ex,
+ 					    interpreter,
+ 					    &interp_map_addr,
+-					    load_bias);
++					    load_bias, interp_elf_phdata);
+ 		if (!IS_ERR((void *)elf_entry)) {
+ 			/*
+ 			 * load_elf_interp() returns relocation
+@@ -1009,6 +1008,7 @@ out_ret:
+ 
+ 	/* error cleanup */
+ out_free_dentry:
++	kfree(interp_elf_phdata);
+ 	allow_write_access(interpreter);
+ 	if (interpreter)
+ 		fput(interpreter);
 -- 
 2.0.4
 
