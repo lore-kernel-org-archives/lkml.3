@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264AbaIKQON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:14:13 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34239 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568AbaIKQOK convert rfc822-to-8bit (ORCPT
+	id S1756797AbaIKQPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:15:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57024 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860AbaIKQPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:14:10 -0400
-Message-ID: <5411CA4D.30202@arm.com>
-Date: Thu, 11 Sep 2014 17:14:05 +0100
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 11 Sep 2014 12:15:19 -0400
+Date: Thu, 11 Sep 2014 18:15:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+Message-ID: <20140911161517.GA3190@worktop.ger.corp.intel.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
 MIME-Version: 1.0
-To: Graeme Gregory <gg@slimlogic.co.uk>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <20140911132935.068DCC408F6@trevor.secretlab.ca> <20140911153739.GA24416@localhost> <5411C664.4060007@arm.com> <20140911160627.GU6558@xora-haswell.xora.org.uk>
-In-Reply-To: <20140911160627.GU6558@xora-haswell.xora.org.uk>
-X-OriginalArrivalTime: 11 Sep 2014 16:14:03.0661 (UTC) FILETIME=[679873D0:01CFCDDB]
-X-MC-Unique: 114091117140609201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
+> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
+> +			struct lb_env *env)
+>  {
+> +	if ((sgs->group_capacity_orig * 100) >
+> +			(sgs->group_utilization * env->sd->imbalance_pct))
+> +		return 1;
+> +
+> +	if (sgs->sum_nr_running < sgs->group_weight)
+> +		return 1;
+>  
+> +	return 0;
+> +}
+>  
+> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
+> +			struct lb_env *env)
+> +{
+> +	if (sgs->sum_nr_running <= sgs->group_weight)
+> +		return 0;
+>  
+> +	if ((sgs->group_capacity_orig * 100) <
+> +			(sgs->group_utilization * env->sd->imbalance_pct))
+> +		return 1;
+>  
+> +	return 0;
+>  }
 
+I'm confused about the utilization vs capacity_orig. I see how we should
+maybe scale things with the capacity when comparing between CPUs/groups,
+but not on the same CPU/group.
 
-On 11/09/14 17:06, Graeme Gregory wrote:
-> On Thu, Sep 11, 2014 at 04:57:24PM +0100, Sudeep Holla wrote:
->>
->>
+I would have expected something simple like:
 
-[...]
->> This what we have suggested in past especially for this S-state support.
->> Currently the core acpi code compiles in sleep support unconditionally.
->> That doesn't mean we need to do the same on ARM64, we can easily make
->> sure that's not enabled for ARM64 until we have clarification on how to
->> support them on ARM in ACPI specification.
->>
->> I just pointed out at one "out of spec" workaround done for x86
->> "unconditionally" in the code just to tell that it won't work on ARM.
->> That shouldn't be misunderstood as demand for refactoring as we have no
->> clue how S-state would look on ARM to take up any such task.
->>
-> For the sleep.c case I worked on this and sent some updates to Hanjun so
-> it should be compiled out in the next version of the patches.
->
+static inline bool group_has_capacity()
+{
+	/* Is there a spare cycle? */
+	if (sgs->group_utilization < sgs->group_weight * SCHED_LOAD_SCALE)
+		return true;
 
-Thanks Graeme, that's much better than any hooks/stubs which might fail
-depending on ACPI table contents.
+	/* Are there less tasks than logical CPUs? */
+	if (sgs->sum_nr_running < sgs->group_weight)
+		return true;
 
-Regards,
-Sudeep
+	return false;
+}
 
+Where group_utilization a pure sum of running_avg.
 
+Now this has a hole when there are RT tasks on the system, in that case
+the utilization will never hit 1, but we could fix that another way. I
+don't think the capacity_orig thing is right.
