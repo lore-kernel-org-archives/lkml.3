@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696AbaIKNF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:05:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271AbaIKNFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:05:22 -0400
-Message-ID: <54119E01.9000908@redhat.com>
-Date: Thu, 11 Sep 2014 15:05:05 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756189AbaIKNFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:05:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52303 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755798AbaIKNFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 09:05:32 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page
- on migration in vcpu_enter_guest().
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com> <541169AD.6060908@redhat.com> <20140911101200.GF25317@minantech.com> <54117DB4.307@redhat.com> <20140911113051.GG25317@minantech.com>
-In-Reply-To: <20140911113051.GG25317@minantech.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Tony Lindgren" <tony@atomide.com>,
+        "Jeremy Vial" <jvial@adeneo-embedded.com>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.38442834@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 042/131] ARM: OMAP3: Fix choice of omap3_restore_es
+ function in OMAP34XX rev3.1.2 case.
+In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 13:30, Gleb Natapov ha scritto:
->> > +			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
->> > +			/*
->> > +			 * Do not pin apic access page in memory so that memory
->> > +			 * hotplug process is able to migrate it.
->> > +			 */
->> > +			put_page(page);
->> >  		}
-> This code is in prepare_vmcs02() and is executed during L1->L2 vmentry. What happens
-> when apic access page is migrated while L2 is running? It needs to be update somewhere.
+3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
 
-Before it is migrated, the MMU notifier is called and will force a
-vmexit on all CPUs.  The reload code will call GUP again on the page
-again and swap it in.
+------------------
 
-Paolo
+From: Jeremy Vial <jvial@adeneo-embedded.com>
+
+commit 9b5f7428f8b16bd8980213f2b70baf1dd0b9e36c upstream.
+
+According to the comment “restore_es3: applies to 34xx >= ES3.0" in
+"arch/arm/mach-omap2/sleep34xx.S”, omap3_restore_es3 should be used
+if the revision of an OMAP34xx is ES3.1.2.
+
+Signed-off-by: Jeremy Vial <jvial@adeneo-embedded.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/arm/mach-omap2/control.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/arch/arm/mach-omap2/control.c
++++ b/arch/arm/mach-omap2/control.c
+@@ -282,7 +282,8 @@ void omap3_save_scratchpad_contents(void
+ 		scratchpad_contents.public_restore_ptr =
+ 			virt_to_phys(omap3_restore_3630);
+ 	else if (omap_rev() != OMAP3430_REV_ES3_0 &&
+-					omap_rev() != OMAP3430_REV_ES3_1)
++					omap_rev() != OMAP3430_REV_ES3_1 &&
++					omap_rev() != OMAP3430_REV_ES3_1_2)
+ 		scratchpad_contents.public_restore_ptr =
+ 			virt_to_phys(omap3_restore);
+ 	else
 
