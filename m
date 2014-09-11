@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595AbaIKHNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 03:13:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17191 "EHLO mx1.redhat.com"
+	id S1752148AbaIKHSk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 03:18:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:6292 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355AbaIKHNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 03:13:19 -0400
-Message-ID: <54114B21.1080102@redhat.com>
-Date: Thu, 11 Sep 2014 09:11:29 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751066AbaIKHSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 03:18:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="601305817"
+Message-ID: <54114CA4.9030503@linux.intel.com>
+Date: Thu, 11 Sep 2014 15:17:56 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, gleb@kernel.org,
-        borntraeger@de.ibm.com, cornelia.huck@de.ibm.com,
-        xiantao.zhang@intel.com, agraf@suse.de, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] KVM: EVENTFD: remove inclusion of irq.h
-References: <1409560568-6911-1-git-send-email-eric.auger@linaro.org> <54044647.4030605@redhat.com> <20140911030932.GA2784@lvm>
-In-Reply-To: <20140911030932.GA2784@lvm>
-Content-Type: text/plain; charset=windows-1252
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        x86@kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch v4 14/16] x86, irq: Introduce helper to check whether
+ an IOAPIC has been registered
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091433150.11037@nanos> <540FBB93.4020509@linux.intel.com> <alpine.DEB.2.10.1409102206300.4178@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409102206300.4178@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 05:09, Christoffer Dall ha scritto:
-> On Mon, Sep 01, 2014 at 12:11:19PM +0200, Paolo Bonzini wrote:
->> Il 01/09/2014 10:36, Eric Auger ha scritto:
->>> No more needed. irq.h would be void on ARM.
->>>
->>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->>>
->>> ---
->>>
->>> I don't think irq.h is needed anymore since Paul Mackerras' work. However
->>> I did not compile for all architectures.
->>> ---
->>>  virt/kvm/eventfd.c | 1 -
->>>  1 file changed, 1 deletion(-)
->>>
->>> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
->>> index 3c5981c..0c712a7 100644
->>> --- a/virt/kvm/eventfd.c
->>> +++ b/virt/kvm/eventfd.c
->>> @@ -36,7 +36,6 @@
->>>  #include <linux/seqlock.h>
->>>  #include <trace/events/kvm.h>
->>>  
->>> -#include "irq.h"
->>>  #include "iodev.h"
->>>  
->>>  #ifdef CONFIG_HAVE_KVM_IRQFD
->>>
->>
->> Acked-by: Paolo Bonzini <pbonzini@redhat.com>
->>
->> Christoffer, please include this via the ARM tree, together with ARM
->> irqfd support.  Thanks,
->>
-> Marc is dealing with the tree this week and the next so he can apply it
-> to kvmarm/queue.  Do you want it to wait and go with the irqfd patch
-> (which has dependencies not yet resolved) or should we just queue it?
 
-As you prefer.
 
-Paolo
+On 2014/9/11 4:08, Thomas Gleixner wrote:
+> On Wed, 10 Sep 2014, Jiang Liu wrote:
+>> On 2014/9/9 20:37, Thomas Gleixner wrote:
+>>>> +	ret  = mp_ioapic_registered(gsi_base);
+>>>> +	up_write(&acpi_ioapic_rwsem);
+>>>> +
+>>>> +	return ret;
+>>>> +}
+>>>
+>>> So I assume that this is for a particular caller in the apci ioapic
+>>> hotplug code and that call site has its own serialization. Otherwise
+>>> the return value is not protected at all.
+>>>
+>>> Please add a Docbook comment to that function, and document the
+>>> locking rules as thats pretty non obvious.
+>> How about this comments about locking rules?
+>> /*
+>>  * Locks related to IOAPIC hotplug
+>>  * Hotplug side:
+>>  *      ->lock_device_hotplug() //device_hotplug_lock
+>>  *              ->acpi_ioapic_rwsem
+>>  *                      ->ioapic_lock
+>>  * Interrupt mapping side:
+>>  *      ->acpi_ioapic_rwsem
+>>  *              ->ioapic_mutex
+>>  *                      ->ioapic_lock
+>>  */
+> 
+> That looks asymetric. Why is the hotplug side not taking ioapic_mutex?
+Hi Thomas,
+	We decide to protect system from IOAPIC hotplug in the ACPI
+layer. For ACPI enumerated IOAPICs, ioapic_mutex is redundant and
+it's used to protect MPPARSE, SFI, OF enumerated IOAPICs.
+Regards!
+Gerry
+
+> 
+> Thanks,
+> 
+> 	tglx
+> 
