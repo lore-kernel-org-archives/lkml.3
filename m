@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552AbaIKOxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:53:19 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54895 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364AbaIKOxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:53:16 -0400
-Date: Thu, 11 Sep 2014 17:47:16 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page on
- migration in vcpu_enter_guest().
-Message-ID: <20140911144716.GF26540@minantech.com>
-References: <20140911101200.GF25317@minantech.com>
- <54117DB4.307@redhat.com>
- <20140911113051.GG25317@minantech.com>
- <54119E01.9000908@redhat.com>
- <20140911135956.GC26540@minantech.com>
- <5411AC82.4080005@redhat.com>
- <20140911142121.GD26540@minantech.com>
- <5411B084.7030800@redhat.com>
- <20140911143123.GE26540@minantech.com>
- <5411B3B3.900@redhat.com>
+	id S1756589AbaIKOxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:53:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753364AbaIKOx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:53:27 -0400
+Date: Thu, 11 Sep 2014 16:53:21 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: "Liang, Kan" <kan.liang@intel.com>
+Cc: "acme@kernel.org" <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH V5 2/3] perf tools: parse the pmu event prefix and surfix
+Message-ID: <20140911145321.GB32722@krava.brq.redhat.com>
+References: <1410371732-1185-1-git-send-email-kan.liang@intel.com>
+ <1410371732-1185-2-git-send-email-kan.liang@intel.com>
+ <20140911085143.GB7326@krava.brq.redhat.com>
+ <37D7C6CF3E00A74B8858931C1DB2F077015C6EDB@SHSMSX103.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5411B3B3.900@redhat.com>
+In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F077015C6EDB@SHSMSX103.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 04:37:39PM +0200, Paolo Bonzini wrote:
-> Il 11/09/2014 16:31, Gleb Natapov ha scritto:
-> >> > What if the page being swapped out is L1's APIC access page?  We don't
-> >> > run prepare_vmcs12 in that case because it's an L2->L0->L2 entry, so we
-> >> > need to "do something".
-> > We will do something on L2->L1 exit. We will call kvm_reload_apic_access_page().
-> > That is what patch 5 of this series is doing.
+On Thu, Sep 11, 2014 at 01:50:50PM +0000, Liang, Kan wrote:
 > 
-> Sorry, I meant "the APIC access page prepared by L1" for L2's execution.
 > 
-> You wrote:
-> 
-> > if (!is_guest_mode() || !(vmcs12->secondary_vm_exec_control & ECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES))
-> >     write(PIC_ACCESS_ADDR)
+> > On Wed, Sep 10, 2014 at 01:55:31PM -0400, kan.liang@intel.com wrote:
 > > 
-> > In other words if L2 shares L1 apic access page then reload, otherwise do nothing.
+> > SNIP
+> > 
+> > > +	struct perf_pmu_event_symbol *pmu2 =
+> > > +			(struct perf_pmu_event_symbol *) p2;
+> > > +
+> > > +	return strcmp(pmu1->symbol, pmu2->symbol); }
+> > > +
+> > > +/*
+> > > + * Read the pmu events list from sysfs
+> > > + * Save it into perf_pmu_events_list
+> > > + */
+> > > +static void perf_pmu__parse_init(void) {
+> > > +
+> > > +	struct perf_pmu *pmu = NULL;
+> > > +	struct perf_pmu_alias *alias;
+> > > +	int len = 0;
+> > > +
+> > > +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+> > > +		list_for_each_entry(alias, &pmu->aliases, list) {
+> > > +			if (!strcmp(pmu->name, "cpu")) {
+> > > +				if (strchr(alias->name, '-'))
+> > > +					len++;
+> > > +				len++;
+> > > +			}
+> > > +	}
+> > > +	if (len == 0)
+> > > +		return;
+> > 
+> > s oif 'len' is 0 we will scan all the time? maybe we want some separate 'init'
+> > variable..
+> > 
 > 
-> but in that case you have to redo nested_get_page, so "do nothing"
-> doesn't work.
+> Maybe we can reuse the "perf_pmu_events_list_num".
+> static int perf_pmu_events_list_num;
 > 
-Ah, 7/7 is new in this submission. Before that this page was still
-pinned.  Looking at 7/7 now I do not see how it can work since it has no
-code for mmu notifier to detect that it deals with such page and call
-kvm_reload_apic_access_page().  I said to Tang previously that nested
-kvm has a bunch of pinned page that are hard to deal with and suggested
-to iron out non nested case first :(
+> If len is 0, we just set perf_pmu_events_list_num to -1.
+> Is it OK?
 
---
-			Gleb.
+seems ok
+
+jirka
