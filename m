@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436AbaIKQW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:22:28 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46680 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaIKQWY (ORCPT
+	id S1756850AbaIKQYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:24:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48281 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751091AbaIKQYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:22:24 -0400
-Date: Thu, 11 Sep 2014 09:16:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140911161653.GA4775@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1409824374.4246.62.camel@pasglop>
- <5408E458.3@zytor.com>
- <54090AF4.7060406@hurleysoftware.com>
- <54091B30.7080100@zytor.com>
- <5409D76D.2070203@hurleysoftware.com>
- <5409D9C0.7030403@zytor.com>
- <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
- <540DEE6C.2060904@zytor.com>
- <540E3207.7090007@hurleysoftware.com>
- <20140911110411.2de01944@alan.etchedpixels.co.uk>
+	Thu, 11 Sep 2014 12:24:14 -0400
+Date: Thu, 11 Sep 2014 18:24:11 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
+Message-ID: <20140911182411.0366ad98@free-electrons.com>
+In-Reply-To: <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911110411.2de01944@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091116-0928-0000-0000-000004CE3EE3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 11:04:11AM +0100, One Thousand Gnomes wrote:
-> > > Is *that* what we are talking about?  I was added to this conversation
-> > > in the middle where it had already generalized, so I had no idea.
-> > 
-> > No, this is just what brought this craziness to my attention.
+Dear Alexandre Belloni,
+
+On Thu, 11 Sep 2014 17:54:06 +0200, Alexandre Belloni wrote:
+> Add sama5d4 support to irq-atmel-aic5.
 > 
-> None of it is craziness. It's the real world leaking into the crazy
-> delusional world of sequential programming. Machines are going to get
-> more not less parallel.
-
-Amen to that!!!
-
-> > For example, byte- and short-sized circular buffers could not possibly
-> > be safe either, when the head nears the tail.
-> > 
-> > Who has audited global storage and ensured that _every_ byte-sized write
-> > doesn't happen to be adjacent to some other storage that may not happen
-> > to be protected by the same (or any) lock?
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+> Cc: Jason Cooper <jason@lakedaemon.net>
+>  drivers/irqchip/irq-atmel-aic5.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
 > 
-> Thats a meaningless question. Have you audited it all for correctness of
-> any other form. Have you mathematically verified the functionality as a
-> set of formal proofs ? If you can't prove its formally mathematically
-> functionally correct why are you worried about this ?
-> 
-> Alpha works, maybe it has a near theoretical race on that point. It's not
-> any worse than it was 15 years ago and nobody has really hit a problem
-> with it. So from that you can usefully infer that those buffer cases are
-> not proving a real problem.
+> diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
+> index dc7d98607a89..a11aae8fb006 100644
+> --- a/drivers/irqchip/irq-atmel-aic5.c
+> +++ b/drivers/irqchip/irq-atmel-aic5.c
+> @@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
+>  
+>  static const struct of_device_id __initdata aic5_irq_fixups[] = {
+>  	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
+> +	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
+>  	{ /* sentinel */ },
+>  };
 
-Fair enough, I guess.
+Sorry for the nitpick, but this seems to lack an updated to the DT
+binding documentation, to add the new compatible string.
 
-But Alpha's limitations were given as a reason to restrict
-smp_store_release() and smp_load_acquire() from providing one-byte and
-two-byte variants.  Of course, I am OK "probabilistically supporting"
-pre-EV56 Alpha CPUs, but only if they don't get in the way of us doing
-smp_store_release() and smp_load_acquire() on chars and shorts.  So if
-pre-EV56 support has to go in order to allow smp_store_release() and
-smp_load_acquire() on small data types, then pre-EV56 support simply
-has to go.
+Thanks,
 
-Alternatively, one way to support this old hardware on a more
-deterministic basis is to make the compiler use ll/sc sequences to do
-byte and short accesses.  That would be fine as well.
-
-						Thanx, Paul
-
-> The tty locks together on the other hand are asking to hit it, and the
-> problem you were trying to fix were the ones that need set_bit() to make
-> the guarantees.
-> 
-> Alan
-> 
-
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
