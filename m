@@ -1,162 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008AbaIKNxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:53:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46319 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752354AbaIKNxM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:53:12 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v5 5/9] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-Date: Thu, 11 Sep 2014 15:53:08 +0200
-Message-Id: <1410443588-9092-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
-References: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
+	id S1753334AbaIKN4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:56:21 -0400
+Received: from imap.thunk.org ([74.207.234.97]:50897 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751057AbaIKN4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 09:56:17 -0400
+Date: Thu, 11 Sep 2014 09:56:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
+Message-ID: <20140911135610.GD15632@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Peter Hurley <peter@hurleysoftware.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jiri Slaby <jslaby@suse.cz>,
+	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
+ <20140911000343.GA5328@kroah.com>
+ <5410E8A2.5030802@hurleysoftware.com>
+ <20140911002410.GA11732@kroah.com>
+ <5410F08D.10707@hurleysoftware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5410F08D.10707@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR registers are not part of the RTT block and thus should not be
-defined in the reg property of the rtt node.
+On Wed, Sep 10, 2014 at 08:45:01PM -0400, Peter Hurley wrote:
+> > I'm all for working around broken hardware in the kernel, but this seems
+> > like a very old issue, if it's even one at all, that we would be
+> > changing for no one who has reported it (that I know of...)
+> 
+> How to unwedge a terminal comes up from time to time.
 
-Use syscon to provide a proper DT representation and reference the GPBR
-syscon device in a new "atmel,time-reg" property which store both the
-syscon device phandle and the register offset within the GPBR block.
+Are you trying to unwedge a terminal using hardware flow control, or
+software flow control?
 
-When using non DT boards, we won't be able to retrieve the syscon regmap,
-hence we need to create our own regmap using the memory region defined
-in the 2nd memory resource assigned to the RTT platform device.
+For software flow control, this is a guarantee that we can make wrt to
+the behavior of tcflow().  For hardware flow control, we can't make
+any guarantees, whether it's with tcflow(TCOON) or tcflow(TCOOF);
+tcflow(TCOON). 
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/rtc/Kconfig        |  1 +
- drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 51 insertions(+), 9 deletions(-)
+> It's possible that this may cause userspace breakage. Some app
+> may call tcflow(TCOON) thus accidently overriding the flow control
+> state when it would have had no effect before.
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..7d76da8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
- 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-+	select MFD_SYSCON
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index d72c34d..944e317 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
- 
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -72,7 +74,8 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
--	void __iomem		*gpbr;
-+	struct regmap		*gpbr;
-+	unsigned int		gpbr_offset;
- 	int 			irq;
- };
- 
-@@ -81,10 +84,19 @@ struct sam9_rtc {
- #define rtt_writel(rtc, field, val) \
- 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
--#define gpbr_readl(rtc) \
--	readl((rtc)->gpbr)
--#define gpbr_writel(rtc, val) \
--	writel((val), (rtc)->gpbr)
-+static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
-+{
-+	unsigned int val;
-+
-+	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
-+
-+	return val;
-+}
-+
-+static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
-+{
-+	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-+}
- 
- /*
-  * Read current time and date in RTC
-@@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
- };
- 
-+static struct regmap_config gpbr_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
- /*
-  * Initialize and install RTC driver
-  */
-@@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(rtc->rtt))
- 		return PTR_ERR(rtc->rtt);
- 
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
--	if (IS_ERR(rtc->gpbr))
--		return PTR_ERR(rtc->rtt);
-+	if (!pdev->dev.of_node) {
-+		void __iomem *gpbr;
-+
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		gpbr = devm_ioremap_resource(&pdev->dev, r);
-+		if (IS_ERR(gpbr))
-+			return PTR_ERR(gpbr);
-+
-+		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-+					     &gpbr_regmap_config);
-+	} else {
-+		struct of_phandle_args args;
-+
-+		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-+						"atmel,rtt-rtc-time-reg", 1, 0,
-+						&args);
-+		if (ret)
-+			return ret;
-+
-+		rtc->gpbr = syscon_node_to_regmap(args.np);
-+		rtc->gpbr_offset = args.args[0];
-+	}
-+
-+	if (IS_ERR(rtc->gpbr)) {
-+		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
-+		return -ENOMEM;
-+	}
- 
- 	mr = rtt_readl(rtc, MR);
- 
--- 
-1.9.1
+It's very likely that an application that would be using tcflow() at
+all would first be sending a TCOOFF, and then sending a TCOON.  So
+this doesn't worry me that much.
 
+Indeed, given that the definition of how TCION and TCIOFF is worded
+(send a START or STOP command), it's completely reasonable to
+interpret TCOON and TCOOFF as emulating what would happen if the
+system received a START or STOP command.  (Note though that part of
+this is that Posix doesn't define CRTSCTS, so POSIX is entirely silent
+on the subject of hardware flow control).
+
+Cheers,
+
+					- Ted
