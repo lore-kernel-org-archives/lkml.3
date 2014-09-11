@@ -1,435 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaIKFiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 01:38:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48684 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752447AbaIKFhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 01:37:19 -0400
-Date: Wed, 10 Sep 2014 22:37:16 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] f2fs: Fix recover when nid of non-inode dnode < nid of
- inode
-Message-ID: <20140911053716.GA24315@jaegeuk-mac02.hsd1.ca.comcast.net>
-References: <1410176306-1689-1-git-send-email-ying.huang@intel.com>
- <20140909052356.GA25590@jaegeuk-mac02.hsd1.ca.comcast.net>
- <1410241170.732.373.camel@yhuang-dev>
- <20140909070811.GA26657@jaegeuk-mac02.mot-mobility.com>
- <CAC=cRTMA9AqmHjQqK3=5pAs8yqi25Rzmz8MaZ8=oTDaxHAXU+A@mail.gmail.com>
- <20140910072012.GA9242@jaegeuk-mac02.mot-mobility.com>
- <CAC=cRTMGJfD_SZ=bE8pi5U6n5W1MF17emLC3VZDbpLSQtbNcKg@mail.gmail.com>
+	id S1752691AbaIKFi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 01:38:58 -0400
+Received: from mail-bn1bbn0106.outbound.protection.outlook.com ([157.56.111.106]:24530
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752653AbaIKFiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 01:38:55 -0400
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <timur@tabi.org>, <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>, <perex@perex.cz>,
+        <tiwai@suse.de>
+CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2] ASoC: fsl_ssi: refine ipg clock usage in this module
+Date: Thu, 11 Sep 2014 13:38:29 +0800
+Message-ID: <27584da8e3ab291ab8dbcbb411579613f8384a59.1410413734.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(54534003)(189002)(199003)(62966002)(102836001)(21056001)(104166001)(50466002)(33646002)(50986999)(36756003)(99396002)(105606002)(64706001)(92726001)(44976005)(4396001)(77982001)(47776003)(83322001)(229853001)(46102001)(88136002)(48376002)(50226001)(77156001)(80022001)(69596002)(97736003)(85306004)(6806004)(81342001)(19580395003)(104016003)(87286001)(2201001)(87936001)(74662001)(81156004)(90102001)(76482001)(81542001)(84676001)(83072002)(93916002)(106466001)(26826002)(74502001)(31966008)(95666004)(19580405001)(68736004)(92566001)(79102001)(118296001)(86362001)(20776003)(85852003)(107046002)(89996001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0612;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC=cRTMGJfD_SZ=bE8pi5U6n5W1MF17emLC3VZDbpLSQtbNcKg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 07:08:32PM +0800, huang ying wrote:
-> On Wed, Sep 10, 2014 at 3:21 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> 
-> > On Tue, Sep 09, 2014 at 07:31:49PM +0800, huang ying wrote:
-> > > On Tue, Sep 9, 2014 at 3:09 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
-> > >
-> > > > Hi,
-> > > >
-> > > > On Tue, Sep 09, 2014 at 01:39:30PM +0800, Huang Ying wrote:
-> > > > > On Mon, 2014-09-08 at 22:23 -0700, Jaegeuk Kim wrote:
-> > > > > > Hi Huang,
-> > > > > >
-> > > > > > On Mon, Sep 08, 2014 at 07:38:26PM +0800, Huang Ying wrote:
-> > > > > > > For fsync, if the nid of a non-inode dnode < nid of inode and the
-> > > > > > > inode is not checkpointed.  The non-inode dnode may be written
-> > before
-> > > > > > > inode.  So in find_fsync_dnodes, f2fs_iget will fail, cause the
-> > > > > > > recovery fail.
-> > > > > > >
-> > > > > > > Usually, inode will be allocated before non-inode dnode, so the
-> > nid
-> > > > of
-> > > > > > > inode < nid of non-inode dnode.  But it is possible for the
-> > reverse.
-> > > > > > > For example, because of alloc_nid_failed.
-> > > > > > >
-> > > > > > > This is fixed via ignoring non-inode dnode before inode dnode in
-> > > > > > > find_fsync_dnodes.
-> > > > > > >
-> > > > > > > The patch was tested via allocating nid reversely via a debugging
-> > > > > > > patch, that is, from big number to small number.
-> > > > > > >
-> > > > > > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
-> > > > > > > ---
-> > > > > > >  fs/f2fs/recovery.c |    7 ++++---
-> > > > > > >  1 file changed, 4 insertions(+), 3 deletions(-)
-> > > > > > >
-> > > > > > > --- a/fs/f2fs/recovery.c
-> > > > > > > +++ b/fs/f2fs/recovery.c
-> > > > > > > @@ -172,8 +172,8 @@ static int find_fsync_dnodes(struct f2fs
-> > > > > > >                   if (IS_INODE(page) && is_dent_dnode(page))
-> > > > > > >                           set_inode_flag(F2FS_I(entry->inode),
-> > > > > > >                                                   FI_INC_LINK);
-> > > > > > > -         } else {
-> > > > > > > -                 if (IS_INODE(page) && is_dent_dnode(page)) {
-> > > > > >
-> > > > > > If this is not inode block, we should add this inode to recover its
-> > > > data blocks.
-> > > > >
-> > > > > Is it possible that there is only non-inode dnode but no inode when
-> > > > > find_fsync_dnodes checking dnodes?  Per my understanding, any
-> > changes to
-> > > > > file will cause inode page dirty (for example, mtime changed), so
-> > that
-> > > > > we will write inode block.  Is it right?  If so, the solution in this
-> > > > > patch should work too.
-> > > >
-> > > > Your description says that f2fs_iget will fail, which causes the
-> > recovery
-> > > > fail.
-> > > > So, I thought it would be better to handle the f2fs_iget failure
-> > directly.
-> > > >
-> > >
-> > > Yes.  That is another way to fix the issue.
-> > >
-> > >
-> > > > In addition, we cannot guarantee the write order of dnode and inode.
-> > > > For exmaple,
-> > > > 1. the inode is written by flusher or kswapd, then,
-> > > > 2. f2fs_sync_file writes its dnode.
-> > > >
-> > > > In that case, we can get only non-inode dnode in the node chain, since
-> > the
-> > > > inode
-> > > > has not fsync_mark.
-> > > >
-> > >
-> > > I think your solution is better here, but does not fix all scenarios.  If
-> > > the inode is checkpointed, the file can be recovered, although the inode
-> > > information may be not up to date.  But if the inode is not checkpointed,
-> > > f2fs_iget will fail too and recover will fail.
-> >
-> > Ok, let me consider your scenarios.
-> >
-> > Term: F: fsync_mark, D: dentry_mark
-> >
-> > 1. inode(x) | CP | inode(x) | dnode(F)
-> >  -> Lose the latest inode(x). Need to fix.
-> >
-> > 2. inode(x) | CP | dnode(F) | inode(x)
-> >  -> Impossible, but recover latest dnode(F)
-> >
-> > 3. CP | inode(x) | dnode(F)
-> >  -> Need to write inode(DF) in f2fs_sync_file.
-> >
-> > 4. CP | dnode(F) | inode(DF)
-> >  -> If f2fs_iget fails, then goto next.
-> >
-> > 5. CP | dnode(F) | inode(x)
-> >  -> If f2fs_iget fails, then goto next. But, this is an impossible
-> > scenario.
-> >     Drop this dnode(F).
-> >
-> > Indeed, there were some missing scenarios.
-> >
-> > So, how about this patch?
-> >
-> > From 552dc68c5f07a335d7b55c197bab531efb135521 Mon Sep 17 00:00:00 2001
-> > From: Jaegeuk Kim <jaegeuk@kernel.org>
-> > Date: Wed, 10 Sep 2014 00:16:34 -0700
-> > Subject: [PATCH] f2fs: fix roll-forward missing scenarios
-> >
-> > We can summarize the roll forward recovery scenarios as follows.
-> >
-> > [Term] F: fsync_mark, D: dentry_mark
-> >
-> > 1. inode(x) | CP | inode(x) | dnode(F)
-> > -> Update the latest inode(x).
-> >
-> > 2. inode(x) | CP | inode(F) | dnode(F)
-> > -> No problem.
-> >
-> > 3. inode(x) | CP | dnode(F) | inode(x)
-> > -> Impossible, but recover latest dnode(F)
-> >
-> 
-> I think this is possible.  If f2fs_sync_file runs concurrently with
-> writeback. f2fs_sync_file written dnode(F), then writeback written inode(x).
+Move the ipg clock enable and disable operation to startup and shutdown,
+that is only enable ipg clock when ssi is working. Keep clock is disabled
+when ssi is in idle.
+otherwise, _fsl_ssi_set_dai_fmt function need to be called in probe,
+so add ipg clock control for it.
 
-If the inode(x) was written, f2fs_sync_file will do write the inode again with
-fsync_mark. So, dnode(F) | inode(x) | inode(F) should be shown.
-
-In f2fs_sync_file,
-	...
-	while (!sync_node_pages(sbi, ino, &wbc)) {
-		if (fsync_mark_done(sbi, ino))
-			goto out;
-		mark_inode_dirty_sync(inode);
-		ret = f2fs_write_inode(inode, NULL);
-		if (ret)
-			goto out;
-	}
-	...
-
-> 
-> 
-> > 4. inode(x) | CP | dnode(F) | inode(F)
-> > -> No problem.
-> >
-> > 5. CP | inode(x) | dnode(F)
-> > -> Impossible. Write inode(DF) with dnode(F) by f2fs_sync_file.
-> >
-> 
-> I think this is possible.  If inode(x) is written by writeback and then
-> dnode(F) is written by f2fs_sync_file.
-
--> The inode(DF) was missing. Should drop this dnode(F).
-Again, CP | inode(x) | dnode(F) | inode(DF) should be shown.
-This is fixed by the below updated patch.
-
-> 
-> 
-> > 6. CP | inode(DF) | dnode(F)
-> > -> No problem.
-> >
-> > 7. CP | dnode(F) | inode(DF)
-> > -> If f2fs_iget fails, then goto next to find inode(DF).
-> >
-> > 8. CP | dnode(F) | inode(x)
-> > -> If f2fs_iget fails, then goto next. But, this is an impossible scenario.
-> >    Drop this dnode(F).
-> >
-> 
-> I think this is possible.  as 3.
-
-ditto.
-
-> 
-> 
-> > So, this patch adds some missing points such as #1, #5, #7, and #8.
-> >
-> > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
-> > ---
-> >  fs/f2fs/file.c     | 10 ++++++++
-> >  fs/f2fs/recovery.c | 70
-> > +++++++++++++++++++++++++++++++++++++++++++++---------
-> >  2 files changed, 69 insertions(+), 11 deletions(-)
-> >
-> > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-> > index 5cde363..2660af2 100644
-> > --- a/fs/f2fs/file.c
-> > +++ b/fs/f2fs/file.c
-> > @@ -207,6 +207,16 @@ int f2fs_sync_file(struct file *file, loff_t start,
-> > loff_t end, int datasync)
-> >                         up_write(&fi->i_sem);
-> >                 }
-> >         } else {
-> > +               /*
-> > +                * CP | inode(x) | dnode(F)
-> > +                * We need to remain inode(DF) for roll-forward recovery.
-> > +                */
-> > +               if (fsync_mark_done(sbi, inode->i_ino) &&
-> >
-> 
-> How can this happen?  We have not called sync_node_pages(sbi, inode->i_ino,
-> &wbc).  Where is the fsync mark set?
-> 
-> 
-> > +                       !is_checkpointed_node(sbi, F2FS_I(inode)->i_pino))
-> > {
-> >
-> 
-> if !is_checkpointed_node(sbi, F2FS_I(inode)->i_pino), we need to do
-> checkpoint.  Right?
-
-Yes, whole conditions were wrong.
-Please, refer the following patch.
-Thanks,
-
->From 2e70059dd680830c030f59813d4e9837cb65ecb1 Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-Date: Wed, 10 Sep 2014 00:16:34 -0700
-Subject: [PATCH 1/2] f2fs: fix roll-forward missing scenarios
-
-We can summarize the roll forward recovery scenarios as follows.
-
-[Term] F: fsync_mark, D: dentry_mark
-
-1. inode(x) | CP | inode(x) | dnode(F)
--> Update the latest inode(x).
-
-2. inode(x) | CP | inode(F) | dnode(F)
--> No problem.
-
-3. inode(x) | CP | dnode(F) | inode(x)
--> Impossible, but recover latest dnode(F).
-
-4. inode(x) | CP | dnode(F) | inode(F)
--> No problem.
-
-5. CP | inode(x) | dnode(F)
--> The inode(DF) was missing. Should drop this dnode(F).
-
-6. CP | inode(DF) | dnode(F)
--> No problem.
-
-7. CP | dnode(F) | inode(DF)
--> If f2fs_iget fails, then goto next to find inode(DF).
-
-8. CP | dnode(F) | inode(x)
--> If f2fs_iget fails, then goto next to find inode(DF).
-   But it will fail due to no inode(DF).
-
-So, this patch adds some missing points such as #1, #5, #7, and #8.
-
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
 ---
- fs/f2fs/file.c     | 10 ++++++++
- fs/f2fs/recovery.c | 70 +++++++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 69 insertions(+), 11 deletions(-)
 
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index e7681c3..e2a2f38 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -206,6 +206,16 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 			up_write(&fi->i_sem);
- 		}
- 	} else {
-+		/*
-+		 * CP | inode(x) | dnode(F)
-+		 * We need to remain inode(DF) for roll-forward recovery.
-+		 */
-+		if (!fsync_mark_done(sbi, inode->i_ino) &&
-+			!is_checkpointed_node(sbi, inode->i_ino)) {
-+			mark_inode_dirty_sync(inode);
-+			f2fs_write_inode(inode, NULL);
-+		}
+change log
+v2: update patch according to maintainer's review comments.
+
+ sound/soc/fsl/fsl_ssi.c |   39 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 31 insertions(+), 8 deletions(-)
+
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 2fc3e66..4447f95 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -530,6 +530,11 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+ 	struct fsl_ssi_private *ssi_private =
+ 		snd_soc_dai_get_drvdata(rtd->cpu_dai);
++	int ret;
 +
- 		/* if there is no written node page, write its inode page */
- 		while (!sync_node_pages(sbi, ino, &wbc)) {
- 			if (fsync_mark_done(sbi, ino))
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 6c5a74a..eeb3785 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -14,6 +14,36 @@
- #include "node.h"
- #include "segment.h"
++	ret = clk_prepare_enable(ssi_private->clk);
++	if (ret)
++		return ret;
  
-+/*
-+ * Roll forward recovery scenarios.
+ 	/* When using dual fifo mode, it is safer to ensure an even period
+ 	 * size. If appearing to an odd number while DMA always starts its
+@@ -544,6 +549,21 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
+ }
+ 
+ /**
++ * fsl_ssi_shutdown: shutdown the SSI
 + *
-+ * [Term] F: fsync_mark, D: dentry_mark
-+ *
-+ * 1. inode(x) | CP | inode(x) | dnode(F)
-+ * -> Update the latest inode(x).
-+ *
-+ * 2. inode(x) | CP | inode(F) | dnode(F)
-+ * -> No problem.
-+ *
-+ * 3. inode(x) | CP | dnode(F) | inode(x)
-+ * -> Impossible, but recover latest dnode(F)
-+ *
-+ * 4. inode(x) | CP | dnode(F) | inode(F)
-+ * -> No problem.
-+ *
-+ * 5. CP | inode(x) | dnode(F)
-+ * -> The inode(DF) was missing. Should drop this dnode(F).
-+ *
-+ * 6. CP | inode(DF) | dnode(F)
-+ * -> No problem.
-+ *
-+ * 7. CP | dnode(F) | inode(DF)
-+ * -> If f2fs_iget fails, then goto next to find inode(DF).
-+ *
-+ * 8. CP | dnode(F) | inode(x)
-+ * -> If f2fs_iget fails, then goto next to find inode(DF).
-+ *    But it will fail due to no inode(DF).
 + */
- static struct kmem_cache *fsync_entry_slab;
- 
- bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-@@ -110,27 +140,32 @@ out:
- 	return err;
- }
- 
--static int recover_inode(struct inode *inode, struct page *node_page)
-+static void __recover_inode(struct inode *inode, struct page *page)
- {
--	struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
-+	struct f2fs_inode *raw = F2FS_INODE(page);
-+
-+	inode->i_mode = le16_to_cpu(raw->i_mode);
-+	i_size_write(inode, le64_to_cpu(raw->i_size));
-+	inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
-+	inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
-+	inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
-+	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-+	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
-+	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
-+}
- 
-+static int recover_inode(struct inode *inode, struct page *node_page)
++static void fsl_ssi_shutdown(struct snd_pcm_substream *substream,
++                             struct snd_soc_dai *dai)
 +{
- 	if (!IS_INODE(node_page))
- 		return 0;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct fsl_ssi_private *ssi_private =
++		snd_soc_dai_get_drvdata(rtd->cpu_dai);
++
++	clk_disable_unprepare(ssi_private->clk);
++
++}
++
++/**
+  * fsl_ssi_set_bclk - configure Digital Audio Interface bit clock
+  *
+  * Note: This function can be only called when using SSI as DAI master
+@@ -771,6 +791,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 	struct regmap *regs = ssi_private->regs;
+ 	u32 strcr = 0, stcr, srcr, scr, mask;
+ 	u8 wm;
++	int ret;
  
--	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
--	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
--	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
--	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
--	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
--	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
--	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
--	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+	__recover_inode(inode, node_page);
+ 	ssi_private->dai_fmt = fmt;
  
- 	if (is_dent_dnode(node_page))
- 		return recover_dentry(node_page, inode);
+@@ -779,6 +800,10 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 		return -EINVAL;
+ 	}
  
- 	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
--			ino_of_node(node_page), raw_inode->i_name);
-+			ino_of_node(node_page), F2FS_INODE(node_page)->i_name);
++	ret = clk_prepare_enable(ssi_private->clk);
++	if (ret)
++		return ret;
++
+ 	fsl_ssi_setup_reg_vals(ssi_private);
+ 
+ 	regmap_read(regs, CCSR_SSI_SCR, &scr);
+@@ -811,6 +836,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 			ssi_private->i2s_mode |= CCSR_SSI_SCR_I2S_MODE_SLAVE;
+ 			break;
+ 		default:
++			clk_disable_unprepare(ssi_private->clk);
+ 			return -EINVAL;
+ 		}
+ 
+@@ -836,6 +862,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 		ssi_private->i2s_mode |= CCSR_SSI_SCR_I2S_MODE_NORMAL;
+ 		break;
+ 	default:
++		clk_disable_unprepare(ssi_private->clk);
+ 		return -EINVAL;
+ 	}
+ 	scr |= ssi_private->i2s_mode;
+@@ -859,6 +886,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 		strcr ^= CCSR_SSI_STCR_TFSI;
+ 		break;
+ 	default:
++		clk_disable_unprepare(ssi_private->clk);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -877,6 +905,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 		scr &= ~CCSR_SSI_SCR_SYS_CLK_EN;
+ 		break;
+ 	default:
++		clk_disable_unprepare(ssi_private->clk);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -925,6 +954,7 @@ static int _fsl_ssi_set_dai_fmt(struct fsl_ssi_private *ssi_private,
+ 	if (fmt & SND_SOC_DAIFMT_AC97)
+ 		fsl_ssi_setup_ac97(ssi_private);
+ 
++	clk_disable_unprepare(ssi_private->clk);
  	return 0;
+ 
+ }
+@@ -1043,6 +1073,7 @@ static int fsl_ssi_dai_probe(struct snd_soc_dai *dai)
+ 
+ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
+ 	.startup	= fsl_ssi_startup,
++	.shutdown       = fsl_ssi_shutdown,
+ 	.hw_params	= fsl_ssi_hw_params,
+ 	.hw_free	= fsl_ssi_hw_free,
+ 	.set_fmt	= fsl_ssi_set_dai_fmt,
+@@ -1175,12 +1206,6 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
+ 		return ret;
+ 	}
+ 
+-	ret = clk_prepare_enable(ssi_private->clk);
+-	if (ret) {
+-		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
+-		return ret;
+-	}
+-
+ 	/* For those SLAVE implementations, we ingore non-baudclk cases
+ 	 * and, instead, abandon MASTER mode that needs baud clock.
+ 	 */
+@@ -1236,7 +1261,6 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
+ 	return 0;
+ 
+ error_pcm:
+-	clk_disable_unprepare(ssi_private->clk);
+ 
+ 	return ret;
+ }
+@@ -1246,7 +1270,6 @@ static void fsl_ssi_imx_clean(struct platform_device *pdev,
+ {
+ 	if (!ssi_private->use_dma)
+ 		imx_pcm_fiq_exit(pdev);
+-	clk_disable_unprepare(ssi_private->clk);
  }
  
-@@ -186,10 +221,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
- 				break;
- 			}
- 
-+			/*
-+			 * CP | dnode(F) | inode(DF)
-+			 * For this case, we should not give up now.
-+			 */
- 			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
- 			if (IS_ERR(entry->inode)) {
- 				err = PTR_ERR(entry->inode);
- 				kmem_cache_free(fsync_entry_slab, entry);
-+				if (err == -ENOENT)
-+					goto next;
- 				break;
- 			}
- 			list_add_tail(&entry->list, head);
-@@ -416,6 +457,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
- 		entry = get_fsync_inode(head, ino_of_node(page));
- 		if (!entry)
- 			goto next;
-+		/*
-+		 * inode(x) | CP | inode(x) | dnode(F)
-+		 * In this case, we can lose the latest inode(x).
-+		 * So, call __recover_inode for the inode update.
-+		 */
-+		if (IS_INODE(page))
-+			__recover_inode(entry->inode, page);
- 
- 		err = do_recover_data(sbi, entry->inode, page, blkaddr);
- 		if (err)
+ static int fsl_ssi_probe(struct platform_device *pdev)
 -- 
-1.8.5.2 (Apple Git-48)
+1.7.9.5
 
