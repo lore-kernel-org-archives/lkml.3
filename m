@@ -1,84 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaIKRa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:30:59 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:37224 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaIKRa6 (ORCPT
+	id S1753285AbaIKRb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:31:58 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55479 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaIKRb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:30:58 -0400
+	Thu, 11 Sep 2014 13:31:56 -0400
+Message-ID: <5411DC70.5060104@linaro.org>
+Date: Thu, 11 Sep 2014 19:31:28 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <ghioku5l29.fsf@lena.gouders.net>
-References: <ghiol53r9u.fsf@lena.gouders.net> <CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
- <ghwq9k3m6z.fsf@lena.gouders.net> <CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
- <ghioku5l29.fsf@lena.gouders.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Sep 2014 11:30:35 -0600
-Message-ID: <CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-To: Dirk Gouders <dirk@gouders.net>
-Cc: Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, john.liuli@huawei.com
+Subject: Re: [RFC v2 2/9] KVM: ARM: VGIC: add forwarded irq rbtree lock
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org> <1409575968-5329-3-git-send-email-eric.auger@linaro.org> <20140911030953.GD2784@lvm>
+In-Reply-To: <20140911030953.GD2784@lvm>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci]
+On 09/11/2014 05:09 AM, Christoffer Dall wrote:
+> On Mon, Sep 01, 2014 at 02:52:41PM +0200, Eric Auger wrote:
+>> add a lock related to the rb tree manipulation. The rb tree can be
+> 
+> Ok, I can't hold myself back any longer. 
 
 
-On Thu, Sep 11, 2014 at 7:43 AM, Dirk Gouders <dirk@gouders.net> wrote:
-> Andreas Noever <andreas.noever@gmail.com> writes:
->
->> On Wed, Sep 3, 2014 at 2:47 PM, Dirk Gouders <dirk@gouders.net> wrote:
->>> Andreas Noever <andreas.noever@gmail.com> writes:
->>>
->>>> On Wed, Sep 3, 2014 at 12:57 PM, Dirk Gouders <dirk@gouders.net> wrote:
->>>>> On a Tyan VX50 (B4985) I ran into problems when updating the kernel: the
->>>>> PCI FC Adapter is no longer recognized.
->>>>
->>>> Can you provide the output of lspci -vvv and the output of dmesg from
->>>> a working boot? Which card is the one that is not recognized?
->>>
->>> Sure, the card that disappeared is:
->>>
->>> 0a:00.0 Fibre Channel: LSI Logic / Symbios Logic FC949ES Fibre Channel Adapter (rev 02)
+ Please begin sentences with a
+> capital letter. You don't do this in French? :)
+Hi Christoffer,
+
+
+yep that's understood ;-) Definitively we do. Just that I am discovering
+it is common too in commits and comments ;-)
+> 
+>> searched in one thread (irqfd handler for instance) and map/unmap
+>> happen in another.
 >>
->> As far as I can tell the following is happening:
->> The root bus resource window (advertised by the bios?) is to small:
->> pci_bus 0000:00: root bus resource [bus 00-07]
->> Previously we didn't really care. There is a resource conflict but we
->> ignored it:
->> pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07]
->> (conflicts with (null) [bus 00-07])
->> With the patch we mark the bridge as broken and reassign the bus to 06:
->> pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
->> pci 0000:00:0e.0: PCI bridge to [bus 06-07]
->> pci 0000:00:0e.0:   bridge window [io  0x3000-0x3fff]
->> pci 0000:00:0e.0:   bridge window [mem 0xd4200000-0xd42fffff]
->> pci_bus 0000:06: busn_res: [bus 06-07] end is updated to 06
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+>> ---
+>>  include/kvm/arm_vgic.h |  1 +
+>>  virt/kvm/arm/vgic.c    | 46 +++++++++++++++++++++++++++++++++++++---------
+>>  2 files changed, 38 insertions(+), 9 deletions(-)
 >>
->> We still scan for children but nothing shows up ("PCI bridge to" is
->> from pci_scan_child_bus -> pcibios_fixup_bus -> pci_read_bridge_base,
->> after pci_scan_slot). I have no idea why the device does not respond.
->
-> Andreas,
->
-> I found an identical FC Adapter here (backup) and was hoping to be able to
-> setup a test-machine where I can easily reproduce the problem, but
-> on that machine, the problem does not occur. So, I have to stick to the
-> busy machine for testing and diagnosis.
->
-> What I further did was rebooting the problematic machine and
-> enabling more messages (dyndbg="file drivers/pci/* +pf") with
-> the working and problematic kernel; the dmesg output is attached.
+>> diff --git a/include/kvm/arm_vgic.h b/include/kvm/arm_vgic.h
+>> index 743020f..3da244f 100644
+>> --- a/include/kvm/arm_vgic.h
+>> +++ b/include/kvm/arm_vgic.h
+>> @@ -177,6 +177,7 @@ struct vgic_dist {
+>>  	unsigned long		irq_pending_on_cpu;
+>>  
+>>  	struct rb_root		irq_phys_map;
+>> +	spinlock_t			rb_tree_lock;
+>>  #endif
+>>  };
+>>  
+>> diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+>> index 8ef495b..dbc2a5a 100644
+>> --- a/virt/kvm/arm/vgic.c
+>> +++ b/virt/kvm/arm/vgic.c
+>> @@ -1630,9 +1630,15 @@ static struct rb_root *vgic_get_irq_phys_map(struct kvm_vcpu *vcpu,
+>>  
+>>  int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+>>  {
+>> -	struct rb_root *root = vgic_get_irq_phys_map(vcpu, virt_irq);
+>> -	struct rb_node **new = &root->rb_node, *parent = NULL;
+>> +	struct rb_root *root;
+>> +	struct rb_node **new, *parent = NULL;
+>>  	struct irq_phys_map *new_map;
+>> +	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+>> +
+>> +	spin_lock(&dist->rb_tree_lock);
+>> +
+>> +	root = vgic_get_irq_phys_map(vcpu, virt_irq);
+>> +	new = &root->rb_node;
+>>  
+>>  	/* Boilerplate rb_tree code */
+>>  	while (*new) {
+>> @@ -1644,13 +1650,17 @@ int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+>>  			new = &(*new)->rb_left;
+>>  		else if (this->virt_irq > virt_irq)
+>>  			new = &(*new)->rb_right;
+>> -		else
+>> +		else {
+>> +			spin_unlock(&dist->rb_tree_lock);
+>>  			return -EEXIST;
+>> +		}
+> 
+> can you initialize a ret variable to -EEXIST in the beginning of this
+> function, and add an out label above the unlock below, replace this
+> multi-line statement with a goto out, and set ret = 0 after the while
+> loop?
+sure
+> 
+>>  	}
+>>  
+>>  	new_map = kzalloc(sizeof(*new_map), GFP_KERNEL);
+>> -	if (!new_map)
+>> +	if (!new_map) {
+>> +		spin_unlock(&dist->rb_tree_lock);
+>>  		return -ENOMEM;
+> 
+> then this becomes ret = -ENOMEM; goto out;
+OK
+> 
+>> +	}
+>>  
+>>  	new_map->virt_irq = virt_irq;
+>>  	new_map->phys_irq = phys_irq;
+>> @@ -1658,6 +1668,8 @@ int vgic_map_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+>>  	rb_link_node(&new_map->node, parent, new);
+>>  	rb_insert_color(&new_map->node, root);
+>>  
+>> +	spin_unlock(&dist->rb_tree_lock);
+>> +
+> 
+> aren't you allocating memory with GFP_KERNEL while holding a spinlock
+> here?
+oups. Thanks for noticing. I Will move the lock.
+> 
+>>  	return 0;
+>>  }
+>>  
+>> @@ -1685,24 +1697,39 @@ static struct irq_phys_map *vgic_irq_map_search(struct kvm_vcpu *vcpu,
+>>  
+>>  int vgic_get_phys_irq(struct kvm_vcpu *vcpu, int virt_irq)
+>>  {
+>> -	struct irq_phys_map *map = vgic_irq_map_search(vcpu, virt_irq);
+>> +	struct irq_phys_map *map;
+>> +	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+>> +	int ret;
+>> +
+>> +	spin_lock(&dist->rb_tree_lock);
+>> +	map = vgic_irq_map_search(vcpu, virt_irq);
+>>  
+>>  	if (map)
+>> -		return map->phys_irq;
+>> +		ret = map->phys_irq;
+>> +	else
+>> +		ret =  -ENOENT;
+> 
+> initialize ret to -ENOENT and avoid the else statement.
+ok
+> 
+>> +
+>> +	spin_unlock(&dist->rb_tree_lock);
+>> +	return ret;
+>>  
+>> -	return -ENOENT;
+>>  }
+>>  
+>>  int vgic_unmap_phys_irq(struct kvm_vcpu *vcpu, int virt_irq, int phys_irq)
+>>  {
+>> -	struct irq_phys_map *map = vgic_irq_map_search(vcpu, virt_irq);
+>> +	struct irq_phys_map *map;
+>> +	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
+>> +
+>> +	spin_lock(&dist->rb_tree_lock);
+>> +
+>> +	map = vgic_irq_map_search(vcpu, virt_irq);
+>>  
+>>  	if (map && map->phys_irq == phys_irq) {
+>>  		rb_erase(&map->node, vgic_get_irq_phys_map(vcpu, virt_irq));
+>>  		kfree(map);
+>> +		spin_unlock(&dist->rb_tree_lock);
+> 
+> can kfree sleep?  I don't remember.  In any case, you can unlock before
+> calling kfree.
+no it can't but I will move anyway.
+> 
+>>  		return 0;
+>>  	}
+>> -
+>> +	spin_unlock(&dist->rb_tree_lock);
+>>  	return -ENOENT;
+> 
+> an out label and single unlock location would be preferred here as well
+> I think.
+ok
 
-Dirk,
+Thansk
 
-Thanks for following up on this.  It had fallen off my radar, so I
-opened https://bugzilla.kernel.org/show_bug.cgi?id=84281 to make sure
-I don't forget again.  Please continue the debug discussion here in
-email.
+Eric
+> 
+>>  }
+>>  
+>> @@ -1898,6 +1925,7 @@ int kvm_vgic_create(struct kvm *kvm)
+>>  	}
+>>  
+>>  	spin_lock_init(&kvm->arch.vgic.lock);
+>> +	spin_lock_init(&kvm->arch.vgic.rb_tree_lock);
+>>  	kvm->arch.vgic.in_kernel = true;
+>>  	kvm->arch.vgic.vctrl_base = vgic->vctrl_base;
+>>  	kvm->arch.vgic.vgic_dist_base = VGIC_ADDR_UNDEF;
+>> -- 
+>> 1.9.1
+>>
 
-Bjorn
