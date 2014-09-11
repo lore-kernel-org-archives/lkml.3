@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaIKJkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:40:16 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49094 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031AbaIKJkM (ORCPT
+	id S1753910AbaIKJlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:41:47 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:39968 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843AbaIKJlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:40:12 -0400
-Date: Thu, 11 Sep 2014 10:39:37 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v2] arm: perf: Don't sleep while atomic when enabling
- per-cpu interrupts
-Message-ID: <20140911093937.GB5045@arm.com>
-References: <1410376426-5707-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 11 Sep 2014 05:41:45 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 11 Sep 2014 11:39:42 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [PATCH v3 0/8] rtc: at91sam9: add DT support
+Message-ID: <20140911093942.GA12295@localhost>
+References: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410376426-5707-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 08:13:46PM +0100, Stephen Boyd wrote:
-> Rob Clark reports a sleeping while atomic bug when using perf.
-> 
-> BUG: sleeping function called from invalid context at ../kernel/locking/mutex.c:583
-> in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/0
-> ------------[ cut here ]------------
-> WARNING: CPU: 2 PID: 4828 at ../kernel/locking/mutex.c:479 mutex_lock_nested+0x3a0/0x3e8()
-> DEBUG_LOCKS_WARN_ON(in_interrupt())
-> Modules linked in:
-> CPU: 2 PID: 4828 Comm: Xorg.bin Tainted: G        W      3.17.0-rc3-00234-gd535c45-dirty #819
-> [<c0216690>] (unwind_backtrace) from [<c0212174>] (show_stack+0x10/0x14)
-> [<c0212174>] (show_stack) from [<c0867cc0>] (dump_stack+0x98/0xb8)
-> [<c0867cc0>] (dump_stack) from [<c02492a4>] (warn_slowpath_common+0x70/0x8c)
-> [<c02492a4>] (warn_slowpath_common) from [<c02492f0>] (warn_slowpath_fmt+0x30/0x40)
-> [<c02492f0>] (warn_slowpath_fmt) from [<c086a3f8>] (mutex_lock_nested+0x3a0/0x3e8)
-> [<c086a3f8>] (mutex_lock_nested) from [<c0294d08>] (irq_find_host+0x20/0x9c)
-> [<c0294d08>] (irq_find_host) from [<c0769d50>] (of_irq_get+0x28/0x48)
-> [<c0769d50>] (of_irq_get) from [<c057d104>] (platform_get_irq+0x1c/0x8c)
-> [<c057d104>] (platform_get_irq) from [<c021a06c>] (cpu_pmu_enable_percpu_irq+0x14/0x38)
-> [<c021a06c>] (cpu_pmu_enable_percpu_irq) from [<c02b1634>] (flush_smp_call_function_queue+0x88/0x178)
-> [<c02b1634>] (flush_smp_call_function_queue) from [<c0214dc0>] (handle_IPI+0x88/0x160)
-> [<c0214dc0>] (handle_IPI) from [<c0208930>] (gic_handle_irq+0x64/0x68)
-> [<c0208930>] (gic_handle_irq) from [<c0212d04>] (__irq_svc+0x44/0x5c)
-> Exception stack(0xe63ddea0 to 0xe63ddee8)
-> dea0: 00000001 00000001 00000000 c2f3b200 c16db380 c032d4a0 e63ddf40 60010013
-> dec0: 00000000 001fbfd4 00000100 00000000 00000001 e63ddee8 c0284770 c02a2e30
-> dee0: 20010013 ffffffff
-> [<c0212d04>] (__irq_svc) from [<c02a2e30>] (ktime_get_ts64+0x1c8/0x200)
-> [<c02a2e30>] (ktime_get_ts64) from [<c032d4a0>] (poll_select_set_timeout+0x60/0xa8)
-> [<c032d4a0>] (poll_select_set_timeout) from [<c032df64>] (SyS_select+0xa8/0x118)
-> [<c032df64>] (SyS_select) from [<c020e8e0>] (ret_fast_syscall+0x0/0x48)
-> ---[ end trace 0bb583b46342da6f ]---
-> INFO: lockdep is turned off.
-> 
-> We don't really need to get the platform irq again when we're
-> enabling or disabling the per-cpu irq. Furthermore, we don't
-> really need to set and clear bits in the active_irqs bitmask
-> because that's only used in the non-percpu irq case to figure out
-> when the last CPU PMU has been disabled. Just pass the irq
-> directly to the enable/disable functions to clean all this up.
-> This should be slightly more efficient and also fix the
-> scheduling while atomic bug.
-> 
-> Reported-by: Rob Clark <robdclark@gmail.com>
-> Fixes: bbd64559376f "ARM: perf: support percpu irqs for the CPU PMU"
-> Acked-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> I'll drop this in the patch tracker tomorrow unless I hear differently.
+On Thu, Sep 11, 2014 at 10:55:59AM +0200, Boris BREZILLON wrote:
 
-Cheers Stephen, don't forget to CC stable.
+> Johan, let me know if this version addresses part of your concerns.
 
-Will
+Looks good to me. I just have a few minor comments on two of the patches.
+
+> I'm open to any suggestion/rework to address other previously discussed
+> issues, as long as it does not end up in a dead-end (like the discussion
+> you had last year):
+>  - the fact that the RTT block could be used for something that is not
+>    an RTC
+>  - the fact that referencing the GPBR node and defining a GPBR register
+>    number to store RTC time info could be considered as an HW config and
+>    not an HW description and thus should not be described in the DT
+
+No doubt.
+
+>  - other things I don't remember :-)
+
+Thanks,
+Johan
