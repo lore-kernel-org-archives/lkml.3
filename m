@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaIKMeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:34:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51563 "EHLO
+	id S1755110AbaIKMen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:34:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51553 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754790AbaIKMe3 (ORCPT
+	by vger.kernel.org with ESMTP id S1754994AbaIKMe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:29 -0400
+	Thu, 11 Sep 2014 08:34:26 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Karl Volz" <karl.volz@oracle.com>,
-        "Sowmini Varadhan" <sowmini.varadhan@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.386719255@decadent.org.uk>
+Message-ID: <lsq.1410438733.290741435@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 119/131] sparc64: ldc_connect() should not return
- EINVAL when  handshake is in progress.
+Subject: [PATCH 3.2 115/131] sparc64: Do not insert non-valid PTEs into
+ the TSB hash  table.
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,36 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 4ec1b01029b4facb651b8ef70bc20a4be4cebc63 ]
+[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
 
-The LDC handshake could have been asynchronously triggered
-after ldc_bind() enables the ldc_rx() receive interrupt-handler
-(and thus intercepts incoming control packets)
-and before vio_port_up() calls ldc_connect(). If that is the case,
-ldc_connect() should return 0 and let the state-machine
-progress.
+The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
+only be called when the PTE being installed will be accessible by the user.
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Acked-by: Karl Volz <karl.volz@oracle.com>
+This is not true for code paths originating from remove_migration_pte().
+
+There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
+miss frramework assumes thatwhen a TSB entry matches we can just load it into
+the TLB and return from the TLB miss trap.
+
+So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
+and over, never satisfying the miss.
+
+Just exit early from update_mmu_cache() and friends in this situation.
+
+Based upon a report and patch from Christopher Alexander Tobias Schulze.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/kernel/ldc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/mm/init_64.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/sparc/kernel/ldc.c b/arch/sparc/kernel/ldc.c
-index 435e406..1beaf60 100644
---- a/arch/sparc/kernel/ldc.c
-+++ b/arch/sparc/kernel/ldc.c
-@@ -1339,7 +1339,7 @@ int ldc_connect(struct ldc_channel *lp)
- 	if (!(lp->flags & LDC_FLAG_ALLOCED_QUEUES) ||
- 	    !(lp->flags & LDC_FLAG_REGISTERED_QUEUES) ||
- 	    lp->hs_state != LDC_HS_OPEN)
--		err = -EINVAL;
-+		err = ((lp->hs_state > LDC_HS_OPEN) ? 0 : -EINVAL);
- 	else
- 		err = start_handshake(lp);
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index b4989f9..77ad815 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -309,6 +309,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
+ 	tsb_index = MM_TSB_BASE;
+ 	tsb_hash_shift = PAGE_SHIFT;
  
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!(pte_val(pte) & _PAGE_VALID))
++		return;
++
+ 	spin_lock_irqsave(&mm->context.lock, flags);
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
 
