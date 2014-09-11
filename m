@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229AbaIKQHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:07:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756657AbaIKQHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:07:36 -0400
-Date: Thu, 11 Sep 2014 18:07:11 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
- cookie with each entry
-Message-ID: <20140911160711.GF32722@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-14-git-send-email-acme@kernel.org>
- <20140911103319.GA13634@krava.brq.redhat.com>
- <20140911132911.GB10158@kernel.org>
- <20140911145945.GC32722@krava.brq.redhat.com>
- <20140911152330.GI10158@kernel.org>
- <20140911153527.GE32722@krava.brq.redhat.com>
- <20140911154922.GK10158@kernel.org>
+	id S1757242AbaIKQHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:07:53 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:49154 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbaIKQHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:07:51 -0400
+Message-ID: <5411C8C6.4060509@mentor.com>
+Date: Thu, 11 Sep 2014 11:07:34 -0500
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911154922.GK10158@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Christopher Covington <cov@codeaurora.org>
+CC: Doug Anderson <dianders@chromium.org>, <olof@lixom.net>,
+        <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, Marc Zyngier <marc.zyngier@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>, <galak@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clocksource: arch_timer: Allow the device tree to specify
+ the physical timer
+References: <1410450727-8182-1-git-send-email-dianders@chromium.org> <5411C68B.6090308@codeaurora.org>
+In-Reply-To: <5411C68B.6090308@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:49:22PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 11, 2014 at 05:35:27PM +0200, Jiri Olsa escreveu:
-> > On Thu, Sep 11, 2014 at 12:23:30PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Thu, Sep 11, 2014 at 04:59:45PM +0200, Jiri Olsa escreveu:
-> > > > On Thu, Sep 11, 2014 at 10:29:11AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > > But then I had no use whatsoever for the ->ptr one at this point, so I
-> > > > > just nuked it, to keep _just_ what is used _right now_, and added the
-> > > > > comment to the changelog :-)
+On 09/11/2014 10:58 AM, Christopher Covington wrote:
 > 
-> > > > if we are treeting tools/lib/api as 'external' lib, I think we should
-> > > > use 'void *' for priv and let the user retype it to whatever he wants
+> On 09/11/2014 11:52 AM, Doug Anderson wrote:
+>> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+>> index 5163ec1..8ca07a9 100644
+>> --- a/drivers/clocksource/arm_arch_timer.c
+>> +++ b/drivers/clocksource/arm_arch_timer.c
+>> @@ -649,6 +649,9 @@ static void __init arch_timer_init(struct device_node *np)
+>>  		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+>>  	arch_timer_detect_rate(NULL, np);
+>>  
+>> +	if (of_property_read_bool(np, "arm,use-physical-timer"))
+>> +		arch_timer_use_virtual = false;
+>> +
+>>  	/*
+>>  	 * If HYP mode is available, we know that the physical timer
+>>  	 * has been configured to be accessible from PL1. Use it, so
+>>
 > 
-> > > > but I dont care/insist here too much.. it just seems strange to me ;-)
-> > > 
-> > > Ok, so perhaps it should be:
-> > > 
-> > > 	struct fdarray {
-> > > 		...
-> > > 		union {
-> > > 			int idx;
-> > > 		} *priv;
-> > > 		...
-> > > }
-> > > 
-> > > And then perf's evlist will use:
-> > > 
-> > > 	fda->priv[fd].idx;
-> > > 
-> > > 	Then, when we get the need for a pointer, we can go there and
-> > > add it to the union.
-> > > 
-> > > 	This will make tools/lib/api/fd/ a little bit more friendly to
-> > > use outside the kernel sources, since then a new version will be source
-> > > code compatible (but not necessarily binary compatible).
-> > 
-> > you lost me ;-)
-> > 
-> > could you please make an example of the !compatibility you mentioned?
+> How's the VDSO supposed to deal with this? It currently does:
 > 
-> If I leave it as is now, when I add that void * pointer to each entry in
-> fdarray->priv[], I will have to change fdarray's users, i.e. right now I
-> will have to go and change evlist.h, i.e. every place that has:
-> 
-> 	fda->priv[fd];
-> 
-> 	will have to be changed to:
-> 
-> 	fda->priv[fd].idx;
-> 
-> If I instead change it to:
-> 
->  	struct fdarray {
->  		...
->  		union {
->  			int idx;
->  		} *priv;
->  		...
-> 	}
-> 
-> Then I will not have to change anything when I add that void * pointer
-> to the union.
+> cycle_now = arch_counter_get_cntvct()
 
-I dont think there's any trouble like that if you keep
-just void* priv pointer and let users to store there
-whatever they like
+Note the VDSO for 32-bit ARM is still out of tree so there's no mainline
+regression in that respect.
 
->  
-> > > 	If we commit to that we can't just go on and change all its
-> > > users as we can now do for things like 'struct sk_buff', 'struct sock'
-> > > and any other kernel data structures.
-> > > 	There are costs in making it 'external' in the sense you're
-> > > implying. I want to make it a bit less 'external' (in your sense), at
-> > > least while we initially implement new stuff like this one.
->  
-> > and the costs?
->  
-> > also I did not mean that union above, what I meant was:
->  
-> > struct fdarray {
-> > 	...
-> > 	void *priv;
-> > 	...
-> > }
-> 
-> Yeah, that is what I am trying to avoid. This will make it use
-> sizeof(void *) for each entry, and I have no use for that right now. All
-> I need is sizeof(int) for each entry.
+I think as long as there's some way for the vdso initialization code to
+discover that it can't use the virtual counter, it should be tractable.
+ If that involves adding an API to the arch timer code, that can be
+added along with the vdso code.
 
-hm? but you're using pointer (int*) not int .. size will be sizeof(unsigned long) anyway
-
-jirka
