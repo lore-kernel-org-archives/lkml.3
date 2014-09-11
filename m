@@ -1,250 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675AbaIKImG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:42:06 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:64092 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaIKIhe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:37:34 -0400
-From: Paul Burton <paul.burton@imgtec.com>
-To: <linux-mips@linux-mips.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Paul Burton <paul.burton@imgtec.com>
-Subject: [PATCH 03/10] binfmt_elf: allow arch code to examine PT_LOPROC ... PT_HIPROC headers
-Date: Thu, 11 Sep 2014 08:30:16 +0100
-Message-ID: <1410420623-11691-4-git-send-email-paul.burton@imgtec.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
-References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
+	id S1753565AbaIKIoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:44:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59797 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414AbaIKIoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:44:00 -0400
+Message-ID: <541160E8.5070701@ti.com>
+Date: Thu, 11 Sep 2014 11:44:24 +0300
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.159.78]
+To: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <bcousson@baylibre.com>
+CC: <t-kristo@ti.com>, <mark.rutland@arm.com>, <detheridge@ti.com>
+Subject: Re: [PATCH] clk: add gpio gated clock
+References: <1409919694-26941-1-git-send-email-jsarha@ti.com> <20140909221408.19023.12081@quantum>
+In-Reply-To: <20140909221408.19023.12081@quantum>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIPS is introducing new variants of its O32 ABI which differ in their
-handling of floating point, in order to enable a gradual transition
-towards a world where mips32 binaries can take advantage of new hardware
-features only available when configured for certain FP modes. In order
-to do this ELF binaries are being augmented with a new section that
-indicates, amongst other things, the FP mode requirements of the binary.
-The presence & location of such a section is indicated by a program
-header in the PT_LOPROC ... PT_HIPROC range.
+On 09/10/2014 01:14 AM, Mike Turquette wrote:
+> Quoting Jyri Sarha (2014-09-05 05:21:34)
+>> The added gpio-gate-clock is a basic clock that can be enabled and
+>> disabled trough a gpio output. The DT binding document for the clock
+>> is also added. For EPROBE_DEFER handling the registering of the clock
+>> has to be delayed until of_clk_get() call time.
+>>
+>> Signed-off-by: Jyri Sarha <jsarha@ti.com>
+>> ---
+>>
+>> This is my final attempt to get this generic gpio controlled basic
+>> clock into mainline. Of course I gladly fix any issues that the patch
+>> may have. However, if there is no response, I give up and move it to TI
+>> specific clocks.
+>>
+>
+> I searched through my archives and found a post from January. You Cc'd
+> me as "<mturquette@linaro.org>". Note that the address is wrapped in
+> chevrons but there is no name string (e.g. "Mike Turquette").
+>
+> My mailer doesn't parse this well it was not flagged as to:me in my
+> filters. Maybe other mailers handle this better? If you leave out the
+> name string in the future then it would probably be best to drop the
+> chevrons.
+>
 
-In order to allow the MIPS architecture code to examine the program
-header & section in question, pass all program headers in this range
-to an architecture-specific arch_elf_pt_proc function. This function
-may return an error if the header is deemed invalid or unsuitable for
-the system, in which case that error will be returned from
-load_elf_binary and upwards through the execve syscall.
+Then git send-email adds the chevrons, but in the future I'll put the 
+name string there too.
 
-A means is required for the architecture code to make a decision once
-it is known that all such headers have been seen, but before it is too
-late to return from an execve syscall. For this purpose the
-arch_check_elf function is added, and called once, after all PT_LOPROC
-to PT_HIPROC headers have been passed to arch_elf_pt_proc but before
-the code which invoked execve has been lost. This enables the
-architecture code to make a decision based upon all the headers present
-in an ELF binary and its interpreter, as is required to forbid
-conflicting FP ABI requirements between an ELF & its interpreter.
+>> I've been sending this patch as a part of Beaglebone-Black HDMI audio
+>> patch series since last autumn. Since the previous version I have done
+>> some minor cleanups and changed the clock's compatible property from
+>> "gpio-clock" to "gpio-gate-clock". All the file names, comments,
+>> etc. have also been changed accordingly.
+>
+> Is your platform the only one to take advantage of this clock type so
+> far? I feel that it is esoteric enough that it shouldn't be made
+> generic.
+>
+> The main reason is that all of the generic clock types needs to be
+> overhauled at some point. E.g. the clk-gate should have its
+> machine-specific logic separated from its machine-independent logic. If
+> the gate clock were to populate .enable and .disable callbacks and then
+> leave the actual register banging, or regmap'ing, or gpio'ing up to your
+> backend driver then that would be a big improvement and would avoid the
+> need to create this new clock type outright.
+>
+> So that's on my todo list, but it's not done yet. For your patch I think
+> that putting this code into drivers/clk/ti would probably be best,
+> unless other folks could use it as-is. Even if others could use it today
+> I would want to remove it eventually for the reasons stated in the
+> paragraph above.
+>
 
-In order to allow data to be stored throughout the calls to the above
-functions, struct arch_elf_state is introduced.
+Ok, I see. I do not know of anybody else needing a gpio gate clock at 
+the moment. I'll put the driver under drivers/clk/ti unless someone 
+comes forward soon.
 
-Finally a variant of the SET_PERSONALITY macro is introduced which
-accepts a pointer to the struct arch_elf_state, allowing it to act
-based upon state observed from the architecture specific program
-headers.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
----
- fs/Kconfig.binfmt   |  3 +++
- fs/binfmt_elf.c     | 36 ++++++++++++++++++++++++--
- include/linux/elf.h | 73 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 110 insertions(+), 2 deletions(-)
-
-diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-index 370b24c..c055d56 100644
---- a/fs/Kconfig.binfmt
-+++ b/fs/Kconfig.binfmt
-@@ -30,6 +30,9 @@ config COMPAT_BINFMT_ELF
- config ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	bool
- 
-+config ARCH_BINFMT_ELF_STATE
-+	bool
-+
- config BINFMT_ELF_FDPIC
- 	bool "Kernel support for FDPIC ELF binaries"
- 	default y
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 61dabe0..ceabb0d 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -611,6 +611,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 		struct elfhdr elf_ex;
- 		struct elfhdr interp_elf_ex;
- 	} *loc;
-+	struct arch_elf_state arch_state = INIT_ARCH_ELF_STATE;
- 
- 	loc = kmalloc(sizeof(*loc), GFP_KERNEL);
- 	if (!loc) {
-@@ -705,12 +706,21 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 
- 	elf_ppnt = elf_phdata;
- 	for (i = 0; i < loc->elf_ex.e_phnum; i++, elf_ppnt++)
--		if (elf_ppnt->p_type == PT_GNU_STACK) {
-+		switch (elf_ppnt->p_type) {
-+		case PT_GNU_STACK:
- 			if (elf_ppnt->p_flags & PF_X)
- 				executable_stack = EXSTACK_ENABLE_X;
- 			else
- 				executable_stack = EXSTACK_DISABLE_X;
- 			break;
-+
-+		case PT_LOPROC ... PT_HIPROC:
-+			retval = arch_elf_pt_proc(&loc->elf_ex, elf_ppnt,
-+						  bprm->file, false,
-+						  &arch_state);
-+			if (retval)
-+				goto out_free_dentry;
-+			break;
- 		}
- 
- 	/* Some simple consistency checks for the interpreter */
-@@ -728,8 +738,30 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 						   interpreter);
- 		if (!interp_elf_phdata)
- 			goto out_free_dentry;
-+
-+		/* Pass PT_LOPROC..PT_HIPROC headers to arch code */
-+		elf_ppnt = interp_elf_phdata;
-+		for (i = 0; i < loc->interp_elf_ex.e_phnum; i++, elf_ppnt++)
-+			switch (elf_ppnt->p_type) {
-+			case PT_LOPROC ... PT_HIPROC:
-+				retval = arch_elf_pt_proc(&loc->interp_elf_ex,
-+							  elf_ppnt, interpreter,
-+							  true, &arch_state);
-+				if (retval)
-+					goto out_free_dentry;
-+				break;
-+			}
- 	}
- 
-+	/*
-+	 * Allow arch code to reject the ELF at this point, whilst it's
-+	 * still possible to return an error to the code that invoked
-+	 * the exec syscall.
-+	 */
-+	retval = arch_check_elf(&loc->elf_ex, !!interpreter, &arch_state);
-+	if (retval)
-+		goto out_free_dentry;
-+
- 	/* Flush all traces of the currently running executable */
- 	retval = flush_old_exec(bprm);
- 	if (retval)
-@@ -737,7 +769,7 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 
- 	/* Do this immediately, since STACK_TOP as used in setup_arg_pages
- 	   may depend on the personality.  */
--	SET_PERSONALITY(loc->elf_ex);
-+	SET_PERSONALITY2(loc->elf_ex, &arch_state);
- 	if (elf_read_implies_exec(loc->elf_ex, executable_stack))
- 		current->personality |= READ_IMPLIES_EXEC;
- 
-diff --git a/include/linux/elf.h b/include/linux/elf.h
-index 67a5fa7..6bd1504 100644
---- a/include/linux/elf.h
-+++ b/include/linux/elf.h
-@@ -15,6 +15,11 @@
- 	set_personality(PER_LINUX | (current->personality & (~PER_MASK)))
- #endif
- 
-+#ifndef SET_PERSONALITY2
-+#define SET_PERSONALITY2(ex, state) \
-+	SET_PERSONALITY(ex)
-+#endif
-+
- #if ELF_CLASS == ELFCLASS32
- 
- extern Elf32_Dyn _DYNAMIC [];
-@@ -37,6 +42,74 @@ extern Elf64_Dyn _DYNAMIC [];
- 
- #endif
- 
-+#ifndef CONFIG_ARCH_BINFMT_ELF_STATE
-+
-+/**
-+ * struct arch_elf_state - arch-specific ELF loading state
-+ *
-+ * This structure is used to preserve architecture specific data during
-+ * the loading of an ELF file, throughout the checking of architecture
-+ * specific ELF headers & through to the point where the ELF load is
-+ * known to be proceeding (ie. SET_PERSONALITY).
-+ *
-+ * This implementation is a dummy for architectures which require no
-+ * specific state.
-+ */
-+struct arch_elf_state {
-+};
-+
-+#define INIT_ARCH_ELF_STATE {}
-+
-+/**
-+ * arch_elf_pt_proc() - check a PT_LOPROC..PT_HIPROC ELF program header
-+ * @ehdr:	The main ELF header
-+ * @phdr:	The program header to check
-+ * @elf:	The open ELF file
-+ * @is_interp:	True if the phdr is from the interpreter of the ELF being
-+ *		loaded, else false.
-+ * @state:	Architecture-specific state preserved throughout the process
-+ *		of loading the ELF.
-+ *
-+ * Inspects the program header phdr to validate its correctness and/or
-+ * suitability for the system. Called once per ELF program header in the
-+ * range PT_LOPROC to PT_HIPROC, for both the ELF being loaded and its
-+ * interpreter.
-+ *
-+ * Return: Zero to proceed with the ELF load, non-zero to fail the ELF load
-+ *         with that return code.
-+ */
-+static inline int arch_elf_pt_proc(struct elfhdr *ehdr,
-+				   struct elf_phdr *phdr,
-+				   struct file *elf, bool is_interp,
-+				   struct arch_elf_state *state)
-+{
-+	/* Dummy implementation, always proceed */
-+	return 0;
-+}
-+
-+/**
-+ * arch_elf_pt_proc() - check a PT_LOPROC..PT_HIPROC ELF program header
-+ * @ehdr:	The main ELF header
-+ * @has_interp:	True if the ELF has an interpreter, else false.
-+ * @state:	Architecture-specific state preserved throughout the process
-+ *		of loading the ELF.
-+ *
-+ * Provides a final opportunity for architecture code to reject the loading
-+ * of the ELF & cause an exec syscall to return an error. This is called after
-+ * all program headers to be checked by arch_elf_pt_proc have been.
-+ *
-+ * Return: Zero to proceed with the ELF load, non-zero to fail the ELF load
-+ *         with that return code.
-+ */
-+static inline int arch_check_elf(struct elfhdr *ehdr, bool has_interp,
-+				 struct arch_elf_state *state)
-+{
-+	/* Dummy implementation, always proceed */
-+	return 0;
-+}
-+
-+#endif /* !CONFIG_ARCH_BINFMT_ELF_STATE */
-+
- /* Optional callbacks to write extra ELF notes. */
- struct file;
- struct coredump_params;
--- 
-2.0.4
+Thanks,
+Jyri
 
