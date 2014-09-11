@@ -1,55 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025AbaIKPvD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:51:03 -0400
-Received: from imap.thunk.org ([74.207.234.97]:51290 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757003AbaIKPu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:50:59 -0400
-Date: Thu, 11 Sep 2014 11:50:53 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-Message-ID: <20140911155053.GF26178@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Peter Hurley <peter@hurleysoftware.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jiri Slaby <jslaby@suse.cz>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
- <20140911000343.GA5328@kroah.com>
- <5410E8A2.5030802@hurleysoftware.com>
- <20140911002410.GA11732@kroah.com>
- <5410F08D.10707@hurleysoftware.com>
- <20140911135610.GD15632@thunk.org>
- <5411C264.8000105@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5411C264.8000105@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1757069AbaIKPvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:51:38 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61915 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848AbaIKPtx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:49:53 -0400
+From: mathieu.poirier@linaro.org
+To: will.deacon@arm.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org
+Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        panchaxari.prasannamurthy@linaro.org, kaixu.xia@linaro.org,
+        marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
+        robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dsaxena@linaro.org, mathieu.poirier@linaro.org
+Subject: [PATCH 08/11 v6] coresight: adding documentation for coresight
+Date: Thu, 11 Sep 2014 09:49:15 -0600
+Message-Id: <1410450558-12358-9-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1410450558-12358-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 11:40:20AM -0400, Peter Hurley wrote:
-> 
-> This is the basic interpretation I assumed, and most of what the tty core
-> already did.
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Yes, I know.  :-)
+Documentation for the coresight framework and drivers.
 
-So it's been a long time since I've had anything to do with the tty
-code, but FWIW, I'd agree with merging Peter's patch.
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ Documentation/trace/coresight.txt | 300 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 300 insertions(+)
+ create mode 100644 Documentation/trace/coresight.txt
 
-Cheers,
+diff --git a/Documentation/trace/coresight.txt b/Documentation/trace/coresight.txt
+new file mode 100644
+index 0000000..d55ac41
+--- /dev/null
++++ b/Documentation/trace/coresight.txt
+@@ -0,0 +1,300 @@
++		Coresight - HW Assisted Tracing on ARM
++		======================================
++
++   Author:   Mathieu Poirier <mathieu.poirier@linaro.org>
++   Date:     September 11th, 2014
++
++Introduction
++------------
++
++Coresight is an umbrella of technologies allowing for the debugging of ARM
++based SoC.  It includes solutions for JTAG and HW assisted tracing.  This
++document is concerned with the latter.
++
++HW assisted tracing is becoming increasingly useful when dealing with systems
++that have many SoCs and other components like GPU and DMA engines.  ARM has
++developed a HW assisted tracing solution by means of different components, each
++being added to a design at systhesis time to cater to specific tracing needs.
++Compoments are generally categorised as source, link and sinks and are
++(usually) discovered using the AMBA bus.
++
++"Sources" generate a compressed stream representing the processor instruction
++path based on tracing scenarios as configured by users.  From there the stream
++flows through the coresight system (via ATB bus) using links that are connecting
++the emanating source to a sink(s).  Sinks serve as endpoints to the coresight
++implementation, either storing the compressed stream in a memory buffer or
++creating an interface to the outside world where data can be transfered to a
++host without fear of filling up the onboard coresight memory buffer.
++
++At typical coresight system would look like this:
++
++  *****************************************************************
++ **************************** AMBA AXI  ****************************===||
++  *****************************************************************    ||
++        ^                    ^                            |            ||
++        |                    |                            *            **
++     0000000    :::::     0000000    :::::    :::::    @@@@@@@    ||||||||||||
++     0 CPU 0<-->: C :     0 CPU 0<-->: C :    : C :    @ STM @    || System ||
++  |->0000000    : T :  |->0000000    : T :    : T :<--->@@@@@     || Memory ||
++  |  #######<-->: I :  |  #######<-->: I :    : I :      @@@<-|   ||||||||||||
++  |  # ETM #    :::::  |  # PTM #    :::::    :::::       @   |
++  |   #####      ^ ^   |   #####      ^ !      ^ !        .   |   |||||||||
++  | |->###       | !   | |->###       | !      | !        .   |   || DAP ||
++  | |   #        | !   | |   #        | !      | !        .   |   |||||||||
++  | |   .        | !   | |   .        | !      | !        .   |      |  |
++  | |   .        | !   | |   .        | !      | !        .   |      |  *
++  | |   .        | !   | |   .        | !      | !        .   |      | SWD/
++  | |   .        | !   | |   .        | !      | !        .   |      | JTAG
++  *****************************************************************<-|
++ *************************** AMBA Debug ABP ************************
++  *****************************************************************
++   |    .          !         .          !        !        .    |
++   |    .          *         .          *        *        .    |
++  *****************************************************************
++ ******************** Cross Trigger Matrix (CTM) *******************
++  *****************************************************************
++   |    .     ^              .                            .    |
++   |    *     !              *                            *    |
++  *****************************************************************
++ ****************** AMBA Advanced Trace Bus (ATB) ******************
++  *****************************************************************
++   |          !                        ===============         |
++   |          *                         ===== F =====<---------|
++   |   :::::::::                         ==== U ====
++   |-->:: CTI ::<!!                       === N ===
++   |   :::::::::  !                        == N ==
++   |    ^         *                        == E ==
++   |    !  &&&&&&&&&       IIIIIII         == L ==
++   |------>&& ETB &&<......II     I        =======
++   |    !  &&&&&&&&&       II     I           .
++   |    !                    I     I          .
++   |    !                    I REP I<..........
++   |    !                    I     I
++   |    !!>&&&&&&&&&       II     I           *Source: ARM ltd.
++   |------>& TPIU  &<......II    I            DAP = Debug Access Port
++           &&&&&&&&&       IIIIIII            ETM = Embedded Trace Macrocell
++               ;                              PTM = Program Trace Macrocell
++               ;                              CTI = Cross Trigger Interface
++               *                              ETB = Embedded Trace Buffer
++          To trace port                       TPIU= Trace Port Interface Unit
++                                              SWD = Serial Wire Debug
++
++While on target configuration of the components is done via the ABP bus,
++all trace data are carried out-of-band on the ATB bus.  The CTM provides
++a way to aggregate and distribute signals between CoreSight components.
++
++The coresight framework provides a central point to represent, configure and
++manage coresight devices on a platform.  This first implementation centers on
++the basic tracing functionnality, enabling components such ETM/PTM, funnel,
++replicator, TMC, TPIU and ETB.  Future work will enable more
++intricate IP blocks such as STM and CTI.
++
++
++Acronyms and Classification
++---------------------------
++
++Acronyms:
++
++PTM:     Program Trace Macrocell
++ETM:     Embedded Trace Macrocell
++STM:     System trace Macrocell
++ETB:     Embedded Trace Buffer
++ITM:     Instrumentation Trace Macrocell
++TPIU:    Trace Port Interface Unit
++TMC-ETR: Trace Memory Controller, configured as Embedded Trace Router
++TMC-ETF: Trace Memory Controller, configured as Embedded Trace FIFO
++CTI:     Cross Trigger Interface
++
++Classification:
++
++Source:
++   ETMv3.x ETMv4, PTMv1.0, PTMv1.1, STM, STM500, ITM
++Link:
++   Funnel, replicator (intelligent or not), TMC-ETR
++Sinks:
++   ETBv1.0, ETB1.1, TPIU, TMC-ETF
++Misc:
++   CTI
++
++
++Device Tree Bindings
++----------------------
++
++See Documentation/devicetree/bindings/arm/coresight.txt for details.
++
++As of this writing drivers for ITM, STMs and CTIs are not provided but are
++expected to be added as the solution matures.
++
++
++Framework and implementation
++----------------------------
++
++The coresight framework provides a central point to represent, configure and
++manage coresight devices on a platform.  Any coresight compliant device can
++register with the framework for as long as they use the right APIs:
++
++struct coresight_device *coresight_register(struct coresight_desc *desc);
++void coresight_unregister(struct coresight_device *csdev);
++
++The registering function is taking a "struct coresight_device *csdev" and
++register the device with the core framework.  The unregister function takes
++a reference to a "strut coresight_device", obtained at registration time.
++
++If everything goes well during the registration process the new devices will
++show up under /sys/kernel/debug/coresight/, as showns here for a TC2 platform:
++
++root:~# ls /sys/kernel/debug/coresight/
++00000000.replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root:~#
++
++The functions take a "struct coresight_device", which looks like this:
++
++struct coresight_desc {
++        enum coresight_dev_type type;
++        struct coresight_dev_subtype subtype;
++        const struct coresight_ops *ops;
++        struct coresight_platform_data *pdata;
++        struct device *dev;
++        const struct coresight_ops_entry **debugfs_ops;
++        struct module *owner;
++};
++
++
++The "coresight_dev_type" identifies what the device is, i.e, source link or
++sink while the "coresight_dev_subtype" will characterise that type further.
++
++The "struct coresight_ops" is mandatory and will tell the framework how to
++perform base operations related to the components, each component having
++a different set of requirement.  For that "struct coresight_ops_sink",
++"struct coresight_ops_link" and "struct coresight_ops_source" have been
++provided.
++
++The next field, "struct coresight_platform_data *pdata" is acquired by calling
++"of_get_coresight_platform_data()", as part of the driver's _probe routine and
++"struct device *dev" gets the device reference embedded in the "amba_device":
++
++static int etm_probe(struct amba_device *adev, const struct amba_id *id)
++{
++ ...
++ ...
++ drvdata->dev = &adev->dev;
++ ...
++}
++
++Specific class of device (source, link, or sink) have generic operations
++that can be performed on them (see "struct coresight_ops").  The
++"**debugfs_ops" is a list of debugfs entries pertaining to operations
++specific to that component only.  "Implementation defined" customisations are
++expected to be accessed and controlled using those entries.
++
++Last but not least, "struct module *owner" is expected to be set to reflect
++the information carried in "THIS_MODULE".
++
++How to use
++----------
++
++Before trace collection can start, a coresight sink needs to be identify.
++There is no limit on the amount of sinks (nor sources) that can be enabled at
++any given moment.  As a generic operation, all device pertaining to the sink
++class will have an "active" entry in debugfs:
++
++root:/sys/kernel/debug/coresight# ls
++00000000.replicator  20030000.tpiu    2201c000.ptm  2203c000.etm  2203e000.etm
++20010000.etb         20040000.funnel  2201d000.ptm  2203d000.etm
++root:/sys/kernel/debug/coresight# ls 20010000.etb
++active  status  trigger_cntr
++root:/sys/kernel/debug/coresight# echo 1 > 20010000.etb/active
++root:/sys/kernel/debug/coresight# cat 20010000.etb/active
++1
++root:/sys/kernel/debug/coresight#
++
++At boot time the current etm3x driver will configure the first address
++comparator with "_stext" and "_etext", essentially tracing any instruction
++that falls within that range.  As such "enabling" a source will immediately
++trigger a trace capture:
++
++root:/sys/kernel/debug/coresight# echo 1 > 2201c000.ptm/enable
++root:/sys/kernel/debug/coresight# cat 2201c000.ptm/enable
++1
++root:/sys/kernel/debug/coresight# cat 20010000.etb/status
++Depth:          0x2000
++Status:         0x1
++RAM read ptr:   0x0
++RAM wrt ptr:    0x19d3   <----- The write pointer is moving
++Trigger cnt:    0x0
++Control:        0x1
++Flush status:   0x0
++Flush ctrl:     0x2001
++root:/sys/kernel/debug/coresight#
++
++Trace collection is stopped the same way:
++
++root:/sys/kernel/debug/coresight# echo 0 > 2201c000.ptm/enable
++root:/sys/kernel/debug/coresight#
++
++The content of the ETB buffer can be harvested directly from /dev:
++
++root:/sys/kernel/debug/coresight# dd if=/dev/20010000.etb \
++of=~/cstrace.bin
++
++64+0 records in
++64+0 records out
++32768 bytes (33 kB) copied, 0.00125258 s, 26.2 MB/s
++root:/sys/kernel/debug/coresight#
++
++The file cstrace.bin can be decompressed using "ptm2human", DS-5 or Trace32.
++
++Following is a DS-5 output of an experimental loop that increments a variable up
++to a certain value.  The example is simple and yet provides a glimpse of the
++wealth of possibilities that coresight provides.
++
++Info                                    Tracing enabled
++Instruction     106378866       0x8026B53C      E52DE004        false   PUSH     {lr}
++Instruction     0       0x8026B540      E24DD00C        false   SUB      sp,sp,#0xc
++Instruction     0       0x8026B544      E3A03000        false   MOV      r3,#0
++Instruction     0       0x8026B548      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Timestamp                                       Timestamp: 17106715833
++Instruction     319     0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     9       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     7       0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     10      0x8026B54C      E59D3004        false   LDR      r3,[sp,#4]
++Instruction     0       0x8026B550      E3530004        false   CMP      r3,#4
++Instruction     0       0x8026B554      E2833001        false   ADD      r3,r3,#1
++Instruction     0       0x8026B558      E58D3004        false   STR      r3,[sp,#4]
++Instruction     0       0x8026B55C      DAFFFFFA        true    BLE      {pc}-0x10 ; 0x8026b54c
++Instruction     6       0x8026B560      EE1D3F30        false   MRC      p15,#0x0,r3,c13,c0,#1
++Instruction     0       0x8026B564      E1A0100D        false   MOV      r1,sp
++Instruction     0       0x8026B568      E3C12D7F        false   BIC      r2,r1,#0x1fc0
++Instruction     0       0x8026B56C      E3C2203F        false   BIC      r2,r2,#0x3f
++Instruction     0       0x8026B570      E59D1004        false   LDR      r1,[sp,#4]
++Instruction     0       0x8026B574      E59F0010        false   LDR      r0,[pc,#16] ; [0x8026B58C] = 0x80550368
++Instruction     0       0x8026B578      E592200C        false   LDR      r2,[r2,#0xc]
++Instruction     0       0x8026B57C      E59221D0        false   LDR      r2,[r2,#0x1d0]
++Instruction     0       0x8026B580      EB07A4CF        true    BL       {pc}+0x1e9344 ; 0x804548c4
++Info                                    Tracing enabled
++Instruction     13570831        0x8026B584      E28DD00C        false   ADD      sp,sp,#0xc
++Instruction     0       0x8026B588      E8BD8000        true    LDM      sp!,{pc}
++Timestamp                                       Timestamp: 17107041535
+-- 
+1.9.1
 
-					- Ted
