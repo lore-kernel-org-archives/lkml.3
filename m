@@ -1,122 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531AbaIKVRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:17:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60437 "EHLO mx1.redhat.com"
+	id S1757542AbaIKVSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:18:09 -0400
+Received: from mga14.intel.com ([192.55.52.115]:24708 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757516AbaIKVRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:17:03 -0400
-Date: Thu, 11 Sep 2014 17:16:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
+	id S1751014AbaIKVSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:18:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,507,1406617200"; 
+   d="scan'208";a="590081058"
+Date: Fri, 12 Sep 2014 05:18:02 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
-Message-ID: <20140911211637.GF17140@redhat.com>
-References: <20140905183314.23690175@hananiah.suse.cz>
- <20140911200110.GA24699@redhat.com>
- <20140911224330.0cec9b4c@hananiah.suse.cz>
+Subject: Re: [nohz] WARNING: CPU: 0 PID: 0 at
+ arch/x86/kernel/cpu/common.c:1430 warn_pre_alternatives()
+Message-ID: <20140911211802.GA18626@localhost>
+References: <20140911071704.GA4026@localhost>
+ <20140911155316.GA2524@lerouge>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140911224330.0cec9b4c@hananiah.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140911155316.GA2524@lerouge>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 10:43:30PM +0200, Petr Tesarik wrote:
-> On Thu, 11 Sep 2014 16:01:10 -0400
-> Vivek Goyal <vgoyal@redhat.com> wrote:
-> 
-> > On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
-> > > On architectures that use percpu-vm, the percpu region is not guaranteed
-> > > to be contiguous in physical space.
-> > 
-> > Petr,
-> > 
-> > Which are those arches?
-> 
-> All except nommu. Actually, percpu-km will be used instead even on MMU
-> if SMP is disabled, but since SMP is pretty standard now, I guess the
-> vast majority of all kernels out there is affected. ;-)
+Hi Frederic,
 
-Hi Petr,
-
-To make sure I understand it correctly I will just summarize what you
-said.
-
-alloc_percpu() code does not guarantee that an object will be on physically
-contiguous pages if object crosses page boundary. That's why we are forcing
-allocation of object aligned to nearest higher power of two boundary of
-object size and that way object will always be on same page (as long as object
-is not bigger than a page).
-
-Is that a fair summary?
-
-Thanks
-Vivek
- 
+On Thu, Sep 11, 2014 at 05:53:19PM +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
-> > > However, fs/proc/vmcore.c expects
-> > > all ELF notes to be contiguous. If the ELF note happens to occupy
-> > > two non-adjacent physical pages, part of the note may be read from an
-> > > incorrect memory location by the kdump kernel, resulting in failure to
-> > > initialize /proc/vmcore (if the content of the following physical page,
-> > > incorrectly interpreted as an ELF note specifies a large number), wrong
-> > > register values or other apparent random memory corruption.
-> > > 
-> > > There is currently no mechanism to pass the virtual-to-physical mapping
-> > > of the percpu allocation to the kdump kernel. So, instead, I'm changing
-> > > the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
-> > > than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
-> > > is enough to make sure that the buffer cannot cross a page boundary,
-> > > effectively ensuring that the whole buffer is contiguous in physical
-> > > space.
-> > > 
-> > > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> > > ---
-> > >  kernel/kexec.c | 3 ++-
-> > >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > > index 2bee072..cdab59d 100644
-> > > --- a/kernel/kexec.c
-> > > +++ b/kernel/kexec.c
-> > > @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
-> > >  static int __init crash_notes_memory_init(void)
-> > >  {
-> > >  	/* Allocate memory for saving cpu registers. */
-> > > -	crash_notes = alloc_percpu(note_buf_t);
-> > > +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
-> > > +				     roundup_pow_of_two(sizeof(note_buf_t)));
+> On Thu, Sep 11, 2014 at 03:17:04PM +0800, Fengguang Wu wrote:
+> > Greetings,
 > > 
-> > I think some of the changelog should show up here as comment in short
-> > form. I don't think it is obvious that why we are using __alloc_percpu()
-> > and why aligning to nearst higher power of 2 is needed here. Please also
-> > mention here which arches run into issues.
-> 
-> OK, I'll add it as a comment in the code. I'll see if I can make it
-> short but still understandable.
-> 
-> Thanks,
-> Petr Tesarik
-> 
-> > Thanks
-> > Vivek
+> > 0day kernel testing robot got the below dmesg and the first bad commit is
 > > 
-> > >  	if (!crash_notes) {
-> > >  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
-> > >  		return -ENOMEM;
-> > > -- 
-> > > 1.8.4.5
-> > > 
-> > > _______________________________________________
-> > > kexec mailing list
-> > > kexec@lists.infradead.org
-> > > http://lists.infradead.org/mailman/listinfo/kexec
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git nohz/fixes-v2
 > > 
-> > _______________________________________________
-> > kexec mailing list
-> > kexec@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/kexec
+> > commit 664c05b9ab2dd92aad807bd7f9aa273955949abe
+> > Author:     Frederic Weisbecker <fweisbec@gmail.com>
+> > AuthorDate: Sun Aug 17 22:02:55 2014 +0200
+> > Commit:     Frederic Weisbecker <fweisbec@gmail.com>
+> > CommitDate: Wed Sep 10 18:52:45 2014 +0200
+> > 
+> >     nohz: Consolidate nohz full init code
+> >     
+> >     The supports for CONFIG_NO_HZ_FULL_ALL=y and the nohz_full= kernel
+> >     parameter both have their own way to do the same thing: allocate
+> >     full dynticks cpumasks, fill them and initialize some state variables.
+> >     
+> >     Lets consolidate that all in the same place.
+> >     
+> >     While at it, convert some regular printk message to warnings when
+> >     fundamental allocations fail.
+> >     
+> >     Cc: Ingo Molnar <mingo@kernel.org>
+> >     Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >     Cc: Peter Zijlstra <peterz@infradead.org>
+> >     Cc: Thomas Gleixner <tglx@linutronix.de>
+> >     Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > 
+> > +-----------------------------------------------------------------+------------+------------+------------+
+> > |                                                                 | ed1fb75de3 | 664c05b9ab | dd99eb9cdf |
+> > +-----------------------------------------------------------------+------------+------------+------------+
+> > | boot_successes                                                  | 60         | 0          | 0          |
+> > | boot_failures                                                   | 0          | 20         | 23         |
+> 
+> So you tested ed1fb75de3 and 664c05b9ab with the same config that is in attachement, right?
+
+Yes.
+
+> I can't find what dd99eb9cdf refers to though.
+
+It's an internal merge-and-test branch head.
+
+> One more thing below:
+> 
+> > | WARNING:at_arch/x86/kernel/cpu/common.c:warn_pre_alternatives() | 0          | 20         | 22         |
+> > | BUG:kernel_boot_hang                                            | 0          | 20         | 22         |
+> > | backtrace:setup_default_timer_irq                               | 0          | 20         | 22         |
+> > | backtrace:hpet_time_init                                        | 0          | 20         | 22         |
+> > | backtrace:x86_late_time_init                                    | 0          | 20         | 22         |
+> > | WARNING:CPU:PID:at/kbuild/                                      | 0          | 1          |            |
+> > | WARNING:CPU:PID:at_arch/x86/k                                   | 0          | 1          |            |
+> > | WARNING:CPU:PID:at_arch/x86/kernel/cpu/common.c:warn_pre_al     | 0          | 0          | 1          |
+> > | BUG:kernel_boot_crashed                                         | 0          | 0          | 1          |
+> > +-----------------------------------------------------------------+------------+------------+------------+
+> > 
+> > [    0.000000] ----------------------------------------------------
+> > [    0.000000] hpet clockevent registered
+> > [    0.000000] ------------[ cut here ]------------
+> > [    0.000000] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1430 warn_pre_alternatives+0x1e/0x20()
+> > [    0.000000] You're using static_cpu_has before alternatives have run!
+> > [    0.000000] Modules linked in:
+> > [    0.000000] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.17.0-rc3-00007-g664c05b #840
+> > [    0.000000]  0000000000000009 ffff880012603d80 ffffffff89dfe8c6 ffff880012603dc8
+> > [    0.000000]  ffff880012603db8 ffffffff89a81df3 ffffffff8a414580 0000000000000000
+> > [    0.000000]  0000000000000000 0000000000000000 0000000000000000 ffff880012603e18
+> > [    0.000000] Call Trace:
+> > [    0.000000]  <IRQ>  [<ffffffff89dfe8c6>] dump_stack+0x4d/0x66
+> > [    0.000000]  [<ffffffff89a81df3>] warn_slowpath_common+0x73/0x90
+> > [    0.000000]  [<ffffffff89a81e57>] warn_slowpath_fmt+0x47/0x50
+> > [    0.000000]  [<ffffffff89acaadf>] ? rcu_check_callbacks+0x30f/0x7c0
+> > [    0.000000]  [<ffffffff89a1396e>] warn_pre_alternatives+0x1e/0x20
+> > [    0.000000]  [<ffffffff89aeddd5>] irq_work_tick+0x15/0x50
+> > [    0.000000]  [<ffffffff89acfae6>] update_process_times+0x56/0x70
+> > [    0.000000]  [<ffffffff89adae2b>] tick_periodic+0x2b/0xc0
+> > [    0.000000]  [<ffffffff89adb0d1>] ? tick_handle_periodic+0x21/0x60
+> > [    0.000000]  [<ffffffff89adb0d1>] tick_handle_periodic+0x21/0x60
+> > [    0.000000]  [<ffffffff89a05500>] timer_interrupt+0x10/0x20
+> > [    0.000000]  [<ffffffff89ac1ef4>] handle_irq_event_percpu+0x64/0x110
+> > [    0.000000]  [<ffffffff89ac1fd8>] handle_irq_event+0x38/0x60
+> > [    0.000000]  [<ffffffff89ac4c24>] handle_level_irq+0x74/0x110
+> > [    0.000000]  [<ffffffff89a04cf8>] handle_irq+0x58/0x150
+> > [    0.000000]  [<ffffffff89aa8e89>] ? vtime_account_idle+0x9/0x50
+> > [    0.000000]  [<ffffffff89aa8f0d>] ? vtime_common_account_irq_enter+0x3d/0x50
+> > [    0.000000]  [<ffffffff89a04598>] do_IRQ+0x48/0xe0
+> > [    0.000000]  [<ffffffff89e063ed>] common_interrupt+0x6d/0x6d
+> > [    0.000000]  <EOI>  [<ffffffff89a2f0a6>] ? native_restore_fl+0x6/0x10
+> > [    0.000000]  [<ffffffff89e04ea1>] _raw_spin_unlock_irqrestore+0x31/0x40
+> > [    0.000000]  [<ffffffff89ac3845>] __setup_irq+0x255/0x580
+> > [    0.000000]  [<ffffffff89ac3bac>] setup_irq+0x3c/0xa0
+> > [    0.000000]  [<ffffffff8a529998>] ? hpet_enable+0x29a/0x2cb
+> > [    0.000000]  [<ffffffff8a51cb9b>] setup_default_timer_irq+0x1e/0x20
+> > [    0.000000]  [<ffffffff8a51cbb4>] hpet_time_init+0x17/0x19
+> > [    0.000000]  [<ffffffff8a51cb76>] x86_late_time_init+0xa/0x11
+> > [    0.000000]  [<ffffffff8a51ad8c>] start_kernel+0x383/0x3f8
+> > [    0.000000]  [<ffffffff8a51a120>] ? early_idt_handlers+0x120/0x120
+> > [    0.000000]  [<ffffffff8a51a432>] x86_64_start_reservations+0x2a/0x2c
+> > [    0.000000]  [<ffffffff8a51a50b>] x86_64_start_kernel+0xd7/0xe4
+> 
+> So the issue here seems to be that something enabled irqs on boot way too early.
+> But I tried hard to reproduce that crash without success. So I wanted to ask you,
+> do you mind if I send you a patch to debug this?
+
+Never mind. Feel free to send me the patch.
+
+Thanks,
+Fengguang
