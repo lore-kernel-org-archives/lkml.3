@@ -1,131 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaIKOOK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:14:10 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:39393 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752063AbaIKOOJ (ORCPT
+	id S1755972AbaIKOO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:14:57 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:54300 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaIKOOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:14:09 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: sre@kernel.org, dbaryshkov@gmail.com, wmw2@infradead.org,
-        santosh.shilimkar@ti.com, maxime.ripard@free-electrons.com
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH] power: Make of_device_id array const
-Date: Thu, 11 Sep 2014 19:41:43 +0530
-Message-Id: <1410444703-27451-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 11 Sep 2014 10:14:55 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm/sl[aou]b: make kfree() aware of error pointers
+Organization: D03
+References: <alpine.LNX.2.00.1409092319370.5523@pobox.suse.cz>
+	<20140909162114.44b3e98cf925f125e84a8a06@linux-foundation.org>
+	<alpine.LNX.2.00.1409100702190.5523@pobox.suse.cz>
+	<20140910140759.GC31903@thunk.org>
+	<alpine.LNX.2.00.1409101625160.5523@pobox.suse.cz>
+	<20140910152104.GS6549@mwanda>
+	<alpine.LNX.2.00.1409101725340.5523@pobox.suse.cz>
+X-Hashcash: 1:20:140911:rientjes@google.com::hwfXaVXZtuFVlfjY:0000000000000000000000000000000000000000000dVy
+X-Hashcash: 1:20:140911:dan.carpenter@oracle.com::8zaBEDlJURSbTx3V:00000000000000000000000000000000000001WIX
+X-Hashcash: 1:20:140911:penberg@kernel.org::SVnYtQDgdJ1qpljg:00000000000000000000000000000000000000000001pbi
+X-Hashcash: 1:20:140911:linux-mm@kvack.org::q2H+6A4zT5X5bf9p:000000000000000000000000000000000000000000027S/
+X-Hashcash: 1:20:140911:tytso@mit.edu::O7/9uOQImhj14LOe:00002u1W
+X-Hashcash: 1:20:140911:akpm@linux-foundation.org::drREVqEvbR/IWO85:0000000000000000000000000000000000003KOd
+X-Hashcash: 1:20:140911:linux-kernel@vger.kernel.org::IR37SSLVCLKY32T2:0000000000000000000000000000000006SK3
+X-Hashcash: 1:20:140911:iamjoonsoo.kim@lge.com::ocirWd8Xx0rckZ8Q:0000000000000000000000000000000000000006peB
+X-Hashcash: 1:20:140911:cl@linux.com::mT/FNuWM8iXw7vjr:0000094pj
+X-Hashcash: 1:20:140911:jkosina@suse.cz::oC2oSmmfFORyJuyt:00AYBv
+Date: Thu, 11 Sep 2014 16:14:52 +0200
+In-Reply-To: <alpine.LNX.2.00.1409101725340.5523@pobox.suse.cz> (Jiri Kosina's
+	message of "Wed, 10 Sep 2014 17:28:11 +0200 (CEST)")
+Message-ID: <87oaumdz1f.fsf@rasmusvillemoes.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make of_device_id array const, because all OF functions handle it as const.
+On Wed, Sep 10 2014, Jiri Kosina <jkosina@suse.cz> wrote:
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- drivers/power/charger-manager.c         |    2 +-
- drivers/power/reset/hisi-reboot.c       |    2 +-
- drivers/power/reset/keystone-reset.c    |    2 +-
- drivers/power/reset/sun6i-reboot.c      |    2 +-
- drivers/power/reset/vexpress-poweroff.c |    2 +-
- drivers/power/reset/xgene-reboot.c      |    2 +-
- drivers/power/tps65090-charger.c        |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
+> On Wed, 10 Sep 2014, Dan Carpenter wrote:
+>
+>> > BTW if we stretch this argument a little bit more, we should also kill the 
+>> > ZERO_OR_NULL_PTR() check from kfree() and make it callers responsibility 
+>> > to perform the checking only if applicable ... we are currently doing a 
+>> > lot of pointless checking in cases where caller would be able to guarantee 
+>> > that the pointer is going to be non-NULL.
+>> 
+>> What you're saying is that we should remove the ZERO_SIZE_PTR
+>> completely.  ZERO_SIZE_PTR is a very useful idiom and also it's too late
+>> to remove it because everything depends on it.
+>
+> I was just argumenting that if we care about single additional test in 
+> this path, the ZERO_OR_NULL_PTR() should have never been added at the 
+> first place, and the responsibility for checking should have been kept at 
+> callers.
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 9e4dab4..eea4dad 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1529,7 +1529,7 @@ static int cm_init_thermal_data(struct charger_manager *cm)
- 	return ret;
- }
- 
--static struct of_device_id charger_manager_match[] = {
-+static const struct of_device_id charger_manager_match[] = {
- 	{
- 		.compatible = "charger-manager",
- 	},
-diff --git a/drivers/power/reset/hisi-reboot.c b/drivers/power/reset/hisi-reboot.c
-index 0c91d02..df2ad92 100644
---- a/drivers/power/reset/hisi-reboot.c
-+++ b/drivers/power/reset/hisi-reboot.c
-@@ -52,7 +52,7 @@ static int hisi_reboot_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id hisi_reboot_of_match[] = {
-+static const struct of_device_id hisi_reboot_of_match[] = {
- 	{ .compatible = "hisilicon,sysctrl" },
- 	{}
- };
-diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
-index 408a18f..a8c22c3 100644
---- a/drivers/power/reset/keystone-reset.c
-+++ b/drivers/power/reset/keystone-reset.c
-@@ -62,7 +62,7 @@ static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
- 			   RSCTRL_RESET_MASK, 0);
- }
- 
--static struct of_device_id rsctrl_of_match[] = {
-+static const struct of_device_id rsctrl_of_match[] = {
- 	{.compatible = "ti,keystone-reset", },
- 	{},
- };
-diff --git a/drivers/power/reset/sun6i-reboot.c b/drivers/power/reset/sun6i-reboot.c
-index af2cd7f..b3b010f 100644
---- a/drivers/power/reset/sun6i-reboot.c
-+++ b/drivers/power/reset/sun6i-reboot.c
-@@ -70,7 +70,7 @@ static int sun6i_reboot_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id sun6i_reboot_of_match[] = {
-+static const struct of_device_id sun6i_reboot_of_match[] = {
- 	{ .compatible = "allwinner,sun6i-a31-wdt" },
- 	{}
- };
-diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
-index 4dc102e2..c199d34 100644
---- a/drivers/power/reset/vexpress-poweroff.c
-+++ b/drivers/power/reset/vexpress-poweroff.c
-@@ -72,7 +72,7 @@ DEVICE_ATTR(active, S_IRUGO | S_IWUSR, vexpress_reset_active_show,
- 
- enum vexpress_reset_func { FUNC_RESET, FUNC_SHUTDOWN, FUNC_REBOOT };
- 
--static struct of_device_id vexpress_reset_of_match[] = {
-+static const struct of_device_id vexpress_reset_of_match[] = {
- 	{
- 		.compatible = "arm,vexpress-reset",
- 		.data = (void *)FUNC_RESET,
-diff --git a/drivers/power/reset/xgene-reboot.c b/drivers/power/reset/xgene-reboot.c
-index ecd55f8..b5542bf 100644
---- a/drivers/power/reset/xgene-reboot.c
-+++ b/drivers/power/reset/xgene-reboot.c
-@@ -83,7 +83,7 @@ static int xgene_reboot_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id xgene_reboot_of_match[] = {
-+static const struct of_device_id xgene_reboot_of_match[] = {
- 	{ .compatible = "apm,xgene-reboot" },
- 	{}
- };
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index 3e8ba97..48e402f 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -344,7 +344,7 @@ static int tps65090_charger_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id of_tps65090_charger_match[] = {
-+static const struct of_device_id of_tps65090_charger_match[] = {
- 	{ .compatible = "ti,tps65090-charger", },
- 	{ /* end */ }
- };
--- 
-1.7.9.5
+I think it makes a lot of sense to have the domain of kfree() be exactly
+the codomain of kmalloc() and friends. That is, what is acceptable to
+pass to kfree() is exactly the set of values that might be returned from
+kmalloc() et al. Those include NULL and the very useful unique
+zero-sized "object" ZERO_SIZE_PTR, but does not include any ERR_PTR().
 
+Having every caller of kfree() check for NULL would bloat the code size
+considerably, and it seems that these checks are being actively removed.
+
+Rasmus
