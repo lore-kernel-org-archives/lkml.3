@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaIKTR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:17:58 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:46230 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaIKTR5 (ORCPT
+	id S1755568AbaIKTSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:18:36 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:50320 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaIKTSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:17:57 -0400
-Date: Thu, 11 Sep 2014 15:17:51 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v5 10/12] sched: get CPU's utilization statistic
-In-Reply-To: <20140911140444.GH4783@worktop.ger.corp.intel.com>
-Message-ID: <alpine.LFD.2.11.1409111443570.16533@knanqh.ubzr>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-11-git-send-email-vincent.guittot@linaro.org> <20140911123412.GY3190@worktop.ger.corp.intel.com> <CAKfTPtBbjpCFifoyFSh8Hb3nBZFFTjjxdfxnpMk=CHy5aX1qpg@mail.gmail.com>
- <20140911140444.GH4783@worktop.ger.corp.intel.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 11 Sep 2014 15:18:34 -0400
+Date: Thu, 11 Sep 2014 12:18:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: roy.qing.li@gmail.com
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, fabf@skynet.be,
+        jkosina@suse.cz, paulmck@linux.vnet.ibm.com, richard@nod.at,
+        oleg@redhat.com, akpm@linux-foundation.org
+Subject: Re: [RFC][PATCH] signal: replace !likely with unlikely!
+Message-ID: <20140911191830.GA31511@roeck-us.net>
+References: <1410396496-13845-1-git-send-email-roy.qing.li@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410396496-13845-1-git-send-email-roy.qing.li@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Peter Zijlstra wrote:
-
-> On Thu, Sep 11, 2014 at 03:07:52PM +0200, Vincent Guittot wrote:
-> > > Also I'm not entirely sure I like the usage, utilization names/metrics.
-> > > I would suggest to reverse them. Call the pure running number
-> > > 'utilization' and this scaled with capacity 'usage' or so.
-> > 
-> > ok. i can invert 'usage' and 'utilization', which will give
-> > 
-> > s/get_cpu_utilization/get_cpu_usage/
-> > s/sgs->group_utilization/sgs->group_usage/
-> > s/cfs.usage_load_avg/cfs.utilization_load_avg/
-> > s/se->avg.usage_avg_contrib/se->avg.utilization_avg_contrib
-> > s/__update_task_entity_usage/__update_task_entity_utilization
-> > s/__update_entity_usage_avg_contrib/__update_entity_utilization_avg_contrib
-> > 
+On Thu, Sep 11, 2014 at 08:48:16AM +0800, roy.qing.li@gmail.com wrote:
+> From: Li RongQing <roy.qing.li@gmail.com> 
 > 
-> Any other opinions before Vince goes and applies sed on patches? ;-)
+> !likely() is hard to be understood, and I do not know if compiler can
+> optimise this condition, but unlikely(!()) is clear
+> 
+> Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+> ---
+>  kernel/signal.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 8f0876f..6156cfa 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -1571,7 +1571,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
+>  	BUG_ON(!(q->flags & SIGQUEUE_PREALLOC));
+>  
+>  	ret = -1;
+> -	if (!likely(lock_task_sighand(t, &flags)))
+> +	if (unlikely(!lock_task_sighand(t, &flags)))
 
-I don't mind either way, but for sure someone (possibly me) is going to 
-confuse the two soon enough.
+I wonder if you tested this code. Seems to be unlikely (punt not intended).
 
-Please include in the code some formal definition in the context of the 
-scheduler.  A comment block right before the corresponding get_cpu_* 
-accessors should be good enough.
+Guenter
 
-
-Nicolas
+>  		goto ret;
+>  
+>  	ret = 1; /* the signal is ignored */
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
