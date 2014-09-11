@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612AbaIKR5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:57:37 -0400
-Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:58422
-	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751053AbaIKR5g convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:57:36 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/48] staging: comedi: avoid using comedi_board()
-Thread-Topic: [PATCH 00/48] staging: comedi: avoid using comedi_board()
-Thread-Index: AQHPzBidpyB9E37aHUyfPTFUHQsjBpv8NngQ
-Date: Thu, 11 Sep 2014 17:57:34 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F9872E@P3PWEX4MB008.ex4.secureserver.net>
-References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753532AbaIKR6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:58:15 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34574 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaIKR6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 13:58:13 -0400
 MIME-Version: 1.0
+In-Reply-To: <1410343554-8383-3-git-send-email-kever.yang@rock-chips.com>
+References: <1410343554-8383-1-git-send-email-kever.yang@rock-chips.com>
+	<1410343554-8383-3-git-send-email-kever.yang@rock-chips.com>
+Date: Thu, 11 Sep 2014 10:58:12 -0700
+X-Google-Sender-Auth: GT5ffIgkzzOqSc_sjuKYP6CQOpg
+Message-ID: <CAD=FV=U3gqMeCp_z_uML3iPc6GC_nnYL9v6qwux2PQ5wzrbdwQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: dts: add intmem node for rk3288 smp support
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, September 09, 2014 3:26 AM, Ian Abbott wrote:
-> The `comedi_board` inline function takes a single parameter of type
-> `struct comedi_device *` and merely returns the value of the `board_ptr`
-> member therein.  This is somewhat superfluous as the member can be
-> accessed directly.
+Kever,
+
+On Wed, Sep 10, 2014 at 3:05 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> This patch add intmem node des which is needed by platsmp.c
+> and enable the smp.
 >
-> Replace all uses of `comedi_board(dev)` with `dev->board_ptr`.
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
 >
-> Note, if there are any conflicts when applying this series, they can
-> just be skipped for now and corrected later.
+>  arch/arm/boot/dts/rk3288.dtsi | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
 >
-> A subsequent patch will remove the `comedi_board` function, once there
-> is nothing using it.
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index dca586e..562ec5f 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -40,6 +40,7 @@
+>                 #address-cells = <1>;
+>                 #size-cells = <0>;
+>
+> +               enable-method = "rockchip,rk3288-smp";
+>                 cpu@500 {
+>                         device_type = "cpu";
+>                         compatible = "arm,cortex-a12";
+> @@ -353,6 +354,23 @@
+>                 status = "disabled";
+>         };
+>
+> +       bus_intmem@ff700000 {
+> +               compatible = "mmio-sram";
+> +               reg = <0xff700000 0x18000>;
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               ranges = <0 0xff700000 0x18000>;
+> +                       smp-sram@0 {
 
-Greg,
+nit: I think the "smp-sram@0" line is indented one too many tabs.
 
-Just wanted to give you a heads up on this series and the ones I have
-posted. The series are:
-
->From Ian, [PATCH 00/48] staging: comedi: avoid using comedi_board()
->From me, [PATCH 00/30] staging: comedi: adl_pci9118: continue cleanup
->From me, [PATCH 00/34] staging: comedi: cleanup async cmd->stop_{src,arg} usage
-
-There are a couple conflicts between the series from Ian and my two.
-If you drop these two from Ian's series:
- 
-06) staging: comedi: adl_pci9118: replace comedi_board() calls
-10) staging: comedi: amplc_dio200_common: replace comedi_board() calls
-
-The rest will apply cleanly in the order above (assuming I didn't miss anything).
-
-Also, Ian had a couple issues with patch 07/34 and 08/34 from the last
-series I posted. I already asked if you could drop those two. I needed I
-will repost the series.
-
-Thanks,
-Hartley
-
+I haven't done a full review of this series yet, though...
