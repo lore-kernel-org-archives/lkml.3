@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaIKMbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:31:40 -0400
-Received: from zimbra13.linbit.com ([212.69.166.240]:47847 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013AbaIKM3S (ORCPT
+	id S1754931AbaIKMdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:33:09 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:51544 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754377AbaIKMdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:29:18 -0400
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: drbd-dev@lists.linbit.com
-Subject: [PATCH 9/9] drbd: Add missing newline in resync progress display in /proc/drbd
-Date: Thu, 11 Sep 2014 14:29:13 +0200
-Message-Id: <1410438553-30440-10-git-send-email-philipp.reisner@linbit.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
-References: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
+	Thu, 11 Sep 2014 08:33:05 -0400
+Message-ID: <5411967A.6090406@hurleysoftware.com>
+Date: Thu, 11 Sep 2014 08:32:58 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de>
+In-Reply-To: <54118AAB.2010205@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Was broken in 2010 with commit 4b0715f096
+On 09/11/2014 07:42 AM, Sebastian Andrzej Siewior wrote:
+> I also need a watchdog timer for TX since it seems that on omap3 the
+> DMA engine suddenly forgets to continue with DMA…
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
----
- drivers/block/drbd/drbd_proc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+One difference I noticed between the omap driver and the 8250 driver is
+the way modem status interrupts are handled.
 
-diff --git a/drivers/block/drbd/drbd_proc.c b/drivers/block/drbd/drbd_proc.c
-index 06e6147..3b10fa6 100644
---- a/drivers/block/drbd/drbd_proc.c
-+++ b/drivers/block/drbd/drbd_proc.c
-@@ -142,10 +142,12 @@ static void drbd_syncer_progress(struct drbd_device *device, struct seq_file *se
- 			    (unsigned long) Bit2KB(rs_left >> 10),
- 			    (unsigned long) Bit2KB(rs_total >> 10));
- 	else
--		seq_printf(seq, "(%lu/%lu)K\n\t",
-+		seq_printf(seq, "(%lu/%lu)K",
- 			    (unsigned long) Bit2KB(rs_left),
- 			    (unsigned long) Bit2KB(rs_total));
- 
-+	seq_printf(seq, "\n\t");
-+
- 	/* see drivers/md/md.c
- 	 * We do not want to overflow, so the order of operands and
- 	 * the * 100 / 100 trick are important. We do a +1 to be
--- 
-1.9.1
+The omap driver only checks modem status for the UART_IIR_MSI interrupt type.
+The 8250 driver checks modem status at every interrupt (other than NO_INT).
 
+I think the UART_MSR_DCTS bit always reflects that the CTS input has changed
+between reads of the MSR _even if auto CTS is on_. So perhaps the hardware
+is being stopped by uart_handle_cts_change() when auto CTS is on?
+
+Regards,
+Peter Hurley
+
+[The UPF_HARD_FLOW thing was pretty much just done for omap even though
+8250 already had auto CTS/auto RTS. Serial core hardware flow control support
+needs a redo as drivers have pretty much tacked stuff on randomly.]
