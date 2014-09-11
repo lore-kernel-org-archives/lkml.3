@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaIKMp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:45:27 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39245 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755437AbaIKMeI (ORCPT
+	id S1756028AbaIKMpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:45:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51646 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755434AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
-Message-ID: <541196BB.60407@hurleysoftware.com>
-Date: Thu, 11 Sep 2014 08:34:03 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>	<20140911000343.GA5328@kroah.com>	<5410E8A2.5030802@hurleysoftware.com> <20140911111930.7227abbf@alan.etchedpixels.co.uk>
-In-Reply-To: <20140911111930.7227abbf@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.237556331@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 043/131] netlabel: use GFP flags from caller instead
+ of GFP_ATOMIC
+In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 06:19 AM, One Thousand Gnomes wrote:
->> It's not common knowledge (and its certainly counterintuitive) that
->> turning off output when output is already turned off (ie., tcflow(TCOOFF))
->> is the required trickery to unwedge a terminal.
->>
->> Unwedging directly seems the straightforward approach.
-> 
-> Putting the off/on in the man page might be safer still ?
+3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
 
-That's my plan if this patch fails to launch.
+------------------
 
-Regards,
-Peter Hurley
+From: Dan Carpenter <dan.carpenter@oracle.com>
+
+commit 64b5fad526f63e9b56752a7e8e153b99ec0ddecd upstream.
+
+This function takes a GFP flags as a parameter, but they are never used.
+We don't take a lock in this function so there is no reason to prefer
+GFP_ATOMIC over the caller's GFP flags.
+
+There is only one caller, cipso_v4_map_cat_rng_ntoh(), and it passes
+GFP_ATOMIC as the GFP flags so this doesn't change how the code works.
+It's just a cleanup.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/netlabel/netlabel_kapi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/netlabel/netlabel_kapi.c
++++ b/net/netlabel/netlabel_kapi.c
+@@ -597,7 +597,7 @@ int netlbl_secattr_catmap_setrng(struct
+ 			iter = iter->next;
+ 			iter_max_spot = iter->startbit + NETLBL_CATMAP_SIZE;
+ 		}
+-		ret_val = netlbl_secattr_catmap_setbit(iter, spot, GFP_ATOMIC);
++		ret_val = netlbl_secattr_catmap_setbit(iter, spot, flags);
+ 	}
+ 
+ 	return ret_val;
 
