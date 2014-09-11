@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510AbaIKEdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 00:33:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33122 "EHLO mail.zytor.com"
+	id S1752205AbaIKEdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 00:33:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33121 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbaIKEdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751344AbaIKEdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 00:33:44 -0400
-Message-ID: <54112607.8000507@zytor.com>
+Message-ID: <54112607.9030303@zytor.com>
 Date: Wed, 10 Sep 2014 21:33:11 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
