@@ -1,125 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaIKTJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:09:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57361 "EHLO arroyo.ext.ti.com"
+	id S1755245AbaIKTJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:09:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41859 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753876AbaIKTJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:09:33 -0400
-Message-ID: <5411F356.2090405@ti.com>
-Date: Thu, 11 Sep 2014 15:09:10 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <bhelgaas@google.com>, <arnd@arndb.de>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 1/2] PCI: keystone: remove handle of PCI mode configuration
-References: <1410369159-11564-1-git-send-email-m-karicheri2@ti.com>
-In-Reply-To: <1410369159-11564-1-git-send-email-m-karicheri2@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755098AbaIKTJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 15:09:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
+   d="scan'208";a="571925959"
+From: kan.liang@intel.com
+To: acme@kernel.org, jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V6 3/3] perf tools: Add support to new style format of kernel PMU event
+Date: Thu, 11 Sep 2014 15:08:59 -0400
+Message-Id: <1410462539-5468-4-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
+References: <1410462539-5468-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 01:12 PM, Murali Karicheri wrote:
-> Keystone PCI hardware supports both RC and EP modes and devcfg
-> register has bits to boot strap the device to either of these modes.
-> It seems proper to add this functionality to the boot loader rather
-> than in the driver as device will be operating in either mode, not
-> both any time. Currently the driver supports only RC mode and hence
-> register configuration in the driver is not needed and driver can
-> assume this is a RC hardware.
->
-> Also update the DT documentation accordingly.
->
-> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
-> Acked-by: Arnd Bergmann<arnd@arndb.de>
-> ---
-> 	v3 - No change
-> 	v2 - Added this separate patch to remove pci mode handling
->   .../devicetree/bindings/pci/pci-keystone.txt       |    4 +---
->   drivers/pci/host/pci-keystone.c                    |   21 ++------------------
->   2 files changed, 3 insertions(+), 22 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/pci/pci-keystone.txt b/Documentation/devicetree/bindings/pci/pci-keystone.txt
-> index ceb3e24..bedacf0 100644
-> --- a/Documentation/devicetree/bindings/pci/pci-keystone.txt
-> +++ b/Documentation/devicetree/bindings/pci/pci-keystone.txt
-> @@ -13,9 +13,7 @@ Required Properties:-
->
->   compatibility: "ti,keystone-pcie"
->   reg:	index 1 is the base address and length of DW application registers.
-> -	index 2 is the base address and length of PCI mode configuration
-> -	register.
-> -	index 3 is the base address and length of PCI device ID register.
-> +	index 2 is the base address and length of PCI device ID register.
->
->   pcie_msi_intc : Interrupt controller device node for MSI IRQ chip
->   	interrupt-cells: should be set to 1
-> diff --git a/drivers/pci/host/pci-keystone.c b/drivers/pci/host/pci-keystone.c
-> index ff8ed25..f1119eb 100644
-> --- a/drivers/pci/host/pci-keystone.c
-> +++ b/drivers/pci/host/pci-keystone.c
-> @@ -35,10 +35,6 @@
->   #define MAX_MSI_HOST_IRQS		8
->   #define MAX_LEGACY_HOST_IRQS		4
->
-> -/* RC mode settings masks */
-> -#define PCIE_RC_MODE		BIT(2)
-> -#define PCIE_MODE_MASK		(BIT(1) | BIT(2))
-> -
->   /* DEV_STAT_CTRL */
->   #define PCIE_CAP_BASE		0x70
->
-> @@ -355,7 +351,6 @@ static int __init ks_pcie_probe(struct platform_device *pdev)
->   	void __iomem *reg_p;
->   	struct phy *phy;
->   	int ret = 0;
-> -	u32 val;
->
->   	ks_pcie = devm_kzalloc(&pdev->dev, sizeof(*ks_pcie),
->   				GFP_KERNEL);
-> @@ -365,18 +360,6 @@ static int __init ks_pcie_probe(struct platform_device *pdev)
->   	}
->   	pp =&ks_pcie->pp;
->
-> -	/* index 2 is the devcfg register for RC mode settings */
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-> -	reg_p = devm_ioremap_resource(dev, res);
-> -	if (IS_ERR(reg_p))
-> -		return PTR_ERR(reg_p);
-> -
-> -	/* enable RC mode in devcfg */
-> -	val = readl(reg_p);
-> -	val&= ~PCIE_MODE_MASK;
-> -	val |= PCIE_RC_MODE;
-> -	writel(val, reg_p);
-> -
->   	/* initialize SerDes Phy if present */
->   	phy = devm_phy_get(dev, "pcie-phy");
->   	if (!IS_ERR_OR_NULL(phy)) {
-> @@ -385,8 +368,8 @@ static int __init ks_pcie_probe(struct platform_device *pdev)
->   			return ret;
->   	}
->
-> -	/* index 3 is to read PCI DEVICE_ID */
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
-> +	/* index 2 is to read PCI DEVICE_ID */
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 2);
->   	reg_p = devm_ioremap_resource(dev, res);
->   	if (IS_ERR(reg_p))
->   		return PTR_ERR(reg_p);
-Bjorn,
+From: Kan Liang <kan.liang@intel.com>
 
-These patches need to go onto host-keystone as well for v3.18. If you 
-you have any comments, please let me know so that I can address them. I 
-have incorporated comments from Arnd already.
+Add new rules for kernel PMU event.
 
-Thanks.
+Currently, the patch only want to handle the PMU event name as "a-b" and
+"a".
 
-Murali
+event_pmu:
+PE_KERNEL_PMU_EVENT
+|
+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
+
+PE_KERNEL_PMU_EVENT token is for
+cycles-ct/cycles-t/mem-loads/mem-stores.
+The prefix cycles is mixed up with cpu-cycles.
+loads and stores are mixed up with cache event
+So they have to be hardcode in lex.
+
+PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU
+events.
+The lex looks generic identifier up in the table and return the matched
+token. If there is no match, generic PE_NAME token will be return.
+
+Using the rules, kernel PMU event could use new style format without //
+
+so you can use
+
+perf record -e mem-loads ...
+
+instead of
+
+perf record -e cpu/mem-loads/
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ tools/perf/util/parse-events.l | 30 +++++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.y | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..ea970cf 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -51,6 +51,24 @@ static int str(yyscan_t scanner, int token)
+ 	return token;
+ }
+ 
++static int pmu_str_check(yyscan_t scanner)
++{
++	YYSTYPE *yylval = parse_events_get_lval(scanner);
++	char *text = parse_events_get_text(scanner);
++
++	yylval->str = strdup(text);
++	switch (perf_pmu__parse_check(text)) {
++		case KERNEL_PMU_EVENT_PREFIX:
++			return PE_PMU_EVENT_PRE;
++		case KERNEL_PMU_EVENT_SUFFIX:
++			return PE_PMU_EVENT_SUF;
++		case KERNEL_PMU_EVENT:
++			return PE_KERNEL_PMU_EVENT;
++		default:
++			return PE_NAME;
++	}
++}
++
+ static int sym(yyscan_t scanner, int type, int config)
+ {
+ 	YYSTYPE *yylval = parse_events_get_lval(scanner);
+@@ -178,6 +196,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
+ emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
+ dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
+ 
++	/*
++	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
++	 * Because the prefix cycles is mixed up with cpu-cycles.
++	 * loads and stores are mixed up with cache event
++	 */
++cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++
+ L1-dcache|l1-d|l1d|L1-data		|
+ L1-icache|l1-i|l1i|L1-instruction	|
+ LLC|L2					|
+@@ -199,7 +227,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_hex}		{ return value(yyscanner, 16); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+-{name}			{ return str(yyscanner, PE_NAME); }
++{name}			{ return pmu_str_check(yyscanner); }
+ "/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+ ,			{ BEGIN(event); return ','; }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 55fab6a..3f26c03 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
+ %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
+ %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
+ %token PE_ERROR
++%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> PE_VALUE
+ %type <num> PE_VALUE_SYM_HW
+ %type <num> PE_VALUE_SYM_SW
+@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
+ %type <str> PE_MODIFIER_EVENT
+ %type <str> PE_MODIFIER_BP
+ %type <str> PE_EVENT_NAME
++%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> value_sym
+ %type <head> event_config
+ %type <term> event_term
+@@ -220,6 +222,44 @@ PE_NAME '/' '/'
+ 	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
+ 	$$ = list;
+ }
++|
++PE_KERNEL_PMU_EVENT
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
++|
++PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++	char pmu_name[128];
++	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					&pmu_name, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
+ 
+ value_sym:
+ PE_VALUE_SYM_HW
+-- 
+1.8.3.2
+
