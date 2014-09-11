@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaIKOsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:48:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41048 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaIKOsK (ORCPT
+	id S1755793AbaIKOtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:49:15 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22696 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752400AbaIKOtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:48:10 -0400
-Date: Thu, 11 Sep 2014 16:47:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [RFC Part1 v1 07/18] x86, irq: Introduce helpers to access struct
- irq_cfg
-In-Reply-To: <alpine.DEB.2.10.1409111126410.4178@nanos>
-Message-ID: <alpine.DEB.2.10.1409111647000.4178@nanos>
-References: <1410423905-26239-1-git-send-email-jiang.liu@linux.intel.com> <1410423905-26239-8-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409111126410.4178@nanos>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 11 Sep 2014 10:49:10 -0400
+Message-Id: <20140911144744.907770249@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 11 Sep 2014 10:47:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 0/9] ftrace: 3.18 queue
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Thomas Gleixner wrote:
-> On Thu, 11 Sep 2014, Jiang Liu wrote:
-> > -static inline struct irq_cfg *irq_cfg(unsigned int irq)
-> > +struct irq_cfg *irq_cfg(unsigned int irq)
-> >  {
-> >  	return irq_get_chip_data(irq);
-> >  }
-> >  
-> > +struct irq_cfg *irqd_cfg(struct irq_data *irq_data)
-> > +{
-> > +	return irq_data->chip_data;
-> > +}
-> 
-> We can make those inlines. There is no point to have that as global
-> functions.
 
-Never mind. Just reading the other patch set.....
+This is my current queue for 3.18. The main update is a rewrite of the
+trampoline accounting to get rid of the large memory usage needed
+when having a trampoline for all functions (the current method creates
+a descriptor for each function). The new way uses the current logic
+of the hash tables, where an empty hash can mean all functions and
+also the use of the notrace hash for all but a few functions.
+
+OFF TOPIC:
+
+As some of you may know, I've recently been having chronic pain
+in my upper back, shoulder and down the arm. This has not let up, although
+the narcotic drugs and steroids I've been prescribed has helped a lot.
+Technically, I'm not suppose to be using a computer at all. But I couldn't
+help myself and spent a few minutes here and there working on getting
+these patches to pass all my tests. Note that I usually paid for that
+work with an hour or so of more pain down the arm. There is a good chance
+I will be having spinal surgery in the near future to remove the problem
+cervical discs and have those vertebra fused. Hopefully, I will be back
+to 100% shortly afterward. But until then, I will still be on hiatus from
+the community again. But hopefully not for too long.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+for-next
+
+Head SHA1: fb5a613b4f310d6d520daf295547ab35b0ac58a3
+
+
+Andreea-Cristina Bernat (1):
+      kernel: trace_syscalls: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
+
+Dave Hansen (1):
+      tracing: generate RCU warnings even when tracepoints are disabled
+
+Steven Rostedt (Red Hat) (7):
+      ftrace: Add separate function for non recursive callbacks
+      ftrace: Add helper function ftrace_ops_get_func()
+      ftrace: Set callback to ftrace_stub when no ops are registered
+      ftrace: Remove freeing of old_hash from ftrace_hash_move()
+      ftrace: Grab any ops for a rec for enabled_functions output
+      ftrace: Annotate the ops operation on update
+      ftrace: Replace tramp_hash with old_*_hash to save space
+
+----
+ include/linux/ftrace.h        |  10 +-
+ include/linux/tracepoint.h    |  11 ++
+ kernel/trace/ftrace.c         | 401 ++++++++++++++++++++++++------------------
+ kernel/trace/trace_syscalls.c |   4 +-
+ 4 files changed, 248 insertions(+), 178 deletions(-)
