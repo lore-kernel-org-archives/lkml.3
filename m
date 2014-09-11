@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaIKTyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:54:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42864 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaIKTyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:54:37 -0400
-Date: Thu, 11 Sep 2014 12:54:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Feiner <pfeiner@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH] mm: softdirty: unmapped addresses between VMAs are
- clean
-Message-Id: <20140911125436.51338d98e8e84abacc418aff@linux-foundation.org>
-In-Reply-To: <20140911054104.GA31069@google.com>
-References: <1410391486-9106-1-git-send-email-pfeiner@google.com>
-	<20140910163628.66302ac77f7835ba5df2f49c@linux-foundation.org>
-	<20140911054104.GA31069@google.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754231AbaIKTyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:54:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16278 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753958AbaIKTyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 15:54:47 -0400
+Message-ID: <5411FDE1.3060302@redhat.com>
+Date: Thu, 11 Sep 2014 21:54:09 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Alexei Starovoitov <ast@plumgrid.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com> <CALCETrVBb_uQZpodv67XSTGVU40y6+9Ktw=3zAJgGV2mNJ=_0A@mail.gmail.com> <CAMEtUuyY0L2=tz5mSvQqR_=_oN18nA6V9fdbR8OiYTPbQth8AQ@mail.gmail.com>
+In-Reply-To: <CAMEtUuyY0L2=tz5mSvQqR_=_oN18nA6V9fdbR8OiYTPbQth8AQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014 22:41:04 -0700 Peter Feiner <pfeiner@google.com> wrote:
+On 09/10/2014 10:21 PM, Alexei Starovoitov wrote:
+...
+>>>                char bpf_log_buf[LOG_BUF_SIZE];
+>>
+>> What happens if the size isn't LOG_BUF_SIZE?
+>
+> would do you mean?
+> LOG_BUF_SIZE is just a user defined macro.
+> Can be anything.
 
-> On Wed, Sep 10, 2014 at 04:36:28PM -0700, Andrew Morton wrote:
-> > On Wed, 10 Sep 2014 16:24:46 -0700 Peter Feiner <pfeiner@google.com> wrote:
-> > > @@ -1048,32 +1048,51 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
-> > > +	while (1) {
-> > > +		unsigned long vm_start = end;
-> > 
-> > Did you really mean to do that?  If so, perhaps a little comment to
-> > explain how it works?
-> 
-> It's the same idea that I used in the pagemap_pte_hole patch that I submitted
-> today: if vma is NULL, then we fill in the pagemap from (addr) to (end) with
-> non-present pagemap entries. 
-> 
-> Should I submit a v2 with a comment?
+I believe, Andy means, what would happen if log_level > 0 but
+the log_size is not big enough so that the human-readable error
+text string from the verifier will fit into it? I presume that
+will be truncated then ... hm.
 
-I spent quite some time staring at that code wondering wtf, so anything
-you can do to clarify it would be good.
-
-I think a better name would be plain old "start", to communicate that
-it's just a local convenience variable.  "vm_start" means "start of a
-vma" and that isn't accurate in this context; in fact it is misleading.
-
+> it's passed along with pointer:
+>                         .log_buf = bpf_log_buf,
+>                         .log_size = LOG_BUF_SIZE,
+>                         .log_level = 1,
