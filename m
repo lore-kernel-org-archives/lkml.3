@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaIKWhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:37:06 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24851 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaIKWhD (ORCPT
+	id S1754615AbaIKWhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:37:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44285 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaIKWho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:37:03 -0400
-Message-ID: <541223F9.2090500@oracle.com>
-Date: Thu, 11 Sep 2014 18:36:41 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 11 Sep 2014 18:37:44 -0400
+Date: Thu, 11 Sep 2014 15:37:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: repeated bugs in new rtl wifi drivers
+Message-ID: <20140911223744.GA21531@kroah.com>
+References: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: kirill.shutemov@linux.intel.com, khlebnikov@openvz.org, riel@redhat.com,
-        mgorman@suse.de, n-horiguchi@ah.jp.nec.com, mhocko@suse.cz,
-        hughd@google.com, vbabka@suse.cz, walken@google.com,
-        minchan@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] mm: introduce VM_BUG_ON_MM
-References: <1410032326-4380-1-git-send-email-sasha.levin@oracle.com>	<1410032326-4380-2-git-send-email-sasha.levin@oracle.com> <20140911141629.e24f7fa5a2ec2401d4f3b429@linux-foundation.org>
-In-Reply-To: <20140911141629.e24f7fa5a2ec2401d4f3b429@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 05:16 PM, Andrew Morton wrote:
-> On Sat,  6 Sep 2014 15:38:45 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+On Thu, Sep 11, 2014 at 03:27:39PM -0700, Kees Cook wrote:
+> Hi,
 > 
->> Very similar to VM_BUG_ON_PAGE and VM_BUG_ON_VMA, dump struct_mm
->> when the bug is hit.
->>
->> ...
->>
->> +void dump_mm(const struct mm_struct *mm)
->> +{
->> +	printk(KERN_ALERT
+> I keep fixing this same bug that keeps showing up in the rtl wifi
+> drivers. CL_PRINTF keeps getting redefined (incorrectly) instead of
+> using a correctly fixed global. Is there a way to stop this from
+> happening again?
 > 
-> I'm not sure why we should use KERN_ALERT here - KERN_EMERG is for
-> "system is unusable", which is a fair descrition of a post-BUG kernel,
-> yes?
-
-Yes. I was following suit with dump_page and assumed there's a good reasoning
-behind KERN_ALERT.
-
->> +		"mm %p mmap %p seqnum %d task_size %lu\n"
->> +#ifdef CONFIG_MMU
->> +		"get_unmapped_area %p\n"
->> +#endif
+> Here are the past three (identical) fixes I've landed:
+> a3355a62673e2c4bd8617d2f07c8edee92a89b8d
+> 037526f1ae7eeff5cf27ad790ebfe30303eeebe8
+> 6437f51ec36af8ef1e3e2659439b35c37e5498e2
 > 
-> This printk is rather hilarious.  I can't think of a better way apart
-> from a great string of individual printks.
-> 
-> And maybe we should use individual printks - dump_mm() presently uses
-> 114 bytes of stack for that printk and that's somewhat of a concern
-> considering the situations when it will be called.
-> 
-> 
-> How's this look?
+> And the buildbot report below seems to show there are more to be made. :)
 
-Works for me.
+Until we figure out a way to keep having the whole rtl wifi driver as a
+duplicate of the previous driver before we cleaned it up, I don't know
+of a way to do this :(
 
+Larry, I know you keep talking to these developers, any chance anything
+is ever going to get better?  Anyone I can talk to?  Even in person, I
+go to Taiwan fairly often...
 
-Thanks,
-Sasha
+thanks,
 
+greg k-h
