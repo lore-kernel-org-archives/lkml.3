@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228AbaIKN04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:26:56 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:46870 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566AbaIKN0y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:26:54 -0400
-Date: Thu, 11 Sep 2014 06:25:09 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Chintan Pandya <cpandya@codeaurora.org>
-cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+	id S1754775AbaIKN3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:29:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51179 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaIKN3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 09:29:17 -0400
+Date: Thu, 11 Sep 2014 10:29:11 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-In-Reply-To: <541156C9.1080203@codeaurora.org>
-Message-ID: <alpine.LSU.2.11.1409110609320.2465@eggly.anvils>
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
- <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <alpine.LSU.2.11.1409091225310.8432@eggly.anvils> <541156C9.1080203@codeaurora.org>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
+ cookie with each entry
+Message-ID: <20140911132911.GB10158@kernel.org>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <1410358129-9965-14-git-send-email-acme@kernel.org>
+ <20140911103319.GA13634@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911103319.GA13634@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Chintan Pandya wrote:
+Em Thu, Sep 11, 2014 at 12:33:19PM +0200, Jiri Olsa escreveu:
+> On Wed, Sep 10, 2014 at 11:08:48AM -0300, Arnaldo Carvalho de Melo wrote:
+ 
+SNIP
 
-> I don't mean to divert the thread too much. But just one suggestion offered
-> by Harshad.
+> > @@ -80,11 +94,17 @@ int fdarray__filter(struct fdarray *fda, short revents)
+> >  	for (fd = 0; fd < fda->nr; ++fd) {
+> > -		if (fda->entries[fd].revents & revents)
+> > +		if (fda->entries[fd].revents & revents) {
+> > +			if (entry_destructor)
+> > +				entry_destructor(fda, fd);
 > 
-> Why can't we stop invoking more of a KSM scanner thread when we are
-> saturating from savings ? But again, to check whether savings are saturated
-> or not, we may still want to rely upon timers and we have to wake the CPUs up
-> from IDLE state.
+> the desctructor callback could have the 'priv' as an argument
+> so we dont need to touch fdarray internals in upper layer
 
-I agree that it should make sense for KSM to slow down when it sees it's
-making no progress (though that would depart from the pages_to_scan and
-sleep_millisecs prescription - perhaps could be tied to sleep_millisecs 0).
+I thought about that, but then I would have to pass as well the pollfd
+entry, that is not in priv, i.e. the callback may want to know exactly
+what were the POLL{RD,WR,HUP,ER) in fdarray->entryes[fd].revents.
 
-But not stop.  That's the problem we're mainly concerned with here:
-to save power we need it to stop, but then how to wake up, without
-putting nasty hooks in hot paths for a minority interest?
-I don't see an answer to that above.
+Yeah, sometimes it is good to avoid users touching the internals, but
+that doesn't need to be something set in stone, i.e. we can consider
+fda->revents and priv->priv to "public" :-)
 
-Hugh
+SNIP
+ 
+> > +++ b/tools/lib/api/fd/array.h
+> > @@ -10,6 +10,7 @@ struct fdarray {
+> >  	struct pollfd *entries;
+> > +	int	      *priv;
+ 
+> I like the idea of private pointer for each fd, but I think it should
+> be 'void*' to keep the library generic. The 'int*' is related only to
+> the evlist usage of this.
+
+Right, from the changelog comment for this patch:
+
+------------------------------
+    We may need to have further info associated with each fdarray entry,
+in that case we'll make that int array a 'union fdarray_priv' one and
+put a pointer there so that users can stash whatever they want there.
+For now, an int is enough tho.
+------------------------------
+
+I had it as:
+
+	struct fdarray {
+	...
+		union {
+			int 	idx;
+			void	*ptr;
+		} priv;
+	...
+	}
+
+But then I had no use whatsoever for the ->ptr one at this point, so I
+just nuked it, to keep _just_ what is used _right now_, and added the
+comment to the changelog :-)
+
+Heck, even the comment mentions "union fdarray_priv", because at one
+point I was passing that to the destructor, as you suggested, but then I
+removed it to an unnamed union, because passing just the index would
+allow access to ->priv[] and ->entries[].
+
+- Arnaldo
