@@ -1,280 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637AbaIKGnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 02:43:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32054 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306AbaIKGnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 02:43:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="476810109"
-Date: Thu, 11 Sep 2014 11:50:24 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Hein Tibosch <hein_tibosch@yahoo.es>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Takashi Iwai <tiwai@suse.de>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Alan Cox <alan@linux.jf.intel.com>, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 08/12] spi/pxa2xx: Don't use slave_id of
- dma_slave_config
-Message-ID: <20140911062024.GG3131@intel.com>
-References: <1408469363-15901-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1408469363-15901-9-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1752807AbaIKGpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 02:45:45 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:52936 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566AbaIKGpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 02:45:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408469363-15901-9-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5411415D.4060103@redhat.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	<1410325808-3657-12-git-send-email-ast@plumgrid.com>
+	<54103506.1030501@redhat.com>
+	<CAMEtUuwQXj=oWzyBkogTSfOAhjhx0oyB5gC4+HoccTGWg8Obfg@mail.gmail.com>
+	<5411415D.4060103@redhat.com>
+Date: Wed, 10 Sep 2014 23:45:41 -0700
+Message-ID: <CAMEtUuxkSuvj04AQAmP4LgF_qUV77i_Gzw5KrAHyi6xDUJApMw@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 11/12] net: filter: move eBPF instruction macros
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=089e011829146753170502c48430
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 08:29:19PM +0300, Andy Shevchenko wrote:
-> From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> 
-> That field has been deprecated in favour of getting the necessary
-> information from ACPI/DT.
-> 
-> However, we still need to deal systems that are PCI only (no ACPI to back
-> up). In order to support such systems, we allow the DMA filter function and
-> its corresponding parameter via pxa2xx_spi_master platform data. Then when
-> the pxa2xx_spi_dma_setup() doesn't find the channel via ACPI, it falls back
-> to use the given filter function.
+--089e011829146753170502c48430
+Content-Type: text/plain; charset=UTF-8
 
-This fails to apply for me, was it based on dmaengine tree or spi?
+On Wed, Sep 10, 2014 at 11:29 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
+>>
+>> Interesting idea. Are you saying just copy paste these
+>> 226 lines into user libbpf.h for now to use them in testsuite
+>> and examples ? Hmm.
+>> Indeed the less lines we add to uapi the better. I'll do that.
+>
+>
+> Yes, that should be just fine, the existing ABI is not allowed to
+> change anyway and we're running into less pain if we decide to change
+> existing or add new macros internally.
 
--- 
-~Vinod
+ok. will do that in the next set.
 
-> 
-> Suggested-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/spi/spi-pxa2xx-dma.c   | 15 ++--------
->  drivers/spi/spi-pxa2xx-pci.c   | 64 +++++++++++++++++++++++++++++++-----------
->  drivers/spi/spi-pxa2xx.c       |  2 --
->  include/linux/spi/pxa2xx_spi.h |  9 +++---
->  4 files changed, 54 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-pxa2xx-dma.c b/drivers/spi/spi-pxa2xx-dma.c
-> index c41ff14..62a9297 100644
-> --- a/drivers/spi/spi-pxa2xx-dma.c
-> +++ b/drivers/spi/spi-pxa2xx-dma.c
-> @@ -157,7 +157,6 @@ static struct dma_async_tx_descriptor *
->  pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
->  			   enum dma_transfer_direction dir)
->  {
-> -	struct pxa2xx_spi_master *pdata = drv_data->master_info;
->  	struct chip_data *chip = drv_data->cur_chip;
->  	enum dma_slave_buswidth width;
->  	struct dma_slave_config cfg;
-> @@ -184,7 +183,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
->  		cfg.dst_addr = drv_data->ssdr_physical;
->  		cfg.dst_addr_width = width;
->  		cfg.dst_maxburst = chip->dma_burst_size;
-> -		cfg.slave_id = pdata->tx_slave_id;
->  
->  		sgt = &drv_data->tx_sgt;
->  		nents = drv_data->tx_nents;
-> @@ -193,7 +191,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
->  		cfg.src_addr = drv_data->ssdr_physical;
->  		cfg.src_addr_width = width;
->  		cfg.src_maxburst = chip->dma_burst_size;
-> -		cfg.slave_id = pdata->rx_slave_id;
->  
->  		sgt = &drv_data->rx_sgt;
->  		nents = drv_data->rx_nents;
-> @@ -210,14 +207,6 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
->  				       DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  }
->  
-> -static bool pxa2xx_spi_dma_filter(struct dma_chan *chan, void *param)
-> -{
-> -	const struct pxa2xx_spi_master *pdata = param;
-> -
-> -	return chan->chan_id == pdata->tx_chan_id ||
-> -	       chan->chan_id == pdata->rx_chan_id;
-> -}
-> -
->  bool pxa2xx_spi_dma_is_possible(size_t len)
->  {
->  	return len <= MAX_DMA_LEN;
-> @@ -321,12 +310,12 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
->  		return -ENOMEM;
->  
->  	drv_data->tx_chan = dma_request_slave_channel_compat(mask,
-> -				pxa2xx_spi_dma_filter, pdata, dev, "tx");
-> +				pdata->dma_filter, pdata->tx_param, dev, "tx");
->  	if (!drv_data->tx_chan)
->  		return -ENODEV;
->  
->  	drv_data->rx_chan = dma_request_slave_channel_compat(mask,
-> -				pxa2xx_spi_dma_filter, pdata, dev, "rx");
-> +				pdata->dma_filter, pdata->rx_param, dev, "rx");
->  	if (!drv_data->rx_chan) {
->  		dma_release_channel(drv_data->tx_chan);
->  		drv_data->tx_chan = NULL;
-> diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
-> index 20ebbc7..0424b67 100644
-> --- a/drivers/spi/spi-pxa2xx-pci.c
-> +++ b/drivers/spi/spi-pxa2xx-pci.c
-> @@ -10,6 +10,9 @@
->  #include <linux/clk.h>
->  #include <linux/clk-provider.h>
->  
-> +#include <linux/dmaengine.h>
-> +#include <linux/platform_data/dma-dw.h>
-> +
->  enum {
->  	PORT_CE4100,
->  	PORT_BYT,
-> @@ -19,33 +22,41 @@ struct pxa_spi_info {
->  	enum pxa_ssp_type type;
->  	int port_id;
->  	int num_chipselect;
-> -	int tx_slave_id;
-> -	int tx_chan_id;
-> -	int rx_slave_id;
-> -	int rx_chan_id;
->  	unsigned long max_clk_rate;
-> +
-> +	/* DMA channel request parameters */
-> +	void *tx_param;
-> +	void *rx_param;
->  };
->  
-> +static struct dw_dma_slave byt_tx_param = { .dst_id = 0 };
-> +static struct dw_dma_slave byt_rx_param = { .src_id = 1 };
-> +
-> +static bool lpss_dma_filter(struct dma_chan *chan, void *param)
-> +{
-> +	struct dw_dma_slave *dws = param;
-> +
-> +	if (dws->dma_dev != chan->device->dev)
-> +		return false;
-> +
-> +	chan->private = dws;
-> +	return true;
-> +}
-> +
->  static struct pxa_spi_info spi_info_configs[] = {
->  	[PORT_CE4100] = {
->  		.type = PXA25x_SSP,
->  		.port_id =  -1,
->  		.num_chipselect = -1,
-> -		.tx_slave_id = -1,
-> -		.tx_chan_id = -1,
-> -		.rx_slave_id = -1,
-> -		.rx_chan_id = -1,
->  		.max_clk_rate = 3686400,
->  	},
->  	[PORT_BYT] = {
->  		.type = LPSS_SSP,
->  		.port_id = 0,
->  		.num_chipselect = 1,
-> -		.tx_slave_id = 0,
-> -		.tx_chan_id = 0,
-> -		.rx_slave_id = 1,
-> -		.rx_chan_id = 1,
->  		.max_clk_rate = 50000000,
-> +		.tx_param = &byt_tx_param,
-> +		.rx_param = &byt_rx_param,
->  	},
->  };
->  
-> @@ -59,6 +70,7 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
->  	struct ssp_device *ssp;
->  	struct pxa_spi_info *c;
->  	char buf[40];
-> +	struct pci_dev *dma_dev;
->  
->  	ret = pcim_enable_device(dev);
->  	if (ret)
-> @@ -73,11 +85,29 @@ static int pxa2xx_spi_pci_probe(struct pci_dev *dev,
->  	memset(&spi_pdata, 0, sizeof(spi_pdata));
->  	spi_pdata.num_chipselect = (c->num_chipselect > 0) ?
->  					c->num_chipselect : dev->devfn;
-> -	spi_pdata.tx_slave_id = c->tx_slave_id;
-> -	spi_pdata.tx_chan_id = c->tx_chan_id;
-> -	spi_pdata.rx_slave_id = c->rx_slave_id;
-> -	spi_pdata.rx_chan_id = c->rx_chan_id;
-> -	spi_pdata.enable_dma = c->rx_slave_id >= 0 && c->tx_slave_id >= 0;
-> +
-> +	dma_dev = pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
-> +
-> +	if (c->tx_param) {
-> +		struct dw_dma_slave *slave = c->tx_param;
-> +
-> +		slave->dma_dev = &dma_dev->dev;
-> +		slave->src_master = 1;
-> +		slave->dst_master = 0;
-> +	}
-> +
-> +	if (c->rx_param) {
-> +		struct dw_dma_slave *slave = c->rx_param;
-> +
-> +		slave->dma_dev = &dma_dev->dev;
-> +		slave->src_master = 1;
-> +		slave->dst_master = 0;
-> +	}
-> +
-> +	spi_pdata.dma_filter = lpss_dma_filter;
-> +	spi_pdata.tx_param = c->tx_param;
-> +	spi_pdata.rx_param = c->rx_param;
-> +	spi_pdata.enable_dma = c->rx_param && c->tx_param;
->  
->  	ssp = &spi_pdata.ssp;
->  	ssp->phys_base = pci_resource_start(dev, 0);
-> diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-> index fe79210..256c0ab 100644
-> --- a/drivers/spi/spi-pxa2xx.c
-> +++ b/drivers/spi/spi-pxa2xx.c
-> @@ -1062,8 +1062,6 @@ pxa2xx_spi_acpi_get_pdata(struct platform_device *pdev)
->  
->  	pdata->num_chipselect = 1;
->  	pdata->enable_dma = true;
-> -	pdata->tx_chan_id = -1;
-> -	pdata->rx_chan_id = -1;
->  
->  	return pdata;
->  }
-> diff --git a/include/linux/spi/pxa2xx_spi.h b/include/linux/spi/pxa2xx_spi.h
-> index 82d5111..d5a3165 100644
-> --- a/include/linux/spi/pxa2xx_spi.h
-> +++ b/include/linux/spi/pxa2xx_spi.h
-> @@ -23,6 +23,8 @@
->  #define PXA2XX_CS_ASSERT (0x01)
->  #define PXA2XX_CS_DEASSERT (0x02)
->  
-> +struct dma_chan;
-> +
->  /* device.platform_data for SSP controller devices */
->  struct pxa2xx_spi_master {
->  	u32 clock_enable;
-> @@ -30,10 +32,9 @@ struct pxa2xx_spi_master {
->  	u8 enable_dma;
->  
->  	/* DMA engine specific config */
-> -	int rx_chan_id;
-> -	int tx_chan_id;
-> -	int rx_slave_id;
-> -	int tx_slave_id;
-> +	bool (*dma_filter)(struct dma_chan *chan, void *param);
-> +	void *tx_param;
-> +	void *rx_param;
->  
->  	/* For non-PXA arches */
->  	struct ssp_device ssp;
-> -- 
-> 2.1.0
-> 
+btw, preliminary compat support in the attached patch.
+It works fine, but Andy's concern about enum is starting
+to get on me. May be we should replace
+enum bpf_.._type with u32 just to be safe...
 
--- 
+--089e011829146753170502c48430
+Content-Type: application/octet-stream; 
+	name="0001-bpf-add-compat_sys_bpf-wrapper.patch"
+Content-Disposition: attachment; 
+	filename="0001-bpf-add-compat_sys_bpf-wrapper.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hzxqdrnl0
+
+RnJvbSA5YzA1Y2MxYmQxOGUyNzhmMGNmZDVhNDkwNjQ0MTA1YWE3Y2JiZjUyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4ZWkgU3Rhcm92b2l0b3YgPGFzdEBwbHVtZ3JpZC5jb20+
+CkRhdGU6IFdlZCwgMTAgU2VwIDIwMTQgMTk6NDE6MzEgLTA3MDAKU3ViamVjdDogW1BBVENIXSBi
+cGY6IGFkZCBjb21wYXRfc3lzX2JwZiB3cmFwcGVyCgp0byBzdXBwb3J0IDMyLWJpdCB1c2VyIHNw
+YWNlIHdpdGggNjQtYml0IGtlcm5lbAoKU2lnbmVkLW9mZi1ieTogQWxleGVpIFN0YXJvdm9pdG92
+IDxhc3RAcGx1bWdyaWQuY29tPgotLS0KIGFyY2gveDg2L3N5c2NhbGxzL3N5c2NhbGxfMzIudGJs
+ICB8ICAgIDIgKy0KIGluY2x1ZGUvdWFwaS9hc20tZ2VuZXJpYy91bmlzdGQuaCB8ICAgIDIgKy0K
+IGtlcm5lbC9icGYvc3lzY2FsbC5jICAgICAgICAgICAgICB8ICAgOTUgKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKwogMyBmaWxlcyBjaGFuZ2VkLCA5NyBpbnNlcnRpb25zKCsp
+LCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L3N5c2NhbGxzL3N5c2NhbGxf
+MzIudGJsIGIvYXJjaC94ODYvc3lzY2FsbHMvc3lzY2FsbF8zMi50YmwKaW5kZXggOWZlMWI1ZDAw
+MmYwLi4yYjFkZGYxZGRiNWUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L3N5c2NhbGxzL3N5c2NhbGxf
+MzIudGJsCisrKyBiL2FyY2gveDg2L3N5c2NhbGxzL3N5c2NhbGxfMzIudGJsCkBAIC0zNjMsNCAr
+MzYzLDQgQEAKIDM1NAlpMzg2CXNlY2NvbXAJCQlzeXNfc2VjY29tcAogMzU1CWkzODYJZ2V0cmFu
+ZG9tCQlzeXNfZ2V0cmFuZG9tCiAzNTYJaTM4NgltZW1mZF9jcmVhdGUJCXN5c19tZW1mZF9jcmVh
+dGUKLTM1NwlpMzg2CWJwZgkJCXN5c19icGYKKzM1NwlpMzg2CWJwZgkJCXN5c19icGYJCQkJY29t
+cGF0X3N5c19icGYKZGlmZiAtLWdpdCBhL2luY2x1ZGUvdWFwaS9hc20tZ2VuZXJpYy91bmlzdGQu
+aCBiL2luY2x1ZGUvdWFwaS9hc20tZ2VuZXJpYy91bmlzdGQuaAppbmRleCAyMjc0OWMxMzQxMTcu
+Ljk0YWZlZDkzZjNjYyAxMDA2NDQKLS0tIGEvaW5jbHVkZS91YXBpL2FzbS1nZW5lcmljL3VuaXN0
+ZC5oCisrKyBiL2luY2x1ZGUvdWFwaS9hc20tZ2VuZXJpYy91bmlzdGQuaApAQCAtNzA2LDcgKzcw
+Niw3IEBAIF9fU1lTQ0FMTChfX05SX2dldHJhbmRvbSwgc3lzX2dldHJhbmRvbSkKICNkZWZpbmUg
+X19OUl9tZW1mZF9jcmVhdGUgMjc5CiBfX1NZU0NBTEwoX19OUl9tZW1mZF9jcmVhdGUsIHN5c19t
+ZW1mZF9jcmVhdGUpCiAjZGVmaW5lIF9fTlJfYnBmIDI4MAotX19TWVNDQUxMKF9fTlJfYnBmLCBz
+eXNfYnBmKQorX19TQ19DT01QKF9fTlJfYnBmLCBzeXNfYnBmLCBjb21wYXRfc3lzX2JwZikKIAog
+I3VuZGVmIF9fTlJfc3lzY2FsbHMKICNkZWZpbmUgX19OUl9zeXNjYWxscyAyODEKZGlmZiAtLWdp
+dCBhL2tlcm5lbC9icGYvc3lzY2FsbC5jIGIva2VybmVsL2JwZi9zeXNjYWxsLmMKaW5kZXggNmNk
+ZmUzODhjNzg5Li40ZjJjNTQ0MWUxNzUgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9icGYvc3lzY2FsbC5j
+CisrKyBiL2tlcm5lbC9icGYvc3lzY2FsbC5jCkBAIC0xNiw2ICsxNiw3IEBACiAjaW5jbHVkZSA8
+bGludXgvZmlsZS5oPgogI2luY2x1ZGUgPGxpbnV4L2xpY2Vuc2UuaD4KICNpbmNsdWRlIDxsaW51
+eC9maWx0ZXIuaD4KKyNpbmNsdWRlIDxsaW51eC9jb21wYXQuaD4KIAogc3RhdGljIExJU1RfSEVB
+RChicGZfbWFwX3R5cGVzKTsKIApAQCAtNTc2LDYgKzU3NywxMDAgQEAgZnJlZV9hdHRyOgogCXJl
+dHVybiBlcnI7CiB9CiAKKyNpZmRlZiBDT05GSUdfQ09NUEFUCit1bmlvbiBjb21wYXRfYnBmX2F0
+dHIgeworCXN0cnVjdCB7CisJCWVudW0gYnBmX21hcF90eXBlIG1hcF90eXBlOworCQlfX3UzMglr
+ZXlfc2l6ZTsKKwkJX191MzIJdmFsdWVfc2l6ZTsKKwkJX191MzIJbWF4X2VudHJpZXM7CisJfTsK
+KworCXN0cnVjdCB7CisJCWludCBtYXBfZmQ7CisJCWNvbXBhdF91cHRyX3Qga2V5OworCQl1bmlv
+biB7CisJCQljb21wYXRfdXB0cl90IHZhbHVlOworCQkJY29tcGF0X3VwdHJfdCBuZXh0X2tleTsK
+KwkJfTsKKwl9OworCisJc3RydWN0IHsKKwkJZW51bSBicGZfcHJvZ190eXBlIHByb2dfdHlwZTsK
+KwkJX191MzIgaW5zbl9jbnQ7CisJCWNvbXBhdF91cHRyX3QgaW5zbnM7CisJCWNvbXBhdF91cHRy
+X3QgbGljZW5zZTsKKwkJX191MzIgbG9nX2xldmVsOworCQlfX3UzMiBsb2dfc2l6ZTsKKwkJY29t
+cGF0X3VwdHJfdCBsb2dfYnVmOworCX07Cit9OworQ09NUEFUX1NZU0NBTExfREVGSU5FMyhicGYs
+IGludCwgY21kLCB1bmlvbiBjb21wYXRfYnBmX2F0dHIgX191c2VyICosIHVhdHRyLAorCQkgICAg
+ICAgdW5zaWduZWQgaW50LCBzaXplKQoreworCXVuaW9uIGNvbXBhdF9icGZfYXR0ciBjb21wYXRf
+YXR0ciA9IHt9OworCXVuaW9uIGJwZl9hdHRyIGF0dHIgPSB7fTsKKwlpbnQgZXJyOworCisJaWYg
+KCFjYXBhYmxlKENBUF9TWVNfQURNSU4pKQorCQlyZXR1cm4gLUVQRVJNOworCisJaWYgKHNpemUg
+PiBzaXplb2YoY29tcGF0X2F0dHIpKQorCQlyZXR1cm4gLUVJTlZBTDsKKworCWlmIChjb3B5X2Zy
+b21fdXNlcigmY29tcGF0X2F0dHIsIHVhdHRyLCBzaXplKSAhPSAwKQorCQlyZXR1cm4gLUVGQVVM
+VDsKKworCXN3aXRjaCAoY21kKSB7CisJY2FzZSBCUEZfTUFQX0NSRUFURToKKwkJYXR0ci5tYXBf
+dHlwZSA9IGNvbXBhdF9hdHRyLm1hcF90eXBlOworCQlhdHRyLmtleV9zaXplID0gY29tcGF0X2F0
+dHIua2V5X3NpemU7CisJCWF0dHIudmFsdWVfc2l6ZSA9IGNvbXBhdF9hdHRyLnZhbHVlX3NpemU7
+CisJCWF0dHIubWF4X2VudHJpZXMgPSBjb21wYXRfYXR0ci5tYXhfZW50cmllczsKKwkJZXJyID0g
+bWFwX2NyZWF0ZSgmYXR0cik7CisJCWJyZWFrOworCWNhc2UgQlBGX01BUF9MT09LVVBfRUxFTToK
+KwkJYXR0ci5tYXBfZmQgPSBjb21wYXRfYXR0ci5tYXBfZmQ7CisJCWF0dHIua2V5ID0gY29tcGF0
+X3B0cihjb21wYXRfYXR0ci5rZXkpOworCQlhdHRyLnZhbHVlID0gY29tcGF0X3B0cihjb21wYXRf
+YXR0ci52YWx1ZSk7CisJCWVyciA9IG1hcF9sb29rdXBfZWxlbSgmYXR0cik7CisJCWJyZWFrOwor
+CWNhc2UgQlBGX01BUF9VUERBVEVfRUxFTToKKwkJYXR0ci5tYXBfZmQgPSBjb21wYXRfYXR0ci5t
+YXBfZmQ7CisJCWF0dHIua2V5ID0gY29tcGF0X3B0cihjb21wYXRfYXR0ci5rZXkpOworCQlhdHRy
+LnZhbHVlID0gY29tcGF0X3B0cihjb21wYXRfYXR0ci52YWx1ZSk7CisJCWVyciA9IG1hcF91cGRh
+dGVfZWxlbSgmYXR0cik7CisJCWJyZWFrOworCWNhc2UgQlBGX01BUF9ERUxFVEVfRUxFTToKKwkJ
+YXR0ci5tYXBfZmQgPSBjb21wYXRfYXR0ci5tYXBfZmQ7CisJCWF0dHIua2V5ID0gY29tcGF0X3B0
+cihjb21wYXRfYXR0ci5rZXkpOworCQllcnIgPSBtYXBfZGVsZXRlX2VsZW0oJmF0dHIpOworCQli
+cmVhazsKKwljYXNlIEJQRl9NQVBfR0VUX05FWFRfS0VZOgorCQlhdHRyLm1hcF9mZCA9IGNvbXBh
+dF9hdHRyLm1hcF9mZDsKKwkJYXR0ci5rZXkgPSBjb21wYXRfcHRyKGNvbXBhdF9hdHRyLmtleSk7
+CisJCWF0dHIubmV4dF9rZXkgPSBjb21wYXRfcHRyKGNvbXBhdF9hdHRyLm5leHRfa2V5KTsKKwkJ
+ZXJyID0gbWFwX2dldF9uZXh0X2tleSgmYXR0cik7CisJCWJyZWFrOworCWNhc2UgQlBGX1BST0df
+TE9BRDoKKwkJYXR0ci5wcm9nX3R5cGUgPSBjb21wYXRfYXR0ci5wcm9nX3R5cGU7CisJCWF0dHIu
+aW5zbl9jbnQgPSBjb21wYXRfYXR0ci5pbnNuX2NudDsKKwkJYXR0ci5pbnNucyA9IGNvbXBhdF9w
+dHIoY29tcGF0X2F0dHIuaW5zbnMpOworCQlhdHRyLmxpY2Vuc2UgPSBjb21wYXRfcHRyKGNvbXBh
+dF9hdHRyLmxpY2Vuc2UpOworCQlhdHRyLmxvZ19sZXZlbCA9IGNvbXBhdF9hdHRyLmxvZ19sZXZl
+bDsKKwkJYXR0ci5sb2dfc2l6ZSA9IGNvbXBhdF9hdHRyLmxvZ19zaXplOworCQlhdHRyLmxvZ19i
+dWYgPSBjb21wYXRfcHRyKGNvbXBhdF9hdHRyLmxvZ19idWYpOworCQllcnIgPSBicGZfcHJvZ19s
+b2FkKCZhdHRyKTsKKwkJYnJlYWs7CisJZGVmYXVsdDoKKwkJZXJyID0gLUVJTlZBTDsKKwkJYnJl
+YWs7CisJfQorCisJcmV0dXJuIGVycjsKK30KKyNlbmRpZgorCiAvKiBjYWxsZWQgZnJvbSBlQlBG
+IHByb2dyYW0gdW5kZXIgcmN1IGxvY2sKICAqCiAgKiBpZiBrZXJuZWwgc3Vic3lzdGVtIGlzIGFs
+bG93aW5nIGVCUEYgcHJvZ3JhbXMgdG8gY2FsbCB0aGlzIGZ1bmN0aW9uLAotLSAKMS43LjkuNQoK
+--089e011829146753170502c48430--
