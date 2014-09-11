@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaIKKgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:36:16 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51125 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaIKKgP (ORCPT
+	id S1752439AbaIKKgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:36:47 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:45928 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863AbaIKKgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:36:15 -0400
-Message-ID: <54117B16.9050409@linux.vnet.ibm.com>
-Date: Thu, 11 Sep 2014 16:06:06 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 11 Sep 2014 06:36:45 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: "dsd@gentoo.org" <dsd@gentoo.org>,
+        "kune@deine-taler.de" <kune@deine-taler.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH v2] zd1211rw: replace ZD_ASSERT with
+ lockdep_assert_held()
+Thread-Topic: [PATCH v2] zd1211rw: replace ZD_ASSERT with
+ lockdep_assert_held()
+Thread-Index: AQHPzaji67ru1uysWEKojhy3lQjAn5v7vMNQ
+Date: Thu, 11 Sep 2014 10:36:42 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF5256D@EU-MBX-02.mgc.mentorg.com>
+References: <1410418407.1825.0.camel@jlt4.sipsolutions.net>
+	 <1410430179-19944-1-git-send-email-sanjeev_sharma@mentor.com>
+	 (sfid-20140911_121019_335368_163BEA7C)
+ <1410430345.22863.0.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1410430345.22863.0.camel@jlt4.sipsolutions.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Vincent Guittot <vincent.guittot@linaro.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, riel@redhat.com,
-        Morten.Rasmussen@arm.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 04/12] sched: Allow all archs to set the capacity_orig
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-5-git-send-email-vincent.guittot@linaro.org> <540204DC.5090204@linux.vnet.ibm.com> <20140910135039.GP3190@worktop.ger.corp.intel.com>
-In-Reply-To: <20140910135039.GP3190@worktop.ger.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091110-9332-0000-0000-000001FA7340
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8BAapus023169
 
-On 09/10/2014 07:20 PM, Peter Zijlstra wrote:
-> On Sat, Aug 30, 2014 at 10:37:40PM +0530, Preeti U Murthy wrote:
->>> -	if ((sd->flags & SD_SHARE_CPUCAPACITY) && weight > 1) {
->>> -		if (sched_feat(ARCH_CAPACITY))
->>
->> Aren't you missing this check above? I understand that it is not
->> crucial, but that would also mean removing ARCH_CAPACITY sched_feat
->> altogether, wouldn't it?
+-----Original Message-----
+From: Johannes Berg [mailto:johannes@sipsolutions.net] 
+Sent: Thursday, September 11, 2014 3:42 PM
+To: Sharma, Sanjeev
+Cc: dsd@gentoo.org; kune@deine-taler.de; linux-wireless@vger.kernel.org; linux-kernel@vger.kernel.org; netdev@vger.kernel.org
+Subject: Re: [PATCH v2] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+
+On Thu, 2014-09-11 at 15:39 +0530, Sanjeev Sharma wrote:
+> on some architecture spin_is_locked() always return false in 
+> uniprocessor configuration and therefore it would be advise to replace 
+> with lockdep_assert_held().
 > 
-> Yes he's missing that, I added the below bit on top.
-> 
-> So the argument last time:
-> lkml.kernel.org/r/20140709105721.GT19379@twins.programming.kicks-ass.net
-> was that you cannot put sched_feat(ARCH_CAPACITY) inside a weak arch_*
-> function. The test has to be outside, seeing how it needs to decide to
-> call the arch function at all (or revert to the default implementation).
-> 
+> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
 > ---
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -5700,7 +5700,7 @@ unsigned long __weak arch_scale_freq_cap
->  	return default_scale_capacity(sd, cpu);
->  }
-> 
-> -unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
-> +static unsigned long default_scale_cpu_capacity(struct sched_domain *sd, int cpu)
->  {
->  	if ((sd->flags & SD_SHARE_CPUCAPACITY) && (sd->span_weight > 1))
->  		return sd->smt_gain / sd->span_weight;
-> @@ -5708,6 +5708,11 @@ unsigned long __weak arch_scale_cpu_capa
->  	return SCHED_CAPACITY_SCALE;
->  }
-> 
-> +unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
-> +{
-> +	return default_scale_cpu_capacity(sd, cpu);
-> +}
-> +
->  static unsigned long scale_rt_capacity(int cpu)
->  {
->  	struct rq *rq = cpu_rq(cpu);
-> @@ -5747,7 +5752,10 @@ static void update_cpu_capacity(struct s
->  	unsigned long capacity = SCHED_CAPACITY_SCALE;
->  	struct sched_group *sdg = sd->groups;
-> 
-> -	capacity *= arch_scale_cpu_capacity(sd, cpu);
-> +	if (sched_feat(ARCH_CAPACITY))
-> +		capacity *= arch_scale_cpu_capacity(sd, cpu);
-> +	else
-> +		capacity *= default_scale_cpu_capacity(sd, cpu);
-> 
->  	capacity >>= SCHED_CAPACITY_SHIFT;
-> 
-> 
-Alright, I see now. Thanks!
+> Changes in v2:
+>   - corrected the typo
+
+> Now it compiles, but you got the logic wrong.
+
+> +++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+> @@ -235,7 +235,7 @@ void zd_mac_clear(struct zd_mac *mac)  {
+>  	flush_workqueue(zd_workqueue);
+>  	zd_chip_clear(&mac->chip);
+> -	ZD_ASSERT(!spin_is_locked(&mac->lock));
+> +	lockdep_assert_held(&mac->lock);
+>  	ZD_MEMCLEAR(mac, sizeof(struct zd_mac));  }
+
+>Look closely at this again.
+
+I didn't understand where I  put wrong logic  ?
 
 Regards
-Preeti U Murthy
+Sanjeev Sharma
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
