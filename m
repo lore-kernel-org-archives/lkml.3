@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaIKQJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:09:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55157 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750860AbaIKQJK (ORCPT
+	id S1757131AbaIKQJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:09:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:57370 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756531AbaIKQJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:09:10 -0400
-Date: Thu, 11 Sep 2014 17:09:08 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-Message-ID: <20140911160908.GT6158@arm.com>
-References: <1410450727-8182-1-git-send-email-dianders@chromium.org>
- <5411C68B.6090308@codeaurora.org>
- <CAD=FV=XPqma5sYbn65NLEAipZFq96t_HcX96ym_cEQrqTKddOQ@mail.gmail.com>
+	Thu, 11 Sep 2014 12:09:32 -0400
+Date: Thu, 11 Sep 2014 09:09:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Rostislav Lisovy <lisovy@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sojkam1@fel.cvut.cz,
+        michal.vokac@comap.cz, Rostislav Lisovy <lisovy@merica.cz>
+Subject: Re: [PATCH] watchdog: omap_wdt: Add 'early_disable' module parameter
+Message-ID: <20140911160927.GC13052@roeck-us.net>
+References: <1410268057-8851-1-git-send-email-lisovy@merica.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=XPqma5sYbn65NLEAipZFq96t_HcX96ym_cEQrqTKddOQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410268057-8851-1-git-send-email-lisovy@merica.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 05:04:11PM +0100, Doug Anderson wrote:
-> On Thu, Sep 11, 2014 at 8:58 AM, Christopher Covington
-> <cov@codeaurora.org> wrote:
-> > On 09/11/2014 11:52 AM, Doug Anderson wrote:
-> >> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> >> index 5163ec1..8ca07a9 100644
-> >> --- a/drivers/clocksource/arm_arch_timer.c
-> >> +++ b/drivers/clocksource/arm_arch_timer.c
-> >> @@ -649,6 +649,9 @@ static void __init arch_timer_init(struct device_node *np)
-> >>               arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
-> >>       arch_timer_detect_rate(NULL, np);
-> >>
-> >> +     if (of_property_read_bool(np, "arm,use-physical-timer"))
-> >> +             arch_timer_use_virtual = false;
-
-Can you #ifdef CONFIG_ARM here please?
-
-> >>       /*
-> >>        * If HYP mode is available, we know that the physical timer
-> >>        * has been configured to be accessible from PL1. Use it, so
-> >>
-> >
-> > How's the VDSO supposed to deal with this? It currently does:
-> >
-> > cycle_now = arch_counter_get_cntvct()
+On Tue, Sep 09, 2014 at 03:07:37PM +0200, Rostislav Lisovy wrote:
+> This parameter makes it possible to control if the watchdog
+> is being disabled during initialization or will stay enabled
+> in case it was previously initialized in the bootloader.
 > 
-> I don't see that line of code anywhere when I do a "git grep" on linux
-> or linuxnext.  Can you give me a clearer pointer?
+> To maintain the existing behavior, the default value is 'true',
+> thus the watchdog is disabled during initialization.
+> 
+> This new feature is highly inspired by the w83627hf_wdt.c
+> 
+> Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
+> ---
+>  drivers/watchdog/omap_wdt.c | 17 +++++++++++++++--
+>  1 file changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+> index 3691b15..8f4cabe 100644
+> --- a/drivers/watchdog/omap_wdt.c
+> +++ b/drivers/watchdog/omap_wdt.c
+> @@ -53,6 +53,10 @@ static unsigned timer_margin;
+>  module_param(timer_margin, uint, 0);
+>  MODULE_PARM_DESC(timer_margin, "initial watchdog timeout (in seconds)");
+>  
+> +static bool early_disable = true;
+> +module_param(early_disable, bool, 0);
+> +MODULE_PARM_DESC(early_disable, "Disable watchdog at boot time (default=1)");
+> +
 
-It's in the actual vdso code (arch/arm64/kernel/vdso/gettimeofday.S):
 
-	/* Read the virtual counter. */
-	isb
-	mrs	x15, cntvct_el0
+>  struct omap_wdt_dev {
+>  	void __iomem    *base;          /* physical */
+>  	struct device   *dev;
+> @@ -255,7 +259,15 @@ static int omap_wdt_probe(struct platform_device *pdev)
+>  	omap_wdt->bootstatus = (rs & (1 << OMAP_MPU_WD_RST_SRC_ID_SHIFT)) ?
+>  				WDIOF_CARDRESET : 0;
+>  
+> -	omap_wdt_disable(wdev);
+> +	if (early_disable) {
+> +		pr_warn("Stopping previously enabled watchdog until userland kicks in\n");
 
-Will
+This is an unconditional message which will be displayed even if the watchdog
+was not running at all. Since there was previously no message, why add a
+confusing one now ?
+
+> +		omap_wdt_disable(wdev);
+> +	} else {
+> +		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
+> +			omap_wdt->timeout);
+> +		omap_wdt_set_timeout(omap_wdt, omap_wdt->timeout);
+> +		omap_wdt_ping(omap_wdt);
+> +	}
+>  
+>  	ret = watchdog_register_device(omap_wdt);
+>  	if (ret) {
+> @@ -267,7 +279,8 @@ static int omap_wdt_probe(struct platform_device *pdev)
+>  		readl_relaxed(wdev->base + OMAP_WATCHDOG_REV) & 0xFF,
+>  		omap_wdt->timeout);
+>  
+> -	pm_runtime_put_sync(wdev->dev);
+> +	if (early_disable)
+> +		pm_runtime_put_sync(wdev->dev);
+
+Doesn't that mean that you are now leaking the device usage counter
+if early_disable is 0 ?
+
+Guenter
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
