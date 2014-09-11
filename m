@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaIKApI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 20:45:08 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:35211 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752944AbaIKApF (ORCPT
+	id S1753614AbaIKArK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 20:47:10 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30364 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751044AbaIKArH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:45:05 -0400
-Message-ID: <5410F08D.10707@hurleysoftware.com>
-Date: Wed, 10 Sep 2014 20:45:01 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 10 Sep 2014 20:47:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,502,1406617200"; 
+   d="scan'208";a="589546597"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: atull <atull@opensource.altera.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHPzVnU1B0Y5KNFyU6p2A+MOtzo+A==
+Date: Thu, 11 Sep 2014 00:46:31 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E98F982@SHSMSX101.ccr.corp.intel.com>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+ <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
+ <alpine.DEB.2.02.1409101353500.2790@atx-linux-37> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com> <20140911000343.GA5328@kroah.com> <5410E8A2.5030802@hurleysoftware.com> <20140911002410.GA11732@kroah.com>
-In-Reply-To: <20140911002410.GA11732@kroah.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 08:24 PM, Greg Kroah-Hartman wrote:
-> On Wed, Sep 10, 2014 at 08:11:14PM -0400, Peter Hurley wrote:
->> On 09/10/2014 08:03 PM, Greg Kroah-Hartman wrote:
->>> On Wed, Sep 10, 2014 at 05:28:19PM -0400, Peter Hurley wrote:
->>>> This patch changes user-space behavior (for the better) but I'm not sure
->>>> that it's consequence-free. Also, it might not be enough to unwedge the
->>>> terminal if the driver got its own flow control state mangled.
->>>>
->>>> Thoughts?
->>>>
->>>> --- >% ---
->>>> Subject: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
->>>>
->>>> If terminal flow has been stopped, the terminal can be unwedged
->>>> by:
->>>> 	tcflow(fd, TCOOFF);
->>>> 	tcflow(fd, TCOON);
->>>> This works because tcflow(TCOOFF) ensures that ->flow_stopped is set,
->>>> which allows tcflow(TCOON) to override the terminal flow state in
->>>> __start_tty().
->>>>
->>>> Instead, allow unwedging with only:
->>>>         tcflow(fd, TCOON);
->>>> by disregarding the existing ->flow_stopped state.
->>>
->>> I don't see the benifit here, what are you trying to solve?  Sending one
->>> extra tcflow command?
->>
->> It's not common knowledge (and its certainly counterintuitive) that
->> turning off output when output is already turned off (ie., tcflow(TCOOFF))
->> is the required trickery to unwedge a terminal.
->>
->> Unwedging directly seems the straightforward approach.
+> >
+> > Hi Alvin,
+> >
+> > I did a quick test and this looks like it works for me (with device tree).
+> > I had a couple of small fixes below.
+> It is very appreciated to help testing.
 > 
-> What's the odds we break POSIX with this type of change?
+> 
+> > Alan
+> >
+> > >
+> > > -	port->bgc.gc.ngpio = ngpio;
+> > > -	port->bgc.gc.of_node = port_np;
+> > > +#ifdef CONFIG_OF_GPIO
+> > > +	port->bgc.gc.of_node = pp->node;
+> > > +#endif
+> >
+> > Please use 'if (IS_ENABLED(CONFIG_OF_GPIO)) as a conditional as you do
+> > elsewhere.
+> OK.
+> 
+Alan, I just do a quick test, here we can't use 'IS_ENABLED', it can't be compiled without OF_GPIO set.
+Because 'gc.of_node' is not defined without 'OF_GPIO'. You can refer the structure of 'gc'.
 
-SUSv3 and v4 do not specify how tcflow() interacts with flow control
-from the remote side, so POSIX breakage is not possible.
-
-> I'm all for working around broken hardware in the kernel, but this seems
-> like a very old issue, if it's even one at all, that we would be
-> changing for no one who has reported it (that I know of...)
-
-How to unwedge a terminal comes up from time to time.
-
-> In other words, I'm really leary of changing userspace functionality
-> without having a real need/reason to.
-
-It's possible that this may cause userspace breakage. Some app
-may call tcflow(TCOON) thus accidently overriding the flow control
-state when it would have had no effect before.
-
-I'm not invested in this patch so I have no problem if you don't
-want to take this.
-
-Regards,
-Peter Hurley
