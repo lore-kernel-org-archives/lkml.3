@@ -1,173 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaIKDK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 23:10:57 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47338 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaIKDKy (ORCPT
+	id S1753331AbaIKDMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 23:12:16 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:25776 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752995AbaIKDKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 23:10:54 -0400
-Date: Thu, 11 Sep 2014 05:10:44 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
-        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, joel.schopp@amd.com,
-        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
-        will.deacon@arm.com, a.motakis@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, john.liuli@huawei.com
-Subject: Re: [RFC v2 0/9] KVM-VFIO IRQ forward control
-Message-ID: <20140911031044.GK2784@lvm>
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
- <1409691941.3804.133.camel@ul30vt.home>
+	Wed, 10 Sep 2014 23:10:14 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhRDAGcSEVR5LKYhPGdsb2JhbABggw2BKoczqX8BBQaYd4VqAgIBAQGBDBcFAQEBATg3hAMBAQEDAScTHCMFCwgDDgcDCSUPBSUDBxoTiDoHv0YBFxiFZIQEhGlkB4RMBZx7l1WBWCsvgQaBSQEBAQ
+Date: Thu, 11 Sep 2014 13:09:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v10 09/21] Replace the XIP page fault handler with the
+ DAX page fault handler
+Message-ID: <20140911030926.GO20518@dastard>
+References: <cover.1409110741.git.matthew.r.wilcox@intel.com>
+ <4d71d7a13bec3acf703e26bf6b0c7da21a71ebe0.1409110741.git.matthew.r.wilcox@intel.com>
+ <20140903074724.GE20473@dastard>
+ <20140910152337.GF27730@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409691941.3804.133.camel@ul30vt.home>
+In-Reply-To: <20140910152337.GF27730@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 02, 2014 at 03:05:41PM -0600, Alex Williamson wrote:
-> On Mon, 2014-09-01 at 14:52 +0200, Eric Auger wrote:
-> > This RFC proposes an integration of "ARM: Forwarding physical
-> > interrupts to a guest VM" (http://lwn.net/Articles/603514/) in
-> > KVM.
+On Wed, Sep 10, 2014 at 11:23:37AM -0400, Matthew Wilcox wrote:
+> On Wed, Sep 03, 2014 at 05:47:24PM +1000, Dave Chinner wrote:
+> > > +	error = get_block(inode, block, &bh, 0);
+> > > +	if (!error && (bh.b_size < PAGE_SIZE))
+> > > +		error = -EIO;
+> > > +	if (error)
+> > > +		goto unlock_page;
 > > 
-> > It enables to transform a VFIO platform driver IRQ into a forwarded
-> > IRQ. The direct benefit is that, for a level sensitive IRQ, a VM
-> > switch can be avoided on guest virtual IRQ completion. Before this
-> > patch, a maintenance IRQ was triggered on the virtual IRQ completion.
+> > page fault into unwritten region, returns buffer_unwritten(bh) ==
+> > true. Hence buffer_written(bh) is false, and we take this branch:
 > > 
-> > When the IRQ is forwarded, the VFIO platform driver does not need to
-> > disable the IRQ anymore. Indeed when returning from the IRQ handler
-> > the IRQ is not deactivated. Only its priority is lowered. This means
-> > the same IRQ cannot hit before the guest completes the virtual IRQ
-> > and the GIC automatically deactivates the corresponding physical IRQ.
+> > > +	if (!buffer_written(&bh) && !vmf->cow_page) {
+> > > +		if (vmf->flags & FAULT_FLAG_WRITE) {
+> > > +			error = get_block(inode, block, &bh, 1);
 > > 
-> > Besides, the injection still is based on irqfd triggering. The only
-> > impact on irqfd process is resamplefd is not called anymore on
-> > virtual IRQ completion since this latter becomes "transparent".
-> > 
-> > The current integration is based on an extension of the KVM-VFIO
-> > device, previously used by KVM to interact with VFIO groups. The
-> > patch serie now enables KVM to directly interact with a VFIO
-> > platform device. The VFIO external API was extended for that purpose.
-> > 
-> > Th KVM-VFIO device can get/put the vfio platform device, check its
-> > integrity and type, get the IRQ number associated to an IRQ index.
-> > 
-> > The IRQ forward programming is architecture specific (virtual interrupt
-> > controller programming basically). However the whole infrastructure is
-> > kept generic.
-> > 
-> > from a user point of view, the functionality is provided through new
-> > KVM-VFIO device commands, KVM_DEV_VFIO_DEVICE_(UN)FORWARD_IRQ
-> > and the capability can be checked with KVM_HAS_DEVICE_ATTR.
-> > Assignment can only be changed when the physical IRQ is not active.
-> > It is the responsability of the user to do this check.
-> > 
-> > This patch serie has the following dependencies:
-> > - "ARM: Forwarding physical interrupts to a guest VM"
-> >   (http://lwn.net/Articles/603514/) in
-> > - [PATCH v3] irqfd for ARM
-> > - and obviously the VFIO platform driver serie:
-> >   [RFC PATCH v6 00/20] VFIO support for platform devices on ARM
-> >   https://www.mail-archive.com/kvm@vger.kernel.org/msg103247.html
-> > 
-> > Integrated pieces can be found at
-> > ssh://git.linaro.org/people/eric.auger/linux.git
-> > on branch 3.17rc3_irqfd_forward_integ_v2
-> > 
-> > This was was tested on Calxeda Midway, assigning the xgmac main IRQ.
-> > 
-> > v1 -> v2:
-> > - forward control is moved from architecture specific file into generic
-> >   vfio.c module.
-> >   only kvm_arch_set_fwd_state remains architecture specific
-> > - integrate Kim's patch which enables KVM-VFIO for ARM
-> > - fix vgic state bypass in vgic_queue_hwirq
-> > - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
-> >   to include/uapi/linux/kvm.h
-> >   also irq_index renamed into index and guest_irq renamed into gsi
-> > - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
-> > - vfio_external_get_base_device renamed into vfio_external_base_device
-> > - vfio_external_get_type removed
-> > - kvm_vfio_external_get_base_device renamed into kvm_vfio_external_base_device
-> > - __KVM_HAVE_ARCH_KVM_VFIO renamed into __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
-> > 
-> > Eric Auger (8):
-> >   KVM: ARM: VGIC: fix multiple injection of level sensitive forwarded
-> >     IRQ
-> >   KVM: ARM: VGIC: add forwarded irq rbtree lock
-> >   VFIO: platform: handler tests whether the IRQ is forwarded
-> >   KVM: KVM-VFIO: update user API to program forwarded IRQ
-> >   VFIO: Extend external user API
-> >   KVM: KVM-VFIO: add new VFIO external API hooks
-> >   KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command and IRQ forwarding
-> >     control
-> >   KVM: KVM-VFIO: ARM forwarding control
-> > 
-> > Kim Phillips (1):
-> >   ARM: KVM: Enable the KVM-VFIO device
-> > 
-> >  Documentation/virtual/kvm/devices/vfio.txt |  26 ++
-> >  arch/arm/include/asm/kvm_host.h            |   7 +
-> >  arch/arm/kvm/Kconfig                       |   1 +
-> >  arch/arm/kvm/Makefile                      |   4 +-
-> >  arch/arm/kvm/kvm_vfio_arm.c                |  85 +++++
-> >  drivers/vfio/platform/vfio_platform_irq.c  |   7 +-
-> >  drivers/vfio/vfio.c                        |  24 ++
-> >  include/kvm/arm_vgic.h                     |   1 +
-> >  include/linux/kvm_host.h                   |  27 ++
-> >  include/linux/vfio.h                       |   3 +
-> >  include/uapi/linux/kvm.h                   |   9 +
-> >  virt/kvm/arm/vgic.c                        |  59 +++-
-> >  virt/kvm/vfio.c                            | 497 ++++++++++++++++++++++++++++-
-> >  13 files changed, 733 insertions(+), 17 deletions(-)
-> >  create mode 100644 arch/arm/kvm/kvm_vfio_arm.c
-> > 
+> > Exactly what are you expecting to happen here? We don't do
+> > allocation because there are already unwritten blocks over this
+> > extent, and so bh will be unchanged when returning. i.e. it will
+> > still be mapping an unwritten extent.
 > 
-> Have we ventured too far in the other direction?  I suppose what I was
-> hoping to see was something more like:
+> I was expecting calling get_block() on an unwritten extent to convert it
+> to a written extent.  Your suggestion below of using b_end_io() to do that
+> is a better idea.
 > 
-> 	case KVM_DEV_VFIO_DEVICE_FORWARD_IRQ:{
+> So this should be:
 > 
-> 		/* get vfio_device */
+> 	if (!buffer_mapped(&bh) && !vmf->cow_page) {
 > 
-> 		/* get mutex */
-> 
-> 		/* verify device+irq isn't already forwarded */
-> 
-> 		/* allocate device/forwarded irq */
-> 
-> 		/* get struct device */
-> 
-> 		/* callout to arch code passing struct device, gsi, ... */
-> 
-> 		/* if success, add to kv, else free and error */
-> 
-> 		/* mutex unlock */
-> 	}
+> ... right?
 
-I think that's essentially what this patch set is trying to do, but
-there are just too many complicated intertwining cases right now that
-makes the code hard to read.
+Yes, that is the conclusion I reached as well. ;)
+
+> > dax: add IO completion callback for page faults
+> > 
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > When a page fault drops into a hole, it needs to allocate an extent.
+> > Filesystems may allocate unwritten extents so that the underlying
+> > contents are not exposed until data is written to the extent. In
+> > that case, we need an io completion callback to run once the blocks
+> > have been zeroed to indicate that it is safe for the filesystem to
+> > mark those blocks written without exposing stale data in the event
+> > of a crash.
+> > 
+> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> > ---
+> >  fs/dax.c | 7 ++++++-
+> >  1 file changed, 6 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/dax.c b/fs/dax.c
+> > index 96c4fed..387ca78 100644
+> > --- a/fs/dax.c
+> > +++ b/fs/dax.c
+> > @@ -306,6 +306,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> >  	memset(&bh, 0, sizeof(bh));
+> >  	block = (sector_t)vmf->pgoff << (PAGE_SHIFT - blkbits);
+> >  	bh.b_size = PAGE_SIZE;
+> > +	bh.b_end_io = NULL;
+> 
+> Given the above memset, I don't think we need to explicitly set b_end_io
+> to NULL.
+
+I missed that ;)
+
+> >   repeat:
+> >  	page = find_get_page(mapping, vmf->pgoff);
+> > @@ -364,8 +365,12 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> >  		return VM_FAULT_LOCKED;
+> >  	}
+> >  
+> > -	if (buffer_unwritten(&bh) || buffer_new(&bh))
+> > +	if (buffer_unwritten(&bh) || buffer_new(&bh)) {
+> > +		/* XXX: errors zeroing the blocks are propagated how? */
+> >  		dax_clear_blocks(inode, bh.b_blocknr, bh.b_size);
+> 
+> That's a great question.  I think we need to segfault here.
+
+I suspect there are other cases where we need to do similar "trigger
+segv" error handling rather than ignoring errors altogether...
 
 > 
-> Exposing the internal mutex out to arch code, as in v1, was an
-> indication that we were pushing too much out to arch code, but including
-> platform_device.h into virt/kvm/vfio.c tells me we're still not
-> abstracting at the right point.  Thanks,
+> > +		if (bh.b_end_io)
+> > +			bh.b_end_io(&bh, 1);
+> > +	}
 > 
-I raised my eyebrows over the platform device bus thingy here as well,
-but on the other hand, there's nothing ARM-specific about referring to
-the platform device bus.
+> I think ext4 is going to need to set b_end_io too.  Right now, it uses the
+> dio_iodone_t to convert unwritten extents to written extents, but we don't
+> have (and I don't think we should have) a kiocb for page faults.
 
-I think perhaps it just has to be made more clear that the generic code
-deals with translating the device resources in the necessary way, and
-currently it only supports vfio-platform devices?
+Yes, ext4 is going to need this as well. After I got XFS running
+without problems, I then went back and ran xfstests on ext4 and it
+failed many of the tests that do operations into unwritten regions.
 
--Christoffer
+> So, if it's OK with you, I'm going to fold this patch into version 11 and
+> add your Reviewed-by to it.
+
+Fold it in, I'll review the result ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
