@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaIKBLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 21:11:40 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:43195 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750970AbaIKBLi (ORCPT
+	id S1751697AbaIKBXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 21:23:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39968 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaIKBXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 21:11:38 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 10 Sep 2014 18:26:04 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Andrew Duggan <aduggan@synaptics.com>
-Subject: [PATCH v2] HID: rmi: check sanity of the incoming report
-Date: Wed, 10 Sep 2014 18:02:37 -0700
-Message-ID: <1410397358-15308-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 10 Sep 2014 21:23:53 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <5410F96B.1020308@jp.fujitsu.com>
+Date: Thu, 11 Sep 2014 10:22:51 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+References: <20140904143055.GA20099@esperanza> <5408E1CD.3090004@jp.fujitsu.com> <20140905082846.GA25641@esperanza> <5409C6BB.7060009@jp.fujitsu.com> <20140905160029.GF25641@esperanza> <540A4420.2030504@jp.fujitsu.com> <20140908110131.GA11812@esperanza> <540DB4EC.6060100@jp.fujitsu.com> <20140910120157.GA13796@esperanza>
+In-Reply-To: <20140910120157.GA13796@esperanza>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+(2014/09/10 21:01), Vladimir Davydov wrote:
+> On Mon, Sep 08, 2014 at 10:53:48PM +0900, Kamezawa Hiroyuki wrote:
+>> (2014/09/08 20:01), Vladimir Davydov wrote:
+>>> On Sat, Sep 06, 2014 at 08:15:44AM +0900, Kamezawa Hiroyuki wrote:
+>>>> As you noticed, hitting anon+swap limit just means oom-kill.
+>>>> My point is that using oom-killer for "server management" just seems crazy.
+>>>>
+>>>> Let my clarify things. your proposal was.
+>>>>   1. soft-limit will be a main feature for server management.
+>>>>   2. Because of soft-limit, global memory reclaim runs.
+>>>>   3. Using swap at global memory reclaim can cause poor performance.
+>>>>   4. So, making use of OOM-Killer for avoiding swap.
+>>>>
+>>>> I can't agree "4". I think
+>>>>
+>>>>   - don't configure swap.
+>>>
+>>> Suppose there are two containers, each having soft limit set to 50% of
+>>> total system RAM. One of the containers eats 90% of the system RAM by
+>>> allocating anonymous pages. Another starts using file caches and wants
+>>> more than 10% of RAM to work w/o issuing disk reads. So what should we
+>>> do then?
+>>> We won't be able to shrink the first container to its soft
+>>> limit, because there's no swap. Leaving it as is would be unfair from
+>>> the second container's point of view. Kill it? But the whole system is
+>>> going OK, because the working set of the second container is easily
+>>> shrinkable. Besides there may be some progress in shrinking file caches
+>> >from the first container.
+>>>
+>>>>   - use zram
+>>>
+>>> In fact this isn't different from the previous proposal (working w/o
+>>> swap). ZRAM only compresses data while still storing them in RAM so we
+>>> eventually may get into a situation where almost all RAM is full of
+>>> compressed anon pages.
+>>>
+>>
+>> In above 2 cases, "vmpressure" works fine.
+>
+> What if a container allocates memory so fast that the userspace thread
+> handling its threshold notifications won't have time to react before it
+> eats all memory?
+>
 
-In the Dell XPS 13 9333, it appears that sometimes the bus get confused
-and corrupts the incoming data. It fills the input report with the
-sentinel value "ff". Synaptics told us that such behavior does not comes
-from the touchpad itself, so we filter out such reports here.
+Softlimit is for avoiding such unfair memory scheduling, isn't it ?
 
-Unfortunately, we can not simply discard the incoming data because they
-may contain useful information. Most of the time, the misbehavior is
-quite near the end of the report, so we can still use the valid part of
-it.
+Thanks,
+-Kame
 
-Fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=1123584
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
-Here is a v2 based of Benjamin's patch with the feedback from the list.
-I added size checks to rmi_f11_input_event and rmi_f30_input_event. For F30 I
-print a message it any data is missing so that a user is notified if a button click
-doesn't get reported. Also, I decided to only warn once if a corrupted report is
-received. Based on the data I have seen I don't think dropped reports will be a
-significanly noticible issue. But, I also added a debug message which could be turned on
-if soneone wants to see exactly how often incomplete reports are being received.
 
- drivers/hid/hid-rmi.c | 44 ++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 578bbe6..54966ca 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -320,10 +320,7 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
- 	int offset;
- 	int i;
- 
--	if (size < hdata->f11.report_size)
--		return 0;
--
--	if (!(irq & hdata->f11.irq_mask))
-+	if (!(irq & hdata->f11.irq_mask) || size <= 0)
- 		return 0;
- 
- 	offset = (hdata->max_fingers >> 2) + 1;
-@@ -332,9 +329,19 @@ static int rmi_f11_input_event(struct hid_device *hdev, u8 irq, u8 *data,
- 		int fs_bit_position = (i & 0x3) << 1;
- 		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
- 					0x03;
-+		int position = offset + 5 * i;
-+
-+		if (position + 5 > size) {
-+			/* partial report, go on with what we received */
-+			printk_once(KERN_WARNING
-+				"%s %s: Detected incomplete finger report. Finger reports may occasionally get dropped on this platform.\n",
-+				 dev_driver_string(&hdev->dev),
-+				 dev_name(&hdev->dev));
-+			hid_dbg(hdev, "Incomplete finger report\n");
-+			break;
-+		}
- 
--		rmi_f11_process_touch(hdata, i, finger_state,
--				&data[offset + 5 * i]);
-+		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
- 	}
- 	input_mt_sync_frame(hdata->input);
- 	input_sync(hdata->input);
-@@ -352,6 +359,11 @@ static int rmi_f30_input_event(struct hid_device *hdev, u8 irq, u8 *data,
- 	if (!(irq & hdata->f30.irq_mask))
- 		return 0;
- 
-+	if (size < (int)hdata->f30.report_size) {
-+		hid_warn(hdev, "Click Button pressed, but the click data is missing\n");
-+		return 0;
-+	}
-+
- 	for (i = 0; i < hdata->gpio_led_count; i++) {
- 		if (test_bit(i, &hdata->button_mask)) {
- 			value = (data[i / 8] >> (i & 0x07)) & BIT(0);
-@@ -412,9 +424,29 @@ static int rmi_read_data_event(struct hid_device *hdev, u8 *data, int size)
- 	return 1;
- }
- 
-+static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
-+{
-+	int valid_size = size;
-+	/*
-+	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
-+	 * the report with a sentinel value "ff". Synaptics told us that such
-+	 * behavior does not comes from the touchpad itself, so we filter out
-+	 * such reports here.
-+	 */
-+
-+	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
-+		valid_size--;
-+
-+	return valid_size;
-+}
-+
- static int rmi_raw_event(struct hid_device *hdev,
- 		struct hid_report *report, u8 *data, int size)
- {
-+	size = rmi_check_sanity(hdev, data, size);
-+	if (size < 2)
-+		return 0;
-+
- 	switch (data[0]) {
- 	case RMI_READ_DATA_REPORT_ID:
- 		return rmi_read_data_event(hdev, data, size);
--- 
-1.9.1
 
