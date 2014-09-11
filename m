@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaIKWAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:00:36 -0400
-Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:35217
-	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754460AbaIKWAe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:00:34 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/48] staging: comedi: avoid using comedi_board()
-Thread-Topic: [PATCH 00/48] staging: comedi: avoid using comedi_board()
-Thread-Index: AQHPzBidpyB9E37aHUyfPTFUHQsjBpv8NngQgAC36YD//5AnIA==
-Date: Thu, 11 Sep 2014 22:00:32 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825F992CA@P3PWEX4MB008.ex4.secureserver.net>
-References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D8825F9872E@P3PWEX4MB008.ex4.secureserver.net>
- <20140911213741.GA4542@kroah.com>
-In-Reply-To: <20140911213741.GA4542@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752333AbaIKWC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:02:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34034 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220AbaIKWC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 18:02:26 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [GIT PULL] USB fixes for v3.17-rc4
+Date: Thu, 11 Sep 2014 17:02:10 -0500
+Message-ID: <1410472930-25276-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.0.1.563.g66f467c
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 11, 2014 2:38 PM, Greg Kroah-Hartman wrote:
-> On Thu, Sep 11, 2014 at 05:57:34PM +0000, Hartley Sweeten wrote:
->> Just wanted to give you a heads up on this series and the ones I have
->> posted. The series are:
->> 
->>> From Ian, [PATCH 00/48] staging: comedi: avoid using comedi_board()
->>> From me, [PATCH 00/30] staging: comedi: adl_pci9118: continue cleanup
->>> From me, [PATCH 00/34] staging: comedi: cleanup async cmd->stop_{src,arg} usage
->> 
->> There are a couple conflicts between the series from Ian and my two.
->> If you drop these two from Ian's series:
->>  
->> 06) staging: comedi: adl_pci9118: replace comedi_board() calls
->> 10) staging: comedi: amplc_dio200_common: replace comedi_board() calls
->> 
->> The rest will apply cleanly in the order above (assuming I didn't miss anything).
->
-> I applied all of the above, with the 2 patches from Ian going last and
-> git handling the merge issues.
->
->> Also, Ian had a couple issues with patch 07/34 and 08/34 from the last
->> series I posted. I already asked if you could drop those two. I needed I
->> will repost the series.
->
-> I've dropped them.  Hopefully I got it all right, it should all be
-> pushed out now, verifying this would be good :)
+Hi Greg,
 
-A quick glance looks like everything is right. I'll give it a better look
-when it hits linux-next.
+Here's another set of fixes for v3.17. By the looks of things, I suppose
+this is my last pull request for v3.17. I should have my v3.18 pull
+ready by end of next week.
 
-Thanks,
-Hartley
+Let me know if you need anything to be changed.
 
+cheers
+
+The following changes since commit 9ce9ec95fb9b82e09b55a52f1bb8a362bf8f74d8:
+
+  usb: phy: tegra: Avoid use of sizeof(void) (2014-09-03 09:16:01 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.17-rc4
+
+for you to fetch changes up to 0b93a4c838fa10370d72f86fe712426ac63804de:
+
+  usb: dwc3: fix TRB completion when multiple TRBs are started (2014-09-05 09:16:55 -0500)
+
+----------------------------------------------------------------
+usb: fixes for v3.17-rc4
+
+Some late fixes for dwc3 so we have something more stable
+on v3.17-final.
+
+Most bugs have been there for quite a while and nobody
+noticed, except for TRB completion when multiple TRBs
+are started.
+
+Patches were tested on AM437x SK and J6 EVM and are passing
+my tests.
+
+Signed-of-by: Felipe Balbi <balbi@ti.com>
+
+----------------------------------------------------------------
+Felipe Balbi (4):
+      usb: dwc3: core: fix order of PM runtime calls
+      usb: dwc3: core: fix ordering for PHY suspend
+      usb: dwc3: omap: fix ordering for runtime pm calls
+      usb: dwc3: fix TRB completion when multiple TRBs are started
+
+Zhuang Jin Can (1):
+      usb: dwc3: gadget: Fix desc NULL pointer in dwc3_gadget_ep_queue()
+
+ drivers/usb/dwc3/core.c      | 13 +++++++------
+ drivers/usb/dwc3/dwc3-omap.c |  2 +-
+ drivers/usb/dwc3/gadget.c    | 11 +++--------
+ 3 files changed, 11 insertions(+), 15 deletions(-)
