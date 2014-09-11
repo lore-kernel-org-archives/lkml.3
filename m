@@ -1,168 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787AbaIKIyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:54:07 -0400
-Received: from mga14.intel.com ([192.55.52.115]:30386 "EHLO mga14.intel.com"
+	id S1753552AbaIKJE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:04:58 -0400
+Received: from mga14.intel.com ([192.55.52.115]:30409 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964AbaIKIyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:54:03 -0400
+	id S1753542AbaIKIyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:54:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="589733132"
+   d="scan'208";a="589733160"
 From: Qiaowei Ren <qiaowei.ren@intel.com>
 To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
 Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v8 00/10] Intel MPX support
-Date: Thu, 11 Sep 2014 16:46:40 +0800
-Message-Id: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+Subject: [PATCH v8 02/10] x86, mpx: add MPX specific mmap interface
+Date: Thu, 11 Sep 2014 16:46:42 +0800
+Message-Id: <1410425210-24789-3-git-send-email-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the Memory Protection Extensions
-(MPX) feature found in future Intel processors.
+This patch adds one MPX specific mmap interface, which only handles
+mpx related maps, including bounds table and bounds directory.
 
-MPX can be used in conjunction with compiler changes to check memory
-references, for those references whose compile-time normal intentions
-are usurped at runtime due to buffer overflow or underflow.
+In order to track MPX specific memory usage, this interface is added
+to stick new vm_flag VM_MPX in the vma_area_struct when create a
+bounds table or bounds directory.
 
-MPX provides this capability at very low performance overhead for
-newly compiled code, and provides compatibility mechanisms with legacy
-software components. MPX architecture is designed allow a machine to
-run both MPX enabled software and legacy software that is MPX unaware.
-In such a case, the legacy software does not benefit from MPX, but it
-also does not experience any change in functionality or reduction in
-performance.
+These bounds tables can take huge amounts of memory.  In the
+worst-case scenario, the tables can be 4x the size of the data
+structure being tracked. IOW, a 1-page structure can require 4
+bounds-table pages.
 
-More information about Intel MPX can be found in "Intel(R) Architecture
-Instruction Set Extensions Programming Reference".
+My expectation is that folks using MPX are going to be keen on
+figuring out how much memory is being dedicated to it. With this
+feature, plus some grepping in /proc/$pid/smaps one could take a
+pretty good stab at it.
 
-To get the advantage of MPX, changes are required in the OS kernel,
-binutils, compiler, system libraries support.
-
-New GCC option -fmpx is introduced to utilize MPX instructions.
-Currently GCC compiler sources with MPX support is available in a
-separate branch in common GCC SVN repository. See GCC SVN page
-(http://gcc.gnu.org/svn.html) for details.
-
-To have the full protection, we had to add MPX instrumentation to all
-the necessary Glibc routines (e.g. memcpy) written on assembler, and
-compile Glibc with the MPX enabled GCC compiler. Currently MPX enabled
-Glibc source can be found in Glibc git repository.
-
-Enabling an application to use MPX will generally not require source
-code updates but there is some runtime code, which is responsible for
-configuring and enabling MPX, needed in order to make use of MPX.
-For most applications this runtime support will be available by linking
-to a library supplied by the compiler or possibly it will come directly
-from the OS once OS versions that support MPX are available.
-
-MPX kernel code, namely this patchset, has mainly the 2 responsibilities:
-provide handlers for bounds faults (#BR), and manage bounds memory.
-
-The high-level areas modified in the patchset are as follow:
-1) struct siginfo is extended to include bound violation information.
-2) two prctl() commands are added to do performance optimization.
-
-Currently no hardware with MPX ISA is available but it is always
-possible to use SDE (Intel(R) software Development Emulator) instead,
-which can be downloaded from
-http://software.intel.com/en-us/articles/intel-software-development-emulator
-
-This patchset has been tested on real internal hardware platform at Intel.
-We have some simple unit tests in user space, which directly call MPX
-instructions to produce #BR to let kernel allocate bounds tables and
-cause bounds violations. We also compiled several benchmarks with an
-MPX-enabled Gcc/Glibc and ICC, an ran them with this patch set.
-We found a number of bugs in this code in these tests.
-
-Future TODO items:
-1) support 32-bit binaries on 64-bit kernels.
-
-Changes since v1:
-  * check to see if #BR occurred in userspace or kernel space.
-  * use generic structure and macro as much as possible when
-    decode mpx instructions.
-
-Changes since v2:
-  * fix some compile warnings.
-  * update documentation.
-
-Changes since v3:
-  * correct some syntax errors at documentation, and document
-    extended struct siginfo.
-  * for kill the process when the error code of BNDSTATUS is 3.
-  * add some comments.
-  * remove new prctl() commands.
-  * fix some compile warnings for 32-bit.
-
-Changes since v4:
-  * raise SIGBUS if the allocations of the bound tables fail.
-
-Changes since v5:
-  * hook unmap() path to cleanup unused bounds tables, and use
-    new prctl() command to register bounds directory address to
-    struct mm_struct to check whether one process is MPX enabled
-    during unmap().
-  * in order track precisely MPX memory usage, add MPX specific
-    mmap interface and one VM_MPX flag to check whether a VMA
-    is MPX bounds table.
-  * add macro cpu_has_mpx to do performance optimization.
-  * sync struct figinfo for mips with general version to avoid
-    build issue.
-
-Changes since v6:
-  * because arch_vma_name is removed, this patchset have toset MPX
-    specific ->vm_ops to do the same thing.
-  * fix warnings for 32 bit arch.
-  * add more description into these patches.
-
-Changes since v7:
-  * introduce VM_ARCH_2 flag. 
-  * remove all of the pr_debug()s.
-  * fix prctl numbers in documentation.
-  * fix some bugs on bounds tables freeing.
-
-Qiaowei Ren (10):
-  x86, mpx: introduce VM_MPX to indicate that a VMA is MPX specific
-  x86, mpx: add MPX specific mmap interface
-  x86, mpx: add macro cpu_has_mpx
-  x86, mpx: hook #BR exception handler to allocate bound tables
-  x86, mpx: extend siginfo structure to include bound violation
-    information
-  mips: sync struct siginfo with general version
-  x86, mpx: decode MPX instruction to get bound violation information
-  x86, mpx: add prctl commands PR_MPX_REGISTER, PR_MPX_UNREGISTER
-  x86, mpx: cleanup unused bound tables
-  x86, mpx: add documentation on Intel MPX
-
- Documentation/x86/intel_mpx.txt      |  127 +++++++++++
- arch/mips/include/uapi/asm/siginfo.h |    4 +
- arch/x86/Kconfig                     |    4 +
- arch/x86/include/asm/cpufeature.h    |    6 +
- arch/x86/include/asm/mmu_context.h   |   16 ++
- arch/x86/include/asm/mpx.h           |   91 ++++++++
- arch/x86/include/asm/processor.h     |   18 ++
- arch/x86/kernel/Makefile             |    1 +
- arch/x86/kernel/mpx.c                |  412 ++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c              |   61 +++++-
- arch/x86/mm/Makefile                 |    2 +
- arch/x86/mm/mpx.c                    |  331 +++++++++++++++++++++++++++
- fs/proc/task_mmu.c                   |    1 +
- include/asm-generic/mmu_context.h    |    6 +
- include/linux/mm.h                   |    6 +
- include/linux/mm_types.h             |    3 +
- include/uapi/asm-generic/siginfo.h   |    9 +-
- include/uapi/linux/prctl.h           |    6 +
- kernel/signal.c                      |    4 +
- kernel/sys.c                         |   12 +
- mm/mmap.c                            |    2 +
- 21 files changed, 1120 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/x86/intel_mpx.txt
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ arch/x86/Kconfig           |    4 ++
+ arch/x86/include/asm/mpx.h |   38 +++++++++++++++++++++
+ arch/x86/mm/Makefile       |    2 +
+ arch/x86/mm/mpx.c          |   79 ++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 123 insertions(+), 0 deletions(-)
  create mode 100644 arch/x86/include/asm/mpx.h
- create mode 100644 arch/x86/kernel/mpx.c
  create mode 100644 arch/x86/mm/mpx.c
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 778178f..935aa69 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -243,6 +243,10 @@ config HAVE_INTEL_TXT
+ 	def_bool y
+ 	depends on INTEL_IOMMU && ACPI
+ 
++config X86_INTEL_MPX
++	def_bool y
++	depends on CPU_SUP_INTEL
++
+ config X86_32_SMP
+ 	def_bool y
+ 	depends on X86_32 && SMP
+diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+new file mode 100644
+index 0000000..5725ac4
+--- /dev/null
++++ b/arch/x86/include/asm/mpx.h
+@@ -0,0 +1,38 @@
++#ifndef _ASM_X86_MPX_H
++#define _ASM_X86_MPX_H
++
++#include <linux/types.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_X86_64
++
++/* upper 28 bits [47:20] of the virtual address in 64-bit used to
++ * index into bounds directory (BD).
++ */
++#define MPX_BD_ENTRY_OFFSET	28
++#define MPX_BD_ENTRY_SHIFT	3
++/* bits [19:3] of the virtual address in 64-bit used to index into
++ * bounds table (BT).
++ */
++#define MPX_BT_ENTRY_OFFSET	17
++#define MPX_BT_ENTRY_SHIFT	5
++#define MPX_IGN_BITS		3
++
++#else
++
++#define MPX_BD_ENTRY_OFFSET	20
++#define MPX_BD_ENTRY_SHIFT	2
++#define MPX_BT_ENTRY_OFFSET	10
++#define MPX_BT_ENTRY_SHIFT	4
++#define MPX_IGN_BITS		2
++
++#endif
++
++#define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
++#define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
++
++#define MPX_BNDSTA_ERROR_CODE	0x3
++
++unsigned long mpx_mmap(unsigned long len);
++
++#endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index 6a19ad9..ecfdc46 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -30,3 +30,5 @@ obj-$(CONFIG_ACPI_NUMA)		+= srat.o
+ obj-$(CONFIG_NUMA_EMU)		+= numa_emulation.o
+ 
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
++
++obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
+diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+new file mode 100644
+index 0000000..e1b28e6
+--- /dev/null
++++ b/arch/x86/mm/mpx.c
+@@ -0,0 +1,79 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <asm/mpx.h>
++#include <asm/mman.h>
++#include <linux/sched/sysctl.h>
++
++static const char *mpx_mapping_name(struct vm_area_struct *vma)
++{
++	return "[mpx]";
++}
++
++static struct vm_operations_struct mpx_vma_ops = {
++	.name = mpx_mapping_name,
++};
++
++/*
++ * this is really a simplified "vm_mmap". it only handles mpx
++ * related maps, including bounds table and bounds directory.
++ *
++ * here we can stick new vm_flag VM_MPX in the vma_area_struct
++ * when create a bounds table or bounds directory, in order to
++ * track MPX specific memory.
++ */
++unsigned long mpx_mmap(unsigned long len)
++{
++	unsigned long ret;
++	unsigned long addr, pgoff;
++	struct mm_struct *mm = current->mm;
++	vm_flags_t vm_flags;
++	struct vm_area_struct *vma;
++
++	/* Only bounds table and bounds directory can be allocated here */
++	if (len != MPX_BD_SIZE_BYTES && len != MPX_BT_SIZE_BYTES)
++		return -EINVAL;
++
++	down_write(&mm->mmap_sem);
++
++	/* Too many mappings? */
++	if (mm->map_count > sysctl_max_map_count) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	/* Obtain the address to map to. we verify (or select) it and ensure
++	 * that it represents a valid section of the address space.
++	 */
++	addr = get_unmapped_area(NULL, 0, len, 0, MAP_ANONYMOUS | MAP_PRIVATE);
++	if (addr & ~PAGE_MASK) {
++		ret = addr;
++		goto out;
++	}
++
++	vm_flags = VM_READ | VM_WRITE | VM_MPX |
++			mm->def_flags | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC;
++
++	/* Set pgoff according to addr for anon_vma */
++	pgoff = addr >> PAGE_SHIFT;
++
++	ret = mmap_region(NULL, addr, len, vm_flags, pgoff);
++	if (IS_ERR_VALUE(ret))
++		goto out;
++
++	vma = find_vma(mm, ret);
++	if (!vma) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	vma->vm_ops = &mpx_vma_ops;
++
++	if (vm_flags & VM_LOCKED) {
++		up_write(&mm->mmap_sem);
++		mm_populate(ret, len);
++		return ret;
++	}
++
++out:
++	up_write(&mm->mmap_sem);
++	return ret;
++}
+-- 
+1.7.1
 
