@@ -1,82 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281AbaIKVIj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:08:39 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:35529 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756865AbaIKVIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:08:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140911205308.GB2598@core.coreip.homeip.net>
-References: <20140905174925.GA12991@mtj.dyndns.org> <20140909224143.GB3154@mtj.dyndns.org>
- <1410302783.13298.50.camel@jarvis.lan> <5762134.BLS0EbmNJd@dtor-glaptop>
- <1410465565.10549.19.camel@jarvis> <20140911202354.GA2598@core.coreip.homeip.net>
- <CAB=NE6XfUAm=iVr=qfu5i9QW7BpViXfJ6wsmEZOOmS=rBF1bdA@mail.gmail.com> <20140911205308.GB2598@core.coreip.homeip.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 11 Sep 2014 14:08:15 -0700
-X-Google-Sender-Auth: 5enaC44FqdJiSuQbFGK_8j_eyOo
-Message-ID: <CAB=NE6U8LQPFw4K+QabSppoLyife-oSX1h5vys5S7dqBj8ANLw@mail.gmail.com>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Tejun Heo <tj@kernel.org>, Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Cas ey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Content-Type: text/plain; charset=UTF-8
+	id S1753251AbaIKVPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:15:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5912 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899AbaIKVPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:15:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,507,1406617200"; 
+   d="scan'208";a="571973841"
+Subject: [PATCH 0/3] [v3] x86: disabled features macros
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        fenghua.yu@intel.com, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Thu, 11 Sep 2014 14:15:10 -0700
+Message-Id: <20140911211510.D032EC3B@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 1:53 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Thu, Sep 11, 2014 at 01:42:20PM -0700, Luis R. Rodriguez wrote:
->> On Thu, Sep 11, 2014 at 1:23 PM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> >
->> >>  There are elements in common, but by and
->> >> large the biggest headaches at least in large device number boots have
->> >> already been tackled by the enterprise crowd (they don't like their
->> >> S390's or 1024 core NUMA systems taking half an hour to come up).
->> >
->> > Please do not position this as a mostly solved large systems problem,
->> > For us it is touchpad detection stalling kernel for 0.5-1 sec. Which is
->> > a lot given that we boot in seconds.
->>
->> Dmitry, would working on top of the aysnc series be reasonable? Then
->> we could address these as separate things which we'd build on top of.
->> The one aspect I see us needing to share is the "async probe universe
->> is OK" flag.
->
-> Sure. Are you planning on refreshing your series?
+There were only minor changes here from the last version.  I'd
+like to get this in before the MPX patch set so that the MPX
+patches can use this instead of 'cpu_has_mpx'.
 
-Yes.
+Could this get queued up for 3.18?
 
-> I think the code-related discussion kind of stalled...
+Changes from v2:
+ * also axe PAE macro
+ * fix typo in comment
+ * put K6_MTRR in the right DISABLED_MASK leaf
 
-I was just waiting for any possible brain farts to flush out before a
-new respin. I'll tackle this now.
-
- Luis
