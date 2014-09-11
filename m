@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467AbaIKTNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:13:01 -0400
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:34042 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752683AbaIKTM7 convert rfc822-to-8bit (ORCPT
+	id S1753930AbaIKTR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:17:58 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:46230 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666AbaIKTR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:12:59 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "b.zolnierkie@samsung.com" <b.zolnierkie@samsung.com>
-Subject: RE: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Topic: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Index: AQHPzb9uAjbYlQN8gkubjUs9hysZ/5v8S7ZQ
-Date: Thu, 11 Sep 2014 19:11:20 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844D6693@US01WEMBX2.internal.synopsys.com>
-References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
-In-Reply-To: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Sep 2014 15:17:57 -0400
+Date: Thu, 11 Sep 2014 15:17:51 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: Re: [PATCH v5 10/12] sched: get CPU's utilization statistic
+In-Reply-To: <20140911140444.GH4783@worktop.ger.corp.intel.com>
+Message-ID: <alpine.LFD.2.11.1409111443570.16533@knanqh.ubzr>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-11-git-send-email-vincent.guittot@linaro.org> <20140911123412.GY3190@worktop.ger.corp.intel.com> <CAKfTPtBbjpCFifoyFSh8Hb3nBZFFTjjxdfxnpMk=CHy5aX1qpg@mail.gmail.com>
+ <20140911140444.GH4783@worktop.ger.corp.intel.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> Sent: Thursday, September 11, 2014 5:53 AM
-> 
-> These two patches breaks dwc2 driver. The first one causes build break,
-> the second breaks gadget at Samsung platforms.
-> 
-> Best regards
-> Robert Baldyga
-> 
-> Robert Baldyga (2):
->   Revert "usb: dwc2: Update Kconfig to support dual-role"
->   Revert "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
-> 
->  drivers/usb/dwc2/Kconfig    | 63 +++++++++++++++++++--------------------------
->  drivers/usb/dwc2/Makefile   | 21 +++++++--------
->  drivers/usb/dwc2/gadget.c   |  1 +
->  drivers/usb/dwc2/platform.c |  1 -
->  4 files changed, 38 insertions(+), 48 deletions(-)
+On Thu, 11 Sep 2014, Peter Zijlstra wrote:
 
-Yep, I can confirm the build breakage. Greg, we should revert these two
-before you send your update for the next -rc, if it's not too late.
+> On Thu, Sep 11, 2014 at 03:07:52PM +0200, Vincent Guittot wrote:
+> > > Also I'm not entirely sure I like the usage, utilization names/metrics.
+> > > I would suggest to reverse them. Call the pure running number
+> > > 'utilization' and this scaled with capacity 'usage' or so.
+> > 
+> > ok. i can invert 'usage' and 'utilization', which will give
+> > 
+> > s/get_cpu_utilization/get_cpu_usage/
+> > s/sgs->group_utilization/sgs->group_usage/
+> > s/cfs.usage_load_avg/cfs.utilization_load_avg/
+> > s/se->avg.usage_avg_contrib/se->avg.utilization_avg_contrib
+> > s/__update_task_entity_usage/__update_task_entity_utilization
+> > s/__update_entity_usage_avg_contrib/__update_entity_utilization_avg_contrib
+> > 
+> 
+> Any other opinions before Vince goes and applies sed on patches? ;-)
 
-Dinh, before resending the series, please test that each individual
-patch does not break the build.
+I don't mind either way, but for sure someone (possibly me) is going to 
+confuse the two soon enough.
 
--- 
-Paul
+Please include in the code some formal definition in the context of the 
+scheduler.  A comment block right before the corresponding get_cpu_* 
+accessors should be good enough.
 
+
+Nicolas
