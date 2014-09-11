@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987AbaIKMn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:43:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51657 "EHLO
+	id S1756021AbaIKMn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:43:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51648 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755445AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755440AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sergiu Giurgiu" <sgiurgiu11@gmail.com>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Hans de Goede" <hdegoede@redhat.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.233889257@decadent.org.uk>
+Message-ID: <lsq.1410438733.843474095@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 047/131] ALSA: virtuoso: Xonar DSX support
+Subject: [PATCH 3.2 008/131] [media] gspca_pac7302: Add new usb-id for
+ Genius i-Look 317
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,59 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergiu Giurgiu <sgiurgiu11@gmail.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 4492363251235c4499a2d073c5f09121ea23d39d upstream.
+commit 242841d3d71191348f98310e2d2001e1001d8630 upstream.
 
-This patch adds support for ASUS - Xonar DSX sound cards. Tested on
-openSUSE 12.2 with kernel:
-Linux 3.4.6-2.10-desktop #1 SMP PREEMPT Thu Jul 26 09:36:26 UTC 2012 (641c197) x86_64 x86_64 x86_64 GNU/Linux
-Works:
- - play sounds
- - adjust volume on master channel.
- - mute .
+Tested-and-reported-by: yullaw <yullaw@mageia.cz>
 
-Since Xonar DS uses the same chip, everything that works for DS should
-work for DSX as well.
-
-Signed-off-by: Sergiu Giurgiu <sgiurgiu11@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/oxygen/virtuoso.c     | 1 +
- sound/pci/oxygen/xonar_wm87x6.c | 6 +++++-
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ drivers/media/video/gspca/pac7302.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/oxygen/virtuoso.c
-+++ b/sound/pci/oxygen/virtuoso.c
-@@ -52,6 +52,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x835d) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
-+	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
- 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
- 	{ }
- };
---- a/sound/pci/oxygen/xonar_wm87x6.c
-+++ b/sound/pci/oxygen/xonar_wm87x6.c
-@@ -1255,7 +1255,6 @@ static void dump_wm87x6_registers(struct
- }
- 
- static const struct oxygen_model model_xonar_ds = {
--	.shortname = "Xonar DS",
- 	.longname = "Asus Virtuoso 66",
- 	.chip = "AV200",
- 	.init = xonar_ds_init,
-@@ -1325,6 +1324,11 @@ int __devinit get_xonar_wm87x6_model(str
- 	switch (id->subdevice) {
- 	case 0x838e:
- 		chip->model = model_xonar_ds;
-+		chip->model.shortname = "Xonar DS";
-+		break;
-+	case 0x8522:
-+		chip->model = model_xonar_ds;
-+		chip->model.shortname = "Xonar DSX";
- 		break;
- 	case 0x835e:
- 		chip->model = model_xonar_hdav_slim;
+--- a/drivers/media/video/gspca/pac7302.c
++++ b/drivers/media/video/gspca/pac7302.c
+@@ -1190,6 +1190,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x093a, 0x2620)},
+ 	{USB_DEVICE(0x093a, 0x2621)},
+ 	{USB_DEVICE(0x093a, 0x2622), .driver_info = FL_VFLIP},
++	{USB_DEVICE(0x093a, 0x2623), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2624), .driver_info = FL_VFLIP},
+ 	{USB_DEVICE(0x093a, 0x2625)},
+ 	{USB_DEVICE(0x093a, 0x2626)},
 
