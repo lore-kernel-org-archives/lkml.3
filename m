@@ -1,108 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaIKVC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:02:56 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.44.111]:50807 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970AbaIKVCz convert rfc822-to-8bit (ORCPT
+	id S1756370AbaIKVEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:04:55 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57302 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252AbaIKVEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:02:55 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>
-CC: Robert Baldyga <r.baldyga@samsung.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Topic: [PATCH 0/2] usb: dwc2: Revert patches causing problems
-Thread-Index: AQHPzb9uAjbYlQN8gkubjUs9hysZ/5v8S7ZQgAACbVCAABuy4A==
-Date: Thu, 11 Sep 2014 21:02:39 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844D6745@US01WEMBX2.internal.synopsys.com>
-References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
-  <A2CA0424C0A6F04399FB9E1CD98E0304844D66E5@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844D66E5@US01WEMBX2.internal.synopsys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 11 Sep 2014 17:04:52 -0400
+Message-ID: <54120E6B.4090704@gmail.com>
+Date: Thu, 11 Sep 2014 23:04:43 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linus.walleij@linaro.org
+CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: berlin: fix the dt_free_map function
+References: <1410340551-24023-1-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1410340551-24023-1-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Paul Zimmerman
-> Sent: Thursday, September 11, 2014 1:10 PM
+On 09/10/2014 11:15 AM, Antoine Tenart wrote:
+> The berlin_pinctrl_dt_free_map function tries to free memory
+> allocated and handled by the of subsystem. This is wrong and
+> already handled by pinctrl_dt_free_maps() which calls
+> of_node_put().
 > 
-> > From: Paul Zimmerman
-> > Sent: Thursday, September 11, 2014 12:11 PM
-> >
-> > > From: Robert Baldyga [mailto:r.baldyga@samsung.com]
-> > > Sent: Thursday, September 11, 2014 5:53 AM
-> > >
-> > > These two patches breaks dwc2 driver. The first one causes build break,
-> > > the second breaks gadget at Samsung platforms.
-> > >
-> > > Best regards
-> > > Robert Baldyga
-> > >
-> > > Robert Baldyga (2):
-> > >   Revert "usb: dwc2: Update Kconfig to support dual-role"
-> > >   Revert "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
-> > >
-> > >  drivers/usb/dwc2/Kconfig    | 63 +++++++++++++++++++--------------------------
-> > >  drivers/usb/dwc2/Makefile   | 21 +++++++--------
-> > >  drivers/usb/dwc2/gadget.c   |  1 +
-> > >  drivers/usb/dwc2/platform.c |  1 -
-> > >  4 files changed, 38 insertions(+), 48 deletions(-)
-> >
-> > Yep, I can confirm the build breakage. Greg, we should revert these two
-> > before you send your update for the next -rc, if it's not too late.
-> >
-> > Dinh, before resending the series, please test that each individual
-> > patch does not break the build.
+> This patch fixes the Berlin pinctrl way of freeing its maps,
+> avoiding a kernel BUG(), by using the common
+> pinctrl_utils_dt_free_map function instead.
 > 
-> FYI, I see the build breakage when using ARM multi_v7_defconfig,
-> with the mass-storage gadget enabled and dwc2 enabled for
-> peripheral-only mode:
-> 
->   CC      init/version.o
->   LD      init/built-in.o
-> drivers/built-in.o: In function `dwc2_hc_set_even_odd_frame':
-> :(.text+0x21ca0c): undefined reference to `dwc2_hcd_get_frame_number'
-> drivers/built-in.o: In function `dwc2_handle_common_intr':
-> :(.text+0x21f5dc): undefined reference to `dwc2_hcd_start'
-> :(.text+0x21f660): undefined reference to `dwc2_hcd_start'
-> :(.text+0x21f7c4): undefined reference to `dwc2_hcd_start'
-> :(.text+0x21f974): undefined reference to `dwc2_hcd_disconnect'
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/pinctrl/berlin/berlin.c | 21 +--------------------
+>  1 file changed, 1 insertion(+), 20 deletions(-)
 
-Hi Dinh,
+I like the diffstat :)
 
-This change, after applying your first patch, fixes the build breakage
-for me:
+I am very short on time, so if it works for you, I am fine with it.
 
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
---- a/drivers/usb/dwc2/Makefile
-+++ b/drivers/usb/dwc2/Makefile
-@@ -2,9 +2,9 @@ ccflags-$(CONFIG_USB_DWC2_DEBUG)	+= -DDEBUG
- ccflags-$(CONFIG_USB_DWC2_VERBOSE)	+= -DVERBOSE_DEBUG
- 
- obj-$(CONFIG_USB_DWC2)			+= dwc2.o
--dwc2-y					:= core.o core_intr.o
- 
- ifneq ($(filter y,$(CONFIG_USB_DWC2_HOST) $(CONFIG_USB_DWC2_DUAL_ROLE)),)
-+	dwc2-y				+= core.o core_intr.o
- 	dwc2-y				+= hcd.o hcd_intr.o
- 	dwc2-y				+= hcd_queue.o hcd_ddma.o
- endif
-
-
-I didn't test whether the resulting drivers actually work, though.
-Maybe you could make that modification to your first patch, and then
-add back the move of core.o and core_intr.o to a later patch when
-the code is ready for it?
-
--- 
-Paul
-
+Sebastian
