@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797AbaIKQPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:15:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57024 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaIKQPT (ORCPT
+	id S1756739AbaIKQQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:16:43 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55230 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751552AbaIKQQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:15:19 -0400
-Date: Thu, 11 Sep 2014 18:15:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-Message-ID: <20140911161517.GA3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+	Thu, 11 Sep 2014 12:16:41 -0400
+Date: Thu, 11 Sep 2014 17:16:36 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Rabin Vincent <rabin@rab.in>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Rob Herring <robh@kernel.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Liu hua <sdu.liu@huawei.com>,
+        Nikolay Borisov <Nikolay.Borisov@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Doug Anderson <dianders@google.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 3/8] arm: fixmap: implement __set_fixmap()
+Message-ID: <20140911161636.GU6158@arm.com>
+References: <CAGXu5jKimGaupwyUwt0Zwa3OtjeoED8-uBeMX0MwXjBYP6ssAg@mail.gmail.com>
+ <20140904172748.GO7156@arm.com>
+ <20140908191634.GV5598@outflux.net>
+ <20140908215506.GA4759@dator>
+ <CAGXu5jJFB+pcDVkcMoRZ9DnJu7MQuN=kceDhpkGrO=6ZLFy6Kw@mail.gmail.com>
+ <20140909123829.GK1754@arm.com>
+ <CAGXu5jJoW-B7WwuFUhbN4e1aL-HVxa9x4da9hB9DcCGEXVLgzw@mail.gmail.com>
+ <20140910175126.GJ1710@arm.com>
+ <CAGXu5jJaML_S+6LUn1uPLrScXxUJL+1N1B+Fa08ioxKt933nCw@mail.gmail.com>
+ <CAGXu5jJ_wLsKOuVgbS7cb+k-nyA=8XpaMYwov0o3hdFdyjaCmA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <CAGXu5jJ_wLsKOuVgbS7cb+k-nyA=8XpaMYwov0o3hdFdyjaCmA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
-> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
-> +			struct lb_env *env)
->  {
-> +	if ((sgs->group_capacity_orig * 100) >
-> +			(sgs->group_utilization * env->sd->imbalance_pct))
-> +		return 1;
-> +
-> +	if (sgs->sum_nr_running < sgs->group_weight)
-> +		return 1;
->  
-> +	return 0;
-> +}
->  
-> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
-> +			struct lb_env *env)
-> +{
-> +	if (sgs->sum_nr_running <= sgs->group_weight)
-> +		return 0;
->  
-> +	if ((sgs->group_capacity_orig * 100) <
-> +			(sgs->group_utilization * env->sd->imbalance_pct))
-> +		return 1;
->  
-> +	return 0;
->  }
+On Thu, Sep 11, 2014 at 05:05:14PM +0100, Kees Cook wrote:
+> Actually, this doesn't make sense. If we're using
+> local_flush_tlb_kernel_range() in set_fixmap, we must always run under
+> stop_machine. The needs-broadcast case is solved by using
+> local_flush_tlb_kernel_range(), and the TLB-miss-on-other-CPU case is
+> solved by using stop_machine(). This is how the ftrace case work,
+> though not via fixmap.
+> 
+> Since we need to flush the TLB on each fixmap change during
+> patch_text(), if we want to make the local_flush_tlb_... optionally
+> use flush_tlb_... to avoid calling stop_machine in the
+> does't-need-broadcast case, then we'd be checking in multiple places,
+> making this code overly complex for this rare operation. Is there a
+> good reason to complicate this code to avoid stop_machine()?
+> 
+> I think we should just do this:
+> 
+> diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
+> index 07314af47733..5038960e3c55 100644
+> --- a/arch/arm/kernel/patch.c
+> +++ b/arch/arm/kernel/patch.c
+> @@ -60,16 +125,5 @@ void __kprobes patch_text(void *addr, unsigned int insn)
+>                 .insn = insn,
+>         };
+> 
+> -       if (cache_ops_need_broadcast()) {
+> -               stop_machine(patch_text_stop_machine, &patch, cpu_online_mask);
+> -       } else {
+> -               bool straddles_word = IS_ENABLED(CONFIG_THUMB2_KERNEL)
+> -                                     && __opcode_is_thumb32(insn)
+> -                                     && ((uintptr_t)addr & 2);
+> -
+> -               if (straddles_word)
+> -                       stop_machine(patch_text_stop_machine, &patch, NULL);
+> -               else
+> -                       __patch_text(addr, insn);
+> -       }
+> +       stop_machine(patch_text_stop_machine, &patch, NULL);
 
-I'm confused about the utilization vs capacity_orig. I see how we should
-maybe scale things with the capacity when comparing between CPUs/groups,
-but not on the same CPU/group.
+The reason not to use stop machine is that it's very expensive and the
+architecture does provide some guarantees that mean it's not always
+required...
 
-I would have expected something simple like:
+... however, as I pointed out in a kprobes thread the other day, the code
+you remove above is actually broken, so I wouldn't be against replacing it
+all with stop_machine.
 
-static inline bool group_has_capacity()
-{
-	/* Is there a spare cycle? */
-	if (sgs->group_utilization < sgs->group_weight * SCHED_LOAD_SCALE)
-		return true;
+Is there any way to you can WARN_ON(!called_under_stop_machine) in
+set_fixmap before doing the local TLBI?
 
-	/* Are there less tasks than logical CPUs? */
-	if (sgs->sum_nr_running < sgs->group_weight)
-		return true;
+Will
 
-	return false;
-}
-
-Where group_utilization a pure sum of running_avg.
-
-Now this has a hole when there are RT tasks on the system, in that case
-the utilization will never hit 1, but we could fix that another way. I
-don't think the capacity_orig thing is right.
+P.S. If you plan on doing an equivalent series for arm64, you should do it
+before we have any broken CPUs, then you can use TLBI without worry ;)
