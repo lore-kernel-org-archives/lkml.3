@@ -1,180 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaIKIyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:54:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34845 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838AbaIKIyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:54:35 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <54116324.7000200@jp.fujitsu.com>
-Date: Thu, 11 Sep 2014 17:53:56 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-References: <20140904143055.GA20099@esperanza> <5408E1CD.3090004@jp.fujitsu.com> <20140905082846.GA25641@esperanza> <5409C6BB.7060009@jp.fujitsu.com> <20140905160029.GF25641@esperanza> <540A4420.2030504@jp.fujitsu.com> <20140908110131.GA11812@esperanza> <540DB4EC.6060100@jp.fujitsu.com> <20140909103943.GA29897@esperanza> <54110339.6000702@jp.fujitsu.com> <20140911082311.GB4151@esperanza>
-In-Reply-To: <20140911082311.GB4151@esperanza>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+	id S1753964AbaIKIy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:54:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37911 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753315AbaIKIyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:54:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="589733230"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v8 10/10] x86, mpx: add documentation on Intel MPX
+Date: Thu, 11 Sep 2014 16:46:50 +0800
+Message-Id: <1410425210-24789-11-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/11 17:23), Vladimir Davydov wrote:
-> On Thu, Sep 11, 2014 at 11:04:41AM +0900, Kamezawa Hiroyuki wrote:
->> (2014/09/09 19:39), Vladimir Davydov wrote:
->>
->>>> For your purpose, you need to implement your method in system-wide way.
->>>> It seems crazy to set per-cgroup-anon-limit for avoding system-wide-oom.
->>>> You'll need help of system-wide-cgroup-configuration-middleware even if
->>>> you have a method in a cgroup. If you say logic should be in OS kernel,
->>>> please implement it in a system wide logic rather than cgroup.
->>>
->>> What if on global pressure a memory cgroup exceeding its soft limit is
->>> being reclaimed, but not fast enough, because it has a lot of anon
->>> memory? The global OOM won't be triggered then, because there's still
->>> progress, but the system will experience hard pressure due to the
->>> reclaimer runs. How can we detect if we should kill the container or
->>> not? It smells like one more heuristic to vmscan, IMO.
->>
->>
->> That's you are trying to implement by per-cgroup-anon+swap-limit, the difference
->> is heuristics by system designer at container creation or heuristics by kernel in
->> the dynamic way.
->
-> anon+swap limit isn't a heuristic, it's a configuration!
->
-> The difference is that the user usually knows *minimal* requirements of
-> the app he's going to run in a container/VM. Basing on them, he buys a
-> container/VM with some predefined amount of RAM. From the whole system
-> POV it's suboptimal to set the hard limit for the container by the user
-> configuration, because there might be free memory, which could be used
-> for file caches and hence lower disk load. If we had anon+swap hard
-> limit, we could use it in conjunction with the soft limit instead of the
-> hard limit. That would be more efficient than VM-like sand-boxing though
-> still safe.
->
-> When I'm talking about in-kernel heuristics, I mean a pile of
-> hard-to-read functions with a bunch of obscure constants. This is much
-> worse than providing the user with a convenient and flexible interface.
->
->> I said it should be done by system/cloud-container-scheduler based on notification.
->
-> Basically, it's unsafe to hand this out to userspace completely. The
-> system would be prone to DOS attacks from inside containers then.
->
->> But okay, let me think of kernel help in global reclaim.
->>
->>   - Assume "priority" is a value calculated by "usage - soft limit".
->>
->>   - weighted kswapd/direct reclaim
->>     => Based on priority of each threads/cgroup,  increase "wait" in direct reclaim
->>        if it's contended.
->>        Low prio container will sleep longer until memory contention is fixed.
->>
->>   - weighted anon allocation
->>     similar to above, if memory is contended, page fault speed should be weighted
->>     based on priority(softlimit).
->>
->>   - off cpu direct-reclaim
->>     run direct recalim in workqueue with cpu mask. the cpu mask is a global setting
->>     per numa node, which determines cpus available for being used to reclaim memory.
->>     "How to wait" may affect the performance of system but this can allow masked cpus
->>     to be used for more important jobs.
->
-> That's what I call a bunch of heuristics. And actually I don't see how
-> it'd help us against latency spikes caused by reclaimer runs, seems the
-> set is still incomplete :-/
->
-> For example, there are two cgroups, one having a huge soft limit excess
-> and full of anon memory and another not exceeding its soft limit but
-> using primarily clean file caches. This prioritizing/weighting stuff
-> would result in shrinking the first group first on global pressure,
-> though it's way slower than shrinking the second one.
+This patch adds the Documentation/x86/intel_mpx.txt file with some
+information about Intel MPX.
 
-Current implementation just round-robin all memcgs under the tree.
-With re-designed soft-limit, things will be changed, you can change it.
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
+---
+ Documentation/x86/intel_mpx.txt |  127 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 127 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/x86/intel_mpx.txt
 
-
-> That means a latency spike in other containers.
-
-why ? you said the other container just contains file caches.
-latency-spike just because file cache drops ?
-If the service is such naive, please use hard limit.
-
-Hmm.
-How about raising kswapd's scheduling threshold in some situation ?
-Per-memcg-kswapd-for-helping-softlimit may work.
-
-> The heuristics you proposed above
-> will only make it non-critical - the system will get over sooner or
-> later.
-
-My idea is always based on there is a container-manager on the system,
-which can do enough clever decision based on a policy, admin specified.
-IIUC, reducing cpu-hog caused by memory pressure is always helpful.
-
-> However, it's still a kind of DOS, which anon+swap hard limit would prevent.
-
-by oom-killer.
-
-
-> On Tue, Sep 09, 2014 at 02:39:43PM +0400, Vladimir Davydov wrote:
->> However, there's one thing, which made me start this discussion, and it
->> still bothers me. It's about memsw.limit_in_bytes knob itself.
->>
->> First, its value must be greater or equal to memory.limit_in_bytes.
->> IMO, such a dependency in the user interface isn't great, but it isn't
->> the worst thing. What is worse, there's only point in setting it to
->> infinity if one wants to fully make use of soft limits as I pointed out
->> earlier.
->>
->> So, we have a userspace knob that suits only for strict sand-boxing when
->> one wants to hard-limit the amount of memory and swap an app can use.
->> When it comes to soft limits, you have to set it to infinity, and it'll
->> still be accounted at the cost of performance, but without any purpose.
->> It just seems meaningless to me.
->>
->> Not counting that the knob itself is a kind of confusing IMO. memsw
->> means memory+swap, so one would mistakenly think memsw.limit-mem.limit
->> is the limit on swap usage, but that's wrong.
->>
->> My point is that anon+swap accounting instead of the current
->> anon+file+swap memsw implementation would be more flexible. We could
->> still sandbox apps by setting hard anon+swap and memory limits, but it
->> would also be possible to make use of it in "soft" environments. It
->> wouldn't be mandatory though. If one doesn't like OOM, he can use
->> threshold notifications to restart the container when it starts to
->> behave badly. But if the user just doesn't want to bother about
->> configuration or is OK with OOM-killer, he could set hard anon+swap
->> limit. Besides, it would untie mem.limit knob from memsw.limit, which
->> would make the user interface simpler and cleaner.
->>
->> So, I think anon+swap limit would be more flexible than file+anon+swap
->> limit we have now. Is there any use case where anon+swap and anon+file
->> accounting couldn't satisfy the user requirements while the
->> anon+file+swap and anon+file pair could?
->
-> I would appreciate if anybody could answer this.
->
-
-I can't understand why you want to use OOM killer for resource controlling .
-
-Thanks,
--Kame
-
+diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
+new file mode 100644
+index 0000000..ccffeee
+--- /dev/null
++++ b/Documentation/x86/intel_mpx.txt
+@@ -0,0 +1,127 @@
++1. Intel(R) MPX Overview
++========================
++
++Intel(R) Memory Protection Extensions (Intel(R) MPX) is a new
++capability introduced into Intel Architecture. Intel MPX provides
++hardware features that can be used in conjunction with compiler
++changes to check memory references, for those references whose
++compile-time normal intentions are usurped at runtime due to
++buffer overflow or underflow.
++
++For more information, please refer to Intel(R) Architecture
++Instruction Set Extensions Programming Reference, Chapter 9:
++Intel(R) Memory Protection Extensions.
++
++Note: Currently no hardware with MPX ISA is available but it is always
++possible to use SDE (Intel(R) Software Development Emulator) instead,
++which can be downloaded from
++http://software.intel.com/en-us/articles/intel-software-development-emulator
++
++
++2. How does MPX kernel code work
++================================
++
++Handling #BR faults caused by MPX
++---------------------------------
++
++When MPX is enabled, there are 2 new situations that can generate
++#BR faults.
++  * bounds violation caused by MPX instructions.
++  * new bounds tables (BT) need to be allocated to save bounds.
++
++We hook #BR handler to handle these two new situations.
++
++Decoding MPX instructions
++-------------------------
++
++If a #BR is generated due to a bounds violation caused by MPX.
++We need to decode MPX instructions to get violation address and
++set this address into extended struct siginfo.
++
++The _sigfault feild of struct siginfo is extended as follow:
++
++87		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
++88		struct {
++89			void __user *_addr; /* faulting insn/memory ref. */
++90 #ifdef __ARCH_SI_TRAPNO
++91			int _trapno;	/* TRAP # which caused the signal */
++92 #endif
++93			short _addr_lsb; /* LSB of the reported address */
++94			struct {
++95				void __user *_lower;
++96				void __user *_upper;
++97			} _addr_bnd;
++98		} _sigfault;
++
++The '_addr' field refers to violation address, and new '_addr_and'
++field refers to the upper/lower bounds when a #BR is caused.
++
++Glibc will be also updated to support this new siginfo. So user
++can get violation address and bounds when bounds violations occur.
++
++Freeing unused bounds tables
++----------------------------
++
++When a BNDSTX instruction attempts to save bounds to a bounds directory
++entry marked as invalid, a #BR is generated. This is an indication that
++no bounds table exists for this entry. In this case the fault handler
++will allocate a new bounds table on demand.
++
++Since the kernel allocated those tables on-demand without userspace
++knowledge, it is also responsible for freeing them when the associated
++mappings go away.
++
++Here, the solution for this issue is to hook do_munmap() to check
++whether one process is MPX enabled. If yes, those bounds tables covered
++in the virtual address region which is being unmapped will be freed also.
++
++Adding new prctl commands
++-------------------------
++
++Runtime library in userspace is responsible for allocation of bounds
++directory. So kernel have to use XSAVE instruction to get the base
++of bounds directory from BNDCFG register.
++
++But XSAVE is expected to be very expensive. In order to do performance
++optimization, we have to add new prctl command to get the base of
++bounds directory to be used in future.
++
++Two new prctl commands are added to register and unregister MPX related
++resource.
++
++155	#define PR_MPX_REGISTER         43
++156	#define PR_MPX_UNREGISTER       44
++
++The base of the bounds directory is set into mm_struct during
++PR_MPX_REGISTER command execution. This member can be used to
++check whether one application is mpx enabled.
++
++
++3. Tips
++=======
++
++1) Users are not allowed to create bounds tables and point the bounds
++directory at them in the userspace. In fact, it is not also necessary
++for users to create bounds tables in the userspace.
++
++When #BR fault is produced due to invalid entry, bounds table will be
++created in kernel on demand and kernel will not transfer this fault to
++userspace. So usersapce can't receive #BR fault for invalid entry, and
++it is not also necessary for users to create bounds tables by themselves.
++
++Certainly users can allocate bounds tables and forcibly point the bounds
++directory at them through XSAVE instruction, and then set valid bit
++of bounds entry to have this entry valid. But we have no way to track
++the memory usage of these user-created bounds tables. In regard to this,
++this behaviour is outlawed here.
++
++2) We will not support the case that multiple bounds directory entries
++are pointed at the same bounds table.
++
++Users can be allowed to take multiple bounds directory entries and point
++them at the same bounds table. See more information "Intel(R) Architecture
++Instruction Set Extensions Programming Reference" (9.3.4).
++
++If userspace did this, it will be possible for kernel to unmap an in-use
++bounds table since it does not recognize sharing. So this behavior is
++also outlawed here.
+-- 
+1.7.1
 
