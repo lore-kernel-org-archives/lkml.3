@@ -1,153 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaIKIhm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:37:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61158 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291AbaIKIhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753371AbaIKIhk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:37:40 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:38550 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281AbaIKIhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 04:37:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="597942668"
-From: Kweh Hock Leong <hock.leong.kweh@intel.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>, rayagond@vayavyalabs.com
-Cc: Vince Bridgers <vbridgers2013@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Chen-Yu Tsai <wens@csie.org>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ong Boon Leong <boon.leong.ong@intel.com>,
-        Kweh Hock Leong <hock.leong.kweh@intel.com>
-Subject: [PATCH v2 2/4] net: stmmac: better code manageability with platform data struct
-Date: Thu, 11 Sep 2014 16:38:38 +0800
-Message-Id: <ee40f7c4ee227b9fda1f0269493dfa5526561f02.1410416224.git.hock.leong.kweh@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1410416223.git.hock.leong.kweh@intel.com>
-References: <cover.1410416223.git.hock.leong.kweh@intel.com>
-In-Reply-To: <cover.1410416223.git.hock.leong.kweh@intel.com>
-References: <cover.1410416223.git.hock.leong.kweh@intel.com>
+From: Paul Burton <paul.burton@imgtec.com>
+To: <linux-mips@linux-mips.org>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Paul Burton <paul.burton@imgtec.com>
+Subject: [PATCH 06/10] MIPS: ensure Config5.UFE is clear on boot
+Date: Thu, 11 Sep 2014 08:30:19 +0100
+Message-ID: <1410420623-11691-7-git-send-email-paul.burton@imgtec.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
+References: <1410420623-11691-1-git-send-email-paul.burton@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.159.78]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+As is done for UFR, ensure that userland cannot directly manipulate the
+mode by clearing the UFE bit during boot.
 
-Introduce additional struct to hold platform info for pci device. It
-is used to store features that are supported by specific chip vendor.
-This code change helps to expand further to support more platform
-vendors and this implementation promotes better code manageability
-and keep code base clean. In addition, this patch adds mcast & ucast
-filter configuration in pci driver.
-
-Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
-Reviewed-by: Ong, Boon Leong <boon.leong.ong@intel.com>
+Signed-off-by: Paul Burton <paul.burton@imgtec.com>
 ---
- drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c |   77 +++++++++++++++++-----
- 1 file changed, 60 insertions(+), 17 deletions(-)
+ arch/mips/kernel/cpu-probe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-index 4d9a5c2..35fc884 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_pci.c
-@@ -26,21 +26,63 @@
- #include <linux/pci.h>
- #include "stmmac.h"
+diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
+index db929a0..4e2a6e0 100644
+--- a/arch/mips/kernel/cpu-probe.c
++++ b/arch/mips/kernel/cpu-probe.c
+@@ -400,7 +400,7 @@ static inline unsigned int decode_config5(struct cpuinfo_mips *c)
+ 	unsigned int config5;
  
--static void stmmac_default_data(struct plat_stmmacenet_data *plat_dat,
--				struct pci_dev *pdev)
-+enum chip {
-+	CHIP_STMICRO = 0,
-+};
-+
-+/* A struct for platform specific information which will be
-+ * used in stmmac_default_data function for initialization
-+ */
-+struct platform_data {
-+	int phy_addr;
-+	int interface;
-+	int clk_csr;
-+	int has_gmac;
-+	int force_sf_dma_mode;
-+	int multicast_filter_bins;
-+	int unicast_filter_entries;
-+	int (*phy_reset)(void *priv);
-+	unsigned int phy_mask;
-+	int pbl;
-+	int burst_len;
-+};
-+
-+static struct platform_data platform_info[] = {
-+	[CHIP_STMICRO] = {
-+		.phy_addr = 0,
-+		.interface = PHY_INTERFACE_MODE_GMII,
-+		.clk_csr = 2,
-+		.has_gmac = 1,
-+		.force_sf_dma_mode = 1,
-+		.multicast_filter_bins = HASH_TABLE_SIZE,
-+		.unicast_filter_entries = 1,
-+		.phy_reset = NULL,
-+		.phy_mask = 0,
-+		.pbl = 32,
-+		.burst_len = DMA_AXI_BLEN_256,
-+	},
-+};
-+
-+static void stmmac_default_data(struct plat_stmmacenet_data *plat,
-+				int chip_id, struct pci_dev *pdev)
- {
--	plat_dat->bus_id = PCI_DEVID(pdev->bus->number, pdev->devfn);
--	plat_dat->phy_addr = 0;
--	plat_dat->interface = PHY_INTERFACE_MODE_GMII;
--	plat_dat->clk_csr = 2;	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
--	plat_dat->has_gmac = 1;
--	plat_dat->force_sf_dma_mode = 1;
--
--	plat_dat->mdio_bus_data->phy_reset = NULL;
--	plat_dat->mdio_bus_data->phy_mask = 0;
--
--	plat_dat->dma_cfg->pbl = 32;
--	plat_dat->dma_cfg->burst_len = DMA_AXI_BLEN_256;
-+	struct platform_data *chip_plat_dat = &platform_info[chip_id];
-+
-+	plat->bus_id = PCI_DEVID(pdev->bus->number, pdev->devfn);
-+	plat->phy_addr = chip_plat_dat->phy_addr;
-+	plat->interface = chip_plat_dat->interface;
-+	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
-+	plat->clk_csr = chip_plat_dat->clk_csr;
-+	plat->has_gmac = chip_plat_dat->has_gmac;
-+	plat->force_sf_dma_mode = chip_plat_dat->force_sf_dma_mode;
-+	plat->multicast_filter_bins = chip_plat_dat->multicast_filter_bins;
-+	plat->unicast_filter_entries = chip_plat_dat->unicast_filter_entries;
-+
-+	plat->mdio_bus_data->phy_reset = chip_plat_dat->phy_reset;
-+	plat->mdio_bus_data->phy_mask = chip_plat_dat->phy_mask;
-+
-+	plat->dma_cfg->pbl = chip_plat_dat->pbl;
-+	plat->dma_cfg->burst_len = chip_plat_dat->burst_len;
- }
+ 	config5 = read_c0_config5();
+-	config5 &= ~MIPS_CONF5_UFR;
++	config5 &= ~(MIPS_CONF5_UFR | MIPS_CONF5_UFE);
+ 	write_c0_config5(config5);
  
- /**
-@@ -114,7 +156,7 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
- 		goto err_out;
- 	}
- 
--	stmmac_default_data(plat_dat, pdev);
-+	stmmac_default_data(plat_dat, id->driver_data, pdev);
- 
- 	priv = stmmac_dvr_probe(&pdev->dev, plat_dat, addr);
- 	if (IS_ERR(priv)) {
-@@ -188,8 +230,9 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
- #define STMMAC_DEVICE_ID 0x1108
- 
- static const struct pci_device_id stmmac_id_table[] = {
--	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID)},
--	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_MAC)},
-+	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID), PCI_ANY_ID,
-+			PCI_ANY_ID, CHIP_STMICRO},
-+	{PCI_VDEVICE(STMICRO, PCI_DEVICE_ID_STMICRO_MAC), CHIP_STMICRO},
- 	{}
- };
- 
+ 	if (config5 & MIPS_CONF5_EVA)
 -- 
-1.7.9.5
+2.0.4
 
