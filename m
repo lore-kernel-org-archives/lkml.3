@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502AbaIKNOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:14:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51509 "EHLO
+	id S1756468AbaIKNPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:15:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51504 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755374AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755372AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Marcel Holtmann" <marcel@holtmann.org>,
+        "Vladimir Davydov" <vdavydov@parallels.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.621467145@decadent.org.uk>
+Message-ID: <lsq.1410438733.523368870@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 111/131] sparc64: Fix top-level fault handling bugs.
+Subject: [PATCH 3.2 011/131] Bluetooth: never linger on process exit
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,153 +31,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-[ Upstream commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 ]
+commit 093facf3634da1b0c2cc7ed106f1983da901bbab upstream.
 
-Make get_user_insn() able to cope with huge PMDs.
+If the current process is exiting, lingering on socket close will make
+it unkillable, so we should avoid it.
 
-Next, make do_fault_siginfo() more robust when get_user_insn() can't
-actually fetch the instruction.  In particular, use the MMU announced
-fault address when that happens, instead of calling
-compute_effective_address() and computing garbage.
+Reproducer:
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  #include <sys/types.h>
+  #include <sys/socket.h>
+
+  #define BTPROTO_L2CAP   0
+  #define BTPROTO_SCO     2
+  #define BTPROTO_RFCOMM  3
+
+  int main()
+  {
+          int fd;
+          struct linger ling;
+
+          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
+
+          ling.l_onoff = 1;
+          ling.l_linger = 1000000000;
+          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
+
+          return 0;
+  }
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/mm/fault_64.c | 86 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 54 insertions(+), 32 deletions(-)
+ net/bluetooth/l2cap_sock.c  | 3 ++-
+ net/bluetooth/rfcomm/sock.c | 3 ++-
+ net/bluetooth/sco.c         | 6 ++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 504c062..6ac702f 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -95,38 +95,51 @@ static unsigned int get_user_insn(unsigned long tpc)
- 	pte_t *ptep, pte;
- 	unsigned long pa;
- 	u32 insn = 0;
--	unsigned long pstate;
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -804,7 +804,8 @@ static int l2cap_sock_shutdown(struct so
+ 		sk->sk_shutdown = SHUTDOWN_MASK;
+ 		l2cap_chan_close(chan, 0);
  
--	if (pgd_none(*pgdp))
--		goto outret;
-+	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
-+		goto out;
- 	pudp = pud_offset(pgdp, tpc);
--	if (pud_none(*pudp))
--		goto outret;
--	pmdp = pmd_offset(pudp, tpc);
--	if (pmd_none(*pmdp))
--		goto outret;
--
--	/* This disables preemption for us as well. */
--	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
--	__asm__ __volatile__("wrpr %0, %1, %%pstate"
--				: : "r" (pstate), "i" (PSTATE_IE));
--	ptep = pte_offset_map(pmdp, tpc);
--	pte = *ptep;
--	if (!pte_present(pte))
-+	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
- 		goto out;
- 
--	pa  = (pte_pfn(pte) << PAGE_SHIFT);
--	pa += (tpc & ~PAGE_MASK);
--
--	/* Use phys bypass so we don't pollute dtlb/dcache. */
--	__asm__ __volatile__("lduwa [%1] %2, %0"
--			     : "=r" (insn)
--			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	/* This disables preemption for us as well. */
-+	local_irq_disable();
- 
-+	pmdp = pmd_offset(pudp, tpc);
-+	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
-+		goto out_irq_enable;
-+
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	if (pmd_trans_huge(*pmdp)) {
-+		if (pmd_trans_splitting(*pmdp))
-+			goto out_irq_enable;
-+
-+		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
-+		pa += tpc & ~HPAGE_MASK;
-+
-+		/* Use phys bypass so we don't pollute dtlb/dcache. */
-+		__asm__ __volatile__("lduwa [%1] %2, %0"
-+				     : "=r" (insn)
-+				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	} else
-+#endif
-+	{
-+		ptep = pte_offset_map(pmdp, tpc);
-+		pte = *ptep;
-+		if (pte_present(pte)) {
-+			pa  = (pte_pfn(pte) << PAGE_SHIFT);
-+			pa += (tpc & ~PAGE_MASK);
-+
-+			/* Use phys bypass so we don't pollute dtlb/dcache. */
-+			__asm__ __volatile__("lduwa [%1] %2, %0"
-+					     : "=r" (insn)
-+					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		}
-+		pte_unmap(ptep);
-+	}
-+out_irq_enable:
-+	local_irq_enable();
- out:
--	pte_unmap(ptep);
--	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
--outret:
- 	return insn;
- }
- 
-@@ -154,7 +167,8 @@ show_signal_msg(struct pt_regs *regs, int sig, int code,
- extern unsigned long compute_effective_address(struct pt_regs *, unsigned int, unsigned int);
- 
- static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
--			     unsigned int insn, int fault_code)
-+			     unsigned long fault_addr, unsigned int insn,
-+			     int fault_code)
- {
- 	unsigned long addr;
- 	siginfo_t info;
-@@ -162,10 +176,18 @@ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
- 	info.si_code = code;
- 	info.si_signo = sig;
- 	info.si_errno = 0;
--	if (fault_code & FAULT_CODE_ITLB)
-+	if (fault_code & FAULT_CODE_ITLB) {
- 		addr = regs->tpc;
--	else
--		addr = compute_effective_address(regs, insn, 0);
-+	} else {
-+		/* If we were able to probe the faulting instruction, use it
-+		 * to compute a precise fault address.  Otherwise use the fault
-+		 * time provided address which may only have page granularity.
-+		 */
-+		if (insn)
-+			addr = compute_effective_address(regs, insn, 0);
-+		else
-+			addr = fault_addr;
-+	}
- 	info.si_addr = (void __user *) addr;
- 	info.si_trapno = 0;
- 
-@@ -240,7 +262,7 @@ static void __kprobes do_kernel_fault(struct pt_regs *regs, int si_code,
- 		/* The si_code was set to make clear whether
- 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
- 		 */
--		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
-+		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
- 		return;
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 							sk->sk_lingertime);
  	}
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -901,7 +901,8 @@ static int rfcomm_sock_shutdown(struct s
+ 		sk->sk_shutdown = SHUTDOWN_MASK;
+ 		__rfcomm_sock_close(sk);
  
-@@ -492,7 +514,7 @@ do_sigbus:
- 	 * Send a sigbus, regardless of whether we were in kernel
- 	 * or user mode.
- 	 */
--	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
-+	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 	}
+ 	release_sock(sk);
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -774,7 +774,8 @@ static int sco_sock_shutdown(struct sock
+ 		sco_sock_clear_timer(sk);
+ 		__sco_sock_close(sk);
  
- 	/* Kernel mode? Handle exceptions or die */
- 	if (regs->tstate & TSTATE_PRIV)
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 							sk->sk_lingertime);
+ 	}
+@@ -794,7 +795,8 @@ static int sco_sock_release(struct socke
+ 
+ 	sco_sock_close(sk);
+ 
+-	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime) {
++	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++	    !(current->flags & PF_EXITING)) {
+ 		lock_sock(sk);
+ 		err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 		release_sock(sk);
 
