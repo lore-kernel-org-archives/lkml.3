@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753565AbaIKIoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:44:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59797 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414AbaIKIoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:44:00 -0400
-Message-ID: <541160E8.5070701@ti.com>
-Date: Thu, 11 Sep 2014 11:44:24 +0300
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753777AbaIKIoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:44:34 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:47728 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaIKIo2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:44:28 -0400
+Message-ID: <541160D2.80400@linaro.org>
+Date: Thu, 11 Sep 2014 10:44:02 +0200
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <bcousson@baylibre.com>
-CC: <t-kristo@ti.com>, <mark.rutland@arm.com>, <detheridge@ti.com>
-Subject: Re: [PATCH] clk: add gpio gated clock
-References: <1409919694-26941-1-git-send-email-jsarha@ti.com> <20140909221408.19023.12081@quantum>
-In-Reply-To: <20140909221408.19023.12081@quantum>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Christoffer Dall <christoffer.dall@linaro.org>
+CC: eric.auger@st.com, marc.zyngier@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, john.liuli@huawei.com
+Subject: Re: [RFC v2 4/9] VFIO: platform: handler tests whether the IRQ is
+ forwarded
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org> <1409575968-5329-5-git-send-email-eric.auger@linaro.org> <20140911031000.GE2784@lvm>
+In-Reply-To: <20140911031000.GE2784@lvm>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 01:14 AM, Mike Turquette wrote:
-> Quoting Jyri Sarha (2014-09-05 05:21:34)
->> The added gpio-gate-clock is a basic clock that can be enabled and
->> disabled trough a gpio output. The DT binding document for the clock
->> is also added. For EPROBE_DEFER handling the registering of the clock
->> has to be delayed until of_clk_get() call time.
+On 09/11/2014 05:10 AM, Christoffer Dall wrote:
+> On Mon, Sep 01, 2014 at 02:52:43PM +0200, Eric Auger wrote:
+>> In case the IRQ is forwarded, the VFIO platform IRQ handler does not
+>> need to disable the IRQ anymore. In that mode, when the handler completes
+> 
+> add a comma after completes
+Hi Christoffer,
+ok
+> 
+>> the IRQ is not deactivated but only its priority is lowered.
 >>
->> Signed-off-by: Jyri Sarha <jsarha@ti.com>
+>> Some other actor (typically a guest) is supposed to deactivate the IRQ,
+>> allowing at that time a new physical IRQ to hit.
+>>
+>> In virtualization use case, the physical IRQ is automatically completed
+>> by the interrupt controller when the guest completes the corresponding
+>> virtual IRQ.
+>>
+>> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 >> ---
+>>  drivers/vfio/platform/vfio_platform_irq.c | 7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
 >>
->> This is my final attempt to get this generic gpio controlled basic
->> clock into mainline. Of course I gladly fix any issues that the patch
->> may have. However, if there is no response, I give up and move it to TI
->> specific clocks.
+>> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+>> index 6768508..1f851b2 100644
+>> --- a/drivers/vfio/platform/vfio_platform_irq.c
+>> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+>> @@ -88,13 +88,18 @@ static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+>>  	struct vfio_platform_irq *irq_ctx = dev_id;
+>>  	unsigned long flags;
+>>  	int ret = IRQ_NONE;
+>> +	struct irq_data *d;
+>> +	bool is_forwarded;
+>>  
+>>  	spin_lock_irqsave(&irq_ctx->lock, flags);
+>>  
+>>  	if (!irq_ctx->masked) {
+>>  		ret = IRQ_HANDLED;
+>> +		d = irq_get_irq_data(irq_ctx->hwirq);
+>> +		is_forwarded = irqd_irq_forwarded(d);
+>>  
+>> -		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
+>> +		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED &&
+>> +						!is_forwarded) {
+>>  			disable_irq_nosync(irq_ctx->hwirq);
+>>  			irq_ctx->masked = true;
+>>  		}
+>> -- 
+>> 1.9.1
 >>
->
-> I searched through my archives and found a post from January. You Cc'd
-> me as "<mturquette@linaro.org>". Note that the address is wrapped in
-> chevrons but there is no name string (e.g. "Mike Turquette").
->
-> My mailer doesn't parse this well it was not flagged as to:me in my
-> filters. Maybe other mailers handle this better? If you leave out the
-> name string in the future then it would probably be best to drop the
-> chevrons.
->
+> It makes sense that these needs to be all controlled in the kernel, but
+> I'm wondering if it would be cleaner / more correct to clear the
+> AUTOMASKED flag when the IRQ is forwarded and have vfio refuse setting
+> this flag as long as the irq is forwarded?
 
-Then git send-email adds the chevrons, but in the future I'll put the 
-name string there too.
+If I am not wrong, even if the user sets AUTOMASKED, this info never is
+exploited by the vfio platform driver. AUTOMASKED only is set internally
+to the driver, on init, for level sensitive IRQs.
 
->> I've been sending this patch as a part of Beaglebone-Black HDMI audio
->> patch series since last autumn. Since the previous version I have done
->> some minor cleanups and changed the clock's compatible property from
->> "gpio-clock" to "gpio-gate-clock". All the file names, comments,
->> etc. have also been changed accordingly.
->
-> Is your platform the only one to take advantage of this clock type so
-> far? I feel that it is esoteric enough that it shouldn't be made
-> generic.
->
-> The main reason is that all of the generic clock types needs to be
-> overhauled at some point. E.g. the clk-gate should have its
-> machine-specific logic separated from its machine-independent logic. If
-> the gate clock were to populate .enable and .disable callbacks and then
-> leave the actual register banging, or regmap'ing, or gpio'ing up to your
-> backend driver then that would be a big improvement and would avoid the
-> need to create this new clock type outright.
->
-> So that's on my todo list, but it's not done yet. For your patch I think
-> that putting this code into drivers/clk/ti would probably be best,
-> unless other folks could use it as-is. Even if others could use it today
-> I would want to remove it eventually for the reasons stated in the
-> paragraph above.
->
+It seems to be the same on PCI (for INTx). I do not see anywhere the
+user flag curectly copied into a local storage. But I prefer to be
+careful ;-)
 
-Ok, I see. I do not know of anybody else needing a gpio gate clock at 
-the moment. I'll put the driver under drivers/clk/ti unless someone 
-comes forward soon.
+If confirmed, although the flag value is exposed in the user API, the
+user set value never is exploited so this removes the need to check.
 
-Thanks,
-Jyri
+the forwarded IRQ modality being fully dynamic currently, then I would
+need to update the irq_ctx->flags on each vfio_irq_handler call. I don't
+know if its better?
+
+Best Regards
+
+Eric
+
+
+> 
+> -Christoffer
+> 
 
