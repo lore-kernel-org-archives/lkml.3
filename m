@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173AbaIKOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:50:16 -0400
-Received: from mout.gmx.net ([212.227.17.21]:55991 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaIKOuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:50:11 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-Date: Thu, 11 Sep 2014 16:49:39 +0200
-Message-ID: <1848352.9OlbbQfLfy@fb07-iapwap2>
-User-Agent: KMail/4.13.3 (Linux/3.16.1-46.g90bc0f1-desktop; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140911141257.GC5149@katana>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de> <16809905.2REViph6WO@fb07-iapwap2> <20140911141257.GC5149@katana>
+	id S1756242AbaIKOu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:50:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:59830 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaIKOuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:50:23 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Phil Edworthy <phil.edworthy@renesas.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Yijing Wang <wangyijing@huawei.com>,
+        Rob Herring <robherring2@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH v10 07/10] OF: Introduce helper function for getting PCI domain_nr
+Date: Thu, 11 Sep 2014 16:49:56 +0200
+Message-ID: <15029597.7ylOekBBOx@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <ae98d68652f1495a857f081c3a6aecb2@HKXPR06MB168.apcprd06.prod.outlook.com>
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com> <2908259.jgJNuDxCCa@wuerfel> <ae98d68652f1495a857f081c3a6aecb2@HKXPR06MB168.apcprd06.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart9298235.REuW2h2BOe"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:6FNrlmAF+o+fNGF/KBdmbS6Knybt6dN0syAfWaDN1V9MJsdTxEy
- wQ7H6YyZ9i3d3veWib7+OiTLF2u8wTqigL0bcJRdOaTajbkt0gnawAHDKfZAbXNMcmpmNEf
- kS3JjoagUrjCIz8k9FuSiX5ft+qX5+JSPHGTC2dEzdLZ27VL3ZjBW06f+URw8ATrRrK3LTw
- Igh6zJJsVL212QWI2ojmA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:oMfjNzqlo+7Fw6vs6oSUYxqlA/JHMnA8jPLq8NO2wnz
+ 3viS9jv7YZZvzdcgOKc2pWEzXYitudRnt0Bmg8qg/CtpiWCJfn
+ hnuUaySNmvj3Pz2mpffaTgXAP3v6U0SehSc9Cnzz/Er+VkbtCt
+ GC+riui275dzoNz7+JetP43IvfcLx55ldl4CiSEdEAZxBeO+r0
+ ovip8VTs7NXPyXVS058BlfcKBtCP2ZWV9+SClLUlGuO4TuZTNf
+ E4h8oA22aESqB9qoIgzp/nopLc5xWXdXIe+M3FQaNQg40pzRaM
+ okUlKZVb61WQpzbtRsZQaiACJeuMMOK3kutd0qtdiX7u+FcGeS
+ 9h7qNJqc59pKcsHUm2mA=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart9298235.REuW2h2BOe
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-
-Am Donnerstag, 11. September 2014, 16:12:58 schrieb Wolfram Sang:
-> On Thu, Sep 11, 2014 at 02:17:16PM +0200, Marc Dietrich wrote:
-> > > +		reg = <0x64>;
+On Thursday 11 September 2014 14:11:05 Phil Edworthy wrote:
+> On 10 September 2014 19:20, Arnd wrote:
+> > On Tuesday 09 September 2014 12:20:54 Catalin Marinas wrote:
+> > >
+> > > We can assume that if a domain is not specified and there is a single
+> > > top level PCIe node, the domain defaults to 0. Are there any arm32
+> > > platforms that require multiple domains (and do not specify a number in
+> > > the DT)?
 > > 
-> > we had some discussions in the past how to represent i2c master devices in
-> > device tree. The outcome was to use to a special representation to
-> > distinguish them from slave devices, e.g. something like reg = <0x1
-> > 0x64>, where the 0x1 would mean "master" device (0x0 -> slave). If
-> > nothing is added, then it's also slave. The adapter address cell would
-> > also need to be changed if this extension is used.
+> > In theory, I think all of them could work with a single domain, but then
+> > you need to partition the bus number space between the host controllers,
+> > so you have the exact same situation that you either need to make up
+> > random bus numbers or put them in DT.
+> > 
+> > Using multiple domains is way cleaner for this, even if we have to
+> > make up the numbers.
 > 
-> Please don't change the reg-layout which is around since forever.
-> It will break all existing devicetrees. NAK.
+> Maybe this is a stupid question, but why would you want to specify the domain
+> in the DT at all? Doesn't every instance of a driver imply a separate domain?
 
-it won't break existing device trees. It would only need to be extended for 
-systems where the adapter uses master and slave modes (or if you add a master 
-device to the i2c client list). So you need to change the device tree anyway.
-All other setups can continue to use a single reg.
+See Jason Gunthorpe's latest reply on the topic. In short, the domain is
+visible to user space and we want it to be stable across boots when
+user configuration refers to devices by domain:bus:device:function
+numbers.
 
-Thinking more about it, are there any i2c clients parsing the reg property 
-directly? In this case I would agree, otherwise, only i2c core needs some 
-update - right?
-
-Marc
-
-> > An alternative would be to use a special property (e.g. slave address),
-> > but
-> > that would encode the same value twice (or even three times).
-> 
-> As said, if all breaks we handle it at runtime.
-> 
-> Thanks,
-> 
->    Wolfram
-
---nextPart9298235.REuW2h2BOe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJUEbaEAAoJEKyeR39HFBtoqLMH/RlB0UezRs64ZMKn/c+WMWun
-Q6KC1Elene0gZ/XJrZ+mq8FKZmXYnVup/Sfy5aWBU6/WjqOlZIpNQXeeNb2WUl47
-hFc76S+7OWXztnfz80071b3l3Q5rNJ8DeukRPFsB5Z8DMI/p+4ab8AcfO3og+z12
-4fF5NxTgZIK0u7UUYub9487j+/K6rYw8lIxmB6XUZwtLBwsdVFmEfQdJd7WNNgFJ
-B8Bcyslx4P5oi0JGZ44PnzK8Ovp+Z5E+33XqXCPa8dBZSG3WeB90jOAW9wIm7zHl
-W8nGXTcQEz8gB1dsVBlUk8/maVxX/pHMT2UHu/xQ2N66VXgQfAc90Zl8voozNZc=
-=yf3d
------END PGP SIGNATURE-----
-
---nextPart9298235.REuW2h2BOe--
-
+	Arnd
