@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260AbaIKKpW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:45:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43389 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229AbaIKKpU (ORCPT
+	id S1754306AbaIKKpr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:45:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50162 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754276AbaIKKpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:45:20 -0400
-Message-ID: <54117D3A.3010305@plexistor.com>
-Date: Thu, 11 Sep 2014 13:45:14 +0300
-From: Boaz Harrosh <boaz@plexistor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Dan Williams <dan.j.williams@intel.com>
-CC: Boaz Harrosh <openosd@gmail.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	Thu, 11 Sep 2014 06:45:45 -0400
+Date: Thu, 11 Sep 2014 11:45:13 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Zi Shen Lim <zlim.lnx@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org
-Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
- memory driver
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>	<540F2977.7010006@plexistor.com>	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>	<541050E5.60502@gmail.com>	<CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>	<54108ECA.6090200@plexistor.com> <CAPcyv4gqyiTaSJY56ZrJh05kwh9O9sXNKOz40fGu5s_=eY=U6Q@mail.gmail.com>
-In-Reply-To: <CAPcyv4gqyiTaSJY56ZrJh05kwh9O9sXNKOz40fGu5s_=eY=U6Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: Re: [PATCH arm64-next] net: bpf: arm64: fix module memory leak when
+ JIT image build fails
+Message-ID: <20140911104513.GC6158@arm.com>
+References: <1410428208-2446-1-git-send-email-dborkman@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410428208-2446-1-git-send-email-dborkman@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 02:01 AM, Dan Williams wrote:
-<>
+On Thu, Sep 11, 2014 at 10:36:48AM +0100, Daniel Borkmann wrote:
+> On ARM64, when the BPF JIT compiler fills the JIT image body with
+> opcodes during translation of eBPF into ARM64 opcodes, we may fail
+> for several reasons during that phase: one being that we jump to
+> the notyet label for not yet supported eBPF instructions such as
+> BPF_ST. In that case we only free offsets, but not the actual
+> allocated target image where opcodes are being stored. Fix it by
+> calling module_free() on dismantle time in case of errors.
 > 
-> Imagine you want to deploy a policy like "use half of the memory
-> provided by the dimm in slot3, i.e. the only one with a battery".
-> That sort of thing gets unwieldy in a command line string compared to
-> a description table format that we can update at will.
+> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
+> Cc: Alexei Starovoitov <ast@plumgrid.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> ---
+>  [ Compile-tested only. ]
 > 
+>  arch/arm64/net/bpf_jit_comp.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
+> index 38c4296..7ae3354 100644
+> --- a/arch/arm64/net/bpf_jit_comp.c
+> +++ b/arch/arm64/net/bpf_jit_comp.c
+> @@ -651,8 +651,10 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
+>  	build_prologue(&ctx);
+>  
+>  	ctx.body_offset = ctx.idx;
+> -	if (build_body(&ctx))
+> +	if (build_body(&ctx)) {
+> +		module_free(NULL, ctx.image);
+>  		goto out;
+> +	}
+>  
 
-Actually it is easy to do, why? I do this here in the lab all the time.
-with a "command line" with this code you see here.
+Looks good to me:
 
-[DDR3 NvDIMM which means I need memmap=16G\$32G on Kernel command line.
- Then: modprobe pmem map=8G@32G,4G@44G,...
- and so on Just as a simple example where 2/4-3/4 addresses are not used.
- You can have holes in the middle or what ever you want. This here is just
- a table in comma-separated format. If we need like flags in future we can
- extend the format to nn@ss:flags, but I do no have any 3rd column yet]
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-And again I have in the pipe a dynamic interface added on top of
-the module param one. So it will all be there soon. Without reverting
-the old one.
+Catalin, can you apply this on the for-next/core branch, please?
 
-Thanks
-Boaz
-
+Will
