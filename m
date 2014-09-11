@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaIKR6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:58:15 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34574 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826AbaIKR6N (ORCPT
+	id S1752740AbaIKSIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 14:08:13 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:43847 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaIKSIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:58:13 -0400
+	Thu, 11 Sep 2014 14:08:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410343554-8383-3-git-send-email-kever.yang@rock-chips.com>
-References: <1410343554-8383-1-git-send-email-kever.yang@rock-chips.com>
-	<1410343554-8383-3-git-send-email-kever.yang@rock-chips.com>
-Date: Thu, 11 Sep 2014 10:58:12 -0700
-X-Google-Sender-Auth: GT5ffIgkzzOqSc_sjuKYP6CQOpg
-Message-ID: <CAD=FV=U3gqMeCp_z_uML3iPc6GC_nnYL9v6qwux2PQ5wzrbdwQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: add intmem node for rk3288 smp support
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+In-Reply-To: <CAF8JNh+U80vPUQ7263cRGFJCZkzsO7nSAg3KOtfOy5Bsp_Xajw@mail.gmail.com>
+References: <1410455644-11732-1-git-send-email-benjamin.tissoires@redhat.com>
+	<CAF8JNh+U80vPUQ7263cRGFJCZkzsO7nSAg3KOtfOy5Bsp_Xajw@mail.gmail.com>
+Date: Thu, 11 Sep 2014 11:08:04 -0700
+Message-ID: <CAF8JNh+uckyW160F8QORrTLNq8GMcLrwA9WpW1AR8SL_nej1nA@mail.gmail.com>
+Subject: Fwd: [PATCH] HID: wacom: make the WL connection friendly for the desktop
+From: Ping Cheng <pinglinux@gmail.com>
+To: linux-input <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
-
-On Wed, Sep 10, 2014 at 3:05 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch add intmem node des which is needed by platsmp.c
-> and enable the smp.
+On Thu, Sep 11, 2014 at 10:14 AM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
 >
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> Currently, tablets connected to the WL receiver all share the same
+> VID/PID. There is no way for the user space to know which one is which
+> besides parsing the name. We can force the PID to be set to the
+> actual hardware. This way, the input device will have the correct PID
+> which can be match in libwacom.
+
+
+Nice job, Benjamin! Thank you, on behalf of wireless tablet users ;-).
+
+>
+> With only this trick, the pad input does not inherit the ID_INPUT_TABLET
+> udev property from its parent. We can force udev to accept it by declaring
+> a BTN_STYLUS which is never used.
+
+
+BTN_STYLUS can be confusing to userland clients that retrieve it to
+decide tool types. But, without it, the client is already confused
+with joystick. So, unless we introduce a new tool type, which I
+proposed a few years ago and was rejected, we may have to keep clients
+confused. With that said, the patch is
+
+>
+> This way, tablets connected through WL can be used from the user point of
+> view in the same way they are used while connected through wire.
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+
+Reviewed-by: Ping Cheng <pingc@wacom.com>
+
+Cheers,
+
+Ping
+
 > ---
 >
->  arch/arm/boot/dts/rk3288.dtsi | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
+> Hi guys,
 >
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index dca586e..562ec5f 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -40,6 +40,7 @@
->                 #address-cells = <1>;
->                 #size-cells = <0>;
+> to continue on Ping's work regarding the Wireless reciever, here is a patch
+> which allows to have the same user experience regardless the transport layer.
+> Unfortunately, a libwacom patch is also required, but once both are applied,
+> there is no differences between the wired and wireless connections. Yeah!
 >
-> +               enable-method = "rockchip,rk3288-smp";
->                 cpu@500 {
->                         device_type = "cpu";
->                         compatible = "arm,cortex-a12";
-> @@ -353,6 +354,23 @@
->                 status = "disabled";
->         };
+> Cheers,
+> Benjamin
 >
-> +       bus_intmem@ff700000 {
-> +               compatible = "mmio-sram";
-> +               reg = <0xff700000 0x18000>;
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +               ranges = <0 0xff700000 0x18000>;
-> +                       smp-sram@0 {
-
-nit: I think the "smp-sram@0" line is indented one too many tabs.
-
-I haven't done a full review of this series yet, though...
+>  drivers/hid/wacom_sys.c | 2 +-
+>  drivers/hid/wacom_wac.c | 3 +++
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
+> index 9e4e188..a8b7f16 100644
+> --- a/drivers/hid/wacom_sys.c
+> +++ b/drivers/hid/wacom_sys.c
+> @@ -1035,7 +1035,7 @@ static struct input_dev *wacom_allocate_input(struct wacom *wacom)
+>         input_dev->uniq = hdev->uniq;
+>         input_dev->id.bustype = hdev->bus;
+>         input_dev->id.vendor  = hdev->vendor;
+> -       input_dev->id.product = hdev->product;
+> +       input_dev->id.product = wacom_wac->pid ? wacom_wac->pid : hdev->product;
+>         input_dev->id.version = hdev->version;
+>         input_set_drvdata(input_dev, wacom);
+>
+> diff --git a/drivers/hid/wacom_wac.c b/drivers/hid/wacom_wac.c
+> index c3cbbfb..b8180e4 100644
+> --- a/drivers/hid/wacom_wac.c
+> +++ b/drivers/hid/wacom_wac.c
+> @@ -1990,6 +1990,9 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
+>         input_set_abs_params(input_dev, ABS_X, 0, 1, 0, 0);
+>         input_set_abs_params(input_dev, ABS_Y, 0, 1, 0, 0);
+>
+> +       /* kept for making udev and libwacom accepting the pad */
+> +       __set_bit(BTN_STYLUS, input_dev->keybit);
+> +
+>         switch (features->type) {
+>         case GRAPHIRE_BT:
+>                 __set_bit(BTN_0, input_dev->keybit);
+> --
+> 2.1.0
+>
