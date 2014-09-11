@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaIKR1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:27:33 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:56408 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaIKR1b (ORCPT
+	id S1752511AbaIKR33 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:29:29 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:46383 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822AbaIKR31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:27:31 -0400
+	Thu, 11 Sep 2014 13:29:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <1410453908.8852.9.camel@AMDC723>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
-	<CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
-	<1410453908.8852.9.camel@AMDC723>
-Date: Thu, 11 Sep 2014 19:27:29 +0200
-X-Google-Sender-Auth: x5sDVBtaeMgOQda_ah9MbSFgpH8
-Message-ID: <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct generic_pm_domain-s
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Maciej Matraszek <m.matraszek@samsung.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>
+In-Reply-To: <5411DA67.2040402@arm.com>
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
+	<20140911164710.GW6158@arm.com>
+	<5411D528.4050605@arm.com>
+	<CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
+	<5411DA67.2040402@arm.com>
+Date: Thu, 11 Sep 2014 10:29:25 -0700
+X-Google-Sender-Auth: nDXl0NrxDSpTWKaiVdisuLxfK6w
+Message-ID: <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+From: Doug Anderson <dianders@chromium.org>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maciej,
+Marc,
 
-On Thu, Sep 11, 2014 at 6:45 PM, Maciej Matraszek
-<m.matraszek@samsung.com> wrote:
-> BTW Can I use your output as example in the commit message for v2?
-> It's much more informative
+On Thu, Sep 11, 2014 at 10:22 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> We would need to run this code potentially at processor bringup and
+>> after suspend/resume, but that seems possible too.
+>
+> Note that this would be an ARMv7 only thing (you can't do that on ARMv8,
+> at all).
 
-Sure, no problem.
+Yes, of course.
 
-> (though 'runtime status' alignment seems odd).
 
-What's wrong with it?
+>> Is the transition to monitor mode and back simple?  Where would you
+>> suggest putting this code?  It would definitely need to be pretty
+>> early.  We'd also need to be able to detect that we're in Secure SVC
+>> and not mess up anyone else who happened to boot in Non Secure SVC.
+>
+> This would have to live in some very early platform-specific code. The
+> ugly part is that you cannot find out what world you're in (accessing
+> SCR is going to send you to UNDEF-land if accessed from NS).
 
-Gr{oetje,eeting}s,
+Yup, so the question is: would such code be accepted upstream, or are
+we going to embark on a big job for someone to figure out how to do
+this only to get NAKed?
 
-                        Geert
+If there was some indication that folks would take this, I think we
+might be able to get it coded up.  If someone else wanted to volunteer
+to code it that would make me even happier, but maybe that's pushing
+my luck.  ;)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> If I was suicidal, I'd suggest you could pass a parameter to the command
+> line, interpreted by the timer code... But I since I'm not, let's
+> pretend I haven't said anything... ;-)
+
+I did this in the past (again, see Sonny's thread), but didn't
+consider myself knowledgeable to know if that was truly a good test:
+
+       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
+       pr_info("DOUG: val is %#010x", val);
+       val |= (1 << 2);
+       asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
+       val = 0xffffffff;
+       asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
+       pr_info("DOUG: val is %#010x", val);
+
+The idea being that if you can make modifications to the SCR register
+(and see your changes take effect) then you must be in secure mode.
+In my case the first printout was 0x0 and the second was 0x4.
+
+-Doug
