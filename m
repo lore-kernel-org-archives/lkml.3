@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756304AbaIKMw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:52:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51596 "EHLO
+	id S1756352AbaIKMwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:52:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51588 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755418AbaIKMeG (ORCPT
+	by vger.kernel.org with ESMTP id S1755412AbaIKMeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,17 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Neal Cardwell" <ncardwell@google.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "Doug Leith" <doug.leith@nuim.ie>,
+        "David Laight" <David.Laight@ACULAB.COM>,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        "Christoph Paasch" <christoph.paasch@uclouvain.be>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.441380773@decadent.org.uk>
+Message-ID: <lsq.1410438733.356389477@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 062/131] reiserfs: Fix use after free in journal teardown
+Subject: [PATCH 3.2 102/131] tcp: Fix integer-overflow in TCP vegas
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,68 +36,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-commit 01777836c87081e4f68c4a43c9abe6114805f91e upstream.
+[ Upstream commit 1f74e613ded11517db90b2bd57e9464d9e0fb161 ]
 
-If do_journal_release() races with do_journal_end() which requeues
-delayed works for transaction flushing, we can leave work items for
-flushing outstanding transactions queued while freeing them. That
-results in use after free and possible crash in run_timers_softirq().
+In vegas we do a multiplication of the cwnd and the rtt. This
+may overflow and thus their result is stored in a u64. However, we first
+need to cast the cwnd so that actually 64-bit arithmetic is done.
 
-Fix the problem by not requeueing works if superblock is being shut down
-(MS_ACTIVE not set) and using cancel_delayed_work_sync() in
-do_journal_release().
+Then, we need to do do_div to allow this to be used on 32-bit arches.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-[bwh: Backported to 3.2:
- - Adjust context
- - commit_wq is global, not per-superblock
- - Change comment about 'these works'; we only have one work item
- - Drop inapplicable changes to reiserfs_schedule_old_flush()]
+Cc: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Neal Cardwell <ncardwell@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>
+Cc: Doug Leith <doug.leith@nuim.ie>
+Fixes: 8d3a564da34e (tcp: tcp_vegas cong avoid fix)
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -1916,15 +1916,19 @@ static int do_journal_release(struct rei
- 	}
+ net/ipv4/tcp_vegas.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv4/tcp_vegas.c b/net/ipv4/tcp_vegas.c
+index 80fa2bf..c042e52 100644
+--- a/net/ipv4/tcp_vegas.c
++++ b/net/ipv4/tcp_vegas.c
+@@ -218,7 +218,8 @@ static void tcp_vegas_cong_avoid(struct sock *sk, u32 ack, u32 in_flight)
+ 			 * This is:
+ 			 *     (actual rate in segments) * baseRTT
+ 			 */
+-			target_cwnd = tp->snd_cwnd * vegas->baseRTT / rtt;
++			target_cwnd = (u64)tp->snd_cwnd * vegas->baseRTT;
++			do_div(target_cwnd, rtt);
  
- 	reiserfs_mounted_fs_count--;
--	/* wait for all commits to finish */
--	cancel_delayed_work(&SB_JOURNAL(sb)->j_work);
- 
- 	/*
- 	 * We must release the write lock here because
- 	 * the workqueue job (flush_async_commit) needs this lock
- 	 */
- 	reiserfs_write_unlock(sb);
--	flush_workqueue(commit_wq);
-+	/*
-+	 * Cancel flushing of old commits. Note that this work will not
-+	 * be requeued because superblock is being shutdown and doesn't
-+	 * have MS_ACTIVE set.
-+	 */
-+	/* wait for all commits to finish */
-+	cancel_delayed_work_sync(&SB_JOURNAL(sb)->j_work);
- 
- 	if (!reiserfs_mounted_fs_count) {
- 		destroy_workqueue(commit_wq);
-@@ -4211,8 +4215,15 @@ static int do_journal_end(struct reiserf
- 	if (flush) {
- 		flush_commit_list(sb, jl, 1);
- 		flush_journal_list(sb, jl, 1);
--	} else if (!(jl->j_state & LIST_COMMIT_PENDING))
--		queue_delayed_work(commit_wq, &journal->j_work, HZ / 10);
-+	} else if (!(jl->j_state & LIST_COMMIT_PENDING)) {
-+		/*
-+		 * Avoid queueing work when sb is being shut down. Transaction
-+		 * will be flushed on journal shutdown.
-+		 */
-+		if (sb->s_flags & MS_ACTIVE)
-+			queue_delayed_work(commit_wq,
-+					   &journal->j_work, HZ / 10);
-+	}
- 
- 	/* if the next transaction has any chance of wrapping, flush
- 	 ** transactions that might get overwritten.  If any journal lists are very
+ 			/* Calculate the difference between the window we had,
+ 			 * and the window we would like to have. This quantity
 
