@@ -1,93 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaIKMRt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:17:49 -0400
-Received: from mout.gmx.net ([212.227.15.15]:58231 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754271AbaIKMRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:17:47 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-Date: Thu, 11 Sep 2014 14:17:16 +0200
-Message-ID: <16809905.2REViph6WO@fb07-iapwap2>
-User-Agent: KMail/4.13.3 (Linux/3.16.1-46.g90bc0f1-desktop; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1410274470-12712-5-git-send-email-wsa@the-dreams.de>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de> <1410274470-12712-5-git-send-email-wsa@the-dreams.de>
+	id S1754795AbaIKMTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:19:00 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:60313 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271AbaIKMS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:18:57 -0400
+Date: Thu, 11 Sep 2014 08:18:43 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Caesar Wang <caesar.wang@rock-chips.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
+        Chris Zhong <zyw@rock-chips.com>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        zhaoyifeng <zyf@rock-chips.com>
+Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
+Message-ID: <20140911121842.GB26715@developer>
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+ <1410310946.25559.12.camel@rzhang1-toshiba>
+ <CAC-25o9qcddZLy8fcwEqWp7g5fXk31xhaQCcALuH+sXDgn5n8w@mail.gmail.com>
+ <1487694.oyLYSrbpA8@diego>
+ <1410403012.25559.69.camel@rzhang1-toshiba>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Provags-ID: V03:K0:e1R/nFpofb31YBcOp9cVBVwlKBO/Cs1u31DYNBctyrfMw75ibb1
- L5rlDvtPML0sBYEvd43pe77UZFLYZEVvgNg86ZpHIt5nh3F+jg2DNa4nUBKi31mBr3Swval
- y58IafuqYLjEPrmvsqayb22gUqtI+y9UBiImcnQmOoDkGT6iTyf7Ortgbw/EHcVPsOETB64
- 84MNbhr5IMI9Yw9EI5v+Q==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410403012.25559.69.camel@rzhang1-toshiba>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'ing: devicetree
+Hello Rui,
 
-Am Dienstag, 9. September 2014, 16:54:30 schrieb Wolfram Sang:
-> From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+On Thu, Sep 11, 2014 at 10:36:52AM +0800, Zhang Rui wrote:
+> On Wed, 2014-09-10 at 09:24 +0200, Heiko Stübner wrote:
+> > Am Dienstag, 9. September 2014, 21:14:18 schrieb edubezval@gmail.com:
+> > > Hello,
+> > > 
+> > > On Tue, Sep 9, 2014 at 9:02 PM, Zhang Rui <rui.zhang@intel.com> wrote:
+> > > > On Tue, 2014-09-09 at 11:09 -0400, Eduardo Valentin wrote:
+> > > >> Hello
+> > > >> 
+> > > >> On Tue, Sep 09, 2014 at 01:35:31PM +0200, Heiko Stübner wrote:
+> > > >> > Am Dienstag, 9. September 2014, 10:27:17 schrieb Zhang Rui:
+> > > >> > > On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
+> > > >> > > > 在 2014年09月03日 16:07, Heiko Stübner 写道:
+> > > >> > > > > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
+> > > >> > > > >> This add the necessary binding documentation for the thermal
+> > > >> > > > >> found on Rockchip SoCs
+> > > >> > > > >> 
+> > > >> > > > >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> > > >> > > > >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> > > >> > > > >> ---
+> > > >> > > > >> 
+> > > >> > > > >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
+> > > >> > > > >> 
+> > > >> > > > >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
+> > > >> > > > >> 
+> > > >> > > > >>   create mode 100644
+> > > >> > > > >> 
+> > > >> > > > >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> > > > >> 
+> > > >> > > > >> diff --git
+> > > >> > > > >> a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> > > > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> > > >> > > > >> new
+> > > >> > > > >> file
+> > > >> > > > >> mode 100644
+> > > >> > > > >> index 0000000..1ed4d4c
+> > > >> > > > >> --- /dev/null
+> > > >> > > > >> +++
+> > > >> > > > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.tx
+> > > >> > > > >> t
+> > > >> > > > >> @@ -0,0 +1,20 @@
+> > > >> > > > >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+> > > >> > > > >> +
+> > > >> > > > >> +Required properties:
+> > > >> > > > >> +- compatible: "rockchip,rk3288-tsadc"
+> > > >> > > > >> +- reg: physical base address of the controller and length of
+> > > >> > > > >> memory
+> > > >> > > > >> mapped
+> > > >> > > > >> +       region.
+> > > >> > > > >> +- interrupts: The interrupt number to the cpu. The interrupt
+> > > >> > > > >> specifier
+> > > >> > > > >> format +           depends on the interrupt controller.
+> > > >> > > > >> +- clocks: Must contain an entry for each entry in clock-names.
+> > > >> > > > >> +- clock-names: Shall be "tsadc" for the converter-clock, and
+> > > >> > > > >> "apb_pclk" for +            the peripheral clock.
+> > > >> > > > > 
+> > > >> > > > > You're using the passive-temp, critical-temp and force-shut-temp
+> > > >> > > > > properties in your driver without declaring them here.
+> > > >> > > > 
+> > > >> > > > frankly,the about are need be declared. but  there are 4 types[0]
+> > > >> > > > for
+> > > >> > > > trip in thermal framework,
+> > > >> > > > there is no force-shut for me. So I want to change it three
+> > > >> > > > additional
+> > > >> > > > properties in [PATCH V4 4/4],
+> > > >> > > > 
+> > > >> > > > 
+> > > >> > > > [0]
+> > > >> > > > {
+> > > >> > > > 
+> > > >> > > >      THERMAL_TRIP_CRITICAL,
+> > > >> > > >      THERMAL_TRIP_HOT,
+> > > >> > > >      THERMAL_TRIP_PASSIVE,
+> > > >> > > >      THERMAL_TRIP_ACTIVE,
+> > > >> > > > 
+> > > >> > > > }
+> > > >> > > 
+> > > >> > > this sounds reasonable to me.
+> > > >> > > 
+> > > >> > > > > But more importantly, please use the generic trip-points for
+> > > >> > > > > this. I
+> > > >> > > > > guess it shouldn't be a problem to introduce a "forced-shutdown"
+> > > >> > > > > trippoint [0] for the additional trip-point you have - thermal
+> > > >> > > > > maintainers, please shout if I'm wrong :-)
+> > > >> > > 
+> > > >> > > what is the difference between a critical trip point and a
+> > > >> > > "forced-shutdown" trip point?
+> > > >> > > Thermal core will do a shutdown in case the critical trip point is
+> > > >> > > triggered.
+> > > >> > 
+> > > >> > The forced-shutdown is where the thermal controller is supposed to also
+> > > >> > do a>> 
+> > > >> Currently, there is no discrimination between hardware configured /
+> > > >> triggered thermal shutdown and software detected / triggered thermal
+> > > >> shutdown. One way to implement it though is to reuse the critical trip
+> > > >> type. Even if you use more than one trip type it is doable, it will
+> > > >> depend on the priorities you give to software triggered and hardware
+> > > >> triggered.
+> > > >> 
+> > > >> > shutdown in hardware. As you said the thermal core will also shutdown
+> > > >> > at the critical trip point, I guess we could map Caesar's value like
+> > > >> > 
+> > > >> > trip-point          tsadc
+> > > >> > critical            forced-shutdown (the 120 degrees in patch 4)
+> > > >> > 
+> > > >> > hot                 critical (the 100 degrees)
+> > > >> > ...
+> > > >> 
+> > > >> In the case we are planing to expand the trip type range, adding one
+> > > >> specific to hardware configurable shutdown makes sense to me too.
+> > > > 
+> > > > hmmm, why? you don't want an orderly shutdown? I still do not understand
+> > > > why we need a hardware shutdown trip point.
+> > > > Say, if we expect the system to be shutdown at 100C, I don't think we
+> > > > have a chance to trigger the hardware shutdown trip point.
+> > > > Further more, if my understanding is right, thermal core won't do
+> > > > anything for the hardware shutdown trip point because the system will be
+> > > > shutdown automatically, right? If this is true, why bother introducing
+> > > > this to thermal core?
+> > > 
+> > > Some ICs allow configuring the temperature when the shutdown will
+> > > happen. That is, you setup in registers the thermal shutdown
+> > > threshold, and one of the output pin of the IC is wired to, say, the
+> > > processor reset pin. Some other ICs have the threshold hardwired, and
+> > > cannot be configured.
+> > > 
+> > > Those options are a last chance to avoid processors to burn, in case
+> > > software really gets stuck at high temperatures.
+> > > 
+> > > The only thing that the thermal driver would need to worry is the
+> > > configuration step, that is, writing the value to the registers. In
+> > > the case the thermal core would have a specific trip type for such
+> > > case, the core itself would not do anything, except allowing designing
+> > > a thermal zone with hardware shutdown trips. And thus the thermal
+> > > driver would do the configuration.
+> > > 
+> > > 
+> > > Currently, the way I see to implement this is to interpret critical
+> > > trips as the threshold to be configured at the IC registers. That is,
+> > > reusing critical trips as orderly power down and as the hardware
+> > > shutdown threshold.
+> > 
+> > which was what I also meant to express above [but seemingly failed to do 
+> > properly :-) ].
+> > 
+> > Critical is specified as "Hardware not reliable", so I'd think it wouldn't 
+> > matter how the hw is shut down (orderly/unorderly) as long as its done.
 > 
-> Not for upstream!
+> Hmmm,
 > 
-> Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
-> ---
->  arch/arm/boot/dts/r8a7790-lager.dts | 15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
+> As what we want is to make thermal driver have a chance to configure the
+> hardware shutdown registers, I'm thinking if we can do this without
+> representing the hardware shutdown value as a trip point.
+> Say,
+> 1. parse DT, and get the hardware shutdown temperature value, and store
+> it somewhere, e.g. struct __thermal_zone.
+> 2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
+> in thermal_zone_of_sensor_register().
+> 3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
+> thermal_zone_of_sensor_register().
+
+
+The only issue I have with the above proposal is that not all platforms
+use DT. Some still boot with boardfiles, for instance. Thus, the
+parameter to configure hardware thermal shutdown needs to be common on
+thermal core, not specific to of-thermal. Do you agree?
+
+
 > 
-> diff --git a/arch/arm/boot/dts/r8a7790-lager.dts
-> b/arch/arm/boot/dts/r8a7790-lager.dts index 856b4236b674..12aa2f21e6fa
-> 100644
-> --- a/arch/arm/boot/dts/r8a7790-lager.dts
-> +++ b/arch/arm/boot/dts/r8a7790-lager.dts
-> @@ -205,9 +205,9 @@
->  		renesas,function = "msiof1";
->  	};
+> thanks,
+> rui
 > 
-> -	iic1_pins: iic1 {
-> -		renesas,groups = "iic1";
-> -		renesas,function = "iic1";
-> +	i2c1_pins: i2c1 {
-> +		renesas,groups = "i2c1";
-> +		renesas,function = "i2c1";
->  	};
-> 
->  	iic2_pins: iic2 {
-> @@ -356,10 +356,15 @@
->  	status = "ok";
->  };
-> 
-> -&iic1	{
-> +&i2c1	{
->  	status = "ok";
-> -	pinctrl-0 = <&iic1_pins>;
-> +	pinctrl-0 = <&i2c1_pins>;
->  	pinctrl-names = "default";
-> +
-> +	eeprom@64 {
-> +		compatible = "slave-24c02";
-
-a "real" compatible value should have vendor,device syntax.
-
-> +		reg = <0x64>;
-
-we had some discussions in the past how to represent i2c master devices in 
-device tree. The outcome was to use to a special representation to distinguish 
-them from slave devices, e.g. something like reg = <0x1 0x64>, where the 0x1 
-would mean "master" device (0x0 -> slave). If nothing is added, then it's also 
-slave. The adapter address cell would also need to be changed if this 
-extension is used.
-
-An alternative would be to use a special property (e.g. slave address), but 
-that would encode the same value twice (or even three times).
-
-Marc
-
