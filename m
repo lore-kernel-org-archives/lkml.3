@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756040AbaIKNAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51491 "EHLO
+	id S1756006AbaIKNAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51543 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755370AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755389AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:04 -0400
+	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
+        "Hans de Goede" <hdegoede@redhat.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.742829264@decadent.org.uk>
+Message-ID: <lsq.1410438733.896282859@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 005/131] debugfs: Fix corrupted loop in
- debugfs_remove_recursive
+Subject: [PATCH 3.2 077/131] xhci: Treat not finding the event_seg on
+ COMP_STOP the same as COMP_STOP_INVAL
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,183 +34,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 485d44022a152c0254dd63445fdb81c4194cbf0e upstream.
+commit 9a54886342e227433aebc9d374f8ae268a836475 upstream.
 
-[ I'm currently running my tests on it now, and so far, after a few
- hours it has yet to blow up. I'll run it for 24 hours which it never
- succeeded in the past. ]
+When using a Renesas uPD720231 chipset usb-3 uas to sata bridge with a 120G
+Crucial M500 ssd, model string: Crucial_ CT120M500SSD1, together with a
+the integrated Intel xhci controller on a Haswell laptop:
 
-The tracing code has a way to make directories within the debugfs file
-system as well as deleting them using mkdir/rmdir in the instance
-directory. This is very limited in functionality, such as there is
-no renames, and the parent directory "instance" can not be modified.
-The tracing code creates the instance directory from the debugfs code
-and then replaces the dentry->d_inode->i_op with its own to allow
-for mkdir/rmdir to work.
+00:14.0 USB controller [0c03]: Intel Corporation 8 Series USB xHCI HC [8086:9c31] (rev 04)
 
-When these are called, the d_entry and inode locks need to be released
-to call the instance creation and deletion code. That code has its own
-accounting and locking to serialize everything to prevent multiple
-users from causing harm. As the parent "instance" directory can not
-be modified this simplifies things.
+The following error gets logged to dmesg:
 
-I created a stress test that creates several threads that randomly
-creates and deletes directories thousands of times a second. The code
-stood up to this test and I submitted it a while ago.
+xhci error: Transfer event TRB DMA ptr not part of current TD
 
-Recently I added a new test that adds readers to the mix. While the
-instance directories were being added and deleted, readers would read
-from these directories and even enable tracing within them. This test
-was able to trigger a bug:
+Treating COMP_STOP the same as COMP_STOP_INVAL when no event_seg gets found
+fixes this.
 
- general protection fault: 0000 [#1] PREEMPT SMP
- Modules linked in: ...
- CPU: 3 PID: 17789 Comm: rmdir Tainted: G        W     3.15.0-rc2-test+ #41
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
- task: ffff88003786ca60 ti: ffff880077018000 task.ti: ffff880077018000
- RIP: 0010:[<ffffffff811ed5eb>]  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
- RSP: 0018:ffff880077019df8  EFLAGS: 00010246
- RAX: 0000000000000002 RBX: ffff88006f0fe490 RCX: 0000000000000000
- RDX: dead000000100058 RSI: 0000000000000246 RDI: ffff88003786d454
- RBP: ffff88006f0fe640 R08: 0000000000000628 R09: 0000000000000000
- R10: 0000000000000628 R11: ffff8800795110a0 R12: ffff88006f0fe640
- R13: ffff88006f0fe640 R14: ffffffff81817d0b R15: ffffffff818188b7
- FS:  00007ff13ae24700(0000) GS:ffff88007d580000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000003054ec7be0 CR3: 0000000076d51000 CR4: 00000000000007e0
- Stack:
-  ffff88007a41ebe0 dead000000100058 00000000fffffffe ffff88006f0fe640
-  0000000000000000 ffff88006f0fe678 ffff88007a41ebe0 ffff88003793a000
-  00000000fffffffe ffffffff810bde82 ffff88006f0fe640 ffff88007a41eb28
- Call Trace:
-  [<ffffffff810bde82>] ? instance_rmdir+0x15b/0x1de
-  [<ffffffff81132e2d>] ? vfs_rmdir+0x80/0xd3
-  [<ffffffff81132f51>] ? do_rmdir+0xd1/0x139
-  [<ffffffff8124ad9e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
-  [<ffffffff814fea62>] ? system_call_fastpath+0x16/0x1b
- Code: fe ff ff 48 8d 75 30 48 89 df e8 c9 fd ff ff 85 c0 75 13 48 c7 c6 b8 cc d2 81 48 c7 c7 b0 cc d2 81 e8 8c 7a f5 ff 48 8b 54 24 08 <48> 8b 82 a8 00 00 00 48 89 d3 48 2d a8 00 00 00 48 89 44 24 08
- RIP  [<ffffffff811ed5eb>] debugfs_remove_recursive+0x1bd/0x367
-  RSP <ffff880077019df8>
-
-It took a while, but every time it triggered, it was always in the
-same place:
-
-	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-
-Where the child->d_u.d_child seemed to be corrupted.  I added lots of
-trace_printk()s to see what was wrong, and sure enough, it was always
-the child's d_u.d_child field. I looked around to see what touches
-it and noticed that in __dentry_kill() which calls dentry_free():
-
-static void dentry_free(struct dentry *dentry)
-{
-	/* if dentry was never visible to RCU, immediate free is OK */
-	if (!(dentry->d_flags & DCACHE_RCUACCESS))
-		__d_free(&dentry->d_u.d_rcu);
-	else
-		call_rcu(&dentry->d_u.d_rcu, __d_free);
-}
-
-I also noticed that __dentry_kill() unlinks the child->d_u.child
-under the parent->d_lock spin_lock.
-
-Looking back at the loop in debugfs_remove_recursive() it never takes the
-parent->d_lock to do the list walk. Adding more tracing, I was able to
-prove this was the issue:
-
- ftrace-t-15385   1.... 246662024us : dentry_kill <ffffffff81138b91>: free ffff88006d573600
-    rmdir-15409   2.... 246662024us : debugfs_remove_recursive <ffffffff811ec7e5>: child=ffff88006d573600 next=dead000000100058
-
-The dentry_kill freed ffff88006d573600 just as the remove recursive was walking
-it.
-
-In order to fix this, the list walk needs to be modified a bit to take
-the parent->d_lock. The safe version is no longer necessary, as every
-time we remove a child, the parent->d_lock must be released and the
-list walk must start over. Each time a child is removed, even though it
-may still be on the list, it should be skipped by the first check
-in the loop:
-
-		if (!debugfs_positive(child))
-			continue;
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: deleted code is slightly different; we don't
- have list_next_entry()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/debugfs/inode.c | 33 ++++++++++++++++++++++++++-------
- 1 file changed, 26 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci-ring.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -380,7 +380,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
- {
--	struct dentry *child, *next, *parent;
-+	struct dentry *child, *parent;
- 
- 	if (!dentry)
- 		return;
-@@ -392,31 +392,49 @@ void debugfs_remove_recursive(struct den
- 	parent = dentry;
-  down:
- 	mutex_lock(&parent->d_inode->i_mutex);
--	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+ loop:
-+	/*
-+	 * The parent->d_subdirs is protected by the d_lock. Outside that
-+	 * lock, the child can be unlinked and set to be freed which can
-+	 * use the d_u.d_child as the rcu head and corrupt this list.
-+	 */
-+	spin_lock(&parent->d_lock);
-+	list_for_each_entry(child, &parent->d_subdirs, d_u.d_child) {
- 		if (!debugfs_positive(child))
- 			continue;
- 
- 		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
-+			spin_unlock(&parent->d_lock);
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
- 			goto down;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2433,7 +2433,8 @@ static int handle_tx_event(struct xhci_h
+ 		 * last TRB of the previous TD. The command completion handle
+ 		 * will take care the rest.
+ 		 */
+-		if (!event_seg && trb_comp_code == COMP_STOP_INVAL) {
++		if (!event_seg && (trb_comp_code == COMP_STOP ||
++				   trb_comp_code == COMP_STOP_INVAL)) {
+ 			ret = 0;
+ 			goto cleanup;
  		}
-- up:
-+
-+		spin_unlock(&parent->d_lock);
-+
- 		if (!__debugfs_remove(child, parent))
- 			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+
-+		/*
-+		 * The parent->d_lock protects agaist child from unlinking
-+		 * from d_subdirs. When releasing the parent->d_lock we can
-+		 * no longer trust that the next pointer is valid.
-+		 * Restart the loop. We'll skip this one with the
-+		 * debugfs_positive() check.
-+		 */
-+		goto loop;
- 	}
-+	spin_unlock(&parent->d_lock);
- 
- 	mutex_unlock(&parent->d_inode->i_mutex);
- 	child = parent;
- 	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
- 
--	if (child != dentry) {
--		next = list_entry(child->d_u.d_child.next, struct dentry,
--					d_u.d_child);
--		goto up;
--	}
-+	if (child != dentry)
-+		/* go up */
-+		goto loop;
- 
- 	if (!__debugfs_remove(child, parent))
- 		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
 
