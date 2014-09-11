@@ -1,87 +1,488 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbaIKKrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:47:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31877 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaIKKrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:47:31 -0400
-Message-ID: <54117DB4.307@redhat.com>
-Date: Thu, 11 Sep 2014 12:47:16 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@kernel.org>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page
- on migration in vcpu_enter_guest().
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com> <541169AD.6060908@redhat.com> <20140911101200.GF25317@minantech.com>
-In-Reply-To: <20140911101200.GF25317@minantech.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1754406AbaIKKsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:48:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:55241 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386AbaIKKr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 06:47:59 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-94-54117ddc3a77
+From: Chao Yu <chao2.yu@samsung.com>
+To: "'Jaegeuk Kim'" <jaegeuk@kernel.org>,
+        "'huang ying'" <huang.ying.caritas@gmail.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Huang Ying'" <ying.huang@intel.com>
+References: <1410176306-1689-1-git-send-email-ying.huang@intel.com>
+ <20140909052356.GA25590@jaegeuk-mac02.hsd1.ca.comcast.net>
+ <1410241170.732.373.camel@yhuang-dev>
+ <20140909070811.GA26657@jaegeuk-mac02.mot-mobility.com>
+ <CAC=cRTMA9AqmHjQqK3=5pAs8yqi25Rzmz8MaZ8=oTDaxHAXU+A@mail.gmail.com>
+ <20140910072012.GA9242@jaegeuk-mac02.mot-mobility.com>
+ <CAC=cRTMGJfD_SZ=bE8pi5U6n5W1MF17emLC3VZDbpLSQtbNcKg@mail.gmail.com>
+ <20140911053716.GA24315@jaegeuk-mac02.hsd1.ca.comcast.net>
+In-reply-to: <20140911053716.GA24315@jaegeuk-mac02.hsd1.ca.comcast.net>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: Fix recover when nid of non-inode dnode <
+ nid of inode
+Date: Thu, 11 Sep 2014 18:47:02 +0800
+Message-id: <003601cfcdad$d64a8d00$82dfa700$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGg8jUmX1BMKiqzDBuQb8O0uU7DgAHcAr4tAjWeL3IB+LVy0AFOSbc0AXTn+3sB8ST3VgIMRe55m/L+GNA=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9jAd27tYIhBk9Ps1qc3/yHzeLJ+lnM
+	FpcWuVtc3jWHzeLkrMksDqweO2fdZfdYvOclk8emVZ1sHrsXfGby+LxJLoA1issmJTUnsyy1
+	SN8ugSvj9OWcgs/lFbv71jE2MB6N6mLk5JAQMJG49eUzG4QtJnHh3nowW0hgEaPEkXPsXYxc
+	QPYPRokdPR+YQRJsAioSyzv+M4HYIgKhEvtX32HtYuTgYBaokLgwKx2i/hmzxIJPS1hAajgF
+	3CW+XVgK1issECcx4+dXdhCbRUBVon39GkYQm1fAUmL+pOdMELagxI/J98B6mQW0JNbvPM4E
+	YctLbF7zlhniUAWJHWdfM0LckCJxrGc/G0SNuMTGI7dYJjAKzUIyahaSUbOQjJqFpGUBI8sq
+	RtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOCoeCa9g3FVg8UhRgEORiUe3koWwRAh1sSy4src
+	Q4wSHMxKIrylhUAh3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1MLUotgskwc
+	nFINjDEmQVGbp/9m03RkSHz/UkLCPkiHQXFhbkHhWRP5/a01J0OEa3g+h2uWvpNcu0O48YNI
+	scxPrqOipxx4kl2+7f0UdoT9VcSUQ2n8z5JZbqw7tjQ2q908TeZn9AxPrlCHJy9KZtzIzakL
+	f9PJu3D33l3WtfsOmNbeKJi2feaH3Sz9v7KLc7oOKrEUZyQaajEXFScCABX8wtOGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 12:12, Gleb Natapov ha scritto:
-> On Thu, Sep 11, 2014 at 11:21:49AM +0200, Paolo Bonzini wrote:
->> Il 11/09/2014 07:38, Tang Chen ha scritto:
->>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->>> index 63c4c3e..da6d55d 100644
->>> --- a/arch/x86/kvm/vmx.c
->>> +++ b/arch/x86/kvm/vmx.c
->>> @@ -7093,6 +7093,11 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
->>>  	vmx_set_msr_bitmap(vcpu);
->>>  }
->>>  
->>> +static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
->>> +{
->>> +	vmcs_write64(APIC_ACCESS_ADDR, hpa);
->>
->> This has to be guarded by "if (!is_guest_mode(vcpu))".
->>
-> We do need to write it if L1 and L2 share APIC_ACCESS_ADDR and skip
-> it otherwise, no?
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> Sent: Thursday, September 11, 2014 1:37 PM
+> To: huang ying
+> Cc: linux-f2fs-devel@lists.sourceforge.net; LKML; Huang Ying
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: Fix recover when nid of non-inode dnode < nid of inode
+> 
+> On Wed, Sep 10, 2014 at 07:08:32PM +0800, huang ying wrote:
+> > On Wed, Sep 10, 2014 at 3:21 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
+> >
+> > > On Tue, Sep 09, 2014 at 07:31:49PM +0800, huang ying wrote:
+> > > > On Tue, Sep 9, 2014 at 3:09 PM, Jaegeuk Kim <jaegeuk@kernel.org> wrote:
+> > > >
+> > > > > Hi,
+> > > > >
+> > > > > On Tue, Sep 09, 2014 at 01:39:30PM +0800, Huang Ying wrote:
+> > > > > > On Mon, 2014-09-08 at 22:23 -0700, Jaegeuk Kim wrote:
+> > > > > > > Hi Huang,
+> > > > > > >
+> > > > > > > On Mon, Sep 08, 2014 at 07:38:26PM +0800, Huang Ying wrote:
+> > > > > > > > For fsync, if the nid of a non-inode dnode < nid of inode and the
+> > > > > > > > inode is not checkpointed.  The non-inode dnode may be written
+> > > before
+> > > > > > > > inode.  So in find_fsync_dnodes, f2fs_iget will fail, cause the
+> > > > > > > > recovery fail.
+> > > > > > > >
+> > > > > > > > Usually, inode will be allocated before non-inode dnode, so the
+> > > nid
+> > > > > of
+> > > > > > > > inode < nid of non-inode dnode.  But it is possible for the
+> > > reverse.
+> > > > > > > > For example, because of alloc_nid_failed.
+> > > > > > > >
+> > > > > > > > This is fixed via ignoring non-inode dnode before inode dnode in
+> > > > > > > > find_fsync_dnodes.
+> > > > > > > >
+> > > > > > > > The patch was tested via allocating nid reversely via a debugging
+> > > > > > > > patch, that is, from big number to small number.
+> > > > > > > >
+> > > > > > > > Signed-off-by: Huang, Ying <ying.huang@intel.com>
+> > > > > > > > ---
+> > > > > > > >  fs/f2fs/recovery.c |    7 ++++---
+> > > > > > > >  1 file changed, 4 insertions(+), 3 deletions(-)
+> > > > > > > >
+> > > > > > > > --- a/fs/f2fs/recovery.c
+> > > > > > > > +++ b/fs/f2fs/recovery.c
+> > > > > > > > @@ -172,8 +172,8 @@ static int find_fsync_dnodes(struct f2fs
+> > > > > > > >                   if (IS_INODE(page) && is_dent_dnode(page))
+> > > > > > > >                           set_inode_flag(F2FS_I(entry->inode),
+> > > > > > > >                                                   FI_INC_LINK);
+> > > > > > > > -         } else {
+> > > > > > > > -                 if (IS_INODE(page) && is_dent_dnode(page)) {
+> > > > > > >
+> > > > > > > If this is not inode block, we should add this inode to recover its
+> > > > > data blocks.
+> > > > > >
+> > > > > > Is it possible that there is only non-inode dnode but no inode when
+> > > > > > find_fsync_dnodes checking dnodes?  Per my understanding, any
+> > > changes to
+> > > > > > file will cause inode page dirty (for example, mtime changed), so
+> > > that
+> > > > > > we will write inode block.  Is it right?  If so, the solution in this
+> > > > > > patch should work too.
+> > > > >
+> > > > > Your description says that f2fs_iget will fail, which causes the
+> > > recovery
+> > > > > fail.
+> > > > > So, I thought it would be better to handle the f2fs_iget failure
+> > > directly.
+> > > > >
+> > > >
+> > > > Yes.  That is another way to fix the issue.
+> > > >
+> > > >
+> > > > > In addition, we cannot guarantee the write order of dnode and inode.
+> > > > > For exmaple,
+> > > > > 1. the inode is written by flusher or kswapd, then,
+> > > > > 2. f2fs_sync_file writes its dnode.
+> > > > >
+> > > > > In that case, we can get only non-inode dnode in the node chain, since
+> > > the
+> > > > > inode
+> > > > > has not fsync_mark.
+> > > > >
+> > > >
+> > > > I think your solution is better here, but does not fix all scenarios.  If
+> > > > the inode is checkpointed, the file can be recovered, although the inode
+> > > > information may be not up to date.  But if the inode is not checkpointed,
+> > > > f2fs_iget will fail too and recover will fail.
+> > >
+> > > Ok, let me consider your scenarios.
+> > >
+> > > Term: F: fsync_mark, D: dentry_mark
+> > >
+> > > 1. inode(x) | CP | inode(x) | dnode(F)
+> > >  -> Lose the latest inode(x). Need to fix.
+> > >
+> > > 2. inode(x) | CP | dnode(F) | inode(x)
+> > >  -> Impossible, but recover latest dnode(F)
+> > >
+> > > 3. CP | inode(x) | dnode(F)
+> > >  -> Need to write inode(DF) in f2fs_sync_file.
+> > >
+> > > 4. CP | dnode(F) | inode(DF)
+> > >  -> If f2fs_iget fails, then goto next.
+> > >
+> > > 5. CP | dnode(F) | inode(x)
+> > >  -> If f2fs_iget fails, then goto next. But, this is an impossible
+> > > scenario.
+> > >     Drop this dnode(F).
+> > >
+> > > Indeed, there were some missing scenarios.
+> > >
+> > > So, how about this patch?
+> > >
+> > > From 552dc68c5f07a335d7b55c197bab531efb135521 Mon Sep 17 00:00:00 2001
+> > > From: Jaegeuk Kim <jaegeuk@kernel.org>
+> > > Date: Wed, 10 Sep 2014 00:16:34 -0700
+> > > Subject: [PATCH] f2fs: fix roll-forward missing scenarios
+> > >
+> > > We can summarize the roll forward recovery scenarios as follows.
+> > >
+> > > [Term] F: fsync_mark, D: dentry_mark
+> > >
+> > > 1. inode(x) | CP | inode(x) | dnode(F)
+> > > -> Update the latest inode(x).
+> > >
+> > > 2. inode(x) | CP | inode(F) | dnode(F)
+> > > -> No problem.
+> > >
+> > > 3. inode(x) | CP | dnode(F) | inode(x)
+> > > -> Impossible, but recover latest dnode(F)
+> > >
+> >
+> > I think this is possible.  If f2fs_sync_file runs concurrently with
+> > writeback. f2fs_sync_file written dnode(F), then writeback written inode(x).
+> 
+> If the inode(x) was written, f2fs_sync_file will do write the inode again with
+> fsync_mark. So, dnode(F) | inode(x) | inode(F) should be shown.
+> 
+> In f2fs_sync_file,
+> 	...
+> 	while (!sync_node_pages(sbi, ino, &wbc)) {
+> 		if (fsync_mark_done(sbi, ino))
+> 			goto out;
+> 		mark_inode_dirty_sync(inode);
+> 		ret = f2fs_write_inode(inode, NULL);
+> 		if (ret)
+> 			goto out;
+> 	}
+> 	...
+> 
+> >
+> >
+> > > 4. inode(x) | CP | dnode(F) | inode(F)
+> > > -> No problem.
+> > >
+> > > 5. CP | inode(x) | dnode(F)
+> > > -> Impossible. Write inode(DF) with dnode(F) by f2fs_sync_file.
+> > >
+> >
+> > I think this is possible.  If inode(x) is written by writeback and then
+> > dnode(F) is written by f2fs_sync_file.
+> 
+> -> The inode(DF) was missing. Should drop this dnode(F).
+> Again, CP | inode(x) | dnode(F) | inode(DF) should be shown.
+> This is fixed by the below updated patch.
+> 
+> >
+> >
+> > > 6. CP | inode(DF) | dnode(F)
+> > > -> No problem.
+> > >
+> > > 7. CP | dnode(F) | inode(DF)
+> > > -> If f2fs_iget fails, then goto next to find inode(DF).
+> > >
+> > > 8. CP | dnode(F) | inode(x)
+> > > -> If f2fs_iget fails, then goto next. But, this is an impossible scenario.
+> > >    Drop this dnode(F).
+> > >
+> >
+> > I think this is possible.  as 3.
+> 
+> ditto.
+> 
+> >
+> >
+> > > So, this patch adds some missing points such as #1, #5, #7, and #8.
+> > >
+> > > Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> > > ---
+> > >  fs/f2fs/file.c     | 10 ++++++++
+> > >  fs/f2fs/recovery.c | 70
+> > > +++++++++++++++++++++++++++++++++++++++++++++---------
+> > >  2 files changed, 69 insertions(+), 11 deletions(-)
+> > >
+> > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> > > index 5cde363..2660af2 100644
+> > > --- a/fs/f2fs/file.c
+> > > +++ b/fs/f2fs/file.c
+> > > @@ -207,6 +207,16 @@ int f2fs_sync_file(struct file *file, loff_t start,
+> > > loff_t end, int datasync)
+> > >                         up_write(&fi->i_sem);
+> > >                 }
+> > >         } else {
+> > > +               /*
+> > > +                * CP | inode(x) | dnode(F)
+> > > +                * We need to remain inode(DF) for roll-forward recovery.
+> > > +                */
+> > > +               if (fsync_mark_done(sbi, inode->i_ino) &&
+> > >
+> >
+> > How can this happen?  We have not called sync_node_pages(sbi, inode->i_ino,
+> > &wbc).  Where is the fsync mark set?
+> >
+> >
+> > > +                       !is_checkpointed_node(sbi, F2FS_I(inode)->i_pino))
+> > > {
+> > >
+> >
+> > if !is_checkpointed_node(sbi, F2FS_I(inode)->i_pino), we need to do
+> > checkpoint.  Right?
+> 
+> Yes, whole conditions were wrong.
+> Please, refer the following patch.
+> Thanks,
+> 
+> >From 2e70059dd680830c030f59813d4e9837cb65ecb1 Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk@kernel.org>
+> Date: Wed, 10 Sep 2014 00:16:34 -0700
+> Subject: [PATCH 1/2] f2fs: fix roll-forward missing scenarios
+> 
+> We can summarize the roll forward recovery scenarios as follows.
+> 
+> [Term] F: fsync_mark, D: dentry_mark
+> 
+> 1. inode(x) | CP | inode(x) | dnode(F)
+> -> Update the latest inode(x).
+> 
+> 2. inode(x) | CP | inode(F) | dnode(F)
+> -> No problem.
+> 
+> 3. inode(x) | CP | dnode(F) | inode(x)
+> -> Impossible, but recover latest dnode(F).
+> 
+> 4. inode(x) | CP | dnode(F) | inode(F)
+> -> No problem.
+> 
+> 5. CP | inode(x) | dnode(F)
+> -> The inode(DF) was missing. Should drop this dnode(F).
+> 
+> 6. CP | inode(DF) | dnode(F)
+> -> No problem.
+> 
+> 7. CP | dnode(F) | inode(DF)
+> -> If f2fs_iget fails, then goto next to find inode(DF).
+> 
+> 8. CP | dnode(F) | inode(x)
+> -> If f2fs_iget fails, then goto next to find inode(DF).
+>    But it will fail due to no inode(DF).
+> 
+> So, this patch adds some missing points such as #1, #5, #7, and #8.
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+> ---
+>  fs/f2fs/file.c     | 10 ++++++++
+>  fs/f2fs/recovery.c | 70 +++++++++++++++++++++++++++++++++++++++++++++---------
+>  2 files changed, 69 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> index e7681c3..e2a2f38 100644
+> --- a/fs/f2fs/file.c
+> +++ b/fs/f2fs/file.c
+> @@ -206,6 +206,16 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int
+> datasync)
+>  			up_write(&fi->i_sem);
+>  		}
+>  	} else {
+> +		/*
+> +		 * CP | inode(x) | dnode(F)
+> +		 * We need to remain inode(DF) for roll-forward recovery.
+> +		 */
+> +		if (!fsync_mark_done(sbi, inode->i_ino) &&
+> +			!is_checkpointed_node(sbi, inode->i_ino)) {
+> +			mark_inode_dirty_sync(inode);
+> +			f2fs_write_inode(inode, NULL);
+> +		}
 
-Yes, but this would be handled by patch 6:
+This un-checkpointed non-fsynced inode page might be writeback by
+kswapd/bdi-flusher here. Then CP | inode(x) | dnode(F) occur.
 
- 		} else if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
-+			struct page *page = gfn_to_page(vmx->vcpu.kvm,
-+				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
- 			exec_control |=
- 				SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
--			vmcs_write64(APIC_ACCESS_ADDR,
--				page_to_phys(vcpu->kvm->arch.apic_access_page));
-+			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
-+			/*
-+			 * Do not pin apic access page in memory so that memory
-+			 * hotplug process is able to migrate it.
-+			 */
-+			put_page(page);
- 		}
+So how about modifying as below:
 
-However, this is also useless code duplication because the above snippet could
-reuse vcpu_reload_apic_access_page too.
+		while (!sync_node_pages(sbi, inode->i_ino, &wbc) ||
+			(!fsync_mark_done(sbi, inode->i_ino) &&
+			!is_checkpointed_node(sbi, inode->i_ino))) {
 
-So I think you cannot do the is_guest_mode check in
-kvm_vcpu_reload_apic_access_page and also not in
-vmx_reload_apic_access_page.  But you could do something like
+to guarantee the inode(DF) is be written out to disk?
 
-kvm_vcpu_reload_apic_access_page(...)
-{
-	...
-	kvm_x86_ops->reload_apic_access_page(...);
-}
-EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
+Thanks,
+Yu
 
-/* used in vcpu_enter_guest only */
-vcpu_reload_apic_access_page(...)
-{
-	if (!is_guest_mode(vcpu))
-		kvm_vcpu_reload_apic_access_page(...)
-}
+> +
+>  		/* if there is no written node page, write its inode page */
+>  		while (!sync_node_pages(sbi, ino, &wbc)) {
+>  			if (fsync_mark_done(sbi, ino))
+> diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> index 6c5a74a..eeb3785 100644
+> --- a/fs/f2fs/recovery.c
+> +++ b/fs/f2fs/recovery.c
+> @@ -14,6 +14,36 @@
+>  #include "node.h"
+>  #include "segment.h"
+> 
+> +/*
+> + * Roll forward recovery scenarios.
+> + *
+> + * [Term] F: fsync_mark, D: dentry_mark
+> + *
+> + * 1. inode(x) | CP | inode(x) | dnode(F)
+> + * -> Update the latest inode(x).
+> + *
+> + * 2. inode(x) | CP | inode(F) | dnode(F)
+> + * -> No problem.
+> + *
+> + * 3. inode(x) | CP | dnode(F) | inode(x)
+> + * -> Impossible, but recover latest dnode(F)
+> + *
+> + * 4. inode(x) | CP | dnode(F) | inode(F)
+> + * -> No problem.
+> + *
+> + * 5. CP | inode(x) | dnode(F)
+> + * -> The inode(DF) was missing. Should drop this dnode(F).
+> + *
+> + * 6. CP | inode(DF) | dnode(F)
+> + * -> No problem.
+> + *
+> + * 7. CP | dnode(F) | inode(DF)
+> + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> + *
+> + * 8. CP | dnode(F) | inode(x)
+> + * -> If f2fs_iget fails, then goto next to find inode(DF).
+> + *    But it will fail due to no inode(DF).
+> + */
+>  static struct kmem_cache *fsync_entry_slab;
+> 
+>  bool space_for_roll_forward(struct f2fs_sb_info *sbi)
+> @@ -110,27 +140,32 @@ out:
+>  	return err;
+>  }
+> 
+> -static int recover_inode(struct inode *inode, struct page *node_page)
+> +static void __recover_inode(struct inode *inode, struct page *page)
+>  {
+> -	struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
+> +	struct f2fs_inode *raw = F2FS_INODE(page);
+> +
+> +	inode->i_mode = le16_to_cpu(raw->i_mode);
+> +	i_size_write(inode, le64_to_cpu(raw->i_size));
+> +	inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
+> +	inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
+> +	inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
+> +	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> +	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
+> +	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+> +}
+> 
+> +static int recover_inode(struct inode *inode, struct page *node_page)
+> +{
+>  	if (!IS_INODE(node_page))
+>  		return 0;
+> 
+> -	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
+> -	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
+> -	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> -	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
+> -	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
+> -	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> -	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+> -	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+> +	__recover_inode(inode, node_page);
+> 
+>  	if (is_dent_dnode(node_page))
+>  		return recover_dentry(node_page, inode);
+> 
+>  	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
+> -			ino_of_node(node_page), raw_inode->i_name);
+> +			ino_of_node(node_page), F2FS_INODE(node_page)->i_name);
+>  	return 0;
+>  }
+> 
+> @@ -186,10 +221,16 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head
+> *head)
+>  				break;
+>  			}
+> 
+> +			/*
+> +			 * CP | dnode(F) | inode(DF)
+> +			 * For this case, we should not give up now.
+> +			 */
+>  			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
+>  			if (IS_ERR(entry->inode)) {
+>  				err = PTR_ERR(entry->inode);
+>  				kmem_cache_free(fsync_entry_slab, entry);
+> +				if (err == -ENOENT)
+> +					goto next;
+>  				break;
+>  			}
+>  			list_add_tail(&entry->list, head);
+> @@ -416,6 +457,13 @@ static int recover_data(struct f2fs_sb_info *sbi,
+>  		entry = get_fsync_inode(head, ino_of_node(page));
+>  		if (!entry)
+>  			goto next;
+> +		/*
+> +		 * inode(x) | CP | inode(x) | dnode(F)
+> +		 * In this case, we can lose the latest inode(x).
+> +		 * So, call __recover_inode for the inode update.
+> +		 */
+> +		if (IS_INODE(page))
+> +			__recover_inode(entry->inode, page);
+> 
+>  		err = do_recover_data(sbi, entry->inode, page, blkaddr);
+>  		if (err)
+> --
+> 1.8.5.2 (Apple Git-48)
+> 
+> 
+> ------------------------------------------------------------------------------
+> Want excitement?
+> Manually upgrade your production database.
+> When you want reliability, choose Perforce
+> Perforce version control. Predictably reliable.
+> http://pubads.g.doubleclick.net/gampad/clk?id=157508191&iu=/4140/ostg.clktrk
+> _______________________________________________
+> Linux-f2fs-devel mailing list
+> Linux-f2fs-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-f2fs-devel
 
-Paolo
