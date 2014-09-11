@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816AbaIKVhn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:37:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43901 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaIKVhm (ORCPT
+	id S1753981AbaIKVic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:38:32 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:39899 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600AbaIKVib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:37:42 -0400
-Date: Thu, 11 Sep 2014 14:37:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Hartley Sweeten <HartleyS@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/48] staging: comedi: avoid using comedi_board()
-Message-ID: <20140911213741.GA4542@kroah.com>
-References: <1410258417-28230-1-git-send-email-abbotti@mev.co.uk>
- <DC148C5AA1CEBA4E87973D432B1C2D8825F9872E@P3PWEX4MB008.ex4.secureserver.net>
+	Thu, 11 Sep 2014 17:38:31 -0400
+Message-ID: <54121651.50004@converseincode.com>
+Date: Thu, 11 Sep 2014 16:38:25 -0500
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825F9872E@P3PWEX4MB008.ex4.secureserver.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chris Mason <clm@fb.com>, jbacik@fb.com
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?Vmluw61jaXVzIFRpbnRp?= <viniciustinti@gmail.com>,
+        =?UTF-8?B?SmFuLVNpbW9uIE3DtmxsZXI=?= <dl9pf@gmx.de>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v2] btrfs: LLVMLinux: Remove VLAIS
+References: <1409957901-28962-1-git-send-email-behanw@converseincode.com> <5411B304.4000203@fb.com>
+In-Reply-To: <5411B304.4000203@fb.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 05:57:34PM +0000, Hartley Sweeten wrote:
-> On Tuesday, September 09, 2014 3:26 AM, Ian Abbott wrote:
-> > The `comedi_board` inline function takes a single parameter of type
-> > `struct comedi_device *` and merely returns the value of the `board_ptr`
-> > member therein.  This is somewhat superfluous as the member can be
-> > accessed directly.
-> >
-> > Replace all uses of `comedi_board(dev)` with `dev->board_ptr`.
-> >
-> > Note, if there are any conflicts when applying this series, they can
-> > just be skipped for now and corrected later.
-> >
-> > A subsequent patch will remove the `comedi_board` function, once there
-> > is nothing using it.
-> 
-> Greg,
-> 
-> Just wanted to give you a heads up on this series and the ones I have
-> posted. The series are:
-> 
-> >From Ian, [PATCH 00/48] staging: comedi: avoid using comedi_board()
-> >From me, [PATCH 00/30] staging: comedi: adl_pci9118: continue cleanup
-> >From me, [PATCH 00/34] staging: comedi: cleanup async cmd->stop_{src,arg} usage
-> 
-> There are a couple conflicts between the series from Ian and my two.
-> If you drop these two from Ian's series:
->  
-> 06) staging: comedi: adl_pci9118: replace comedi_board() calls
-> 10) staging: comedi: amplc_dio200_common: replace comedi_board() calls
-> 
-> The rest will apply cleanly in the order above (assuming I didn't miss anything).
+On 09/11/14 09:34, Chris Mason wrote:
+>
+> On 09/05/2014 06:58 PM, behanw@converseincode.com wrote:
+>> From: Vinícius Tinti <viniciustinti@gmail.com>
+>>
+>> Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
+>> compliant equivalent. This is the original VLAIS struct.
+>>
+>> struct {
+>> 	struct shash_desc shash;
+>> 	char ctx[crypto_shash_descsize(tfm)];
+>> } desc;
+>>
+>> This patch instead allocates the appropriate amount of memory using an char
+>> array.
+>>
+>> The new code can be compiled with both gcc and clang.
+>>
+>> struct shash_desc contains a flexible array member member ctx declared with
+>> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
+>> of the array declared after struct shash_desc with long long.
+>>
+>> No trailing padding is required because it is not a struct type that can
+>> be used in an array.
+>>
+>> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
+>> as would be the case for a struct containing a member with
+>> CRYPTO_MINALIGN_ATTR.
+> We copied this from one of the other crypto api users, and I'm sure
+> cooking up all these patches was not a great way to your afternoon.
+>
+> But, can I talk you into making a helper macro of some kind for this and
+> putting it into the crypto api headers?  Honestly this setup seems
+> really error prone.
+You're not the only person to ask for this. I've got one already coded 
+up based on suggestions from tglx.
 
-I applied all of the above, with the 2 patches from Ian going last and
-git handling the merge issues.
+I've regenerated all the patches. I will resubmit soon.
 
-> Also, Ian had a couple issues with patch 07/34 and 08/34 from the last
-> series I posted. I already asked if you could drop those two. I needed I
-> will repost the series.
+Will fix.
 
-I've dropped them.  Hopefully I got it all right, it should all be
-pushed out now, verifying this would be good :)
+Behan
 
-thanks,
+-- 
+Behan Webster
+behanw@converseincode.com
 
-greg k-h
