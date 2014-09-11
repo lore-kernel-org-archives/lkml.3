@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163AbaIKKTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:19:46 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41888 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549AbaIKKTo (ORCPT
+	id S1754175AbaIKKVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:21:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61469 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272AbaIKKVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:19:44 -0400
-Date: Thu, 11 Sep 2014 11:19:30 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-Message-ID: <20140911111930.7227abbf@alan.etchedpixels.co.uk>
-In-Reply-To: <5410E8A2.5030802@hurleysoftware.com>
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
-	<20140911000343.GA5328@kroah.com>
-	<5410E8A2.5030802@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 11 Sep 2014 06:21:15 -0400
+Message-ID: <1410430870.32479.0.camel@phoenix>
+Subject: [PATCH 1/2] regulator: rk808: Remove unused variables
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, Doug Anderson <dianders@chromium.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Sep 2014 18:21:10 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's not common knowledge (and its certainly counterintuitive) that
-> turning off output when output is already turned off (ie., tcflow(TCOOFF))
-> is the required trickery to unwedge a terminal.
-> 
-> Unwedging directly seems the straightforward approach.
+Also remove non-informative comment.
 
-Putting the off/on in the man page might be safer still ?
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/rk808-regulator.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
+
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index d91f2b6..9557428 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -28,32 +28,6 @@
+ #define RK808_BUCK4_VSEL_MASK	0xf
+ #define RK808_LDO_VSEL_MASK	0x1f
+ 
+-static const int buck_set_vol_base_addr[] = {
+-	RK808_BUCK1_ON_VSEL_REG,
+-	RK808_BUCK2_ON_VSEL_REG,
+-	RK808_BUCK3_CONFIG_REG,
+-	RK808_BUCK4_ON_VSEL_REG,
+-};
+-
+-static const int buck_contr_base_addr[] = {
+-	RK808_BUCK1_CONFIG_REG,
+-	RK808_BUCK2_CONFIG_REG,
+-	RK808_BUCK3_CONFIG_REG,
+-	RK808_BUCK4_CONFIG_REG,
+-};
+-
+-static const int ldo_set_vol_base_addr[] = {
+-	RK808_LDO1_ON_VSEL_REG,
+-	RK808_LDO2_ON_VSEL_REG,
+-	RK808_LDO3_ON_VSEL_REG,
+-	RK808_LDO4_ON_VSEL_REG,
+-	RK808_LDO5_ON_VSEL_REG,
+-	RK808_LDO6_ON_VSEL_REG,
+-	RK808_LDO7_ON_VSEL_REG,
+-	RK808_LDO8_ON_VSEL_REG,
+-};
+-
+-/* rk808 voltage number */
+ static const struct regulator_linear_range rk808_buck_voltage_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(700000, 0, 63, 12500),
+ };
+-- 
+1.9.1
+
+
+
