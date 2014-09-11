@@ -1,433 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaIKIyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:54:18 -0400
-Received: from mga14.intel.com ([192.55.52.115]:30409 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895AbaIKIyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:54:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="589733202"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound violation information
-Date: Thu, 11 Sep 2014 16:46:47 +0800
-Message-Id: <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+	id S1753937AbaIKIyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:54:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34845 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbaIKIyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:54:35 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <54116324.7000200@jp.fujitsu.com>
+Date: Thu, 11 Sep 2014 17:53:56 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+References: <20140904143055.GA20099@esperanza> <5408E1CD.3090004@jp.fujitsu.com> <20140905082846.GA25641@esperanza> <5409C6BB.7060009@jp.fujitsu.com> <20140905160029.GF25641@esperanza> <540A4420.2030504@jp.fujitsu.com> <20140908110131.GA11812@esperanza> <540DB4EC.6060100@jp.fujitsu.com> <20140909103943.GA29897@esperanza> <54110339.6000702@jp.fujitsu.com> <20140911082311.GB4151@esperanza>
+In-Reply-To: <20140911082311.GB4151@esperanza>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets bound violation fields of siginfo struct in #BR
-exception handler by decoding the user instruction and constructing
-the faulting pointer.
+(2014/09/11 17:23), Vladimir Davydov wrote:
+> On Thu, Sep 11, 2014 at 11:04:41AM +0900, Kamezawa Hiroyuki wrote:
+>> (2014/09/09 19:39), Vladimir Davydov wrote:
+>>
+>>>> For your purpose, you need to implement your method in system-wide way.
+>>>> It seems crazy to set per-cgroup-anon-limit for avoding system-wide-oom.
+>>>> You'll need help of system-wide-cgroup-configuration-middleware even if
+>>>> you have a method in a cgroup. If you say logic should be in OS kernel,
+>>>> please implement it in a system wide logic rather than cgroup.
+>>>
+>>> What if on global pressure a memory cgroup exceeding its soft limit is
+>>> being reclaimed, but not fast enough, because it has a lot of anon
+>>> memory? The global OOM won't be triggered then, because there's still
+>>> progress, but the system will experience hard pressure due to the
+>>> reclaimer runs. How can we detect if we should kill the container or
+>>> not? It smells like one more heuristic to vmscan, IMO.
+>>
+>>
+>> That's you are trying to implement by per-cgroup-anon+swap-limit, the difference
+>> is heuristics by system designer at container creation or heuristics by kernel in
+>> the dynamic way.
+>
+> anon+swap limit isn't a heuristic, it's a configuration!
+>
+> The difference is that the user usually knows *minimal* requirements of
+> the app he's going to run in a container/VM. Basing on them, he buys a
+> container/VM with some predefined amount of RAM. From the whole system
+> POV it's suboptimal to set the hard limit for the container by the user
+> configuration, because there might be free memory, which could be used
+> for file caches and hence lower disk load. If we had anon+swap hard
+> limit, we could use it in conjunction with the soft limit instead of the
+> hard limit. That would be more efficient than VM-like sand-boxing though
+> still safe.
+>
+> When I'm talking about in-kernel heuristics, I mean a pile of
+> hard-to-read functions with a bunch of obscure constants. This is much
+> worse than providing the user with a convenient and flexible interface.
+>
+>> I said it should be done by system/cloud-container-scheduler based on notification.
+>
+> Basically, it's unsafe to hand this out to userspace completely. The
+> system would be prone to DOS attacks from inside containers then.
+>
+>> But okay, let me think of kernel help in global reclaim.
+>>
+>>   - Assume "priority" is a value calculated by "usage - soft limit".
+>>
+>>   - weighted kswapd/direct reclaim
+>>     => Based on priority of each threads/cgroup,  increase "wait" in direct reclaim
+>>        if it's contended.
+>>        Low prio container will sleep longer until memory contention is fixed.
+>>
+>>   - weighted anon allocation
+>>     similar to above, if memory is contended, page fault speed should be weighted
+>>     based on priority(softlimit).
+>>
+>>   - off cpu direct-reclaim
+>>     run direct recalim in workqueue with cpu mask. the cpu mask is a global setting
+>>     per numa node, which determines cpus available for being used to reclaim memory.
+>>     "How to wait" may affect the performance of system but this can allow masked cpus
+>>     to be used for more important jobs.
+>
+> That's what I call a bunch of heuristics. And actually I don't see how
+> it'd help us against latency spikes caused by reclaimer runs, seems the
+> set is still incomplete :-/
+>
+> For example, there are two cgroups, one having a huge soft limit excess
+> and full of anon memory and another not exceeding its soft limit but
+> using primarily clean file caches. This prioritizing/weighting stuff
+> would result in shrinking the first group first on global pressure,
+> though it's way slower than shrinking the second one.
 
-This patch does't use the generic decoder, and implements a limited
-special-purpose decoder to decode MPX instructions, simply because the
-generic decoder is very heavyweight not just in terms of performance
-but in terms of interface -- because it has to.
+Current implementation just round-robin all memcgs under the tree.
+With re-designed soft-limit, things will be changed, you can change it.
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/include/asm/mpx.h |   23 ++++
- arch/x86/kernel/mpx.c      |  299 ++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c    |    6 +
- 3 files changed, 328 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
-index b7598ac..780af63 100644
---- a/arch/x86/include/asm/mpx.h
-+++ b/arch/x86/include/asm/mpx.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include <asm/ptrace.h>
-+#include <asm/insn.h>
- 
- #ifdef CONFIG_X86_64
- 
-@@ -44,15 +45,37 @@
- #define MPX_BNDSTA_ERROR_CODE	0x3
- #define MPX_BD_ENTRY_VALID_FLAG	0x1
- 
-+struct mpx_insn {
-+	struct insn_field rex_prefix;	/* REX prefix */
-+	struct insn_field modrm;
-+	struct insn_field sib;
-+	struct insn_field displacement;
-+
-+	unsigned char addr_bytes;	/* effective address size */
-+	unsigned char limit;
-+	unsigned char x86_64;
-+
-+	const unsigned char *kaddr;	/* kernel address of insn to analyze */
-+	const unsigned char *next_byte;
-+};
-+
-+#define MAX_MPX_INSN_SIZE	15
-+
- unsigned long mpx_mmap(unsigned long len);
- 
- #ifdef CONFIG_X86_INTEL_MPX
- int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
-+void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
-+		struct xsave_struct *xsave_buf);
- #else
- static inline int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
- {
- 	return -EINVAL;
- }
-+static inline void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
-+		struct xsave_struct *xsave_buf)
-+{
-+}
- #endif /* CONFIG_X86_INTEL_MPX */
- 
- #endif /* _ASM_X86_MPX_H */
-diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
-index 88d660f..7ef6e39 100644
---- a/arch/x86/kernel/mpx.c
-+++ b/arch/x86/kernel/mpx.c
-@@ -2,6 +2,275 @@
- #include <linux/syscalls.h>
- #include <asm/mpx.h>
- 
-+enum reg_type {
-+	REG_TYPE_RM = 0,
-+	REG_TYPE_INDEX,
-+	REG_TYPE_BASE,
-+};
-+
-+static unsigned long get_reg(struct mpx_insn *insn, struct pt_regs *regs,
-+			     enum reg_type type)
-+{
-+	int regno = 0;
-+	unsigned char modrm = (unsigned char)insn->modrm.value;
-+	unsigned char sib = (unsigned char)insn->sib.value;
-+
-+	static const int regoff[] = {
-+		offsetof(struct pt_regs, ax),
-+		offsetof(struct pt_regs, cx),
-+		offsetof(struct pt_regs, dx),
-+		offsetof(struct pt_regs, bx),
-+		offsetof(struct pt_regs, sp),
-+		offsetof(struct pt_regs, bp),
-+		offsetof(struct pt_regs, si),
-+		offsetof(struct pt_regs, di),
-+#ifdef CONFIG_X86_64
-+		offsetof(struct pt_regs, r8),
-+		offsetof(struct pt_regs, r9),
-+		offsetof(struct pt_regs, r10),
-+		offsetof(struct pt_regs, r11),
-+		offsetof(struct pt_regs, r12),
-+		offsetof(struct pt_regs, r13),
-+		offsetof(struct pt_regs, r14),
-+		offsetof(struct pt_regs, r15),
-+#endif
-+	};
-+
-+	switch (type) {
-+	case REG_TYPE_RM:
-+		regno = X86_MODRM_RM(modrm);
-+		if (X86_REX_B(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	case REG_TYPE_INDEX:
-+		regno = X86_SIB_INDEX(sib);
-+		if (X86_REX_X(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	case REG_TYPE_BASE:
-+		regno = X86_SIB_BASE(sib);
-+		if (X86_REX_B(insn->rex_prefix.value) == 1)
-+			regno += 8;
-+		break;
-+
-+	default:
-+		break;
-+	}
-+
-+	return regs_get_register(regs, regoff[regno]);
-+}
-+
-+/*
-+ * return the address being referenced be instruction
-+ * for rm=3 returning the content of the rm reg
-+ * for rm!=3 calculates the address using SIB and Disp
-+ */
-+static unsigned long get_addr_ref(struct mpx_insn *insn, struct pt_regs *regs)
-+{
-+	unsigned long addr;
-+	unsigned long base;
-+	unsigned long indx;
-+	unsigned char modrm = (unsigned char)insn->modrm.value;
-+	unsigned char sib = (unsigned char)insn->sib.value;
-+
-+	if (X86_MODRM_MOD(modrm) == 3) {
-+		addr = get_reg(insn, regs, REG_TYPE_RM);
-+	} else {
-+		if (insn->sib.nbytes) {
-+			base = get_reg(insn, regs, REG_TYPE_BASE);
-+			indx = get_reg(insn, regs, REG_TYPE_INDEX);
-+			addr = base + indx * (1 << X86_SIB_SCALE(sib));
-+		} else {
-+			addr = get_reg(insn, regs, REG_TYPE_RM);
-+		}
-+		addr += insn->displacement.value;
-+	}
-+
-+	return addr;
-+}
-+
-+/* Verify next sizeof(t) bytes can be on the same instruction */
-+#define validate_next(t, insn, n)	\
-+	((insn)->next_byte + sizeof(t) + n - (insn)->kaddr <= (insn)->limit)
-+
-+#define __get_next(t, insn)		\
-+({					\
-+	t r = *(t *)insn->next_byte;	\
-+	insn->next_byte += sizeof(t);	\
-+	r;				\
-+})
-+
-+#define __peek_next(t, insn)		\
-+({					\
-+	t r = *(t *)insn->next_byte;	\
-+	r;				\
-+})
-+
-+#define get_next(t, insn)		\
-+({					\
-+	if (unlikely(!validate_next(t, insn, 0)))	\
-+		goto err_out;		\
-+	__get_next(t, insn);		\
-+})
-+
-+#define peek_next(t, insn)		\
-+({					\
-+	if (unlikely(!validate_next(t, insn, 0)))	\
-+		goto err_out;		\
-+	__peek_next(t, insn);		\
-+})
-+
-+static void mpx_insn_get_prefixes(struct mpx_insn *insn)
-+{
-+	unsigned char b;
-+
-+	/* Decode legacy prefix and REX prefix */
-+	b = peek_next(unsigned char, insn);
-+	while (b != 0x0f) {
-+		/*
-+		 * look for a rex prefix
-+		 * a REX prefix cannot be followed by a legacy prefix.
-+		 */
-+		if (insn->x86_64 && ((b&0xf0) == 0x40)) {
-+			insn->rex_prefix.value = b;
-+			insn->rex_prefix.nbytes = 1;
-+			insn->next_byte++;
-+			break;
-+		}
-+
-+		/* check the other legacy prefixes */
-+		switch (b) {
-+		case 0xf2:
-+		case 0xf3:
-+		case 0xf0:
-+		case 0x64:
-+		case 0x65:
-+		case 0x2e:
-+		case 0x3e:
-+		case 0x26:
-+		case 0x36:
-+		case 0x66:
-+		case 0x67:
-+			insn->next_byte++;
-+			break;
-+		default: /* everything else is garbage */
-+			goto err_out;
-+		}
-+		b = peek_next(unsigned char, insn);
-+	}
-+
-+err_out:
-+	return;
-+}
-+
-+static void mpx_insn_get_modrm(struct mpx_insn *insn)
-+{
-+	insn->modrm.value = get_next(unsigned char, insn);
-+	insn->modrm.nbytes = 1;
-+
-+err_out:
-+	return;
-+}
-+
-+static void mpx_insn_get_sib(struct mpx_insn *insn)
-+{
-+	unsigned char modrm = (unsigned char)insn->modrm.value;
-+
-+	if (X86_MODRM_MOD(modrm) != 3 && X86_MODRM_RM(modrm) == 4) {
-+		insn->sib.value = get_next(unsigned char, insn);
-+		insn->sib.nbytes = 1;
-+	}
-+
-+err_out:
-+	return;
-+}
-+
-+static void mpx_insn_get_displacement(struct mpx_insn *insn)
-+{
-+	unsigned char mod, rm, base;
-+
-+	/*
-+	 * Interpreting the modrm byte:
-+	 * mod = 00 - no displacement fields (exceptions below)
-+	 * mod = 01 - 1-byte displacement field
-+	 * mod = 10 - displacement field is 4 bytes
-+	 * mod = 11 - no memory operand
-+	 *
-+	 * mod != 11, r/m = 100 - SIB byte exists
-+	 * mod = 00, SIB base = 101 - displacement field is 4 bytes
-+	 * mod = 00, r/m = 101 - rip-relative addressing, displacement
-+	 *	field is 4 bytes
-+	 */
-+	mod = X86_MODRM_MOD(insn->modrm.value);
-+	rm = X86_MODRM_RM(insn->modrm.value);
-+	base = X86_SIB_BASE(insn->sib.value);
-+	if (mod == 3)
-+		return;
-+	if (mod == 1) {
-+		insn->displacement.value = get_next(unsigned char, insn);
-+		insn->displacement.nbytes = 1;
-+	} else if ((mod == 0 && rm == 5) || mod == 2 ||
-+			(mod == 0 && base == 5)) {
-+		insn->displacement.value = get_next(int, insn);
-+		insn->displacement.nbytes = 4;
-+	}
-+
-+err_out:
-+	return;
-+}
-+
-+static void mpx_insn_init(struct mpx_insn *insn, struct pt_regs *regs)
-+{
-+	unsigned char buf[MAX_MPX_INSN_SIZE];
-+	int bytes;
-+
-+	memset(insn, 0, sizeof(*insn));
-+
-+	bytes = copy_from_user(buf, (void __user *)regs->ip, MAX_MPX_INSN_SIZE);
-+	insn->limit = MAX_MPX_INSN_SIZE - bytes;
-+	insn->kaddr = buf;
-+	insn->next_byte = buf;
-+
-+	/*
-+	 * In 64-bit Mode, all Intel MPX instructions use 64-bit
-+	 * operands for bounds and 64 bit addressing, i.e. REX.W &
-+	 * 67H have no effect on data or address size.
-+	 *
-+	 * In compatibility and legacy modes (including 16-bit code
-+	 * segments, real and virtual 8086 modes) all Intel MPX
-+	 * instructions use 32-bit operands for bounds and 32 bit
-+	 * addressing.
-+	 */
-+#ifdef CONFIG_X86_64
-+	insn->x86_64 = 1;
-+	insn->addr_bytes = 8;
-+#else
-+	insn->x86_64 = 0;
-+	insn->addr_bytes = 4;
-+#endif
-+}
-+
-+static unsigned long mpx_insn_decode(struct mpx_insn *insn,
-+				     struct pt_regs *regs)
-+{
-+	mpx_insn_init(insn, regs);
-+
-+	/*
-+	 * In this case, we only need decode bndcl/bndcn/bndcu,
-+	 * so we can use private diassembly interfaces to get
-+	 * prefixes, modrm, sib, displacement, etc..
-+	 */
-+	mpx_insn_get_prefixes(insn);
-+	insn->next_byte += 2; /* ignore opcode */
-+	mpx_insn_get_modrm(insn);
-+	mpx_insn_get_sib(insn);
-+	mpx_insn_get_displacement(insn);
-+
-+	return get_addr_ref(insn, regs);
-+}
-+
- static int allocate_bt(long __user *bd_entry)
- {
- 	unsigned long bt_addr, old_val = 0;
-@@ -56,3 +325,33 @@ int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
- 
- 	return allocate_bt((long __user *)bd_entry);
- }
-+
-+/*
-+ * If a bounds overflow occurs then a #BR is generated. The fault
-+ * handler will decode MPX instructions to get violation address
-+ * and set this address into extended struct siginfo.
-+ */
-+void do_mpx_bounds(struct pt_regs *regs, siginfo_t *info,
-+		struct xsave_struct *xsave_buf)
-+{
-+	struct mpx_insn insn;
-+	uint8_t bndregno;
-+	unsigned long addr_vio;
-+
-+	addr_vio = mpx_insn_decode(&insn, regs);
-+
-+	bndregno = X86_MODRM_REG(insn.modrm.value);
-+	if (bndregno > 3)
-+		return;
-+
-+	/* Note: the upper 32 bits are ignored in 32-bit mode. */
-+	info->si_lower = (void __user *)(unsigned long)
-+		(xsave_buf->bndregs.bndregs[2*bndregno]);
-+	info->si_upper = (void __user *)(unsigned long)
-+		(~xsave_buf->bndregs.bndregs[2*bndregno+1]);
-+	info->si_addr_lsb = 0;
-+	info->si_signo = SIGSEGV;
-+	info->si_errno = 0;
-+	info->si_code = SEGV_BNDERR;
-+	info->si_addr = (void __user *)addr_vio;
-+}
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 396a88b..93ce924 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -284,6 +284,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
- 	unsigned long status;
- 	struct xsave_struct *xsave_buf;
- 	struct task_struct *tsk = current;
-+	siginfo_t info;
- 
- 	prev_state = exception_enter();
- 	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
-@@ -319,6 +320,11 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
- 		break;
- 
- 	case 1: /* Bound violation. */
-+		do_mpx_bounds(regs, &info, xsave_buf);
-+		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs,
-+				error_code, &info);
-+		break;
-+
- 	case 0: /* No exception caused by Intel MPX operations. */
- 		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
- 		break;
--- 
-1.7.1
+> That means a latency spike in other containers.
+
+why ? you said the other container just contains file caches.
+latency-spike just because file cache drops ?
+If the service is such naive, please use hard limit.
+
+Hmm.
+How about raising kswapd's scheduling threshold in some situation ?
+Per-memcg-kswapd-for-helping-softlimit may work.
+
+> The heuristics you proposed above
+> will only make it non-critical - the system will get over sooner or
+> later.
+
+My idea is always based on there is a container-manager on the system,
+which can do enough clever decision based on a policy, admin specified.
+IIUC, reducing cpu-hog caused by memory pressure is always helpful.
+
+> However, it's still a kind of DOS, which anon+swap hard limit would prevent.
+
+by oom-killer.
+
+
+> On Tue, Sep 09, 2014 at 02:39:43PM +0400, Vladimir Davydov wrote:
+>> However, there's one thing, which made me start this discussion, and it
+>> still bothers me. It's about memsw.limit_in_bytes knob itself.
+>>
+>> First, its value must be greater or equal to memory.limit_in_bytes.
+>> IMO, such a dependency in the user interface isn't great, but it isn't
+>> the worst thing. What is worse, there's only point in setting it to
+>> infinity if one wants to fully make use of soft limits as I pointed out
+>> earlier.
+>>
+>> So, we have a userspace knob that suits only for strict sand-boxing when
+>> one wants to hard-limit the amount of memory and swap an app can use.
+>> When it comes to soft limits, you have to set it to infinity, and it'll
+>> still be accounted at the cost of performance, but without any purpose.
+>> It just seems meaningless to me.
+>>
+>> Not counting that the knob itself is a kind of confusing IMO. memsw
+>> means memory+swap, so one would mistakenly think memsw.limit-mem.limit
+>> is the limit on swap usage, but that's wrong.
+>>
+>> My point is that anon+swap accounting instead of the current
+>> anon+file+swap memsw implementation would be more flexible. We could
+>> still sandbox apps by setting hard anon+swap and memory limits, but it
+>> would also be possible to make use of it in "soft" environments. It
+>> wouldn't be mandatory though. If one doesn't like OOM, he can use
+>> threshold notifications to restart the container when it starts to
+>> behave badly. But if the user just doesn't want to bother about
+>> configuration or is OK with OOM-killer, he could set hard anon+swap
+>> limit. Besides, it would untie mem.limit knob from memsw.limit, which
+>> would make the user interface simpler and cleaner.
+>>
+>> So, I think anon+swap limit would be more flexible than file+anon+swap
+>> limit we have now. Is there any use case where anon+swap and anon+file
+>> accounting couldn't satisfy the user requirements while the
+>> anon+file+swap and anon+file pair could?
+>
+> I would appreciate if anybody could answer this.
+>
+
+I can't understand why you want to use OOM killer for resource controlling .
+
+Thanks,
+-Kame
+
 
