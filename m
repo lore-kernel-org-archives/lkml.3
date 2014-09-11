@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaIKJVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:21:41 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:15020 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaIKJVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:21:38 -0400
-Message-ID: <5411698E.3000402@huawei.com>
-Date: Thu, 11 Sep 2014 17:21:18 +0800
-From: Yang Yingliang <yangyingliang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753663AbaIKJVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:21:55 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:38912 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753612AbaIKJVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:21:52 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, Addy Ke <addy.ke@rock-chips.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: Switch i2c0 to 400kHz on rk3288-evb-rk808
+Date: Thu, 11 Sep 2014 11:23:47 +0200
+Message-ID: <14543621.jVTOtFDFto@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1410409815-22200-1-git-send-email-dianders@chromium.org>
+References: <1410409815-22200-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH v2] arm64: add guard macros of unistd.h to prevent double
- inclusion
-References: <1410235185-16652-1-git-send-email-yangyingliang@huawei.com> <20140909123938.GL1754@arm.com> <54115583.8080306@huawei.com>
-In-Reply-To: <54115583.8080306@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.231]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yang Yingliang <yangyingliang@huawei.com>
+Am Mittwoch, 10. September 2014, 21:30:15 schrieb Doug Anderson:
+> We should be able to talk to the PMIC at 400kHz.  No need to talk at
+> the slow 100kHz.
+> 
+> As measured by ftrace (with a bunch of extra patches, since cpufreq
+> for rk808 hasn't landed yet):
+>   before this change: cpu0_set_target() => ~500us
+>   after this change:  cpu0_set_target() => ~300us
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Add guard macros for uapi/asm/unistd.h, asm/unistd.h and
-asm/unistd32.h.
+looks harmless :-)
 
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
----
- arch/arm64/include/asm/unistd.h      | 5 +++++
- arch/arm64/include/asm/unistd32.h    | 4 ++++
- arch/arm64/include/uapi/asm/unistd.h | 5 +++++
- 3 files changed, 14 insertions(+)
+I've added it to my v3.18-next/dts branch with Addy's tags
 
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index 6d2bf41..21a7dec 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -13,6 +13,9 @@
-  * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
-+#ifndef __ASM_ARM64_UNISTD_H
-+#define __ASM_ARM64_UNISTD_H
-+
- #ifdef CONFIG_COMPAT
- #define __ARCH_WANT_COMPAT_SYS_GETDENTS64
- #define __ARCH_WANT_COMPAT_STAT64
-@@ -48,3 +51,5 @@
- #include <uapi/asm/unistd.h>
- 
- #define NR_syscalls (__NR_syscalls)
-+
-+#endif /* __ASM_ARM64_UNISTD_H */
-diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
-index da1f06b..8f5e78e 100644
---- a/arch/arm64/include/asm/unistd32.h
-+++ b/arch/arm64/include/asm/unistd32.h
-@@ -16,6 +16,8 @@
-  * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
-+#ifndef __ASM_ARM64_UNISTD32_H
-+#define __ASM_ARM64_UNISTD32_H
- 
- #ifndef __SYSCALL
- #define __SYSCALL(x, y)
-@@ -792,3 +794,5 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
- __SYSCALL(__NR_getrandom, sys_getrandom)
- #define __NR_memfd_create 385
- __SYSCALL(__NR_memfd_create, sys_memfd_create)
-+
-+#endif /* __ASM_ARM64_UNISTD32_H */
-diff --git a/arch/arm64/include/uapi/asm/unistd.h b/arch/arm64/include/uapi/asm/unistd.h
-index 1caadc2..ab72cac 100644
---- a/arch/arm64/include/uapi/asm/unistd.h
-+++ b/arch/arm64/include/uapi/asm/unistd.h
-@@ -13,4 +13,9 @@
-  * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  */
-+#ifndef _UAPI__ASM_ARM64_UNISTD_H
-+#define _UAPI__ASM_ARM64_UNISTD_H
-+
- #include <asm-generic/unistd.h>
-+
-+#endif /* _UAPI__ASM_ARM64_UNISTD_H */
+
+> ---
+>  arch/arm/boot/dts/rk3288-evb-rk808.dts | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288-evb-rk808.dts
+> b/arch/arm/boot/dts/rk3288-evb-rk808.dts index 36db177..ff522f8 100644
+> --- a/arch/arm/boot/dts/rk3288-evb-rk808.dts
+> +++ b/arch/arm/boot/dts/rk3288-evb-rk808.dts
+> @@ -18,6 +18,7 @@
+>  };
+> 
+>  &i2c0 {
+> +	clock-frequency = <400000>;
+>  	status = "okay";
+> 
+>  	rk808: pmic@1b {
 
