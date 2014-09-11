@@ -1,114 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304AbaIKX5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:57:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241AbaIKX5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:57:49 -0400
-Date: Fri, 12 Sep 2014 01:57:36 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Piotr Karbowski <piotr.karbowski@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: /proc/<pid>/exe symlink behavior change in >=3.15.
-Message-ID: <20140911235735.GA12362@mguzik>
-References: <540B8040.5010206@gmail.com>
- <20140907075607.GA11240@mguzik>
- <20140911183958.1e45b99e@as>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140911183958.1e45b99e@as>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1755114AbaIKX5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:57:38 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:54158 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057AbaIKX5f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 19:57:35 -0400
+From: Arianna Avanzini <avanzini.arianna@gmail.com>
+To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Cc: hch@infradead.org, bob.liu@oracle.com, felipe.franciosi@citrix.com,
+        axboe@fb.com, avanzini.arianna@gmail.com
+Subject: [PATCH RFC v2 3/5] xen, blkfront: negotiate the number of block rings with the backend
+Date: Fri, 12 Sep 2014 01:57:22 +0200
+Message-Id: <1410479844-2864-4-git-send-email-avanzini.arianna@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410479844-2864-1-git-send-email-avanzini.arianna@gmail.com>
+References: <1410479844-2864-1-git-send-email-avanzini.arianna@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 06:39:58PM -0500, Chuck Ebbert wrote:
-> On Sun, 7 Sep 2014 09:56:08 +0200
-> Mateusz Guzik <mguzik@redhat.com> wrote:
-> 
-> > On Sat, Sep 06, 2014 at 11:44:32PM +0200, Piotr Karbowski wrote:
-> > > Hi,
-> > > 
-> > > Starting with kernel 3.15 the 'exe' symlink under /proc/<pid>/ acts diffrent
-> > > than it used to in all the pre-3.15 kernels.
-> > > 
-> > > The usecase:
-> > > 
-> > > run /root/testbin (app that just sleeps)
-> > > cp /root/testbin /root/testbin.new
-> > > mv /root/testbin.new /root/testbin
-> > > ls -al /proc/`pidof testbin`/exe
-> > > 
-> > > <=3.14: /root/testbin (deleted)
-> > > >=3.15: /root/testbin.new (deleted)
-> > > 
-> > > Was the change intentional? It does render my system unusable and I failed
-> > > to find a information about such change in the ChangeLog.
-> > > 
-> > 
-> > It looks like this was already broken for "long" (> DNAME_INLINE_LEN)
-> > names.
-> > 
-> > Short names share the problem since da1ce0670c14d8 "vfs: add
-> > cross-rename".
-> > 
-> > The following change to switch_names is the culprit:
-> > 
-> > -       memcpy(dentry->d_iname, target->d_name.name,
-> > -                   target->d_name.len + 1);
-> > -       dentry->d_name.len = target->d_name.len;
-> > -       return;
-> > +       unsigned int i;
-> > +       BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-> > +       for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
-> > +     		  swap(((long *) &dentry->d_iname)[i],
-> > +  			((long *) &target->d_iname)[i]);
-> > +       }
-> > 
-> > 
-> > Dentries can have names from embedded structure or from an external buffer.
-> > 
-> > If you take a look around you will see the code just swaps pointers for
-> > "both external" case. But this results in the same behavoiur you are seeing.
-> > 
-> 
-> Looks like the real problem here is that __d_materialise_dentry() needs the
-> old behavior of switch_names() . At least that's how it got fixed in grsecurity.
+This commit implements the negotiation of the number of block rings
+to be used; as a default, the number of rings is decided by the
+frontend driver and is equal to the number of hardware queues that
+the backend makes available. In case of guest migration towards a
+host whose devices expose a different number of hardware queues, the
+number of I/O rings used by the frontend driver remains the same;
+XenStore keys may vary if the frontend needs to be compatible with
+a host not having multi-queue support.
 
-No.
+Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+---
+ drivers/block/xen-blkfront.c | 95 +++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 84 insertions(+), 11 deletions(-)
 
-Regression in question is an effect of swap instead of memcpy in
-switch_names, as called by d_move. Fix in grsecurity reverts to previous
-behaviour when needed and imho should be applied for the time being.
-
-The real problem is that __d_move always switches parent dentry and
-calls switch_names, which actually switches names in some cases.
-
-Without the regression you get expected results only for short names
-when you move stuff around within the same directory.
-
-For instance with current code:
-mv /foo/bar/baz /1/2/3
-
-will replace the whole path.
-
-Previous behavoiur would result in /foo/bar/3 as the new path, which is
-clearly still incorrect
-
-Leaving the old dentry under the same parent would mean that the "tree"
-associated with now moved dentry will possibly need to be freed.
-
-In addition to that one has to deal with the need of having renamed
-dentry the new name which possibly came from an external buffer. An idea
-I came up with (atomic_t refcount; char name[0]; with ->name assigned to
-dentry) may require adding an additional field to struct dentry, which
-would be bad.
-
-I didn't have the time yet to look at this stuff properly.
-
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 9282df1..77e311d 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -137,7 +137,7 @@ struct blkfront_info
+ 	int vdevice;
+ 	blkif_vdev_t handle;
+ 	enum blkif_state connected;
+-	unsigned int nr_rings;
++	unsigned int nr_rings, old_nr_rings;
+ 	struct blkfront_ring_info *rinfo;
+ 	struct request_queue *rq;
+ 	unsigned int feature_flush;
+@@ -147,6 +147,7 @@ struct blkfront_info
+ 	unsigned int discard_granularity;
+ 	unsigned int discard_alignment;
+ 	unsigned int feature_persistent:1;
++	unsigned int hardware_queues;
+ 	unsigned int max_indirect_segments;
+ 	int is_ready;
+ 	/* Block layer tags. */
+@@ -669,7 +670,7 @@ static int xlvbd_init_blk_queue(struct gendisk *gd, u16 sector_size,
+ 
+ 	memset(&info->tag_set, 0, sizeof(info->tag_set));
+ 	info->tag_set.ops = &blkfront_mq_ops;
+-	info->tag_set.nr_hw_queues = 1;
++	info->tag_set.nr_hw_queues = info->hardware_queues ? : 1;
+ 	info->tag_set.queue_depth = BLK_RING_SIZE;
+ 	info->tag_set.numa_node = NUMA_NO_NODE;
+ 	info->tag_set.flags = BLK_MQ_F_SHOULD_MERGE | BLK_MQ_F_SG_MERGE;
+@@ -938,6 +939,7 @@ static void xlvbd_release_gendisk(struct blkfront_info *info)
+ 	info->gd = NULL;
+ }
+ 
++/* Must be called with io_lock held */
+ static void kick_pending_request_queues(struct blkfront_ring_info *rinfo,
+ 					unsigned long *flags)
+ {
+@@ -1351,10 +1353,24 @@ again:
+ 		goto destroy_blkring;
+ 	}
+ 
++	/* Advertise the number of rings */
++	err = xenbus_printf(xbt, dev->nodename, "nr_blk_rings",
++			    "%u", info->nr_rings);
++	if (err) {
++		xenbus_dev_fatal(dev, err, "advertising number of rings");
++		goto abort_transaction;
++	}
++
+ 	for (i = 0 ; i < info->nr_rings ; i++) {
+-		BUG_ON(i > 0);
+-		snprintf(ring_ref_s, 64, "ring-ref");
+-		snprintf(evtchn_s, 64, "event-channel");
++		if (!info->hardware_queues) {
++			BUG_ON(i > 0);
++			/* Support old XenStore keys */
++			snprintf(ring_ref_s, 64, "ring-ref");
++			snprintf(evtchn_s, 64, "event-channel");
++		} else {
++			snprintf(ring_ref_s, 64, "ring-ref-%d", i);
++			snprintf(evtchn_s, 64, "event-channel-%d", i);
++		}
+ 		err = xenbus_printf(xbt, dev->nodename,
+ 				    ring_ref_s, "%u", info->rinfo[i].ring_ref);
+ 		if (err) {
+@@ -1403,6 +1419,14 @@ again:
+ 	return err;
+ }
+ 
++static inline int blkfront_gather_hw_queues(struct blkfront_info *info,
++					    unsigned int *nr_queues)
++{
++	return xenbus_gather(XBT_NIL, info->xbdev->otherend,
++			     "nr_supported_hw_queues", "%u", nr_queues,
++			     NULL);
++}
++
+ /**
+  * Entry point to this code when a new device is created.  Allocate the basic
+  * structures and the ring buffer for communication with the backend, and
+@@ -1414,6 +1438,7 @@ static int blkfront_probe(struct xenbus_device *dev,
+ {
+ 	int err, vdevice, i, r;
+ 	struct blkfront_info *info;
++	unsigned int nr_queues;
+ 
+ 	/* FIXME: Use dynamic device id if this is not set. */
+ 	err = xenbus_scanf(XBT_NIL, dev->nodename,
+@@ -1472,10 +1497,19 @@ static int blkfront_probe(struct xenbus_device *dev,
+ 	info->handle = simple_strtoul(strrchr(dev->nodename, '/')+1, NULL, 0);
+ 	dev_set_drvdata(&dev->dev, info);
+ 
+-	/* Allocate the correct number of rings. */
+-	info->nr_rings = 1;
+-	pr_info("blkfront: %s: %d rings\n",
+-		info->gd->disk_name, info->nr_rings);
++	/* Gather the number of hardware queues as soon as possible */
++	err = blkfront_gather_hw_queues(info, &nr_queues);
++	if (err)
++		info->hardware_queues = 0;
++	else
++		info->hardware_queues = nr_queues;
++	/*
++	 * The backend has told us the number of hw queues he wants.
++	 * Allocate the correct number of rings.
++	 */
++	info->nr_rings = info->hardware_queues ? : 1;
++	pr_info("blkfront: %s: %d hardware queues, %d rings\n",
++		info->gd->disk_name, info->hardware_queues, info->nr_rings);
+ 
+ 	info->rinfo = kzalloc(info->nr_rings *
+ 				sizeof(struct blkfront_ring_info),
+@@ -1556,7 +1590,7 @@ static int blkif_recover(struct blkfront_info *info)
+ 
+ 	segs = blkfront_gather_indirect(info);
+ 
+-	for (r = 0 ; r < info->nr_rings ; r++) {
++	for (r = 0 ; r < info->old_nr_rings ; r++) {
+ 		rc |= blkif_setup_shadow(&info->rinfo[r], &copy);
+ 		rc |= blkfront_setup_indirect(&info->rinfo[r], segs);
+ 		if (rc) {
+@@ -1599,7 +1633,7 @@ static int blkif_recover(struct blkfront_info *info)
+ 	/* Now safe for us to use the shared ring */
+ 	info->connected = BLKIF_STATE_CONNECTED;
+ 
+-	for (i = 0 ; i < info->nr_rings ; i++) {
++	for (i = 0 ; i < info->old_nr_rings ; i++) {
+ 		spin_lock_irqsave(&info->rinfo[i].io_lock, flags);
+ 		/* Kick any other new requests queued since we resumed */
+ 		kick_pending_request_queues(&info->rinfo[i], &flags);
+@@ -1659,11 +1693,46 @@ static int blkfront_resume(struct xenbus_device *dev)
+ {
+ 	struct blkfront_info *info = dev_get_drvdata(&dev->dev);
+ 	int err;
++	unsigned int nr_queues, prev_nr_queues;
++	bool mq_to_rq_transition;
+ 
+ 	dev_dbg(&dev->dev, "blkfront_resume: %s\n", dev->nodename);
+ 
++	prev_nr_queues = info->hardware_queues;
++
++	err = blkfront_gather_hw_queues(info, &nr_queues);
++	if (err < 0)
++		nr_queues = 0;
++	mq_to_rq_transition = prev_nr_queues && !nr_queues;
++
++	if (prev_nr_queues != nr_queues) {
++		printk(KERN_INFO "blkfront: %s: hw queues %u -> %u\n",
++		       info->gd->disk_name, prev_nr_queues, nr_queues);
++		if (mq_to_rq_transition) {
++			struct blk_mq_hw_ctx *hctx;
++			unsigned int i;
++			/*
++			 * Switch from multi-queue to single-queue:
++			 * update hctx-to-ring mapping before
++			 * resubmitting any requests
++			 */
++			queue_for_each_hw_ctx(info->rq, hctx, i)
++				hctx->driver_data = &info->rinfo[0];
++		}
++		info->hardware_queues = nr_queues;
++	}
++
+ 	blkif_free(info, info->connected == BLKIF_STATE_CONNECTED);
+ 
++	/* Free with old number of rings, but rebuild with new */
++	info->old_nr_rings = info->nr_rings;
++	/*
++	 * Must not update if transition didn't happen, we're keeping
++	 * the old number of rings.
++	 */
++	if (mq_to_rq_transition)
++		info->nr_rings = 1;
++
+ 	err = talk_to_blkback(dev, info);
+ 
+ 	/*
+@@ -1863,6 +1932,10 @@ static void blkfront_connect(struct blkfront_info *info)
+ 		 * supports indirect descriptors, and how many.
+ 		 */
+ 		blkif_recover(info);
++		info->rinfo = krealloc(info->rinfo,
++				       info->nr_rings * sizeof(struct blkfront_ring_info),
++				       GFP_KERNEL);
++
+ 		return;
+ 
+ 	default:
 -- 
-Mateusz Guzik
+2.1.0
+
