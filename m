@@ -1,206 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaIKChR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 22:37:17 -0400
-Received: from mga14.intel.com ([192.55.52.115]:6670 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903AbaIKChP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 22:37:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,503,1406617200"; 
-   d="scan'208";a="589586979"
-Message-ID: <1410403012.25559.69.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-From: Zhang Rui <rui.zhang@intel.com>
-To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: "edubezval@gmail.com" <edubezval@gmail.com>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
-        Chris Zhong <zyw@rock-chips.com>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        zhaoyifeng <zyf@rock-chips.com>
-Date: Thu, 11 Sep 2014 10:36:52 +0800
-In-Reply-To: <1487694.oyLYSrbpA8@diego>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
-	 <1410310946.25559.12.camel@rzhang1-toshiba>
-	 <CAC-25o9qcddZLy8fcwEqWp7g5fXk31xhaQCcALuH+sXDgn5n8w@mail.gmail.com>
-	 <1487694.oyLYSrbpA8@diego>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1752825AbaIKCii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 22:38:38 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:54742 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752035AbaIKCig (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 22:38:36 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-6b-54110b293a0d
+Message-id: <54110B29.7030303@samsung.com>
+Date: Thu, 11 Sep 2014 11:38:33 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Cc: tgih.jun@samsung.com, ulf.hansson@linaro.org, chris@printf.net
+Subject: Re: [PATCH] mmc: Add delay between CMD6 and CMD13 for Sandisk eMMC
+ cards
+References: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+In-reply-to: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNIsWRmVeSWpSXmKPExsWyRsSkWFeLWzDE4EidxYTL2xktjj3ZyWpx
+	edccNosj//sZLT7cv8hscXxtuAObx51re9g8brxayOTRt2UVo8fnTXIe20/MZQpgjeKySUnN
+	ySxLLdK3S+DKuHXvN3PBPe6K01OWsTYwLuTsYuTkkBAwkZjYvJIFwhaTuHBvPVsXIxeHkMBS
+	RolfbzewwxTdbVnLBJGYzihxb8dCFgjnNaNEV/seZpAqXgEtiXW/GsFsFgFViY3rFoLZbAI6
+	Etu/HWcCsUUFwiQOtc1jgqgXlPgx+R7QIA4OEYEyiWmba0HCzAJOEuvWHQALCwsES5ydYQkS
+	FhLwl1j2cg1YJ6dAgMScRQ1MEOU6Evtbp7FB2PISm9e8ZQY5TULgELvE5E2rGCHOEZD4NvkQ
+	2EwJAVmJTQeYIf6SlDi44gbLBEaxWUgOmoVk7CwkYxcwMq9iFE0tSC4oTkovMtIrTswtLs1L
+	10vOz93ECIyz0/+e9e1gvHnA+hCjAAejEg9vBYtgiBBrYllxZe4hRlOgKyYyS4km5wOjOa8k
+	3tDYzMjC1MTU2Mjc0kxJnDdB6mewkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsa5bbcWK05P
+	T17IdvFZVPyc7cHMB+ef/JvtVGW/ccmkiJAX2z/MOhrN/f7d0p47J37YR7HN6LmpzqR22vMx
+	t2TslnzuaSI/OVb4rz8iVtGhxtw3I8vqbEnhxjfbZ8pFOe9ze/N6Yf6bgPvfGhZOkvjZFRqz
+	/d99VvZpMZt/nlo8bd+zx+fYf8x6rsRSnJFoqMVcVJwIAFOpp4CuAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jQV1NbsEQg+2nzCwmXN7OaHHsyU5W
+	i8u75rBZHPnfz2jx4f5FZovja8Md2DzuXNvD5nHj1UImj74tqxg9Pm+S89h+Yi5TAGtUA6NN
+	RmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAFSgpliTml
+	QKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMW/d+Mxfc4644PWUZawPjQs4uRk4O
+	CQETibsta5kgbDGJC/fWs3UxcnEICUxnlLi3YyELhPOaUaKrfQ8zSBWvgJbEul+NYDaLgKrE
+	xnULwWw2AR2J7d+Og00SFQiTONQ2jwmiXlDix+R7QIM4OEQEyiSmba4FCTMLOEmsW3cALCws
+	ECxxdoYlSFhIwF9i2cs1YJ2cAgEScxY1MEGU60jsb53GBmHLS2xe85Z5AqPALCQLZiEpm4Wk
+	bAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Dh+JrWDcWWDxSFGAQ5GJR7eChbBECHW
+	xLLiytxDjBIczEoivAkPBEKEeFMSK6tSi/Lji0pzUosPMZoC/T+RWUo0OR+YYvJK4g2NTcyM
+	LI3MDS2MjM2VxHkPtFoHCgmkJ5akZqemFqQWwfQxcXBKNTB6y9yOKIve1dUotTCzs6ZO//Zc
+	3g98pzQD5u1ifLbzfd2iKK0f9nEmBzTyNq5OYrD6veLilzi2y7lx5ULcZa8fmE6t3Woza/qj
+	nUvum/TkF/B5zel7lOuXr6GYHHQ6Ys41t7rwPKeThwN4rs35wDWT8fPD3zs/3Jjcvfj1727v
+	4MuRW4/Ecq9UYinOSDTUYi4qTgQAWo/IQPkCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 09:24 +0200, Heiko Stübner wrote:
-> Am Dienstag, 9. September 2014, 21:14:18 schrieb edubezval@gmail.com:
-> > Hello,
-> > 
-> > On Tue, Sep 9, 2014 at 9:02 PM, Zhang Rui <rui.zhang@intel.com> wrote:
-> > > On Tue, 2014-09-09 at 11:09 -0400, Eduardo Valentin wrote:
-> > >> Hello
-> > >> 
-> > >> On Tue, Sep 09, 2014 at 01:35:31PM +0200, Heiko Stübner wrote:
-> > >> > Am Dienstag, 9. September 2014, 10:27:17 schrieb Zhang Rui:
-> > >> > > On Thu, 2014-09-04 at 09:02 +0800, Caesar Wang wrote:
-> > >> > > > 在 2014年09月03日 16:07, Heiko Stübner 写道:
-> > >> > > > > Am Mittwoch, 3. September 2014, 10:10:37 schrieb Caesar Wang:
-> > >> > > > >> This add the necessary binding documentation for the thermal
-> > >> > > > >> found on Rockchip SoCs
-> > >> > > > >> 
-> > >> > > > >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> > >> > > > >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> > >> > > > >> ---
-> > >> > > > >> 
-> > >> > > > >>   .../devicetree/bindings/thermal/rockchip-thermal.txt | 20
-> > >> > > > >> 
-> > >> > > > >> ++++++++++++++++++++ 1 file changed, 20 insertions(+)
-> > >> > > > >> 
-> > >> > > > >>   create mode 100644
-> > >> > > > >> 
-> > >> > > > >> Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> > > > >> 
-> > >> > > > >> diff --git
-> > >> > > > >> a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> > > > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > >> > > > >> new
-> > >> > > > >> file
-> > >> > > > >> mode 100644
-> > >> > > > >> index 0000000..1ed4d4c
-> > >> > > > >> --- /dev/null
-> > >> > > > >> +++
-> > >> > > > >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.tx
-> > >> > > > >> t
-> > >> > > > >> @@ -0,0 +1,20 @@
-> > >> > > > >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
-> > >> > > > >> +
-> > >> > > > >> +Required properties:
-> > >> > > > >> +- compatible: "rockchip,rk3288-tsadc"
-> > >> > > > >> +- reg: physical base address of the controller and length of
-> > >> > > > >> memory
-> > >> > > > >> mapped
-> > >> > > > >> +       region.
-> > >> > > > >> +- interrupts: The interrupt number to the cpu. The interrupt
-> > >> > > > >> specifier
-> > >> > > > >> format +           depends on the interrupt controller.
-> > >> > > > >> +- clocks: Must contain an entry for each entry in clock-names.
-> > >> > > > >> +- clock-names: Shall be "tsadc" for the converter-clock, and
-> > >> > > > >> "apb_pclk" for +            the peripheral clock.
-> > >> > > > > 
-> > >> > > > > You're using the passive-temp, critical-temp and force-shut-temp
-> > >> > > > > properties in your driver without declaring them here.
-> > >> > > > 
-> > >> > > > frankly,the about are need be declared. but  there are 4 types[0]
-> > >> > > > for
-> > >> > > > trip in thermal framework,
-> > >> > > > there is no force-shut for me. So I want to change it three
-> > >> > > > additional
-> > >> > > > properties in [PATCH V4 4/4],
-> > >> > > > 
-> > >> > > > 
-> > >> > > > [0]
-> > >> > > > {
-> > >> > > > 
-> > >> > > >      THERMAL_TRIP_CRITICAL,
-> > >> > > >      THERMAL_TRIP_HOT,
-> > >> > > >      THERMAL_TRIP_PASSIVE,
-> > >> > > >      THERMAL_TRIP_ACTIVE,
-> > >> > > > 
-> > >> > > > }
-> > >> > > 
-> > >> > > this sounds reasonable to me.
-> > >> > > 
-> > >> > > > > But more importantly, please use the generic trip-points for
-> > >> > > > > this. I
-> > >> > > > > guess it shouldn't be a problem to introduce a "forced-shutdown"
-> > >> > > > > trippoint [0] for the additional trip-point you have - thermal
-> > >> > > > > maintainers, please shout if I'm wrong :-)
-> > >> > > 
-> > >> > > what is the difference between a critical trip point and a
-> > >> > > "forced-shutdown" trip point?
-> > >> > > Thermal core will do a shutdown in case the critical trip point is
-> > >> > > triggered.
-> > >> > 
-> > >> > The forced-shutdown is where the thermal controller is supposed to also
-> > >> > do a>> 
-> > >> Currently, there is no discrimination between hardware configured /
-> > >> triggered thermal shutdown and software detected / triggered thermal
-> > >> shutdown. One way to implement it though is to reuse the critical trip
-> > >> type. Even if you use more than one trip type it is doable, it will
-> > >> depend on the priorities you give to software triggered and hardware
-> > >> triggered.
-> > >> 
-> > >> > shutdown in hardware. As you said the thermal core will also shutdown
-> > >> > at the critical trip point, I guess we could map Caesar's value like
-> > >> > 
-> > >> > trip-point          tsadc
-> > >> > critical            forced-shutdown (the 120 degrees in patch 4)
-> > >> > 
-> > >> > hot                 critical (the 100 degrees)
-> > >> > ...
-> > >> 
-> > >> In the case we are planing to expand the trip type range, adding one
-> > >> specific to hardware configurable shutdown makes sense to me too.
-> > > 
-> > > hmmm, why? you don't want an orderly shutdown? I still do not understand
-> > > why we need a hardware shutdown trip point.
-> > > Say, if we expect the system to be shutdown at 100C, I don't think we
-> > > have a chance to trigger the hardware shutdown trip point.
-> > > Further more, if my understanding is right, thermal core won't do
-> > > anything for the hardware shutdown trip point because the system will be
-> > > shutdown automatically, right? If this is true, why bother introducing
-> > > this to thermal core?
-> > 
-> > Some ICs allow configuring the temperature when the shutdown will
-> > happen. That is, you setup in registers the thermal shutdown
-> > threshold, and one of the output pin of the IC is wired to, say, the
-> > processor reset pin. Some other ICs have the threshold hardwired, and
-> > cannot be configured.
-> > 
-> > Those options are a last chance to avoid processors to burn, in case
-> > software really gets stuck at high temperatures.
-> > 
-> > The only thing that the thermal driver would need to worry is the
-> > configuration step, that is, writing the value to the registers. In
-> > the case the thermal core would have a specific trip type for such
-> > case, the core itself would not do anything, except allowing designing
-> > a thermal zone with hardware shutdown trips. And thus the thermal
-> > driver would do the configuration.
-> > 
-> > 
-> > Currently, the way I see to implement this is to interpret critical
-> > trips as the threshold to be configured at the IC registers. That is,
-> > reusing critical trips as orderly power down and as the hardware
-> > shutdown threshold.
+Hi,
+
+On 09/09/2014 09:26 PM, Jean-Michel Hautbois wrote:
+> Tested on a i.MX6 board, with Sandisk SDIN5D1-2G.
+> Without this patch, I/O errors occur.
+> This eMMC seems to have a different Manufacturer ID as it reads 0x45
+> and not 0x2 as specified in datasheet.
+
+I think this patch don't merge into mainline.
+This is not solution for problem.
+you mentioned the below comment, this is workaround.
+
 > 
-> which was what I also meant to express above [but seemingly failed to do 
-> properly :-) ].
+> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+> ---
+>  drivers/mmc/core/mmc_ops.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
-> Critical is specified as "Hardware not reliable", so I'd think it wouldn't 
-> matter how the hw is shut down (orderly/unorderly) as long as its done.
+> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+> index f51b5ba..91babaa 100644
+> --- a/drivers/mmc/core/mmc_ops.c
+> +++ b/drivers/mmc/core/mmc_ops.c
+> @@ -458,6 +458,15 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+>  	if (!use_busy_signal)
+>  		return 0;
+>  
+> +	/* WORKAROUND: for Sandisk eMMC cards, it might need certain delay
+> +	 * before sending CMD13 after CMD6
+> +	 * On SDIN5D1-2G MANFID is 0x45 and not 0x2 as specified in datasheet
+> +	 */
+> +	if (card->cid.manfid == CID_MANFID_SANDISK ||
+> +		card->cid.manfid == 0x45) {
+> +		msleep(1);
+> +	}
 
-Hmmm,
+If it's a general problem of Sandisk SDIN5D1-2G,
+I think you need to verify this problem. And can you use the MMC_FIXUP() and QUIRK?
 
-As what we want is to make thermal driver have a chance to configure the
-hardware shutdown registers, I'm thinking if we can do this without
-representing the hardware shutdown value as a trip point.
-Say,
-1. parse DT, and get the hardware shutdown temperature value, and store
-it somewhere, e.g. struct __thermal_zone.
-2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
-in thermal_zone_of_sensor_register().
-3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
-thermal_zone_of_sensor_register().
+Best Regards,
+Jaehoon Chung
 
-thanks,
-rui
+> +
+>  	/*
+>  	 * CRC errors shall only be ignored in cases were CMD13 is used to poll
+>  	 * to detect busy completion.
+> 
 
