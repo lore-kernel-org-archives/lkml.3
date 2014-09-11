@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767AbaIKVIP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:08:15 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:63878 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588AbaIKVIN (ORCPT
+	id S1757281AbaIKVIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:08:39 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:35529 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756865AbaIKVIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:08:13 -0400
-Message-ID: <54120F34.6010708@gmail.com>
-Date: Thu, 11 Sep 2014 23:08:04 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: berlin: enable timer 1 for sched_clock
-References: <1410274069-24922-1-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1410274069-24922-1-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Sep 2014 17:08:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140911205308.GB2598@core.coreip.homeip.net>
+References: <20140905174925.GA12991@mtj.dyndns.org> <20140909224143.GB3154@mtj.dyndns.org>
+ <1410302783.13298.50.camel@jarvis.lan> <5762134.BLS0EbmNJd@dtor-glaptop>
+ <1410465565.10549.19.camel@jarvis> <20140911202354.GA2598@core.coreip.homeip.net>
+ <CAB=NE6XfUAm=iVr=qfu5i9QW7BpViXfJ6wsmEZOOmS=rBF1bdA@mail.gmail.com> <20140911205308.GB2598@core.coreip.homeip.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 11 Sep 2014 14:08:15 -0700
+X-Google-Sender-Auth: 5enaC44FqdJiSuQbFGK_8j_eyOo
+Message-ID: <CAB=NE6U8LQPFw4K+QabSppoLyife-oSX1h5vys5S7dqBj8ANLw@mail.gmail.com>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Tejun Heo <tj@kernel.org>, Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Cas ey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Tom Gundersen <teg@jklm.no>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/2014 04:47 PM, Antoine Tenart wrote:
-> Enable timer 1 to be the source for the sched_clock, allowing to have a
-> more precise value than 1/HZ.
-> 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+On Thu, Sep 11, 2014 at 1:53 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Sep 11, 2014 at 01:42:20PM -0700, Luis R. Rodriguez wrote:
+>> On Thu, Sep 11, 2014 at 1:23 PM, Dmitry Torokhov
+>> <dmitry.torokhov@gmail.com> wrote:
+>> >
+>> >>  There are elements in common, but by and
+>> >> large the biggest headaches at least in large device number boots have
+>> >> already been tackled by the enterprise crowd (they don't like their
+>> >> S390's or 1024 core NUMA systems taking half an hour to come up).
+>> >
+>> > Please do not position this as a mostly solved large systems problem,
+>> > For us it is touchpad detection stalling kernel for 0.5-1 sec. Which is
+>> > a lot given that we boot in seconds.
+>>
+>> Dmitry, would working on top of the aysnc series be reasonable? Then
+>> we could address these as separate things which we'd build on top of.
+>> The one aspect I see us needing to share is the "async probe universe
+>> is OK" flag.
+>
+> Sure. Are you planning on refreshing your series?
 
-Applied to berlin/dt.
+Yes.
 
-For the record, I managed to configure UTF-8, so feel free to add the
-accent back to your name ;)
+> I think the code-related discussion kind of stalled...
 
-I applied the last patches with it already.
+I was just waiting for any possible brain farts to flush out before a
+new respin. I'll tackle this now.
 
-Sebastian
-
-> ---
->  arch/arm/boot/dts/berlin2q.dtsi | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> index a216cb621ebc..e22b99a3a796 100644
-> --- a/arch/arm/boot/dts/berlin2q.dtsi
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -247,7 +247,6 @@
->  				reg = <0x2c14 0x14>;
->  				clocks = <&chip CLKID_CFG>;
->  				clock-names = "timer";
-> -				status = "disabled";
->  			};
->  
->  			timer2: timer@2c28 {
-> 
-
+ Luis
