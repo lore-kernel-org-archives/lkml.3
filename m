@@ -1,140 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431AbaIKBHg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 21:07:36 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:3367 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752394AbaIKBHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 21:07:34 -0400
-X-Greylist: delayed 1216 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Sep 2014 21:07:34 EDT
-From: "Patel, Gaurav" <gspatel@hp.com>
-To: Ming Lei <ming.lei@canonical.com>
-CC: Robert Hancock <hancockrwd@gmail.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: RE: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
- controller
-Thread-Topic: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata
- controller
-Thread-Index: AQHPxb3TXu8CM/mi30KTwmTJFT1LRpv5xfoAgAAxCwCAAJ/iAIAAc7kAgAAc0yCAAARtAIAAAXQQ
-Date: Thu, 11 Sep 2014 01:05:49 +0000
-Message-ID: <4693A34300ED74418DB0F7454C3D19DA16A999C1@G5W2736.americas.hpqcorp.net>
-References: <CACVXFVN6f3Og+D_70M+4j_qhGNsryJWzTJK8G+rY0sxXweMqQg@mail.gmail.com>
-	<540FC7C8.1070904@gmail.com>
-	<CACVXFVOFci3572cJ=G8vAQ0-R_0A9rcDUcwa-8t0rjuGduJdwg@mail.gmail.com>
-	<4693A34300ED74418DB0F7454C3D19DA16A9969B@G5W2736.americas.hpqcorp.net>
-	<CACVXFVPen-__38-XGHAe2Yxb0CGVLr3sGxQXvvk=Zkwzn-A_gA@mail.gmail.com>
-	<4693A34300ED74418DB0F7454C3D19DA16A99994@G5W2736.americas.hpqcorp.net>
- <CACVXFVN9KUzMQQcUGGFfg5TG2EK3B+GO2ciuC5pQb4NHaa8h_w@mail.gmail.com>
-In-Reply-To: <CACVXFVN9KUzMQQcUGGFfg5TG2EK3B+GO2ciuC5pQb4NHaa8h_w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [15.193.49.17]
-Content-Type: text/plain; charset="utf-8"
+	id S1752958AbaIKBJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 21:09:07 -0400
+Received: from mail-by2on0105.outbound.protection.outlook.com ([207.46.100.105]:50046
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751332AbaIKBJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Sep 2014 21:09:05 -0400
+Date: Thu, 11 Sep 2014 08:54:47 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
+        <yoshihiro.shimoda.uh@renesas.com>,
+        <alexandre.belloni@free-electrons.com>,
+        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
+        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Message-ID: <20140911005446.GD3609@peterchendt>
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(189002)(51704005)(57986006)(97756001)(95666004)(4396001)(110136001)(83506001)(76482001)(85306004)(19580395003)(68736004)(107046002)(83322001)(19580405001)(44976005)(79102001)(77982001)(33716001)(6806004)(99396002)(23726002)(97736003)(92726001)(50466002)(46406003)(74502001)(26826002)(81342001)(21056001)(31966008)(74662001)(92566001)(46102001)(33656002)(81542001)(20776003)(47776003)(50986999)(64706001)(54356999)(105606002)(76176999)(86362001)(90102001)(87936001)(83072002)(85852003)(104016003)(102836001)(106466001)(80022001)(84676001)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB210;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8B17dK6020264
 
-Got it.
-I just followed your step but it did not work. I will try something else to get 3.16 install on redhat.
+On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
+> This patch adds support of the PHY framework for ChipIdea drivers.
+> Changes are done in both the ChipIdea common code and in the drivers
+> accessing the PHY. This is done by adding a new PHY member in
+> ChipIdea's structures and by taking care of it in the code.
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> ---
+>  drivers/usb/chipidea/ci.h      |  5 ++-
+>  drivers/usb/chipidea/core.c    | 74 ++++++++++++++++++++++++++++++++++--------
+>  drivers/usb/chipidea/debug.c   |  3 +-
+>  drivers/usb/chipidea/host.c    |  5 ++-
+>  drivers/usb/chipidea/otg_fsm.c |  6 +++-
+>  include/linux/usb/chipidea.h   |  2 ++
+>  6 files changed, 78 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
+> index dac5ab6adfa2..7e9e8223672a 100644
+> --- a/drivers/usb/chipidea/ci.h
+> +++ b/drivers/usb/chipidea/ci.h
+> @@ -161,7 +161,8 @@ struct hw_bank {
+>   * @test_mode: the selected test mode
+>   * @platdata: platform specific information supplied by parent device
+>   * @vbus_active: is VBUS active
+> - * @usb_phy: pointer to USB PHY, if any
+> + * @phy: pointer to PHY, if any
+> + * @usb_phy: pointer to USB PHY, if any and if using the USB PHY framework
+>   * @hcd: pointer to usb_hcd for ehci host driver
+>   * @debugfs: root dentry for this controller in debugfs
+>   * @id_event: indicates there is an id event, and handled at ci_otg_work
+> @@ -202,6 +203,8 @@ struct ci_hdrc {
+>  
+>  	struct ci_hdrc_platform_data	*platdata;
+>  	int				vbus_active;
+> +	struct phy			*phy;
+> +	/* old usb_phy interface */
+>  	struct usb_phy			*usb_phy;
+>  	struct usb_hcd			*hcd;
+>  	struct dentry			*debugfs;
+> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
+> index a8cd35fd8175..7c617b765bf2 100644
+> --- a/drivers/usb/chipidea/core.c
+> +++ b/drivers/usb/chipidea/core.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/device.h>
+>  #include <linux/dma-mapping.h>
+> +#include <linux/phy/phy.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/module.h>
+>  #include <linux/idr.h>
+> @@ -293,6 +294,49 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
+>  }
+>  
+>  /**
+> + * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
+> + * interfaces
+> + * @ci: the controller
+> + *
+> + * This function returns an error code if the phy failed to init
+> + */
+> +static int _ci_usb_phy_init(struct ci_hdrc *ci)
+> +{
+> +	int ret;
+> +
+> +	if (ci->phy) {
+> +		ret = phy_init(ci->phy);
+> +		if (ret)
+> +			return ret;
+> +
+> +		ret = phy_power_on(ci->phy);
+> +		if (ret) {
+> +			phy_exit(ci->phy);
+> +			return ret;
+> +		}
+> +	} else {
+> +		ret = usb_phy_init(ci->usb_phy);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
+> + * interfaces
+> + * @ci: the controller
+> + */
+> +static void ci_usb_phy_exit(struct ci_hdrc *ci)
+> +{
+> +	if (ci->phy) {
+> +		phy_power_off(ci->phy);
+> +		phy_exit(ci->phy);
+> +	} else {
+> +		usb_phy_shutdown(ci->usb_phy);
+> +	}
+> +}
+> +
+> +/**
+>   * ci_usb_phy_init: initialize phy according to different phy type
+>   * @ci: the controller
+>    *
+> @@ -306,7 +350,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+>  	case USBPHY_INTERFACE_MODE_UTMI:
+>  	case USBPHY_INTERFACE_MODE_UTMIW:
+>  	case USBPHY_INTERFACE_MODE_HSIC:
+> -		ret = usb_phy_init(ci->usb_phy);
+> +		ret = _ci_usb_phy_init(ci);
+>  		if (ret)
+>  			return ret;
+>  		hw_phymode_configure(ci);
+> @@ -314,12 +358,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
+>  	case USBPHY_INTERFACE_MODE_ULPI:
+>  	case USBPHY_INTERFACE_MODE_SERIAL:
+>  		hw_phymode_configure(ci);
+> -		ret = usb_phy_init(ci->usb_phy);
+> +		ret = _ci_usb_phy_init(ci);
+>  		if (ret)
+>  			return ret;
+>  		break;
+>  	default:
+> -		ret = usb_phy_init(ci->usb_phy);
+> +		ret = _ci_usb_phy_init(ci);
+>  	}
+>  
+>  	return ret;
+> @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  		return -ENODEV;
+>  	}
+>  
+> -	if (ci->platdata->usb_phy)
+> +	if (ci->platdata->phy)
+> +		ci->phy = ci->platdata->phy;
+> +	else if (ci->platdata->usb_phy)
+>  		ci->usb_phy = ci->platdata->usb_phy;
+>  	else
+> -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> +		ci->phy = devm_phy_get(dev, "usb-phy");
+>  
+> -	if (IS_ERR(ci->usb_phy)) {
+> -		ret = PTR_ERR(ci->usb_phy);
+> +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy == NULL)) {
+>  		/*
+>  		 * if -ENXIO is returned, it means PHY layer wasn't
+>  		 * enabled, so it makes no sense to return -EPROBE_DEFER
+>  		 * in that case, since no PHY driver will ever probe.
+>  		 */
+> -		if (ret == -ENXIO)
+> -			return ret;
+> +		if (PTR_ERR(ci->phy) == -ENXIO)
+> +			return -ENXIO;
+>  
+> -		dev_err(dev, "no usb2 phy configured\n");
+> -		return -EPROBE_DEFER;
+> +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> +		if (IS_ERR(ci->usb_phy)) {
+> +			dev_err(dev, "no usb2 phy configured\n");
+> +			return -EPROBE_DEFER;
+> +		}
+>  	}
 
-Thanks,
-Gaurav Patel
-Email: Gspatel@hp.com
-Cell # 832-382-5550
+Sorry, I can't accept this change, why devm_usb_get_phy(dev, USB_PHY_TYPE_USB2)
+is put at error path? Since current get PHY operation is a little complicated,
+we may have a dedicate function to do it, dwc3 driver is a good example.
 
+>  
+>  	ret = ci_usb_phy_init(ci);
+> @@ -718,7 +766,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
+>  stop:
+>  	ci_role_destroy(ci);
+>  deinit_phy:
+> -	usb_phy_shutdown(ci->usb_phy);
+> +	ci_usb_phy_exit(ci);
+>  
+>  	return ret;
+>  }
+> @@ -731,7 +779,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
+>  	free_irq(ci->irq, ci);
+>  	ci_role_destroy(ci);
+>  	ci_hdrc_enter_lpm(ci, true);
+> -	usb_phy_shutdown(ci->usb_phy);
+> +	ci_usb_phy_exit(ci);
+>  	kfree(ci->hw_bank.regmap);
+>  
+>  	return 0;
+> diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
+> index 5a7ea93011dd..999e9d683d7a 100644
+> --- a/drivers/usb/chipidea/debug.c
+> +++ b/drivers/usb/chipidea/debug.c
+> @@ -219,7 +219,8 @@ static int ci_otg_show(struct seq_file *s, void *unused)
+>  	fsm = &ci->fsm;
+>  
+>  	/* ------ State ----- */
+> -		usb_otg_state_string(ci->usb_phy->otg.state));
+> +	seq_printf(s, "OTG state: %s\n\n",
+> +		   usb_otg_state_string(ci->otg.state));
 
------Original Message-----
-From: Ming Lei [mailto:ming.lei@canonical.com] 
-Sent: Wednesday, September 10, 2014 8:00 PM
-To: Patel, Gaurav
-Cc: Robert Hancock; linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List
-Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata controller
+Again, rebase error?
 
-On Thu, Sep 11, 2014 at 8:45 AM, Patel, Gaurav <gspatel@hp.com> wrote:
-> I will try to update kernel on Ubuntu to 2.6.32 and run the test.
->
-> I was not able to install 3.16 ubuntu kernel on RrdHat.
+>  
+>  	/* ------ State Machine Variables ----- */
+>  	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
+> diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
+> index 4fcebb6a6d14..e9a872ac355d 100644
+> --- a/drivers/usb/chipidea/host.c
+> +++ b/drivers/usb/chipidea/host.c
+> @@ -59,7 +59,10 @@ static int host_start(struct ci_hdrc *ci)
+>  	hcd->has_tt = 1;
+>  
+>  	hcd->power_budget = ci->platdata->power_budget;
+> -	hcd->usb_phy = ci->usb_phy;
+> +	if (ci->phy)
+> +		hcd->phy = ci->phy;
+> +	else
+> +		hcd->usb_phy = ci->usb_phy;
+>  
+>  	ehci = hcd_to_ehci(hcd);
+>  	ehci->caps = ci->hw_bank.cap;
+> diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
+> index 862d7cb01b92..3c2ab1ae00fc 100644
+> --- a/drivers/usb/chipidea/otg_fsm.c
+> +++ b/drivers/usb/chipidea/otg_fsm.c
+> @@ -779,7 +779,11 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
+>  {
+>  	int retval = 0;
+>  
+> -	ci->otg.usb_phy = ci->usb_phy;
+> +	if (ci->phy)
+> +		ci->otg.phy = ci->phy;
+> +	else
+> +		ci->otg.usb_phy = ci->usb_phy;
+> +
+>  	ci->otg.gadget = &ci->gadget;
+>  	ci->fsm.otg = &ci->otg;
+>  	ci->fsm.power_up = 1;
+> diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
+> index 57d757a1aa83..a0285623b9c1 100644
+> --- a/include/linux/usb/chipidea.h
+> +++ b/include/linux/usb/chipidea.h
+> @@ -13,6 +13,8 @@ struct ci_hdrc_platform_data {
+>  	/* offset of the capability registers */
+>  	uintptr_t	 capoffset;
+>  	unsigned	 power_budget;
+> +	struct phy	*phy;
+> +	/* old usb_phy interface */
+>  	struct usb_phy	*usb_phy;
+>  	enum usb_phy_interface phy_mode;
+>  	unsigned long	 flags;
+> -- 
+> 1.9.1
+> 
 
-I didn't ask you to install 3.16 ubuntu kernel on Redhat, and you just need to install upstream 3.16 kernel, :-)
-
->
-> Thanks,
-> Gaurav Patel
-> Email: Gspatel@hp.com
-> Cell # 832-382-5550
->
-> -----Original Message-----
-> From: Ming Lei [mailto:ming.lei@canonical.com]
-> Sent: Wednesday, September 10, 2014 6:01 PM
-> To: Patel, Gaurav
-> Cc: Robert Hancock; linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel 
-> Mailing List
-> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata 
-> controller
->
-> On Thu, Sep 11, 2014 at 12:11 AM, Patel, Gaurav <gspatel@hp.com> wrote:
->>
->> ">> When we use hdparm to download firmware on system with Marvell
->>>> 88SE9125 SATA controller, it returns failure always and it has been 
->>>> observed in several systems:"
->>
->>  [Gaurav]:  So I have another moonshot cartridge with same SATA controller and I was able to update FW with hdparm with RedHat65 without any issues. So this looks to me issue with Ubuntu kernel dos not have correct driver (or something is missing to support hdparm or sata controller).
->
-> But RedHat65 ships a 2.6.32 kernel as you said, and you can test the 
-> stable
-> 2.6.32 kernel on one ubuntu release too.
->
-> As far as I can tell, the problem is very probably related with kernel, that is why I suggest you to test upstream kernel and run 'git bisect' later to find the commit which caused the regression.
->
-> But looks you have simply install problem.
->
-> Thanks,
->
->
->>
->> Thanks,
->> Gaurav Patel
->> Email: Gspatel@hp.com
->> Cell # 832-382-5550
->>
->>
->> -----Original Message-----
->> From: Ming Lei [mailto:ming.lei@canonical.com]
->> Sent: Wednesday, September 10, 2014 1:34 AM
->> To: Robert Hancock
->> Cc: linux-ide@vger.kernel.org; Tejun Heo; Linux Kernel Mailing List; 
->> Patel, Gaurav
->> Subject: Re: [Bug] 3.16 fwdownload failure on Marvell 88SE9125 sata 
->> controller
->>
->> On Wed, Sep 10, 2014 at 11:38 AM, Robert Hancock <hancockrwd@gmail.com> wrote:
->>> On 01/09/14 02:22 AM, Ming Lei wrote:
->>>>
->>>> Hi Guys,
->>>>
->>>> When we use hdparm to download firmware on system with Marvell
->>>> 88SE9125 SATA controller, it returns failure always and it has been 
->>>> observed in several systems:
->>>>
->>>> #hdparm --fwdownload-mode7 fw.bin
->>>> --yes-i-kno-what-i-am-doing --please-destroy-my-drive /dev/sda
->>>>
->>>> /dev/sda:
->>>> fwdownload: xfer_mode=7 min=1 max=65535 size=699392
->>>> FAILED: Input/output error
->>>
->>>
->>> Any errors in dmesg after doing this?
->>
->> No any failure log from kernel.
->>
->> Thanks,
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Best Regards,
+Peter Chen
