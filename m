@@ -1,59 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaIKJLG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:11:06 -0400
-Received: from mail-bl2on0060.outbound.protection.outlook.com ([65.55.169.60]:8269
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752148AbaIKJK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:10:59 -0400
-X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Sep 2014 05:10:58 EDT
-From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
-To: <jic23@kernel.org>, <lars@metafoo.de>, <linux-iio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <michals@xilinx.com>, <svemula@xilinx.com>, <anirudh@xilinx.com>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Subject: [PATCH] iio: adc: xilinx-xadc: assign auxiliary channels address correctly
-Date: Thu, 11 Sep 2014 14:25:39 +0530
-X-Mailer: git-send-email 1.7.4
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20940.006
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <344d9464-c489-42cd-b9c4-a63759f8f6da@BL2FFO11FD040.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(64706001)(4396001)(92566001)(50986999)(83322001)(95666004)(81542001)(19580395003)(44976005)(19580405001)(74662001)(31696002)(87936001)(50226001)(99396002)(81342001)(79102001)(102836001)(20776003)(6806004)(88136002)(46102001)(104166001)(2201001)(89996001)(47776003)(77982001)(93916002)(77096002)(80022001)(74502001)(92726001)(31966008)(87286001)(70736001)(85852003)(104016003)(83072002)(48376002)(50466002)(229853001)(1496007)(76482001)(62966002)(77156001)(74316001)(53416004)(86362001)(21056001)(90102001)(106466001)(107046002)(85306004)(107986001)(23106004)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB018;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+	id S1753092AbaIKJOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:14:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146AbaIKJOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:14:37 -0400
+Message-ID: <541167EE.202@redhat.com>
+Date: Thu, 11 Sep 2014 11:14:22 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03319F6FEF
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=subbaraya.sundeep.bhatta@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 2/7] kvm: Remove ept_identity_pagetable from struct
+ kvm_arch.
+References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-3-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1410413886-32213-3-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes incorrect logic for assigning address
-to auxiliary channels of xilinx xadc.
+Il 11/09/2014 07:38, Tang Chen ha scritto:
+> kvm_arch->ept_identity_pagetable holds the ept identity pagetable page. But
+> it is never used to refer to the page at all.
+> 
+> In vcpu initialization, it indicates two things:
+> 1. indicates if ept page is allocated
+> 2. indicates if a memory slot for identity page is initialized
+> 
+> Actually, kvm_arch->ept_identity_pagetable_done is enough to tell if the ept
+> identity pagetable is initialized. So we can remove ept_identity_pagetable.
+> 
+> NOTE: In the original code, ept identity pagetable page is pinned in memroy.
+>       As a result, it cannot be migrated/hot-removed. After this patch, since
+>       kvm_arch->ept_identity_pagetable is removed, ept identity pagetable page
+>       is no longer pinned in memory. And it can be migrated/hot-removed.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Gleb Natapov <gleb@kernel.org>
+> ---
+>  arch/x86/include/asm/kvm_host.h |  1 -
+>  arch/x86/kvm/vmx.c              | 50 ++++++++++++++++++++---------------------
+>  arch/x86/kvm/x86.c              |  2 --
+>  3 files changed, 25 insertions(+), 28 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 7c492ed..35171c7 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -580,7 +580,6 @@ struct kvm_arch {
+>  
+>  	gpa_t wall_clock;
+>  
+> -	struct page *ept_identity_pagetable;
+>  	bool ept_identity_pagetable_done;
+>  	gpa_t ept_identity_map_addr;
+>  
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 4b80ead..953d529 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -743,6 +743,7 @@ static u32 vmx_segment_access_rights(struct kvm_segment *var);
+>  static void vmx_sync_pir_to_irr_dummy(struct kvm_vcpu *vcpu);
+>  static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx);
+>  static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx);
+> +static int alloc_identity_pagetable(struct kvm *kvm);
+>  
+>  static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+>  static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
+> @@ -3938,21 +3939,27 @@ out:
+>  
+>  static int init_rmode_identity_map(struct kvm *kvm)
+>  {
+> -	int i, idx, r, ret;
+> +	int i, idx, r, ret = 0;
+>  	pfn_t identity_map_pfn;
+>  	u32 tmp;
+>  
+>  	if (!enable_ept)
+>  		return 1;
+> -	if (unlikely(!kvm->arch.ept_identity_pagetable)) {
+> -		printk(KERN_ERR "EPT: identity-mapping pagetable "
+> -			"haven't been allocated!\n");
+> -		return 0;
+> +
+> +	/* Protect kvm->arch.ept_identity_pagetable_done. */
+> +	mutex_lock(&kvm->slots_lock);
+> +
+> +	if (likely(kvm->arch.ept_identity_pagetable_done)) {
+> +		ret = 1;
+> +		goto out2;
+>  	}
+> -	if (likely(kvm->arch.ept_identity_pagetable_done))
+> -		return 1;
+> -	ret = 0;
+> +
+>  	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
+> +
+> +	r = alloc_identity_pagetable(kvm);
+> +	if (r)
+> +		goto out2;
+> +
+>  	idx = srcu_read_lock(&kvm->srcu);
+>  	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+>  	if (r < 0)
+> @@ -3970,6 +3977,9 @@ static int init_rmode_identity_map(struct kvm *kvm)
+>  	ret = 1;
+>  out:
+>  	srcu_read_unlock(&kvm->srcu, idx);
+> +
+> +out2:
+> +	mutex_unlock(&kvm->slots_lock);
+>  	return ret;
+>  }
+>  
+> @@ -4019,31 +4029,23 @@ out:
+>  
+>  static int alloc_identity_pagetable(struct kvm *kvm)
+>  {
+> -	struct page *page;
+> +	/*
+> +	 * In init_rmode_identity_map(), kvm->arch.ept_identity_pagetable_done
+> +	 * is checked before calling this function and set to true after the
+> +	 * calling. The access to kvm->arch.ept_identity_pagetable_done should
+> +	 * be protected by kvm->slots_lock.
+> +	 */
 
-Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
----
- drivers/iio/adc/xilinx-xadc-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Not just the access, also the call to this function must be protected by
+the lock.
 
-diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
-index fd2745c..626b397 100644
---- a/drivers/iio/adc/xilinx-xadc-core.c
-+++ b/drivers/iio/adc/xilinx-xadc-core.c
-@@ -1126,7 +1126,7 @@ static int xadc_parse_dt(struct iio_dev *indio_dev, struct device_node *np,
- 				chan->address = XADC_REG_VPVN;
- 			} else {
- 				chan->scan_index = 15 + reg;
--				chan->scan_index = XADC_REG_VAUX(reg - 1);
-+				chan->address = XADC_REG_VAUX(reg - 1);
- 			}
- 			num_channels++;
- 			chan++;
--- 
-1.7.4
+So replace this commend by just
+
+/* Called with kvm->slots_lock held.  */
+
+and add a BUG_ON that ept_identity_pagetable_done is false.
+
+Paolo
+
+>  	struct kvm_userspace_memory_region kvm_userspace_mem;
+>  	int r = 0;
+>  
+> -	mutex_lock(&kvm->slots_lock);
+> -	if (kvm->arch.ept_identity_pagetable)
+> -		goto out;
+>  	kvm_userspace_mem.slot = IDENTITY_PAGETABLE_PRIVATE_MEMSLOT;
+>  	kvm_userspace_mem.flags = 0;
+>  	kvm_userspace_mem.guest_phys_addr =
+>  		kvm->arch.ept_identity_map_addr;
+>  	kvm_userspace_mem.memory_size = PAGE_SIZE;
+>  	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
+> -	if (r)
+> -		goto out;
+>  
+> -	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
+> -	if (is_error_page(page)) {
+> -		r = -EFAULT;
+> -		goto out;
+> -	}
+> -
+> -	kvm->arch.ept_identity_pagetable = page;
+> -out:
+> -	mutex_unlock(&kvm->slots_lock);
+>  	return r;
+>  }
+>  
+> @@ -7643,8 +7645,6 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+>  			kvm->arch.ept_identity_map_addr =
+>  				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
+>  		err = -ENOMEM;
+> -		if (alloc_identity_pagetable(kvm) != 0)
+> -			goto free_vmcs;
+>  		if (!init_rmode_identity_map(kvm))
+>  			goto free_vmcs;
+>  	}
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 8f1e22d..e05bd58 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -7239,8 +7239,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+>  	kvm_free_vcpus(kvm);
+>  	if (kvm->arch.apic_access_page)
+>  		put_page(kvm->arch.apic_access_page);
+> -	if (kvm->arch.ept_identity_pagetable)
+> -		put_page(kvm->arch.ept_identity_pagetable);
+>  	kfree(rcu_dereference_check(kvm->arch.apic_map, 1));
+>  }
+>  
+> 
 
