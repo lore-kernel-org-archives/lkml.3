@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaIKTht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:37:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42753 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886AbaIKThs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:37:48 -0400
-Date: Thu, 11 Sep 2014 21:37:44 +0200
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Eric Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
-Message-ID: <20140911213744.42735c3c@hananiah.suse.cz>
-In-Reply-To: <20140905183314.23690175@hananiah.suse.cz>
-References: <20140905183314.23690175@hananiah.suse.cz>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756152AbaIKTqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:46:48 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:56531 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999AbaIKTqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 15:46:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410085687-11273-1-git-send-email-vidyas@nvidia.com>
+References: <1410085687-11273-1-git-send-email-vidyas@nvidia.com>
+From: vidya sagar <sagar.tv@gmail.com>
+Date: Fri, 12 Sep 2014 01:16:25 +0530
+Message-ID: <CAN7O0+K2+5E7LOD8haK3sgpvyPeOZzbgu8VQuQSwOYwYBk3dzg@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM: fix debug prints relevant to PCI devices
+To: linux@arm.linux.org.uk, bhelgaas@google.com, wangyijing@huawei.com,
+        thierry.reding@gmail.com, jason@lakedaemon.net, will.deacon@arm.com,
+        swarren@nvidia.com
+Cc: kthota@nvidia.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Vidya Sagar <sagar.tv@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Anyone ???
 
-is anything wrong with the patch below? Are there questions? I thought
-this would be an easy one-line bugfix...
-
-Regards,
-Petr Tesarik
-
-On Fri, 5 Sep 2014 18:33:14 +0200
-Petr Tesarik <ptesarik@suse.cz> wrote:
-
-> On architectures that use percpu-vm, the percpu region is not guaranteed
-> to be contiguous in physical space. However, fs/proc/vmcore.c expects
-> all ELF notes to be contiguous. If the ELF note happens to occupy
-> two non-adjacent physical pages, part of the note may be read from an
-> incorrect memory location by the kdump kernel, resulting in failure to
-> initialize /proc/vmcore (if the content of the following physical page,
-> incorrectly interpreted as an ELF note specifies a large number), wrong
-> register values or other apparent random memory corruption.
-> 
-> There is currently no mechanism to pass the virtual-to-physical mapping
-> of the percpu allocation to the kdump kernel. So, instead, I'm changing
-> the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
-> than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
-> is enough to make sure that the buffer cannot cross a page boundary,
-> effectively ensuring that the whole buffer is contiguous in physical
-> space.
-> 
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+On Sun, Sep 7, 2014 at 3:58 PM, Vidya Sagar <sagar.tv@gmail.com> wrote:
+> From: Vidya Sagar <sagar.tv@gmail.com>
+>
+> As per PCIe spec, fast back-to-back transactions feature
+> is not applicable to PCIe devices. Hence, do not print
+> that fast back-to-back trasactions are disabled when
+> there is a PCIe device found on the bus
+>
+> Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
 > ---
->  kernel/kexec.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 2bee072..cdab59d 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
->  static int __init crash_notes_memory_init(void)
+> v4:
+> * initialized 'has_pcie_dev' to 'false'
+>
+> v3:
+> * removed KERN_INFO from pr_info() which was not removed by mistake in previous patch
+>
+> v2:
+> * Modified has_pcie_dev type to bool and used pci_is_pcie() instead of pci_pcie_cap()
+> * replaced printk with pr_info
+>
+>  arch/arm/kernel/bios32.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> index 17a26c1..03c56ba 100644
+> --- a/arch/arm/kernel/bios32.c
+> +++ b/arch/arm/kernel/bios32.c
+> @@ -290,6 +290,7 @@ void pcibios_fixup_bus(struct pci_bus *bus)
 >  {
->  	/* Allocate memory for saving cpu registers. */
-> -	crash_notes = alloc_percpu(note_buf_t);
-> +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
-> +				     roundup_pow_of_two(sizeof(note_buf_t)));
->  	if (!crash_notes) {
->  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
->  		return -ENOMEM;
-
+>         struct pci_dev *dev;
+>         u16 features = PCI_COMMAND_SERR | PCI_COMMAND_PARITY | PCI_COMMAND_FAST_BACK;
+> +       bool has_pcie_dev = false;
+>
+>         /*
+>          * Walk the devices on this bus, working out what we can
+> @@ -298,6 +299,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+>         list_for_each_entry(dev, &bus->devices, bus_list) {
+>                 u16 status;
+>
+> +               if (!has_pcie_dev)
+> +                       has_pcie_dev = pci_is_pcie(dev);
+>                 pci_read_config_word(dev, PCI_STATUS, &status);
+>
+>                 /*
+> @@ -354,9 +357,11 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+>
+>         /*
+>          * Report what we did for this bus
+> +        * (only if the bus doesn't have any PCIe devices)
+>          */
+> -       printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+> -               bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+> +       if (!has_pcie_dev)
+> +               pr_info("PCI: bus%d: Fast back to back transfers %sabled\n",
+> +                       bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
+>  }
+>  EXPORT_SYMBOL(pcibios_fixup_bus);
+>
+> --
+> 1.8.1.5
+>
