@@ -1,174 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaIKRmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:42:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48900 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751306AbaIKRmN (ORCPT
+	id S1753171AbaIKRnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:43:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43531 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaIKRnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:42:13 -0400
-Date: Thu, 11 Sep 2014 19:42:09 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 5/9] rtc: at91sam9: make use of syscon/regmap to
- access GPBR registers
-Message-ID: <20140911174209.GE3131@piout.net>
-References: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
- <1410443588-9092-1-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410443588-9092-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Sep 2014 13:43:23 -0400
+Message-ID: <1410457391.4011.87.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH] [media] coda: Improve runtime PM support
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 11 Sep 2014 19:43:11 +0200
+In-Reply-To: <1410356613-16811-1-git-send-email-ulf.hansson@linaro.org>
+References: <1410356613-16811-1-git-send-email-ulf.hansson@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 at 15:53:08 +0200, Boris Brezillon wrote :
-> The GPBR registers are not part of the RTT block and thus should not be
-> defined in the reg property of the rtt node.
+Hi Ulf,
+
+thanks for the patch!
+
+Am Mittwoch, den 10.09.2014, 15:43 +0200 schrieb Ulf Hansson:
+> For several reasons it's good practice to leave devices in runtime PM
+> active state while those have been probed.
+
+It would be nice to mention those reasons.
+
+> In this cases we also want to prevent the device from going inactive,
+> until the firmware has been completely installed, especially when using
+> a PM domain.
 > 
-> Use syscon to provide a proper DT representation and reference the GPBR
-> syscon device in a new "atmel,time-reg" property which store both the
-> syscon device phandle and the register offset within the GPBR block.
-> 
-> When using non DT boards, we won't be able to retrieve the syscon regmap,
-> hence we need to create our own regmap using the memory region defined
-> in the 2nd memory resource assigned to the RTT platform device.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
 > ---
->  drivers/rtc/Kconfig        |  1 +
->  drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
->  2 files changed, 51 insertions(+), 9 deletions(-)
+>  drivers/media/platform/coda/coda-common.c | 42 ++++++++-----------------------
+>  1 file changed, 11 insertions(+), 31 deletions(-)
 > 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index a168e96..7d76da8 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
->  config RTC_DRV_AT91SAM9
->  	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
->  	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-> +	select MFD_SYSCON
->  	help
->  	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
->  	  (Real Time Timer). These timers are powered by the backup power
-> diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-> index d72c34d..944e317 100644
-> --- a/drivers/rtc/rtc-at91sam9.c
-> +++ b/drivers/rtc/rtc-at91sam9.c
-> @@ -21,6 +21,8 @@
->  #include <linux/slab.h>
->  #include <linux/platform_data/atmel.h>
->  #include <linux/io.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
+> diff --git a/drivers/media/platform/coda/coda-common.c b/drivers/media/platform/coda/coda-common.c
+> index 0997b5c..361f28d 100644
+> --- a/drivers/media/platform/coda/coda-common.c
+> +++ b/drivers/media/platform/coda/coda-common.c
+> @@ -1703,39 +1703,16 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
+>  	memcpy(dev->codebuf.vaddr, fw->data, fw->size);
+>  	release_firmware(fw);
 >  
->  /*
->   * This driver uses two configurable hardware resources that live in the
-> @@ -72,7 +74,8 @@ struct sam9_rtc {
->  	void __iomem		*rtt;
->  	struct rtc_device	*rtcdev;
->  	u32			imr;
-> -	void __iomem		*gpbr;
-> +	struct regmap		*gpbr;
-> +	unsigned int		gpbr_offset;
->  	int 			irq;
->  };
+> -	if (pm_runtime_enabled(&pdev->dev) && pdev->dev.pm_domain) {
+> -		/*
+> -		 * Enabling power temporarily will cause coda_hw_init to be
+> -		 * called via coda_runtime_resume by the pm domain.
+> -		 */
+> -		ret = pm_runtime_get_sync(&dev->plat_dev->dev);
+> -		if (ret < 0) {
+> -			v4l2_err(&dev->v4l2_dev, "failed to power on: %d\n",
+> -				 ret);
+> -			return;
+> -		}
+> -
+> -		ret = coda_check_firmware(dev);
+> -		if (ret < 0)
+> -			return;
+> -
+> -		pm_runtime_put_sync(&dev->plat_dev->dev);
+> -	} else {
+> -		/*
+> -		 * If runtime pm is disabled or pm_domain is not set,
+> -		 * initialize once manually.
+> -		 */
+> -		ret = coda_hw_init(dev);
+> -		if (ret < 0) {
+> -			v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
+> -			return;
+> -		}
+> -
+> -		ret = coda_check_firmware(dev);
+> -		if (ret < 0)
+> -			return;
+> +	ret = coda_hw_init(dev);
+> +	if (ret < 0) {
+> +		v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
+> +		return;
+>  	}
 >  
-> @@ -81,10 +84,19 @@ struct sam9_rtc {
->  #define rtt_writel(rtc, field, val) \
->  	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
->  
-> -#define gpbr_readl(rtc) \
-> -	readl((rtc)->gpbr)
-> -#define gpbr_writel(rtc, val) \
-> -	writel((val), (rtc)->gpbr)
-> +static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
-> +{
-> +	unsigned int val;
-> +
-> +	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
-> +
-> +	return val;
-> +}
-> +
-> +static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
-> +{
-> +	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-> +}
->  
->  /*
->   * Read current time and date in RTC
-> @@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
->  	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
->  };
->  
-> +static struct regmap_config gpbr_regmap_config = {
-> +	.reg_bits = 32,
-> +	.val_bits = 32,
-> +	.reg_stride = 4,
-> +};
-> +
->  /*
->   * Initialize and install RTC driver
->   */
-> @@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
->  	if (IS_ERR(rtc->rtt))
->  		return PTR_ERR(rtc->rtt);
->  
-> -	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
-> -	if (IS_ERR(rtc->gpbr))
-> -		return PTR_ERR(rtc->rtt);
-> +	if (!pdev->dev.of_node) {
-> +		void __iomem *gpbr;
-> +
-> +		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> +		gpbr = devm_ioremap_resource(&pdev->dev, r);
-> +		if (IS_ERR(gpbr))
-> +			return PTR_ERR(gpbr);
+> +	ret = coda_check_firmware(dev);
+> +	if (ret < 0)
+> +		return;
 > +
 
-Maybe you could add a comment here as this is soon to be dead code.
+Won't this keep the PM domain active indefinitely if hw_init or
+check_firmware fails? Other than that, this is a great change.
 
-> +		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-> +					     &gpbr_regmap_config);
-> +	} else {
-> +		struct of_phandle_args args;
-> +
-> +		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-> +						"atmel,rtt-rtc-time-reg", 1, 0,
-> +						&args);
-> +		if (ret)
-> +			return ret;
-> +
-> +		rtc->gpbr = syscon_node_to_regmap(args.np);
-> +		rtc->gpbr_offset = args.args[0];
-> +	}
-> +
-> +	if (IS_ERR(rtc->gpbr)) {
-> +		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
-> +		return -ENOMEM;
-> +	}
+>  	dev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+>  	if (IS_ERR(dev->alloc_ctx)) {
+>  		v4l2_err(&dev->v4l2_dev, "Failed to alloc vb2 context\n");
+> @@ -1771,6 +1748,7 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
+>  	v4l2_info(&dev->v4l2_dev, "codec registered as /dev/video[%d-%d]\n",
+>  		  dev->vfd[0].num, dev->vfd[1].num);
 >  
->  	mr = rtt_readl(rtc, MR);
+> +	pm_runtime_put_sync(&pdev->dev);
+>  	return;
 >  
-> -- 
-> 1.9.1
-> 
+>  rel_m2m:
+> @@ -1998,6 +1976,8 @@ static int coda_probe(struct platform_device *pdev)
+>  
+>  	platform_set_drvdata(pdev, dev);
+>  
+> +	pm_runtime_get_noresume(&pdev->dev);
+> +	pm_runtime_set_active(&pdev->dev);
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Should we have a comment here why this is necessary?
+
+regards
+Philipp
+
