@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850AbaIKQYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:24:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48281 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751091AbaIKQYO (ORCPT
+	id S1755883AbaIKQZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:25:47 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:51194 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaIKQZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:24:14 -0400
-Date: Thu, 11 Sep 2014 18:24:11 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
-Message-ID: <20140911182411.0366ad98@free-electrons.com>
-In-Reply-To: <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 11 Sep 2014 12:25:45 -0400
+Message-ID: <5411CD05.6050705@codethink.co.uk>
+Date: Thu, 11 Sep 2014 17:25:41 +0100
+From: Rob Jones <rob.jones@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@codethink.co.uk
+Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
+References: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk> <20140901153637.GI7996@ZenIV.linux.org.uk>
+In-Reply-To: <20140901153637.GI7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Belloni,
 
-On Thu, 11 Sep 2014 17:54:06 +0200, Alexandre Belloni wrote:
-> Add sama5d4 support to irq-atmel-aic5.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
-> Cc: Jason Cooper <jason@lakedaemon.net>
->  drivers/irqchip/irq-atmel-aic5.c | 10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
-> index dc7d98607a89..a11aae8fb006 100644
-> --- a/drivers/irqchip/irq-atmel-aic5.c
-> +++ b/drivers/irqchip/irq-atmel-aic5.c
-> @@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
->  
->  static const struct of_device_id __initdata aic5_irq_fixups[] = {
->  	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
-> +	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
->  	{ /* sentinel */ },
->  };
 
-Sorry for the nitpick, but this seems to lack an updated to the DT
-binding documentation, to add the new compatible string.
+On 01/09/14 16:36, Al Viro wrote:
+> On Mon, Sep 01, 2014 at 02:17:08PM +0100, Rob Jones wrote:
+>
+>>   void *__seq_open_private(struct file *f, const struct seq_operations *ops,
+>> -		int psize)
+>> +		size_t psize)
+>
+> <sarcasm>
+> It is a horrible limitation to impose, indeed.  Why, a lousy
+> 2 gigabytes per line in procfs file - that's intolerable...
+> </sarcasm>
+>
+>
 
-Thanks,
+OK, I know this is a trivial patch but I've gone away and thought about
+it and done some reading to see what the rest of the world thinks about
+using size_t vs unsigned int (signed int is an abomination in this
+context regardless).
 
-Thomas
+I think Al's sarcasm is misplaced.
+
+The correct type to use here *is* size_t. It's about consistency and,
+more importantly, it's about not making assumptions about the hardware
+architecture. It's included in the language for very good reasons and
+it seems to me to be risky to ignore those reasons.
+
+I would like the patch to be considered for inclusion, it costs nothing
+and could avoid a future problem coming up to bite us in the bum.
+
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Rob Jones
+Codethink Ltd
+mailto:rob.jones@codethink.co.uk
+tel:+44 161 236 5575
