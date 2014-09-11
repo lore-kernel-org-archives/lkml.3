@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaIKSMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 14:12:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24813 "EHLO mx1.redhat.com"
+	id S1752583AbaIKSP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 14:15:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7705 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424AbaIKSME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 14:12:04 -0400
-Message-ID: <1410458863.2982.320.camel@ul30vt.home>
-Subject: Re: [RFC v2 4/9] VFIO: platform: handler tests whether the IRQ is
- forwarded
+	id S1751014AbaIKSP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 14:15:56 -0400
+Message-ID: <1410459250.2982.325.camel@ul30vt.home>
+Subject: Re: [RFC v2 8/9] KVM: KVM-VFIO: generic KVM_DEV_VFIO_DEVICE command
+ and IRQ forwarding control
 From: Alex Williamson <alex.williamson@redhat.com>
 To: Christoffer Dall <christoffer.dall@linaro.org>
 Cc: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
@@ -18,12 +18,12 @@ Cc: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
         pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
         will.deacon@arm.com, a.motakis@virtualopensystems.com,
         a.rigo@virtualopensystems.com, john.liuli@huawei.com
-Date: Thu, 11 Sep 2014 12:07:43 -0600
-In-Reply-To: <20140911170554.GB5535@lvm>
+Date: Thu, 11 Sep 2014 12:14:10 -0600
+In-Reply-To: <20140911171033.GD5535@lvm>
 References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
-	 <1409575968-5329-5-git-send-email-eric.auger@linaro.org>
-	 <20140911031000.GE2784@lvm> <541160D2.80400@linaro.org>
-	 <20140911170554.GB5535@lvm>
+	 <1409575968-5329-9-git-send-email-eric.auger@linaro.org>
+	 <20140911031026.GI2784@lvm> <1410411949.2982.284.camel@ul30vt.home>
+	 <20140911171033.GD5535@lvm>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -31,97 +31,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 19:05 +0200, Christoffer Dall wrote:
-> On Thu, Sep 11, 2014 at 10:44:02AM +0200, Eric Auger wrote:
-> > On 09/11/2014 05:10 AM, Christoffer Dall wrote:
-> > > On Mon, Sep 01, 2014 at 02:52:43PM +0200, Eric Auger wrote:
-> > >> In case the IRQ is forwarded, the VFIO platform IRQ handler does not
-> > >> need to disable the IRQ anymore. In that mode, when the handler completes
+On Thu, 2014-09-11 at 19:10 +0200, Christoffer Dall wrote:
+> On Wed, Sep 10, 2014 at 11:05:49PM -0600, Alex Williamson wrote:
+> > On Thu, 2014-09-11 at 05:10 +0200, Christoffer Dall wrote:
+> > > On Mon, Sep 01, 2014 at 02:52:47PM +0200, Eric Auger wrote:
+> 
+> [...]
+> 
+> > > >  
+> > > > +#ifdef __KVM_HAVE_ARCH_KVM_VFIO_FORWARD
+> > > > +int kvm_arch_set_fwd_state(struct kvm_fwd_irq *pfwd,
 > > > 
-> > > add a comma after completes
-> > Hi Christoffer,
-> > ok
+> > > what's the 'p' in pfwd?
+> > 
+> > p is for pointer?
+> > 
+> 
+> shouldn't the type declation spell out quite clearly to me that I'm
+> dealing with a pointer?
+
+Sure.  In the cases where I've done similar things it's more a matter of
+not needing to come up with another variable, for instance if I need
+both a struct and a struct* I might call them foo and pfoo if I can't
+come up with anything more meaningful.
+
+
+> [...]
+> 
 > > > 
-> > >> the IRQ is not deactivated but only its priority is lowered.
-> > >>
-> > >> Some other actor (typically a guest) is supposed to deactivate the IRQ,
-> > >> allowing at that time a new physical IRQ to hit.
-> > >>
-> > >> In virtualization use case, the physical IRQ is automatically completed
-> > >> by the interrupt controller when the guest completes the corresponding
-> > >> virtual IRQ.
-> > >>
-> > >> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> > >> ---
-> > >>  drivers/vfio/platform/vfio_platform_irq.c | 7 ++++++-
-> > >>  1 file changed, 6 insertions(+), 1 deletion(-)
-> > >>
-> > >> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> > >> index 6768508..1f851b2 100644
-> > >> --- a/drivers/vfio/platform/vfio_platform_irq.c
-> > >> +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> > >> @@ -88,13 +88,18 @@ static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
-> > >>  	struct vfio_platform_irq *irq_ctx = dev_id;
-> > >>  	unsigned long flags;
-> > >>  	int ret = IRQ_NONE;
-> > >> +	struct irq_data *d;
-> > >> +	bool is_forwarded;
-> > >>  
-> > >>  	spin_lock_irqsave(&irq_ctx->lock, flags);
-> > >>  
-> > >>  	if (!irq_ctx->masked) {
-> > >>  		ret = IRQ_HANDLED;
-> > >> +		d = irq_get_irq_data(irq_ctx->hwirq);
-> > >> +		is_forwarded = irqd_irq_forwarded(d);
-> > >>  
-> > >> -		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
-> > >> +		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED &&
-> > >> +						!is_forwarded) {
-> > >>  			disable_irq_nosync(irq_ctx->hwirq);
-> > >>  			irq_ctx->masked = true;
-> > >>  		}
-> > >> -- 
-> > >> 1.9.1
-> > >>
-> > > It makes sense that these needs to be all controlled in the kernel, but
-> > > I'm wondering if it would be cleaner / more correct to clear the
-> > > AUTOMASKED flag when the IRQ is forwarded and have vfio refuse setting
-> > > this flag as long as the irq is forwarded?
+> > > need some spaceing here, also, I would turn this around, first check if
+> > > the strcmp fails, and then error out, then do you next check etc., to
+> > > avoid so many nested statements.
+> > > 
+> > > > +	/* is a ref to this device already owned by the KVM-VFIO device? */
+> > > 
+> > > this comment is not particularly helpful in its current form, it would
+> > > be helpful if you specified that we're checking whether that particular
+> > > device/irq combo is already registered.
+> > > 
+> > > > +	*kvm_vdev = kvm_vfio_find_device(kv, vdev);
+> > > > +	if (*kvm_vdev) {
+> > > > +		if (kvm_vfio_find_irq(*kvm_vdev, fwd_irq->index)) {
+> > > > +			kvm_err("%s irq %d already forwarded\n",
+> > > > +				__func__, *hwirq);
 > > 
-> > If I am not wrong, even if the user sets AUTOMASKED, this info never is
-> > exploited by the vfio platform driver. AUTOMASKED only is set internally
-> > to the driver, on init, for level sensitive IRQs.
+> > Why didn't we do this first?
 > > 
-> > It seems to be the same on PCI (for INTx). I do not see anywhere the
-> > user flag curectly copied into a local storage. But I prefer to be
-> > careful ;-)
-> > 
-> > If confirmed, although the flag value is exposed in the user API, the
-> > user set value never is exploited so this removes the need to check.
-> > 
-> > the forwarded IRQ modality being fully dynamic currently, then I would
-> > need to update the irq_ctx->flags on each vfio_irq_handler call. I don't
-> > know if its better?
-> > 
-> I'm not an expert on vfio, so I'll leave that to Alex Williamson to
-> answer, but I'm just worried that we need to special-case the forwarded
-> IRQ here, and if that may get lost elsewhere in the vfio code.  If the
-> AUTOMASKED flag covers specifically this behavior, then why don't we
-> simply clear/set that flag when forwarding/unforwarding the specific
-> IRQ?
+> huh?
 
-The way that VFIO_IRQ_INFO_AUTOMASKED is being used here is unique to
-the platform device vfio backend.  In the rest of VFIO,
-VFIO_IRQ_INFO_AUTOMASKED is simply a flag bit exposed via
-VFIO_DEVICE_GET_IRQ_INFO.  The flags field of struct vfio_irq_info is
-output-only.  vfio-pci knows by the IRQ index whether it is edge or
-level.  I do agree though that changing the flag bit, or better yet a
-bool, rather than adding extra tests that need to be handled as each
-usage seems less error prone.
+The code is doing:
 
-Things could get confusing for userspace though if suddenly
-VFIO_DEVICE_GET_IRQ_INFO starts calling the index edge triggered once
-forwarding mode is enabled.  Thanks,
+1. can the arch forward this irq
+2. are we already forwarding this irq
+
+It's backwards, test for duplicates locally before calling out into arch
+code.  Besides, I think the arch code here should go away and just be
+another error condition for the call-out.  Thanks,
 
 Alex
 
