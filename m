@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076AbaIKOw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:52:56 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:41663 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756475AbaIKOwx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:52:53 -0400
-Message-ID: <5411B73E.4040404@itdev.co.uk>
-Date: Thu, 11 Sep 2014 15:52:46 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1756526AbaIKOxD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:53:03 -0400
+Received: from mout.gmx.net ([212.227.17.21]:49740 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754685AbaIKOw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:52:58 -0400
+From: Marc Dietrich <marvin24@gmx.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
+        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
+Date: Thu, 11 Sep 2014 16:52:22 +0200
+Message-ID: <1591383.Xdy91rktuP@fb07-iapwap2>
+User-Agent: KMail/4.13.3 (Linux/3.16.1-46.g90bc0f1-desktop; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20140911144003.GD5149@katana>
+References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de> <20140911141257.GC5149@katana> <20140911144003.GD5149@katana>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Input: atmel_mxt_ts - fix merge in DT documentation
-References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk> <53E37329.4020002@itdev.co.uk> <53E4E41D.4070703@collabora.co.uk> <53EDF6B4.7080804@collabora.co.uk> <53EE307E.8060507@itdev.co.uk> <53EE319A.1030304@wwwdotorg.org>
-In-Reply-To: <53EE319A.1030304@wwwdotorg.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart6151357.4VKUoaRBI6"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:nT/2KIkPyvx0PHdDuUWYkcYQeLGWVIfM+VNyNGF7NMqcH9CYU9h
+ Hp/QjRCH5f3bEERbkWkXbC/NjSaxBqIYhh2yRez6jG/CVg8+0iDgHh156X6V+1qxYb4Sfro
+ Jry5leWMZ/fGKk5lDGfU2/H7A5VTYgTUXo9dtWGhnrNcxuIYRTEkVzwSJ1UmbyCCDahtKh/
+ 0EToN78KY+T3vJKaCqWzg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/08/14 17:13, Stephen Warren wrote:
->>> Any comments on this? I would really appreciate if you can expand on how
->>> this DT property is supposed to be used so I can re-spin the atmel support
->>> patch for Peach boards.
->>
->> The below patch improves the documentation for the gpio-property.
+
+--nextPart6151357.4VKUoaRBI6
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+
+Am Donnerstag, 11. September 2014, 16:40:04 schrieb Wolfram Sang:
+> > b) could be seen as a configuration thing since the functionality
+> > backend could be changed at runtime even.
 > 
-> That patch makes sense, and is a nice description,
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+> Come to think of it, not only the functionality, also the address can be
+> changed at runtime. This makes me think it should really not be in DT
+> after all.
 
-Hi Dmitry-
+even worse, there can be multiple masters and slaves changing their role on 
+the fly AFAIK. So the best dt can do is to provide an initial configuration, 
+so all drivers know where they are and where to start. Everything else can be 
+changed during runtime.
 
-Something went a bit wrong in merging f5940231a - there's a bit of repeated
-text that's been introduced.
+> People will probably find out that it is possible to put it in DT, but
+> it should not be encouraged and they should do it on their own risk.
 
-Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
----
- Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 4 ----
- 1 file changed, 4 deletions(-)
+--nextPart6151357.4VKUoaRBI6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
-diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-index 0ac23f2..1852906 100644
---- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-+++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
-@@ -11,10 +11,6 @@ Required properties:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
- Optional properties for main touchpad device:
+iQEcBAABAgAGBQJUEbcmAAoJEKyeR39HFBtoUJAH/2VkYCMJ+aDlPXoWbktY2AHP
+xHbstyCIzfj7kdVl8G4BRmuAbkSzoSGtm/apwz6zQOv0YjwaxUw32gaO6/E3srVT
+qEzCTqg7gyvvhenOQY2OWXJvM9inwBPQzuB8DRVtRTbO8kJtyk7YCBhaKURc6xyf
+pqyhLjuJrwRuAxxF1hd3fur3uvtop11LFNbv5hxybGWyRRosO38h0vaHfLpKSqSD
+RjqV7NfjxoQ8sk25IAghwRquO+YeaItJ1fWcmcaOLGj/ID27X54SHq2vYGVkqMN2
+n9+CZ6n795dxd1tj1WQnIVl3CCd/0xcS5QAfmMgVKQ7sgfJB6AX/ElX6BxJf3u0=
+=3/oV
+-----END PGP SIGNATURE-----
 
--- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
--    keycode generated by each GPIO. Linux keycodes are defined in
--    <dt-bindings/input/input.h>.
--
- - linux,gpio-keymap: When enabled, the SPT_GPIOPWN_T19 object sends messages
-     on GPIO bit changes. An array of up to 8 entries can be provided
-     indicating the Linux keycode mapped to each bit of the status byte,
--- 
-1.9.1
+--nextPart6151357.4VKUoaRBI6--
+
