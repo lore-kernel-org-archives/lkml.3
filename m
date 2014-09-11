@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224AbaIKN0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:26:04 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:39504 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648AbaIKN0C (ORCPT
+	id S1755228AbaIKN04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:26:56 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:46870 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754566AbaIKN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:26:02 -0400
+	Thu, 11 Sep 2014 09:26:54 -0400
+Date: Thu, 11 Sep 2014 06:25:09 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Chintan Pandya <cpandya@codeaurora.org>
+cc: Hugh Dickins <hughd@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <541156C9.1080203@codeaurora.org>
+Message-ID: <alpine.LSU.2.11.1409110609320.2465@eggly.anvils>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <alpine.LSU.2.11.1409091225310.8432@eggly.anvils> <541156C9.1080203@codeaurora.org>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1410360030-26634-1-git-send-email-anders.berg@avagotech.com>
-References: <1410360030-26634-1-git-send-email-anders.berg@avagotech.com>
-Date: Thu, 11 Sep 2014 15:26:01 +0200
-Message-ID: <CACRpkdavQBJkaC40GJkD396JkwPjSr_dzWegn8veLpG-Fcn-SQ@mail.gmail.com>
-Subject: Re: [PATCH] spi: pl022: Add support for chip select extension
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Anders Berg <anders.berg@avagotech.com>
-Cc: Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 4:40 PM, Anders Berg <anders.berg@avagotech.com> wrote:
+On Thu, 11 Sep 2014, Chintan Pandya wrote:
 
-> Add support for a extended PL022 which has an extra register for controlling up
-> to five chip select signals. This controller is found on the AXM5516 SoC.
-> Unfortunately the PrimeCell identification registers are identical to a
-> standard ARM PL022. To work around this, the peripheral ID must be overridden
-> in the device tree using the "arm,primecell-periphid" property with the value
-> 0x000b6022.
->
-> Signed-off-by: Anders Berg <anders.berg@avagotech.com>
-(...)
-> +               /*
-> +                * PL022 variant that has a chip select control register whih
-> +                * allows control of 5 output signals nCS[0:4].
-> +                */
-> +               .id     = 0x000b6022,
+> I don't mean to divert the thread too much. But just one suggestion offered
+> by Harshad.
+> 
+> Why can't we stop invoking more of a KSM scanner thread when we are
+> saturating from savings ? But again, to check whether savings are saturated
+> or not, we may still want to rely upon timers and we have to wake the CPUs up
+> from IDLE state.
 
-OK so you're defining 0xb6 to the the 8bit ID for LSI.
+I agree that it should make sense for KSM to slow down when it sees it's
+making no progress (though that would depart from the pages_to_scan and
+sleep_millisecs prescription - perhaps could be tied to sleep_millisecs 0).
 
-Do you have some special reason for this, like that it appears
-in some other silicon block from LSI? Otherwise I suggest using
-0x4c (uppercase 'L') so as to follow the pattern of the other
-vendor IDs.
+But not stop.  That's the problem we're mainly concerned with here:
+to save power we need it to stop, but then how to wake up, without
+putting nasty hooks in hot paths for a minority interest?
+I don't see an answer to that above.
 
-Please patch include/linux/amba/bus.h to add
-AMBA_VENDOR_LSI = 0x4c (or 6b) as well, as this is the first
-occurence.
-
-Yours,
-Linus Walleij
+Hugh
