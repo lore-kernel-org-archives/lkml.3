@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaIKIBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:01:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39768 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449AbaIKIBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:01:20 -0400
-Message-ID: <541156C9.1080203@codeaurora.org>
-Date: Thu, 11 Sep 2014 13:31:13 +0530
-From: Chintan Pandya <cpandya@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1752844AbaIKICr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:02:47 -0400
+Received: from mail-by2on0125.outbound.protection.outlook.com ([207.46.100.125]:6368
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751290AbaIKICn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:02:43 -0400
+Date: Thu, 11 Sep 2014 16:02:23 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Robin Gong <b38343@freescale.com>
+CC: <kernel@pengutronix.de>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+Message-ID: <20140911080222.GG18566@dragon>
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
- for scanner thread
-References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com> <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1409091225310.8432@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(189002)(83072002)(85852003)(92566001)(68736004)(44976005)(87936001)(6806004)(19580395003)(19580405001)(26826002)(83322001)(84676001)(81542001)(23726002)(81342001)(83506001)(86362001)(64706001)(92726001)(47776003)(20776003)(97756001)(80022001)(95666004)(99396002)(50986999)(104016003)(57986006)(106466001)(105606002)(97736003)(107046002)(110136001)(76176999)(54356999)(90102001)(85306004)(46102001)(102836001)(33656002)(4396001)(77982001)(21056001)(79102001)(50466002)(76482001)(31966008)(74662001)(74502001)(46406003)(33716001)(32563001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB037;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't mean to divert the thread too much. But just one suggestion 
-offered by Harshad.
+On Wed, Sep 10, 2014 at 01:30:12PM +0800, Robin Gong wrote:
+> There is one weird data in rxfifo after one full rx/tx transfer
+> done sometimes. It looks a design issue and hard to workaround
+> totally, so disable dma functhion here. And will re-enable it
+> once the root cause found.
+> 
+> Signed-off-by: Robin Gong <b38343@freescale.com>
 
-Why can't we stop invoking more of a KSM scanner thread when we are 
-saturating from savings ? But again, to check whether savings are 
-saturated or not, we may still want to rely upon timers and we have to 
-wake the CPUs up from IDLE state.
-
->> here. Can't we create a new (timer) infrastructure that does the right
->> thing? Surely this isn't the only such case.
->
-> A sleep-walking timer, that goes to sleep in one bed, but may wake in
-> another; and defers while beds are empty?  I'd be happy to try using
-> that for KSM if it already existed, and no doubt Chintan would too
-
-This is interesting for sure :)
-
->
-> But I don't think KSM presents a very good case for developing it.
-> I think KSM's use of a sleep_millisecs timer is really just an apology
-> for the amount of often wasted work that it does, and dates from before
-> we niced it down 5.  I prefer the idea of a KSM which waits on activity
-> amongst the restricted set of tasks it is tracking: as this patch tries.
->
-> But my preference may be naive: doing lots of unnecessary work doesn't
-> matter as much as waking cpus from deep sleep.
-
-This is exactly the preference we are looking for. But yes, cannot be 
-generalized for all.
-
->
->>
->> I know both RCU and some NOHZ_FULL muck already track when the system is
->> completely idle. This is yet another case of that.
->
-> Hugh
-
-
--- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Applied, thanks.
