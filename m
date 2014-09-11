@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaIKJfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:35:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8023 "EHLO mx1.redhat.com"
+	id S1753848AbaIKJfp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:35:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbaIKJfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:35:04 -0400
-Message-ID: <54116CBB.7050505@redhat.com>
-Date: Thu, 11 Sep 2014 11:34:51 +0200
+	id S1753770AbaIKJfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:35:43 -0400
+Message-ID: <54116CE6.3090608@redhat.com>
+Date: Thu, 11 Sep 2014 11:35:34 +0200
 From: Paolo Bonzini <pbonzini@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 6/7] kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-7-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1410413886-32213-7-git-send-email-tangchen@cn.fujitsu.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>,
+        Chris J Arges <chris.j.arges@canonical.com>, kvm@vger.kernel.org
+CC: Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: ioapic: add check for RTC_GSI
+References: <1410368033-23628-1-git-send-email-chris.j.arges@canonical.com> <54113AB2.3020801@siemens.com> <54116699.8080303@redhat.com> <5411691D.5060103@siemens.com>
+In-Reply-To: <5411691D.5060103@siemens.com>
 Content-Type: text/plain; charset=iso-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 07:38, Tang Chen ha scritto:
-> +	if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
-> +		struct page *page = gfn_to_page(vmx->vcpu.kvm,
-> +				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
-> +		vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
-> +		/*
-> +		 * Do not pin apic access page in memory so that memory
-> +		 * hotplug process is able to migrate it.
-> +		 */
-> +		put_page(page);
-> +	}
+Il 11/09/2014 11:19, Jan Kiszka ha scritto:
+> On 2014-09-11 11:08, Paolo Bonzini wrote:
+>> Il 11/09/2014 08:01, Jan Kiszka ha scritto:
+>>> That issue is limited to the dead ia64 architecture, no other builds
+>>> ioapic.c (besides x86, of course). Maybe finally remove KVM support for
+>>> that arch instead of bloating otherwise correct code?
+>>
+>> Yes, we should.  I've just been too busy to do it.
+> 
+> As I enjoy creating large negative diffs :), I would almost do it - if I
+> had a test environment for IA64...
 
-Please reuse vcpu_reload_apic_access_page here, too.
+I have one. :)
 
 Paolo
+
