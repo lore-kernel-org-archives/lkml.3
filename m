@@ -1,57 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334AbaIKXij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:38:39 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:34043 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671AbaIKXii (ORCPT
+	id S1754582AbaIKXkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:40:07 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:33375 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaIKXkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:38:38 -0400
-Message-ID: <5412327B.6030000@lwfinger.net>
-Date: Thu, 11 Sep 2014 18:38:35 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 11 Sep 2014 19:40:05 -0400
+Date: Thu, 11 Sep 2014 18:39:58 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: Piotr Karbowski <piotr.karbowski@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: /proc/<pid>/exe symlink behavior change in >=3.15.
+Message-ID: <20140911183958.1e45b99e@as>
+In-Reply-To: <20140907075607.GA11240@mguzik>
+References: <540B8040.5010206@gmail.com>
+	<20140907075607.GA11240@mguzik>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: repeated bugs in new rtl wifi drivers
-References: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
-In-Reply-To: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 05:27 PM, Kees Cook wrote:
-> Hi,
->
-> I keep fixing this same bug that keeps showing up in the rtl wifi
-> drivers. CL_PRINTF keeps getting redefined (incorrectly) instead of
-> using a correctly fixed global. Is there a way to stop this from
-> happening again?
->
-> Here are the past three (identical) fixes I've landed:
-> a3355a62673e2c4bd8617d2f07c8edee92a89b8d
-> 037526f1ae7eeff5cf27ad790ebfe30303eeebe8
-> 6437f51ec36af8ef1e3e2659439b35c37e5498e2
->
-> And the buildbot report below seems to show there are more to be made. :)
+On Sun, 7 Sep 2014 09:56:08 +0200
+Mateusz Guzik <mguzik@redhat.com> wrote:
 
-Sorry that I missed your fix. I should have seen it come through Linville's 
-list. I will push your fix through again.
+> On Sat, Sep 06, 2014 at 11:44:32PM +0200, Piotr Karbowski wrote:
+> > Hi,
+> > 
+> > Starting with kernel 3.15 the 'exe' symlink under /proc/<pid>/ acts diffrent
+> > than it used to in all the pre-3.15 kernels.
+> > 
+> > The usecase:
+> > 
+> > run /root/testbin (app that just sleeps)
+> > cp /root/testbin /root/testbin.new
+> > mv /root/testbin.new /root/testbin
+> > ls -al /proc/`pidof testbin`/exe
+> > 
+> > <=3.14: /root/testbin (deleted)
+> > >=3.15: /root/testbin.new (deleted)
+> > 
+> > Was the change intentional? It does render my system unusable and I failed
+> > to find a information about such change in the ChangeLog.
+> > 
+> 
+> It looks like this was already broken for "long" (> DNAME_INLINE_LEN)
+> names.
+> 
+> Short names share the problem since da1ce0670c14d8 "vfs: add
+> cross-rename".
+> 
+> The following change to switch_names is the culprit:
+> 
+> -       memcpy(dentry->d_iname, target->d_name.name,
+> -                   target->d_name.len + 1);
+> -       dentry->d_name.len = target->d_name.len;
+> -       return;
+> +       unsigned int i;
+> +       BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
+> +       for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
+> +     		  swap(((long *) &dentry->d_iname)[i],
+> +  			((long *) &target->d_iname)[i]);
+> +       }
+> 
+> 
+> Dentries can have names from embedded structure or from an external buffer.
+> 
+> If you take a look around you will see the code just swaps pointers for
+> "both external" case. But this results in the same behavoiur you are seeing.
+> 
 
-We are in the process of unifying the in-house driver development at Realtek 
-with what I have been doing in the kernel. Unfortunately, this will involve 
-rather massive changes in all the codes. I am trying not to wipe out fixes such 
-as this one, but I expect that others will slip through. Once this painful 
-process is completed, maintaining the drivers should be a lot easier.
-
-Larry
-
-
-
-
-
+Looks like the real problem here is that __d_materialise_dentry() needs the
+old behavior of switch_names() . At least that's how it got fixed in grsecurity.
