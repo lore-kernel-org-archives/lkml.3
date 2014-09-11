@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaIKFhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 01:37:12 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:12448 "EHLO
+	id S1752530AbaIKFhY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 01:37:24 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13147 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752362AbaIKFhI (ORCPT
+	with ESMTP id S1752416AbaIKFhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 01:37:08 -0400
+	Thu, 11 Sep 2014 01:37:15 -0400
 X-IronPort-AV: E=Sophos;i="5.04,504,1406563200"; 
-   d="scan'208";a="35792882"
+   d="scan'208";a="35792886"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
         <jan.kiszka@web.de>, <pbonzini@redhat.com>
 CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
         <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v5 5/7] kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is running.
-Date: Thu, 11 Sep 2014 13:38:04 +0800
-Message-ID: <1410413886-32213-6-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v5 6/7] kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
+Date: Thu, 11 Sep 2014 13:38:05 +0800
+Message-ID: <1410413886-32213-7-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -28,54 +28,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch only handle "L1 and L2 vm share one apic access page" situation.
+To make apic access page migratable, we do not pin it in memory now.
+When it is migrated, we should reload its physical address for all
+vmcses. But when we tried to do this, all vcpu will access
+kvm_arch->apic_access_page without any locking. This is not safe.
 
-When L1 vm is running, if the shared apic access page is migrated, mmu_notifier will
-request all vcpus to exit to L0, and reload apic access page physical address for
-all the vcpus' vmcs (which is done by patch 5/6). And when it enters L2 vm, L2's vmcs
-will be updated in prepare_vmcs02() called by nested_vm_run(). So we need to do
-nothing.
+Actually, we do not need kvm_arch->apic_access_page anymore. Since
+apic access page is not pinned in memory now, we can remove
+kvm_arch->apic_access_page. When we need to write its physical address
+into vmcs, use gfn_to_page() to get its page struct, which will also
+pin it. And unpin it after then.
 
-When L2 vm is running, if the shared apic access page is migrated, mmu_notifier will
-request all vcpus to exit to L0, and reload apic access page physical address for
-all L2 vmcs. And this patch requests apic access page reload in L2->L1 vmexit.
-
+Suggested-by: Gleb Natapov <gleb@kernel.org>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/kvm/vmx.c  | 7 +++++++
- virt/kvm/kvm_main.c | 1 +
- 2 files changed, 8 insertions(+)
+ arch/x86/include/asm/kvm_host.h |  2 +-
+ arch/x86/kvm/vmx.c              | 32 +++++++++++++++++++++++++-------
+ arch/x86/kvm/x86.c              | 15 +++++++++------
+ 3 files changed, 35 insertions(+), 14 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 514183e..70f0d2d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -576,7 +576,7 @@ struct kvm_arch {
+ 	struct kvm_apic_map *apic_map;
+ 
+ 	unsigned int tss_addr;
+-	struct page *apic_access_page;
++	bool apic_access_page_done;
+ 
+ 	gpa_t wall_clock;
+ 
 diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index da6d55d..e7704b2 100644
+index e7704b2..058c373 100644
 --- a/arch/x86/kvm/vmx.c
 +++ b/arch/x86/kvm/vmx.c
-@@ -8796,6 +8796,13 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
+@@ -4002,7 +4002,7 @@ static int alloc_apic_access_page(struct kvm *kvm)
+ 	int r = 0;
+ 
+ 	mutex_lock(&kvm->slots_lock);
+-	if (kvm->arch.apic_access_page)
++	if (kvm->arch.apic_access_page_done)
+ 		goto out;
+ 	kvm_userspace_mem.slot = APIC_ACCESS_PAGE_PRIVATE_MEMSLOT;
+ 	kvm_userspace_mem.flags = 0;
+@@ -4018,7 +4018,12 @@ static int alloc_apic_access_page(struct kvm *kvm)
+ 		goto out;
  	}
  
- 	/*
-+	 * Do not call kvm_reload_apic_access_page() because we are now
-+	 * running, mmu_notifier will force to reload the page's hpa for L2
-+	 * vmcs. Need to reload it for L1 before entering L1.
-+	 */
-+	kvm_reload_apic_access_page(vcpu->kvm);
-+
+-	kvm->arch.apic_access_page = page;
 +	/*
- 	 * Exiting from L2 to L1, we're now back to L1 which thinks it just
- 	 * finished a VMLAUNCH or VMRESUME instruction, so we need to set the
- 	 * success or failure flag accordingly.
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index d8280de..784127e 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -214,6 +214,7 @@ void kvm_reload_apic_access_page(struct kvm *kvm)
- {
- 	make_all_cpus_request(kvm, KVM_REQ_APIC_PAGE_RELOAD);
- }
-+EXPORT_SYMBOL_GPL(kvm_reload_apic_access_page);
++	 * Do not pin apic access page in memory so that memory hotplug
++	 * process is able to migrate it.
++	 */
++	put_page(page);
++	kvm->arch.apic_access_page_done = true;
+ out:
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+@@ -4536,9 +4541,16 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 		vmcs_write32(TPR_THRESHOLD, 0);
+ 	}
  
- int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
+-	if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm))
+-		vmcs_write64(APIC_ACCESS_ADDR,
+-			     page_to_phys(vmx->vcpu.kvm->arch.apic_access_page));
++	if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
++		struct page *page = gfn_to_page(vmx->vcpu.kvm,
++				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
++		vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
++		/*
++		 * Do not pin apic access page in memory so that memory
++		 * hotplug process is able to migrate it.
++		 */
++		put_page(page);
++	}
+ 
+ 	if (vmx_vm_has_apicv(vcpu->kvm))
+ 		memset(&vmx->pi_desc, 0, sizeof(struct pi_desc));
+@@ -7994,10 +8006,16 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+ 				vmcs_write64(APIC_ACCESS_ADDR,
+ 				  page_to_phys(vmx->nested.apic_access_page));
+ 		} else if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
++			struct page *page = gfn_to_page(vmx->vcpu.kvm,
++				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
+ 			exec_control |=
+ 				SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
+-			vmcs_write64(APIC_ACCESS_ADDR,
+-				page_to_phys(vcpu->kvm->arch.apic_access_page));
++			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
++			/*
++			 * Do not pin apic access page in memory so that memory
++			 * hotplug process is able to migrate it.
++			 */
++			put_page(page);
+ 		}
+ 
+ 		vmcs_write32(SECONDARY_VM_EXEC_CONTROL, exec_control);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 96f4188..6da0b93 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5991,15 +5991,20 @@ static void vcpu_scan_ioapic(struct kvm_vcpu *vcpu)
+ 
+ static void vcpu_reload_apic_access_page(struct kvm_vcpu *vcpu)
  {
++	struct page *page;
++
+ 	/*
+ 	 * apic access page could be migrated. When the page is being migrated,
+ 	 * GUP will wait till the migrate entry is replaced with the new pte
+ 	 * entry pointing to the new page.
+ 	 */
+-	vcpu->kvm->arch.apic_access_page = gfn_to_page(vcpu->kvm,
+-				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
+-	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm,
+-				page_to_phys(vcpu->kvm->arch.apic_access_page));
++	page = gfn_to_page(vcpu->kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
++	kvm_x86_ops->set_apic_access_page_addr(vcpu->kvm, page_to_phys(page));
++	/*
++	 * Do not pin apic access page in memory so that memory hotplug
++	 * process is able to migrate it.
++	 */
++	put_page(page);
+ }
+ 
+ /*
+@@ -7252,8 +7257,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+ 	kfree(kvm->arch.vpic);
+ 	kfree(kvm->arch.vioapic);
+ 	kvm_free_vcpus(kvm);
+-	if (kvm->arch.apic_access_page)
+-		put_page(kvm->arch.apic_access_page);
+ 	kfree(rcu_dereference_check(kvm->arch.apic_map, 1));
+ }
+ 
 -- 
 1.8.3.1
 
