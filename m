@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaIKKCq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:02:46 -0400
-Received: from eu1sys200aog131.obsmtp.com ([207.126.144.205]:40702 "EHLO
-	eu1sys200aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753158AbaIKKCo (ORCPT
+	id S1754016AbaIKKDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:03:46 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:63472 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366AbaIKKDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:02:44 -0400
-Message-ID: <541172D4.50608@mellanox.com>
-Date: Thu, 11 Sep 2014 13:00:52 +0300
-From: Haggai Eran <haggaie@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 11 Sep 2014 06:03:44 -0400
+Message-ID: <5411737D.4070801@imgtec.com>
+Date: Thu, 11 Sep 2014 11:03:41 +0100
+From: Markos Chandras <Markos.Chandras@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: <j.glisse@gmail.com>, <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <akpm@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, <joro@8bytes.org>,
-        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        =?UTF-8?B?SsOpcsO0bWUgR2xpc3Nl?= <jglisse@redhat.com>
-Subject: Re: [RFC PATCH 1/6] mmu_notifier: add event information to address
- invalidation v4
-References: <1409339415-3626-1-git-send-email-j.glisse@gmail.com> <1409339415-3626-2-git-send-email-j.glisse@gmail.com>
-In-Reply-To: <1409339415-3626-2-git-send-email-j.glisse@gmail.com>
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, <linux-mips@linux-mips.org>,
+        <nbd@openwrt.org>, <james.hogan@imgtec.com>, <jchandra@broadcom.com>,
+        <paul.burton@imgtec.com>, <david.daney@cavium.com>,
+        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
+        <macro@linux-mips.org>, <manuel.lauss@gmail.com>,
+        <jerinjacobk@gmail.com>, <chenhc@lemote.com>, <blogic@openwrt.org>
+Subject: Re: [PATCH V2] MIPS: bugfix of coherentio variable default setup
+References: <20140908191002.13852.47842.stgit@linux-yegoshin>
+In-Reply-To: <20140908191002.13852.47842.stgit@linux-yegoshin>
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.8.3.227]
+X-Originating-IP: [192.168.154.67]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/08/2014 22:10, j.glisse@gmail.com wrote:
-> + * - MMU_MUNMAP: the range is being unmapped (outcome of a munmap syscall or
-> + * process destruction). However, access is still allowed, up until the
-> + * invalidate_range_free_pages callback. This also implies that secondary
-> + * page table can be trimmed, because the address range is no longer valid.
+Hi Leonid,
 
-I couldn't find the invalidate_range_free_pages callback. Is that a left over 
-from a previous version of the patch?
+On 09/08/2014 08:10 PM, Leonid Yegoshin wrote:
+> Patch commit b6d92b4a6bdb880b39789c677b952c53a437028d
+> 
+>     MIPS: Add option to disable software I/O coherency.
+> 
+>     Some MIPS controllers have hardware I/O coherency. This patch
+>     detects those and turns off software coherency. A new kernel
+>     command line option also allows the user to manually turn
+>     software coherency on or off.
+> 
+> in fact enforces L2 cache flushes even on systems with IOCU.
+> The default value of coherentio is 0 and is not changed even with IOCU.
+> It is a serious performance problem because it destroys all IOCU performance
+> advantages.
+> 
+> It is fixed by setting coherentio to tri-state with default value as (-1) and
+> setup a final value during platform coherency setup.
+> 
+> Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+> [...]
+> diff --git a/arch/mips/mti-malta/malta-setup.c b/arch/mips/mti-malta/malta-setup.c
+> index db7c9e5..48039fd 100644
+> --- a/arch/mips/mti-malta/malta-setup.c
+> +++ b/arch/mips/mti-malta/malta-setup.c
+> @@ -147,13 +147,17 @@ static void __init plat_setup_iocoherency(void)
+>  	if (plat_enable_iocoherency()) {
+>  		if (coherentio == 0)
+>  			pr_info("Hardware DMA cache coherency disabled\n");
+> -		else
+> +		else {
+> +			coherentio = 1;
+>  			pr_info("Hardware DMA cache coherency enabled\n");
+> +		}
+>  	} else {
+>  		if (coherentio == 1)
+>  			pr_info("Hardware DMA cache coherency unsupported, but enabled from command line!\n");
+> -		else
+> +		else {
+> +			coherentio = 0;
+>  			pr_info("Software DMA cache coherency enabled\n");
+> +		}
 
-Also, I think that you have to invalidate the secondary PTEs of the range being 
-unmapped immediately, because put_page may be called immediately after the 
-invalidate_range_start returns.
+This is not acceptable coding style for the kernel. See
+Documentation/CodingStyle, Chapter 3. Since you are adding braces in the
+"else" case, you should also add them in the "if" case as well.
 
-Haggai
+-- 
+markos
