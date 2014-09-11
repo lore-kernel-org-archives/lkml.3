@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaIKXkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:40:18 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:49553 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594AbaIKXkN (ORCPT
+	id S1753268AbaIKXph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:45:37 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:43692 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaIKXpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:40:13 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: lustre: Cleanup src/dst comparisons in obdo_cmp_md()
-Date: Thu, 11 Sep 2014 18:38:25 -0500
-Message-Id: <1410478705-5052-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 11 Sep 2014 19:45:36 -0400
+Date: Fri, 12 Sep 2014 01:45:31 +0200
+From: Arianna Avanzini <avanzini.arianna@gmail.com>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        bob.liu@oracle.com, felipe.franciosi@citrix.com, axboe@fb.com
+Subject: Re: [PATCH RFC 4/4] xen, blkback: add support for multiple block
+ rings
+Message-ID: <20140911234530.GB2052@gmail.com>
+Reply-To: avanzini.arianna@gmail.com
+References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com>
+ <1408706404-6614-5-git-send-email-avanzini.arianna@gmail.com>
+ <53F7428E.90806@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53F7428E.90806@citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup obdo_cmp_md() src/dst comparisons using bitwise OR assignments
+On Fri, Aug 22, 2014 at 02:15:58PM +0100, David Vrabel wrote:
+> On 22/08/14 12:20, Arianna Avanzini wrote:
+> > This commit adds to xen-blkback the support to retrieve the block
+> > layer API being used and the number of available hardware queues,
+> > in case the block layer is using the multi-queue API. This commit
+> > also lets the driver advertise the number of available hardware
+> > queues to the frontend via XenStore, therefore allowing for actual
+> > multiple I/O rings to be used.
+> 
+> Does it make sense for number of queues should be dependent on the
+> number of queues available in the underlying block device?  
 
-Suggested-by: Joe Perches <joe@perches.com>
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/lustre/lustre/obdclass/obdo.c | 32 +++++++++++++--------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+Thank you for raising that point. It probably is not the best solution.
 
-diff --git a/drivers/staging/lustre/lustre/obdclass/obdo.c b/drivers/staging/lustre/lustre/obdclass/obdo.c
-index b97433e..307ffe3 100644
---- a/drivers/staging/lustre/lustre/obdclass/obdo.c
-+++ b/drivers/staging/lustre/lustre/obdclass/obdo.c
-@@ -162,38 +162,38 @@ int obdo_cmp_md(struct obdo *dst, struct obdo *src, u32 compare)
- 	int res = 0;
- 
- 	if (compare & OBD_MD_FLATIME)
--		res = (res || (dst->o_atime != src->o_atime));
-+		res |= dst->o_atime != src->o_atime;
- 	if (compare & OBD_MD_FLMTIME)
--		res = (res || (dst->o_mtime != src->o_mtime));
-+		res |= dst->o_mtime != src->o_mtime;
- 	if (compare & OBD_MD_FLCTIME)
--		res = (res || (dst->o_ctime != src->o_ctime));
-+		res |= dst->o_ctime != src->o_ctime;
- 	if (compare & OBD_MD_FLSIZE)
--		res = (res || (dst->o_size != src->o_size));
-+		res |= dst->o_size != src->o_size;
- 	if (compare & OBD_MD_FLBLOCKS) /* allocation of space */
--		res = (res || (dst->o_blocks != src->o_blocks));
-+		res |= dst->o_blocks != src->o_blocks;
- 	if (compare & OBD_MD_FLBLKSZ)
--		res = (res || (dst->o_blksize != src->o_blksize));
-+		res |= dst->o_blksize != src->o_blksize;
- 	if (compare & OBD_MD_FLTYPE)
--		res = (res || (((dst->o_mode ^ src->o_mode) & S_IFMT) != 0));
-+		res |= ((dst->o_mode ^ src->o_mode) & S_IFMT) != 0;
- 	if (compare & OBD_MD_FLMODE)
--		res = (res || (((dst->o_mode ^ src->o_mode) & ~S_IFMT) != 0));
-+		res |= ((dst->o_mode ^ src->o_mode) & ~S_IFMT) != 0;
- 	if (compare & OBD_MD_FLUID)
--		res = (res || (dst->o_uid != src->o_uid));
-+		res |= dst->o_uid != src->o_uid;
- 	if (compare & OBD_MD_FLGID)
--		res = (res || (dst->o_gid != src->o_gid));
-+		res |= dst->o_gid != src->o_gid;
- 	if (compare & OBD_MD_FLFLAGS)
--		res = (res || (dst->o_flags != src->o_flags));
-+		res |= dst->o_flags != src->o_flags;
- 	if (compare & OBD_MD_FLNLINK)
--		res = (res || (dst->o_nlink != src->o_nlink));
-+		res |= dst->o_nlink != src->o_nlink;
- 	if (compare & OBD_MD_FLFID) {
--		res = (res || (dst->o_parent_seq != src->o_parent_seq));
--		res = (res || (dst->o_parent_ver != src->o_parent_ver));
-+		res |= dst->o_parent_seq != src->o_parent_seq;
-+		res |= dst->o_parent_ver != src->o_parent_ver;
- 	}
- 	if (compare & OBD_MD_FLGENER)
--		res = (res || (dst->o_parent_oid != src->o_parent_oid));
-+		res |= dst->o_parent_oid != src->o_parent_oid;
- 	/* XXX Don't know if these should be included here - wasn't previously
- 	if ( compare & OBD_MD_FLINLINE )
--		res = (res || memcmp(dst->o_inline, src->o_inline));
-+		res |= memcmp(dst->o_inline, src->o_inline);
- 	*/
- 	return res;
- }
--- 
-1.9.1
+Bob Liu suggested to have the number of I/O rings depend on the number
+of vCPUs in the driver domain. Konrad Wilk suggested to compute the
+number of I/O rings according to the following formula to preserve the
+possibility to explicitly define the number of hardware queues to be
+exposed to the frontend:
+what_backend_exposes = some_module_parameter ? :
+                   min(nr_online_cpus(), nr_hardware_queues()).
+io_rings = min(nr_online_cpus(), what_backend_exposes);
+
+(Please do correct me if I misunderstood your point)
+
+> What
+> behaviour do we want when a domain is migrated to a host with different
+> storage?
+> 
+
+This first patchset does not include support to migrate a multi-queue-capable
+domU to a host with different storage. The second version, which I am posting
+now, includes it. The behavior I have implemented as of now lets the frontend
+use the same number of rings, if the backend is still multi-queue-capable
+after the migration, otherwise it exposes one only ring.
+
+> Can you split this patch up as well?
+
+Sure, thank you for the comments.
+
+> 
+> David
 
