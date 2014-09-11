@@ -1,562 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004AbaIKWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:49:25 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53939 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437AbaIKWtS (ORCPT
+	id S1754502AbaIKWvv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:51:51 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:61133 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaIKWvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:49:18 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Heiko Stuebner <heiko@sntech.de>, Kevin Hilman <khilman@linaro.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Nishanth Menon <nm@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        olof@lixom.net, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, sre@kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, dwmw2@infradead.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-rockchip@lists.infradead.org
-Subject: [PATCH v3] PM / AVS: rockchip-io: add driver handling Rockchip io domains
-Date: Thu, 11 Sep 2014 15:48:55 -0700
-Message-Id: <1410475735-10278-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Thu, 11 Sep 2014 18:51:50 -0400
 MIME-Version: 1.0
+In-Reply-To: <ghd2b1svdw.fsf@quad.gouders.net>
+References: <ghiol53r9u.fsf@lena.gouders.net> <CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
+ <ghwq9k3m6z.fsf@lena.gouders.net> <CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
+ <ghioku5l29.fsf@lena.gouders.net> <CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
+ <CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
+ <ghppf15236.fsf@quad.gouders.net> <CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
+ <ghd2b1svdw.fsf@quad.gouders.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 11 Sep 2014 16:51:25 -0600
+Message-ID: <CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+To: Dirk Gouders <dirk@gouders.net>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Stübner <heiko@sntech.de>
+On Thu, Sep 11, 2014 at 3:24 PM, Dirk Gouders <dirk@gouders.net> wrote:
+> Bjorn Helgaas <bhelgaas@google.com> writes:
+>
+>> On Thu, Sep 11, 2014 at 2:33 PM, Dirk Gouders <dirk@gouders.net> wrote:
+>>> What I was currently trying was to construct a test-environment so that
+>>> I do not need to do tests and diagnosis on a busy machine.
+>>>
+>>> I noticed that this problem seems to start with the narrow Root
+>>> Bridge window (00-07) but every other machine that I had a look at,
+>>> starts with (00-ff), so those will not trigger my problem.
+>>>
+>>> I thought I could perhaps try to shrink the window in
+>>> acpi_pci_root_add() to trigger the problem and that kind of works: it
+>>> triggers it but not exactly the same way, because it basically ends at
+>>> this code in pci_scan_bridge():
+>>>
+>>>         if (max >= bus->busn_res.end) {
+>>>                 dev_warn(&dev->dev, "can't allocate child bus %02x from %pR (pass %d)\n",
+>>>                          max, &bus->busn_res, pass);
+>>>                 goto out;
+>>>         }
+>>>
+>>> If this could work but I am just missing a small detail, I would be
+>>> glad to hear about it and do the first tests this way.  If it is
+>>> complete nonsense, I will just use the machine that triggers the problem
+>>> for the tests.
+>>
+>> I was about to suggest the same thing.  If the problem is related to
+>> the bus number change, we should be able to force that to happen on a
+>> different machine.  Your approach sounds good, so I'm guessing we just
+>> need a tweak.
+>>
+>> I would first double-check that the PCI adapters are identical,
+>> including the firmware on the card.  Can you also include your patch
+>> and the resulting dmesg (with debug enabled as before)?
+>
+> Currently I am at home doing just tests for understanding and that I can
+> hopefully use when I am back in the office.
+>
+> I already noticed the the backup FC Adapter on the test machine is not
+> exactly the same: it is Rev. 1 whereas the one on the failing machine is
+> Rev. 2.
+>
+> So, here at home my tests let a NIC disappear.  Different from the
+> original problem but I was just trying to reconstruct the szenario of a
+> misconfigured bridge causing a reconfiguration.
+>
+> What I was trying is:
+>
+> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+> index e6ae603..fd146b3 100644
+> --- a/drivers/acpi/pci_root.c
+> +++ b/drivers/acpi/pci_root.c
+> @@ -556,6 +556,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
+>         strcpy(acpi_device_name(device), ACPI_PCI_ROOT_DEVICE_NAME);
+>         strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
+>         device->driver_data = root;
+> +       root->secondary.end = 0x02;
+>
+>         pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
+>                acpi_device_name(device), acpi_device_bid(device),
+>
+> The device that disappears is a NIC:
+>
+> 00:00.0 Host bridge: Intel Corporation Xeon E3-1200 v2/3rd Gen Core processor DRAM Controller (rev 09)
+> 00:02.0 VGA compatible controller: Intel Corporation Xeon E3-1200 v2/3rd Gen Core processor Graphics Controller (rev 09)
+> 00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB xHCI Host Controller (rev 04)
+> 00:16.0 Communication controller: Intel Corporation 7 Series/C210 Series Chipset Family MEI Controller #1 (rev 04)
+> 00:1a.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #2 (rev 04)
+> 00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset Family High Definition Audio Controller (rev 04)
+> 00:1c.0 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 1 (rev c4)
+> 00:1c.4 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 5 (rev c4)
+> 00:1c.5 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family PCI Express Root Port 6 (rev c4)
+> 00:1d.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset Family USB Enhanced Host Controller #1 (rev 04)
+> 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev a4)
+> 00:1f.0 ISA bridge: Intel Corporation B75 Express Chipset LPC Controller (rev 04)
+> 00:1f.2 SATA controller: Intel Corporation 7 Series/C210 Series Chipset Family 6-port SATA Controller [AHCI mode] (rev 04)
+> 00:1f.3 SMBus: Intel Corporation 7 Series/C210 Series Chipset Family SMBus Controller (rev 04)
+> 02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 06)
+>
+> This is the one that is missing with the above change:
+> 03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 06)
 
-IO domain voltages on some Rockchip SoCs are variable but need to be
-kept in sync between the regulators and the SoC using a special
-register.
+This situation is a little different, so I don't think you're
+reproducing the situation we want to test.  On this box, you have:
 
-A specific example using rk3288:
-- If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
-  bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
-  that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
+    pci_bus 0000:00: root bus resource [bus 00-02]
+    pci 0000:00:1c.0: PCI bridge to [bus 01]
+    pci 0000:00:1c.4: PCI bridge to [bus 02]
 
-Said another way, this driver simply handles keeping bits in the SoC's
-general register file (GRF) in sync with the actual value of a voltage
-hooked up to the pins.
+so we find all the devices on bus 00 and bus 02 (there's nothing on
+bus 01).  My guess is the 03:00.0 device is normally behind the
+00:1c.5 bridge, but we don't even scan behind that bridge because we
+can't allocate a secondary bus number for it (we're not smart enough
+to take advantage of the empty bus 01).
 
-Note that this driver specifically doesn't include:
-- any logic for deciding what voltage we should set regulators to
-- any logic for deciding whether regulators (or internal SoC blocks)
-  should have power or not have power
+On the failing box, it's different because we *do* have unused bus
+number space, and we do actually reconfigure the bridge to use it.
+It's just that the FC adapter doesn't respond when we use the new bus
+number for it.
 
-If there were some other software that had the smarts of making
-decisions about regulators, it would work in conjunction with this
-driver.  When that other software adjusted a regulator's voltage then
-this driver would handle telling the SoC about it.  A good example is
-vqmmc for SD.  In that case the dw_mmc driver simply is told about a
-regulator.  It changes the regulator between 3.3V and 1.8V at the
-right time.  This driver notices the change and makes sure that the
-SoC is on the same page.
+You might be able to do something similar on the test box by:
 
-Signed-off-by: Heiko Stübner <heiko@sntech.de>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
-Changes in v3:
-- Changed compatible string as per Santosh.
-- Added code docs about the slop in 1.8V and 3.3V as per Santosh.
-- Moved some #defines to the top as per Santosh.
+  - Keeping your root->secondary.end = 02 patch, so you still have [bus 00-02].
+  - Ignoring bridges 00:1c.0 and 00:1c.4.  I would just test for those
+devfns in pci_scan_device() and when you see them, return NULL instead
+of trying to read the vendor ID.
 
-Changes in v2:
-- Regulator patch landed, so just io-domain patch now.
-- Now in AVS as per Kevin Hilman.
-- Updated commit message to make it clear why I think this driver
-  doesn't fit into some other framework.
-- Updated bindings to also include better description.
+Then 00:1c.5 is probably configured by the BIOS for [bus 03], but
+that's outside the root bridge range, so we should reconfigure it to
+use [bus 01].  Then we should scan behind it, and we'll probably
+discover the NIC that was previously at 03:00.0.  The device *should*
+just work at the new bus number, since it probably doesn't have the
+same bug the FC adapter does.
 
- .../bindings/power/rockchip-io-domain.txt          |  83 +++++
- drivers/power/avs/Kconfig                          |   8 +
- drivers/power/avs/Makefile                         |   1 +
- drivers/power/avs/rockchip-io-domain.c             | 351 +++++++++++++++++++++
- 4 files changed, 443 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/rockchip-io-domain.txt
- create mode 100644 drivers/power/avs/rockchip-io-domain.c
-
-diff --git a/Documentation/devicetree/bindings/power/rockchip-io-domain.txt b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
-new file mode 100644
-index 0000000..6fbf6e7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
-@@ -0,0 +1,83 @@
-+Rockchip SRAM for IO Voltage Domains:
-+-------------------------------------
-+
-+IO domain voltages on some Rockchip SoCs are variable but need to be
-+kept in sync between the regulators and the SoC using a special
-+register.
-+
-+A specific example using rk3288:
-+- If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
-+  bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
-+  that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
-+
-+Said another way, this driver simply handles keeping bits in the SoC's
-+general register file (GRF) in sync with the actual value of a voltage
-+hooked up to the pins.
-+
-+Note that this driver specifically doesn't include:
-+- any logic for deciding what voltage we should set regulators to
-+- any logic for deciding whether regulators (or internal SoC blocks)
-+  should have power or not have power
-+
-+If there were some other software that had the smarts of making
-+decisions about regulators, it would work in conjunction with this
-+driver.  When that other software adjusted a regulator's voltage then
-+this driver would handle telling the SoC about it.  A good example is
-+vqmmc for SD.  In that case the dw_mmc driver simply is told about a
-+regulator.  It changes the regulator between 3.3V and 1.8V at the
-+right time.  This driver notices the change and makes sure that the
-+SoC is on the same page.
-+
-+
-+Required properties:
-+- compatible: should be one of:
-+  - "rockchip,rk3188-io-voltage-domain" for rk3188
-+  - "rockchip,rk3288-io-voltage-domain" for rk3288
-+- rockchip,grf: phandle to the syscon managing the "general register files"
-+
-+
-+You specify supplies using the standard regulator bindings by including
-+a phandle the the relevant regulator.  All specified supplies must be able
-+to report their voltage.  The IO Voltage Domain for any non-specified
-+supplies will be not be touched.
-+
-+Possible supplies for rk3188:
-+- ap0-supply:    The supply connected to AP0_VCC.
-+- ap1-supply:    The supply connected to AP1_VCC.
-+- cif-supply:    The supply connected to CIF_VCC.
-+- flash-supply:  The supply connected to FLASH_VCC.
-+- lcdc0-supply:  The supply connected to LCD0_VCC.
-+- lcdc1-supply:  The supply connected to LCD1_VCC.
-+- vccio0-supply: The supply connected to VCCIO0.
-+- vccio1-supply: The supply connected to VCCIO1.
-+                 Sometimes also labeled VCCIO1 and VCCIO2.
-+
-+Possible supplies for rk3288:
-+- audio-supply:  The supply connected to APIO4_VDD.
-+- bb-supply:     The supply connected to APIO5_VDD.
-+- dvp-supply:    The supply connected to DVPIO_VDD.
-+- flash0-supply: The supply connected to FLASH0_VDD.  Typically for eMMC
-+- flash1-supply: The supply connected to FLASH1_VDD.  Also known as SDIO1.
-+- gpio30-supply: The supply connected to APIO1_VDD.
-+- gpio1830       The supply connected to APIO2_VDD.
-+- lcdc-supply:   The supply connected to LCDC_VDD.
-+- sdcard-supply: The supply connected to SDMMC0_VDD.
-+- wifi-supply:   The supply connected to APIO3_VDD.  Also known as SDIO0.
-+
-+
-+Example:
-+
-+	io-domains {
-+		compatible = "rockchip,rk3288-io-voltage-domain";
-+		rockchip,grf = <&grf>;
-+
-+		audio-supply = <&vcc18_codec>;
-+		bb-supply = <&vcc33_io>;
-+		dvp-supply = <&vcc_18>;
-+		flash0-supply = <&vcc18_flashio>;
-+		gpio1830-supply = <&vcc33_io>;
-+		gpio30-supply = <&vcc33_pmuio>;
-+		lcdc-supply = <&vcc33_lcd>;
-+		sdcard-supply = <&vccio_sd>;
-+		wifi-supply = <&vcc18_wl>;
-+	};
-diff --git a/drivers/power/avs/Kconfig b/drivers/power/avs/Kconfig
-index 2a1008b..7f3d389 100644
---- a/drivers/power/avs/Kconfig
-+++ b/drivers/power/avs/Kconfig
-@@ -10,3 +10,11 @@ menuconfig POWER_AVS
- 	  AVS is also called SmartReflex on OMAP devices.
- 
- 	  Say Y here to enable Adaptive Voltage Scaling class support.
-+
-+config ROCKCHIP_IODOMAIN
-+        tristate "Rockchip IO domain support"
-+        depends on ARCH_ROCKCHIP && OF
-+        help
-+          Say y here to enable support io domains on Rockchip SoCs. It is
-+          necessary for the io domain setting of the SoC to match the
-+          voltage supplied by the regulators.
-diff --git a/drivers/power/avs/Makefile b/drivers/power/avs/Makefile
-index 0843386..ba4c7bc 100644
---- a/drivers/power/avs/Makefile
-+++ b/drivers/power/avs/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_POWER_AVS_OMAP)		+= smartreflex.o
-+obj-$(CONFIG_ROCKCHIP_IODOMAIN)		+= rockchip-io-domain.o
-diff --git a/drivers/power/avs/rockchip-io-domain.c b/drivers/power/avs/rockchip-io-domain.c
-new file mode 100644
-index 0000000..aa0a483
---- /dev/null
-+++ b/drivers/power/avs/rockchip-io-domain.c
-@@ -0,0 +1,351 @@
-+/*
-+ * Rockchip IO Voltage Domain driver
-+ *
-+ * Copyright 2014 MundoReader S.L.
-+ * Copyright 2014 Google, Inc.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/consumer.h>
-+
-+#define MAX_SUPPLIES		16
-+
-+/*
-+ * The max voltage for 1.8V and 3.3V come from the Rockchip datasheet under
-+ * "Recommended Operating Conditions" for "Digital GPIO".   When the typical
-+ * is 3.3V the max is 3.6V.  When the typical is 1.8V the max is 1.98V.
-+ *
-+ * They are used like this:
-+ * - If the voltage on a rail is above the "1.8" voltage (1.98V) we'll tell the
-+ *   SoC we're at 3.3.
-+ * - If the voltage on a rail is above the "3.3" voltage (3.6V) we'll consider
-+ *   that to be an error.
-+ */
-+#define MAX_VOLTAGE_1_8		1980000
-+#define MAX_VOLTAGE_3_3		3600000
-+
-+#define RK3288_SOC_CON2			0x24c
-+#define RK3288_SOC_CON2_FLASH0		BIT(7)
-+#define RK3288_SOC_FLASH_SUPPLY_NUM	2
-+
-+struct rockchip_iodomain;
-+
-+/**
-+ * @supplies: voltage settings matching the register bits.
-+ */
-+struct rockchip_iodomain_soc_data {
-+	int grf_offset;
-+	const char *supply_names[MAX_SUPPLIES];
-+	void (*init)(struct rockchip_iodomain *iod);
-+};
-+
-+struct rockchip_iodomain_supply {
-+	struct rockchip_iodomain *iod;
-+	struct regulator *reg;
-+	struct notifier_block nb;
-+	int idx;
-+};
-+
-+struct rockchip_iodomain {
-+	struct device *dev;
-+	struct regmap *grf;
-+	struct rockchip_iodomain_soc_data *soc_data;
-+	struct rockchip_iodomain_supply supplies[MAX_SUPPLIES];
-+};
-+
-+static int rockchip_iodomain_write(struct rockchip_iodomain_supply *supply,
-+				   int uV)
-+{
-+	struct rockchip_iodomain *iod = supply->iod;
-+	u32 val;
-+	int ret;
-+
-+	/* set value bit */
-+	val = (uV > MAX_VOLTAGE_1_8) ? 0 : 1;
-+	val <<= supply->idx;
-+
-+	/* apply hiword-mask */
-+	val |= (BIT(supply->idx) << 16);
-+
-+	ret = regmap_write(iod->grf, iod->soc_data->grf_offset, val);
-+	if (ret)
-+		dev_err(iod->dev, "Couldn't write to GRF\n");
-+
-+	return ret;
-+}
-+
-+static int rockchip_iodomain_notify(struct notifier_block *nb,
-+				    unsigned long event,
-+				    void *data)
-+{
-+	struct rockchip_iodomain_supply *supply =
-+			container_of(nb, struct rockchip_iodomain_supply, nb);
-+	int uV;
-+	int ret;
-+
-+	/*
-+	 * According to Rockchip it's important to keep the SoC IO domain
-+	 * higher than (or equal to) the external voltage.  That means we need
-+	 * to change it before external voltage changes happen in the case
-+	 * of an increase.
-+	 *
-+	 * Note that in the "pre" change we pick the max possible voltage that
-+	 * the regulator might end up at (the client requests a range and we
-+	 * don't know for certain the exact voltage).  Right now we rely on the
-+	 * slop in MAX_VOLTAGE_1_8 and MAX_VOLTAGE_3_3 to save us if clients
-+	 * request something like a max of 3.6V when they really want 3.3V.
-+	 * We could attempt to come up with better rules if this fails.
-+	 */
-+	if (event & REGULATOR_EVENT_PRE_VOLTAGE_CHANGE) {
-+		struct pre_voltage_change_data *pvc_data = data;
-+
-+		uV = max_t(unsigned long, pvc_data->old_uV, pvc_data->max_uV);
-+	} else if (event & (REGULATOR_EVENT_VOLTAGE_CHANGE |
-+			    REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE)) {
-+		uV = (unsigned long)data;
-+	} else {
-+		return NOTIFY_OK;
-+	}
-+
-+	dev_dbg(supply->iod->dev, "Setting to %d\n", uV);
-+
-+	if (uV > MAX_VOLTAGE_3_3) {
-+		dev_err(supply->iod->dev, "Voltage too high: %d\n", uV);
-+
-+		if (event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
-+			return NOTIFY_BAD;
-+	}
-+
-+	ret = rockchip_iodomain_write(supply, uV);
-+	if (ret && event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
-+		return NOTIFY_BAD;
-+
-+	dev_info(supply->iod->dev, "Setting to %d done\n", uV);
-+	return NOTIFY_OK;
-+}
-+
-+static void rk3288_iodomain_init(struct rockchip_iodomain *iod)
-+{
-+	int ret;
-+	u32 val;
-+
-+	/* if no flash supply we should leave things alone */
-+	if (!iod->supplies[RK3288_SOC_FLASH_SUPPLY_NUM].reg)
-+		return;
-+
-+	/*
-+	 * set flash0 iodomain to also use this framework
-+	 * instead of a special gpio.
-+	 */
-+	val = RK3288_SOC_CON2_FLASH0 | (RK3288_SOC_CON2_FLASH0 << 16);
-+	ret = regmap_write(iod->grf, RK3288_SOC_CON2, val);
-+	if (ret < 0)
-+		dev_warn(iod->dev, "couldn't update flash0 ctrl\n");
-+}
-+
-+/*
-+ * On the rk3188 the io-domains are handled by a shared register with the
-+ * lower 8 bits being still being continuing drive-strength settings.
-+ */
-+static const struct rockchip_iodomain_soc_data soc_data_rk3188 = {
-+	.grf_offset = 0x104,
-+	.supply_names = {
-+		NULL,
-+		NULL,
-+		NULL,
-+		NULL,
-+		NULL,
-+		NULL,
-+		NULL,
-+		NULL,
-+		"ap0",
-+		"ap1",
-+		"cif",
-+		"flash",
-+		"vccio0",
-+		"vccio1",
-+		"lcdc0",
-+		"lcdc1",
-+	},
-+};
-+
-+static const struct rockchip_iodomain_soc_data soc_data_rk3288 = {
-+	.grf_offset = 0x380,
-+	.supply_names = {
-+		"lcdc",		/* LCDC_VDD */
-+		"dvp",		/* DVPIO_VDD */
-+		"flash0",	/* FLASH0_VDD (emmc) */
-+		"flash1",	/* FLASH1_VDD (sdio1) */
-+		"wifi",		/* APIO3_VDD  (sdio0) */
-+		"bb",		/* APIO5_VDD */
-+		"audio",	/* APIO4_VDD */
-+		"sdcard",	/* SDMMC0_VDD (sdmmc) */
-+		"gpio30",	/* APIO1_VDD */
-+		"gpio1830",	/* APIO2_VDD */
-+	},
-+	.init = rk3288_iodomain_init,
-+};
-+
-+static const struct of_device_id rockchip_iodomain_match[] = {
-+	{
-+		.compatible = "rockchip,rk3188-io-voltage-domain",
-+		.data = (void *)&soc_data_rk3188
-+	},
-+	{
-+		.compatible = "rockchip,rk3288-io-voltage-domain",
-+		.data = (void *)&soc_data_rk3288
-+	},
-+	{ /* sentinel */ },
-+};
-+
-+static int rockchip_iodomain_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
-+	struct rockchip_iodomain *iod;
-+	int i, ret;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	iod = devm_kzalloc(&pdev->dev, sizeof(*iod), GFP_KERNEL);
-+	if (!iod)
-+		return -ENOMEM;
-+
-+	iod->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, iod);
-+
-+	match = of_match_node(rockchip_iodomain_match, np);
-+	iod->soc_data = (struct rockchip_iodomain_soc_data *)match->data;
-+
-+	iod->grf = syscon_regmap_lookup_by_phandle(np, "rockchip,grf");
-+	if (IS_ERR(iod->grf)) {
-+		dev_err(&pdev->dev, "couldn't find grf regmap\n");
-+		return PTR_ERR(iod->grf);
-+	}
-+
-+	for (i = 0; i < MAX_SUPPLIES; i++) {
-+		const char *supply_name = iod->soc_data->supply_names[i];
-+		struct rockchip_iodomain_supply *supply = &iod->supplies[i];
-+		struct regulator *reg;
-+		int uV;
-+
-+		if (!supply_name)
-+			continue;
-+
-+		reg = devm_regulator_get_optional(iod->dev, supply_name);
-+		if (IS_ERR(reg)) {
-+			ret = PTR_ERR(reg);
-+
-+			/* If a supply wasn't specified, that's OK */
-+			if (ret == -ENODEV)
-+				continue;
-+			else if (ret != -EPROBE_DEFER)
-+				dev_err(iod->dev, "couldn't get regulator %s\n",
-+					supply_name);
-+			goto unreg_notify;
-+		}
-+
-+		/* set initial correct value */
-+		uV = regulator_get_voltage(reg);
-+
-+		/* must be a regulator we can get the voltage of */
-+		if (uV < 0) {
-+			dev_err(iod->dev, "Can't determine voltage: %s\n",
-+				supply_name);
-+			goto unreg_notify;
-+		}
-+
-+		if (uV > MAX_VOLTAGE_3_3) {
-+			dev_crit(iod->dev,
-+				 "%d uV is too high. May damage SoC!\n",
-+				 uV);
-+			ret = -EINVAL;
-+			goto unreg_notify;
-+		}
-+
-+		/* setup our supply */
-+		supply->idx = i;
-+		supply->iod = iod;
-+		supply->reg = reg;
-+		supply->nb.notifier_call = rockchip_iodomain_notify;
-+
-+		ret = rockchip_iodomain_write(supply, uV);
-+		if (ret) {
-+			supply->reg = NULL;
-+			goto unreg_notify;
-+		}
-+
-+		/* register regulator notifier */
-+		ret = regulator_register_notifier(reg, &supply->nb);
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"regulator notifier request failed\n");
-+			supply->reg = NULL;
-+			goto unreg_notify;
-+		}
-+	}
-+
-+	if (iod->soc_data->init)
-+		iod->soc_data->init(iod);
-+
-+	return 0;
-+
-+unreg_notify:
-+	for (i = MAX_SUPPLIES - 1; i >= 0; i--) {
-+		struct rockchip_iodomain_supply *io_supply = &iod->supplies[i];
-+
-+		if (io_supply->reg)
-+			regulator_unregister_notifier(io_supply->reg,
-+						      &io_supply->nb);
-+	}
-+
-+	return ret;
-+}
-+
-+static int rockchip_iodomain_remove(struct platform_device *pdev)
-+{
-+	struct rockchip_iodomain *iod = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = MAX_SUPPLIES - 1; i >= 0; i--) {
-+		struct rockchip_iodomain_supply *io_supply = &iod->supplies[i];
-+
-+		if (io_supply->reg)
-+			regulator_unregister_notifier(io_supply->reg,
-+						      &io_supply->nb);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct platform_driver rockchip_iodomain_driver = {
-+	.probe   = rockchip_iodomain_probe,
-+	.remove  = rockchip_iodomain_remove,
-+	.driver  = {
-+		.name  = "rockchip-iodomain",
-+		.of_match_table = rockchip_iodomain_match,
-+	},
-+};
-+
-+module_platform_driver(rockchip_iodomain_driver);
-+
-+MODULE_DESCRIPTION("Rockchip IO-domain driver");
-+MODULE_AUTHOR("Heiko Stuebner <heiko@sntech.de>");
-+MODULE_AUTHOR("Doug Anderson <dianders@chromium.org>");
-+MODULE_LICENSE("GPL v2");
--- 
-2.1.0.rc2.206.gedb03e5
-
+Bjorn
