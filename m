@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029AbaIKECc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 00:02:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32868 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750704AbaIKEC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 00:02:29 -0400
-Message-ID: <54111E99.9010408@zytor.com>
-Date: Wed, 10 Sep 2014 21:01:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752256AbaIKECz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 00:02:55 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:57542 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaIKECy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 00:02:54 -0400
+From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: "dsd@gentoo.org" <dsd@gentoo.org>,
+        "kune@deine-taler.de" <kune@deine-taler.de>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+Thread-Topic: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+Thread-Index: AQHPvfy4VhjwVefflUWmSbacV2I4ZZv7bmfA
+Date: Thu, 11 Sep 2014 04:02:49 +0000
+Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF4D490@EU-MBX-02.mgc.mentorg.com>
+References: <1407827133-29493-1-git-send-email-sanjeev_sharma@mentor.com>
+	 <FDC088D3B5555644AE135ED28A7ABDE94DF2FDC2@EU-MBX-02.mgc.mentorg.com>
+	 (sfid-20140819_083957_833442_DEE44B0A)
+ <1408707084.4349.0.camel@jlt4.sipsolutions.net>
+In-Reply-To: <1408707084.4349.0.camel@jlt4.sipsolutions.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [137.202.0.76]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>, x86@kernel.org,
-        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
-In-Reply-To: <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8B430Fg020974
 
-On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
-> This patch add arch specific code for kernel address sanitizer.
-> 
-> 16TB of virtual addressed used for shadow memory.
-> It's located in range [0xffff800000000000 - 0xffff900000000000]
-> Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
-> to 0xffff900000000000.
+-----Original Message-----
+From: Johannes Berg [mailto:johannes@sipsolutions.net] 
+Sent: Friday, August 22, 2014 5:01 PM
+To: Sharma, Sanjeev
+Cc: dsd@gentoo.org; kune@deine-taler.de; linville@tuxdriver.com; linux-wireless@vger.kernel.org; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
 
-NAK on this.
+On Tue, 2014-08-19 at 06:39 +0000, Sharma, Sanjeev wrote:
+> Ping for review the patch.
 
-0xffff880000000000 is the lowest usable address because we have agreed
-to leave 0xffff800000000000-0xffff880000000000 for the hypervisor or
-other non-OS uses.
+> Make sure it compiles ...
 
-Bumping PAGE_OFFSET seems needlessly messy, why not just designate a
-zone higher up in memory?
+Any update on this patch ?
 
-	-hpa
+Regards
+Sanjeev Sharma
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
