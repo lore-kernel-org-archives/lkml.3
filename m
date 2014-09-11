@@ -1,98 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaIKWQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:16:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36740 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaIKWQ1 (ORCPT
+	id S1753432AbaIKWSW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:18:22 -0400
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:37922 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaIKWSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:16:27 -0400
-Date: Thu, 11 Sep 2014 15:16:12 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Darren Hart <darren@dvhart.com>
-Subject: Re: futex_wait_setup sleeping while atomic bug.
-Message-ID: <20140911221611.GA18425@vmdeb7>
-References: <20140911151040.GB3008@redhat.com>
- <alpine.DEB.2.10.1409112318500.4178@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1409112318500.4178@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 11 Sep 2014 18:18:20 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, dianders@chromium.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        stable@vger.kernel.org
+Subject: [PATCH v2] clocksource: arch_timer: Fix code to use physical timers when requested
+Date: Thu, 11 Sep 2014 15:18:15 -0700
+Message-Id: <1410473895-6756-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 11:52:02PM +0200, Thomas Gleixner wrote:
-> On Thu, 11 Sep 2014, Dave Jones wrote:
-> 
-> > Hit this overnight on Linus tree from yesterday.
-> > 
-> > BUG: sleeping function called from invalid context at include/linux/freezer.h:56
-> > in_atomic(): 1, irqs_disabled(): 0, pid: 31948, name: trinity-c121
-> > Preemption disabled at:[<ffffffffb90f2512>] futex_wait_setup+0xb2/0x140
-> 
-> Huch? So we are in a preempt disabled region in futex_wait_setup and
-> we get interrupted and end up in the signal delivery path?
-> 
-> I really love that futex stuff....
-> 
-> But fortunately the preemption disabled hint made it into mainline so
-> looking at the callsites of futex_wait_setup() makes it pretty clear
-> where the shit hits the fan. Patch below.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> ------------------->
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Thu, 11 Sep 2014 23:44:35 +0200
-> Subject: futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-> 
-> futex_wait_requeue_pi() calls futex_wait_setup(). If
-> futex_wait_setup() succeeds it returns with hb->lock held and
-> preemption disabled. Now the sanity check after this does:
-> 
->         if (match_futex(&q.key, &key2)) {
-> 	   	ret = -EINVAL;
-> 		goto out_put_keys;
-> 	}
-> 
-> which releases the keys but does not release hb->lock. So we happily
-> return to user space with hb->lock held and therefor preemption
-> disabled.
-> 
-> Unlock hb->lock before taking the exit route.
-> 
-> Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index d3a9d946d0b7..815d7af2ffe8 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -2592,6 +2592,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
->  	 * shared futexes. We need to compare the keys:
->  	 */
->  	if (match_futex(&q.key, &key2)) {
-> +		queue_unlock(hb);
->  		ret = -EINVAL;
->  		goto out_put_keys;
->  	}
+This is a bug fix for using physical arch timers when
+the arch_timer_use_virtual boolean is false.  It restores the
+arch_counter_get_cntpct() function after removal in
 
-I was hoping to move this before the key equivalence test so we could exit as
-early as possible, but some idgit (that would be me) embedded the
-get_futex_key() for uaddr into futex_wait_setup() to avoid so much duplication
-of code... sigh.
+0d651e4e "clocksource: arch_timer: use virtual counters"
 
-Thomas's fix is the best immediate solution in my opinion.
+and completes the implementation of memory mapped access for physical
+timers, so if a system is trying to use physical timers, it will
+function properly.
 
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+We need this on certain ARMv7 systems which are architected like this:
 
+* The firmware doesn't know and doesn't care about hypervisor mode and
+  we don't want to add the complexity of hypervisor there.
+
+* The firmware isn't involved in SMP bringup or resume.
+
+* The ARCH timer come up with an uninitialized offset between the
+  virtual and physical counters.  Each core gets a different random
+  offset.
+
+* The device boots in "Secure SVC" mode.
+
+* Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+  CNTHCTL.PL1PCTEN (both default to 1 at reset)
+
+One example of such as system is RK3288 where it is much simpler to
+use the physical counter since there's nobody managing the offset and
+each time a core goes down and comes back up it will get reinitialized
+to some other random value.
+
+Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+Cc: stable@vger.kernel.org
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Acked-by: Olof Johansson <olof@lixom.net>
+---
+v2: Add fixes tag to commit message, cc stable, copy Doug's
+    description of the systems which need this in commit message.
+---
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++++
+ arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
+ drivers/clocksource/arm_arch_timer.c | 30 ++++++++++++++++++++++++++----
+ 3 files changed, 45 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index 0704e0c..e72aa4d 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+ 	return val;
+ }
+ 
++static inline u64 arch_counter_get_cntpct(void)
++{
++	u64 cval;
++
++	isb();
++	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
++	return cval;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 9400596..58657c4 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+ #endif
+ }
+ 
++static inline u64 arch_counter_get_cntpct(void)
++{
++	u64 cval;
++
++	isb();
++	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
++
++	return cval;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5163ec1..ad723cb 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -30,6 +30,8 @@
+ #define CNTTIDR		0x08
+ #define CNTTIDR_VIRT(n)	(BIT(1) << ((n) * 4))
+ 
++#define CNTPCT_LO	0x00
++#define CNTPCT_HI	0x04
+ #define CNTVCT_LO	0x08
+ #define CNTVCT_HI	0x0c
+ #define CNTFRQ		0x10
+@@ -386,6 +388,19 @@ static u64 arch_counter_get_cntvct_mem(void)
+ 	return ((u64) vct_hi << 32) | vct_lo;
+ }
+ 
++static u64 arch_counter_get_cntpct_mem(void)
++{
++	u32 pct_lo, pct_hi, tmp_hi;
++
++	do {
++		pct_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
++		pct_lo = readl_relaxed(arch_counter_base + CNTPCT_LO);
++		tmp_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
++	} while (pct_hi != tmp_hi);
++
++	return ((u64) pct_hi << 32) | pct_lo;
++}
++
+ /*
+  * Default to cp15 based access because arm64 uses this function for
+  * sched_clock() before DT is probed and the cp15 method is guaranteed
+@@ -429,10 +444,17 @@ static void __init arch_counter_register(unsigned type)
+ 	u64 start_count;
+ 
+ 	/* Register the CP15 based counter if we have one */
+-	if (type & ARCH_CP15_TIMER)
+-		arch_timer_read_counter = arch_counter_get_cntvct;
+-	else
+-		arch_timer_read_counter = arch_counter_get_cntvct_mem;
++	if (type & ARCH_CP15_TIMER) {
++		if (arch_timer_use_virtual)
++			arch_timer_read_counter = arch_counter_get_cntvct;
++		else
++			arch_timer_read_counter = arch_counter_get_cntpct;
++	} else {
++		if (arch_timer_use_virtual)
++			arch_timer_read_counter = arch_counter_get_cntvct_mem;
++		else
++			arch_timer_read_counter = arch_counter_get_cntpct_mem;
++	}
+ 
+ 	start_count = arch_timer_read_counter();
+ 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
 -- 
-Darren Hart
-Intel Open Source Technology Center
+1.8.3.2
+
