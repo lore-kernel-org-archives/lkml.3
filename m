@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaIKMg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:36:57 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45453 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755701AbaIKMgz (ORCPT
+	id S1755631AbaIKMgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:36:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51705 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755474AbaIKMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:36:55 -0400
-Date: Thu, 11 Sep 2014 14:36:16 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <b32955@freescale.com>,
-        Mike Voytovich <mvoytovich@paypal.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20140911143616.3ebb025a@bbrezillon>
-In-Reply-To: <20140911120928.GA1585@localhost.localdomain>
-References: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140911120928.GA1585@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 11 Sep 2014 08:34:09 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.407810982@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 114/131] sparc64: Add membar to Niagara2 memcpy code.
+In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huang,
+3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
 
-On Thu, 11 Sep 2014 20:09:30 +0800
-Huang Shijie <shijie8@gmail.com> wrote:
+------------------
 
-> On Wed, Sep 10, 2014 at 10:55:39AM +0200, Boris BREZILLON wrote:
-> > Several MTD users (either in user or kernel space) expect a valid raw
-> > access support to NAND chip devices.
-> > This is particularly true for testing tools which are often touching the
-> > data stored in a NAND chip in raw mode to artificially generate errors.
-> > 
-> > The GPMI drivers do not implemenent raw access functions, and thus rely on
-> > default HW_ECC scheme implementation.
-> > The default implementation consider the data and OOB area as properly
-> > separated in their respective NAND section, which is not true for the GPMI
-> > controller.
-> > In this driver/controller some OOB data are stored at the beginning of the
-> > NAND data area (these data are called metadata in the driver), then ECC
-> > bytes are interleaved with data chunk (which is similar to the
-> > HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
-> > OOB data.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> > Hello,
-> > 
-> > This patch is providing raw access support to the GPMI driver which is
-> > particularly useful to run some tests on the NAND (the one coming in
-> > mind is the mtd_nandbiterrs testsuite).
-> > 
-> > I know this rework might break several user space tools which are relying
-> > on the default raw access implementation (I already experienced an issue
-> > with the kobs-ng tool provided by freescale), but many other tools will
-> > now work as expected.
-> If the kobs-ng can not works, there is no meaning that other tools
-> works.  So I do not think we need to implement these hooks.
+From: "David S. Miller" <davem@davemloft.net>
 
-Well, I don't know about freescale specific tools, but at least I have
-an example with mtd_nandbiterrs module.
-This module is assuming it can write only the data part of a NAND page
-without modifying the OOB area (see [1]), which in GPMI controller case
-is impossible because raw write function store the data as if there
-were no specific scheme, while there is one:
-(metadata + n x (data_chunk + ECC bytes) + remaining_bytes).
+[ Upstream commit 5aa4ecfd0ddb1e6dcd1c886e6c49677550f581aa ]
 
-Moreover, IMHO, nanddump and nandwrite tools (which can use raw
-access mode when passing the appropriate option) should always return
-the same kind of data no matter what NAND controller is in use on the
-system => (DATA + OOB_DATA), and this is definitely not the case with
-the GPMI driver.
+This is the prevent previous stores from overlapping the block stores
+done by the memcpy loop.
 
-See how raw access on HW_ECC_SYNDROME scheme is implemented in
-nand_base.c [2]. It hides to the mtd user the fact that DATA and ECC
-bytes are interleaved, and give him the expected (DATA + OOB_DATA)
-representation.
+Based upon a glibc patch by Jose E. Marchesi
 
-Best Regards,
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/sparc/lib/NG2memcpy.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-Boris
+diff --git a/arch/sparc/lib/NG2memcpy.S b/arch/sparc/lib/NG2memcpy.S
+index 0aed756..e993fc8 100644
+--- a/arch/sparc/lib/NG2memcpy.S
++++ b/arch/sparc/lib/NG2memcpy.S
+@@ -236,6 +236,7 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len */
+ 	 */
+ 	VISEntryHalf
+ 
++	membar		#Sync
+ 	alignaddr	%o1, %g0, %g0
+ 
+ 	add		%o1, (64 - 1), %o4
 
-[1]http://lxr.free-electrons.com/source/drivers/mtd/tests/nandbiterrs.c#L112
-[2]http://lxr.free-electrons.com/source/drivers/mtd/nand/nand_base.c#L1364
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
