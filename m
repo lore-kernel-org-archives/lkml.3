@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909AbaIKNTo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:19:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51479 "EHLO
+	id S1756895AbaIKNTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:19:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51498 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755362AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755006AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Hurley" <peter@hurleysoftware.com>,
-        "Valerio Vanni" <valerio.vanni@inwind.it>,
+CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@linux.intel.com>,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Alan Cox" <alan@linux.intel.com>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.441062894@decadent.org.uk>
+        "Fengguang Wu" <fengguang.wu@intel.com>
+Date: Thu, 11 Sep 2014 13:32:14 +0100
+Message-ID: <lsq.1410438734.665181735@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 006/131] serial: core: Preserve termios c_cflag for
- console resume
+Subject: [PATCH 3.2 125/131] x86, espfix: Move espfix definitions into a
+ separate  header file
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,40 +33,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit ae84db9661cafc63d179e1d985a2c5b841ff0ac4 upstream.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-When a tty is opened for the serial console, the termios c_cflag
-settings are inherited from the console line settings.
-However, if the tty is subsequently closed, the termios settings
-are lost. This results in a garbled console if the console is later
-suspended and resumed.
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-Preserve the termios c_cflag for the serial console when the tty
-is shutdown; this reflects the most recent line settings.
-
-Fixes: Bugzilla #69751, 'serial console does not wake from S3'
-Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: tty_struct::termios is a pointer]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/serial_core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/include/asm/espfix.h | 16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |  5 ++---
+ arch/x86/kernel/espfix_64.c   |  1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/include/asm/espfix.h
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -225,6 +225,9 @@ static void uart_shutdown(struct tty_str
- 		/*
- 		 * Turn off DTR and RTS early.
- 		 */
-+		if (uart_console(uport) && tty)
-+			uport->cons->cflag = tty->termios->c_cflag;
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
 +
- 		if (!tty || (tty->termios->c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -59,11 +59,10 @@ extern void x86_ce4100_early_setup(void);
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
  
+-extern void init_espfix_bsp(void);
+-extern void init_espfix_ap(void);
+-
+ #ifndef _SETUP
+ 
++#include <asm/espfix.h>
++
+ /*
+  * This is set up by the setup-routine at boot-time
+  */
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
+ 
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 
