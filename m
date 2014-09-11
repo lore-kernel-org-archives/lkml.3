@@ -1,165 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236AbaIKJCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:02:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43430 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753970AbaIKI4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:56:16 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 5/8] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-Date: Thu, 11 Sep 2014 10:56:04 +0200
-Message-Id: <1410425767-17874-6-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1753863AbaIKIyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:54:13 -0400
+Received: from mga14.intel.com ([192.55.52.115]:30409 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752995AbaIKIyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:54:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="589733180"
+From: Qiaowei Ren <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Dave Hansen <dave.hansen@intel.com>
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH v8 04/10] x86, mpx: hook #BR exception handler to allocate bound tables
+Date: Thu, 11 Sep 2014 16:46:44 +0800
+Message-Id: <1410425210-24789-5-git-send-email-qiaowei.ren@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR registers are not part of the RTT block and thus should not be
-defined in the reg property of the rtt node.
+This patch handles a #BR exception for non-existent tables by
+carving the space out of the normal processes address space
+(essentially calling mmap() from inside the kernel) and then
+pointing the bounds-directory over to it.
 
-Use syscon to provide a proper DT representation and reference the GPBR
-syscon device in a new "atmel,time-reg" property which store both the
-syscon device phandle and the register offset within the GPBR block.
+The tables need to be accessed and controlled by userspace
+because the compiler generates instructions for MPX-enabled
+code which frequently store and retrieve entries from the bounds
+tables. Any direct kernel involvement (like a syscall) to access
+the tables would destroy performance since these are so frequent.
 
-When using non DT boards, we won't be able to retrieve the syscon regmap,
-hence we need to create our own regmap using the memory region defined
-in the 2nd memory resource assigned to the RTT platform device.
+The tables are carved out of userspace because we have no better
+spot to put them. For each pointer which is being tracked by MPX,
+the bounds tables contain 4 longs worth of data, and the tables
+are indexed virtually. If we were to preallocate the tables, we
+would theoretically need to allocate 4x the virtual space that
+we have available for userspace somewhere else. We don't have
+that room in the kernel address space.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-
-Conflicts:
-	drivers/rtc/rtc-at91sam9.c
+Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- drivers/rtc/Kconfig        |  1 +
- drivers/rtc/rtc-at91sam9.c | 58 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 50 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/mpx.h |   20 +++++++++++++++
+ arch/x86/kernel/Makefile   |    1 +
+ arch/x86/kernel/mpx.c      |   58 ++++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/traps.c    |   55 ++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 133 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/kernel/mpx.c
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..7d76da8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
- 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-+	select MFD_SYSCON
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
-diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index d72c34d..b953545 100644
---- a/drivers/rtc/rtc-at91sam9.c
-+++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
- #include <linux/platform_data/atmel.h>
- #include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
+diff --git a/arch/x86/include/asm/mpx.h b/arch/x86/include/asm/mpx.h
+index 5725ac4..b7598ac 100644
+--- a/arch/x86/include/asm/mpx.h
++++ b/arch/x86/include/asm/mpx.h
+@@ -18,6 +18,8 @@
+ #define MPX_BT_ENTRY_SHIFT	5
+ #define MPX_IGN_BITS		3
  
- /*
-  * This driver uses two configurable hardware resources that live in the
-@@ -72,7 +74,8 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
--	void __iomem		*gpbr;
-+	struct regmap		*gpbr;
-+	unsigned int		gpbr_offset;
- 	int 			irq;
- };
++#define MPX_BD_ENTRY_TAIL	3
++
+ #else
  
-@@ -81,10 +84,18 @@ struct sam9_rtc {
- #define rtt_writel(rtc, field, val) \
- 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
+ #define MPX_BD_ENTRY_OFFSET	20
+@@ -26,13 +28,31 @@
+ #define MPX_BT_ENTRY_SHIFT	4
+ #define MPX_IGN_BITS		2
  
--#define gpbr_readl(rtc) \
--	readl((rtc)->gpbr)
--#define gpbr_writel(rtc, val) \
--	writel((val), (rtc)->gpbr)
-+static inline unsigned int gpbr_readl(struct sam9_rtc *rtc) {
-+	unsigned int val;
++#define MPX_BD_ENTRY_TAIL	2
 +
-+	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
+ #endif
+ 
++#define MPX_BNDSTA_TAIL		2
++#define MPX_BNDCFG_TAIL		12
++#define MPX_BNDSTA_ADDR_MASK	(~((1UL<<MPX_BNDSTA_TAIL)-1))
++#define MPX_BNDCFG_ADDR_MASK	(~((1UL<<MPX_BNDCFG_TAIL)-1))
++#define MPX_BT_ADDR_MASK	(~((1UL<<MPX_BD_ENTRY_TAIL)-1))
 +
-+	return val;
-+}
-+
-+static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
+ #define MPX_BD_SIZE_BYTES (1UL<<(MPX_BD_ENTRY_OFFSET+MPX_BD_ENTRY_SHIFT))
+ #define MPX_BT_SIZE_BYTES (1UL<<(MPX_BT_ENTRY_OFFSET+MPX_BT_ENTRY_SHIFT))
+ 
+ #define MPX_BNDSTA_ERROR_CODE	0x3
++#define MPX_BD_ENTRY_VALID_FLAG	0x1
+ 
+ unsigned long mpx_mmap(unsigned long len);
+ 
++#ifdef CONFIG_X86_INTEL_MPX
++int do_mpx_bt_fault(struct xsave_struct *xsave_buf);
++#else
++static inline int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
 +{
-+	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
++	return -EINVAL;
 +}
++#endif /* CONFIG_X86_INTEL_MPX */
++
+ #endif /* _ASM_X86_MPX_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index ada2e2d..9ece662 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_PREEMPT)	+= preempt.o
  
- /*
-  * Read current time and date in RTC
-@@ -301,6 +312,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
- };
+ obj-y				+= process.o
+ obj-y				+= i387.o xsave.o
++obj-$(CONFIG_X86_INTEL_MPX)	+= mpx.o
+ obj-y				+= ptrace.o
+ obj-$(CONFIG_X86_32)		+= tls.o
+ obj-$(CONFIG_IA32_EMULATION)	+= tls.o
+diff --git a/arch/x86/kernel/mpx.c b/arch/x86/kernel/mpx.c
+new file mode 100644
+index 0000000..88d660f
+--- /dev/null
++++ b/arch/x86/kernel/mpx.c
+@@ -0,0 +1,58 @@
++#include <linux/kernel.h>
++#include <linux/syscalls.h>
++#include <asm/mpx.h>
++
++static int allocate_bt(long __user *bd_entry)
++{
++	unsigned long bt_addr, old_val = 0;
++	int ret = 0;
++
++	bt_addr = mpx_mmap(MPX_BT_SIZE_BYTES);
++	if (IS_ERR((void *)bt_addr))
++		return bt_addr;
++	bt_addr = (bt_addr & MPX_BT_ADDR_MASK) | MPX_BD_ENTRY_VALID_FLAG;
++
++	ret = user_atomic_cmpxchg_inatomic(&old_val, bd_entry, 0, bt_addr);
++	if (ret)
++		goto out;
++
++	/*
++	 * there is a existing bounds table pointed at this bounds
++	 * directory entry, and so we need to free the bounds table
++	 * allocated just now.
++	 */
++	if (old_val)
++		goto out;
++
++	return 0;
++
++out:
++	vm_munmap(bt_addr & MPX_BT_ADDR_MASK, MPX_BT_SIZE_BYTES);
++	return ret;
++}
++
++/*
++ * When a BNDSTX instruction attempts to save bounds to a BD entry
++ * with the lack of the valid bit being set, a #BR is generated.
++ * This is an indication that no BT exists for this entry. In this
++ * case the fault handler will allocate a new BT.
++ *
++ * With 32-bit mode, the size of BD is 4MB, and the size of each
++ * bound table is 16KB. With 64-bit mode, the size of BD is 2GB,
++ * and the size of each bound table is 4MB.
++ */
++int do_mpx_bt_fault(struct xsave_struct *xsave_buf)
++{
++	unsigned long status;
++	unsigned long bd_entry, bd_base;
++
++	bd_base = xsave_buf->bndcsr.cfg_reg_u & MPX_BNDCFG_ADDR_MASK;
++	status = xsave_buf->bndcsr.status_reg;
++
++	bd_entry = status & MPX_BNDSTA_ADDR_MASK;
++	if ((bd_entry < bd_base) ||
++		(bd_entry >= bd_base + MPX_BD_SIZE_BYTES))
++		return -EINVAL;
++
++	return allocate_bt((long __user *)bd_entry);
++}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 0d0e922..396a88b 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -60,6 +60,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/mach_traps.h>
+ #include <asm/alternative.h>
++#include <asm/mpx.h>
  
-+static struct regmap_config gpbr_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
- /*
-  * Initialize and install RTC driver
-  */
-@@ -334,10 +351,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(rtc->rtt))
- 		return PTR_ERR(rtc->rtt);
+ #ifdef CONFIG_X86_64
+ #include <asm/x86_init.h>
+@@ -228,7 +229,6 @@ dotraplinkage void do_##name(struct pt_regs *regs, long error_code)	\
  
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
--	if (IS_ERR(rtc->gpbr))
--		return PTR_ERR(rtc->rtt);
-+	if (!pdev->dev.of_node) {
-+		void __iomem *gpbr;
+ DO_ERROR(X86_TRAP_DE,     SIGFPE,  "divide error",		divide_error)
+ DO_ERROR(X86_TRAP_OF,     SIGSEGV, "overflow",			overflow)
+-DO_ERROR(X86_TRAP_BR,     SIGSEGV, "bounds",			bounds)
+ DO_ERROR(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op)
+ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS,     SIGSEGV, "invalid TSS",		invalid_TSS)
+@@ -278,6 +278,59 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ }
+ #endif
+ 
++dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
++{
++	enum ctx_state prev_state;
++	unsigned long status;
++	struct xsave_struct *xsave_buf;
++	struct task_struct *tsk = current;
 +
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		gpbr = devm_ioremap_resource(&pdev->dev, r);
-+		if (IS_ERR(gpbr))
-+			return PTR_ERR(gpbr);
++	prev_state = exception_enter();
++	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
++			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
++		goto exit;
++	conditional_sti(regs);
 +
-+		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-+					     &gpbr_regmap_config);
-+	} else {
-+		struct of_phandle_args args;
++	if (!user_mode(regs))
++		die("bounds", regs, error_code);
 +
-+		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-+						       "atmel,time-reg", 1, 0,
-+						       &args);
-+		if (ret)
-+			return ret;
-+
-+		rtc->gpbr = syscon_node_to_regmap(args.np);
-+		rtc->gpbr_offset = args.args[0];
++	if (!cpu_has_mpx) {
++		/* The exception is not from Intel MPX */
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		goto exit;
 +	}
 +
-+	if (IS_ERR(rtc->gpbr)) {
-+		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
-+		return -ENOMEM;
++	fpu_xsave(&tsk->thread.fpu);
++	xsave_buf = &(tsk->thread.fpu.state->xsave);
++	status = xsave_buf->bndcsr.status_reg;
++
++	/*
++	 * The error code field of the BNDSTATUS register communicates status
++	 * information of a bound range exception #BR or operation involving
++	 * bound directory.
++	 */
++	switch (status & MPX_BNDSTA_ERROR_CODE) {
++	case 2:
++		/*
++		 * Bound directory has invalid entry.
++		 */
++		if (do_mpx_bt_fault(xsave_buf))
++			force_sig(SIGSEGV, tsk);
++		break;
++
++	case 1: /* Bound violation. */
++	case 0: /* No exception caused by Intel MPX operations. */
++		do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, error_code, NULL);
++		break;
++
++	default:
++		die("bounds", regs, error_code);
 +	}
- 
- 	mr = rtt_readl(rtc, MR);
- 
++
++exit:
++	exception_exit(prev_state);
++}
++
+ dotraplinkage void
+ do_general_protection(struct pt_regs *regs, long error_code)
+ {
 -- 
-1.9.1
+1.7.1
 
