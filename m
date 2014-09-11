@@ -1,346 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaIKVeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:34:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60978 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988AbaIKVek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:34:40 -0400
-Message-ID: <541214A7.3040402@ti.com>
-Date: Thu, 11 Sep 2014 17:31:19 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753535AbaIKVfC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:35:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44720 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287AbaIKVfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:35:00 -0400
+Date: Thu, 11 Sep 2014 14:34:46 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-9298b815efe500b272e4084ed05eeae7a92b5340@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dave.hansen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com,
+        bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dave.hansen@linux.intel.com, bp@suse.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140911211524.C0EC332A@viggo.jf.intel.com>
+References: <20140911211524.C0EC332A@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpufeature] x86: Add more disabled features
+Git-Commit-ID: 9298b815efe500b272e4084ed05eeae7a92b5340
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
-        Kevin Hilman <khilman@linaro.org>
-CC: Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Nishanth Menon <nm@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] PM / AVS: rockchip-io: add driver handling Rockchip
- io domains
-References: <1410469229-30167-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1410469229-30167-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 September 2014 05:00 PM, Doug Anderson wrote:
-> From: Heiko Stübner <heiko@sntech.de>
-> 
-> IO domain voltages on some Rockchip SoCs are variable but need to be
-> kept in sync between the regulators and the SoC using a special
-> register.
-> 
-> A specific example using rk3288:
-> - If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
->   bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
->   that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
-> 
-> Said another way, this driver simply handles keeping bits in the SoC's
-> general register file (GRF) in sync with the actual value of a voltage
-> hooked up to the pins.
-> 
-> Note that this driver specifically doesn't include:
-> - any logic for deciding what voltage we should set regulators to
-> - any logic for deciding whether regulators (or internal SoC blocks)
->   should have power or not have power
-> 
-> If there were some other software that had the smarts of making
-> decisions about regulators, it would work in conjunction with this
-> driver.  When that other software adjusted a regulator's voltage then
-> this driver would handle telling the SoC about it.  A good example is
-> vqmmc for SD.  In that case the dw_mmc driver simply is told about a
-> regulator.  It changes the regulator between 3.3V and 1.8V at the
-> right time.  This driver notices the change and makes sure that the
-> SoC is on the same page.
-> 
-> Signed-off-by: Heiko Stübner <heiko@sntech.de>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v2:
-> - Regulator patch landed, so just io-domain patch now.
-> - Now in AVS as per Kevin Hilman.
-> - Updated commit message to make it clear why I think this driver
->   doesn't fit into some other framework.
-> - Updated bindings to also include better description.
->
-Nice to see that your driver is getting better home. Minor
-comments below....
+Commit-ID:  9298b815efe500b272e4084ed05eeae7a92b5340
+Gitweb:     http://git.kernel.org/tip/9298b815efe500b272e4084ed05eeae7a92b5340
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 11 Sep 2014 14:15:24 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 11 Sep 2014 14:30:17 -0700
 
+x86: Add more disabled features
+
+The original motivation for these patches was for an Intel CPU
+feature called MPX.  The patch to add a disabled feature for it
+will go in with the other parts of the support.
+
+But, in the meantime, there are a few other features than MPX
+that we can make assumptions about at compile-time based on
+compile options.  Add them to disabled-features.h and check them
+with cpu_feature_enabled().
+
+Note that this gets rid of the last things that needed an #ifdef
+CONFIG_X86_64 in cpufeature.h.  Yay!
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140911211524.C0EC332A@viggo.jf.intel.com
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h        | 20 --------------------
+ arch/x86/include/asm/disabled-features.h | 16 ++++++++++++++--
+ arch/x86/kernel/cpu/common.c             |  2 +-
+ arch/x86/kernel/cpu/mtrr/main.c          |  6 +++---
+ 4 files changed, 18 insertions(+), 26 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 1492041..42db503 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -324,7 +324,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ } while (0)
  
->  .../bindings/power/rockchip-io-domain.txt          |  83 +++++
->  drivers/power/avs/Kconfig                          |   8 +
->  drivers/power/avs/Makefile                         |   1 +
->  drivers/power/avs/rockchip-io-domain.c             | 333 +++++++++++++++++++++
->  4 files changed, 425 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/power/rockchip-io-domain.txt
->  create mode 100644 drivers/power/avs/rockchip-io-domain.c
-> 
-> diff --git a/Documentation/devicetree/bindings/power/rockchip-io-domain.txt b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
-> new file mode 100644
-> index 0000000..e663255
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
-> @@ -0,0 +1,83 @@
-> +Rockchip SRAM for IO Voltage Domains:
-> +-------------------------------------
-> +
-> +IO domain voltages on some Rockchip SoCs are variable but need to be
-> +kept in sync between the regulators and the SoC using a special
-> +register.
-> +
-> +A specific example using rk3288:
-> +- If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
-> +  bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
-> +  that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
-> +
-> +Said another way, this driver simply handles keeping bits in the SoC's
-> +general register file (GRF) in sync with the actual value of a voltage
-> +hooked up to the pins.
-> +
-> +Note that this driver specifically doesn't include:
-> +- any logic for deciding what voltage we should set regulators to
-> +- any logic for deciding whether regulators (or internal SoC blocks)
-> +  should have power or not have power
-> +
-> +If there were some other software that had the smarts of making
-> +decisions about regulators, it would work in conjunction with this
-> +driver.  When that other software adjusted a regulator's voltage then
-> +this driver would handle telling the SoC about it.  A good example is
-> +vqmmc for SD.  In that case the dw_mmc driver simply is told about a
-> +regulator.  It changes the regulator between 3.3V and 1.8V at the
-> +right time.  This driver notices the change and makes sure that the
-> +SoC is on the same page.
-> +
-> +
-> +Required properties:
-> +- compatible: should be one of:
-> +  - "rockchip,rk3188-iodomain" for rk3188
-> +  - "rockchip,rk3288-iodomain" for rk3288
-The key word 'voltage' is missing from the compatible. iodomain itself
-doesn't convey what it is actually.
-
-> +- rockchip,grf: phandle to the syscon managing the "general register files"
-> +
-> +
-> +You specify supplies using the standard regulator bindings by including
-> +a phandle the the relevant regulator.  All specified supplies must be able
-> +to report their voltage.  The IO Voltage Domain for any non-specified
-> +supplies will be not be touched.
-> +
-> +Possible supplies for rk3188:
-> +- ap0-supply:    The supply connected to AP0_VCC.
-> +- ap1-supply:    The supply connected to AP1_VCC.
-> +- cif-supply:    The supply connected to CIF_VCC.
-> +- flash-supply:  The supply connected to FLASH_VCC.
-> +- lcdc0-supply:  The supply connected to LCD0_VCC.
-> +- lcdc1-supply:  The supply connected to LCD1_VCC.
-> +- vccio0-supply: The supply connected to VCCIO0.
-> +- vccio1-supply: The supply connected to VCCIO1.
-> +                 Sometimes also labeled VCCIO1 and VCCIO2.
-> +
-> +Possible supplies for rk3288:
-> +- audio-supply:  The supply connected to APIO4_VDD.
-> +- bb-supply:     The supply connected to APIO5_VDD.
-> +- dvp-supply:    The supply connected to DVPIO_VDD.
-> +- flash0-supply: The supply connected to FLASH0_VDD.  Typically for eMMC
-> +- flash1-supply: The supply connected to FLASH1_VDD.  Also known as SDIO1.
-> +- gpio30-supply: The supply connected to APIO1_VDD.
-> +- gpio1830       The supply connected to APIO2_VDD.
-> +- lcdc-supply:   The supply connected to LCDC_VDD.
-> +- sdcard-supply: The supply connected to SDMMC0_VDD.
-> +- wifi-supply:   The supply connected to APIO3_VDD.  Also known as SDIO0.
-> +
-> +
-> +Example:
-> +
-> +	io-domains {
-> +		compatible = "rockchip,rk3288-iodomain";
-> +		rockchip,grf = <&grf>;
-> +
-> +		audio-supply = <&vcc18_codec>;
-> +		bb-supply = <&vcc33_io>;
-> +		dvp-supply = <&vcc_18>;
-> +		flash0-supply = <&vcc18_flashio>;
-> +		gpio1830-supply = <&vcc33_io>;
-> +		gpio30-supply = <&vcc33_pmuio>;
-> +		lcdc-supply = <&vcc33_lcd>;
-> +		sdcard-supply = <&vccio_sd>;
-> +		wifi-supply = <&vcc18_wl>;
-> +	};
-> diff --git a/drivers/power/avs/Kconfig b/drivers/power/avs/Kconfig
-> index 2a1008b..7f3d389 100644
-> --- a/drivers/power/avs/Kconfig
-> +++ b/drivers/power/avs/Kconfig
-> @@ -10,3 +10,11 @@ menuconfig POWER_AVS
->  	  AVS is also called SmartReflex on OMAP devices.
->  
->  	  Say Y here to enable Adaptive Voltage Scaling class support.
-> +
-> +config ROCKCHIP_IODOMAIN
-> +        tristate "Rockchip IO domain support"
-> +        depends on ARCH_ROCKCHIP && OF
-> +        help
-> +          Say y here to enable support io domains on Rockchip SoCs. It is
-> +          necessary for the io domain setting of the SoC to match the
-> +          voltage supplied by the regulators.
-> diff --git a/drivers/power/avs/Makefile b/drivers/power/avs/Makefile
-> index 0843386..ba4c7bc 100644
-> --- a/drivers/power/avs/Makefile
-> +++ b/drivers/power/avs/Makefile
-> @@ -1 +1,2 @@
->  obj-$(CONFIG_POWER_AVS_OMAP)		+= smartreflex.o
-> +obj-$(CONFIG_ROCKCHIP_IODOMAIN)		+= rockchip-io-domain.o
-> diff --git a/drivers/power/avs/rockchip-io-domain.c b/drivers/power/avs/rockchip-io-domain.c
-> new file mode 100644
-> index 0000000..f4e0ebc
-> --- /dev/null
-> +++ b/drivers/power/avs/rockchip-io-domain.c
-> @@ -0,0 +1,333 @@
-> +/*
-> + * Rockchip IO Voltage Domain driver
-> + *
-> + * Copyright 2014 MundoReader S.L.
-> + * Copyright 2014 Google, Inc.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/mfd/syscon.h>
-The bindings are not talking about syscon usage. You might
-want to document it appropriately to make the usage clear.
-
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regmap.h>
-> +#include <linux/regulator/consumer.h>
-> +
-> +#define MAX_SUPPLIES		16
-> +
-> +#define MAX_VOLTAGE_1_8		1980000
-This is close to 2V, Is that intentional.
-
-> +#define MAX_VOLTAGE_3_3		3600000
-> +
-Same here.
-
-> +struct rockchip_iodomain;
-> +
-> +/**
-> + * @supplies: voltage settings matching the register bits.
-> + */
-> +struct rockchip_iodomain_soc_data {
-> +	int grf_offset;
-> +	const char *supply_names[MAX_SUPPLIES];
-> +	void (*init)(struct rockchip_iodomain *iod);
-> +};
-> +
-> +struct rockchip_iodomain_supply {
-> +	struct rockchip_iodomain *iod;
-> +	struct regulator *reg;
-> +	struct notifier_block nb;
-> +	int idx;
-> +};
-> +
-> +struct rockchip_iodomain {
-> +	struct device *dev;
-> +	struct regmap *grf;
-> +	struct rockchip_iodomain_soc_data *soc_data;
-> +	struct rockchip_iodomain_supply supplies[MAX_SUPPLIES];
-> +};
-> +
-> +static int rockchip_iodomain_write(struct rockchip_iodomain_supply *supply,
-> +				   int uV)
-> +{
-> +	struct rockchip_iodomain *iod = supply->iod;
-> +	u32 val;
-> +	int ret;
-> +
-> +	/* set value bit */
-> +	val = (uV > MAX_VOLTAGE_1_8) ? 0 : 1;
-> +	val <<= supply->idx;
-> +
-> +	/* apply hiword-mask */
-> +	val |= (BIT(supply->idx) << 16);
-> +
-> +	ret = regmap_write(iod->grf, iod->soc_data->grf_offset, val);
-> +	if (ret)
-> +		dev_err(iod->dev, "Couldn't write to GRF\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static int rockchip_iodomain_notify(struct notifier_block *nb,
-> +				    unsigned long event,
-> +				    void *data)
-> +{
-> +	struct rockchip_iodomain_supply *supply =
-> +			container_of(nb, struct rockchip_iodomain_supply, nb);
-> +	int uV;
-> +	int ret;
-> +
-> +	/*
-> +	 * According to Rockchip it's important to keep the SoC IO domain
-> +	 * higher than (or equal to) the external voltage.  That means we need
-> +	 * to change it before external voltage changes happen in the case
-> +	 * of an increase.
-> +	 */
-> +	if (event & REGULATOR_EVENT_PRE_VOLTAGE_CHANGE) {
-> +		struct pre_voltage_change_data *pvc_data = data;
-> +
-> +		uV = max_t(unsigned long, pvc_data->old_uV, pvc_data->max_uV);
-> +	} else if (event & (REGULATOR_EVENT_VOLTAGE_CHANGE |
-> +			    REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE)) {
-> +		uV = (unsigned long)data;
-> +	} else {
-> +		return NOTIFY_OK;
-> +	}
-> +
-> +	dev_dbg(supply->iod->dev, "Setting to %d\n", uV);
-> +
-> +	if (uV > MAX_VOLTAGE_3_3) {
-> +		dev_err(supply->iod->dev, "Voltage too high: %d\n", uV);
-> +
-> +		if (event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
-> +			return NOTIFY_BAD;
-> +	}
-> +
-> +	ret = rockchip_iodomain_write(supply, uV);
-> +	if (ret && event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
-> +		return NOTIFY_BAD;
-> +
-> +	dev_info(supply->iod->dev, "Setting to %d done\n", uV);
-> +	return NOTIFY_OK;
-> +}
-> +
-> +#define RK3288_SOC_CON2			0x24c
-> +#define RK3288_SOC_CON2_FLASH0		BIT(7)
-> +#define RK3288_SOC_FLASH_SUPPLY_NUM	2
-> +
-Not a strong opinion but you can club all the defines on top
-of the file.
-
-Regards,
-Santosh
+ #define cpu_has_fpu		boot_cpu_has(X86_FEATURE_FPU)
+-#define cpu_has_vme		boot_cpu_has(X86_FEATURE_VME)
+ #define cpu_has_de		boot_cpu_has(X86_FEATURE_DE)
+ #define cpu_has_pse		boot_cpu_has(X86_FEATURE_PSE)
+ #define cpu_has_tsc		boot_cpu_has(X86_FEATURE_TSC)
+@@ -343,9 +342,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ #define cpu_has_avx2		boot_cpu_has(X86_FEATURE_AVX2)
+ #define cpu_has_ht		boot_cpu_has(X86_FEATURE_HT)
+ #define cpu_has_nx		boot_cpu_has(X86_FEATURE_NX)
+-#define cpu_has_k6_mtrr		boot_cpu_has(X86_FEATURE_K6_MTRR)
+-#define cpu_has_cyrix_arr	boot_cpu_has(X86_FEATURE_CYRIX_ARR)
+-#define cpu_has_centaur_mcr	boot_cpu_has(X86_FEATURE_CENTAUR_MCR)
+ #define cpu_has_xstore		boot_cpu_has(X86_FEATURE_XSTORE)
+ #define cpu_has_xstore_enabled	boot_cpu_has(X86_FEATURE_XSTORE_EN)
+ #define cpu_has_xcrypt		boot_cpu_has(X86_FEATURE_XCRYPT)
+@@ -380,22 +376,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
+ #define cpu_has_topoext		boot_cpu_has(X86_FEATURE_TOPOEXT)
+ 
+-#ifdef CONFIG_X86_64
+-
+-#undef  cpu_has_vme
+-#define cpu_has_vme		0
+-
+-#undef  cpu_has_k6_mtrr
+-#define cpu_has_k6_mtrr		0
+-
+-#undef  cpu_has_cyrix_arr
+-#define cpu_has_cyrix_arr	0
+-
+-#undef  cpu_has_centaur_mcr
+-#define cpu_has_centaur_mcr	0
+-
+-#endif /* CONFIG_X86_64 */
+-
+ #if __GNUC__ >= 4
+ extern void warn_pre_alternatives(void);
+ extern bool __static_cpu_has_safe(u16 bit);
+diff --git a/arch/x86/include/asm/disabled-features.h b/arch/x86/include/asm/disabled-features.h
+index 1a9955d..97534a7 100644
+--- a/arch/x86/include/asm/disabled-features.h
++++ b/arch/x86/include/asm/disabled-features.h
+@@ -10,13 +10,25 @@
+  * cpu_feature_enabled().
+  */
+ 
++#ifdef CONFIG_X86_64
++# define DISABLE_VME		(1<<(X86_FEATURE_VME & 31))
++# define DISABLE_K6_MTRR	(1<<(X86_FEATURE_K6_MTRR & 31))
++# define DISABLE_CYRIX_ARR	(1<<(X86_FEATURE_CYRIX_ARR & 31))
++# define DISABLE_CENTAUR_MCR	(1<<(X86_FEATURE_CENTAUR_MCR & 31))
++#else
++# define DISABLE_VME		0
++# define DISABLE_K6_MTRR	0
++# define DISABLE_CYRIX_ARR	0
++# define DISABLE_CENTAUR_MCR	0
++#endif /* CONFIG_X86_64 */
++
+ /*
+  * Make sure to add features to the correct mask
+  */
+-#define DISABLED_MASK0	0
++#define DISABLED_MASK0	(DISABLE_VME)
+ #define DISABLED_MASK1	0
+ #define DISABLED_MASK2	0
+-#define DISABLED_MASK3	0
++#define DISABLED_MASK3	(DISABLE_CYRIX_ARR|DISABLE_CENTAUR_MCR|DISABLE_K6_MTRR)
+ #define DISABLED_MASK4	0
+ #define DISABLED_MASK5	0
+ #define DISABLED_MASK6	0
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e4ab2b4..724d221 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1391,7 +1391,7 @@ void cpu_init(void)
+ 
+ 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 
+-	if (cpu_has_vme || cpu_has_tsc || cpu_has_de)
++	if (cpu_feature_enabled(X86_FEATURE_VME) || cpu_has_tsc || cpu_has_de)
+ 		clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+ 
+ 	load_current_idt();
+diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
+index f961de9..ea5f363 100644
+--- a/arch/x86/kernel/cpu/mtrr/main.c
++++ b/arch/x86/kernel/cpu/mtrr/main.c
+@@ -707,7 +707,7 @@ void __init mtrr_bp_init(void)
+ 	} else {
+ 		switch (boot_cpu_data.x86_vendor) {
+ 		case X86_VENDOR_AMD:
+-			if (cpu_has_k6_mtrr) {
++			if (cpu_feature_enabled(X86_FEATURE_K6_MTRR)) {
+ 				/* Pre-Athlon (K6) AMD CPU MTRRs */
+ 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
+ 				size_or_mask = SIZE_OR_MASK_BITS(32);
+@@ -715,14 +715,14 @@ void __init mtrr_bp_init(void)
+ 			}
+ 			break;
+ 		case X86_VENDOR_CENTAUR:
+-			if (cpu_has_centaur_mcr) {
++			if (cpu_feature_enabled(X86_FEATURE_CENTAUR_MCR)) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
+ 				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
+ 			}
+ 			break;
+ 		case X86_VENDOR_CYRIX:
+-			if (cpu_has_cyrix_arr) {
++			if (cpu_feature_enabled(X86_FEATURE_CYRIX_ARR)) {
+ 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
+ 				size_or_mask = SIZE_OR_MASK_BITS(32);
+ 				size_and_mask = 0;
