@@ -1,114 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237AbaIKRGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:06:07 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:46099 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215AbaIKRGF (ORCPT
+	id S1753476AbaIKRHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:07:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56073 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751761AbaIKRHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:06:05 -0400
-Date: Thu, 11 Sep 2014 19:05:54 +0200
-From: Christoffer Dall <christoffer.dall@linaro.org>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
-        will.deacon@arm.com, a.motakis@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, john.liuli@huawei.com
-Subject: Re: [RFC v2 4/9] VFIO: platform: handler tests whether the IRQ is
- forwarded
-Message-ID: <20140911170554.GB5535@lvm>
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
- <1409575968-5329-5-git-send-email-eric.auger@linaro.org>
- <20140911031000.GE2784@lvm>
- <541160D2.80400@linaro.org>
+	Thu, 11 Sep 2014 13:07:18 -0400
+Date: Thu, 11 Sep 2014 18:07:16 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+Message-ID: <20140911170716.GA6158@arm.com>
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
+ <20140911164710.GW6158@arm.com>
+ <CAD=FV=WECbZ4L=-C+F9K6kfiPUi7ar3a4a7Upq2TqDYYPGoOrA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <541160D2.80400@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAD=FV=WECbZ4L=-C+F9K6kfiPUi7ar3a4a7Upq2TqDYYPGoOrA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 10:44:02AM +0200, Eric Auger wrote:
-> On 09/11/2014 05:10 AM, Christoffer Dall wrote:
-> > On Mon, Sep 01, 2014 at 02:52:43PM +0200, Eric Auger wrote:
-> >> In case the IRQ is forwarded, the VFIO platform IRQ handler does not
-> >> need to disable the IRQ anymore. In that mode, when the handler completes
-> > 
-> > add a comma after completes
-> Hi Christoffer,
-> ok
-> > 
-> >> the IRQ is not deactivated but only its priority is lowered.
-> >>
-> >> Some other actor (typically a guest) is supposed to deactivate the IRQ,
-> >> allowing at that time a new physical IRQ to hit.
-> >>
-> >> In virtualization use case, the physical IRQ is automatically completed
-> >> by the interrupt controller when the guest completes the corresponding
-> >> virtual IRQ.
-> >>
-> >> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> >> ---
-> >>  drivers/vfio/platform/vfio_platform_irq.c | 7 ++++++-
-> >>  1 file changed, 6 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
-> >> index 6768508..1f851b2 100644
-> >> --- a/drivers/vfio/platform/vfio_platform_irq.c
-> >> +++ b/drivers/vfio/platform/vfio_platform_irq.c
-> >> @@ -88,13 +88,18 @@ static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
-> >>  	struct vfio_platform_irq *irq_ctx = dev_id;
-> >>  	unsigned long flags;
-> >>  	int ret = IRQ_NONE;
-> >> +	struct irq_data *d;
-> >> +	bool is_forwarded;
-> >>  
-> >>  	spin_lock_irqsave(&irq_ctx->lock, flags);
-> >>  
-> >>  	if (!irq_ctx->masked) {
-> >>  		ret = IRQ_HANDLED;
-> >> +		d = irq_get_irq_data(irq_ctx->hwirq);
-> >> +		is_forwarded = irqd_irq_forwarded(d);
-> >>  
-> >> -		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
-> >> +		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED &&
-> >> +						!is_forwarded) {
-> >>  			disable_irq_nosync(irq_ctx->hwirq);
-> >>  			irq_ctx->masked = true;
-> >>  		}
-> >> -- 
-> >> 1.9.1
-> >>
-> > It makes sense that these needs to be all controlled in the kernel, but
-> > I'm wondering if it would be cleaner / more correct to clear the
-> > AUTOMASKED flag when the IRQ is forwarded and have vfio refuse setting
-> > this flag as long as the irq is forwarded?
+On Thu, Sep 11, 2014 at 05:59:53PM +0100, Doug Anderson wrote:
+> On Thu, Sep 11, 2014 at 9:47 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > I'd say `Only supported for ARM' to better match what we've done. Probably
+> > also worth mentioning that this relies on the hypervisor/firmware having set
+> > CNTHCTL.PL1PCEN and CNTHCTL.EL1PCTEN (but assumedly made a mess of CNTVOFF
+> > ;) if you want to boot on the non-secure side (e.g. as a guest).
 > 
-> If I am not wrong, even if the user sets AUTOMASKED, this info never is
-> exploited by the vfio platform driver. AUTOMASKED only is set internally
-> to the driver, on init, for level sensitive IRQs.
-> 
-> It seems to be the same on PCI (for INTx). I do not see anywhere the
-> user flag curectly copied into a local storage. But I prefer to be
-> careful ;-)
-> 
-> If confirmed, although the flag value is exposed in the user API, the
-> user set value never is exploited so this removes the need to check.
-> 
-> the forwarded IRQ modality being fully dynamic currently, then I would
-> need to update the irq_ctx->flags on each vfio_irq_handler call. I don't
-> know if its better?
-> 
-I'm not an expert on vfio, so I'll leave that to Alex Williamson to
-answer, but I'm just worried that we need to special-case the forwarded
-IRQ here, and if that may get lost elsewhere in the vfio code.  If the
-AUTOMASKED flag covers specifically this behavior, then why don't we
-simply clear/set that flag when forwarding/unforwarding the specific
-IRQ?
+> Note that the reset value of CNTHCTL.PL1PCEN and CNTHCTL.PL1PCTEN are
+> both 1 in my version of the ARM ARM.  On the other hand CNTVOFF is
+> documented to have an UNKNOWN reset value.  If only ARM had guaranteed
+> that CNTVOFF started out as 0 (which seems like it would have been
+> sensible) we wouldn't be in this mess.  :-/
 
--Christoffer
+I'm afraid we went the opposite way -- in ARMv8 there are a tiny handful
+of EL3 registers that are well-defined out of reset, then the rest of the
+system is UNKNOWN. The hardware guys prefer that and it can also be useful
+for very low-level debugging (system crashes, do a reset, read out the
+state).
+
+Will
