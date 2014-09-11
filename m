@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188AbaIKNf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:35:56 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:45406 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaIKNfz (ORCPT
+	id S1754470AbaIKNgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:36:39 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16233 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400AbaIKNgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:35:55 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1410442536.32328.1.camel@hadess.net>
-Subject: [regression] Failed boot with 3.17rc0 on Baytrail tablet
-From: Bastien Nocera <hadess@hadess.net>
-To: linux-kernel@vger.kernel.org
-Date: Thu, 11 Sep 2014 15:35:36 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5 (3.12.5-2.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Sep 2014 09:36:37 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-71-5411a563312a
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Date: Thu, 11 Sep 2014 15:36:31 +0200
+Message-id: <4127129.ClfhyhZXo5@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140911124248.GA18490@dhcp-27-160.brq.redhat.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+ <20130521235003.GE6985@mtj.dyndns.org>
+ <20140911124248.GA18490@dhcp-27-160.brq.redhat.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t9jAd3kpYIhBqvuGlu8fH6azeLYjkdM
+	Fpd3zWGz+LX8KKMDi8emVZ1sHu/3XWXz+LxJLoA5issmJTUnsyy1SN8ugSvj5+1W1oKvHBUv
+	j5xnamCcwN7FyMkhIWAi8ezSayhbTOLCvfVsXYxcHEICixglrnRMZ4FwWpgk1rTvYgWpYhOw
+	kpjYvooRxBYR0JZo2/wNrJtZIEJi97HJYDXCAs4S8//vZwKxWQRUJa7sPMEMYvMKaEq8+zYR
+	rFdUwFNix/aVbCA2p4CDxP7e/awQy6YySryd0cQG0SAo8WPyPRaIBfIS+/ZPZYWwtSTW7zzO
+	NIFRYBaSsllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhsn0ntYFzZYHGI
+	UYCDUYmHt4JFMESINbGsuDL3EKMEB7OSCK/zQqAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt
+	1oFCAumJJanZqakFqUUwWSYOTqkGRs9e82V+lUphlZ7/2i5onK6eqqTfsbCatf1T3Jz7/CxT
+	6kWV5zM1rWY4yKG2qt3d+BOr1bbzDgoPtp3Oc+0P3XXZ9IHc/a3Fn5Pul/U9YDyydlpds1vB
+	i91ZvLzh4fNuOXtLuy9et4+9l7sshX2apt/i85fYYmZv/mpUv6ukR+L6z5QA+fW3lFiKMxIN
+	tZiLihMBSLo7KlcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
 
-Sorry about the wide distribution of this bug, but the mode of failure
-makes it particularly hard to search for, be it in Bugzilla or search
-engines. That's the failure:
-https://bugzilla.kernel.org/attachment.cgi?id=149781
+Hi,
 
-My Baytrail tablet, running a 32-bit UEFI, fails to boot with the
-earliest 3.17 rc0 kernels and still with the newer 3.17 versions, though
-3.16.0 worked as expected.
+On Thursday, September 11, 2014 02:42:49 PM Alexander Gordeev wrote:
 
-I believe that Adam Williamson had the same problem on his Dell Venue 8
-Pro tablet.
+> The numbers are taken by running 'dd if=/dev/sd{a,b} of=/dev/null'
+> in parallel. All time values are in us.
+> 
+> Before this update host lock average holdtime was 2.45 and
+> average waittime was 1.24. After the update average holdtime
+> dropped to 0.29 (about eight times) while average waittime
+> decreased to 0.58 (about two times).
+> 
+> Also, port events are handled with local interrupts enabled
+> and compete on individual per-port locks with average holdtime
+> 1.25 and average waittime 1.48. So combined average holdtime
+> spent while holding host and port locks decreased from 2.45 to
+> 0.29 + 1.25 = 1.54 (about 1.6 times).
+> 
+> The downside of this change is introduction of a kernel thread.
+> 
+> The upside is shorter access time to port locks and moving port
+> interrupts handling out of the hardware interrupt context.
 
-I filed a bug here:
-https://bugzilla.kernel.org/show_bug.cgi?id=84241
-with a little more detail.
+IMHO it would be great to put the above results into the patch
+description (it now looks a bit skimpy).
 
-Any ideas about what could be wrong, or pointers to existing
-discussions?
-
-Cheers
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
