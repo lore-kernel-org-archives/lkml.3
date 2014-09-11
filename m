@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaIKMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:32:26 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:49428 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaIKMcX (ORCPT
+	id S1755264AbaIKMbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:31:41 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:47846 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755008AbaIKM3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:32:23 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
-        Chris Zhong <zyw@rock-chips.com>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        zhaoyifeng <zyf@rock-chips.com>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-Date: Thu, 11 Sep 2014 14:32:08 +0200
-Message-ID: <40514790.Xc34lyFLGa@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140911121842.GB26715@developer>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com> <1410403012.25559.69.camel@rzhang1-toshiba> <20140911121842.GB26715@developer>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:S1hsm6ZsnHTZhR9lpuBHZa0JZZLRV5TFXJLw/gcIvV2
- 169JWLWfoQQ1OG17AMeVppjXlRWKKa6rq9f4p8R28YunH09K3+
- OVusjZaZIXcwff7ZwLbc+c1MM/6Xss5C47LndUErVdfrrp8cq9
- oaU21bbayTWZfJJbAbyvFfUC2LjpJvpBbF61whyJM3+I2NUi3i
- wGcycJuGpBjqgtvCQCnktkndiQIDdEKZb6uPEhC+Z8BNNNxdiq
- hSH8PU0qv1/as/9C26uO0iXOQqyTZfBEUm+9iUNwqnEBhDVJzb
- cbcWdrCOIaY8NCBrL/+aKlizOjN7JLVFpq9tAzd8jyu93Y75Rq
- 7woemslhxp9lHi9De5D0=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 11 Sep 2014 08:29:18 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 7/9] drbd: Improve asender performance
+Date: Thu, 11 Sep 2014 14:29:11 +0200
+Message-Id: <1410438553-30440-8-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
+References: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 September 2014 08:18:43 Eduardo Valentin wrote:
-> > As what we want is to make thermal driver have a chance to configure the
-> > hardware shutdown registers, I'm thinking if we can do this without
-> > representing the hardware shutdown value as a trip point.
-> > Say,
-> > 1. parse DT, and get the hardware shutdown temperature value, and store
-> > it somewhere, e.g. struct __thermal_zone.
-> > 2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
-> > in thermal_zone_of_sensor_register().
-> > 3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
-> > thermal_zone_of_sensor_register().
-> 
-> The only issue I have with the above proposal is that not all platforms
-> use DT. Some still boot with boardfiles, for instance. Thus, the
-> parameter to configure hardware thermal shutdown needs to be common on
-> thermal core, not specific to of-thermal. Do you agree?
+From: Lars Ellenberg <lars@linbit.com>
 
-Do you know of a machine that can't yet be converted to DT and that
-needs this driver? In case of rockchips that is certainly not the
-case, and we don't care about anybody trying to use board files out
-of tree, they can just hack the thermal support as well.
+Shorten receive path in the asender thread. Reduces CPU utilisation
+of asender when receiving packets, and with that increases IOPs.
 
-	Arnd
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_receiver.c |  6 ++++++
+ drivers/block/drbd/drbd_worker.c   | 11 +----------
+ 2 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 3ae769e..6960fb0 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -5561,6 +5561,7 @@ int drbd_asender(struct drbd_thread *thi)
+ 		 * rv <  expected: "woken" by signal during receive
+ 		 * rv == 0	 : "connection shut down by peer"
+ 		 */
++received_more:
+ 		if (likely(rv > 0)) {
+ 			received += rv;
+ 			buf	 += rv;
+@@ -5636,6 +5637,11 @@ int drbd_asender(struct drbd_thread *thi)
+ 			expect	 = header_size;
+ 			cmd	 = NULL;
+ 		}
++		if (test_bit(SEND_PING, &connection->flags))
++			continue;
++		rv = drbd_recv_short(connection->meta.socket, buf, expect-received, MSG_DONTWAIT);
++		if (rv > 0)
++			goto received_more;
+ 	}
+ 
+ 	if (0) {
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 3b74f08..3ed2d87 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -1994,22 +1994,13 @@ static bool dequeue_work_batch(struct drbd_work_queue *queue, struct list_head *
+ 	return !list_empty(work_list);
+ }
+ 
+-static bool dequeue_work_item(struct drbd_work_queue *queue, struct list_head *work_list)
+-{
+-	spin_lock_irq(&queue->q_lock);
+-	if (!list_empty(&queue->q))
+-		list_move(queue->q.next, work_list);
+-	spin_unlock_irq(&queue->q_lock);
+-	return !list_empty(work_list);
+-}
+-
+ static void wait_for_work(struct drbd_connection *connection, struct list_head *work_list)
+ {
+ 	DEFINE_WAIT(wait);
+ 	struct net_conf *nc;
+ 	int uncork, cork;
+ 
+-	dequeue_work_item(&connection->sender_work, work_list);
++	dequeue_work_batch(&connection->sender_work, work_list);
+ 	if (!list_empty(work_list))
+ 		return;
+ 
+-- 
+1.9.1
+
