@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756AbaIKSK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 14:10:56 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:54433 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaIKSKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 14:10:54 -0400
-Date: Thu, 11 Sep 2014 13:10:34 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
- namespaces
-Message-ID: <20140911181034.GA58733@ubuntu-hedt>
-Mail-Followup-To: "Serge E. Hallyn" <serge@hallyn.com>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Serge Hallyn <serge.hallyn@ubuntu.com>,
-	fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <1409672696-15847-1-git-send-email-seth.forshee@canonical.com>
- <20140910123525.GA29064@ubuntu-hedt>
- <20140910162155.GA7748@mail.hallyn.com>
- <20140910164212.GA32587@ubuntu-hedt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140910164212.GA32587@ubuntu-hedt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754119AbaIKSMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 14:12:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24813 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424AbaIKSME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 14:12:04 -0400
+Message-ID: <1410458863.2982.320.camel@ul30vt.home>
+Subject: Re: [RFC v2 4/9] VFIO: platform: handler tests whether the IRQ is
+ forwarded
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
+        marc.zyngier@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org, joel.schopp@amd.com,
+        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
+        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, john.liuli@huawei.com
+Date: Thu, 11 Sep 2014 12:07:43 -0600
+In-Reply-To: <20140911170554.GB5535@lvm>
+References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
+	 <1409575968-5329-5-git-send-email-eric.auger@linaro.org>
+	 <20140911031000.GE2784@lvm> <541160D2.80400@linaro.org>
+	 <20140911170554.GB5535@lvm>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:42:12AM -0500, Seth Forshee wrote:
-> On Wed, Sep 10, 2014 at 06:21:55PM +0200, Serge E. Hallyn wrote:
-> > Quoting Seth Forshee (seth.forshee@canonical.com):
-> > > On Tue, Sep 02, 2014 at 10:44:53AM -0500, Seth Forshee wrote:
-> > > > Another issue mentioned by Eric was what to use for i_[ug]id if the ids
-> > > > from userspace don't map into the user namespace, which is going to be a
-> > > > problem for any other filesystems which become mountable from user
-> > > > namespaces as well. We discussed a few options for addressing this, the
-> > > > most promising of which seems to be either using INVALID_[UG]ID for
-> > > > these inodes or creating vfs-wide "nobody" ids for this purpose. After
-> > > > thinking about it for a while I'm favoring using the invalid ids, but
-> > > > I'm hoping to solicit some more feedback.
-> > > > 
-> > > > For now these patches are using invalid ids if the user doesn't map into
-> > > > the namespace. I went through the vfs code and found one place where
-> > > > this could be handled better (addressed in patch 1 of the series). The
-> > > > only other issue I found was that currently no one, not even root, can
-> > > > change onwership of such inodes, but I suspect we can find a way around
-> > > > this.
+On Thu, 2014-09-11 at 19:05 +0200, Christoffer Dall wrote:
+> On Thu, Sep 11, 2014 at 10:44:02AM +0200, Eric Auger wrote:
+> > On 09/11/2014 05:10 AM, Christoffer Dall wrote:
+> > > On Mon, Sep 01, 2014 at 02:52:43PM +0200, Eric Auger wrote:
+> > >> In case the IRQ is forwarded, the VFIO platform IRQ handler does not
+> > >> need to disable the IRQ anymore. In that mode, when the handler completes
 > > > 
-> > > I started playing around with using -2 as a global nobody id. The
-> > > changes below (made on top of this series) are working fine in light
-> > > testing. I'm still not sure about the security implications of doing
-> > > this though. Possibly the nobody id should be removed from init_user_ns
-> > > to prevent any use of the id to gain unauthroized access to such files.
-> > > Thoughts?
+> > > add a comma after completes
+> > Hi Christoffer,
+> > ok
+> > > 
+> > >> the IRQ is not deactivated but only its priority is lowered.
+> > >>
+> > >> Some other actor (typically a guest) is supposed to deactivate the IRQ,
+> > >> allowing at that time a new physical IRQ to hit.
+> > >>
+> > >> In virtualization use case, the physical IRQ is automatically completed
+> > >> by the interrupt controller when the guest completes the corresponding
+> > >> virtual IRQ.
+> > >>
+> > >> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+> > >> ---
+> > >>  drivers/vfio/platform/vfio_platform_irq.c | 7 ++++++-
+> > >>  1 file changed, 6 insertions(+), 1 deletion(-)
+> > >>
+> > >> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+> > >> index 6768508..1f851b2 100644
+> > >> --- a/drivers/vfio/platform/vfio_platform_irq.c
+> > >> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+> > >> @@ -88,13 +88,18 @@ static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+> > >>  	struct vfio_platform_irq *irq_ctx = dev_id;
+> > >>  	unsigned long flags;
+> > >>  	int ret = IRQ_NONE;
+> > >> +	struct irq_data *d;
+> > >> +	bool is_forwarded;
+> > >>  
+> > >>  	spin_lock_irqsave(&irq_ctx->lock, flags);
+> > >>  
+> > >>  	if (!irq_ctx->masked) {
+> > >>  		ret = IRQ_HANDLED;
+> > >> +		d = irq_get_irq_data(irq_ctx->hwirq);
+> > >> +		is_forwarded = irqd_irq_forwarded(d);
+> > >>  
+> > >> -		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
+> > >> +		if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED &&
+> > >> +						!is_forwarded) {
+> > >>  			disable_irq_nosync(irq_ctx->hwirq);
+> > >>  			irq_ctx->masked = true;
+> > >>  		}
+> > >> -- 
+> > >> 1.9.1
+> > >>
+> > > It makes sense that these needs to be all controlled in the kernel, but
+> > > I'm wondering if it would be cleaner / more correct to clear the
+> > > AUTOMASKED flag when the IRQ is forwarded and have vfio refuse setting
+> > > this flag as long as the irq is forwarded?
 > > 
-> > Can you explain the downsides of just using -1?  What are we able to do
-> > (as a fuse-in-container user) when we use -2 that we can't do when it
-> > uses -1?
-> 
-> The thing that happens with -1 is that checks like
-> capable_wrt_inode_uidgid() always fail on those inodes because
-> INVALID_UID isn't ever mapped into any namespace, even if you're
-> system-wide root. If we use a real id this check would at least pass in
-> init_user_ns, assuming that we don't have to remove -2 from init_user_ns
-> for security reasons.
-> 
-> Or we could modify these checks so that CAP_SYS_ADMIN always gets
-> permission or something like that, which might be the better way to go.
+> > If I am not wrong, even if the user sets AUTOMASKED, this info never is
+> > exploited by the vfio platform driver. AUTOMASKED only is set internally
+> > to the driver, on init, for level sensitive IRQs.
+> > 
+> > It seems to be the same on PCI (for INTx). I do not see anywhere the
+> > user flag curectly copied into a local storage. But I prefer to be
+> > careful ;-)
+> > 
+> > If confirmed, although the flag value is exposed in the user API, the
+> > user set value never is exploited so this removes the need to check.
+> > 
+> > the forwarded IRQ modality being fully dynamic currently, then I would
+> > need to update the irq_ctx->flags on each vfio_irq_handler call. I don't
+> > know if its better?
+> > 
+> I'm not an expert on vfio, so I'll leave that to Alex Williamson to
+> answer, but I'm just worried that we need to special-case the forwarded
+> IRQ here, and if that may get lost elsewhere in the vfio code.  If the
+> AUTOMASKED flag covers specifically this behavior, then why don't we
+> simply clear/set that flag when forwarding/unforwarding the specific
+> IRQ?
 
-This ought to do (untested as of yet). I think I like this best, but I'm
-also interested in hearing what Eric has to say.
+The way that VFIO_IRQ_INFO_AUTOMASKED is being used here is unique to
+the platform device vfio backend.  In the rest of VFIO,
+VFIO_IRQ_INFO_AUTOMASKED is simply a flag bit exposed via
+VFIO_DEVICE_GET_IRQ_INFO.  The flags field of struct vfio_irq_info is
+output-only.  vfio-pci knows by the IRQ index whether it is edge or
+level.  I do agree though that changing the flag bit, or better yet a
+bool, rather than adding extra tests that need to be handled as each
+usage seems less error prone.
 
+Things could get confusing for userspace though if suddenly
+VFIO_DEVICE_GET_IRQ_INFO starts calling the index edge triggered once
+forwarding mode is enabled.  Thanks,
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 26753ba7b6d6..1029320ff029 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -1840,6 +1840,9 @@ bool inode_owner_or_capable(const struct inode *inode)
- {
-        struct user_namespace *ns;
- 
-+       if (capable(CAP_SYS_ADMIN))
-+               return true;
-+
-        if (uid_eq(current_fsuid(), inode->i_uid))
-                return true;
- 
-diff --git a/kernel/capability.c b/kernel/capability.c
-index 989f5bfc57dc..a472eaa52b6a 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -438,8 +438,12 @@ EXPORT_SYMBOL(capable);
-  */
- bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
- {
--       struct user_namespace *ns = current_user_ns();
-+       struct user_namespace *ns;
- 
-+       if (capable(CAP_SYS_ADMIN))
-+               return true;
-+
-+       ns = current_user_ns();
-        return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
-                kgid_has_mapping(ns, inode->i_gid);
- }
+Alex
 
