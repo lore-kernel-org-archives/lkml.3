@@ -1,61 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaIKIpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:45:32 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19726 "EHLO mga09.intel.com"
+	id S1753900AbaIKIrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:47:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50884 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509AbaIKIp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:45:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="601339986"
-Message-ID: <54116106.5090904@linux.intel.com>
-Date: Thu, 11 Sep 2014 16:44:54 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753315AbaIKIrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:47:05 -0400
+Date: Thu, 11 Sep 2014 10:46:59 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: acme@kernel.org, linux-kernel@vger.kernel.org, ak@linux.intel.com
+Subject: Re: [PATCH V5 2/3] perf tools: parse the pmu event prefix and surfix
+Message-ID: <20140911084659.GA7326@krava.brq.redhat.com>
+References: <1410371732-1185-1-git-send-email-kan.liang@intel.com>
+ <1410371732-1185-2-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Ask help about pre_init_apic_IRQ0()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410371732-1185-2-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Wed, Sep 10, 2014 at 01:55:31PM -0400, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
+> 
 
-When converting IOAPIC to hierarchy irqdomain, I ran into trouble when
-dealing with pre_init_apic_IRQ0(). Currently pre_init_apic_IRQ0() is
-only used by intel-mid platform and is called before initializing of
-IOAPIC irqdomains. That really causes headache when converting to
-hierarchy irqdomain. So could we delay
-	io_apic_setup_irq_pin(0, 0, &attr);
-        irq_set_chip_and_handler_name(0, &ioapic_chip, handle_edge_irq,
-                                      "edge");
-to the point of "check_timer()"?
+SNIP
 
-I have no MID hardware at handle so can't experiment with it. Could
-you please refer someone for help?
+>  	return 0;
+>  }
+>  
+> +static int
+> +comp_pmu(const void *p1, const void *p2)
+> +{
+> +	struct perf_pmu_event_symbol *pmu1 =
+> +			(struct perf_pmu_event_symbol *) p1;
+> +	struct perf_pmu_event_symbol *pmu2 =
+> +			(struct perf_pmu_event_symbol *) p2;
+> +
+> +	return strcmp(pmu1->symbol, pmu2->symbol);
+> +}
+> +
+> +/*
+> + * Read the pmu events list from sysfs
+> + * Save it into perf_pmu_events_list
+> + */
+> +static void perf_pmu__parse_init(void)
+> +{
+> +
+> +	struct perf_pmu *pmu = NULL;
+> +	struct perf_pmu_alias *alias;
+> +	int len = 0;
+> +
 
-/* Enable IOAPIC early just for system timer */
-void __init pre_init_apic_IRQ0(void)
-{
-        struct io_apic_irq_attr attr = { 0, 0, 0, 0 };
+missing my previous comment being addressed:
 
-        printk(KERN_INFO "Early APIC setup for system timer0\n");
-#ifndef CONFIG_SMP
-        physid_set_mask_of_physid(boot_cpu_physical_apicid,
-                                         &phys_cpu_present_map);
-#endif
-        setup_local_APIC();
+---
+Why do we need to call scan here? Looks like:
+  pmu = pmu_lookup("cpu")
 
-        io_apic_setup_irq_pin(0, 0, &attr);
-        irq_set_chip_and_handler_name(0, &ioapic_chip, handle_edge_irq,
-                                      "edge");
-}
+should be enough.. and could be used below as well
+---
 
-Regards!
-Gerry
+or commented why not to do it..
+
+jirka
+
+> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+> +		list_for_each_entry(alias, &pmu->aliases, list) {
+> +			if (!strcmp(pmu->name, "cpu")) {
+> +				if (strchr(alias->name, '-'))
+> +					len++;
+> +				len++;
+> +			}
+> +	}
+> +	if (len == 0)
+> +		return;
+> +	perf_pmu_events_list =
+> +		malloc(sizeof(struct perf_pmu_event_symbol) * len);
+> +	perf_pmu_events_list_num = len;
+> +
+> +	pmu = NULL;
+> +	len = 0;
+> +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
+> +		list_for_each_entry(alias, &pmu->aliases, list) {
+> +			if (!strcmp(pmu->name, "cpu")) {
+> +				struct perf_pmu_event_symbol *p =
+> +					perf_pmu_events_list + len;
+> +				char *tmp = strchr(alias->name, '-');
+> +
+> +				if (tmp != NULL) {
+> +					p->symbol =
+> +						malloc(tmp - alias->name + 1);
+> +					strlcpy(p->symbol, alias->name,
+> +						tmp - alias->name + 1);
+> +					p->type = KERNEL_PMU_EVENT_PREFIX;
+> +					tmp++;
+> +					p++;
+> +					p->symbol = malloc(strlen(tmp) + 1);
+> +					strcpy(p->symbol, tmp);
+> +					p->type = KERNEL_PMU_EVENT_SUFFIX;
+> +					len += 2;
+> +				} else {
+> +					p->symbol =
+> +						malloc(strlen(alias->name) + 1);
+> +					strcpy(p->symbol, alias->name);
+> +					p->type = KERNEL_PMU_EVENT;
+> +					len++;
+> +				}
+> +			}
+> +		}
+> +	qsort(perf_pmu_events_list, len,
+> +		sizeof(struct perf_pmu_event_symbol), comp_pmu);
+> +
+> +}
+> +
+
+SNIP
