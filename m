@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaIKDKT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 23:10:19 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:39496 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaIKDKN (ORCPT
+	id S1753154AbaIKDK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 23:10:26 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50496 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaIKDKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 23:10:13 -0400
-Date: Thu, 11 Sep 2014 05:10:11 +0200
+	Wed, 10 Sep 2014 23:10:23 -0400
+Date: Thu, 11 Sep 2014 05:10:20 +0200
 From: Christoffer Dall <christoffer.dall@linaro.org>
 To: Eric Auger <eric.auger@linaro.org>
 Cc: eric.auger@st.com, marc.zyngier@arm.com,
@@ -17,98 +17,128 @@ Cc: eric.auger@st.com, marc.zyngier@arm.com,
         pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
         will.deacon@arm.com, a.motakis@virtualopensystems.com,
         a.rigo@virtualopensystems.com, john.liuli@huawei.com
-Subject: Re: [RFC v2 6/9] VFIO: Extend external user API
-Message-ID: <20140911031011.GG2784@lvm>
+Subject: Re: [RFC v2 7/9] KVM: KVM-VFIO: add new VFIO external API hooks
+Message-ID: <20140911031020.GH2784@lvm>
 References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org>
- <1409575968-5329-7-git-send-email-eric.auger@linaro.org>
+ <1409575968-5329-8-git-send-email-eric.auger@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1409575968-5329-7-git-send-email-eric.auger@linaro.org>
+In-Reply-To: <1409575968-5329-8-git-send-email-eric.auger@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 01, 2014 at 02:52:45PM +0200, Eric Auger wrote:
-> New functions are added to be called from ARM KVM-VFIO device.
+On Mon, Sep 01, 2014 at 02:52:46PM +0200, Eric Auger wrote:
+> add functions that implement the gateway to the extended
 
-This commit message seems somewhat random.  This patch doesn't deal with
-anything ARM specific, it introduces some generic functions that allows
-users external to vfio itself to retrieve information about a vfio
-platform device.
+Capital letter when beginning a new sentence.  Also the reference to
+'the extended VFIO API' feels a bit weird.  Can't you make your commit
+message a little more descriptive of this patch, something along the
+lines of:
 
-> 
-> - vfio_device_get_external_user enables to get a vfio device from
->   its fd
-> - vfio_device_put_external_user puts the vfio device
-> - vfio_external_base_device returns the struct device*,
->   useful to access the platform_device
+Provide wrapper functions that allows KVM-VFIO device code to get an
+external handle on a struct vfio_device based on a vfio device file
+descriptor.  We provide this through three new functions:
+
+(assuming I got this right).
+
+
+
+> external VFIO API:
+> - kvm_vfio_device_get_external_user
+> - kvm_vfio_device_put_external_user
+> - kvm_vfio_external_base_device
 > 
 > Signed-off-by: Eric Auger <eric.auger@linaro.org>
 > 
 > ---
 > 
 > v1 -> v2:
-> 
-> - vfio_external_get_base_device renamed into vfio_external_base_device
-> - vfio_external_get_type removed
+> - kvm_vfio_external_get_base_device renamed into
+>   kvm_vfio_external_base_device
+> - kvm_vfio_external_get_type removed
 > ---
->  drivers/vfio/vfio.c  | 24 ++++++++++++++++++++++++
->  include/linux/vfio.h |  3 +++
->  2 files changed, 27 insertions(+)
+>  arch/arm/include/asm/kvm_host.h |  5 +++++
+>  virt/kvm/vfio.c                 | 45 +++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 50 insertions(+)
 > 
-> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-> index 8e84471..282814e 100644
-> --- a/drivers/vfio/vfio.c
-> +++ b/drivers/vfio/vfio.c
-> @@ -1401,6 +1401,30 @@ void vfio_group_put_external_user(struct vfio_group *group)
->  }
->  EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
+> diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
+> index 6dfb404..1aee6bb 100644
+> --- a/arch/arm/include/asm/kvm_host.h
+> +++ b/arch/arm/include/asm/kvm_host.h
+> @@ -171,6 +171,11 @@ void kvm_set_spte_hva(struct kvm *kvm, unsigned long hva, pte_t pte);
+>  unsigned long kvm_arm_num_regs(struct kvm_vcpu *vcpu);
+>  int kvm_arm_copy_reg_indices(struct kvm_vcpu *vcpu, u64 __user *indices);
 >  
-> +struct vfio_device *vfio_device_get_external_user(struct file *filep)
-> +{
-> +	struct vfio_device *vdev = filep->private_data;
+> +struct vfio_device;
+> +struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep);
+> +void kvm_vfio_device_put_external_user(struct vfio_device *vdev);
+> +struct device *kvm_vfio_external_base_device(struct vfio_device *vdev);
 > +
-> +	if (filep->f_op != &vfio_device_fops)
+>  /* We do not have shadow page tables, hence the empty hooks */
+>  static inline int kvm_age_hva(struct kvm *kvm, unsigned long hva)
+>  {
+> diff --git a/virt/kvm/vfio.c b/virt/kvm/vfio.c
+> index ba1a93f..76dc7a1 100644
+> --- a/virt/kvm/vfio.c
+> +++ b/virt/kvm/vfio.c
+> @@ -59,6 +59,51 @@ static void kvm_vfio_group_put_external_user(struct vfio_group *vfio_group)
+>  	symbol_put(vfio_group_put_external_user);
+>  }
+>  
+> +struct vfio_device *kvm_vfio_device_get_external_user(struct file *filep)
+> +{
+> +	struct vfio_device *vdev;
+> +	struct vfio_device *(*fn)(struct file *);
+> +
+> +	fn = symbol_get(vfio_device_get_external_user);
+> +	if (!fn)
 > +		return ERR_PTR(-EINVAL);
 > +
-> +	vfio_device_get(vdev);
+> +	vdev = fn(filep);
+> +
+> +	symbol_put(vfio_device_get_external_user);
+> +
 > +	return vdev;
 > +}
-> +EXPORT_SYMBOL_GPL(vfio_device_get_external_user);
 > +
-> +void vfio_device_put_external_user(struct vfio_device *vdev)
+> +void kvm_vfio_device_put_external_user(struct vfio_device *vdev)
 > +{
-> +	vfio_device_put(vdev);
-> +}
-> +EXPORT_SYMBOL_GPL(vfio_device_put_external_user);
+> +	void (*fn)(struct vfio_device *);
 > +
-> +struct device *vfio_external_base_device(struct vfio_device *vdev)
+> +	fn = symbol_get(vfio_device_put_external_user);
+> +	if (!fn)
+> +		return;
+> +
+> +	fn(vdev);
+> +
+> +	symbol_put(vfio_device_put_external_user);
+> +}
+> +
+> +struct device *kvm_vfio_external_base_device(struct vfio_device *vdev)
 > +{
-> +	return vdev->dev;
-> +}
-> +EXPORT_SYMBOL_GPL(vfio_external_base_device);
+> +	struct device *(*fn)(struct vfio_device *);
+> +	struct device *dev;
 > +
->  int vfio_external_user_iommu_id(struct vfio_group *group)
+> +	fn = symbol_get(vfio_external_base_device);
+> +	if (!fn)
+> +		return NULL;
+> +
+> +	dev = fn(vdev);
+> +
+> +	symbol_put(vfio_external_base_device);
+> +
+> +	return dev;
+> +}
+> +
+>  static bool kvm_vfio_group_is_coherent(struct vfio_group *vfio_group)
 >  {
->  	return iommu_group_id(group->iommu_group);
-> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-> index ffe04ed..bd4b6cb 100644
-> --- a/include/linux/vfio.h
-> +++ b/include/linux/vfio.h
-> @@ -99,6 +99,9 @@ extern void vfio_group_put_external_user(struct vfio_group *group);
->  extern int vfio_external_user_iommu_id(struct vfio_group *group);
->  extern long vfio_external_check_extension(struct vfio_group *group,
->  					  unsigned long arg);
-> +extern struct vfio_device *vfio_device_get_external_user(struct file *filep);
-> +extern void vfio_device_put_external_user(struct vfio_device *vdev);
-> +extern struct device *vfio_external_base_device(struct vfio_device *vdev);
->  
->  struct pci_dev;
->  #ifdef CONFIG_EEH
+>  	long (*fn)(struct vfio_group *, unsigned long);
 > -- 
 > 1.9.1
 > 
-Looks good to me,
+
+otherwise looks good to me!
 -Christoffer
