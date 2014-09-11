@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515AbaIKMmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:42:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51650 "EHLO
+	id S1755987AbaIKMn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:43:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51657 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755441AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755445AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mario" <fugazzi99@gmail.com>,
-        "Takashi Iwai" <tiwai@suse.de>, "corubba" <corubba@gmx.de>,
-        "Clemens Ladisch" <clemens@ladisch.de>
+CC: akpm@linux-foundation.org, "Sergiu Giurgiu" <sgiurgiu11@gmail.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.639722099@decadent.org.uk>
+Message-ID: <lsq.1410438733.233889257@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 048/131] ALSA: virtuoso: add Xonar Essence STX II support
+Subject: [PATCH 3.2 047/131] ALSA: virtuoso: Xonar DSX support
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,87 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Sergiu Giurgiu <sgiurgiu11@gmail.com>
 
-commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
+commit 4492363251235c4499a2d073c5f09121ea23d39d upstream.
 
-Just add the PCI ID for the STX II.  It appears to work the same as the
-STX, except for the addition of the not-yet-supported daughterboard.
+This patch adds support for ASUS - Xonar DSX sound cards. Tested on
+openSUSE 12.2 with kernel:
+Linux 3.4.6-2.10-desktop #1 SMP PREEMPT Thu Jul 26 09:36:26 UTC 2012 (641c197) x86_64 x86_64 x86_64 GNU/Linux
+Works:
+ - play sounds
+ - adjust volume on master channel.
+ - mute .
 
-Tested-by: Mario <fugazzi99@gmail.com>
-Tested-by: corubba <corubba@gmx.de>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Since Xonar DS uses the same chip, everything that works for DS should
+work for DSX as well.
+
+Signed-off-by: Sergiu Giurgiu <sgiurgiu11@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/sound/alsa/ALSA-Configuration.txt |  4 ++--
- sound/pci/Kconfig                               |  4 ++--
- sound/pci/oxygen/virtuoso.c                     |  1 +
- sound/pci/oxygen/xonar_pcm179x.c                | 12 ++++++++++--
- 4 files changed, 15 insertions(+), 6 deletions(-)
+ sound/pci/oxygen/virtuoso.c     | 1 +
+ sound/pci/oxygen/xonar_wm87x6.c | 6 +++++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
---- a/Documentation/sound/alsa/ALSA-Configuration.txt
-+++ b/Documentation/sound/alsa/ALSA-Configuration.txt
-@@ -2018,8 +2018,8 @@ Prior to version 0.9.0rc4 options had a
-   -------------------
- 
-     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
--    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
--    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
-+    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
-+    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
- 
-     This module supports autoprobe and multiple cards.
- 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -852,8 +852,8 @@ config SND_VIRTUOSO
- 	select SND_JACK if INPUT=y || INPUT=SND
- 	help
- 	  Say Y here to include support for sound cards based on the
--	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
--	  Essence ST (Deluxe), and Essence STX.
-+	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
-+	  Essence ST (Deluxe), and Essence STX (II).
- 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
- 	  for the Xense, missing.
- 
 --- a/sound/pci/oxygen/virtuoso.c
 +++ b/sound/pci/oxygen/virtuoso.c
-@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
+@@ -52,6 +52,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x835d) },
  	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
  	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
- 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
-+	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
++	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
  	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
  	{ }
  };
---- a/sound/pci/oxygen/xonar_pcm179x.c
-+++ b/sound/pci/oxygen/xonar_pcm179x.c
-@@ -100,8 +100,8 @@
-  */
+--- a/sound/pci/oxygen/xonar_wm87x6.c
++++ b/sound/pci/oxygen/xonar_wm87x6.c
+@@ -1255,7 +1255,6 @@ static void dump_wm87x6_registers(struct
+ }
  
- /*
-- * Xonar Essence ST (Deluxe)/STX
-- * -----------------------------
-+ * Xonar Essence ST (Deluxe)/STX (II)
-+ * ----------------------------------
-  *
-  * CMI8788:
-  *
-@@ -1137,6 +1137,14 @@ int __devinit get_xonar_pcm179x_model(st
- 		chip->model.init = xonar_stx_init;
- 		chip->model.resume = xonar_stx_resume;
- 		chip->model.set_dac_params = set_pcm1796_params;
+ static const struct oxygen_model model_xonar_ds = {
+-	.shortname = "Xonar DS",
+ 	.longname = "Asus Virtuoso 66",
+ 	.chip = "AV200",
+ 	.init = xonar_ds_init,
+@@ -1325,6 +1324,11 @@ int __devinit get_xonar_wm87x6_model(str
+ 	switch (id->subdevice) {
+ 	case 0x838e:
+ 		chip->model = model_xonar_ds;
++		chip->model.shortname = "Xonar DS";
 +		break;
-+	case 0x85f4:
-+		chip->model = model_xonar_st;
-+		/* TODO: daughterboard support */
-+		chip->model.shortname = "Xonar STX II";
-+		chip->model.init = xonar_stx_init;
-+		chip->model.resume = xonar_stx_resume;
-+		chip->model.set_dac_params = set_pcm1796_params;
++	case 0x8522:
++		chip->model = model_xonar_ds;
++		chip->model.shortname = "Xonar DSX";
  		break;
- 	default:
- 		return -EINVAL;
+ 	case 0x835e:
+ 		chip->model = model_xonar_hdav_slim;
 
