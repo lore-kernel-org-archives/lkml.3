@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaIKXgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:36:22 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:37325 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaIKXgV (ORCPT
+	id S1753534AbaIKXhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:37:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44273 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550AbaIKXhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:36:21 -0400
-Date: Fri, 12 Sep 2014 01:36:17 +0200
-From: Arianna Avanzini <avanzini.arianna@gmail.com>
-To: David Vrabel <david.vrabel@citrix.com>
-Cc: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        bob.liu@oracle.com, felipe.franciosi@citrix.com, axboe@fb.com
-Subject: Re: [PATCH RFC 3/4] xen, blkfront: introduce support for multiple hw
- queues
-Message-ID: <20140911233615.GA2052@gmail.com>
-Reply-To: avanzini.arianna@gmail.com
-References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com>
- <1408706404-6614-4-git-send-email-avanzini.arianna@gmail.com>
- <53F73D29.4020401@citrix.com>
+	Thu, 11 Sep 2014 19:37:22 -0400
+Date: Fri, 12 Sep 2014 01:37:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+In-Reply-To: <541223B1.5040705@zytor.com>
+Message-ID: <alpine.DEB.2.10.1409120133330.4178@nanos>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53F73D29.4020401@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 11 Sep 2014, H. Peter Anvin wrote:
 
-thank you for all your comments and sorry if it took so long to reply
-and address them.
-
-On Fri, Aug 22, 2014 at 01:52:57PM +0100, David Vrabel wrote:
-> On 22/08/14 12:20, Arianna Avanzini wrote:
-> > This commit introduces in xen-blkfront actual support for multiple
-> > hardware queues. The number of available hardware queues is gathered
-> > from the backend via XenStore; in case the expected XenStore key
-> > is not available, the frontend defaults to a single I/O ring.
+> On 09/11/2014 03:32 PM, Dave Hansen wrote:
+> > On 09/11/2014 03:18 PM, Thomas Gleixner wrote:
+> >> On Thu, 11 Sep 2014, Qiaowei Ren wrote:
+> >>> This patch sets bound violation fields of siginfo struct in #BR
+> >>> exception handler by decoding the user instruction and constructing
+> >>> the faulting pointer.
+> >>>
+> >>> This patch does't use the generic decoder, and implements a limited
+> >>> special-purpose decoder to decode MPX instructions, simply because the
+> >>> generic decoder is very heavyweight not just in terms of performance
+> >>> but in terms of interface -- because it has to.
+> >>
+> >> And why is that an argument to add another special purpose decoder?
+> > 
+> > Peter asked for it to be done this way specifically:
+> > 
+> > 	https://lkml.org/lkml/2014/6/19/411
+> > 
 > 
-> Can you split this into a part that reactors blkfront handle multiple
-> queues and the part that adds the XenStore negotiation for this?
-> 
+> Specifically because marshaling the data in and out of the generic
+> decoder was more complex than a special-purpose decoder.
 
-Of course, thank you for the suggestion.
+I did not look at that detail and I trust your judgement here, but
+that is in no way explained in the changelog.
 
-> You will also need to to add documentation for the XenStore keys to the
-> blkif.h header in Xen.
-> 
+This whole patchset is a pain to review due to half baken changelogs
+and complete lack of a proper design description.
 
-Thank you for pointing that out. I'll add the documentation when/if I'll
-drop the RFC tag, if it's OK (I'll need to send a separate patch to
-xen-devel, I think).
+Thanks,
 
-
-> David
-
+	tglx
