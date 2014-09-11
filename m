@@ -1,68 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020AbaIKQxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:53:01 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:50015 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164AbaIKQw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:52:58 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] usb: f_fs: replace BUG in dead-code with less serious WARN_ON
-In-Reply-To: <20140910161337.GL667@saruman.home>
-Organization: http://mina86.com/
-References: <1410364225-6087-1-git-send-email-mina86@mina86.com> <1410364225-6087-2-git-send-email-mina86@mina86.com> <20140910161337.GL667@saruman.home>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140911:linux-usb@vger.kernel.org::gPRYqflP5T3wiUcq:0000000000000000000000000000000000000cjG
-X-Hashcash: 1:20:140911:dan.carpenter@oracle.com::iPvxMaP7bPFyuc00:00000000000000000000000000000000000001G/z
-X-Hashcash: 1:20:140911:linux-kernel@vger.kernel.org::4l/0WKfsD0OzpvsL:0000000000000000000000000000000006WKD
-X-Hashcash: 1:20:140911:balbi@ti.com::yv0fUrTSR1sbZ3IS:000005SHQ
-X-Hashcash: 1:20:140911:balbi@ti.com::HqwhDRSuq8YANf0+:00000Iye0
-Date: Thu, 11 Sep 2014 18:52:49 +0200
-Message-ID: <xa1tegvi14m6.fsf@mina86.com>
+	id S1757278AbaIKQzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:55:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52288 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755671AbaIKQzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:55:15 -0400
+Date: Thu, 11 Sep 2014 11:54:28 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Vivek Gautam <gautam.vivek@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Julius Werner <jwerner@google.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH v6 4/4] phy: exynos5-usbdrd: Calibrate LOS levels for
+ exynos5420/5800
+Message-ID: <20140911165428.GD1840@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <CAFp+6iGU86yL8Ry3ArJJjBy2Cs0Em2B49yssH3BK5fJwyaZbtA@mail.gmail.com>
+ <20140908134454.GK22409@saruman.home>
+ <CAFp+6iG+gmD_JseytYuVQcRK9ErOqQrUEWJoU1KUU7PqMd=aRw@mail.gmail.com>
+ <20140909144225.GF6151@saruman.home>
+ <CAFp+6iHJKmeothDM67WW60Sqqj8BQroBCzZ8zecKwM_GcYL8HA@mail.gmail.com>
+ <CAFp+6iHRJ5oAA+K1Y0Y2uadPhsR6wmrd13DM39dqiL4jj+swHg@mail.gmail.com>
+ <20140910045328.GA32475@saruman.home>
+ <CAFp+6iHMhbi4V4LAkNsgzDc192ihT2a1mZHgLbia=K2U8+x=2w@mail.gmail.com>
+ <CAFp+6iErXKpXgE0tRPB=tEqXxcXgQAeFJP1TpSwRN6fNu9a-qw@mail.gmail.com>
+ <5411C265.2080203@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Rgf3q3z9SdmXC6oT"
+Content-Disposition: inline
+In-Reply-To: <5411C265.2080203@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though the BUG() in __ffs_event_add is a dead-code, it is still
-better to warn rather then crash the system if that code ever gets
-executed.
+--Rgf3q3z9SdmXC6oT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reported-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
----
- drivers/usb/gadget/function/f_fs.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Hi,
 
-On Wed, Sep 10 2014, Felipe Balbi <balbi@ti.com> wrote:
-> WARN(1, "unknown event type %d\n", type);
-> Then you can drop pr_vdebug();
+On Thu, Sep 11, 2014 at 09:10:21PM +0530, Kishon Vijay Abraham I wrote:
+> Hi,
+>=20
+> On Wednesday 10 September 2014 01:26 PM, Vivek Gautam wrote:
+> > On Wed, Sep 10, 2014 at 10:53 AM, Vivek Gautam <gautam.vivek@samsung.co=
+m> wrote:
+> >> On Wed, Sep 10, 2014 at 10:23 AM, Felipe Balbi <balbi@ti.com> wrote:
+> >>> On Wed, Sep 10, 2014 at 09:09:57AM +0530, Vivek Gautam wrote:
+> >>>> On Wed, Sep 10, 2014 at 9:07 AM, Vivek Gautam <gautam.vivek@samsung.=
+com> wrote:
+> >>>>> adding Julius here,
+> >>>>
+> >>>> i think i had missed adding Julius for this entire series :-(
+> >>>> I should be more careful with the CC list in future.
+> >>>> Added his chromium id, since that seems to be more active.
+> >>>>
+> >>>>>
+> >>>>>
+> >>>>> On Tue, Sep 9, 2014 at 8:12 PM, Felipe Balbi <balbi@ti.com> wrote:
+> >>>>>> On Tue, Sep 09, 2014 at 07:19:50AM +0530, Vivek Gautam wrote:
+> >>>>>>> Hi,
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> On Mon, Sep 8, 2014 at 7:14 PM, Felipe Balbi <balbi@ti.com> wrote:
+> >>>>>>>> Hi,
+> >>>>>>>>
+> >>>>>>>> On Mon, Sep 08, 2014 at 09:53:09AM +0530, Vivek Gautam wrote:
+> >>>>>>>>> On Fri, Sep 5, 2014 at 11:26 PM, Felipe Balbi <balbi@ti.com> wr=
+ote:
+> >>>>>>>>>> On Thu, Sep 04, 2014 at 12:01:19PM +0530, Vivek Gautam wrote:
+> >>>>>>>>>>>> Don't we have phy_power_on()
+> >>>>>>>>>>>> for that ? It looks like you could just as well do this from
+> >>>>>>>>>>>> phy_power_on() ?
+> >>>>>>>>>>>
+> >>>>>>>>>>> No, unfortunately keeping these calibration settings in phy_p=
+ower_on()
+> >>>>>>>>>>> doesn't help, since we need to do this after XHCI reset has h=
+appened.
+> >>>>>>>>>>
+> >>>>>>>>>> teach xHCI about PHYs ?
+> >>>>>>>>>
+> >>>>>>>>> sorry i couldn't understand you here.
+> >>>>>>>>> Aren't we trying to do the same with Heikki's patch about dwc3 :
+> >>>>>>>>> [PATCH 6/6] usb: dwc3: host: convey the PHYs to xhci
+> >>>>>>>>>
+> >>>>>>>>> and the 2nd patch in this series :
+> >>>>>>>>> [PATCH v6 2/4] usb: host: xhci-plat: Get PHYs for xhci's hcds
+> >>>>>>>>>
+> >>>>>>>>> Is there something else that is expected ?
+> >>>>>>>>
+> >>>>>>>> right, use that to call phy_init() at the right time, then you n=
+eed to
+> >>>>>>>> add a new ->calibrate() method which, likely, will only be used =
+by you
+> >>>>>>>> ;-)
+> >>>>>>>
+> >>>>>>> so you mean, the xhci should itself call phy_init() at a time sui=
+table,
+> >>>>>>> so that ->calibrate() is not required at all ?
+> >=20
+> > but wait, dwc3 does a phy_init() already, then how xhci will be able to
+> > do that again. We can't do phy_init() multiple times right ?
+>=20
+> right. I think we should split and do phy ops separately for dwc3 host
+> and gadget?
 
-True, but the printk call will stay in the binary whereas pr_vdebug is not
-included in non-debug builds.  Furthermore, WARN() does not use pr_fmt.
+no, don't do that. We need a better way of handling this. As of now we
+don't support dual-role, so we can just reinitialize the PHY once we
+reach xhci.
 
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index ec50e0d..ea21565 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -2321,7 +2321,8 @@ static void __ffs_event_add(struct ffs_data *ffs,
- 		break;
- 
- 	default:
--		BUG();
-+		WARN(1, "%d: unknown event, this should not happen\n", type);
-+		return;
- 	}
- 
- 	{
--- 
-2.1.0.rc2.206.gedb03e5
+Once we start supporting dual-role, we will need more inteligence in the
+algorithm.
+
+--=20
+balbi
+
+--Rgf3q3z9SdmXC6oT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUEdPDAAoJEIaOsuA1yqREclgP/2+VvtBIoccn4wMjgjdiERCp
+FKp8erfCibNHWXHSUoNx5IJzfaNCPlh366DNdC1ZOBWxCI98k7qAn6dRdb4M1GhL
+6lnSjNWNVChbctAZIunRrxD0LdtfvykXssHPXKxPZ4v1oZ+ULKits9nRXwWCEONJ
+Dh89x/5boZKjkLMcDAU8QSZbnh0eVkWtYJQL5zbtRh6D9tciVY702cGr4BYi5WEq
+Cgxu75Fc7AwIY1l8EVw9FrJa3p+fdxOWA4SbzodwV7OwbtrmaX9RhaqwduxMOQOW
+8D08XKvpdkRxgYDK+kIKoCUpJd6C8e7xR/Z4ALAF8e7AI2mBQVLgBnOeC7JOmM5+
+8hmDW2292iuBYXIfjxpPlCZwX1XYVHZpzFEuWohz3l4Sc1ZJBCXbbJqAoTjDUXQH
+AXP7fPqmALgcT+uWJllpxHOSDic/viat0ueHX9fe33wFYIRlPfnjRMQ1Dfyt+ZVD
+yrx1uJY7qi4HAMkvNPBrWeDDGN860Sp1txhRZ5mlhNaJkqB7MPvf1g/1XqiptNwc
+MaLeID09bQ+xGu2hM/nwJwHBO/dAzlDiU4TY57an+Xwh8wrQ795goxRQaowNXTeE
+PJ0xyRAcVq6Iyj1iCGsKNDsoSgXhLkkGlsSXTTF/2DKKmC7N/M51cyA4io5x/wlx
+ozNEiywlc8w+XHfgRyUh
+=ufO3
+-----END PGP SIGNATURE-----
+
+--Rgf3q3z9SdmXC6oT--
