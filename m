@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaIKNSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:18:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51482 "EHLO
+	id S1756839AbaIKNSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:18:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51500 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755366AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755369AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Dave Chiluk" <chiluk@canonical.com>
+CC: akpm@linux-foundation.org, "Romain Degez" <romain.degez@gmail.com>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.53059414@decadent.org.uk>
+Message-ID: <lsq.1410438733.322406795@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 004/131] stable_kernel_rules: Add pointer to
- netdev-FAQ for network patches
+Subject: [PATCH 3.2 014/131] ahci: add support for the Promise FastTrak
+ TX8660 SATA HBA (ahci mode)
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,31 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chiluk <chiluk@canonical.com>
+From: Romain Degez <romain.degez@gmail.com>
 
-commit b76fc285337b6b256e9ba20a40cfd043f70c27af upstream.
+commit b32bfc06aefab61acc872dec3222624e6cd867ed upstream.
 
-Stable_kernel_rules should point submitters of network stable patches to the
-netdev_FAQ.txt as requests for stable network patches should go to netdev
-first.
+Add support of the Promise FastTrak TX8660 SATA HBA in ahci mode by
+registering the board in the ahci_pci_tbl[].
 
-Signed-off-by: Dave Chiluk <chiluk@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Note: this HBA also provide a hardware RAID mode when activated in
+BIOS but specific drivers from the manufacturer are required in this
+case.
+
+Signed-off-by: Romain Degez <romain.degez@gmail.com>
+Tested-by: Romain Degez <romain.degez@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/stable_kernel_rules.txt | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/ata/ahci.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -29,6 +29,9 @@ Rules on what kind of patches are accept
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -463,6 +463,7 @@ static const struct pci_device_id ahci_p
  
- Procedure for submitting patches to the -stable tree:
+ 	/* Promise */
+ 	{ PCI_VDEVICE(PROMISE, 0x3f20), board_ahci },	/* PDC42819 */
++	{ PCI_VDEVICE(PROMISE, 0x3781), board_ahci },   /* FastTrak TX8660 ahci-mode */
  
-+ - If the patch covers files in net/ or drivers/net please follow netdev stable
-+   submission guidelines as described in
-+   Documentation/networking/netdev-FAQ.txt
-  - Send the patch, after verifying that it follows the above rules, to
-    stable@vger.kernel.org.  You must note the upstream commit ID in the
-    changelog of your submission.
+ 	/* Asmedia */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0601), board_ahci },	/* ASM1060 */
 
