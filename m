@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173AbaIKUne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:43:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43569 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932149AbaIKUnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:43:33 -0400
-Date: Thu, 11 Sep 2014 22:43:30 +0200
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: kexec@lists.infradead.org, Eric Biederman <ebiederm@xmission.com>,
+	id S932194AbaIKUn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:43:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43251 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932149AbaIKUn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 16:43:56 -0400
+Date: Thu, 11 Sep 2014 13:43:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: john@johnmccutchan.com, rlove@rlove.org, eparis@parisplace.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
-Message-ID: <20140911224330.0cec9b4c@hananiah.suse.cz>
-In-Reply-To: <20140911200110.GA24699@redhat.com>
-References: <20140905183314.23690175@hananiah.suse.cz>
-	<20140911200110.GA24699@redhat.com>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Subject: Re: [PATCH] fsnotify: don't put user context if it was never
+ assigned
+Message-Id: <20140911134355.21bed9dbf5a0c7a8190c748f@linux-foundation.org>
+In-Reply-To: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
+References: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -25,81 +25,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014 16:01:10 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On Tue, 29 Jul 2014 09:25:14 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
-> > On architectures that use percpu-vm, the percpu region is not guaranteed
-> > to be contiguous in physical space.
-> 
-> Petr,
-> 
-> Which are those arches?
+> On some failure paths we may attempt to free user context even
+> if it wasn't assigned yet. This will cause a NULL ptr deref
+> and a kernel BUG.
 
-All except nommu. Actually, percpu-km will be used instead even on MMU
-if SMP is disabled, but since SMP is pretty standard now, I guess the
-vast majority of all kernels out there is affected. ;-)
+Are you able to identify "some failure paths"?  I spent some time
+grepping, but it's a pain.
 
-> > However, fs/proc/vmcore.c expects
-> > all ELF notes to be contiguous. If the ELF note happens to occupy
-> > two non-adjacent physical pages, part of the note may be read from an
-> > incorrect memory location by the kdump kernel, resulting in failure to
-> > initialize /proc/vmcore (if the content of the following physical page,
-> > incorrectly interpreted as an ELF note specifies a large number), wrong
-> > register values or other apparent random memory corruption.
-> > 
-> > There is currently no mechanism to pass the virtual-to-physical mapping
-> > of the percpu allocation to the kdump kernel. So, instead, I'm changing
-> > the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
-> > than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
-> > is enough to make sure that the buffer cannot cross a page boundary,
-> > effectively ensuring that the whole buffer is contiguous in physical
-> > space.
-> > 
-> > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> > ---
-> >  kernel/kexec.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/kexec.c b/kernel/kexec.c
-> > index 2bee072..cdab59d 100644
-> > --- a/kernel/kexec.c
-> > +++ b/kernel/kexec.c
-> > @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
-> >  static int __init crash_notes_memory_init(void)
-> >  {
-> >  	/* Allocate memory for saving cpu registers. */
-> > -	crash_notes = alloc_percpu(note_buf_t);
-> > +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
-> > +				     roundup_pow_of_two(sizeof(note_buf_t)));
-> 
-> I think some of the changelog should show up here as comment in short
-> form. I don't think it is obvious that why we are using __alloc_percpu()
-> and why aligning to nearst higher power of 2 is needed here. Please also
-> mention here which arches run into issues.
+Please try to include such info in changelogs because reviewers (ie,
+me) might want to review those callers to decide whether the bug lies
+elsewhere.
 
-OK, I'll add it as a comment in the code. I'll see if I can make it
-short but still understandable.
-
-Thanks,
-Petr Tesarik
-
-> Thanks
-> Vivek
-> 
-> >  	if (!crash_notes) {
-> >  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
-> >  		return -ENOMEM;
-> > -- 
-> > 1.8.4.5
-> > 
-> > _______________________________________________
-> > kexec mailing list
-> > kexec@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/kexec
-> 
-> _______________________________________________
-> kexec mailing list
-> kexec@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/kexec
+> --- a/fs/notify/inotify/inotify_fsnotify.c
+> +++ b/fs/notify/inotify/inotify_fsnotify.c
+> @@ -165,8 +165,10 @@ static void inotify_free_group_priv(struct fsnotify_group *group)
+>  	/* ideally the idr is empty and we won't hit the BUG in the callback */
+>  	idr_for_each(&group->inotify_data.idr, idr_callback, group);
+>  	idr_destroy(&group->inotify_data.idr);
+> -	atomic_dec(&group->inotify_data.user->inotify_devs);
+> -	free_uid(group->inotify_data.user);
+> +	if (group->inotify_data.user) {
+> +		atomic_dec(&group->inotify_data.user->inotify_devs);
+> +		free_uid(group->inotify_data.user);
+> +	}
+>  }
+>  
+>  static void inotify_free_event(struct fsnotify_event *fsn_event)
 
