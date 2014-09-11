@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149AbaIKNXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:23:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45960 "EHLO
+	id S1756970AbaIKNVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:21:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45913 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756987AbaIKNVo (ORCPT
+	with ESMTP id S1756949AbaIKNVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:21:44 -0400
+	Thu, 11 Sep 2014 09:21:34 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 5/9] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
-Date: Thu, 11 Sep 2014 15:18:41 +0200
-Message-Id: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 1/9] rtc: at91sam9: remove references to mach specific headers
+Date: Thu, 11 Sep 2014 15:18:37 +0200
+Message-Id: <1410441525-25258-2-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,133 +30,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPBR registers are not part of the RTT block and thus should not be
-defined in the reg property of the rtt node.
-
-Use syscon to provide a proper DT representation and reference the GPBR
-syscon device in a new "atmel,time-reg" property which store both the
-syscon device phandle and the register offset within the GPBR block.
-
-When using non DT boards, we won't be able to retrieve the syscon regmap,
-hence we need to create our own regmap using the memory region defined
-in the 2nd memory resource assigned to the RTT platform device.
+In order to support multi platform kernel drivers should not include
+machine specific headers.
+Copy RTT macros in the driver code and remove any machine specific
+headers.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/rtc/Kconfig        |  1 +
- drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 51 insertions(+), 9 deletions(-)
+ drivers/rtc/rtc-at91sam9.c | 22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..7d76da8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
- config RTC_DRV_AT91SAM9
- 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
- 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-+	select MFD_SYSCON
- 	help
- 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
- 	  (Real Time Timer). These timers are powered by the backup power
 diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index d72c34d..e1b7109 100644
+index 5963743..51f0038 100644
 --- a/drivers/rtc/rtc-at91sam9.c
 +++ b/drivers/rtc/rtc-at91sam9.c
-@@ -21,6 +21,8 @@
- #include <linux/slab.h>
+@@ -22,10 +22,6 @@
  #include <linux/platform_data/atmel.h>
  #include <linux/io.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/regmap.h>
  
+-#include <mach/at91_rtt.h>
+-#include <mach/cpu.h>
+-#include <mach/hardware.h>
+-
  /*
   * This driver uses two configurable hardware resources that live in the
-@@ -72,7 +74,8 @@ struct sam9_rtc {
- 	void __iomem		*rtt;
- 	struct rtc_device	*rtcdev;
- 	u32			imr;
--	void __iomem		*gpbr;
-+	struct regmap		*gpbr;
-+	unsigned int		gpbr_offset;
- 	int 			irq;
- };
- 
-@@ -81,10 +84,19 @@ struct sam9_rtc {
- #define rtt_writel(rtc, field, val) \
- 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
- 
--#define gpbr_readl(rtc) \
--	readl((rtc)->gpbr)
--#define gpbr_writel(rtc, val) \
--	writel((val), (rtc)->gpbr)
-+static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
-+{
-+	unsigned int val;
-+
-+	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
-+
-+	return val;
-+}
-+
-+static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
-+{
-+	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-+}
- 
- /*
-  * Read current time and date in RTC
-@@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
- 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
- };
- 
-+static struct regmap_config gpbr_regmap_config = {
-+	.reg_bits = 32,
-+	.val_bits = 32,
-+	.reg_stride = 4,
-+};
-+
- /*
-  * Initialize and install RTC driver
+  * AT91SAM9 backup power domain (intended to be powered at all times)
+@@ -47,6 +43,24 @@
+  * registers available, likewise usable for more than "RTC" support.
   */
-@@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	if (IS_ERR(rtc->rtt))
- 		return PTR_ERR(rtc->rtt);
  
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
--	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
--	if (IS_ERR(rtc->gpbr))
--		return PTR_ERR(rtc->rtt);
-+	if (!pdev->dev.of_node) {
-+		void __iomem *gpbr;
++#define AT91_RTT_MR		0x00			/* Real-time Mode Register */
++#define AT91_RTT_RTPRES		(0xffff << 0)		/* Real-time Timer Prescaler Value */
++#define AT91_RTT_ALMIEN		(1 << 16)		/* Alarm Interrupt Enable */
++#define AT91_RTT_RTTINCIEN	(1 << 17)		/* Real Time Timer Increment Interrupt Enable */
++#define AT91_RTT_RTTRST		(1 << 18)		/* Real Time Timer Restart */
 +
-+		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		gpbr = devm_ioremap_resource(&pdev->dev, r);
-+		if (IS_ERR(gpbr))
-+			return PTR_ERR(gpbr);
++#define AT91_RTT_AR		0x04			/* Real-time Alarm Register */
++#define AT91_RTT_ALMV		(0xffffffff)		/* Alarm Value */
 +
-+		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
-+					     &gpbr_regmap_config);
-+	} else {
-+		struct of_phandle_args args;
++#define AT91_RTT_VR		0x08			/* Real-time Value Register */
++#define AT91_RTT_CRTV		(0xffffffff)		/* Current Real-time Value */
 +
-+		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
-+						       "atmel,time-reg", 1, 0,
-+						       &args);
-+		if (ret)
-+			return ret;
++#define AT91_RTT_SR		0x0c			/* Real-time Status Register */
++#define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
++#define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
 +
-+		rtc->gpbr = syscon_node_to_regmap(args.np);
-+		rtc->gpbr_offset = args.args[0];
-+	}
++#define AT91_SLOW_CLOCK		32768
 +
-+	if (IS_ERR(rtc->gpbr)) {
-+		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
-+		return -ENOMEM;
-+	}
- 
- 	mr = rtt_readl(rtc, MR);
- 
+ /*
+  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
+  * It's also the reset value for that field.
 -- 
 1.9.1
 
