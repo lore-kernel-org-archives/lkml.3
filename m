@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaIKILs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:11:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54601 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133AbaIKILn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:11:43 -0400
-Date: Thu, 11 Sep 2014 10:11:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Vince Weaver <vincent.weaver@maine.edu>
-Subject: Re: BUG uncore_assign_events
-Message-ID: <20140911081137.GT6758@twins.programming.kicks-ass.net>
-References: <20140910091626.GO16043@twins.programming.kicks-ass.net>
- <20140910215908.GL4120@two.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AUv0/Bqt5dWl9oeU"
-Content-Disposition: inline
-In-Reply-To: <20140910215908.GL4120@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1753391AbaIKIMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:12:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35740 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321AbaIKIDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:03:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="601322280"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch v5 03/15] ACPI: Fix minor syntax issues in processor_core.c
+Date: Thu, 11 Sep 2014 16:05:46 +0800
+Message-Id: <1410422758-24942-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1410422758-24942-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1410422758-24942-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix minor syntax issues in processor_core.c to follow coding styles.
 
---AUv0/Bqt5dWl9oeU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/acpi/processor_core.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-On Wed, Sep 10, 2014 at 11:59:08PM +0200, Andi Kleen wrote:
-> > # addr2line -i -e ivb-ep-build/vmlinux ffffffff81025f18
-> >=20
-> > arch/x86/include/asm/bitops.h:318
-> > arch/x86/kernel/cpu/perf_event_intel_uncore.c:3339
->=20
-> i =3D=3D zero  (ok)
-> c points to some kernel looking address
-> hwc->idx is 64
->=20
->      /* fastpath, try to reuse previous register */
->         for (i =3D 0; i < n; i++) {
->                 hwc =3D &box->event_list[i]->hw;
->                 c =3D hwc->constraint;
->=20
->                 /* never assigned */
->                 if (hwc->idx =3D=3D -1)
->                         break;
->=20
->                 /* constraint still honored */
->                 if (!test_bit(hwc->idx, c->idxmsk))
->                         break;
->=20
-> My best bet is something goes wrong in uncore_pmu_to_box or
-> uncore_event_to_pmu in hte caller, so the box is bogus.
->=20
-> Did the test do CPU hot plug?
+diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+index e32321ce9a5c..b048f3752c2b 100644
+--- a/drivers/acpi/processor_core.c
++++ b/drivers/acpi/processor_core.c
+@@ -125,13 +125,12 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+ 	}
+ 
+ 	header = (struct acpi_subtable_header *)obj->buffer.pointer;
+-	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC) {
++	if (header->type == ACPI_MADT_TYPE_LOCAL_APIC)
+ 		map_lapic_id(header, acpi_id, &apic_id);
+-	} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
++	else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC)
+ 		map_lsapic_id(header, type, acpi_id, &apic_id);
+-	} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
++	else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC)
+ 		map_x2apic_id(header, type, acpi_id, &apic_id);
+-	}
+ 
+ exit:
+ 	kfree(buffer.pointer);
+@@ -164,7 +163,7 @@ int acpi_map_cpuid(int apic_id, u32 acpi_id)
+ 		 * For example,
+ 		 *
+ 		 * Scope (_PR)
+-                 * {
++		 * {
+ 		 *     Processor (CPU0, 0x00, 0x00000410, 0x06) {}
+ 		 *     Processor (CPU1, 0x01, 0x00000410, 0x06) {}
+ 		 *     Processor (CPU2, 0x02, 0x00000410, 0x06) {}
+-- 
+1.7.10.4
 
-Dunno, I don't think it does. Its just the perf_fuzzer thing. A quick
-grep of the source doesn't show hotplug stuff.
-
---AUv0/Bqt5dWl9oeU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEVkxAAoJEHZH4aRLwOS6wAcP+gIJjS7G/YbH0TXsa+DfmX/+
-EFt5Uk7+h9prZIHPvcju2x2XS9O6MjYpOJoZOIdP98134hU3gihFVTPRZGwtkqlM
-GfJnwvjZ3Iowbg+4WSLSQY+tMcznAWKb6WpT5mQGCHiwig/LpcAzXzPNJUNoyDQe
-8SGSHUxQRGt8eqcHLc028IuRscV+ZSfdiVmdsY66XWFX1I07OBcP0dEC9ZbcZs+O
-aTgqjVpOt7Nun6yps9Vr0SVzzhCGHLHlCSwC2YWIcsdXulScGKKc/l2U7gUE1EtW
-GNSIRyA7D4O9lbakbP5gsM/TMGmpEqdICoBolDRlGPn0lmtOKBAJ0FY0Cfx5BCqj
-Ozbz+rWfoz6u35VXgEFYjiHVjXXFU2Xxvdiw5SJmgW77xsRnKBEA2hDA5yeQ/2ru
-NHh0j8X6xNdOx8QTSj6vpChbv6pp1g4ATfyDzUTvaHL/DQxrX47UAaC4hk6Ex8hp
-NNq/p4Y0dt3mZhX5eppIh6ojKoATwQIZ91bkXenUGh3UD/iL+3X7vhQxkhfaA4Lg
-2FJm1U5Avx1/hFiFvzN6uCyhPFlXnDt10Ivn3depTGtfwyeEpBvTDsRHMXqVL9e2
-KrL6ZPSSgsUkInq1nWjWgmgC2FOGAj6DiuGDNzuKpY01/5eAQ0lzGPRyj8J7nqt1
-c5gXlAeNRwlmHGU0tSPX
-=jK6Z
------END PGP SIGNATURE-----
-
---AUv0/Bqt5dWl9oeU--
