@@ -1,129 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187AbaIKQFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:05:32 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:63503 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156AbaIKQF1 (ORCPT
+	id S1757208AbaIKQGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:06:33 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:43319 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbaIKQGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:05:27 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:fd28:d59f:629b:bb3e:ba7e]
-In-Reply-To: <20140911132935.068DCC408F6@trevor.secretlab.ca>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
-	<20140911132935.068DCC408F6@trevor.secretlab.ca>
-Date: Thu, 11 Sep 2014 09:05:25 -0700
-Message-ID: <CAOesGMhQXSTb_c_fDcVGubkUkoPVvikm3k7W8sOCZJNwqmqBUg@mail.gmail.com>
-Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
+	Thu, 11 Sep 2014 12:06:31 -0400
+Date: Thu, 11 Sep 2014 17:06:27 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
         Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Content-Type: text/plain; charset=UTF-8
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20140911160627.GU6558@xora-haswell.xora.org.uk>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <20140911132935.068DCC408F6@trevor.secretlab.ca>
+ <20140911153739.GA24416@localhost>
+ <5411C664.4060007@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5411C664.4060007@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 6:29 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Mon,  1 Sep 2014 22:57:38 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->> ACPI 5.1 has been released and now be freely available for
->> download [1]. It fixed some major gaps to run ACPI on ARM,
->> this patch just follow the ACPI 5.1 spec and prepare the
->> code to run ACPI on ARM64.
->>
->> ACPI 5.1 has some major changes for the following tables and
->> method which are essential for ARM platforms:
->> 1) MADT table updates.
->> 2) FADT updates for PSCI
->> 3) GTDT
->>
->> This patch set is the ARM64 ACPI core patches covered MADT, FADT
->> and GTDT, platform board specific drivers are not covered by this
->> patch set, but we provide drivers for Juno to boot with ACPI only
->> in the follwing patch set for review purpose.
->>
->> We first introduce acpi.c and its related head file which are needed
->> by ACPI core, and then get RSDP to extract all the ACPI boot-time tables.
->> When all the boot-time tables (FADT, MADT, GTDT) are ready, then
->> parse them to init the sytem when booted. Specifically,
->> a) we use FADT to init PSCI and use PSCI to boot SMP;
->> b) Use MADT for GIC init and SMP init;
->> c) GTDT for arch timer init.
->>
->> This patch set is based on 3.17-rc2 and was tested by Graeme on Juno
->> and FVP base model boot with ACPI only OK, if you want to test them,
->> you can pull from acpi-5.1-v3 branch in leg/acpi repo:
->> git://git.linaro.org/leg/acpi/acpi.git
->>
->> Updates since v2:
->>  - Refactor the code to make SMP/PSCI init with less sperated init
->>    path by Tomasz
->>  - make ACPI depend on EXPERT
->>  - Address lots of comments from Catalin, Sudeep, Geoff
->>  - Add Juno device ACPI driver patches for review
->>
->> Updates since v1:
->>  - Set ACPI default off on ARM64 suggested by Olof;
->>  - Rebase the patch set on top of linux-next branch/linux-pm tree which
->>    includes the ACPICA for full ACPI 5.1 support.
->>  - Update the document as suggested;
->>  - Adress lots of comments from Mark, Sudeep, Randy, Naresh, Olof, Geoff
->>    and more...
->>
->> [1]: http://www.uefi.org/sites/default/files/resources/ACPI_5_1release.pdf
->
-> I've read through this entire series now. In my mind, aside from a few
-> comments that I know you're addressing, this is ready.  The hooks into
-> arm64 core code are not terribly invasive, it is nicely organized and
-> manageable. Get the next version out ASAP, but I would also like to see
-> the diffs from this version to the next so I don't need to review the
-> entire series again.
+On Thu, Sep 11, 2014 at 04:57:24PM +0100, Sudeep Holla wrote:
+> 
+> 
+> On 11/09/14 16:37, Catalin Marinas wrote:
+> >On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
+> >>Regarding the requests to refactor ACPICA to work better for ARM. I
+> >>completely agree that it should be done, but I do not think it should be
+> >>a prerequisite to getting this core support merged. That kind of
+> >>refactoring is far easier to justify when it has immediate improvement
+> >>on the mainline codebase, and it gives us a working baseline to test
+> >>against. Doing it the other way around just makes things harder.
+> >
+> >I have to disagree here. As I said, I'm perfectly fine with refactoring
+> >happening later but I'm not happy with compiling in code with undefined
+> >behaviour on ARM that may actually be executed at run-time.
+> >
+> >I'm being told one of the main advantages of ACPI is forward
+> >compatibility: running older kernels on newer hardware (potentially with
+> >newer ACPI version tables). ACPI 5.1 includes partial support for ARM
+> >but the S and C states are not defined yet. We therefore assume that
+> >hardware vendors deploying servers using ACPI would not provide such
+> >yet to be defined information in ACPI 5.1 tables.
+> >
+> >What if in a year time we get ACPI 5.2 or 6 (or an errata update)
+> >covering the S and C states for ARM? I would expect hardware vendors
+> >to take advantage and provide such information in ACPI tables. Can we
+> >guarantee that a kernel with the current ACPI patches wouldn't blow up
+> >when it tries to interpret the new tables? If we can't guarantee this,
+> >we rather fix it now. Some suggestions:
+> >
+> >a) Make sure code which doesn't have a clear behaviour on ARM is not
+> >    compiled in and doesn't even try to interpret such tables on ARM (you
+> >    could just go for the latter but I'm not sure how feasible it is)
+> 
+> This what we have suggested in past especially for this S-state support.
+> Currently the core acpi code compiles in sleep support unconditionally.
+> That doesn't mean we need to do the same on ARM64, we can easily make
+> sure that's not enabled for ARM64 until we have clarification on how to
+> support them on ARM in ACPI specification.
+> 
+> I just pointed out at one "out of spec" workaround done for x86
+> "unconditionally" in the code just to tell that it won't work on ARM.
+> That shouldn't be misunderstood as demand for refactoring as we have no
+> clue how S-state would look on ARM to take up any such task.
+> 
+For the sleep.c case I worked on this and sent some updates to Hanjun so
+it should be compiled out in the next version of the patches.
 
-I'm going to take a pass on the next version of the series that will
-get posted; I've been a bit too busy to pay close attention to the
-series the last few weeks and I might as well wait until the next
-version at this rate.
+Graeme
 
-> Regarding the requests to refactor ACPICA to work better for ARM. I
-> completely agree that it should be done, but I do not think it should be
-> a prerequisite to getting this core support merged. That kind of
-> refactoring is far easier to justify when it has immediate improvement
-> on the mainline codebase, and it gives us a working baseline to test
-> against. Doing it the other way around just makes things harder.
->
-> I would really like to see the next version of this series go into
-> linux-next. I think this is ready for some wider exposure. Have you got
-> a branch being pulled into Fengguang's autobuilder yet?
-
-That's not how -next works. We only add code to -next that is targeted
-to the upcoming release, we certainly don't add it to get "wider
-exposure". If the code is ready then it can go in, but that's not the
-case at this time.
-
-For "wider exposure" -- who do you have in mind? Everybody that's
-currently got hardware relevant for this already needs out-of-tree
-patches, so getting it into -next doesn't add any exposure. Doesn't
-Linaro do kernel builds and publish trees for this reason already?
-
-
--Olof
