@@ -1,100 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208AbaIKQGd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:06:33 -0400
-Received: from www.xora.org.uk ([80.68.91.202]:43319 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbaIKQGb (ORCPT
+	id S1757040AbaIKQH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:07:27 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:52271 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaIKQHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:06:31 -0400
-Date: Thu, 11 Sep 2014 17:06:27 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-Message-ID: <20140911160627.GU6558@xora-haswell.xora.org.uk>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
- <20140911132935.068DCC408F6@trevor.secretlab.ca>
- <20140911153739.GA24416@localhost>
- <5411C664.4060007@arm.com>
+	Thu, 11 Sep 2014 12:07:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5411C664.4060007@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140911130624.GJ15520@phenom.ffwll.local>
+References: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
+	<1410364463-12692-5-git-send-email-dh.herrmann@gmail.com>
+	<20140911064834.GA15520@phenom.ffwll.local>
+	<CANq1E4Q1RJCPACB0Cg7A79BB7Ly-zEUDik7PKyQ9oNuEizFPxA@mail.gmail.com>
+	<20140911130624.GJ15520@phenom.ffwll.local>
+Date: Thu, 11 Sep 2014 18:07:24 +0200
+Message-ID: <CANq1E4Tt0+cb0YHZcTdQYkBmFXyAkbwNkofcyJ6bHsYQW9vH7g@mail.gmail.com>
+Subject: Re: [PATCH RFC 4/4] drm: link connectors to backlight devices
+From: David Herrmann <dh.herrmann@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Adam Jackson <ajax@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 04:57:24PM +0100, Sudeep Holla wrote:
-> 
-> 
-> On 11/09/14 16:37, Catalin Marinas wrote:
-> >On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
-> >>Regarding the requests to refactor ACPICA to work better for ARM. I
-> >>completely agree that it should be done, but I do not think it should be
-> >>a prerequisite to getting this core support merged. That kind of
-> >>refactoring is far easier to justify when it has immediate improvement
-> >>on the mainline codebase, and it gives us a working baseline to test
-> >>against. Doing it the other way around just makes things harder.
-> >
-> >I have to disagree here. As I said, I'm perfectly fine with refactoring
-> >happening later but I'm not happy with compiling in code with undefined
-> >behaviour on ARM that may actually be executed at run-time.
-> >
-> >I'm being told one of the main advantages of ACPI is forward
-> >compatibility: running older kernels on newer hardware (potentially with
-> >newer ACPI version tables). ACPI 5.1 includes partial support for ARM
-> >but the S and C states are not defined yet. We therefore assume that
-> >hardware vendors deploying servers using ACPI would not provide such
-> >yet to be defined information in ACPI 5.1 tables.
-> >
-> >What if in a year time we get ACPI 5.2 or 6 (or an errata update)
-> >covering the S and C states for ARM? I would expect hardware vendors
-> >to take advantage and provide such information in ACPI tables. Can we
-> >guarantee that a kernel with the current ACPI patches wouldn't blow up
-> >when it tries to interpret the new tables? If we can't guarantee this,
-> >we rather fix it now. Some suggestions:
-> >
-> >a) Make sure code which doesn't have a clear behaviour on ARM is not
-> >    compiled in and doesn't even try to interpret such tables on ARM (you
-> >    could just go for the latter but I'm not sure how feasible it is)
-> 
-> This what we have suggested in past especially for this S-state support.
-> Currently the core acpi code compiles in sleep support unconditionally.
-> That doesn't mean we need to do the same on ARM64, we can easily make
-> sure that's not enabled for ARM64 until we have clarification on how to
-> support them on ARM in ACPI specification.
-> 
-> I just pointed out at one "out of spec" workaround done for x86
-> "unconditionally" in the code just to tell that it won't work on ARM.
-> That shouldn't be misunderstood as demand for refactoring as we have no
-> clue how S-state would look on ARM to take up any such task.
-> 
-For the sleep.c case I worked on this and sent some updates to Hanjun so
-it should be compiled out in the next version of the patches.
+Hi
 
-Graeme
+On Thu, Sep 11, 2014 at 3:06 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Thu, Sep 11, 2014 at 02:22:55PM +0200, David Herrmann wrote:
+>> actual-brightness is a bit more tricky. Currently, DRM caches property
+>> values, so there is no read_property() hook. We'd have to add this.
+>> But it'll be quite nasty as we have to call into the backlight driver.
+>> So I think we want to run an async-interruptible worker on the
+>> backlight, drop the locks in the ioctl and wait for the job to finish.
+>> Not sure whether it's worth it.. maybe we can add this later.
+>
+> See Jani's reply - we probably don't need it, at least not in version 1.
 
+I couldn't see any comment regarding "actual-brightness". But I'm
+totally fine with dropping this.
+
+>>
+>> > - How does udev match on the drm connector name? They are not terribly
+>> >   stable atm, and if you reload your drm driver, or much more likely, have
+>> >   two gpus with two drm drivers they change. We probably should change the
+>> >   name allocation scheme to be per device instance instead of global
+>> >   first. Within a driver probe order is hopefully deterministic on a given
+>> >   platform, since even with super dynamic setups (based on dt/acpi) the
+>> >   firmware tables should change really.
+>>
+>> You can match on EDID attributes. Ok, so far this is pretty ugly as
+>> the EDID property is binary. But we can add rather trivial udev
+>> extensions to make EDID binary against text matching possible.
+>
+> Why EDID? This is purely about the drm connector name, e.g. if I have 2
+> gpus, both with an eDP connector (optimus, so just one panel) then the
+> first driver gets eDP-1 as the name of it and the 2nd one eDP-2. Which is
+> ok if both should control backlight brightness through the same driver,
+> but a total mess if not just gpus get switched, but also backlight
+> controllers.
+>
+> And if you reload you get then eDP-2 and eDP-3. Well at least in the past,
+> that hilarity at least was fixed in
+>
+> commit b21e3afe2357c0f49348a5fb61247012bf8262ec
+> Author: Ilia Mirkin <imirkin@alum.mit.edu>
+> Date:   Wed Aug 7 22:34:48 2013 -0400
+>
+>     drm: use ida to allocate connector id
+>
+> What I think we need to do is to make these ida allocators per-device, so
+> that both drivers have an eDP-1 connector. Otherwise you need to either
+> match both or do funny tricks like "the first eDP connector, no matter
+> which one on this gpu". After all we can now support more than one eDP
+> (and more than one LVDS since a long time actually).
+>
+> Or how exactly is the udev hw db supposed to match this stuff for special
+> cases. In general we need to duplicate the existing logic from
+> libbacklight, like Matthew suggested.
+
+Yeah, I get what you mean. Names are not stable so even if we can
+match on the internal card, we cannot match on "lowest available eDP
+display". per-device IDs should be totally fine and fix this issue. We
+prefix connectors with the device name anyway, so no conflicts can
+arise.
+
+But I think we want to make this a udev builtin anyway. So we can
+easily implement the same logic as libbacklight.
+
+Thanks
+David
