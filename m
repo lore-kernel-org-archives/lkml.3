@@ -1,98 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbaIKLa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:30:59 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46846 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaIKLa5 (ORCPT
+	id S1754335AbaIKLbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:31:33 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48346 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251AbaIKLbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:30:57 -0400
-Date: Thu, 11 Sep 2014 14:30:51 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page on
- migration in vcpu_enter_guest().
-Message-ID: <20140911113051.GG25317@minantech.com>
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
- <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com>
- <541169AD.6060908@redhat.com>
- <20140911101200.GF25317@minantech.com>
- <54117DB4.307@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54117DB4.307@redhat.com>
+	Thu, 11 Sep 2014 07:31:31 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [PATCH 3.17-rc4 v5 0/6] arm: Implement arch_trigger_all_cpu_backtrace
+Date: Thu, 11 Sep 2014 12:31:12 +0100
+Message-Id: <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
+References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:47:16PM +0200, Paolo Bonzini wrote:
-> Il 11/09/2014 12:12, Gleb Natapov ha scritto:
-> > On Thu, Sep 11, 2014 at 11:21:49AM +0200, Paolo Bonzini wrote:
-> >> Il 11/09/2014 07:38, Tang Chen ha scritto:
-> >>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> >>> index 63c4c3e..da6d55d 100644
-> >>> --- a/arch/x86/kvm/vmx.c
-> >>> +++ b/arch/x86/kvm/vmx.c
-> >>> @@ -7093,6 +7093,11 @@ static void vmx_set_virtual_x2apic_mode(struct kvm_vcpu *vcpu, bool set)
-> >>>  	vmx_set_msr_bitmap(vcpu);
-> >>>  }
-> >>>  
-> >>> +static void vmx_set_apic_access_page_addr(struct kvm *kvm, hpa_t hpa)
-> >>> +{
-> >>> +	vmcs_write64(APIC_ACCESS_ADDR, hpa);
-> >>
-> >> This has to be guarded by "if (!is_guest_mode(vcpu))".
-> >>
-> > We do need to write it if L1 and L2 share APIC_ACCESS_ADDR and skip
-> > it otherwise, no?
-> 
-> Yes, but this would be handled by patch 6:
-> 
->  		} else if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
-> +			struct page *page = gfn_to_page(vmx->vcpu.kvm,
-> +				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
->  			exec_control |=
->  				SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
-> -			vmcs_write64(APIC_ACCESS_ADDR,
-> -				page_to_phys(vcpu->kvm->arch.apic_access_page));
-> +			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
-> +			/*
-> +			 * Do not pin apic access page in memory so that memory
-> +			 * hotplug process is able to migrate it.
-> +			 */
-> +			put_page(page);
->  		}
-This code is in prepare_vmcs02() and is executed during L1->L2 vmentry. What happens
-when apic access page is migrated while L2 is running? It needs to be update somewhere.
+This patchset implements arch_trigger_all_cpu_backtrace for arm.
 
-> 
-> However, this is also useless code duplication because the above snippet could
-> reuse vcpu_reload_apic_access_page too.
-> 
-> So I think you cannot do the is_guest_mode check in
-> kvm_vcpu_reload_apic_access_page and also not in
-> vmx_reload_apic_access_page.  But you could do something like
-> 
-> kvm_vcpu_reload_apic_access_page(...)
-> {
-> 	...
-> 	kvm_x86_ops->reload_apic_access_page(...);
-> }
-> EXPORT_SYMBOL_GPL(kvm_vcpu_reload_apic_access_page);
-> 
-> /* used in vcpu_enter_guest only */
-> vcpu_reload_apic_access_page(...)
-> {
-> 	if (!is_guest_mode(vcpu))
-> 		kvm_vcpu_reload_apic_access_page(...)
-> }
-> 
-> Paolo
+Non-maskable signalling relies on the kernel being able to access FIQ
+and therefore, for devices that implement TrustZone, it will work only on
+systems that boot the kernel in secure mode.
+
+Tested on Freescale iMX.6 (both via SysRq-l and by deliberately locking
+up the kernel with CONFIG_DEBUG_SPINLOCK=y).
+
+Changes since v4:
+
+* Rebased on 3.17-rc4.
+
+* Removed a spurious line from the final "glue it together" patch
+  that broke the build.
+
+Changes since v3:
+
+* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
+  Pitre).
+
+* Really fix bad pt_regs pointer generation in __fiq_abt.
+
+* Remove fiq_safe_migration_lock and associated logic in
+  gic_raise_softirq() (review of Russell King)
+
+* Restructured to introduce the default FIQ handler first, before the
+  new features (review of Russell King).
+
+Changes since v2:
+
+* Removed redundant header guards from arch/arm64/include/asm/fiq.h
+  (review of Catalin Marinas).
+
+* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
+  Pitre).
+
+Changes since v1:
+
+* Restructured to sit nicely on a similar FYI patchset from Russell
+  King. It now effectively replaces the work in progress final patch
+  with something much more complete.
+
+* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
+  (review of Nicolas Pitre)
+
+* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
+  being acknowledged by the IRQ handler does still exist but should be
+  harmless because the IRQ handler will still wind up calling
+  ipi_cpu_backtrace().
+
+* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
+  becomes a platform feature (although the use of non-maskable
+  interrupts to implement it is best effort rather than guaranteed).
+
+* Better comments highlighting usage of RAZ/WI registers (and parts of
+  registers) in the GIC code.
+
+Changes *before* v1:
+
+* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
+  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
+  the new structure. For historic details see:
+        https://lkml.org/lkml/2014/9/2/227
+
+* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
+  In fixing this we also remove the useless indirection previously
+  found in the fiq_handler macro.
+
+* Make default fiq handler "always on" by migrating from fiq.c to
+  traps.c and replace do_unexp_fiq with the new handler (review
+  of Russell King).
+
+* Add arm64 version of fiq.h (review of Russell King)
+
+* Removed conditional branching and code from irq-gic.c, this is
+  replaced by much simpler code that relies on the GIC specification's
+  heavy use of read-as-zero/write-ignored (review of Russell King)
+
+
+Daniel Thompson (5):
+  arm: fiq: Replace default FIQ handler
+  arm64: Introduce dummy version of asm/fiq.h
+  irqchip: gic: Add support for IPI FIQ
+  ARM: add basic support for on-demand backtrace of other CPUs
+  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
+
+Russell King (1):
+  ARM: remove unused do_unexp_fiq() function
+
+ arch/arm/include/asm/irq.h      |   5 ++
+ arch/arm/include/asm/smp.h      |   3 +
+ arch/arm/kernel/entry-armv.S    |  95 ++++++++++++++++++++++++---
+ arch/arm/kernel/entry-header.S  |  47 ++++++++++++++
+ arch/arm/kernel/setup.c         |   8 ++-
+ arch/arm/kernel/smp.c           |  64 ++++++++++++++++++
+ arch/arm/kernel/traps.c         |  32 ++++++++-
+ arch/arm64/include/asm/fiq.h    |   8 +++
+ drivers/irqchip/irq-gic.c       | 140 ++++++++++++++++++++++++++++++++++++++--
+ include/linux/irqchip/arm-gic.h |   3 +
+ 10 files changed, 386 insertions(+), 19 deletions(-)
+ create mode 100644 arch/arm64/include/asm/fiq.h
 
 --
-			Gleb.
+1.9.3
+
