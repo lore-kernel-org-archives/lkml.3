@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816AbaIKNQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:16:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51485 "EHLO
+	id S1756801AbaIKNQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:16:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51503 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754975AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755373AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Pratyush Anand" <pratyush.anand@st.com>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
+CC: akpm@linux-foundation.org, "Richard Weinberger" <richard@nod.at>,
+        "Ingo Molnar" <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.610986@decadent.org.uk>
+Date: Thu, 11 Sep 2014 13:32:14 +0100
+Message-ID: <lsq.1410438734.656065065@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 016/131] USB: Fix persist resume of some SS USB devices
+Subject: [PATCH 3.2 127/131] x86, espfix: Make espfix64 a Kconfig option,
+ fix UML
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,138 +33,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit a40178b2fa6ad87670fb1e5fa4024db00c149629 upstream.
+commit 197725de65477bc8509b41388157c1a2283542bb upstream.
 
-Problem Summary: Problem has been observed generally with PM states
-where VBUS goes off during suspend. There are some SS USB devices which
-take longer time for link training compared to many others.  Such
-devices fail to reconnect with same old address which was associated
-with it before suspend.
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
-When system resumes, at some point of time (dpm_run_callback->
-usb_dev_resume->usb_resume->usb_resume_both->usb_resume_device->
-usb_port_resume) SW reads hub status. If device is present,
-then it finishes port resume and re-enumerates device with same
-address. If device is not present then, SW thinks that device was
-removed during suspend and therefore does logical disconnection
-and removes all the resource allocated for this device.
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
 
-Now, if I put sufficient delay just before root hub status read in
-usb_resume_device then, SW sees always that device is present. In normal
-course(without any delay) SW sees that no device is present and then SW
-removes all resource associated with the device at this port.  In the
-latter case, after sometime, device says that hey I am here, now host
-enumerates it, but with new address.
-
-Problem had been reproduced when I connect verbatim USB3.0 hard disc
-with my STiH407 XHCI host running with 3.10 kernel.
-
-I see that similar problem has been reported here.
-https://bugzilla.kernel.org/show_bug.cgi?id=53211
-Reading above it seems that bug was not in 3.6.6 and was present in 3.8
-and again it was not present for some in 3.12.6, while it was present
-for few others. I tested with 3.13-FC19 running at i686 desktop, problem
-was still there. However, I was failed to reproduce it with 3.16-RC4
-running at same i686 machine. I would say it is just a random
-observation. Problem for few devices is always there, as I am unable to
-find a proper fix for the issue.
-
-So, now question is what should be the amount of delay so that host is
-always able to recognize suspended device after resume.
-
-XHCI specs 4.19.4 says that when Link training is successful, port sets
-CSC bit to 1. So if SW reads port status before successful link
-training, then it will not find device to be present.  USB Analyzer log
-with such buggy devices show that in some cases device switch on the
-RX termination after long delay of host enabling the VBUS. In few other
-cases it has been seen that device fails to negotiate link training in
-first attempt. It has been reported till now that few devices take as
-long as 2000 ms to train the link after host enabling its VBUS and
-RX termination. This patch implements a 2000 ms timeout for CSC bit to set
-ie for link training. If in a case link trains before timeout, loop will
-exit earlier.
-
-This patch implements above delay, but only for SS device and when
-persist is enabled.
-
-So, for the good device overhead is almost none. While for the bad
-devices penalty could be the time which it take for link training.
-But, If a device was connected before suspend, and was removed
-while system was asleep, then the penalty would be the timeout ie
-2000 ms.
-
-Results:
-
-Verbatim USB SS hard disk connected with STiH407 USB host running 3.10
-Kernel resumes in 461 msecs without this patch, but hard disk is
-assigned a new device address. Same system resumes in 790 msecs with
-this patch, but with old device address.
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/hub.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ arch/x86/Kconfig          | 4 ++++
+ arch/x86/kernel/Makefile  | 2 +-
+ arch/x86/kernel/smpboot.c | 2 +-
+ init/main.c               | 2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2651,6 +2651,43 @@ static int finish_port_resume(struct usb
- }
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -901,6 +901,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
  
- /*
-+ * There are some SS USB devices which take longer time for link training.
-+ * XHCI specs 4.19.4 says that when Link training is successful, port
-+ * sets CSC bit to 1. So if SW reads port status before successful link
-+ * training, then it will not find device to be present.
-+ * USB Analyzer log with such buggy devices show that in some cases
-+ * device switch on the RX termination after long delay of host enabling
-+ * the VBUS. In few other cases it has been seen that device fails to
-+ * negotiate link training in first attempt. It has been
-+ * reported till now that few devices take as long as 2000 ms to train
-+ * the link after host enabling its VBUS and termination. Following
-+ * routine implements a 2000 ms timeout for link training. If in a case
-+ * link trains before timeout, loop will exit earlier.
-+ *
-+ * FIXME: If a device was connected before suspend, but was removed
-+ * while system was asleep, then the loop in the following routine will
-+ * only exit at timeout.
-+ *
-+ * This routine should only be called when persist is enabled for a SS
-+ * device.
-+ */
-+static int wait_for_ss_port_enable(struct usb_device *udev,
-+		struct usb_hub *hub, int *port1,
-+		u16 *portchange, u16 *portstatus)
-+{
-+	int status = 0, delay_ms = 0;
++config X86_ESPFIX64
++	def_bool y
++	depends on X86_64
 +
-+	while (delay_ms < 2000) {
-+		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
-+			break;
-+		msleep(20);
-+		delay_ms += 20;
-+		status = hub_port_status(hub, *port1, portstatus, portchange);
-+	}
-+	return status;
-+}
-+
-+/*
-  * usb_port_resume - re-activate a suspended usb device's upstream port
-  * @udev: device to re-activate, not a root hub
-  * Context: must be able to sleep; device not locked; pm locks held
-@@ -2742,6 +2779,10 @@ int usb_port_resume(struct usb_device *u
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+ 	depends on X86_32
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -27,7 +27,7 @@ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i3
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -268,7 +268,7 @@ notrace static void __cpuinit start_seco
+ 	/*
+ 	 * Enable the espfix hack for this CPU
+ 	 */
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	init_espfix_ap();
+ #endif
  
- 	clear_bit(port1, hub->busy_bits);
- 
-+	if (udev->persist_enabled && hub_is_superspeed(hub->hdev))
-+		status = wait_for_ss_port_enable(udev, hub, &port1, &portchange,
-+				&portstatus);
-+
- 	status = check_port_resume_type(udev,
- 			hub, port1, status, portchange, portstatus);
- 	if (status == 0)
+--- a/init/main.c
++++ b/init/main.c
+@@ -610,7 +610,7 @@ asmlinkage void __init start_kernel(void
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
 
