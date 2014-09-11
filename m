@@ -1,48 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255AbaIKW7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:59:52 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:45089 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaIKW7u (ORCPT
+	id S1752260AbaIKXLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:11:10 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:47478 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105AbaIKXLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:59:50 -0400
-Message-ID: <54122962.5020903@gmail.com>
-Date: Fri, 12 Sep 2014 00:59:46 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Thu, 11 Sep 2014 19:11:09 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 12 Sep 2014 08:10:56 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-api@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Jason Evans <je@fb.com>,
+        zhangyanfei@cn.fujitsu.com,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v16 0/7] MADV_FREE support
+Message-ID: <20140911231056.GA4652@bbox>
+References: <1409556048-5045-1-git-send-email-minchan@kernel.org>
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
-        Chander Kashyap <k.chander@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>
-Subject: Re: [PATCH] clk: samsung: exynos5260: fix typo in clock name
-References: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1409556048-5045-1-git-send-email-minchan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+Hello Andrew,
 
-On 10.09.2014 07:56, Pankaj Dubey wrote:
-> From: Chander Kashyap <k.chander@samsung.com>
+This patchset have been pended for a long time.
+Is there any problem to proceed?
+
+On Mon, Sep 01, 2014 at 04:20:41PM +0900, Minchan Kim wrote:
+> This patch enable MADV_FREE hint for madvise syscall, which have
+> been supported by other OSes. [PATCH 1] includes the details.
 > 
-> The parent name added in parent list as
-> mout_phyclk_mipi_dphy_4l_m_txbyte_clkhs_p, is different
-> than the defined parent due to typo.
+> [1] support MADVISE_FREE for !THP page so if VM encounter
+> THP page in syscall context, it splits THP page.
+> [2-6] is to preparing to call madvise syscall without THP plitting
+> [7] enable THP page support for MADV_FREE.
 > 
-> Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> * from v15
+>  * Add more Acked-by - Rik van Riel
+>  * Rebased on mmotom-08-29-15-15
+> 
+> * from v14
+>  * Add more Ackedy-by from arch people(sparc, arm64 and arm)
+>  * Drop s390 since pmd_dirty/clean was merged
+> 
+> * from v13
+>  * Add more Ackedy-by from arch people(arm, arm64 and ppc)
+>  * Rebased on mmotm 2014-08-13-14-29
+> 
+> * from v12
+>  * Fix - skip to mark free pte on try_to_free_swap failed page - Kirill
+>  * Add more Acked-by from arch maintainers and Kirill
+> 
+> * From v11
+>  * Fix arm build - Steve
+>  * Separate patch for arm and arm64 - Steve
+>  * Remove unnecessary check - Kirill
+>  * Skip non-vm_normal page - Kirill
+>  * Add Acked-by - Zhang
+>  * Sparc64 build fix
+>  * Pagetable walker THP handling fix
+> 
+> * From v10
+>  * Add Acked-by from arch stuff(x86, s390)
+>  * Pagewalker based pagetable working - Kirill
+>  * Fix try_to_unmap_one broken with hwpoison - Kirill
+>  * Use VM_BUG_ON_PAGE in madvise_free_pmd - Kirill
+>  * Fix pgtable-3level.h for arm - Steve
+> 
+> * From v9
+>  * Add Acked-by - Rik
+>  * Add THP page support - Kirill
+> 
+> * From v8
+>  * Rebased-on v3.16-rc2-mmotm-2014-06-25-16-44
+> 
+> * From v7
+>  * Rebased-on next-20140613
+> 
+> * From v6
+>  * Remove page from swapcache in syscal time
+>  * Move utility functions from memory.c to madvise.c - Johannes
+>  * Rename untilify functtions - Johannes
+>  * Remove unnecessary checks from vmscan.c - Johannes
+>  * Rebased-on v3.15-rc5-mmotm-2014-05-16-16-56
+>  * Drop Reviewe-by because there was some changes since then.
+> 
+> * From v5
+>  * Fix PPC problem which don't flush TLB - Rik
+>  * Remove unnecessary lazyfree_range stub function - Rik
+>  * Rebased on v3.15-rc5
+> 
+> * From v4
+>  * Add Reviewed-by: Zhang Yanfei
+>  * Rebase on v3.15-rc1-mmotm-2014-04-15-16-14
+> 
+> * From v3
+>  * Add "how to work part" in description - Zhang
+>  * Add page_discardable utility function - Zhang
+>  * Clean up
+> 
+> * From v2
+>  * Remove forceful dirty marking of swap-readed page - Johannes
+>  * Remove deactivation logic of lazyfreed page
+>  * Rebased on 3.14
+>  * Remove RFC tag
+> 
+> * From v1
+>  * Use custom page table walker for madvise_free - Johannes
+>  * Remove PG_lazypage flag - Johannes
+>  * Do madvise_dontneed instead of madvise_freein swapless system
+> 
+> Minchan Kim (7):
+>   mm: support madvise(MADV_FREE)
+>   x86: add pmd_[dirty|mkclean] for THP
+>   sparc: add pmd_[dirty|mkclean] for THP
+>   powerpc: add pmd_[dirty|mkclean] for THP
+>   arm: add pmd_mkclean for THP
+>   arm64: add pmd_[dirty|mkclean] for THP
+>   mm: Don't split THP page when syscall is called
+> 
+>  arch/arm/include/asm/pgtable-3level.h    |   1 +
+>  arch/arm64/include/asm/pgtable.h         |   2 +
+>  arch/powerpc/include/asm/pgtable-ppc64.h |   2 +
+>  arch/sparc/include/asm/pgtable_64.h      |  16 ++++
+>  arch/x86/include/asm/pgtable.h           |  10 ++
+>  include/linux/huge_mm.h                  |   4 +
+>  include/linux/rmap.h                     |   9 +-
+>  include/linux/vm_event_item.h            |   1 +
+>  include/uapi/asm-generic/mman-common.h   |   1 +
+>  mm/huge_memory.c                         |  35 +++++++
+>  mm/madvise.c                             | 159 +++++++++++++++++++++++++++++++
+>  mm/rmap.c                                |  46 ++++++++-
+>  mm/vmscan.c                              |  64 +++++++++----
+>  mm/vmstat.c                              |   1 +
+>  14 files changed, 331 insertions(+), 20 deletions(-)
+> 
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Missed your sign-off? You can reply with it inline and I will add it
-when applying this weekend.
-
-P.S. Please keep me on CC when sending patches for Samsung clock drivers.
-
-Best regards,
-Tomasz
+-- 
+Kind regards,
+Minchan Kim
