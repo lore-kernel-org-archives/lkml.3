@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707AbaIKOHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:07:30 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58089 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752090AbaIKOH0 (ORCPT
+	id S1755830AbaIKOII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:08:08 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52320 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831AbaIKOIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:07:26 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Thu, 11 Sep 2014 16:26:56 +0200
-Message-ID: <1943936.s0DGHUisGb@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140911140448.GJ22042@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <2362560.tfnxFWQpxu@vostro.rjw.lan> <20140911140448.GJ22042@dhcp22.suse.cz>
+	Thu, 11 Sep 2014 10:08:04 -0400
+Date: Thu, 11 Sep 2014 16:59:56 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page on
+ migration in vcpu_enter_guest().
+Message-ID: <20140911135956.GC26540@minantech.com>
+References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com>
+ <541169AD.6060908@redhat.com>
+ <20140911101200.GF25317@minantech.com>
+ <54117DB4.307@redhat.com>
+ <20140911113051.GG25317@minantech.com>
+ <54119E01.9000908@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54119E01.9000908@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 11, 2014 04:04:48 PM Michal Hocko wrote:
-> On Thu 11-09-14 16:17:56, Rafael J. Wysocki wrote:
-> [...]
-> > And I'm still wondering if the OOM killer may be made avoid killing frozen
-> > tasks.
+On Thu, Sep 11, 2014 at 03:05:05PM +0200, Paolo Bonzini wrote:
+> Il 11/09/2014 13:30, Gleb Natapov ha scritto:
+> >> > +			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
+> >> > +			/*
+> >> > +			 * Do not pin apic access page in memory so that memory
+> >> > +			 * hotplug process is able to migrate it.
+> >> > +			 */
+> >> > +			put_page(page);
+> >> >  		}
+> > This code is in prepare_vmcs02() and is executed during L1->L2 vmentry. What happens
+> > when apic access page is migrated while L2 is running? It needs to be update somewhere.
 > 
-> This is really tricky. OOM killer aims at the biggest memory hog. We
-> shouldn't ignore it just because it hides into the fridge... So even
-> if we "fix" oom killer to ignore frozen tasks (which is inherently
-> racy btw.) then we have a potential problem of freezer abuse (e.g. in
-> container environments). So I strongly believe that the OOM killer has
-> to be able to kill a frozen tasks.
+> Before it is migrated, the MMU notifier is called and will force a
+> vmexit on all CPUs.  The reload code will call GUP again on the page
+> again and swap it in.
+> 
+This is how it will work without "if (!is_guest_mode(vcpu))". But,
+unless I am missing something, with this check it will not work while
+vcpu is in L2.
 
-OK
+Suppose vmcs01->APIC_ACCESS_ADDR = 0xf000. During L2 entry
+vmcs02->APIC_ACCESS_ADDR is set to 0xf000 too (by prepare_vmcs02). Now
+0xf000 is migrated to 0x8000, mmu notifier is called, it forces vmexit,
+but vcpu is in a guest mode so vmcs02->APIC_ACCESS_ADDR is never updated
+to 0x8000 because of "if (!is_guest_mode(vcpu))" check. So what am I
+missing here?
 
-Is the OOM killer the only place where TIF_MEMDIE is set?
-
-Rafael
-
+--
+			Gleb.
