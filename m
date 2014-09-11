@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189AbaIKNFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:05:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52303 "EHLO
+	id S1756192AbaIKNGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:06:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52280 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755798AbaIKNFc (ORCPT
+	by vger.kernel.org with ESMTP id S1754499AbaIKNEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:05:32 -0400
+	Thu, 11 Sep 2014 09:04:47 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tony Lindgren" <tony@atomide.com>,
-        "Jeremy Vial" <jvial@adeneo-embedded.com>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.38442834@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 11 Sep 2014 13:32:14 +0100
+Message-ID: <lsq.1410438734.964318026@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 042/131] ARM: OMAP3: Fix choice of omap3_restore_es
- function in OMAP34XX rev3.1.2 case.
+Subject: [PATCH 3.2 123/131] Revert "x86-64, modify_ldt: Make support for
+ 16-bit  segments a runtime option"
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +33,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Vial <jvial@adeneo-embedded.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 9b5f7428f8b16bd8980213f2b70baf1dd0b9e36c upstream.
+commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
 
-According to the comment “restore_es3: applies to 34xx >= ES3.0" in
-"arch/arm/mach-omap2/sleep34xx.S”, omap3_restore_es3 should be used
-if the revision of an OMAP34xx is ES3.1.2.
+This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
+preparation of merging in the proper fix (espfix64).
 
-Signed-off-by: Jeremy Vial <jvial@adeneo-embedded.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mach-omap2/control.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/ldt.c        | 4 +---
+ arch/x86/vdso/vdso32-setup.c | 8 --------
+ 2 files changed, 1 insertion(+), 11 deletions(-)
 
---- a/arch/arm/mach-omap2/control.c
-+++ b/arch/arm/mach-omap2/control.c
-@@ -282,7 +282,8 @@ void omap3_save_scratchpad_contents(void
- 		scratchpad_contents.public_restore_ptr =
- 			virt_to_phys(omap3_restore_3630);
- 	else if (omap_rev() != OMAP3430_REV_ES3_0 &&
--					omap_rev() != OMAP3430_REV_ES3_1)
-+					omap_rev() != OMAP3430_REV_ES3_1 &&
-+					omap_rev() != OMAP3430_REV_ES3_1_2)
- 		scratchpad_contents.public_restore_ptr =
- 			virt_to_phys(omap3_restore);
- 	else
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -21,8 +21,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ 
+-int sysctl_ldt16 = 0;
+-
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -237,7 +235,7 @@ static int write_ldt(void __user *ptr, u
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
++	if (!ldt_info.seg_32bit) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,7 +41,6 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+-extern int sysctl_ldt16;
+ #endif
+ 
+ /*
+@@ -388,13 +387,6 @@ static ctl_table abi_table2[] = {
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+-	},
+-	{
+-		.procname	= "ldt16",
+-		.data		= &sysctl_ldt16,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
+ 	},
+ 	{}
+ };
 
