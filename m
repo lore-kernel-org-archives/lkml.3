@@ -1,176 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaIKWYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:24:21 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58935 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752177AbaIKWYN (ORCPT
+	id S1753689AbaIKW0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:26:36 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:51277 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaIKW0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:24:13 -0400
-Subject: [PATCH 2/2] ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: SpacemanSpiff <a818958@trbvm.com>, Rajat Jain <rajatxjain@gmail.com>,
-        Dave Airlie <airlied@linux.ie>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org,
-        Pali =?utf-8?b?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        "Jose P." <lbdkmjdf@sharklasers.com>
-Date: Thu, 11 Sep 2014 16:24:10 -0600
-Message-ID: <20140911222410.16809.69017.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-In-Reply-To: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Thu, 11 Sep 2014 18:26:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan>
+ <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+ <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com>
+ <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+ <CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com> <CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 11 Sep 2014 15:26:11 -0700
+X-Google-Sender-Auth: 4eghZAAiPFL3csXD-qffeuRDr3A
+Message-ID: <CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com>
+Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tom Gundersen <teg@jklm.no>, Tejun Heo <tj@kernel.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        hare <hare@suse.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Wu Zhangjin <falcon@meizu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revert parts of f244d8b623da ("ACPIPHP / radeon / nouveau: Fix VGA
-switcheroo problem related to hotplug").
+On Thu, Sep 11, 2014 at 2:43 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Wed, Sep 10, 2014 at 11:10 PM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+>>>> More than two years
+>>>> have gone by on growing design and assumptions on top of that original
+>>>> commit. I'm not sure if *systemd folks* yet believe its was a design
+>>>> regression?
+>>>
+>>> I don't think so. udev should not allow its workers to run for an
+>>> unbounded length of time. Whether the upper bound should be 30, 60,
+>>> 180 seconds or something else is up for debate (currently it is 60,
+>>> but if that is too short for some drivers we could certainly revisit
+>>> that).
+>>
+>> That's the thing -- the timeout was put in place under the assumption
+>> probe was asyncronous and its not, the driver core issues both module
+>> init *and* probe together, the loader has to wait. That alone makes
+>> the timeout a design flaw, and then systemd carried on top of that
+>> design over two years after that. Its not systemd's fault, its just
+>> that we never spoke about this as a design thing broadly and we should
+>> have, and I will mention that even when the first issues creeped up,
+>> the issue was still tossed back a driver problems. It was only until
+>> recently that we realized that both init and probe run together that
+>> we've been thinking about this problem differently. Systemd was trying
+>> to ensure init on driver don't take long but its not init that is
+>> taking long, its probe, and probe gets then penalized as the driver
+>> core batches both init and probe synchronously before finishing module
+>> loading.
+>
+> Just to clarify: udev/systemd is not trying to get into the business
+> of what the kernel does on finit_module(), we just need to make sure
+> that none of our workers stay around forever, which is why we have a
+> global timeout. If necessary we can bump this higher (as mentioned in
+> another thread I just bumped it to 180 secs), but we cannot abolish it
+> entirely.
 
-A previous commit 5493b31f0b55 ("PCI: Add pci_ignore_hotplug() to ignore
-hotplug events for a device") added equivalent functionality implemented in
-a different way for both acpiphp and pciehp.
+180 seconds is certainly better than 30, but let me be clear here on
+the extent to which the timeout at least for kmod built-in command can
+be an issue. The driver core not only batches init and probe together
+synchronously, it also runs probe for *all* devices that the device
+driver can claim and all those series of probes run synchronously
+within itself, that is bus_for_each_dev() runs synchronously on each
+device. So, if a init takes 1 second and probe for each device takes
+120 seconds and the system has 2 devices with the new timeout the
+second device would not be successfully probed (and in fact I'm not
+sure if this would kill the first).
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/acpi/bus.c                           |   10 ----------
- drivers/gpu/drm/nouveau/nouveau_acpi.c       |   16 ++--------------
- drivers/gpu/drm/radeon/radeon_atpx_handler.c |   16 ++--------------
- include/acpi/acpi_bus.h                      |    4 +---
- 4 files changed, 5 insertions(+), 41 deletions(-)
+>> Furthermore as clarified by Tejun random userland is known to
+>> exist that will wait indefinitely for module loading under the simple
+>> assumption things *are done synchronously*, and its precisely why we
+>> can't just blindly enable async probe upstream through a new driver
+>> boolean as it can be unfair to this old userland. What is being
+>> evaluated is to enable aync probe for *all* drivers through a new
+>> general system-wide option. We cannot regress old userspace and
+>> assumptions but we can create a new shiny universe.
+>
+> How about simply introducing a new flag to finit_module() to indicate
+> that the caller does not care about asynchronicity. We could then pass
+> this from udev, but existing scripts calling modprobe/insmod will not
+> be affected.
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 8581f5b84f48..8b67bd0f6bb5 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -177,16 +177,6 @@ void acpi_bus_detach_private_data(acpi_handle handle)
- }
- EXPORT_SYMBOL_GPL(acpi_bus_detach_private_data);
- 
--void acpi_bus_no_hotplug(acpi_handle handle)
--{
--	struct acpi_device *adev = NULL;
--
--	acpi_bus_get_device(handle, &adev);
--	if (adev)
--		adev->flags.no_hotplug = true;
--}
--EXPORT_SYMBOL_GPL(acpi_bus_no_hotplug);
--
- static void acpi_print_osc_error(acpi_handle handle,
- 	struct acpi_osc_context *context, char *error)
- {
-diff --git a/drivers/gpu/drm/nouveau/nouveau_acpi.c b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-index 279206997e5c..622424692b3b 100644
---- a/drivers/gpu/drm/nouveau/nouveau_acpi.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_acpi.c
-@@ -46,7 +46,6 @@ static struct nouveau_dsm_priv {
- 	bool dsm_detected;
- 	bool optimus_detected;
- 	acpi_handle dhandle;
--	acpi_handle other_handle;
- 	acpi_handle rom_handle;
- } nouveau_dsm_priv;
- 
-@@ -222,10 +221,9 @@ static int nouveau_dsm_pci_probe(struct pci_dev *pdev)
- 	if (!dhandle)
- 		return false;
- 
--	if (!acpi_has_method(dhandle, "_DSM")) {
--		nouveau_dsm_priv.other_handle = dhandle;
-+	if (!acpi_has_method(dhandle, "_DSM"))
- 		return false;
--	}
-+
- 	if (acpi_check_dsm(dhandle, nouveau_dsm_muid, 0x00000102,
- 			   1 << NOUVEAU_DSM_POWER))
- 		retval |= NOUVEAU_DSM_HAS_MUX;
-@@ -301,16 +299,6 @@ static bool nouveau_dsm_detect(void)
- 		printk(KERN_INFO "VGA switcheroo: detected DSM switching method %s handle\n",
- 			acpi_method_name);
- 		nouveau_dsm_priv.dsm_detected = true;
--		/*
--		 * On some systems hotplug events are generated for the device
--		 * being switched off when _DSM is executed.  They cause ACPI
--		 * hotplug to trigger and attempt to remove the device from
--		 * the system, which causes it to break down.  Prevent that from
--		 * happening by setting the no_hotplug flag for the involved
--		 * ACPI device objects.
--		 */
--		acpi_bus_no_hotplug(nouveau_dsm_priv.dhandle);
--		acpi_bus_no_hotplug(nouveau_dsm_priv.other_handle);
- 		ret = true;
- 	}
- 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index a9fb0d016d38..8bc7d0bbd3c8 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -33,7 +33,6 @@ static struct radeon_atpx_priv {
- 	bool atpx_detected;
- 	/* handle for device - and atpx */
- 	acpi_handle dhandle;
--	acpi_handle other_handle;
- 	struct radeon_atpx atpx;
- } radeon_atpx_priv;
- 
-@@ -453,10 +452,9 @@ static bool radeon_atpx_pci_probe_handle(struct pci_dev *pdev)
- 		return false;
- 
- 	status = acpi_get_handle(dhandle, "ATPX", &atpx_handle);
--	if (ACPI_FAILURE(status)) {
--		radeon_atpx_priv.other_handle = dhandle;
-+	if (ACPI_FAILURE(status))
- 		return false;
--	}
-+
- 	radeon_atpx_priv.dhandle = dhandle;
- 	radeon_atpx_priv.atpx.handle = atpx_handle;
- 	return true;
-@@ -540,16 +538,6 @@ static bool radeon_atpx_detect(void)
- 		printk(KERN_INFO "VGA switcheroo: detected switching method %s handle\n",
- 		       acpi_method_name);
- 		radeon_atpx_priv.atpx_detected = true;
--		/*
--		 * On some systems hotplug events are generated for the device
--		 * being switched off when ATPX is executed.  They cause ACPI
--		 * hotplug to trigger and attempt to remove the device from
--		 * the system, which causes it to break down.  Prevent that from
--		 * happening by setting the no_hotplug flag for the involved
--		 * ACPI device objects.
--		 */
--		acpi_bus_no_hotplug(radeon_atpx_priv.dhandle);
--		acpi_bus_no_hotplug(radeon_atpx_priv.other_handle);
- 		return true;
- 	}
- 	return false;
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index bcfd808b1098..95c506961a13 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -204,10 +204,9 @@ struct acpi_device_flags {
- 	u32 match_driver:1;
- 	u32 initialized:1;
- 	u32 visited:1;
--	u32 no_hotplug:1;
- 	u32 hotplug_notify:1;
- 	u32 is_dock_station:1;
--	u32 reserved:22;
-+	u32 reserved:23;
- };
- 
- /* File System */
-@@ -412,7 +411,6 @@ void acpi_bus_private_data_handler(acpi_handle, void *);
- int acpi_bus_get_private_data(acpi_handle, void **);
- int acpi_bus_attach_private_data(acpi_handle, void *);
- void acpi_bus_detach_private_data(acpi_handle);
--void acpi_bus_no_hotplug(acpi_handle handle);
- extern int acpi_notifier_call_chain(struct acpi_device *, u32, u32);
- extern int register_acpi_notifier(struct notifier_block *);
- extern int unregister_acpi_notifier(struct notifier_block *);
+Do you mean that you *do want asynchronicity*?
 
+>>> Moreover, it seems from this discussion that the aim is (still)
+>>> that insmod should be near-instantaneous (i.e., not wait for probe),
+>>
+>> The only reason that is being discussed is that systemd has not
+>> accepted the timeout as a system design despite me pointing out the
+>> original design flaw recently and at this point even if was accepted
+>> as a design flaw it seems its too late. The approach taken to help
+>> make all drivers async is simply an afterthought to give systemd what
+>> it *thought* was in place, and it by no measure should be considered
+>> the proper fix to the regression introduced by systemd, it may perhaps
+>> be the right step long term for systemd systems given it goes with
+>> what it assumed was there, but the timeout was flawed. Its not clear
+>> if systemd can help with old kernels, it seems the ship has sailed and
+>> there seems no options but for folks to work around that -- unless of
+>> course some reasonable solution is found which doesn't break current
+>> systemd design?
+>
+> If I read the git logs correctly the hard timeout was introduced in
+> April 2011, so reverting it now seems indeed not to help much with all
+> the running systems out there.
+
+yeah figured :(
+
+>> As part of this series I addressed hunting for the  "misbehaving
+>> drivers" in-kernel as I saw no progress on the systemd side of things
+>> to non-fatally detect "misbehaving drivers" despite my original RFCs
+>> and request for advice. I quote  "misbehaving drivers" as its a flawed
+>> view to consider them misbehaving now in light of clarifications of
+>> how the driver core works in that it batches both init and probe
+>> together always and we can't be penalizing long probes due to the fact
+>> long probes are simply fine. My patch to pick up "misbehaving drivers"
+>> drivers on the kernel front by picking up systemd's signal was
+>> reactive but it was also simply braindead given the same exact reasons
+>> why systemd's original timeout was flawed. We want a general solution
+>> and we don't want to work around the root cause, in this case it was
+>> systemd's assumption on how drivers work.
+>
+> Would your ongoing work to make probing asynchronous solve this
+> problem in the long-term? In the short-term I guess bumping the udev
+> timeout should be sufficient.
+
+That and the global flag / module param to specify the async desire
+which would not regress old userspace. Probe afterall is the main
+source of the issue.
+
+>> Keep in mind that the above just addresses kmod built-in cmd on
+>> systemd, its where the timeout was introduced but as has been
+>> clarified here assuming the same timeout on *all* other built-in
+>> likely is likely pretty flawed as well and this does concern me. Its
+>> why I mentioned that more than two years have gone by now on growing
+>> design and assumptions on top of that original commit and its why its
+>> hard for systemd to consider an alternative.
+>
+> All built-ins should be near-instantaneous. If they are not, that
+> needs to be fixed, or they should not be udev built-ins at all. I have
+> now added a warning to udev if any builtin-in takes more than a third
+> of the timeout, so hopefully any problems should be spotted early.
+
+Great thanks. Collecting these should be valuable and help being proactive.
+
+>>>>>>  I'm afraid distributions that want to avoid this
+>>>>>> sigkill at least on the kernel front will have to work around this
+>>>>>> issue either on systemd by increasing the default timeout which is now
+>>>>>> possible thanks to Hannes' changes or by some other means such as the
+>>>>>> combination of a modified non-chatty version of this patch + a check
+>>>>>> at the end of load_module() as mentioned earlier on these threads.
+>>>>>
+>>>>> Increasing the default timeout in systemd seems like the obvious bug fix
+>>>>> to me.  If the patch exists already, having distros that want it use it
+>>>>> looks to be correct ... not every bug is a kernel bug, after all.
+>>>>
+>>>> Its merged upstream on systemd now, along with a few fixes on top of
+>>>> it. I also see Kay merged a change to the default timeout to 60 second
+>>>> on August 30. Its unclear if these discussions had any impact on that
+>>>> decision or if that was just because udev firmware loading got now
+>>>> ripped out. I'll note that the new 60 second timeout wouldn't suffice
+>>>> for cxgb4 even if it didn't do firmware loading, its probe takes over
+>>>> one full minute.
+>>>>
+>>>>> Negotiating a probe vs init split for drivers is fine too, but it's a
+>>>>> longer term thing rather than a bug fix.
+>>>>
+>>>> Indeed. What I proposed with a multiplier for the timeout for the
+>>>> different types of built in commands was deemed complex but saw no
+>>>> alternatives proposed despite my interest to work on one and
+>>>> clarifications noted that this was a design regression. Not quite sure
+>>>> what else I could have done here. I'm interested in learning what the
+>>>> better approach is for the future as if we want to marry init + kernel
+>>>> we need a smooth way for us to discuss design without getting worked
+>>>> up about it, or taking it personal. I really want this to work as I
+>>>> personally like systemd so far.
+>>>
+>>> How about this: keep the timeout global, but also introduce a
+>>> (relatively short, say 10 or 15 seconds) timeout after which a warning
+>>> is printed.
+>>
+>> That is something that I originally was looking forward to on systemd,
+>> but here's the thing once that warning comes up  -- what would we do
+>> with it?
+>
+> Short term: bump the timeout further. Long-term, hopefully the driver
+> (core) can be changed to avoid the problem.
+
+Fine by me, although I think some folks still have concerns with the
+sigkill completely. But not sure if we escape it now.
+
+>> This patch addresses this warning in-kernel and the idea was
+>> that we'd then peg an async_probe bool as true on the driver as a fix,
+>> that was decided to be silly given all the above. These drivers are
+>> actually not misbehaving and it would be even more incorrect to try to
+>> "fix" them by making them run asynchronously. In fact for some old
+>> storage drivers it may even be the worst thing to do given the
+>> possible slew of userland deployment and scripts which assume things
+>> *are* synchronous.
+>
+> As mentioned above, it probably makes sense to switch on the
+> asynchronous behaviour only for a given call to finit_module(), and
+> not globally to avoid problems with userland assumptions.
+
+Sure that's one way.
+
+>>> Even if nothing is actually killed, having workers (be it
+>>> insmod or something else) take longer than a couple of seconds is
+>>> likely a sign that something is seriously off somewhere.
+>>
+>> Probe can take a long time and that's fine,
+>
+> But isn't finit_module() taking a long time a serious problem given
+> that it means no other module can be loaded in parallel?
+
+Indeed but having a desire to make the init() complete fast is
+different than the desire to have the combination of both init and
+probe fast synchronously. If userspace wants init to be fast and let
+probe be async then userspace has no option but to deal with the fact
+that async probe will be async, and it should then use other methods
+to match any dependencies if its doing that itself. For example
+networking should not kick off after a network driver is loaded but
+rather one the device creeps up on udev. We should be good with
+networking dealing with this correctly today but not sure about other
+subsystems. depmod should be able to load the required modules in
+order and if bus drivers work right then probe of the remnant devices
+should happen asynchronously. The one case I can think of that is a
+bit different is modules-load.d things but those *do not rely on the
+timeout*, but are loaded prior to a service requirement. Note though
+that if those modules had probe and they then run async'd then systemd
+service would probably need to consider that the requirements may not
+be there until later. If this is not carefully considered that could
+introduce regression to users of modules-load.d when async probe is
+fully deployed. The same applies to systemd making assumptions of kmod
+loading a module and a dependency being complete as probe would have
+run it before.
+
+> Even if you
+> have some storage device which legitimately needs to take a couple of
+> minutes to probe, you probably still want your computer to boot and
+> get on with its other tasks whilst you wait... Or worse still, some
+> insignificant driver is broken and simply hangs in probe, but surely
+> you still want the rest of the system to boot?
+
+Agreed, I believe one concern here lies in on whether or not userspace
+is properly equipped to deal with the requirements on module loading
+doing async probing and that possibly failing. Perhaps systemd might
+think all userspace is ready for that but are we sure that's the case?
+Another obvious issue was if the driver was a storage driver and your
+boot depended upon it. If it takes a while we kill it and you can't
+boot, no bueno. If systemd can avoid those situations that'd be nice.
+That was the source of the first major issue reported by Joseph.
+
+Chattiness on issues before the timeout should help a lot, we should
+start collecting these somehow. These should be collected and
+addressed. If we really want to be good on this we should put a bit of
+effort on monitoring these and not being reactive.
+
+  Luis
