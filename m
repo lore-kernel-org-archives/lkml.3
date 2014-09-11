@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaIKJVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:21:32 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:34756 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaIKJVa (ORCPT
+	id S1753590AbaIKJVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:21:41 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:15020 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbaIKJVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:21:30 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de
-Subject: Re: [PATCH v2 3/8] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
-Date: Thu, 11 Sep 2014 12:21:33 +0300
-Message-ID: <1826645.Jx4afrVREc@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1410346708-5125-4-git-send-email-p.zabel@pengutronix.de>
-References: <1410346708-5125-1-git-send-email-p.zabel@pengutronix.de> <1410346708-5125-4-git-send-email-p.zabel@pengutronix.de>
+	Thu, 11 Sep 2014 05:21:38 -0400
+Message-ID: <5411698E.3000402@huawei.com>
+Date: Thu, 11 Sep 2014 17:21:18 +0800
+From: Yang Yingliang <yangyingliang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH v2] arm64: add guard macros of unistd.h to prevent double
+ inclusion
+References: <1410235185-16652-1-git-send-email-yangyingliang@huawei.com> <20140909123938.GL1754@arm.com> <54115583.8080306@huawei.com>
+In-Reply-To: <54115583.8080306@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.231]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+From: Yang Yingliang <yangyingliang@huawei.com>
 
-Thank you for the patch.
+Add guard macros for uapi/asm/unistd.h, asm/unistd.h and
+asm/unistd32.h.
 
-On Wednesday 10 September 2014 12:58:23 Philipp Zabel wrote:
-> Decrementing the reference count of the previous endpoint node allows to
-> use the of_graph_get_next_endpoint function in a for_each_... style macro.
-> Prior to this patch, all current users of this function that actually pass
-> a non-NULL prev parameter should be changed to not decrement the passed
-> prev argument's refcount themselves.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+---
+ arch/arm64/include/asm/unistd.h      | 5 +++++
+ arch/arm64/include/asm/unistd32.h    | 4 ++++
+ arch/arm64/include/uapi/asm/unistd.h | 5 +++++
+ 3 files changed, 14 insertions(+)
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
->  drivers/of/base.c | 9 +--------
->  1 file changed, 1 insertion(+), 8 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index d8574ad..a49b5628 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -2058,8 +2058,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
->   * @prev: previous endpoint node, or NULL to get first
->   *
->   * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-> - * of the passed @prev node is not decremented, the caller have to use
-> - * of_node_put() on it when done.
-> + * of the passed @prev node is decremented.
->   */
->  struct device_node *of_graph_get_next_endpoint(const struct device_node
-> *parent, struct device_node *prev)
-> @@ -2095,12 +2094,6 @@ struct device_node *of_graph_get_next_endpoint(const
-> struct device_node *parent, if (WARN_ONCE(!port, "%s(): endpoint %s has no
-> parent node\n",
->  			      __func__, prev->full_name))
->  			return NULL;
-> -
-> -		/*
-> -		 * Avoid dropping prev node refcount to 0 when getting the next
-> -		 * child below.
-> -		 */
-> -		of_node_get(prev);
->  	}
-> 
->  	while (1) {
-
--- 
-Regards,
-
-Laurent Pinchart
+diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
+index 6d2bf41..21a7dec 100644
+--- a/arch/arm64/include/asm/unistd.h
++++ b/arch/arm64/include/asm/unistd.h
+@@ -13,6 +13,9 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
++#ifndef __ASM_ARM64_UNISTD_H
++#define __ASM_ARM64_UNISTD_H
++
+ #ifdef CONFIG_COMPAT
+ #define __ARCH_WANT_COMPAT_SYS_GETDENTS64
+ #define __ARCH_WANT_COMPAT_STAT64
+@@ -48,3 +51,5 @@
+ #include <uapi/asm/unistd.h>
+ 
+ #define NR_syscalls (__NR_syscalls)
++
++#endif /* __ASM_ARM64_UNISTD_H */
+diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
+index da1f06b..8f5e78e 100644
+--- a/arch/arm64/include/asm/unistd32.h
++++ b/arch/arm64/include/asm/unistd32.h
+@@ -16,6 +16,8 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
++#ifndef __ASM_ARM64_UNISTD32_H
++#define __ASM_ARM64_UNISTD32_H
+ 
+ #ifndef __SYSCALL
+ #define __SYSCALL(x, y)
+@@ -792,3 +794,5 @@ __SYSCALL(__NR_renameat2, sys_renameat2)
+ __SYSCALL(__NR_getrandom, sys_getrandom)
+ #define __NR_memfd_create 385
+ __SYSCALL(__NR_memfd_create, sys_memfd_create)
++
++#endif /* __ASM_ARM64_UNISTD32_H */
+diff --git a/arch/arm64/include/uapi/asm/unistd.h b/arch/arm64/include/uapi/asm/unistd.h
+index 1caadc2..ab72cac 100644
+--- a/arch/arm64/include/uapi/asm/unistd.h
++++ b/arch/arm64/include/uapi/asm/unistd.h
+@@ -13,4 +13,9 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
++#ifndef _UAPI__ASM_ARM64_UNISTD_H
++#define _UAPI__ASM_ARM64_UNISTD_H
++
+ #include <asm-generic/unistd.h>
++
++#endif /* _UAPI__ASM_ARM64_UNISTD_H */
 
