@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094AbaIKNAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51533 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755386AbaIKMeE (ORCPT
+	id S1753787AbaIKNBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:01:33 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58675 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbaIKNB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:04 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Sep 2014 09:01:29 -0400
+Date: Thu, 11 Sep 2014 05:59:45 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <20140910082726.GO6758@twins.programming.kicks-ass.net>
+Message-ID: <alpine.LSU.2.11.1409110527200.2465@eggly.anvils>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <alpine.LSU.2.11.1409091225310.8432@eggly.anvils> <20140910082726.GO6758@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.392948276@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 108/131] sparc64: Fix argument sign extension for 
- compat_sys_futex().
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On Wed, 10 Sep 2014, Peter Zijlstra wrote:
+> 
+> Does it make sense to drive both KSM and khugepage the same way we drive
+> the numa scanning? It has the benefit of getting rid of these threads,
+> which pushes the work into the right accountable context (the task its
+> doing the scanning for) and makes the scanning frequency depend on the
+> actual task activity.
 
-------------------
+I expect it would be possible: but more work than I'd ever find time
+to complete myself, with uncertain benefit.
 
-From: "David S. Miller" <davem@davemloft.net>
+khugepaged would probably be easier to convert, since it is dealing
+with independent mms anyway.  Whereas ksmd is establishing sharing
+between unrelated mms, so cannot deal with single mms in isolation.
 
-[ Upstream commit aa3449ee9c87d9b7660dd1493248abcc57769e31 ]
+But what's done by a single daemon today, could be passed from task
+to task under mutex instead; with probably very different handling
+of KSM's "unstable" tree (at present the old one is forgotten at the
+start of each cycle, and the new one rebuilt from scratch: I expect
+that would have to change, to removing rb entries one by one).
 
-Only the second argument, 'op', is signed.
+How well it would work out, I'm not confident to say.  And I think
+we shall need an answer to the power question sooner than we can
+turn the design of KSM on its head.  Vendors will go with what works
+for them, never mind what our priniciples dictate.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/sparc/kernel/sys32.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Your suggestion of following the NUMA scanning did make me wonder
+if I could use task_work: if there were already a re-arming task_work,
+I could probably use that, and escape your gaze :)  But I don't think
+it exists at present, and I don't think it's an extension that would
+be welcomed, and I don't think it would present an efficient solution.
 
-diff --git a/arch/sparc/kernel/sys32.S b/arch/sparc/kernel/sys32.S
-index d97f3eb..085c60f 100644
---- a/arch/sparc/kernel/sys32.S
-+++ b/arch/sparc/kernel/sys32.S
-@@ -87,7 +87,7 @@ SIGN1(sys32_io_submit, compat_sys_io_submit, %o1)
- SIGN1(sys32_mq_open, compat_sys_mq_open, %o1)
- SIGN1(sys32_select, compat_sys_select, %o0)
- SIGN1(sys32_mkdir, sys_mkdir, %o1)
--SIGN3(sys32_futex, compat_sys_futex, %o1, %o2, %o5)
-+SIGN1(sys32_futex, compat_sys_futex, %o1)
- SIGN1(sys32_sysfs, compat_sys_sysfs, %o0)
- SIGN2(sys32_sendfile, compat_sys_sendfile, %o0, %o1)
- SIGN2(sys32_sendfile64, compat_sys_sendfile64, %o0, %o1)
+The most satisfying solution aesthetically, would be for KSM to write
+protect the VM_MERGEABLE areas at some stage (when they "approach
+stability", whatever I mean by that), and let itself be woken by the
+faults (and if there are no write faults on any of the areas, then
+there is no need for it to be awoken).
 
+But I think that all those new faults would pose a very significant
+regression in performance.
+
+I don't have a good idea of where else to hook in at present.
+
+Hugh
