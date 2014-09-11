@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888AbaIKMlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:41:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51680 "EHLO
+	id S1755565AbaIKMmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:42:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51651 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755456AbaIKMeI (ORCPT
+	by vger.kernel.org with ESMTP id S1755442AbaIKMeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:08 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org, "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        "Antti Palosaari" <crope@iki.fi>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.602516901@decadent.org.uk>
+Message-ID: <lsq.1410438733.525606601@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 064/131] powerpc/mm: Use read barrier when creating
- real_pte
+Subject: [PATCH 3.2 007/131] [media] tda10071: force modulation to QPSK on
+ DVB-S
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,72 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 85c1fafd7262e68ad821ee1808686b1392b1167d upstream.
+commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
 
-On ppc64 we support 4K hash pte with 64K page size. That requires
-us to track the hash pte slot information on a per 4k basis. We do that
-by storing the slot details in the second half of pte page. The pte bit
-_PAGE_COMBO is used to indicate whether the second half need to be
-looked while building real_pte. We need to use read memory barrier while
-doing that so that load of hidx is not reordered w.r.t _PAGE_COMBO
-check. On the store side we already do a lwsync in __hash_page_4K
+Only supported modulation for DVB-S is QPSK. Modulation parameter
+contains invalid value for DVB-S on some cases, which leads driver
+refusing tuning attempt. Due to that, hard code modulation to QPSK
+in case of DVB-S.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[bwh: Backported to 3.2: include <asm/system.h> to ensure smp_rmb()
- is defined; cell_defconfig fails to build without this]
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/include/asm/pte-hash64-64k.h | 30 +++++++++++++++++++++++++-----
- 1 file changed, 25 insertions(+), 5 deletions(-)
+ drivers/media/dvb/frontends/tda10071.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/pte-hash64-64k.h
-+++ b/arch/powerpc/include/asm/pte-hash64-64k.h
-@@ -40,17 +40,39 @@
+--- a/drivers/media/dvb/frontends/tda10071.c
++++ b/drivers/media/dvb/frontends/tda10071.c
+@@ -644,6 +644,7 @@ static int tda10071_set_frontend(struct
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+ 	int ret, i;
+ 	u8 mode, rolloff, pilot, inversion, div;
++	fe_modulation_t modulation;
  
- #ifndef __ASSEMBLY__
+ 	dbg("%s: delivery_system=%d modulation=%d frequency=%d " \
+ 		"symbol_rate=%d inversion=%d pilot=%d rolloff=%d", __func__,
+@@ -677,10 +678,13 @@ static int tda10071_set_frontend(struct
  
-+#include <asm/system.h> /* for smp_rmb() */
+ 	switch (c->delivery_system) {
+ 	case SYS_DVBS:
++		modulation = QPSK;
+ 		rolloff = 0;
+ 		pilot = 2;
+ 		break;
+ 	case SYS_DVBS2:
++		modulation = c->modulation;
 +
- /*
-  * With 64K pages on hash table, we have a special PTE format that
-  * uses a second "half" of the page table to encode sub-page information
-  * in order to deal with 64K made of 4K HW pages. Thus we override the
-  * generic accessors and iterators here
-  */
--#define __real_pte(e,p) 	((real_pte_t) { \
--			(e), (pte_val(e) & _PAGE_COMBO) ? \
--				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
--#define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
--        (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
-+#define __real_pte __real_pte
-+static inline real_pte_t __real_pte(pte_t pte, pte_t *ptep)
-+{
-+	real_pte_t rpte;
-+
-+	rpte.pte = pte;
-+	rpte.hidx = 0;
-+	if (pte_val(pte) & _PAGE_COMBO) {
-+		/*
-+		 * Make sure we order the hidx load against the _PAGE_COMBO
-+		 * check. The store side ordering is done in __hash_page_4K
-+		 */
-+		smp_rmb();
-+		rpte.hidx = pte_val(*((ptep) + PTRS_PER_PTE));
-+	}
-+	return rpte;
-+}
-+
-+static inline unsigned long __rpte_to_hidx(real_pte_t rpte, unsigned long index)
-+{
-+	if ((pte_val(rpte.pte) & _PAGE_COMBO))
-+		return (rpte.hidx >> (index<<2)) & 0xf;
-+	return (pte_val(rpte.pte) >> 12) & 0xf;
-+}
-+
- #define __rpte_to_pte(r)	((r).pte)
- #define __rpte_sub_valid(rpte, index) \
- 	(pte_val(rpte.pte) & (_PAGE_HPTE_SUB0 >> (index)))
+ 		switch (c->rolloff) {
+ 		case ROLLOFF_20:
+ 			rolloff = 2;
+@@ -722,7 +726,7 @@ static int tda10071_set_frontend(struct
+ 
+ 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
+ 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
+-			c->modulation == TDA10071_MODCOD[i].modulation &&
++			modulation == TDA10071_MODCOD[i].modulation &&
+ 			c->fec_inner == TDA10071_MODCOD[i].fec) {
+ 			mode = TDA10071_MODCOD[i].val;
+ 			dbg("%s: mode found=%02x", __func__, mode);
 
