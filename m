@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770AbaIKMqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:46:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51630 "EHLO
+	id S1756136AbaIKMr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:47:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51614 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754980AbaIKMeH (ORCPT
+	by vger.kernel.org with ESMTP id S1755424AbaIKMeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:07 -0400
+	Thu, 11 Sep 2014 08:34:06 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Filipe Manana" <fdmanana@suse.com>,
-        "Chris Mason" <clm@fb.com>
+CC: akpm@linux-foundation.org, "NeilBrown" <neilb@suse.de>,
+        "Dan Williams" <dan.j.williams@intel.com>,
+        "Manibalan P" <pmanibalan@amiindia.co.in>,
+        "Yuri Tikhonov" <yur@emcraft.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.382124556@decadent.org.uk>
+Message-ID: <lsq.1410438733.547378807@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 066/131] Btrfs: fix csum tree corruption, duplicate
- and outdated checksums
+Subject: [PATCH 3.2 069/131] md/raid6: avoid data corruption during
+ recovery of double-degraded RAID6
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,104 +34,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Manana <fdmanana@suse.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 27b9a8122ff71a8cadfbffb9c4f0694300464f3b upstream.
+commit 9c4bdf697c39805078392d5ddbbba5ae5680e0dd upstream.
 
-Under rare circumstances we can end up leaving 2 versions of a checksum
-for the same file extent range.
+During recovery of a double-degraded RAID6 it is possible for
+some blocks not to be recovered properly, leading to corruption.
 
-The reason for this is that after calling btrfs_next_leaf we process
-slot 0 of the leaf it returns, instead of processing the slot set in
-path->slots[0]. Most of the time (by far) path->slots[0] is 0, but after
-btrfs_next_leaf() releases the path and before it searches for the next
-leaf, another task might cause a split of the next leaf, which migrates
-some of its keys to the leaf we were processing before calling
-btrfs_next_leaf(). In this case btrfs_next_leaf() returns again the
-same leaf but with path->slots[0] having a slot number corresponding
-to the first new key it got, that is, a slot number that didn't exist
-before calling btrfs_next_leaf(), as the leaf now has more keys than
-it had before. So we must really process the returned leaf starting at
-path->slots[0] always, as it isn't always 0, and the key at slot 0 can
-have an offset much lower than our search offset/bytenr.
+If a write happens to one block in a stripe that would be written to a
+missing device, and at the same time that stripe is recovering data
+to the other missing device, then that recovered data may not be written.
 
-For example, consider the following scenario, where we have:
+This patch skips, in the double-degraded case, an optimisation that is
+only safe for single-degraded arrays.
 
-sums->bytenr: 40157184, sums->len: 16384, sums end: 40173568
-four 4kb file data blocks with offsets 40157184, 40161280, 40165376, 40169472
+Bug was introduced in 2.6.32 and fix is suitable for any kernel since
+then.  In an older kernel with separate handle_stripe5() and
+handle_stripe6() functions the patch must change handle_stripe6().
 
-  Leaf N:
-
-    slot = 0                           slot = btrfs_header_nritems() - 1
-  |-------------------------------------------------------------------|
-  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4] |
-  |-------------------------------------------------------------------|
-
-  Leaf N + 1:
-
-      slot = 0                          slot = btrfs_header_nritems() - 1
-  |--------------------------------------------------------------------|
-  | [(CSUM CSUM 40161280), size 32] ... [((CSUM CSUM 40615936), size 8 |
-  |--------------------------------------------------------------------|
-
-Because we are at the last slot of leaf N, we call btrfs_next_leaf() to
-find the next highest key, which releases the current path and then searches
-for that next key. However after releasing the path and before finding that
-next key, the item at slot 0 of leaf N + 1 gets moved to leaf N, due to a call
-to ctree.c:push_leaf_left() (via ctree.c:split_leaf()), and therefore
-btrfs_next_leaf() will returns us a path again with leaf N but with the slot
-pointing to its new last key (CSUM CSUM 40161280). This new version of leaf N
-is then:
-
-    slot = 0                        slot = btrfs_header_nritems() - 2  slot = btrfs_header_nritems() - 1
-  |----------------------------------------------------------------------------------------------------|
-  | [(CSUM CSUM 39239680), size 8] ... [(CSUM CSUM 40116224), size 4]  [(CSUM CSUM 40161280), size 32] |
-  |----------------------------------------------------------------------------------------------------|
-
-And incorrecly using slot 0, makes us set next_offset to 39239680 and we jump
-into the "insert:" label, which will set tmp to:
-
-    tmp = min((sums->len - total_bytes) >> blocksize_bits,
-        (next_offset - file_key.offset) >> blocksize_bits) =
-    min((16384 - 0) >> 12, (39239680 - 40157184) >> 12) =
-    min(4, (u64)-917504 = 18446744073708634112 >> 12) = 4
-
-and
-
-   ins_size = csum_size * tmp = 4 * 4 = 16 bytes.
-
-In other words, we insert a new csum item in the tree with key
-(CSUM_OBJECTID CSUM_KEY 40157184 = sums->bytenr) that contains the checksums
-for all the data (4 blocks of 4096 bytes each = sums->len). Which is wrong,
-because the item with key (CSUM CSUM 40161280) (the one that was moved from
-leaf N + 1 to the end of leaf N) contains the old checksums of the last 12288
-bytes of our data and won't get those old checksums removed.
-
-So this leaves us 2 different checksums for 3 4kb blocks of data in the tree,
-and breaks the logical rule:
-
-   Key_N+1.offset >= Key_N.offset + length_of_data_its_checksums_cover
-
-An obvious bad effect of this is that a subsequent csum tree lookup to get
-the checksum of any of the blocks with logical offset of 40161280, 40165376
-or 40169472 (the last 3 4kb blocks of file data), will get the old checksums.
-
-Signed-off-by: Filipe Manana <fdmanana@suse.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+Cc: Yuri Tikhonov <yur@emcraft.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Tested-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
+Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/file-item.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/btrfs/file-item.c
-+++ b/fs/btrfs/file-item.c
-@@ -717,7 +717,7 @@ again:
- 				found_next = 1;
- 			if (ret != 0)
- 				goto insert;
--			slot = 0;
-+			slot = path->slots[0];
- 		}
- 		btrfs_item_key_to_cpu(path->nodes[0], &found_key, slot);
- 		if (found_key.objectid != BTRFS_EXTENT_CSUM_OBJECTID ||
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3240,6 +3240,8 @@ static void handle_stripe(struct stripe_
+ 				set_bit(R5_Wantwrite, &dev->flags);
+ 				if (prexor)
+ 					continue;
++				if (s.failed > 1)
++					continue;
+ 				if (!test_bit(R5_Insync, &dev->flags) ||
+ 				    ((i == sh->pd_idx || i == sh->qd_idx)  &&
+ 				     s.failed == 0))
 
