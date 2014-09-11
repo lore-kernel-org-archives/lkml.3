@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808AbaIKPfz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40499 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756397AbaIKPfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:35:53 -0400
-Date: Thu, 11 Sep 2014 17:35:27 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
- cookie with each entry
-Message-ID: <20140911153527.GE32722@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-14-git-send-email-acme@kernel.org>
- <20140911103319.GA13634@krava.brq.redhat.com>
- <20140911132911.GB10158@kernel.org>
- <20140911145945.GC32722@krava.brq.redhat.com>
- <20140911152330.GI10158@kernel.org>
+	id S1756429AbaIKPhc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:37:32 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:54253 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaIKPh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:37:29 -0400
+Message-ID: <5411C1B6.5090104@gmail.com>
+Date: Thu, 11 Sep 2014 08:37:26 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911152330.GI10158@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sameer Nanda <snanda@chromium.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: dirk.brandewie@gmail.com, Anup Chenthamarakshan <anupc@chromium.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_pstate: track and export frequency residency stats
+ via sysfs.
+References: <1410221424-20590-1-git-send-email-anupc@chromium.org> <1610826.tK4V65ABJD@vostro.rjw.lan> <20140910233905.GA2439@google.com> <7546673.Ir6ttItgPU@vostro.rjw.lan> <CANMivWa_kowDefkvLHpY=JoB9JejiJWBZL7fNqeuwQfcMu+hhQ@mail.gmail.com>
+In-Reply-To: <CANMivWa_kowDefkvLHpY=JoB9JejiJWBZL7fNqeuwQfcMu+hhQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:23:30PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Sep 11, 2014 at 04:59:45PM +0200, Jiri Olsa escreveu:
-> > On Thu, Sep 11, 2014 at 10:29:11AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > But then I had no use whatsoever for the ->ptr one at this point, so I
-> > > just nuked it, to keep _just_ what is used _right now_, and added the
-> > > comment to the changelog :-)
-> > 
-> > if we are treeting tools/lib/api as 'external' lib, I think we should
-> > use 'void *' for priv and let the user retype it to whatever he wants
->  
-> > but I dont care/insist here too much.. it just seems strange to me ;-)
-> 
-> Ok, so perhaps it should be:
-> 
-> 	struct fdarray {
-> 		...
-> 		union {
-> 			int idx;
-> 		} *priv;
-> 		...
-> }
-> 
-> And then perf's evlist will use:
-> 
-> 	fda->priv[fd].idx;
-> 
-> 	Then, when we get the need for a pointer, we can go there and
-> add it to the union.
-> 
-> 	This will make tools/lib/api/fd/ a little bit more friendly to
-> use outside the kernel sources, since then a new version will be source
-> code compatible (but not necessarily binary compatible).
+On 09/10/2014 06:04 PM, Sameer Nanda wrote:
+> On Wed, Sep 10, 2014 at 5:04 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> On Wednesday, September 10, 2014 04:39:05 PM Anup Chenthamarakshan wrote:
+>>> On Thu, Sep 11, 2014 at 12:49:48AM +0200, Rafael J. Wysocki wrote:
+>>>> On Wednesday, September 10, 2014 03:15:08 PM Anup Chenthamarakshan wrote:
+>>>>>
+>>>>> Tools like powertop and turbostat are not present by default on all systems,
+>>>>> so it is not always possible to use them :(
+>>>>
+>>>> Which systems are you referring to in particular?
+>>>
+>>> We're testing on Chrome OS devices (Chromebooks).
+>>
+>> How big of a deal is it to install the tools mentioned above on such a system?
+>>
+>> At least turbostat is shipped with the kernel source.
+>
+> Given the web browser based front end of Chrome OS, installing these
+> tools will only get us so far -- if the system is in developer mode,
+> the tools are accessible but when the system is in normal (verified
+> boot mode) these tools cannot be launched directly.
+>
+> We are in the process of switching Chrome OS x86 kernels from ondemand
+> governor to intel_pstate.  When debugging power consumption issues,
+> losing the ability to easily get CPU frequency related information as
+> a side-effect of this switch is less than ideal.
+>
+> We are happy to spin this patch to expose aperf/mperf based CPU
+> frequency information if you think that is the better route to take
+> longer term.
 
-you lost me ;-)
+You can get the frequency as measured by intel_pstate from /proc/cpuinfo
+or /sys/devices/system/cpu/cpu[n]/cpufreq/cpuinfo_cur_freq but his is only
+for the most recent sample on cpu[n]
 
-could you please make an example of the !compatibility you mentioned?
+reading MSR 0x199 and some reasonable rate will let you graph what request
+is being made on each core.
 
-> 	If we commit to that we can't just go on and change all its
-> users as we can now do for things like 'struct sk_buff', 'struct sock'
-> and any other kernel data structures.
-> 	There are costs in making it 'external' in the sense you're
-> implying. I want to make it a bit less 'external' (in your sense), at
-> least while we initially implement new stuff like this one.
+>
+>>
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
+>
+>
+>
 
-and the costs?
-
-
-also I did not mean that union above, what I meant was:
-
-struct fdarray {
-	...
-	void *priv;
-	...
-}
-
-
-jirka
