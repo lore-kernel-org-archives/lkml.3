@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262AbaIKQc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:32:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48388 "EHLO
+	id S1756822AbaIKQfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:35:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48417 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750860AbaIKQc2 (ORCPT
+	with ESMTP id S1752786AbaIKQe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:32:28 -0400
-Date: Thu, 11 Sep 2014 18:32:25 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+	Thu, 11 Sep 2014 12:34:59 -0400
+Date: Thu, 11 Sep 2014 18:34:56 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 7/7] ARM: at91: add sama5d4 support to sama5_defconfig
-Message-ID: <20140911183225.1a9363bd@free-electrons.com>
-In-Reply-To: <1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
+Message-ID: <20140911163456.GC3131@piout.net>
 References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+ <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <5411CB17.1060608@atmel.com>
+ <20140911162836.GB3131@piout.net>
+ <5411CDFF.2000601@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5411CDFF.2000601@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Belloni,
+On 11/09/2014 at 18:29:51 +0200, Nicolas Ferre wrote :
+> On 11/09/2014 18:28, Alexandre Belloni :
+> > This actually depends on the maintainer preferences, after the ---
+> > marker means that it will not appear in the final commit log which was
+> > my intention.
+> 
+> And it still works with git send-email? good to know! (and sorry for the
+> noise ;-)).
+> 
 
-On Thu, 11 Sep 2014 17:54:12 +0200, Alexandre Belloni wrote:
+As you can see, it does
 
-> @@ -66,7 +67,6 @@ CONFIG_MTD=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_CFI=y
-> -CONFIG_MTD_M25P80=y
->  CONFIG_MTD_NAND=y
->  CONFIG_MTD_NAND_ATMEL=y
->  CONFIG_MTD_SPI_NOR=y
-
-Most likely this is not intended to be part of this patch.
-
-Thomas
 -- 
-Thomas Petazzoni, CTO, Free Electrons
+Alexandre Belloni, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
