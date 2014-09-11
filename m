@@ -1,194 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaIKXTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 19:19:06 -0400
-Received: from [65.55.169.130] ([65.55.169.130]:1876 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754812AbaIKXTA convert rfc822-to-8bit (ORCPT
+	id S1754032AbaIKXVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 19:21:30 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41264 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaIKXV3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 19:19:00 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Michal Hocko <mhocko@suse.cz>, Dexuan Cui <decui@microsoft.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Hugh Dickins" <hughd@google.com>
-Subject: RE: page fault in mem_cgroup_page_lruvec() due to memory hot-add
-Thread-Topic: page fault in mem_cgroup_page_lruvec() due to memory hot-add
-Thread-Index: Ac/NtHCekGW+JEAwTwikIP9woKg07AAB5PiAABabewA=
-Date: Thu, 11 Sep 2014 23:17:08 +0000
-Message-ID: <c5d21324ce1144e49979747a00643a83@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <EE124450C0AAF944A40DD71E61F878C99B0031@SINEX14MBXC418.southpacific.corp.microsoft.com>
- <20140911122923.GE22042@dhcp22.suse.cz>
-In-Reply-To: <20140911122923.GE22042@dhcp22.suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [2001:4898:80e8:ee31::3]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 03319F6FEF
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(41574002)(199003)(189002)(24454002)(479174003)(13464003)(51704005)(377454003)(53754006)(74662001)(74502001)(31966008)(86612001)(1511001)(97736003)(81342001)(83072002)(81542001)(4396001)(77982001)(85852003)(76576001)(33646002)(101416001)(2421001)(54356999)(90102001)(19580405001)(83322001)(95666004)(99286002)(19580395003)(2656002)(105586002)(74316001)(108616004)(85306004)(2561002)(20776003)(99396002)(107046002)(64706001)(92566001)(76176999)(86362001)(46102001)(80022001)(50986999)(79102001)(87936001)(106356001)(21056001)(575784001)(76482001)(77096002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Sep 2014 19:21:29 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 12 Sep 2014 08:21:24 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        Chao Yu <chao2.yu@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] zram: use notify_free to account all free notifications
+Message-ID: <20140911232124.GB4652@bbox>
+References: <1409921829-12261-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <1409921829-12261-2-git-send-email-sergey.senozhatsky@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1409921829-12261-2-git-send-email-sergey.senozhatsky@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey Sergey,
 
+Sorry for late review.
 
-> -----Original Message-----
-> From: Michal Hocko [mailto:mstsxfx@gmail.com] On Behalf Of Michal Hocko
-> Sent: Thursday, September 11, 2014 5:29 AM
-> To: Dexuan Cui
-> Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org; Johannes Weiner;
-> Hugh Dickins; KY Srinivasan
-> Subject: Re: page fault in mem_cgroup_page_lruvec() due to memory hot-
-> add
+On Fri, Sep 05, 2014 at 09:57:09PM +0900, Sergey Senozhatsky wrote:
+> notify_free device attribute accounts the number of slot free notifications
+> and internally represents the number of zram_free_page() calls. Slot free
+> notifications are sent only when device is used as a swap device, hence
+> notify_free is used only for swap devices. Since f4659d8e620d08 (zram:
+> support REQ_DISCARD) ZRAM handles yet another one free notification (also
+> via zram_free_page() call) -- REQ_DISCARD requests, which are sent by a
+> filesystem, whenever some data blocks are discarded. However, there is no
+> way to know the number of notifications in the latter case.
 > 
-> On Thu 11-09-14 12:07:13, Dexuan Cui wrote:
-> > Hi all,
-> >
-> > When I try to run Ubuntu 14.10 guest (the nightly build with the
-> > kernel version 3.16.0-12-generic) on hyper-v, occasionally, I get the
-> > below panic(see the end of the mail) suddenly.
-> > (I suppose it's likely the upstream kernel has the issue too)
-> >
-> > When the panic happens, I'm running a memory stress program to test
-> > the balloon driver drivers/hv/hv_balloon.c, which can hot-add memory
-> > to the guest by invoking memory_add_physaddr_to_nid() and
-> > add_memory(), if the feature "Dynamic Memory" is enabled.
-> >
-> > The issue here is: the memory hot-add seems successful, but
-> > occasionally the page fault can happen and crash the whole guest.
-> >
-> > It looks the crash only happens to the guest in the SMP guest case. I
-> > never get the crash when the guest is configured with 1 vCPU.
-> >
-> > Sometimes it's very difficult to reproduce the crash while sometimes
-> > it's relatively easy.
-> >
-> > Can anybody please shed some light?
-> >
-> > Thanks!
-> >
-> > -- Dexuan
-> >
-> > [   99.211382] BUG: unable to handle kernel paging request at
-> 0000000000c0b608
-> > [   99.215308] IP: [<ffffffff811d2e9c>]
-> mem_cgroup_page_lruvec+0x2c/0xa0
-> > [   99.215308] PGD 37544067 PUD 393c2067 PMD 0
-> > [   99.215308] Oops: 0000 [#1] SMP
-> > [   99.215308] Modules linked in: bnep rfcomm bluetooth 6lowpan_iphc
-> joydev hid_generic crct10dif_pclmul crc32_pclmul ghash_clmulni_intel
-> aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd
-> hyperv_keyboard hv_balloon hid_hyperv hid serio_raw i2c_piix4 mac_hid
-> parport_pc ppdev lp parport hv_netvsc hv_utils hv_storvsc psmouse
-> hv_vmbus pata_acpi floppy
-> > [   99.215308] CPU: 3 PID: 1919 Comm: stressapptest Not tainted 3.16.0-12-
-> generic #18-Ubuntu
-> > [   99.215308] Hardware name: Microsoft Corporation Virtual
-> Machine/Virtual Machine, BIOS 090006  05/23/2012
-> > [   99.215308] task: ffff880034282880 ti: ffff8800415f8000 task.ti:
-> ffff8800415f8000
-> > [   99.215308] RIP: 0010:[<ffffffff811d2e9c>]  [<ffffffff811d2e9c>]
-> mem_cgroup_page_lruvec+0x2c/0xa0
-> > [   99.215308] RSP: 0000:ffff8800415fbc58  EFLAGS: 00010006
-> > [   99.215308] RAX: 0000000000c0b600 RBX: ffff88003ffebf80 RCX:
-> ffff88003ffea300
-> > [   99.215308] RDX: 02ffff00000d0001 RSI: ffff88003ffebf80 RDI:
-> ffffea000302d800
-> > [   99.215308] RBP: ffff8800415fbc68 R08: 0000000000000008 R09:
-> 0000000000000004
-> > [   99.215308] R10: 00000000ffffffff R11: ffff880033ffd400 R12:
-> ffffea000302d800
-> > [   99.215308] R13: ffffea000302d800 R14: ffff88003b4703c0 R15:
-> 0000000000000202
-> > [   99.215308] FS:  00007fb0075fa700(0000) GS:ffff88003b460000(0000)
-> knlGS:0000000000000000
-> > [   99.215308] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [   99.215308] CR2: 0000000000c0b608 CR3: 00000000389b4000 CR4:
-> 00000000000006e0
-> > [   99.215308] Stack:
-> > [   99.215308]  ffff88003ffebf80 0000000000000002 ffff8800415fbcc0
-> ffffffff81178604
-> > [   99.215308]  0000000000000000 ffffffff81177bf0 0000000000000296
-> ffff8800415fbc90
-> > [   99.215308]  0000000000000003 000000000004b5d8 00000000000200da
-> ffff880036db6480
-> > [   99.215308] Call Trace:
-> > [   99.215308]  [<ffffffff81178604>] pagevec_lru_move_fn+0xc4/0x130
-> > [   99.215308]  [<ffffffff81177bf0>] ? __activate_page+0x1e0/0x1e0
-> > [   99.215308]  [<ffffffff81178b7e>] lru_add_drain_cpu+0xce/0xe0
-> > [   99.215308]  [<ffffffff81178c96>] lru_add_drain+0x16/0x20
-> > [   99.215308]  [<ffffffff811aa2e6>] swapin_readahead+0x126/0x1a0
-> > [   99.215308]  [<ffffffff81198c17>] handle_mm_fault+0xc87/0xf90
-> > [   99.215308]  [<ffffffff8105ce42>] __do_page_fault+0x1c2/0x580
-> > [   99.215308]  [<ffffffff810a9d18>] ? __enqueue_entity+0x78/0x80
-> > [   99.215308]  [<ffffffff810ae8c4>] ? update_curr+0xf4/0x180
-> > [   99.215308]  [<ffffffff810ab3f8>] ? pick_next_entity+0x88/0x180
-> > [   99.215308]  [<ffffffff810b3b8e>] ? pick_next_task_fair+0x57e/0x8d0
-> > [   99.215308]  [<ffffffff810a84e8>] ? sched_clock_cpu+0x88/0xb0
-> > [   99.215308]  [<ffffffff8105d231>] do_page_fault+0x31/0x70
-> > [   99.215308]  [<ffffffff81782908>] page_fault+0x28/0x30
-> > [   99.215308] Code: 66 66 66 90 8b 15 15 2a b5 00 55 48 8d 86 48 05 00 00 48
-> 89 e5 41 54 53 85 d2 48 89 f3 75 56 49 89 fc e8 18 44 00 00 49 8b 14 24 <48> 8b
-> 48 08 83 e2 20 75 1b 48 8b 10 83 e2 02 75 13 48 8b 15 54
-> > [   99.215308] RIP  [<ffffffff811d2e9c>]
-> mem_cgroup_page_lruvec+0x2c/0xa0
-> > [   99.215308]  RSP <ffff8800415fbc58>
-> > [   99.215308] CR2: 0000000000c0b608
-> > [   99.215308] ---[ end trace 24db5f2378e898cb ]---
+> Use notify_free to account the number of pages freed in zram_free_page(),
+> instead of accounting only swap_slot_free_notify() calls (each
+> zram_slot_free_notify() call frees one page).
 > 
-> This decodes to:
-> All code
-> ========
->    0:   66 66 66 90             data16 data16 xchg %ax,%ax
->    4:   8b 15 15 2a b5 00       mov    0xb52a15(%rip),%edx        # 0xb52a1f
->    a:   55                      push   %rbp
->    b:   48 8d 86 48 05 00 00    lea    0x548(%rsi),%rax
->   12:   48 89 e5                mov    %rsp,%rbp
->   15:   41 54                   push   %r12
->   17:   53                      push   %rbx
->   18:   85 d2                   test   %edx,%edx
->   1a:   48 89 f3                mov    %rsi,%rbx
->   1d:   75 56                   jne    0x75
->   1f:   49 89 fc                mov    %rdi,%r12
->   22:   e8 18 44 00 00          callq  0x443f
->   27:   49 8b 14 24             mov    (%r12),%rdx
->   2b:*  48 8b 48 08             mov    0x8(%rax),%rcx           <-- trapping instruction
->   2f:   83 e2 20                and    $0x20,%edx
->   32:   75 1b                   jne    0x4f
->   34:   48 8b 10                mov    (%rax),%rdx
->   37:   83 e2 02                and    $0x2,%edx
->   3a:   75 13                   jne    0x4f
->   3c:   48                      rex.W
->   3d:   8b                      .byte 0x8b
->   3e:   15                      .byte 0x15
->   3f:   54                      push   %rsp
+> This means that depending on usage scenario notify_free represents:
+>  a) the number of pages freed because of slot free notifications, which is
+>    equal to the number of swap_slot_free_notify() calls, so there is no
+>    behaviour change
 > 
-> and that matches to the following code:
->         pc = lookup_page_cgroup(page);
->         memcg = pc->mem_cgroup;		<<< BANG
+>  b) the number of pages freed because of REQ_DISCARD notifications
 > 
-> So the lookup_page_cgroup returned a garbage (rax is supposed to be pc
-> pointer but the value is definitely not a kernel pointer. It looks like an offset
-> from zero base address). The page itself (rdi resp. r12 looks pretty normal to
-> me). I would strongly suspect that the HyperV is doing something nasty
-> when offlining the memory. Because there shouldn't be any page left behind
-> when the node_data resp. mem_section (depending on the used memory
-> model) is torn down.
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> ---
+>  Documentation/ABI/testing/sysfs-block-zram | 13 ++++++++-----
+>  drivers/block/zram/zram_drv.c              |  2 +-
+>  2 files changed, 9 insertions(+), 6 deletions(-)
 > 
-> KY, any ideas?
+> diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+> index b13dc99..a6148ea 100644
+> --- a/Documentation/ABI/testing/sysfs-block-zram
+> +++ b/Documentation/ABI/testing/sysfs-block-zram
+> @@ -77,11 +77,14 @@ What:		/sys/block/zram<id>/notify_free
+>  Date:		August 2010
+>  Contact:	Nitin Gupta <ngupta@vflare.org>
+>  Description:
+> -		The notify_free file is read-only and specifies the number of
+> -		swap slot free notifications received by this device. These
+> -		notifications are sent to a swap block device when a swap slot
+> -		is freed. This statistic is applicable only when this disk is
+> -		being used as a swap disk.
+> +		The notify_free file is read-only. Depending on device usage
+> +		scenario it may account a) the number of pages freed because
+> +		of swap slot free notifications or b) the number of pages freed
+> +		because of REQ_DISCARD requests sent by bio. The former ones
+> +		are sent to a swap block device when a swap slot is freed, which
+> +		implies that this disk is being used as a swap disk. The latter
+> +		ones are sent by filesystem mounted with discard option,
+> +		whenever some data blocks are getting discarded.
+>  
+>  What:		/sys/block/zram<id>/zero_pages
+>  Date:		August 2010
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index d78b245..bc20fe1 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -410,6 +410,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+>  	atomic64_sub(zram_get_obj_size(meta, index),
+>  			&zram->stats.compr_data_size);
+>  	atomic64_dec(&zram->stats.pages_stored);
+> +	atomic64_inc(&zram->stats.notify_free);
 
-I will take a look.
+It is wrong. The zram_free_page is called at several places and
+they are all not notify free.
+Pz, account it in zram_slot_free_notify and zram_bio_discard.
 
-K. Y
+>  
+>  	meta->table[index].handle = 0;
+>  	zram_set_obj_size(meta, index, 0);
+> @@ -938,7 +939,6 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>  	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+>  	zram_free_page(zram, index);
+>  	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
+> -	atomic64_inc(&zram->stats.notify_free);
+>  }
+>  
+>  static const struct block_device_operations zram_devops = {
+> -- 
+> 2.1.0.134.gb1ae451
+> 
 > --
-> Michal Hocko
-> SUSE Labs
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
