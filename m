@@ -1,124 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284AbaIKQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:28:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39033 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689AbaIKQ2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:28:33 -0400
-Date: Thu, 11 Sep 2014 17:28:28 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: Re: mm: BUG in unmap_page_range
-Message-ID: <20140911162827.GZ17501@suse.de>
-References: <54082B25.9090600@oracle.com>
- <20140908171853.GN17501@suse.de>
- <540DEDE7.4020300@oracle.com>
- <20140909213309.GQ17501@suse.de>
- <540F7D42.1020402@oracle.com>
- <alpine.LSU.2.11.1409091903390.10989@eggly.anvils>
- <20140910124732.GT17501@suse.de>
- <alpine.LSU.2.11.1409101210520.1744@eggly.anvils>
- <54110C62.4030702@oracle.com>
- <alpine.LSU.2.11.1409110356280.2116@eggly.anvils>
+	id S1755278AbaIKQ2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:28:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48319 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755921AbaIKQ2j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:28:39 -0400
+Date: Thu, 11 Sep 2014 18:28:37 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
+Message-ID: <20140911162836.GB3131@piout.net>
+References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <5411CB17.1060608@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1409110356280.2116@eggly.anvils>
+In-Reply-To: <5411CB17.1060608@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 04:39:39AM -0700, Hugh Dickins wrote:
-> On Wed, 10 Sep 2014, Sasha Levin wrote:
-> > On 09/10/2014 03:36 PM, Hugh Dickins wrote:
-> > > Right, and Sasha  reports that that can fire, but he sees the bug
-> > > with this patch in and without that firing.
+On 11/09/2014 at 18:17:27 +0200, Nicolas Ferre wrote :
+> On 11/09/2014 17:54, Alexandre Belloni :
+> > Add sama5d4 support to irq-atmel-aic5.
 > > 
-> > I've changed that WARN_ON_ONCE() to a VM_BUG_ON_VMA() to get some useful
-> > VMA information out, and got the following:
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> > Cc: Jason Cooper <jason@lakedaemon.net>
 > 
-> Well, thanks, but Mel and I have both failed to perceive any actual
-> problem arising from that peculiarity.  And Mel's warning, and the 900s
-> in yesterday's dumps, have shown that it is not correlated with the
-> pte_mknuma() bug we are chasing.  So there isn't anything that I want to
-> look up in these vmas.  Or did you notice something interesting in them?
+> Supposed to be before the "---" ;-)
+
+This actually depends on the maintainer preferences, after the ---
+marker means that it will not appear in the final commit log which was
+my intention.
+
 > 
-> > And on a maybe related note, I've started seeing the following today. It may
-> > be because we fixed mbind() in trinity but it could also be related to
-> 
-> The fixed trinity may be counter-productive for now, since we think
-> there is an understandable pte_mknuma() bug coming from that direction,
-> but have not posted a patch for it yet.
-> 
-> > this issue (free_pgtables() is in the call chain). If you don't think it has
-> > anything to do with it let me know and I'll start a new thread:
+> >  drivers/irqchip/irq-atmel-aic5.c | 10 ++++++++++
+> >  1 file changed, 10 insertions(+)
 > > 
-> > [ 1195.996803] BUG: unable to handle kernel NULL pointer dereference at           (null)
-> > [ 1196.001744] IP: __rb_erase_color (include/linux/rbtree_augmented.h:107 lib/rbtree.c:229 lib/rbtree.c:367)
-> > [ 1196.001744] Call Trace:
-> > [ 1196.001744] vma_interval_tree_remove (mm/interval_tree.c:24)
-> > [ 1196.001744] __remove_shared_vm_struct (mm/mmap.c:232)
-> > [ 1196.001744] unlink_file_vma (mm/mmap.c:246)
-> > [ 1196.001744] free_pgtables (mm/memory.c:547)
-> > [ 1196.001744] exit_mmap (mm/mmap.c:2826)
-> > [ 1196.001744] mmput (kernel/fork.c:654)
-> > [ 1196.001744] do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:461 kernel/exit.c:746)
+> > diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
+> > index dc7d98607a89..a11aae8fb006 100644
+> > --- a/drivers/irqchip/irq-atmel-aic5.c
+> > +++ b/drivers/irqchip/irq-atmel-aic5.c
+> > @@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
+> >  
+> >  static const struct of_device_id __initdata aic5_irq_fixups[] = {
+> >  	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
+> > +	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
+> >  	{ /* sentinel */ },
+> >  };
+> >  
+> > @@ -349,3 +350,12 @@ static int __init sama5d3_aic5_of_init(struct device_node *node,
+> >  	return aic5_of_init(node, parent, NR_SAMA5D3_IRQS);
+> >  }
+> >  IRQCHIP_DECLARE(sama5d3_aic5, "atmel,sama5d3-aic", sama5d3_aic5_of_init);
+> > +
+> > +#define NR_SAMA5D4_IRQS		68
+> > +
+> > +static int __init sama5d4_aic5_of_init(struct device_node *node,
+> > +				       struct device_node *parent)
+> > +{
+> > +	return aic5_of_init(node, parent, NR_SAMA5D4_IRQS);
+> > +}
+> > +IRQCHIP_DECLARE(sama5d4_aic5, "atmel,sama5d4-aic", sama5d4_aic5_of_init);
+> > 
 > 
-> I didn't study in any detail, but this one seems much more like the
-> zeroing and vma corruption that you've been seeing in other dumps.
 > 
-
-I didn't look through the dumps closely today because I spent the time
-putting together a KVM setup similar to Sasha's (many cpus, fake NUMA,
-etc) so I could run trinity in it in another attempt to reproduce this.
-I did not encounter the same VM_BUG_ON unfortunately. However, trinity
-itself crashed after 2.5 hours complaining
-
-[watchdog] pid 32188 has disappeared. Reaping.
-[watchdog] pid 32024 has disappeared. Reaping.
-[watchdog] pid 32300 has disappeared. Reaping.
-[watchdog] Sanity check failed! Found pid 0 at pidslot 35!
-
-This did not happen when running on bare metal. This error makes me wonder
-if it is evidence that there is zeroing corruption occuring when running
-inside KVM. Another possibility is that it's somehow related to fake NUMA
-although it's hard to see how. It's still possible the bug is with the
-page table handling and KVM affects timing enough to cause problems so
-I'm not ruling that out.
-
-> Though a single pte_mknuma() crash could presumably be caused by vma
-> corruption (but I think not mere zeroing), the recurrent way in which
-> you hit that pte_mknuma() bug in particular makes it unlikely to be
-> caused by random corruption.
-> 
-> You are generating new crashes faster than we can keep up with them.
-> Would this be a suitable point for you to switch over to testing
-> 3.17-rc, to see if that is as unstable for you as -next is?
-> 
-> That VM_BUG_ON(!(val & _PAGE_PRESENT)) is not in the 3.17-rc tree,
-> but I think you can "safely" add it to 3.17-rc.  Quotes around
-> "safely" meaning that we know that there's a bug to hit, at least
-> in -next, but I don't think it's going to be hit for stupid obvious
-> reasons.
-> 
-
-Agreed. If 3.17-rc4 looks stable with the VM_BUG_ON then it would be
-really nice if you could bisect 3.17-rc4 to linux-next carrying the
-VM_BUG_ON(!(val & _PAGE_PRESENT)) check at each bisection point. I'm not
-100% sure if I'm seeing the same corruption as you or some other issue and
-do not want to conflate numerous different problems into one. I know this
-is a pain in the ass but if 3.17-rc4 looks stable then a bisection might
-be faster overall than my constant head scratching :(
+> -- 
+> Nicolas Ferre
 
 -- 
-Mel Gorman
-SUSE Labs
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
