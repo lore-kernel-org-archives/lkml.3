@@ -1,81 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbaIKLOe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:14:34 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:47394 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172AbaIKLOc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:14:32 -0400
+	id S1754141AbaIKLR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:17:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64140 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233AbaIKLR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 07:17:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,505,1406617200"; 
+   d="scan'208";a="571696909"
+Date: Thu, 11 Sep 2014 14:17:21 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+Message-ID: <20140911111721.GB17476@xps8300>
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
+ <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20140911111000.GA552@ulmo>
-References: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
-	<1410364463-12692-4-git-send-email-dh.herrmann@gmail.com>
-	<20140911111000.GA552@ulmo>
-Date: Thu, 11 Sep 2014 13:14:31 +0200
-Message-ID: <CANq1E4S=0EHyLh6M_pA94QNgMzzj5NXpd6p7OMDTaQSW+Qd_bQ@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/4] backlight: add kernel-internal backlight API
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Bryan Wu <cooloney@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Wed, Sep 10, 2014 at 09:30:04PM +0200, Sebastian Andrzej Siewior wrote:
+> At least on AM335x the following problem exists: Even if the TX FIFO is
+> empty and a TX transfer is programmed (and started) the UART does not
+> trigger the DMA transfer.
+> After $TRESHOLD number of bytes have been written to the FIFO manually the
+> UART reevaluates the whole situation and decides that now there is enough
+> room in the FIFO and so the transfer begins.
+> This problem has not been seen on DRA7 or beagle board xm (OMAP3). I am not
+> sure if this is UART-IP core specific or DMA engine.
+> 
+> The workaround is to use a threshold of one byte, program the DMA
+> transfer minus one byte and then to put the first byte into the FIFO to
+> kick start the transfer.
+> 
+> v7…v8:
+> 	- fix the problem when get invoked and the FIFO is full.
+> 
+> Reviewed-by: Tony Lindgren <tony@atomide.com>
+> Tested-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  drivers/tty/serial/8250/8250.h     |  3 +++
+>  drivers/tty/serial/8250/8250_dma.c | 39 +++++++++++++++++++++++++++++++++++---
+>  include/uapi/linux/serial_reg.h    |  1 +
+>  3 files changed, 40 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
+> index fbed1636e9c4..09489b391568 100644
+> --- a/drivers/tty/serial/8250/8250.h
+> +++ b/drivers/tty/serial/8250/8250.h
+> @@ -82,6 +82,9 @@ struct serial8250_config {
+>  #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
+>  #define UART_BUG_DMA_RX	(1 << 5)	/* UART needs DMA RX req before there is
+>  					   data in FIFO */
+> +#define UART_BUG_DMA_TX	(1 << 6)	/* UART needs one byte in FIFO for
+> +					   kickstart */
 
-On Thu, Sep 11, 2014 at 1:10 PM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Wed, Sep 10, 2014 at 05:54:22PM +0200, David Herrmann wrote:
-> [...]
->> +void backlight_set_brightness(struct backlight_device *bd, unsigned int value,
->> +                           enum backlight_update_reason reason)
->> +{
->> +     mutex_lock(&bd->ops_lock);
->> +     if (bd->ops) {
->> +             value = clamp(value, 0U, (unsigned)bd->props.max_brightness);
->
-> max_brightness should really be unsigned to begin with...
->
->> +             pr_debug("set brightness to %u\n", value);
->
-> dev_dbg(&bd->dev, ...)?
+I don't think we should go ahead with this patch. I'm pretty sure
+this is AM335 specific problem, or at least limited to only few
+platforms. And I don't think we should take any more "BUG" flags.
 
-I agree with both comments, but I tried to be consistent with what
-brightness_store() does.
+We should add hooks like tx_dma and rx_dma to struct uart_8250_dma so
+that the probe drivers can replace serial8250_tx_dma and
+seria8250_rx_dma, like I think Alan already suggested.
 
->> diff --git a/include/linux/backlight.h b/include/linux/backlight.h
->> index adb14a8..bcc0dec 100644
->> --- a/include/linux/backlight.h
->> +++ b/include/linux/backlight.h
->> @@ -141,6 +141,22 @@ extern bool backlight_device_registered(enum backlight_type type);
->>  extern int backlight_register_notifier(struct notifier_block *nb);
->>  extern int backlight_unregister_notifier(struct notifier_block *nb);
->>
->> +struct backlight_device *backlight_device_lookup(const char *name);
->> +void backlight_set_brightness(struct backlight_device *bd, unsigned int value,
->> +                           enum backlight_update_reason reason);
->> +
->> +static inline void backlight_device_ref(struct backlight_device *bd)
->> +{
->> +     if (bd)
->> +             get_device(&bd->dev);
->> +}
->
-> Perhaps for consistency with get_device() this should return bd? That
-> way you can chain things like so:
->
->         priv->backlight = backlight_device_ref(bd);
+Let's keep serial8250_tx_dma/rx_dma as the default, and not add any
+quirks to them. Only if there is a very common case should it be
+handled in those. The case of RX req needing to be sent before data in
+FIFO maybe one of those, but I'm no sure.
 
-Makes sense, will change it. Same is actually true for _unref(), which
-should return NULL unconditionally. This way, you can use:
-  priv->backlight = backlight_device_unref(priv->backlight);
-to release a reference and reset the pointer at the same time.
 
-Thanks
-David
+>  #define PROBE_RSA	(1 << 0)
+>  #define PROBE_ANY	(~0)
+>  
+> diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+> index 3674900a1f14..48dc57aad0dd 100644
+> --- a/drivers/tty/serial/8250/8250_dma.c
+> +++ b/drivers/tty/serial/8250/8250_dma.c
+> @@ -83,6 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+>  	struct uart_8250_dma		*dma = p->dma;
+>  	struct circ_buf			*xmit = &p->port.state->xmit;
+>  	struct dma_async_tx_descriptor	*desc;
+> +	unsigned int			skip_byte = 0;
+>  	int ret;
+>  
+>  	if (uart_tx_stopped(&p->port) || dma->tx_running ||
+> @@ -91,10 +92,40 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+>  
+>  	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
+>  
+> +	if (p->bugs & UART_BUG_DMA_TX) {
+> +		u8 tx_lvl;
+> +
+> +		/*
+> +		 * We need to put the first byte into the FIFO in order to start
+> +		 * the DMA transfer. For transfers smaller than four bytes we
+> +		 * don't bother doing DMA at all. It seem not matter if there
+> +		 * are still bytes in the FIFO from the last transfer (in case
+> +		 * we got here directly from __dma_tx_complete()). Bytes leaving
+> +		 * the FIFO seem not to trigger the DMA transfer. It is really
+> +		 * the byte that we put into the FIFO.
+> +		 * If the FIFO is already full then we most likely got here from
+> +		 * __dma_tx_complete(). And this means the DMA engine just
+> +		 * completed its work. We don't have to wait the complete 86us
+> +		 * at 115200,8n1 but around 60us (not to mention lower
+> +		 * baudrates). So in that case we take the interrupt and try
+> +		 * again with an empty FIFO.
+> +		 */
+> +		tx_lvl = serial_in(p, UART_OMAP_TX_LVL);
+> +		if (tx_lvl == p->tx_loadsz) {
+> +			ret = -EBUSY;
+> +			goto err;
+> +		}
+> +		if (dma->tx_size < 4) {
+> +			ret = -EINVAL;
+> +			goto err;
+> +		}
+> +		skip_byte = 1;
+> +	}
+> +
+>  	desc = dmaengine_prep_slave_single(dma->txchan,
+> -					   dma->tx_addr + xmit->tail,
+> -					   dma->tx_size, DMA_MEM_TO_DEV,
+> -					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+> +			dma->tx_addr + xmit->tail + skip_byte,
+> +			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
+> +			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+>  	if (!desc) {
+>  		ret = -EBUSY;
+>  		goto err;
+> @@ -118,6 +149,8 @@ int serial8250_tx_dma(struct uart_8250_port *p)
+>  			serial_out(p, UART_IER, p->ier);
+>  		}
+>  	}
+> +	if (skip_byte)
+> +		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
+>  	return 0;
+>  err:
+>  	dma->tx_err = 1;
+> diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
+> index df6c9ab6b0cd..53af3b790129 100644
+> --- a/include/uapi/linux/serial_reg.h
+> +++ b/include/uapi/linux/serial_reg.h
+> @@ -359,6 +359,7 @@
+>  #define UART_OMAP_SYSC		0x15	/* System configuration register */
+>  #define UART_OMAP_SYSS		0x16	/* System status register */
+>  #define UART_OMAP_WER		0x17	/* Wake-up enable register */
+> +#define UART_OMAP_TX_LVL	0x1a	/* TX FIFO level register */
+>  
+>  /*
+>   * These are the definitions for the MDR1 register
+> -- 
+> 2.1.0
+
+Cheers,
+
+-- 
+heikki
