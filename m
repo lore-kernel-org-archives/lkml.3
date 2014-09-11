@@ -1,129 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaIKRof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:44:35 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61449 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753366AbaIKRod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:44:33 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18p710hv8OL5HJ5QsPbeCEk
-Date: Thu, 11 Sep 2014 10:44:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Kristian Otnes <kotnes@cisco.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bus: omap_l3_noc: Fix connID for OMAP4
-Message-ID: <20140911174428.GC18849@atomide.com>
-References: <1410344427-26006-1-git-send-email-nm@ti.com>
+	id S1753806AbaIKRrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:47:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042AbaIKRrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 13:47:12 -0400
+Date: Thu, 11 Sep 2014 18:44:09 +0100
+From: Aaron Tomlin <atomlin@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "jcastillo@redhat.com" <jcastillo@redhat.com>,
+        "riel@redhat.com" <riel@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "mingo@kernel.com" <mingo@kernel.com>,
+        "bmr@redhat.com" <bmr@redhat.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "aneesh.kumar@linux.vnet.ibm.com" <aneesh.kumar@linux.vnet.ibm.com>,
+        "akpm@google.com" <akpm@google.com>, "jgh@redhat.com" <jgh@redhat.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "pzijlstr@redhat.com" <pzijlstr@redhat.com>
+Subject: Re: [PATCH v3 0/3] sched: Always check the integrity of the canary
+Message-ID: <20140911174408.GA1873@atomlin.usersys.redhat.com>
+References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
+ <1410450088-18236-1-git-send-email-atomlin@redhat.com>
+ <063D6719AE5E284EB5DD2968C1650D6D17490245@AcuExch.aculab.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410344427-26006-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17490245@AcuExch.aculab.com>
+X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
+X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [140910 03:21]:
-> Commit d4d8819e205854c ("bus: omap_l3_noc: fix masterid detection")
-> did the right thing in dropping the LSB 2 bits which is not part
-> of the ConnID for NTTP master address. However, as part of that
-> change, we should also have ensured that existing list of OMAP4 connID
-> codes are also shifted by 2 bits to ensure that connIDs map to "Table
-> 13-18. ConnID Values" as provided in Technical Reference Manuals for
-> OMAP4430(Rev AP, April 2014, SWPU220AP) and OMAP4460(Rev AB, April
-> 2014, SWPU234AB)
+On Thu, Sep 11, 2014 at 04:02:45PM +0000, David Laight wrote:
+> From: Aaron Tomlin
+> > Currently in the event of a stack overrun a call to schedule()
+> > does not check for this type of corruption. This corruption is
+> > often silent and can go unnoticed. However once the corrupted
+> > region is examined at a later stage, the outcome is undefined
+> > and often results in a sporadic page fault which cannot be
+> > handled.
+> > 
+> > The first patch adds a canary to init_task's end of stack.
+> > While the second patch provides a helper to determine the
+> > integrity of the canary. The third checks for a stack
+> > overrun and takes appropriate action since the damage
+> > is already done, there is no point in continuing.
 > 
-> Fixes: d4d8819e205854c ("bus: omap_l3_noc: fix masterid detection")
-> Reported-by: Kristian Otnes <kotnes@cisco.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> 
-> Based on v3.17-rc1 - but might be 3.17 rc material
+> Clearly you've just been 'bitten' by a kernel stack overflow.
+> But a simple 'canary' isn't going to find most of the overflows
+> and will give an incorrect 'sense of security'.
 
-Yes as it's a regression. Applying into omap-for-v3.17/fixes-v3.
+Please note that this is not suppose to be a 'perfect' solution.
+Rather a worth while check in this particular code path.
+Let's assume that the canary is damaged. In this situation it is
+rather likely that the thread_info object has been compromised too.
 
-Tony
- 
-> Quick links (seems to work on firefox):
-> 4430:
-> http://www.ti.com/lit/ug/swpu231ap/swpu231ap.pdf#page=3030&zoom=auto,0,699.5
-> 4460:
-> http://www.ti.com/lit/ug/swpu235ab/swpu235ab.pdf#page=3073&zoom=auto,0,699.5
-> 
-> NOTE: there are a few more cleanup patches that can follow these..
-> will leave those out for now.
-> 
->  drivers/bus/omap_l3_noc.h |   50 ++++++++++++++++++++++-----------------------
->  1 file changed, 25 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-> index 551e010..9525458 100644
-> --- a/drivers/bus/omap_l3_noc.h
-> +++ b/drivers/bus/omap_l3_noc.h
-> @@ -188,31 +188,31 @@ static struct l3_flagmux_data omap_l3_flagmux_clk3 = {
->  };
->  
->  static struct l3_masters_data omap_l3_masters[] = {
-> -	{ 0x0 , "MPU"},
-> -	{ 0x10, "CS_ADP"},
-> -	{ 0x14, "xxx"},
-> -	{ 0x20, "DSP"},
-> -	{ 0x30, "IVAHD"},
-> -	{ 0x40, "ISS"},
-> -	{ 0x44, "DucatiM3"},
-> -	{ 0x48, "FaceDetect"},
-> -	{ 0x50, "SDMA_Rd"},
-> -	{ 0x54, "SDMA_Wr"},
-> -	{ 0x58, "xxx"},
-> -	{ 0x5C, "xxx"},
-> -	{ 0x60, "SGX"},
-> -	{ 0x70, "DSS"},
-> -	{ 0x80, "C2C"},
-> -	{ 0x88, "xxx"},
-> -	{ 0x8C, "xxx"},
-> -	{ 0x90, "HSI"},
-> -	{ 0xA0, "MMC1"},
-> -	{ 0xA4, "MMC2"},
-> -	{ 0xA8, "MMC6"},
-> -	{ 0xB0, "UNIPRO1"},
-> -	{ 0xC0, "USBHOSTHS"},
-> -	{ 0xC4, "USBOTGHS"},
-> -	{ 0xC8, "USBHOSTFS"}
-> +	{ 0x00, "MPU"},
-> +	{ 0x04, "CS_ADP"},
-> +	{ 0x05, "xxx"},
-> +	{ 0x08, "DSP"},
-> +	{ 0x0C, "IVAHD"},
-> +	{ 0x10, "ISS"},
-> +	{ 0x11, "DucatiM3"},
-> +	{ 0x12, "FaceDetect"},
-> +	{ 0x14, "SDMA_Rd"},
-> +	{ 0x15, "SDMA_Wr"},
-> +	{ 0x16, "xxx"},
-> +	{ 0x17, "xxx"},
-> +	{ 0x18, "SGX"},
-> +	{ 0x1C, "DSS"},
-> +	{ 0x20, "C2C"},
-> +	{ 0x22, "xxx"},
-> +	{ 0x23, "xxx"},
-> +	{ 0x24, "HSI"},
-> +	{ 0x28, "MMC1"},
-> +	{ 0x29, "MMC2"},
-> +	{ 0x2A, "MMC6"},
-> +	{ 0x2C, "UNIPRO1"},
-> +	{ 0x30, "USBHOSTHS"},
-> +	{ 0x31, "USBOTGHS"},
-> +	{ 0x32, "USBHOSTFS"}
->  };
->  
->  static struct l3_flagmux_data *omap_l3_flagmux[] = {
-> -- 
-> 1.7.9.5
-> 
+-- 
+Aaron Tomlin
