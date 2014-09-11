@@ -1,113 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaIKK0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:26:42 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:44204 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbaIKK0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:26:40 -0400
-Message-ID: <541178D6.6010303@de.ibm.com>
-Date: Thu, 11 Sep 2014 12:26:30 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1751484AbaIKKdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:33:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3660 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972AbaIKKdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 06:33:40 -0400
+Date: Thu, 11 Sep 2014 12:33:19 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
+ cookie with each entry
+Message-ID: <20140911103319.GA13634@krava.brq.redhat.com>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <1410358129-9965-14-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-To: rusty Russell <rusty@rustcorp.com.au>,
-        "ms >> Michael S. Tsirkin" <mst@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, KVM list <kvm@vger.kernel.org>
-CC: Virtualization List <virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>
-Subject: blk-mq crash under KVM  in multiqueue block code (with virtio-blk
- and ext4)
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091110-0342-0000-0000-000001051076
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410358129-9965-14-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks,
+On Wed, Sep 10, 2014 at 11:08:48AM -0300, Arnaldo Carvalho de Melo wrote:
 
-we have seen the following bug with 3.16 as a KVM guest. It suspect the blk-mq rework that happened between 3.15 and 3.16, but it can be something completely different.
+SNIP
 
+>  }
+>  
+> -int fdarray__filter(struct fdarray *fda, short revents)
+> +int fdarray__filter(struct fdarray *fda, short revents,
+> +		    void (*entry_destructor)(struct fdarray *fda, int fd))
+>  {
+>  	int fd, nr = 0;
+>  
+> @@ -80,11 +94,17 @@ int fdarray__filter(struct fdarray *fda, short revents)
+>  		return 0;
+>  
+>  	for (fd = 0; fd < fda->nr; ++fd) {
+> -		if (fda->entries[fd].revents & revents)
+> +		if (fda->entries[fd].revents & revents) {
+> +			if (entry_destructor)
+> +				entry_destructor(fda, fd);
 
-[   65.992022] Unable to handle kernel pointer dereference in virtual kernel address space
-[   65.992187] failing address: ccccccccccccd000 TEID: ccccccccccccd803
-[   65.992363] Fault in home space mode while using kernel ASCE.
-[   65.992365] AS:0000000000a7c007 R3:0000000000000024 
-[   65.993754] Oops: 0038 [#1] SMP 
-[   65.993923] Modules linked in: iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi virtio_balloon vhost_net vhost macvtap macvlan kvm dm_multipath virtio_net virtio_blk sunrpc
-[   65.994274] CPU: 0 PID: 44 Comm: kworker/u6:2 Not tainted 3.16.0-20140814.0.c66c84c.fc18-s390xfrob #1
-[   65.996043] Workqueue: writeback bdi_writeback_workfn (flush-251:32)
-[   65.996222] task: 0000000002250000 ti: 0000000002258000 task.ti: 0000000002258000
-[   65.996228] Krnl PSW : 0704f00180000000 00000000003ed114 (blk_mq_tag_to_rq+0x20/0x38)
-[   65.997299]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:3
-               Krnl GPRS: 0000000000000040 cccccccccccccccc 0000000001619000 000000000000004e
-[   65.997301]            000000000000004e 0000000000000000 0000000000000001 0000000000a0de18
-[   65.997302]            0000000077ffbe18 0000000077ffbd50 000000006d72d620 000000000000004f
-[   65.997304]            0000000001a99400 0000000000000080 00000000003eddee 0000000077ffbc28
-[   65.997864] Krnl Code: 00000000003ed106: e31020300004        lg      %r1,48(%r2)
-                          00000000003ed10c: 91082044            tm      68(%r2),8
-                         #00000000003ed110: a7840009            brc     8,3ed122
-                         >00000000003ed114: e34016880004        lg      %r4,1672(%r1)
-                          00000000003ed11a: 59304100            c       %r3,256(%r4)
-                          00000000003ed11e: a7840003            brc     8,3ed124
-                          00000000003ed122: 07fe                bcr     15,%r14
-                          00000000003ed124: b9040024            lgr     %r2,%r4
-[   65.998221] Call Trace:
-[   65.998224] ([<0000000000000001>] 0x1)
-[   65.998227]  [<00000000003f17b6>] blk_mq_tag_busy_iter+0x7a/0xc4
-[   65.998228]  [<00000000003edcd6>] blk_mq_rq_timer+0x96/0x13c
-[   65.999226]  [<000000000013ee60>] call_timer_fn+0x40/0x110
-[   65.999230]  [<000000000013f642>] run_timer_softirq+0x2de/0x3d0
-[   65.999238]  [<0000000000135b70>] __do_softirq+0x124/0x2ac
-[   65.999241]  [<0000000000136000>] irq_exit+0xc4/0xe4
-[   65.999435]  [<000000000010bc08>] do_IRQ+0x64/0x84
-[   66.437533]  [<000000000067ccd8>] ext_skip+0x42/0x46
-[   66.437541]  [<00000000003ed7b4>] __blk_mq_alloc_request+0x58/0x1e8
-[   66.437544] ([<00000000003ed788>] __blk_mq_alloc_request+0x2c/0x1e8)
-[   66.437547]  [<00000000003eef82>] blk_mq_map_request+0xc2/0x208
-[   66.437549]  [<00000000003ef860>] blk_sq_make_request+0xac/0x350
-[   66.437721]  [<00000000003e2d6c>] generic_make_request+0xc4/0xfc
-[   66.437723]  [<00000000003e2e56>] submit_bio+0xb2/0x1a8
-[   66.438373]  [<000000000031e8aa>] ext4_io_submit+0x52/0x80
-[   66.438375]  [<000000000031ccfa>] ext4_writepages+0x7c6/0xd0c
-[   66.438378]  [<00000000002aea20>] __writeback_single_inode+0x54/0x274
-[   66.438379]  [<00000000002b0134>] writeback_sb_inodes+0x28c/0x4ec
-[   66.438380]  [<00000000002b042e>] __writeback_inodes_wb+0x9a/0xe4
-[   66.438382]  [<00000000002b06a2>] wb_writeback+0x22a/0x358
-[   66.438383]  [<00000000002b0cd0>] bdi_writeback_workfn+0x354/0x538
-[   66.438618]  [<000000000014e3aa>] process_one_work+0x1aa/0x418
-[   66.438621]  [<000000000014ef94>] worker_thread+0x48/0x524
-[   66.438625]  [<00000000001560ca>] kthread+0xee/0x108
-[   66.438627]  [<000000000067c76e>] kernel_thread_starter+0x6/0xc
-[   66.438628]  [<000000000067c768>] kernel_thread_starter+0x0/0xc
-[   66.438629] Last Breaking-Event-Address:
-[   66.438631]  [<00000000003edde8>] blk_mq_timeout_check+0x6c/0xb8
+the desctructor callback could have the 'priv' as an argument
+so we dont need to touch fdarray internals in upper layer
 
-I looked into the dump, and the full function is  (annotated by me to match the source code)
-r2= tags
-r3= tag (4e)
-Dump of assembler code for function blk_mq_tag_to_rq:
-   0x00000000003ed0f4 <+0>:     lg      %r1,96(%r2)			# r1 has now tags->rqs
-   0x00000000003ed0fa <+6>:     sllg    %r2,%r3,3			# r2 has tag*8
-   0x00000000003ed100 <+12>:    lg      %r2,0(%r2,%r1)			# r2 now has rq (=tags->rqs[tag])
-   0x00000000003ed106 <+18>:    lg      %r1,48(%r2)			# r1 now has rq->q
-   0x00000000003ed10c <+24>:    tm      68(%r2),8			# test for rq->cmd_flags & REQ_FLUSH_SEQ
-   0x00000000003ed110 <+28>:    je      0x3ed122 <blk_mq_tag_to_rq+46>  #  if not goto 3ed122
-   0x00000000003ed114 <+32>:    lg      %r4,1672(%r1)			# r4 = rq->q->flush_rq  <-------- CRASHES as rq->q points to cccccccccccc
-   0x00000000003ed11a <+38>:    c       %r3,256(%r4)			# compare tag with rq->q->flush_rq->tag
-   0x00000000003ed11e <+42>:    je      0x3ed124 <blk_mq_tag_to_rq+48>  # if equal goto ..124
-   0x00000000003ed122 <+46>:    br      %r14				# return (with return value == r2)
-   0x00000000003ed124 <+48>:    lgr     %r2,%r4				# return value = r4
-   0x00000000003ed128 <+52>:    br      %r14				# return
+> +
+>  			continue;
+> +		}
+>  
+> -		if (fd != nr)
+> +		if (fd != nr) {
+>  			fda->entries[nr] = fda->entries[fd];
+> +			fda->priv[nr]	 = fda->priv[fd];
+> +		}
+>  
+>  		++nr;
+>  	}
+> diff --git a/tools/lib/api/fd/array.h b/tools/lib/api/fd/array.h
+> index de38361ba69e..7b2870a96898 100644
+> --- a/tools/lib/api/fd/array.h
+> +++ b/tools/lib/api/fd/array.h
+> @@ -10,6 +10,7 @@ struct fdarray {
+>  	int	       nr_alloc;
+>  	int	       nr_autogrow;
+>  	struct pollfd *entries;
+> +	int	      *priv;
 
-Does anyone have an idea?
-The request itself is completely filled with cc
+I like the idea of private pointer for each fd, but I think
+it should be 'void*' to keep the library generic. The 'int*'
+is related only to the evlist usage of this.
 
-
-Christian
-
+jirka
