@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaIKNEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:04:14 -0400
+	id S1754322AbaIKNEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:04:21 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52280 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753224AbaIKNEL (ORCPT
+	by vger.kernel.org with ESMTP id S1753980AbaIKNEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:04:11 -0400
+	Thu, 11 Sep 2014 09:04:14 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, linux-mips@linux-mips.org,
-        "Paul Burton" <paul.burton@imgtec.com>,
-        "Ralf Baechle" <ralf@linux-mips.org>
+CC: akpm@linux-foundation.org, "Zheng Liu" <wenqing.lz@taobao.com>,
+        "Zheng Liu" <gnehzuil.liu@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.978510958@decadent.org.uk>
+Message-ID: <lsq.1410438733.701966010@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 030/131] MIPS: Prevent user from setting FCSR cause bits
+Subject: [PATCH 3.2 033/131] ext4: cleanup in ext4_discard_allocated_blocks()
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,55 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Burton <paul.burton@imgtec.com>
+From: Zheng Liu <gnehzuil.liu@gmail.com>
 
-commit b1442d39fac2fcfbe6a4814979020e993ca59c9e upstream.
+commit 400db9d30146dc062aaba97a6301b425eb6015bc upstream.
 
-If one or more matching FCSR cause & enable bits are set in saved thread
-context then when that context is restored the kernel will take an FP
-exception. This is of course undesirable and considered an oops, leading
-to the kernel writing a backtrace to the console and potentially
-rebooting depending upon the configuration. Thus the kernel avoids this
-situation by clearing the cause bits of the FCSR register when handling
-FP exceptions and after emulating FP instructions.
+remove 'len' variable in ext4_discard_allocated_blocks() because it is
+useless.
 
-However the kernel does not prevent userland from setting arbitrary FCSR
-cause & enable bits via ptrace, using either the PTRACE_POKEUSR or
-PTRACE_SETFPREGS requests. This means userland can trivially cause the
-kernel to oops on any system with an FPU. Prevent this from happening
-by clearing the cause bits when writing to the saved FCSR context via
-ptrace.
-
-This problem appears to exist at least back to the beginning of the git
-era in the PTRACE_POKEUSR case.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Paul Burton <paul.burton@imgtec.com>
-Patchwork: https://patchwork.linux-mips.org/patch/7438/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/mips/kernel/ptrace.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/ext4/mballoc.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@ -162,6 +162,7 @@ int ptrace_setfpregs(struct task_struct
- 		__get_user(fregs[i], i + (__u64 __user *) data);
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3128,13 +3128,9 @@ static void ext4_mb_collect_stats(struct
+ static void ext4_discard_allocated_blocks(struct ext4_allocation_context *ac)
+ {
+ 	struct ext4_prealloc_space *pa = ac->ac_pa;
+-	int len;
+-
+-	if (pa && pa->pa_type == MB_INODE_PA) {
+-		len = ac->ac_b_ex.fe_len;
+-		pa->pa_free += len;
+-	}
  
- 	__get_user(child->thread.fpu.fcr31, data + 64);
-+	child->thread.fpu.fcr31 &= ~FPU_CSR_ALL_X;
++	if (pa && pa->pa_type == MB_INODE_PA)
++		pa->pa_free += ac->ac_b_ex.fe_len;
+ }
  
- 	/* FIR may not be written.  */
- 
-@@ -452,7 +453,7 @@ long arch_ptrace(struct task_struct *chi
- 			break;
- #endif
- 		case FPC_CSR:
--			child->thread.fpu.fcr31 = data;
-+			child->thread.fpu.fcr31 = data & ~FPU_CSR_ALL_X;
- 			break;
- 		case DSP_BASE ... DSP_BASE + 5: {
- 			dspreg_t *dregs;
+ /*
 
