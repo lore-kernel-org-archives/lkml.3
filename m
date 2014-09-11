@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753039AbaIKO7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:59:13 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:45732 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaIKO7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:59:11 -0400
+	id S1754317AbaIKO7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:59:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15759 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296AbaIKO7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:59:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
+   d="scan'208";a="601493498"
+Message-ID: <5411B8C3.7080205@intel.com>
+Date: Thu, 11 Sep 2014 07:59:15 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20140911104513.GC6158@arm.com>
-References: <1410428208-2446-1-git-send-email-dborkman@redhat.com>
-	<20140911104513.GC6158@arm.com>
-Date: Thu, 11 Sep 2014 07:59:03 -0700
-Message-ID: <CABg9mcsqyk5udznitb2=B-M4SjB=ptgV7Z+34zJXqEcP9ia4Gw@mail.gmail.com>
-Subject: Re: [PATCH arm64-next] net: bpf: arm64: fix module memory leak when
- JIT image build fails
-From: Z Lim <zlim.lnx@gmail.com>
-To: Will Deacon <will.deacon@arm.com>, Daniel Borkmann <dborkman@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 09/10] x86, mpx: cleanup unused bound tables
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-10-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1410425210-24789-10-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 3:45 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Thu, Sep 11, 2014 at 10:36:48AM +0100, Daniel Borkmann wrote:
->> On ARM64, when the BPF JIT compiler fills the JIT image body with
->> opcodes during translation of eBPF into ARM64 opcodes, we may fail
->> for several reasons during that phase: one being that we jump to
->> the notyet label for not yet supported eBPF instructions such as
->> BPF_ST. In that case we only free offsets, but not the actual
->> allocated target image where opcodes are being stored. Fix it by
->> calling module_free() on dismantle time in case of errors.
->>
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
->> Cc: Alexei Starovoitov <ast@plumgrid.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> ---
->>  [ Compile-tested only. ]
->>
->>  arch/arm64/net/bpf_jit_comp.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
->> index 38c4296..7ae3354 100644
->> --- a/arch/arm64/net/bpf_jit_comp.c
->> +++ b/arch/arm64/net/bpf_jit_comp.c
->> @@ -651,8 +651,10 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
->>       build_prologue(&ctx);
->>
->>       ctx.body_offset = ctx.idx;
->> -     if (build_body(&ctx))
->> +     if (build_body(&ctx)) {
->> +             module_free(NULL, ctx.image);
->>               goto out;
->> +     }
->>
->
-> Looks good to me:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
+On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
+> + * This function will be called by do_munmap(), and the VMAs covering
+> + * the virtual address region start...end have already been split if
+> + * necessary and remvoed from the VMA list.
 
-Same here:
+"remvoed" -> "removed"
 
-    Acked-by: Zi Shen Lim <zlim.lnx@gmail.com>
+> +void mpx_unmap(struct mm_struct *mm,
+> +		unsigned long start, unsigned long end)
+> +{
+> +	int ret;
+> +
+> +	ret = mpx_try_unmap(mm, start, end);
+> +	if (ret == -EINVAL)
+> +		force_sig(SIGSEGV, current);
+> +}
 
-Thank you Daniel.
-
->
-> Catalin, can you apply this on the for-next/core branch, please?
->
-> Will
+In the case of a fault during an unmap, this just ignores the situation
+and returns silently.  Where is the code to retry the freeing operation
+outside of mmap_sem?
