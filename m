@@ -1,110 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaIKLXd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:23:33 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:46643 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaIKLWv (ORCPT
+	id S1754567AbaIKLZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:25:04 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:36228 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754137AbaIKLZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:22:51 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-3c-54118608e664
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        linaro-mm-sig@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2 1/3] drivers: of: add return value to
- of_reserved_mem_device_init
-Date: Thu, 11 Sep 2014 13:22:39 +0200
-Message-id: <1410434561-9294-2-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1410434561-9294-1-git-send-email-m.szyprowski@samsung.com>
-References: <1410434561-9294-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xq7ocbYIhBj/OyVvMWb+GzeLvpGPs
-	Fgf+7GC0WNndzGaxc907RouzTW/YLbZ3zmC3+HLlIZPFpsfXWC0u75rDZrH2yF12iwXHW1gd
-	eDx+/5rE6HG5r5fJo+vtFSaPO9f2sHmcmPGbxWPzknqP2/8eM3us+/OKyaNvyypGj8+b5AK4
-	orhsUlJzMstSi/TtErgyrh+9w1iwWLii69dhlgbGRQJdjJwcEgImEpcaPrFC2GISF+6tZ+ti
-	5OIQEljKKPH85iEop49J4tujD+wgVWwChhJdb7vYQGwRATeJf+sgipgFJjNLXFu4hwkkISwQ
-	JrHq2B0wm0VAVWL11wssXYwcHLwC7hJXT0pDbJOT+P9yBVgJp4CHxORvk8DmCwGVXNy9gW0C
-	I+8CRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGB+2UH4+JjVocYBTgYlXh4Cy/yhwix
-	JpYVV+YeYpTgYFYS4S0tFAwR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwLjsZM9F3SYm6ct1OTH/
-	7k+/EW/btn1b6vK82lxj9t1rpC+zFLQ+LVAoTL6rtGei2v9tL7yaTpg03bDVdQuO7nN8orn3
-	4Ip5Am3qEWnBWzcGzd1hMzWoYcfR6KiOtmPHsgqr5yz7Kq/p+ix/ffTFs4occzdte3RGvuj0
-	KfEjS9bOMLlue98wXkmJpTgj0VCLuag4EQDVQPmiOgIAAA==
+	Thu, 11 Sep 2014 07:25:01 -0400
+Message-ID: <54118687.8040802@collabora.co.uk>
+Date: Thu, 11 Sep 2014 13:24:55 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>, Nick Dyer <nick.dyer@itdev.co.uk>
+CC: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Lee Jones <lee.jones@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "Bowens, Alan" <Alan.Bowens@atmel.com>
+Subject: Re: [PATCH] Input: atmel_mxt_ts: Add of node type to the i2c table
+References: <1410249158-18192-1-git-send-email-sjoerd.simons@collabora.co.uk> <540ED495.20609@collabora.co.uk> <20140910092832.GM30307@lee--X1> <1410422429.2857.16.camel@collabora.co.uk> <54115F6E.3010007@collabora.co.uk> <5411693A.3050300@itdev.co.uk> <20140911110829.GA5149@katana>
+In-Reply-To: <20140911110829.GA5149@katana>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver calling of_reserved_mem_device_init() might be interested if the
-initialization has been successful or not, so add support for returning
-error code.
+Hello Wolfram,
 
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- drivers/of/of_reserved_mem.c    | 3 ++-
- include/linux/of_reserved_mem.h | 9 ++++++---
- 2 files changed, 8 insertions(+), 4 deletions(-)
+On 09/11/2014 01:08 PM, Wolfram Sang wrote:
+> 
+> Funny timing. I am just reviewing the series from Lee and also stumbled
+> over modaliases, too...
+> 
+> On Thu, Sep 11, 2014 at 10:19:54AM +0100, Nick Dyer wrote:
+>> On 11/09/14 09:38, Javier Martinez Canillas wrote:
+>> > To expand on what Sjoerd already said and just to be sure everyone is on the
+>> > same page.
+>> > 
+>> > The problem is that right now the driver reports the following modalias:
+>> > 
+>> > # cat /sys/class/i2c-adapter/i2c-8/8-004b/modalias
+>> > i2c:maxtouch
+>> > 
+>> > but if you look at the module information, that is not a valid alias:
+>> > 
+>> > # modinfo atmel_mxt_ts | grep alias
+>> > alias:          i2c:mXT224
+>> > alias:          i2c:atmel_mxt_tp
+>> > alias:          i2c:atmel_mxt_ts
+>> > alias:          i2c:qt602240_ts
+>> > alias:          of:N*T*Catmel,maxtouch*
+>> > 
+>> > which means that udev/kmod can't load the module automatically based on the
+>> > alias information.
+>> > 
+>> > The aliases are filled by both MODULE_DEVICE_TABLE(i2c, mxt_id) and
+>> > MODULE_DEVICE_TABLE(of, mxt_of_match) so after Sjoerd's patch:
+>> > 
+>> > # cat /sys/class/i2c-adapter/i2c-8/8-004b/modalias
+>> > i2c:maxtouch
+>> > 
+>> > # modinfo atmel_mxt_ts | grep alias
+>> > alias:          i2c:mXT224
+>> > alias:          i2c:maxtouch
+>> > alias:          i2c:atmel_mxt_tp
+>> > alias:          i2c:atmel_mxt_ts
+>> > alias:          i2c:qt602240_ts
+>> > 
+>> > which matches the reported uevent so the module will be auto-loaded.
+>> > 
+>> > This is because the I2C subsystem hardcodes i2c:<client->name>, if you look at
+>> > drivers/i2c/i2c-core.c:
+>> > 
+>> > /* uevent helps with hotplug: modprobe -q $(MODALIAS) */
+>> > static int i2c_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+>> > {
+>> > ...
+>> >         if (add_uevent_var(env, "MODALIAS=%s%s",
+>> >                            I2C_MODULE_PREFIX, client->name))
+>> > ...
+>> > }
+>> > 
+>> > I've looked at Lee's series and AFAICT that remains the same so I second
+>> > Sjoerd that module auto-loading will continue to be broken.
+> 
+> I think the above code in the i2c core needs a fix. Will have a closer
+> look after lunch.
+> 
 
-diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
-index 59fb12e..7e7de03 100644
---- a/drivers/of/of_reserved_mem.c
-+++ b/drivers/of/of_reserved_mem.c
-@@ -243,7 +243,7 @@ static inline struct reserved_mem *__find_rmem(struct device_node *node)
-  * This function assign memory region pointed by "memory-region" device tree
-  * property to the given device.
-  */
--void of_reserved_mem_device_init(struct device *dev)
-+int of_reserved_mem_device_init(struct device *dev)
- {
- 	struct reserved_mem *rmem;
- 	struct device_node *np;
-@@ -260,6 +260,7 @@ void of_reserved_mem_device_init(struct device *dev)
- 
- 	rmem->ops->device_init(rmem, dev);
- 	dev_info(dev, "assigned reserved memory node %s\n", rmem->name);
-+	return 0;
- }
- 
- /**
-diff --git a/include/linux/of_reserved_mem.h b/include/linux/of_reserved_mem.h
-index 5b5efae..ad2f670 100644
---- a/include/linux/of_reserved_mem.h
-+++ b/include/linux/of_reserved_mem.h
-@@ -16,7 +16,7 @@ struct reserved_mem {
- };
- 
- struct reserved_mem_ops {
--	void	(*device_init)(struct reserved_mem *rmem,
-+	int	(*device_init)(struct reserved_mem *rmem,
- 			       struct device *dev);
- 	void	(*device_release)(struct reserved_mem *rmem,
- 				  struct device *dev);
-@@ -28,14 +28,17 @@ typedef int (*reservedmem_of_init_fn)(struct reserved_mem *rmem);
- 	_OF_DECLARE(reservedmem, name, compat, init, reservedmem_of_init_fn)
- 
- #ifdef CONFIG_OF_RESERVED_MEM
--void of_reserved_mem_device_init(struct device *dev);
-+int of_reserved_mem_device_init(struct device *dev);
- void of_reserved_mem_device_release(struct device *dev);
- 
- void fdt_init_reserved_mem(void);
- void fdt_reserved_mem_save_node(unsigned long node, const char *uname,
- 			       phys_addr_t base, phys_addr_t size);
- #else
--static inline void of_reserved_mem_device_init(struct device *dev) { }
-+static inline int of_reserved_mem_device_init(struct device *dev)
-+{
-+	return -ENOSYS;
-+}
- static inline void of_reserved_mem_device_release(struct device *pdev) { }
- 
- static inline void fdt_init_reserved_mem(void) { }
--- 
-1.9.2
+Agreed, I just posted an RFC patch [0] with the fix but as Sjoerd pointed out
+on an internal review, changing that will regress all the drivers that were
+relying on the old behavior.
 
+>> The i2c aliases are a bit confusing. The original device the driver was
+>> written for was called qt602240, which was renamed by Atmel to mXT224 when
+>> the chip series was called "maXTouch". The driver now actually supports
+>> many other chips which aren't listed (more than 20 devices that I've
+>> personally tested). I could add them all, but it would be an extremely long
+>> list. It may be preferable to use the generic name maXTouch.
+> 
+> This is probably true for some more I2C devices. Like RTCs being
+> compatible or, most prominent, EEPROMS. I don't want to have a list of
+> all vendors producing 24c02s if they are all compatible. If generic
+> entries are frowned upon, I'd agree on a "first come, first served" policy:
+> Somebody provides one compatible-property with the vendor which happens
+> to be on that board, and the others have to reuse that
+> compatible-property since they are, well, compatible.
+> 
+
+Agreed.
+
+>> So I think the sensible thing to do here would be to add "maxtouch" to the
+>> i2c list to fix the module autoload issue.
+> 
+> This is a workaround. It would make sense, however, to add it because we
+> want to support i2c_board_info structures.
+> 
+
+I think it really depends if an IP block can be used on non-DT platforms
+(which I think is true for this trackpad) but if a driver is for an IP block
+that can only be used on a DT-only platform (e.g: a PMIC that is controlled
+over I2C and is only compatible with a DT-only SoC) then I don't think we need
+to support the i2c_board_info structure and can get rid of the I2C ID table on
+these drivers once Lee series land.
+
+> Regards,
+> 
+>    Wolfram
+> 
+
+Best regards,
+Javier
+
+[0]: https://patchwork.ozlabs.org/patch/388200/
