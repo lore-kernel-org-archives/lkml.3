@@ -1,110 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804AbaIKPma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:42:30 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47640 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932070AbaIKPm0 (ORCPT
+	id S1756852AbaIKPmj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:42:39 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:61000 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaIKPmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:42:26 -0400
-Date: Thu, 11 Sep 2014 17:42:22 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, kishon@ti.com, stern@rowland.harvard.edu,
-        sergei.shtylyov@cogentembedded.com, yoshihiro.shimoda.uh@renesas.com,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
- framework in ChipIdea
-Message-ID: <20140911154222.GB11275@kwain>
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
- <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
- <20140911005446.GD3609@peterchendt>
+	Thu, 11 Sep 2014 11:42:36 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>
+Subject: [PATCH RFC 2/2] memcg: add threshold for anon rss
+Date: Thu, 11 Sep 2014 19:41:50 +0400
+Message-ID: <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1410447097.git.vdavydov@parallels.com>
+References: <cover.1410447097.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140911005446.GD3609@peterchendt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Though hard memory limits suit perfectly for sand-boxing, they are not
+that efficient when it comes to partitioning a server's resources among
+multiple containers. The point is a container consuming a particular
+amount of memory most of time may have infrequent spikes in the load.
+Setting the hard limit to the maximal possible usage (spike) will lower
+server utilization while setting it to the "normal" usage will result in
+heavy lags during the spikes.
 
-On Thu, Sep 11, 2014 at 08:54:47AM +0800, Peter Chen wrote:
-> On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
-> > @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct platform_device *pdev)
-> >  		return -ENODEV;
-> >  	}
-> >  
-> > -	if (ci->platdata->usb_phy)
-> > +	if (ci->platdata->phy)
-> > +		ci->phy = ci->platdata->phy;
-> > +	else if (ci->platdata->usb_phy)
-> >  		ci->usb_phy = ci->platdata->usb_phy;
-> >  	else
-> > -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > +		ci->phy = devm_phy_get(dev, "usb-phy");
-> >  
-> > -	if (IS_ERR(ci->usb_phy)) {
-> > -		ret = PTR_ERR(ci->usb_phy);
-> > +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy == NULL)) {
-> >  		/*
-> >  		 * if -ENXIO is returned, it means PHY layer wasn't
-> >  		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> >  		 * in that case, since no PHY driver will ever probe.
-> >  		 */
-> > -		if (ret == -ENXIO)
-> > -			return ret;
-> > +		if (PTR_ERR(ci->phy) == -ENXIO)
-> > +			return -ENXIO;
-> >  
-> > -		dev_err(dev, "no usb2 phy configured\n");
-> > -		return -EPROBE_DEFER;
-> > +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > +		if (IS_ERR(ci->usb_phy)) {
-> > +			dev_err(dev, "no usb2 phy configured\n");
-> > +			return -EPROBE_DEFER;
-> > +		}
-> >  	}
-> 
-> Sorry, I can't accept this change, why devm_usb_get_phy(dev, USB_PHY_TYPE_USB2)
-> is put at error path? Since current get PHY operation is a little complicated,
-> we may have a dedicate function to do it, dwc3 driver is a good example.
+To handle such scenarios soft limits were introduced. The idea is to
+allow a container to breach the limit freely when there's enough free
+memory, but shrink it back to the limit aggressively on global memory
+pressure. However, the concept of soft limits is intrinsically unsafe
+by itself: if a container eats too much anonymous memory, it will be
+very slow or even impossible (if there's no swap) to reclaim its
+resources back to the limit. As a result the whole system will be
+feeling bad until it finally realizes the culprit must die.
 
-It's not the error path, it's the case when there is no PHY from the
-generic PHY framework available. Getting an USB PHY is a fallback
-solution.
+Currently we have no way to react to anonymous memory + swap usage
+growth inside a container: the memsw counter accounts both anonymous
+memory and file caches and swap, so we have neither a limit for
+anon+swap nor a threshold notification. Actually, memsw is totally
+useless if one wants to make full use of soft limits: it should be set
+to a very large value or infinity then, otherwise it just makes no
+sense.
 
-I agree we can move this to a dedicated function. But even if doing so,
-we'll have to test ci->phy first.
+That's one of the reasons why I think we should replace memsw with a
+kind of anonsw so that it'd account only anon+swap. This way we'd still
+be able to sand-box apps, but it'd also allow us to avoid nasty
+surprises like the one I described above. For more arguments for and
+against this idea, please see the following thread:
 
-Or do you have something else in mind?
+http://www.spinics.net/lists/linux-mm/msg78180.html
 
-> > diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-> > index 5a7ea93011dd..999e9d683d7a 100644
-> > --- a/drivers/usb/chipidea/debug.c
-> > +++ b/drivers/usb/chipidea/debug.c
-> > @@ -219,7 +219,8 @@ static int ci_otg_show(struct seq_file *s, void *unused)
-> >  	fsm = &ci->fsm;
-> >  
-> >  	/* ------ State ----- */
-> > -		usb_otg_state_string(ci->usb_phy->otg.state));
-> > +	seq_printf(s, "OTG state: %s\n\n",
-> > +		   usb_otg_state_string(ci->otg.state));
-> 
-> Again, rebase error?
+There's an alternative to this approach backed by Kamezawa. He thinks
+that OOM on anon+swap limit hit is a no-go and proposes to use memory
+thresholds for it. I still strongly disagree with the proposal, because
+it's unsafe (what if the userspace handler won't react in time?).
+Nevertheless, I implement his idea in this RFC. I hope this will fuel
+the debate, because sadly enough nobody seems to care about this
+problem.
 
-Yes, sorry about that. This will be fixed in the next version of this
-series.
+So this patch adds the "memory.rss" file that shows the amount of
+anonymous memory consumed by a cgroup and the event to handle threshold
+notifications coming from it. The notification works exactly in the same
+fashion as the existing memory/memsw usage notifications.
 
-Antoine
+Please note this is improper implementation - we should rework
+thresholds interface first.
 
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 53 insertions(+), 8 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7e8d65e0608a..2cb4e498bc5f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -325,6 +325,9 @@ struct mem_cgroup {
+ 	/* thresholds for mem+swap usage. RCU-protected */
+ 	struct mem_cgroup_thresholds memsw_thresholds;
+ 
++	/* thresholds for anonymous memory usage. RCU-protected */
++	struct mem_cgroup_thresholds rss_thresholds;
++
+ 	/* For oom notifier event fd */
+ 	struct list_head oom_notify;
+ 
+@@ -464,6 +467,7 @@ enum res_type {
+ 	_MEMSWAP,
+ 	_OOM_TYPE,
+ 	_KMEM,
++	_RSS,
+ };
+ 
+ #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
+@@ -4076,6 +4080,10 @@ static u64 mem_cgroup_read_u64(struct cgroup_subsys_state *css,
+ 		if (name == RES_USAGE)
+ 			return mem_cgroup_usage(memcg, true);
+ 		return res_counter_read_u64(&memcg->memsw, name);
++	case _RSS:
++		BUG_ON(name != RES_USAGE);
++		return mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS)
++								<< PAGE_SHIFT;
+ 	case _KMEM:
+ 		return res_counter_read_u64(&memcg->kmem, name);
+ 		break;
+@@ -4528,22 +4536,30 @@ static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
+ 	return 0;
+ }
+ 
+-static void __mem_cgroup_threshold(struct mem_cgroup *memcg, bool swap)
++static void __mem_cgroup_threshold(struct mem_cgroup *memcg, enum res_type type)
+ {
+ 	struct mem_cgroup_threshold_ary *t;
+ 	u64 usage;
+ 	int i;
+ 
+ 	rcu_read_lock();
+-	if (!swap)
++	if (type == _MEM)
+ 		t = rcu_dereference(memcg->thresholds.primary);
+-	else
++	else if (type == _MEMSWAP)
+ 		t = rcu_dereference(memcg->memsw_thresholds.primary);
++	else if (type == _RSS)
++		t = rcu_dereference(memcg->rss_thresholds.primary);
++	else
++		BUG();
+ 
+ 	if (!t)
+ 		goto unlock;
+ 
+-	usage = mem_cgroup_usage(memcg, swap);
++	if (type == _RSS)
++		usage = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS)
++								<< PAGE_SHIFT;
++	else
++		usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 
+ 	/*
+ 	 * current_threshold points to threshold just below or equal to usage.
+@@ -4582,9 +4598,10 @@ unlock:
+ static void mem_cgroup_threshold(struct mem_cgroup *memcg)
+ {
+ 	while (memcg) {
+-		__mem_cgroup_threshold(memcg, false);
++		__mem_cgroup_threshold(memcg, _MEM);
+ 		if (do_swap_account)
+-			__mem_cgroup_threshold(memcg, true);
++			__mem_cgroup_threshold(memcg, _MEMSWAP);
++		__mem_cgroup_threshold(memcg, _RSS);
+ 
+ 		memcg = parent_mem_cgroup(memcg);
+ 	}
+@@ -4645,12 +4662,16 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
+ 	} else if (type == _MEMSWAP) {
+ 		thresholds = &memcg->memsw_thresholds;
+ 		usage = mem_cgroup_usage(memcg, true);
++	} else if (type == _RSS) {
++		thresholds = &memcg->rss_thresholds;
++		usage = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS)
++								<< PAGE_SHIFT;
+ 	} else
+ 		BUG();
+ 
+ 	/* Check if a threshold crossed before adding a new one */
+ 	if (thresholds->primary)
+-		__mem_cgroup_threshold(memcg, type == _MEMSWAP);
++		__mem_cgroup_threshold(memcg, type);
+ 
+ 	size = thresholds->primary ? thresholds->primary->size + 1 : 1;
+ 
+@@ -4718,6 +4739,12 @@ static int memsw_cgroup_usage_register_event(struct mem_cgroup *memcg,
+ 	return __mem_cgroup_usage_register_event(memcg, eventfd, args, _MEMSWAP);
+ }
+ 
++static int mem_cgroup_rss_register_event(struct mem_cgroup *memcg,
++	struct eventfd_ctx *eventfd, const char *args)
++{
++	return __mem_cgroup_usage_register_event(memcg, eventfd, args, _RSS);
++}
++
+ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
+ 	struct eventfd_ctx *eventfd, enum res_type type)
+ {
+@@ -4734,6 +4761,10 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
+ 	} else if (type == _MEMSWAP) {
+ 		thresholds = &memcg->memsw_thresholds;
+ 		usage = mem_cgroup_usage(memcg, true);
++	} else if (type == _RSS) {
++		thresholds = &memcg->rss_thresholds;
++		usage = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS)
++								<< PAGE_SHIFT;
+ 	} else
+ 		BUG();
+ 
+@@ -4741,7 +4772,7 @@ static void __mem_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
+ 		goto unlock;
+ 
+ 	/* Check if a threshold crossed before removing */
+-	__mem_cgroup_threshold(memcg, type == _MEMSWAP);
++	__mem_cgroup_threshold(memcg, type);
+ 
+ 	/* Calculate new number of threshold */
+ 	size = 0;
+@@ -4808,6 +4839,12 @@ static void memsw_cgroup_usage_unregister_event(struct mem_cgroup *memcg,
+ 	return __mem_cgroup_usage_unregister_event(memcg, eventfd, _MEMSWAP);
+ }
+ 
++static void mem_cgroup_rss_unregister_event(struct mem_cgroup *memcg,
++	struct eventfd_ctx *eventfd)
++{
++	return __mem_cgroup_usage_unregister_event(memcg, eventfd, _RSS);
++}
++
+ static int mem_cgroup_oom_register_event(struct mem_cgroup *memcg,
+ 	struct eventfd_ctx *eventfd, const char *args)
+ {
+@@ -5112,6 +5149,9 @@ static ssize_t memcg_write_event_control(struct kernfs_open_file *of,
+ 	} else if (!strcmp(name, "memory.memsw.usage_in_bytes")) {
+ 		event->register_event = memsw_cgroup_usage_register_event;
+ 		event->unregister_event = memsw_cgroup_usage_unregister_event;
++	} else if (!strcmp(name, "memory.rss")) {
++		event->register_event = mem_cgroup_rss_register_event;
++		event->unregister_event = mem_cgroup_rss_unregister_event;
+ 	} else {
+ 		ret = -EINVAL;
+ 		goto out_put_cfile;
+@@ -5192,6 +5232,11 @@ static struct cftype mem_cgroup_files[] = {
+ 		.read_u64 = mem_cgroup_read_u64,
+ 	},
+ 	{
++		.name = "rss",
++		.private = MEMFILE_PRIVATE(_RSS, RES_USAGE),
++		.read_u64 = mem_cgroup_read_u64,
++	},
++	{
+ 		.name = "stat",
+ 		.seq_show = memcg_stat_show,
+ 	},
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.10.4
+
