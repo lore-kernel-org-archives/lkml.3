@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317AbaIKO7U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:59:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15759 "EHLO mga02.intel.com"
+	id S1755025AbaIKPAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:00:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41942 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753296AbaIKO7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:59:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
-   d="scan'208";a="601493498"
-Message-ID: <5411B8C3.7080205@intel.com>
-Date: Thu, 11 Sep 2014 07:59:15 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751057AbaIKPAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:00:10 -0400
+Date: Thu, 11 Sep 2014 16:59:45 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
+ cookie with each entry
+Message-ID: <20140911145945.GC32722@krava.brq.redhat.com>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <1410358129-9965-14-git-send-email-acme@kernel.org>
+ <20140911103319.GA13634@krava.brq.redhat.com>
+ <20140911132911.GB10158@kernel.org>
 MIME-Version: 1.0
-To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 09/10] x86, mpx: cleanup unused bound tables
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-10-git-send-email-qiaowei.ren@intel.com>
-In-Reply-To: <1410425210-24789-10-git-send-email-qiaowei.ren@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911132911.GB10158@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
-> + * This function will be called by do_munmap(), and the VMAs covering
-> + * the virtual address region start...end have already been split if
-> + * necessary and remvoed from the VMA list.
+On Thu, Sep 11, 2014 at 10:29:11AM -0300, Arnaldo Carvalho de Melo wrote:
 
-"remvoed" -> "removed"
+SNIP
 
-> +void mpx_unmap(struct mm_struct *mm,
-> +		unsigned long start, unsigned long end)
-> +{
-> +	int ret;
-> +
-> +	ret = mpx_try_unmap(mm, start, end);
-> +	if (ret == -EINVAL)
-> +		force_sig(SIGSEGV, current);
-> +}
+> > I like the idea of private pointer for each fd, but I think it should
+> > be 'void*' to keep the library generic. The 'int*' is related only to
+> > the evlist usage of this.
+> 
+> Right, from the changelog comment for this patch:
+> 
+> ------------------------------
+>     We may need to have further info associated with each fdarray entry,
+> in that case we'll make that int array a 'union fdarray_priv' one and
+> put a pointer there so that users can stash whatever they want there.
+> For now, an int is enough tho.
+> ------------------------------
+> 
+> I had it as:
+> 
+> 	struct fdarray {
+> 	...
+> 		union {
+> 			int 	idx;
+> 			void	*ptr;
+> 		} priv;
+> 	...
+> 	}
+> 
+> But then I had no use whatsoever for the ->ptr one at this point, so I
+> just nuked it, to keep _just_ what is used _right now_, and added the
+> comment to the changelog :-)
 
-In the case of a fault during an unmap, this just ignores the situation
-and returns silently.  Where is the code to retry the freeing operation
-outside of mmap_sem?
+if we are treeting tools/lib/api as 'external' lib, I think we should
+use 'void *' for priv and let the user retype it to whatever he wants
+
+but I dont care/insist here too much.. it just seems strange to me ;-)
+
+jirka
