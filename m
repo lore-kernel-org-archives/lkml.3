@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741AbaIKNOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:14:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51519 "EHLO
+	id S1756726AbaIKNOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:14:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51524 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755381AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755383AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Vlad Yasevich" <vyasevic@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Jonas Bonn" <jonas@southpole.se>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.40821185@decadent.org.uk>
+Message-ID: <lsq.1410438733.948936431@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 104/131] macvlan: Initialize vlan_features to turn on
- offload  support.
+Subject: [PATCH 3.2 098/131] openrisc: include export.h for EXPORT_SYMBOL
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,32 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Jonas Bonn <jonas@southpole.se>
 
-[ Upstream commit 081e83a78db9b0ae1f5eabc2dedecc865f509b98 ]
+commit abdf8b5e07884a183938969253770164d60b87cb upstream.
 
-Macvlan devices do not initialize vlan_features.  As a result,
-any vlan devices configured on top of macvlans perform very poorly.
-Initialize vlan_features based on the vlan features of the lower-level
-device.
+Use of EXPORT_SYMBOL requires inclusion of export.h
 
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/macvlan.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/openrisc/kernel/init_task.c | 1 +
+ arch/openrisc/kernel/irq.c       | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/net/macvlan.c b/drivers/net/macvlan.c
-index b74cdf6..fed39de 100644
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -455,6 +455,7 @@ static int macvlan_init(struct net_device *dev)
- 				  (lowerdev->state & MACVLAN_STATE_MASK);
- 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
- 	dev->features		|= NETIF_F_LLTX;
-+	dev->vlan_features	= lowerdev->vlan_features & MACVLAN_FEATURES;
- 	dev->gso_max_size	= lowerdev->gso_max_size;
- 	dev->iflink		= lowerdev->ifindex;
- 	dev->hard_header_len	= lowerdev->hard_header_len;
+diff --git a/arch/openrisc/kernel/init_task.c b/arch/openrisc/kernel/init_task.c
+index 45744a38..ca53408 100644
+--- a/arch/openrisc/kernel/init_task.c
++++ b/arch/openrisc/kernel/init_task.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/init_task.h>
+ #include <linux/mqueue.h>
++#include <linux/export.h>
+ 
+ static struct signal_struct init_signals = INIT_SIGNALS(init_signals);
+ static struct sighand_struct init_sighand = INIT_SIGHAND(init_sighand);
+diff --git a/arch/openrisc/kernel/irq.c b/arch/openrisc/kernel/irq.c
+index 59b3023..4bfead2 100644
+--- a/arch/openrisc/kernel/irq.c
++++ b/arch/openrisc/kernel/irq.c
+@@ -23,6 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/seq_file.h>
+ #include <linux/kernel_stat.h>
++#include <linux/export.h>
+ 
+ #include <linux/irqflags.h>
+ 
 
