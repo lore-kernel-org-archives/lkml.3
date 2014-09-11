@@ -1,95 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaIKIjU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:39:20 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39265 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaIKIjO (ORCPT
+	id S1753566AbaIKIj0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:39:26 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:14760 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752865AbaIKIjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:39:14 -0400
-Message-ID: <54115FAB.2050601@gmail.com>
-Date: Thu, 11 Sep 2014 11:39:07 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Thu, 11 Sep 2014 04:39:22 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'torvalds@linux-foundation.org'" <torvalds@linux-foundation.org>,
+        "'sfrench@samba.org'" <sfrench@samba.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'linux-cifs@vger.kernel.org'" <linux-cifs@vger.kernel.org>,
+        "'samba-technical@lists.samba.org'" <samba-technical@lists.samba.org>
+Date: Thu, 11 Sep 2014 16:39:17 +0800
+Subject: [PATCH] cifs:fix build warnings
+Thread-Topic: [PATCH] cifs:fix build warnings
+Thread-Index: Ac/Nm66al6dDe1qdQiObatmyCAjtKgAABH/Q
+Message-ID: <35FD53F367049845BC99AC72306C23D103CDBFBFB01C@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103CDBFBFB01B@CNBJMBX05.corpusers.net>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103CDBFBFB01B@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Boaz Harrosh <boaz@plexistor.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>, Jens Axboe <axboe@fb.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-nvdimm@ml01.01.org, Toshi Kani <toshi.kani@hp.com>,
-        linux-mm@kvack.org
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/9] mm: Let sparse_{add,remove}_one_section receive a
- node_id
-References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com> <540F1EC6.4000504@plexistor.com> <540F20AB.4000404@plexistor.com> <540F48BA.2090304@intel.com> <541022DB.9090000@plexistor.com> <541077DF.1060609@intel.com> <5410899C.3030501@plexistor.com> <54109845.3050309@intel.com>
-In-Reply-To: <54109845.3050309@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8B8dY2g022111
 
-On 09/10/2014 09:28 PM, Dave Hansen wrote:
-<>
-> 
-> OK, so what happens when a page is truncated out of a file and this
-> "last" block reference is dropped while a get_user_pages() still has a
-> reference?
-> 
+this fix the following warningsï¼š
+kernel.torvalds.git/fs/cifs/sess.c:751:1: warning: 'sess_auth_lanman' defined but not used [-Wunused-function]
+kernel.torvalds.git/fs/cifs/sess.c:1109:1: warning: 'sess_auth_kerberos' defined but not used [-Wunused-function]
 
-I have a very simple plan for this scenario, as I said, hang these pages
-with ref!=1 on a garbage list, and one of the clear threads can scan them
-periodically and release them.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+fs/cifs/sess.c | 19 -------------------
+1 file changed, 19 deletions(-)
 
-I have this test in place, currently what I do is just drop the block
-and let it leak (that is, not be used any more) until a next mount where
-this will be returned to free store. Yes stupid I know. But I have a big
-fat message when this happens and I have not been able to reproduce it.
-So I'm still waiting for this test case, I guess DAX protects me.
+diff --git a/fs/cifs/sess.c b/fs/cifs/sess.c
+index 3a5e833..7bc9c03 100644
+--- a/fs/cifs/sess.c
++++ b/fs/cifs/sess.c
+@@ -744,15 +744,6 @@ out:
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_data->func = NULL;
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_free_buffer(sess_data);
+}
+-
+-#else
+-
+-static void
+-sess_auth_lanman(struct sess_data *sess_data)
+-{
+-Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_data->result = -EOPNOTSUPP;
+-Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_data->func = NULL;
+-}
+#endif
 
-<>
-> From my perspective, DAX is complicated, but it is necessary because we
-> don't have a 'struct page'.  You're saying that even if we pay the cost
-> of a 'struct page' for the memory, we still don't get the benefit of
-> having it like getting rid of this DAX stuff?
-> 
+Â static void
+@@ -1102,16 +1093,6 @@ out:
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â  kfree(ses->auth_key.response);
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â  ses->auth_key.response = NULL;
+}
+-
+-#else
+-
+-static void
+-sess_auth_kerberos(struct sess_data *sess_data)
+-{
+-Â Â Â Â Â Â Â Â Â Â Â Â Â  cifs_dbg(VFS, "Kerberos negotiated but upcall support disabled!\n");
+-Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_data->result = -ENOSYS;
+-Â Â Â Â Â Â Â Â Â Â Â Â Â  sess_data->func = NULL;
+-}
+#endif /* ! CONFIG_CIFS_UPCALL */
 
-No DAX is still necessary because we map storage directly to app space,
-and we still need it persistent. That is we can-not/need-not use an
-in-ram radix tree but directly use on-storage btrees.
-Regular VFS has this 2 tiers model, volatile-ram over persistent store.
-DAX is an alternative VFS model where you have a single tier. the name
-implies "Direct Access".
-
-So this is nothing to do with page cost or "benefit". DAX is about a new
-VFS model for new storage technologies.
-
-And please be noted, the complexity you are talking about is just a learning
-curve, on the developers side. Not a technological one. Actually if you
-compare the two models, lets call them VFS-2t and VFS-1t, then you see that
-DAX is an order of a magnitude simpler then the old model.
-
-Life is hard and we do need the two models all at the same time, to support
-all these different devices. So yes the complexity is added with the added
-choice. But please do not confuse, DAX is not the complicated part. Having
-a Choice is.
-
-> Also, about not having a zone for these pages.  Do you intend to support
-> 32-bit systems?  If so, I believe you will require the kmap() family of
-> functions to map the pages in order to copy data in and out.  kmap()
-> currently requires knowing the zone of the page.
-
-No!!! This is strictly 64 bit. A 32bit system is able to have at maximum
-3Gb of low-ram + storage.
-DAX implies always mapped. That is, no re-mapping. So this rules out
-more then a G of storage. Since that is a joke then No! 32bit is out.
-
-You need to understand current HW std talks about DDR4 and there are
-DDR3 samples flouting around. So this is strictly 64bit, even on
-phones.
-
-
-Thanks
-Boaz
-
+Â /*
+-- 
+2.1.0
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
