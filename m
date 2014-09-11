@@ -1,125 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332AbaIKOwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:52:11 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22696 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753114AbaIKOtL (ORCPT
+	id S932076AbaIKOw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:52:56 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:41663 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756475AbaIKOwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:49:11 -0400
-Message-Id: <20140911144907.912469902@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 11 Sep 2014 10:47:46 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 2/9] ftrace: Add helper function ftrace_ops_get_func()
-References: <20140911144744.907770249@goodmis.org>
+	Thu, 11 Sep 2014 10:52:53 -0400
+Message-ID: <5411B73E.4040404@itdev.co.uk>
+Date: Thu, 11 Sep 2014 15:52:46 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftrace-Add-helper-function-ftrace_ops_get_func.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Warren <swarren@nvidia.com>,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: atmel_mxt_ts - fix merge in DT documentation
+References: <1407372486-25881-1-git-send-email-javier.martinez@collabora.co.uk> <1407372486-25881-2-git-send-email-javier.martinez@collabora.co.uk> <53E37329.4020002@itdev.co.uk> <53E4E41D.4070703@collabora.co.uk> <53EDF6B4.7080804@collabora.co.uk> <53EE307E.8060507@itdev.co.uk> <53EE319A.1030304@wwwdotorg.org>
+In-Reply-To: <53EE319A.1030304@wwwdotorg.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+On 15/08/14 17:13, Stephen Warren wrote:
+>>> Any comments on this? I would really appreciate if you can expand on how
+>>> this DT property is supposed to be used so I can re-spin the atmel support
+>>> patch for Peach boards.
+>>
+>> The below patch improves the documentation for the gpio-property.
+> 
+> That patch makes sense, and is a nice description,
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Add the helper function to what the mcount trampoline is to call
-for a ftrace_ops function. This helper will be used by arch code
-in the future to set up dynamic trampolines. But as this does the
-same tests that are performed in choosing what function to call for
-the default mcount trampoline, might as well use it to clean up
-the existing code.
+Hi Dmitry-
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Something went a bit wrong in merging f5940231a - there's a bit of repeated
+text that's been introduced.
+
+Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 ---
- include/linux/ftrace.h |  2 ++
- kernel/trace/ftrace.c  | 47 +++++++++++++++++++++++++++++++++++------------
- 2 files changed, 37 insertions(+), 12 deletions(-)
+ Documentation/devicetree/bindings/input/atmel,maxtouch.txt | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f0b0edbf55a9..ef37286547fc 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -56,6 +56,8 @@ struct ftrace_ops;
- typedef void (*ftrace_func_t)(unsigned long ip, unsigned long parent_ip,
- 			      struct ftrace_ops *op, struct pt_regs *regs);
- 
-+ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops);
-+
- /*
-  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
-  * set in the flags member.
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 17b606362ab4..dabf734f909c 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -259,20 +259,12 @@ static void update_ftrace_function(void)
- 	 * then have the mcount trampoline call the function directly.
- 	 */
- 	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list->next == &ftrace_list_end &&
--	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     !FTRACE_FORCE_LIST_FUNC)) {
-+	    (ftrace_ops_list->next == &ftrace_list_end)) {
-+
- 		/* Set the ftrace_ops that the arch callback uses */
- 		set_function_trace_op = ftrace_ops_list;
--		/*
--		 * If the func handles its own recursion, call it directly.
--		 * Otherwise call the recursion protected function that
--		 * will call the ftrace ops function.
--		 */
--		if (ftrace_ops_list->flags & FTRACE_OPS_FL_RECURSION_SAFE)
--			func = ftrace_ops_list->func;
--		else
--			func = ftrace_ops_recurs_func;
-+
-+		func = ftrace_ops_get_func(ftrace_ops_list);
- 	} else {
- 		/* Just use the default ftrace_ops */
- 		set_function_trace_op = &ftrace_list_end;
-@@ -4856,6 +4848,37 @@ static void ftrace_ops_recurs_func(unsigned long ip, unsigned long parent_ip,
- 	trace_clear_recursion(bit);
- }
- 
-+/**
-+ * ftrace_ops_get_func - get the function a trampoline should call
-+ * @ops: the ops to get the function for
-+ *
-+ * Normally the mcount trampoline will call the ops->func, but there
-+ * are times that it should not. For example, if the ops does not
-+ * have its own recursion protection, then it should call the
-+ * ftrace_ops_recurs_func() instead.
-+ *
-+ * Returns the function that the trampoline should call for @ops.
-+ */
-+ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops)
-+{
-+	/*
-+	 * If this is a dynamic ops or we force list func,
-+	 * then it needs to call the list anyway.
-+	 */
-+	if (ops->flags & FTRACE_OPS_FL_DYNAMIC || FTRACE_FORCE_LIST_FUNC)
-+		return ftrace_ops_list_func;
-+
-+	/*
-+	 * If the func handles its own recursion, call it directly.
-+	 * Otherwise call the recursion protected function that
-+	 * will call the ftrace ops function.
-+	 */
-+	if (!(ops->flags & FTRACE_OPS_FL_RECURSION_SAFE))
-+		return ftrace_ops_recurs_func;
-+
-+	return ops->func;
-+}
-+
- static void clear_ftrace_swapper(void)
- {
- 	struct task_struct *p;
+diff --git a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+index 0ac23f2..1852906 100644
+--- a/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
++++ b/Documentation/devicetree/bindings/input/atmel,maxtouch.txt
+@@ -11,10 +11,6 @@ Required properties:
+
+ Optional properties for main touchpad device:
+
+-- linux,gpio-keymap: An array of up to 4 entries indicating the Linux
+-    keycode generated by each GPIO. Linux keycodes are defined in
+-    <dt-bindings/input/input.h>.
+-
+ - linux,gpio-keymap: When enabled, the SPT_GPIOPWN_T19 object sends messages
+     on GPIO bit changes. An array of up to 8 entries can be provided
+     indicating the Linux keycode mapped to each bit of the status byte,
 -- 
-2.0.1
-
-
+1.9.1
