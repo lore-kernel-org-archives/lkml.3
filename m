@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307AbaIKRAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:00:15 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57974 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaIKRAL (ORCPT
+	id S1752035AbaIKRAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:00:33 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51904 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaIKRA3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:00:11 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: olof@lixom.net
-Cc: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <will.deacon@arm.com>,
+	Thu, 11 Sep 2014 13:00:29 -0400
+Message-ID: <5411D528.4050605@arm.com>
+Date: Thu, 11 Sep 2014 18:00:24 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Doug Anderson <dianders@chromium.org>, "olof@lixom.net" <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
         Mark Rutland <Mark.Rutland@arm.com>,
         Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
         Sudeep Holla <Sudeep.Holla@arm.com>,
         Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Nathan Lynch <Nathan_Lynch@mentor.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] clocksource: arch_timer: Allow the device tree to specify the physical timer
-Date: Thu, 11 Sep 2014 10:00:01 -0700
-Message-Id: <1410454801-14231-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com>
+In-Reply-To: <20140911164710.GW6158@arm.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 11 Sep 2014 17:00:25.0626 (UTC) FILETIME=[E1C69FA0:01CFCDE1]
+X-MC-Unique: 114091118002600701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some 32-bit (ARMv7) systems are architected like this:
+On 11/09/14 17:47, Will Deacon wrote:
+> On Thu, Sep 11, 2014 at 05:16:44PM +0100, Doug Anderson wrote:
+>> Some 32-bit (ARMv7) systems are architected like this:
+>>
+>> * The firmware doesn't know and doesn't care about hypervisor mode and
+>>   we don't want to add the complexity of hypervisor there.
+>>
+>> * The firmware isn't involved in SMP bringup or resume.
+>>
+>> * The ARCH timer come up with an uninitialized offset between the
+>>   virtual and physical counters.  Each core gets a different random
+>>   offset.
+>>
+>> On systems like the above, it doesn't make sense to use the virtual
+>> counter.  There's nobody managing the offset and each time a core goes
+>> down and comes back up it will get reinitialized to some other random
+>> value.
+> 
+> You probably need to rephrase this slightly, as there *is* still a
+> requirement on the hypervisor/firmware (actually, two!). See below.
+> 
+>> Let's add a property to the device tree to say that we shouldn't use
+>> the virtual timer.  Firmware could potentially remove this property
+>> before passing the device tree to the kernel if it really wants the
+>> kernel to use a virtual timer.
+>>
+>> Note that it's been said that ARM64 (ARMv8) systems the firmware and
+>> kernel really can't be architected as described above.  That means
+>> using the physical timer like this really only makes sense for ARMv7
+>> systems.
+> 
+> I'd go further: this only makes sense if you're booting in secure SVC
+> mode.
 
-* The firmware doesn't know and doesn't care about hypervisor mode and
-  we don't want to add the complexity of hypervisor there.
+If that's the case, what's the problem? Enter monitor mode, set SCR.NS
+to one, nuke CNTVOFF, revert, job done.
 
-* The firmware isn't involved in SMP bringup or resume.
+What am I missing?
 
-* The ARCH timer come up with an uninitialized offset between the
-  virtual and physical counters.  Each core gets a different random
-  offset.
-
-* The device boots in "Secure SVC" mode.
-
-* Nothing has touched the reset value of CNTHCTL.PL1PCEN or
-  CNTHCTL.PL1PCTEN (both default to 1 at reset)
-
-On systems like the above, it doesn't make sense to use the virtual
-counter.  There's nobody managing the offset and each time a core goes
-down and comes back up it will get reinitialized to some other random
-value.
-
-Let's add a property to the device tree to say that we shouldn't use
-the virtual timer.  Firmware could potentially remove this property
-before passing the device tree to the kernel if it really wants the
-kernel to use a virtual timer.
-
-Note that it's been said that ARM64 (ARMv8) systems the firmware and
-kernel really can't be architected as described above.  That means
-using the physical timer like this really only makes sense for ARMv7
-systems.
-
-In order for this patch to do anything useful, we also need Sonny's
-patch at <https://patchwork.kernel.org/patch/4790921/>
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
----
-Changes in v3:
-- Wording changes to bindings and patch desc as per Will Deacon
-
-Changes in v2:
-- Add "#ifdef CONFIG_ARM" as per Will Deacon
-
- Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
- drivers/clocksource/arm_arch_timer.c                 | 5 +++++
- 2 files changed, 11 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-index 37b2caf..e28fced 100644
---- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-+++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-@@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
- - always-on : a boolean property. If present, the timer is powered through an
-   always-on power domain, therefore it never loses context.
- 
-+** Optional properties:
-+
-+- arm,use-physical-timer : Don't ever use the virtual timer, just use the
-+  physical one.  Only supported for ARM (not ARM64).
-+
-+
- Example:
- 
- 	timer {
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 5163ec1..e7aa256 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -649,6 +649,11 @@ static void __init arch_timer_init(struct device_node *np)
- 		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
- 	arch_timer_detect_rate(NULL, np);
- 
-+#ifdef CONFIG_ARM
-+	if (of_property_read_bool(np, "arm,use-physical-timer"))
-+		arch_timer_use_virtual = false;
-+#endif
-+
- 	/*
- 	 * If HYP mode is available, we know that the physical timer
- 	 * has been configured to be accessible from PL1. Use it, so
+	M.
 -- 
-2.1.0.rc2.206.gedb03e5
+Jazz is not dead. It just smells funny...
 
