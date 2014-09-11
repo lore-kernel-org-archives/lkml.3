@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaIKLWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:22:54 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:46643 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472AbaIKLWw (ORCPT
+	id S1754533AbaIKLXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:23:14 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:51125 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754165AbaIKLWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:22:52 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-5d-541186097666
+	Thu, 11 Sep 2014 07:22:51 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-57-54118609f6a4
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -19,49 +19,232 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Josh Cartwright <joshc@codeaurora.org>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH v2 3/3] drivers: dma-contiguous: add initialization from device
+Subject: [PATCH v2 2/3] drivers: dma-coherent: add initialization from device
  tree
-Date: Thu, 11 Sep 2014 13:22:41 +0200
-Message-id: <1410434561-9294-4-git-send-email-m.szyprowski@samsung.com>
+Date: Thu, 11 Sep 2014 13:22:40 +0200
+Message-id: <1410434561-9294-3-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.9.2
 In-reply-to: <1410434561-9294-1-git-send-email-m.szyprowski@samsung.com>
 References: <1410434561-9294-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xq7qcbYIhBk//mVjMWb+GzeLvpGPs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOLMWRmVeSWpSXmKPExsVy+t/xq7qcbYIhBg8es1vMWb+GzeLvpGPs
 	Fgf+7GC0WNndzGaxc907RouzTW/YLbZ3zmC3+HLlIZPFpsfXWC0u75rDZrH2yF12iwXHW1gd
 	eDx+/5rE6HG5r5fJo+vtFSaPO9f2sHmcmPGbxWPzknqP2/8eM3us+/OKyaNvyypGj8+b5AK4
-	orhsUlJzMstSi/TtErgyTm8OKVhrWLFx7jbWBsYdGl2MnBwSAiYS3/ctZYewxSQu3FvP1sXI
-	xSEksJRRYsnBuUwQTh+TxP7Jj8Cq2AQMJbredrGB2CICbhL/1h0C62AWmMwscW3hHiaQhLBA
-	mERLz1SwBhYBVYmnT1eBNfAKuEtMeHiVFWKdnMT/lyvA6jkFPCQmf5sEVi8EVHNx9wa2CYy8
-	CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBO7XHYxLj1kdYhTgYFTi4f2QKxgixJpY
-	VlyZe4hRgoNZSYS3tBAoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgVHphbvEk9Xnn7P2bNd7L8jQ
-	f0Jic3zbzsNu/o5lVbOOM7X/VebZbr6q9q2CZOPyTG27skNpmhVTimJv8t9jbI+Of7Bf6Vj2
-	/zBG86lO78Vu/Gk16yw8kV70cP4tk+mHjpXGH1yb83yiOpfT91WxB/RvzpiRdyszvN6dpTqL
-	Y126pa7Y6g26Z5VYijMSDbWYi4oTAQz66u46AgAA
+	orhsUlJzMstSi/TtErgyJv8KK/hlV7H00RamBsaDxl2MnBwSAiYSL+f+ZYGwxSQu3FvP1sXI
+	xSEksJRR4tHLmYwQTh+TxP7Jj9hBqtgEDCW63naxgdgiAm4S/9YdAutgFpjMLHFt4R4mkISw
+	QIjEltmzwMayCKhKHOw8CNbAK+Au8fjCbqh1chL/X64Aq+cU8JCY/G0S2AIhoJqLuzewTWDk
+	XcDIsIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMjJHC/7mBceszqEKMAB6MSD++HXMEQIdbE
+	suLK3EOMEhzMSiK8pYVAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYxHLBf/t1y65VjXt8+Hl+2q
+	eDlNf8KiNenzeqa63pr6dUZuPeefNVlH/f7fzYt9K3xfaFWnpn2wferZs1mTNW7lH/s9aSpj
+	6J2ktC9rAnsKTxyZ/vLj7r8vpGe4ZD62XrlI7NvhmJpC3gyvmVx+hwWPLBb6V77t699Du/wn
+	vXVfaMP1se7IZ6n2F0osxRmJhlrMRcWJALiaznA6AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function to create CMA region from previously reserved memory
-and add support for handling 'shared-dma-pool' reserved-memory device
-tree nodes.
-
-Based on previous code provided by Josh Cartwright <joshc@codeaurora.org>
+Initialization procedure of dma coherent pool has been split into two
+parts, so memory pool can now be initialized without assigning to
+particular struct device. Then initialized region can be assigned to
+more than one struct device. To protect from concurent allocations from
+different devices, a spinlock has been added to dma_coherent_mem
+structure. The last part of this patch adds support for handling
+'shared-dma-pool' reserved-memory device tree nodes.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/base/dma-contiguous.c | 71 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/cma.h           |  3 ++
- mm/cma.c                      | 62 ++++++++++++++++++++++++++++++-------
- 3 files changed, 125 insertions(+), 11 deletions(-)
+ drivers/base/dma-coherent.c | 145 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 126 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 6606abd..eefb81b8 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -211,3 +211,74 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+diff --git a/drivers/base/dma-coherent.c b/drivers/base/dma-coherent.c
+index 7d6e84a..8f88c91 100644
+--- a/drivers/base/dma-coherent.c
++++ b/drivers/base/dma-coherent.c
+@@ -14,11 +14,14 @@ struct dma_coherent_mem {
+ 	int		size;
+ 	int		flags;
+ 	unsigned long	*bitmap;
++	spinlock_t	spinlock;
+ };
+ 
+-int dma_declare_coherent_memory(struct device *dev, phys_addr_t phys_addr,
+-				dma_addr_t device_addr, size_t size, int flags)
++static int dma_init_coherent_memory(phys_addr_t phys_addr, dma_addr_t device_addr,
++			     size_t size, int flags,
++			     struct dma_coherent_mem **mem)
  {
- 	return cma_release(dev_get_cma_area(dev), pages, count);
++	struct dma_coherent_mem *dma_mem = NULL;
+ 	void __iomem *mem_base = NULL;
+ 	int pages = size >> PAGE_SHIFT;
+ 	int bitmap_size = BITS_TO_LONGS(pages) * sizeof(long);
+@@ -27,27 +30,26 @@ int dma_declare_coherent_memory(struct device *dev, phys_addr_t phys_addr,
+ 		goto out;
+ 	if (!size)
+ 		goto out;
+-	if (dev->dma_mem)
+-		goto out;
+-
+-	/* FIXME: this routine just ignores DMA_MEMORY_INCLUDES_CHILDREN */
+ 
+ 	mem_base = ioremap(phys_addr, size);
+ 	if (!mem_base)
+ 		goto out;
+ 
+-	dev->dma_mem = kzalloc(sizeof(struct dma_coherent_mem), GFP_KERNEL);
+-	if (!dev->dma_mem)
++	dma_mem = kzalloc(sizeof(struct dma_coherent_mem), GFP_KERNEL);
++	if (!dma_mem)
+ 		goto out;
+-	dev->dma_mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+-	if (!dev->dma_mem->bitmap)
++	dma_mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	if (!dma_mem->bitmap)
+ 		goto free1_out;
+ 
+-	dev->dma_mem->virt_base = mem_base;
+-	dev->dma_mem->device_base = device_addr;
+-	dev->dma_mem->pfn_base = PFN_DOWN(phys_addr);
+-	dev->dma_mem->size = pages;
+-	dev->dma_mem->flags = flags;
++	dma_mem->virt_base = mem_base;
++	dma_mem->device_base = device_addr;
++	dma_mem->pfn_base = PFN_DOWN(phys_addr);
++	dma_mem->size = pages;
++	dma_mem->flags = flags;
++	spin_lock_init(&dma_mem->spinlock);
++
++	*mem = dma_mem;
+ 
+ 	if (flags & DMA_MEMORY_MAP)
+ 		return DMA_MEMORY_MAP;
+@@ -55,12 +57,51 @@ int dma_declare_coherent_memory(struct device *dev, phys_addr_t phys_addr,
+ 	return DMA_MEMORY_IO;
+ 
+  free1_out:
+-	kfree(dev->dma_mem);
++	kfree(dma_mem);
+  out:
+ 	if (mem_base)
+ 		iounmap(mem_base);
+ 	return 0;
  }
++
++static void dma_release_coherent_memory(struct dma_coherent_mem *mem)
++{
++	if (!mem)
++		return;
++	iounmap(mem->virt_base);
++	kfree(mem->bitmap);
++	kfree(mem);
++}
++
++static int dma_assign_coherent_memory(struct device *dev,
++				      struct dma_coherent_mem *mem)
++{
++	if (dev->dma_mem)
++		return -EBUSY;
++
++	dev->dma_mem = mem;
++	/* FIXME: this routine just ignores DMA_MEMORY_INCLUDES_CHILDREN */
++
++	return 0;
++}
++
++int dma_declare_coherent_memory(struct device *dev, phys_addr_t phys_addr,
++				dma_addr_t device_addr, size_t size, int flags)
++{
++	struct dma_coherent_mem *mem;
++	int ret;
++
++	ret = dma_init_coherent_memory(phys_addr, device_addr, size, flags,
++				       &mem);
++	if (ret == 0)
++		return 0;
++
++	if (dma_assign_coherent_memory(dev, mem) == 0)
++		return ret;
++
++	dma_release_coherent_memory(mem);
++	return 0;
++}
+ EXPORT_SYMBOL(dma_declare_coherent_memory);
+ 
+ void dma_release_declared_memory(struct device *dev)
+@@ -69,10 +110,8 @@ void dma_release_declared_memory(struct device *dev)
+ 
+ 	if (!mem)
+ 		return;
++	dma_release_coherent_memory(mem);
+ 	dev->dma_mem = NULL;
+-	iounmap(mem->virt_base);
+-	kfree(mem->bitmap);
+-	kfree(mem);
+ }
+ EXPORT_SYMBOL(dma_release_declared_memory);
+ 
+@@ -80,6 +119,7 @@ void *dma_mark_declared_memory_occupied(struct device *dev,
+ 					dma_addr_t device_addr, size_t size)
+ {
+ 	struct dma_coherent_mem *mem = dev->dma_mem;
++	unsigned long flags;
+ 	int pos, err;
+ 
+ 	size += device_addr & ~PAGE_MASK;
+@@ -87,8 +127,11 @@ void *dma_mark_declared_memory_occupied(struct device *dev,
+ 	if (!mem)
+ 		return ERR_PTR(-EINVAL);
+ 
++	spin_lock_irqsave(&mem->spinlock, flags);
+ 	pos = (device_addr - mem->device_base) >> PAGE_SHIFT;
+ 	err = bitmap_allocate_region(mem->bitmap, pos, get_order(size));
++	spin_unlock_irqrestore(&mem->spinlock, flags);
++
+ 	if (err != 0)
+ 		return ERR_PTR(err);
+ 	return mem->virt_base + (pos << PAGE_SHIFT);
+@@ -115,6 +158,7 @@ int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+ {
+ 	struct dma_coherent_mem *mem;
+ 	int order = get_order(size);
++	unsigned long flags;
+ 	int pageno;
+ 
+ 	if (!dev)
+@@ -124,6 +168,7 @@ int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+ 		return 0;
+ 
+ 	*ret = NULL;
++	spin_lock_irqsave(&mem->spinlock, flags);
+ 
+ 	if (unlikely(size > (mem->size << PAGE_SHIFT)))
+ 		goto err;
+@@ -138,10 +183,12 @@ int dma_alloc_from_coherent(struct device *dev, ssize_t size,
+ 	*dma_handle = mem->device_base + (pageno << PAGE_SHIFT);
+ 	*ret = mem->virt_base + (pageno << PAGE_SHIFT);
+ 	memset(*ret, 0, size);
++	spin_unlock_irqrestore(&mem->spinlock, flags);
+ 
+ 	return 1;
+ 
+ err:
++	spin_unlock_irqrestore(&mem->spinlock, flags);
+ 	/*
+ 	 * In the case where the allocation can not be satisfied from the
+ 	 * per-device area, try to fall back to generic memory if the
+@@ -171,8 +218,11 @@ int dma_release_from_coherent(struct device *dev, int order, void *vaddr)
+ 	if (mem && vaddr >= mem->virt_base && vaddr <
+ 		   (mem->virt_base + (mem->size << PAGE_SHIFT))) {
+ 		int page = (vaddr - mem->virt_base) >> PAGE_SHIFT;
++		unsigned long flags;
+ 
++		spin_lock_irqsave(&mem->spinlock, flags);
+ 		bitmap_release_region(mem->bitmap, page, order);
++		spin_unlock_irqrestore(&mem->spinlock, flags);
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -218,3 +268,60 @@ int dma_mmap_from_coherent(struct device *dev, struct vm_area_struct *vma,
+ 	return 0;
+ }
+ EXPORT_SYMBOL(dma_mmap_from_coherent);
 +
 +/*
 + * Support for reserved memory regions defined in device tree
@@ -71,169 +254,54 @@ index 6606abd..eefb81b8 100644
 +#include <linux/of_fdt.h>
 +#include <linux/of_reserved_mem.h>
 +
-+#undef pr_fmt
-+#define pr_fmt(fmt) fmt
-+
-+static int rmem_cma_device_init(struct reserved_mem *rmem, struct device *dev)
++static int rmem_dma_device_init(struct reserved_mem *rmem, struct device *dev)
 +{
-+	struct cma *cma = rmem->priv;
-+	if (!cma)
++	struct dma_coherent_mem *mem = rmem->priv;
++	if (!mem &&
++	    dma_init_coherent_memory(rmem->base, rmem->base, rmem->size,
++				     DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE,
++				     &mem) != DMA_MEMORY_MAP) {
++		pr_info("Reserved memory: failed to init DMA memory pool at %pa, size %ld MiB\n",
++			&rmem->base, (unsigned long)rmem->size / SZ_1M);
 +		return -ENODEV;
-+
-+	dev_set_cma_area(dev, cma);
++	}
++	rmem->priv = mem;
++	dma_assign_coherent_memory(dev, mem);
 +	return 0;
 +}
 +
-+static void rmem_cma_device_release(struct reserved_mem *rmem,
++static void rmem_dma_device_release(struct reserved_mem *rmem,
 +				    struct device *dev)
 +{
-+	dev_set_cma_area(dev, NULL);
++	dev->dma_mem = NULL;
 +}
 +
-+static const struct reserved_mem_ops rmem_cma_ops = {
-+	.device_init	= rmem_cma_device_init,
-+	.device_release = rmem_cma_device_release,
++static const struct reserved_mem_ops rmem_dma_ops = {
++	.device_init	= rmem_dma_device_init,
++	.device_release	= rmem_dma_device_release,
 +};
 +
-+static int __init rmem_cma_setup(struct reserved_mem *rmem)
++static int __init rmem_dma_setup(struct reserved_mem *rmem)
 +{
-+	phys_addr_t align = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-+	phys_addr_t mask = align - 1;
 +	unsigned long node = rmem->fdt_node;
-+	struct cma *cma;
-+	int err;
 +
-+	if (!of_get_flat_dt_prop(node, "reusable", NULL) ||
-+	    of_get_flat_dt_prop(node, "no-map", NULL))
++	if (of_get_flat_dt_prop(node, "reusable", NULL))
 +		return -EINVAL;
 +
-+	if ((rmem->base & mask) || (rmem->size & mask)) {
-+		pr_err("Reserved memory: incorrect alignment of CMA region\n");
++#ifdef CONFIG_ARM
++	if (!of_get_flat_dt_prop(node, "no-map", NULL)) {
++		pr_info("Reserved memory: regions without no-map are not yet supported\n");
 +		return -EINVAL;
 +	}
-+
-+	err = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
-+	if (err) {
-+		pr_err("Reserved memory: unable to setup CMA region\n");
-+		return err;
-+	}
-+	/* Architecture specific contiguous memory fixup. */
-+	dma_contiguous_early_fixup(rmem->base, rmem->size);
-+
-+	if (of_get_flat_dt_prop(node, "linux,cma-default", NULL))
-+		dma_contiguous_set_default(cma);
-+
-+	rmem->ops = &rmem_cma_ops;
-+	rmem->priv = cma;
-+
-+	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
-+		&rmem->base, (unsigned long)rmem->size / SZ_1M);
-+
-+	return 0;
-+}
-+RESERVEDMEM_OF_DECLARE(cma, "shared-dma-pool", rmem_cma_setup);
 +#endif
-diff --git a/include/linux/cma.h b/include/linux/cma.h
-index 371b930..0430ed0 100644
---- a/include/linux/cma.h
-+++ b/include/linux/cma.h
-@@ -22,6 +22,9 @@ extern int __init cma_declare_contiguous(phys_addr_t size,
- 			phys_addr_t base, phys_addr_t limit,
- 			phys_addr_t alignment, unsigned int order_per_bit,
- 			bool fixed, struct cma **res_cma);
-+extern int cma_init_reserved_mem(phys_addr_t size,
-+					phys_addr_t base, int order_per_bit,
-+					struct cma **res_cma);
- extern struct page *cma_alloc(struct cma *cma, int count, unsigned int align);
- extern bool cma_release(struct cma *cma, struct page *pages, int count);
- #endif
-diff --git a/mm/cma.c b/mm/cma.c
-index 474c644..014e145 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -141,6 +141,54 @@ static int __init cma_init_reserved_areas(void)
- core_initcall(cma_init_reserved_areas);
- 
- /**
-+ * cma_init_reserved_mem() - create custom contiguous area from reserved memory
-+ * @base: Base address of the reserved area
-+ * @size: Size of the reserved area (in bytes),
-+ * @order_per_bit: Order of pages represented by one bit on bitmap.
-+ * @res_cma: Pointer to store the created cma region.
-+ *
-+ * This function creates custom contiguous area from already reserved memory.
-+ */
-+int __init cma_init_reserved_mem(phys_addr_t base, phys_addr_t size,
-+				 int order_per_bit, struct cma **res_cma)
-+{
-+	struct cma *cma;
-+	phys_addr_t alignment;
 +
-+	/* Sanity checks */
-+	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
-+		pr_err("Not enough slots for CMA reserved regions!\n");
-+		return -ENOSPC;
-+	}
-+
-+	if (!size || !memblock_is_region_reserved(base, size))
-+		return -EINVAL;
-+
-+	/* ensure minimal alignment requied by mm core */
-+	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-+
-+	/* alignment should be aligned with order_per_bit */
-+	if (!IS_ALIGNED(alignment >> PAGE_SHIFT, 1 << order_per_bit))
-+		return -EINVAL;
-+
-+	if (ALIGN(base, alignment) != base || ALIGN(size, alignment) != size)
-+		return -EINVAL;
-+
-+	/*
-+	 * Each reserved area must be initialised later, when more kernel
-+	 * subsystems (like slab allocator) are available.
-+	 */
-+	cma = &cma_areas[cma_area_count];
-+	cma->base_pfn = PFN_DOWN(base);
-+	cma->count = size >> PAGE_SHIFT;
-+	cma->order_per_bit = order_per_bit;
-+	*res_cma = cma;
-+	cma_area_count++;
-+
++	rmem->ops = &rmem_dma_ops;
++	pr_info("Reserved memory: created DMA memory pool at %pa, size %ld MiB\n",
++		&rmem->base, (unsigned long)rmem->size / SZ_1M);
 +	return 0;
 +}
-+
-+/**
-  * cma_declare_contiguous() - reserve custom contiguous area
-  * @base: Base address of the reserved area optional, use 0 for any
-  * @size: Size of the reserved area (in bytes),
-@@ -163,7 +211,6 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 			phys_addr_t alignment, unsigned int order_per_bit,
- 			bool fixed, struct cma **res_cma)
- {
--	struct cma *cma;
- 	phys_addr_t memblock_end = memblock_end_of_DRAM();
- 	phys_addr_t highmem_start = __pa(high_memory);
- 	int ret = 0;
-@@ -235,16 +282,9 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 		}
- 	}
- 
--	/*
--	 * Each reserved area must be initialised later, when more kernel
--	 * subsystems (like slab allocator) are available.
--	 */
--	cma = &cma_areas[cma_area_count];
--	cma->base_pfn = PFN_DOWN(base);
--	cma->count = size >> PAGE_SHIFT;
--	cma->order_per_bit = order_per_bit;
--	*res_cma = cma;
--	cma_area_count++;
-+	ret = cma_init_reserved_mem(base, size, order_per_bit, res_cma);
-+	if (ret)
-+		goto err;
- 
- 	pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
- 		(unsigned long)base);
++RESERVEDMEM_OF_DECLARE(dma, "shared-dma-pool", rmem_dma_setup);
++#endif
 -- 
 1.9.2
 
