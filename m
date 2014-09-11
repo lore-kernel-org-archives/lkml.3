@@ -1,106 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaIKMPP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:15:15 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:64793 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302AbaIKMPN (ORCPT
+	id S1754751AbaIKMQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:16:53 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36888 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377AbaIKMQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:15:13 -0400
+	Thu, 11 Sep 2014 08:16:51 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8BCGlYZ014682, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: support VLAN
+Date: Thu, 11 Sep 2014 20:16:24 +0800
+Message-ID: <1394712342-15778-36-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-In-Reply-To: <20140911101308.GU3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org> <20140911101308.GU3190@worktop.ger.corp.intel.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Thu, 11 Sep 2014 14:14:52 +0200
-Message-ID: <CAKfTPtDtiTFVtgmM+38Ry-=32=o4NDn8LpPaQomug2NfeO_wnw@mail.gmail.com>
-Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher capacity
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2014 12:13, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Aug 26, 2014 at 01:06:51PM +0200, Vincent Guittot wrote:
->
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 18db43e..60ae1ce 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->>                       return true;
->>       }
->>
->> +     /*
->> +      * The group capacity is reduced probably because of activity from other
->> +      * sched class or interrupts which use part of the available capacity
->> +      */
->> +     if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
->> +                             env->sd->imbalance_pct))
->> +             return true;
->> +
->>       return false;
->>  }
->>
->> @@ -6534,13 +6542,23 @@ static int need_active_balance(struct lb_env *env)
->>       struct sched_domain *sd = env->sd;
->>
->>       if (env->idle == CPU_NEWLY_IDLE) {
->> +             int src_cpu = env->src_cpu;
->>
->>               /*
->>                * ASYM_PACKING needs to force migrate tasks from busy but
->>                * higher numbered CPUs in order to pack all tasks in the
->>                * lowest numbered CPUs.
->>                */
->> -             if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
->> +             if ((sd->flags & SD_ASYM_PACKING) && src_cpu > env->dst_cpu)
->> +                     return 1;
->> +
->> +             /*
->> +              * If the CPUs share their cache and the src_cpu's capacity is
->> +              * reduced because of other sched_class or IRQs, we trig an
->> +              * active balance to move the task
->> +              */
->> +             if ((capacity_orig_of(src_cpu) * 100) > (capacity_of(src_cpu) *
->> +                             sd->imbalance_pct))
->>                       return 1;
->>       }
->
-> Should you not also check -- in both cases -- that the destination is
-> any better?
+Support hw VLAN for tx and rx. And enable them by default.
 
-The case should have been solved earlier when calculating the
-imbalance which should be null if the destination is worse than the
-source.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 85 +++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 71 insertions(+), 14 deletions(-)
 
-But i haven't formally check that calculate_imbalance correctly
-handles that case
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 2130c75..9b6c35c 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -506,6 +506,7 @@ struct rx_desc {
+ #define IPF				(1 << 23) /* IP checksum fail */
+ #define UDPF				(1 << 22) /* UDP checksum fail */
+ #define TCPF				(1 << 21) /* TCP checksum fail */
++#define RX_VLAN_TAG			(1 << 16)
+ 
+ 	__le32 opts4;
+ 	__le32 opts5;
+@@ -531,6 +532,7 @@ struct tx_desc {
+ #define MSS_MAX			0x7ffU
+ #define TCPHO_SHIFT		17
+ #define TCPHO_MAX		0x7ffU
++#define TX_VLAN_TAG			(1 << 16)
+ };
+ 
+ struct r8152;
+@@ -1423,6 +1425,25 @@ static int msdn_giant_send_check(struct sk_buff *skb)
+ 	return ret;
+ }
+ 
++static inline void rtl_tx_vlan_tag(struct tx_desc *desc, struct sk_buff *skb)
++{
++	if (vlan_tx_tag_present(skb)) {
++		u32 opts2;
++
++		opts2 = TX_VLAN_TAG | swab16(vlan_tx_tag_get(skb));
++		desc->opts2 |= cpu_to_le32(opts2);
++	}
++}
++
++static inline void rtl_rx_vlan_tag(struct rx_desc *desc, struct sk_buff *skb)
++{
++	u32 opts2 = le32_to_cpu(desc->opts2);
++
++	if (opts2 & RX_VLAN_TAG)
++		__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
++				       swab16(opts2 & 0xffff));
++}
++
+ static int r8152_tx_csum(struct r8152 *tp, struct tx_desc *desc,
+ 			 struct sk_buff *skb, u32 len, u32 transport_offset)
+ {
+@@ -1550,6 +1571,8 @@ static int r8152_tx_agg_fill(struct r8152 *tp, struct tx_agg *agg)
+ 			continue;
+ 		}
+ 
++		rtl_tx_vlan_tag(tx_desc, skb);
++
+ 		tx_data += sizeof(*tx_desc);
+ 
+ 		len = skb->len;
+@@ -1691,6 +1714,7 @@ static void rx_bottom(struct r8152 *tp)
+ 			memcpy(skb->data, rx_data, pkt_len);
+ 			skb_put(skb, pkt_len);
+ 			skb->protocol = eth_type_trans(skb, netdev);
++			rtl_rx_vlan_tag(rx_desc, skb);
+ 			netif_receive_skb(skb);
+ 			stats->rx_packets++;
+ 			stats->rx_bytes += pkt_len;
+@@ -2082,6 +2106,34 @@ static void r8152_power_cut_en(struct r8152 *tp, bool enable)
+ 	ocp_write_word(tp, MCU_TYPE_USB, USB_PM_CTRL_STATUS, ocp_data);
+ }
+ 
++static void rtl_rx_vlan_en(struct r8152 *tp, bool enable)
++{
++	u32 ocp_data;
++
++	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
++	if (enable)
++		ocp_data |= CPCR_RX_VLAN;
++	else
++		ocp_data &= ~CPCR_RX_VLAN;
++	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
++}
++
++static int rtl8152_set_features(struct net_device *dev,
++				netdev_features_t features)
++{
++	netdev_features_t changed = features ^ dev->features;
++	struct r8152 *tp = netdev_priv(dev);
++
++	if (changed & NETIF_F_HW_VLAN_CTAG_RX) {
++		if (features & NETIF_F_HW_VLAN_CTAG_RX)
++			rtl_rx_vlan_en(tp, true);
++		else
++			rtl_rx_vlan_en(tp, false);
++	}
++
++	return 0;
++}
++
+ #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
+ 
+ static u32 __rtl_get_wol(struct r8152 *tp)
+@@ -2330,9 +2382,10 @@ static void r8152b_exit_oob(struct r8152 *tp)
+ 	ocp_write_dword(tp, MCU_TYPE_USB, USB_TX_DMA,
+ 			TEST_MODE_DISABLE | TX_SIZE_ADJUST1);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
+-	ocp_data &= ~CPCR_RX_VLAN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
++	if (tp->netdev->features & NETIF_F_HW_VLAN_CTAG_RX)
++		rtl_rx_vlan_en(tp, true);
++	else
++		rtl_rx_vlan_en(tp, false);
+ 
+ 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
+ 
+@@ -2376,9 +2429,7 @@ static void r8152b_enter_oob(struct r8152 *tp)
+ 
+ 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8152_RMS);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
+-	ocp_data |= CPCR_RX_VLAN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
++	rtl_rx_vlan_en(tp, true);
+ 
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PAL_BDC_CR);
+ 	ocp_data |= ALDPS_PROXY_MODE;
+@@ -2532,9 +2583,10 @@ static void r8153_first_init(struct r8152 *tp)
+ 		usleep_range(1000, 2000);
+ 	}
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
+-	ocp_data &= ~CPCR_RX_VLAN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
++	if (tp->netdev->features & NETIF_F_HW_VLAN_CTAG_RX)
++		rtl_rx_vlan_en(tp, true);
++	else
++		rtl_rx_vlan_en(tp, false);
+ 
+ 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_RMS, RTL8153_RMS);
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_MTPS, MTPS_JUMBO);
+@@ -2593,9 +2645,7 @@ static void r8153_enter_oob(struct r8152 *tp)
+ 	ocp_data &= ~TEREDO_WAKE_MASK;
+ 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_TEREDO_CFG, ocp_data);
+ 
+-	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_CPCR);
+-	ocp_data |= CPCR_RX_VLAN;
+-	ocp_write_word(tp, MCU_TYPE_PLA, PLA_CPCR, ocp_data);
++	rtl_rx_vlan_en(tp, true);
+ 
+ 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PAL_BDC_CR);
+ 	ocp_data |= ALDPS_PROXY_MODE;
+@@ -3330,6 +3380,7 @@ static const struct net_device_ops rtl8152_netdev_ops = {
+ 	.ndo_do_ioctl		= rtl8152_ioctl,
+ 	.ndo_start_xmit		= rtl8152_start_xmit,
+ 	.ndo_tx_timeout		= rtl8152_tx_timeout,
++	.ndo_set_features	= rtl8152_set_features,
+ 	.ndo_set_rx_mode	= rtl8152_set_rx_mode,
+ 	.ndo_set_mac_address	= rtl8152_set_mac_address,
+ 	.ndo_change_mtu		= rtl8152_change_mtu,
+@@ -3484,10 +3535,16 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 
+ 	netdev->features |= NETIF_F_RXCSUM | NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			    NETIF_F_TSO | NETIF_F_FRAGLIST | NETIF_F_IPV6_CSUM |
+-			    NETIF_F_TSO6;
++			    NETIF_F_TSO6 | NETIF_F_HW_VLAN_CTAG_RX |
++			    NETIF_F_HW_VLAN_CTAG_TX;
+ 	netdev->hw_features = NETIF_F_RXCSUM | NETIF_F_IP_CSUM | NETIF_F_SG |
+ 			      NETIF_F_TSO | NETIF_F_FRAGLIST |
+-			      NETIF_F_IPV6_CSUM | NETIF_F_TSO6;
++			      NETIF_F_IPV6_CSUM | NETIF_F_TSO6 |
++			      NETIF_F_HW_VLAN_CTAG_RX |
++			      NETIF_F_HW_VLAN_CTAG_RX;
++	netdev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO |
++				NETIF_F_HIGHDMA | NETIF_F_FRAGLIST |
++				NETIF_F_IPV6_CSUM | NETIF_F_TSO6;
+ 
+ 	netdev->ethtool_ops = &ops;
+ 	netif_set_gso_max_size(netdev, RTL_LIMITED_TSO_SIZE);
+-- 
+1.9.3
 
->
-> Also, there's some obvious repetition going on there, maybe add a
-> helper?
-
-yes
-
->
-> Also, both sites should probably ensure they're operating in the
-> non-saturated/overloaded scenario. Because as soon as we're completely
-> saturated we want SMP nice etc. and that all already works right
-> (presumably).
-
-If both are overloaded, calculated_imbalance will cap the max load
-that can be pulled so the busiest_group will not become idle
