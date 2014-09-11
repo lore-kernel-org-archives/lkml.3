@@ -1,185 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaIKRUs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:20:48 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:60604 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaIKRUp (ORCPT
+	id S1752288AbaIKRU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:20:56 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:46310 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaIKRUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:20:45 -0400
-Message-ID: <5411D9E2.5030408@gmail.com>
-Date: Thu, 11 Sep 2014 13:20:34 -0400
-From: Austin S Hemmelgarn <ahferroin7@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 11 Sep 2014 13:20:52 -0400
 MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] memcg: add threshold for anon rss
-References: <cover.1410447097.git.vdavydov@parallels.com> <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
-In-Reply-To: <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
-x-hashcash: 1:21:140911:vdavydov@parallels.com::4778fb37d796af725d2cb372966ea90:f6081fab8d488ba5
-x-hashcash: 1:21:140911:linux-kernel@vger.kernel.org::7867b2d47172e9d2f35242db9dd20a6:5c2d3daf1029d861
-x-hashcash: 1:21:140911:kamezawa.hiroyu@jp.fujitsu.com::14a34d645a7fc01a68b8c6d3648ea2e1:1febf9ae83089b29
-x-hashcash: 1:21:140911:hannes@cmpxchg.org::e7341e0b7a543b91ebce74c68e89da9d:84b2e6a3d67d2c8e
-x-hashcash: 1:21:140911:mhocko@suse.cz::c3be8daf8b573f2fc916fb0a7a930138:b58d3ee4b847a7be
-x-hashcash: 1:21:140911:gthelen@google.com::ddf304093b0c1bc2946b1ea8d98a8e2c:52880cffdab71ca4
-x-hashcash: 1:21:140911:hughd@google.com::3d290a51a82eaad21989f2d9f285e9:caa4fd70985a7d9d
-x-hashcash: 1:21:140911:Motohiro.Kosaki@us.fujitsu.com::e20c96998c0a28d2e905baf4654b8b62:3d52e7fed1b9fce
-x-hashcash: 1:21:140911:glommer@gmail.com::9b6dfa6fe832d0989e8edf2115750d72:606ec818d3dad570
-x-hashcash: 1:21:140911:tj@kernel.org::efbedea5caec46d2dcb6c2ff1a44a754:4956ee59d11a03ee
-x-hashcash: 1:21:140911:akpm@linux-foundation.org::5016ef6eb49fe7891c64514486245b25:c6da15450e98b76e
-x-hashcash: 1:21:140911:xemul@parallels.com::d33fc23a96f8b4d17e34f7d4d90961b1:ff6b7e04a3cfa7ac
-x-hashcash: 1:21:140911:khorenko@parallels.com::7721b5cf8bc52c5aff684402c7382617:1763a86f9f092353
-x-hashcash: 1:21:140911:linux-mm@kvack.org::ca4f7aa862d4f43eef78fdaf90da52e:5d8de1dc157ef3ef
-x-hashcash: 1:21:140911:cgroups@vger.kernel.org::cf06604feb334a723a3a90898eb80c56:cb639498516ecd61
-x-stampprotocols: hashcash:1:17;mbound:0:10:3000:5000
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms000609080005020801020809"
+X-Originating-IP: [2a01:e35:2434:4600:f125:f3cb:887f:34b9]
+In-Reply-To: <20140910101333.GA3002@lvm>
+References: <1401987808-23596-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1401987808-23596-16-git-send-email-a.motakis@virtualopensystems.com>
+ <20140608101703.GB3279@lvm> <CAG8rG2z02JPE+D-Bo1puuMPCR=wETciLaBgKT+i1XKQ55U-kYg@mail.gmail.com>
+ <20140910101333.GA3002@lvm>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Thu, 11 Sep 2014 19:20:31 +0200
+Message-ID: <CAG8rG2w29=+UCVK+SNUGmDa4Zh0riVt0_u7=6cmvUrcGs9-YFg@mail.gmail.com>
+Subject: Re: [RFC PATCH v6 15/20] vfio/platform: support for maskable and
+ automasked interrupts
+To: Christoffer Dall <christoffer.dall@linaro.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        alvise rigo <a.rigo@virtualopensystems.com>,
+        KVM devel mailing list <kvm@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>,
+        Eric Auger <eric.auger@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Wed, Sep 10, 2014 at 12:13 PM, Christoffer Dall
+<christoffer.dall@linaro.org> wrote:
+> On Tue, Sep 02, 2014 at 06:06:17PM +0200, Antonios Motakis wrote:
+>> On Sun, Jun 8, 2014 at 12:17 PM, Christoffer Dall
+>> <christoffer.dall@linaro.org> wrote:
+>> > On Thu, Jun 05, 2014 at 07:03:23PM +0200, Antonios Motakis wrote:
+>> >> Adds support to mask interrupts, and also for automasked interrupts.
+>> >> Level sensitive interrupts are exposed as automasked interrupts and
+>> >> are masked and disabled automatically when they fire.
+>> >>
+>> >> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>> >> ---
+>> >>  drivers/vfio/platform/vfio_platform_irq.c     | 112 ++++++++++++++++++++++++--
+>> >>  drivers/vfio/platform/vfio_platform_private.h |   2 +
+>> >>  2 files changed, 109 insertions(+), 5 deletions(-)
+>> >>
+>> >> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+>> >> index d79f5af..10dfbf0 100644
+>> >> --- a/drivers/vfio/platform/vfio_platform_irq.c
+>> >> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+>> >> @@ -51,9 +51,17 @@ int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+>> >>               if (hwirq < 0)
+>> >>                       goto err;
+>> >>
+>> >> -             vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD;
+>> >> +             spin_lock_init(&vdev->irq[i].lock);
+>> >> +
+>> >> +             vdev->irq[i].flags = VFIO_IRQ_INFO_EVENTFD
+>> >> +                                     | VFIO_IRQ_INFO_MASKABLE;
+>> >> +
+>> >> +             if (irq_get_trigger_type(hwirq) & IRQ_TYPE_LEVEL_MASK)
+>> >> +                     vdev->irq[i].flags |= VFIO_IRQ_INFO_AUTOMASKED;
+>> >
+>> > This seems to rely on the fact that you had actually loaded a driver for
+>> > your device to set the right type.  Is this assumption always correct?
+>> >
+>> > It seems to me that this configuration bit should now be up to your user
+>> > space drive who is the best candidate to know details about your device
+>> > at this point?
+>> >
+>>
+>> Hm, I see this type being set usually either in a device tree source,
+>> or in the support code for a specific platform. Are there any
+>> situations where this is actually set by the driver? If I understand
+>> right this is not the case for the PL330, but if it is possible that
+>> it is the case for another device then I need to rethink this. Though
+>> as far as I understand this should not be the case.
+>>
+>
+> Wow, this has been incredibly long time since I looked at this code, so
+> not sure if I remember my original reasoning anymore, however,
+>
+> while device properties are set in the DT, they would only be available
+> to this code if you actually loaded a device driver for that device,
+> right?  I'm just not sure that assumption always holds for devices used
+> by VFIO, but I'm really not sure anymore.  Maybe I'm rambling.
 
---------------ms000609080005020801020809
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+The device I'm testing with, the PL330 DMAC, is one of the devices
+that exposes level sensitive interrupts, and therefore for it to
+properly work VFIO needs to be able to expose it as automasked.
 
-On 2014-09-11 11:41, Vladimir Davydov wrote:
-> Though hard memory limits suit perfectly for sand-boxing, they are not
-> that efficient when it comes to partitioning a server's resources among=
+I just tested the code on a kernel that doesn't include the native
+PL330 DMA driver. It seems that even so, the unmasked property is
+properly detected and exposed by VFIO. So for this scenario at least
+the assumptions are true...
 
-> multiple containers. The point is a container consuming a particular
-> amount of memory most of time may have infrequent spikes in the load.
-> Setting the hard limit to the maximal possible usage (spike) will lower=
+I'm afraid I have to admit that if there are any edge cases where this
+might not be true, I don't know which they are :(
 
-> server utilization while setting it to the "normal" usage will result i=
-n
-> heavy lags during the spikes.
->=20
-> To handle such scenarios soft limits were introduced. The idea is to
-> allow a container to breach the limit freely when there's enough free
-> memory, but shrink it back to the limit aggressively on global memory
-> pressure. However, the concept of soft limits is intrinsically unsafe
-> by itself: if a container eats too much anonymous memory, it will be
-> very slow or even impossible (if there's no swap) to reclaim its
-> resources back to the limit. As a result the whole system will be
-> feeling bad until it finally realizes the culprit must die.
-I have actually seen this happen on a number of occasions.  I use
-cgroups to sandbox anything I run under wine (cause it's gotten so good
-at mimicking windows that a number of windows viruses will run on it),
-and have had issues with wine processes with memory leaks bringing the
-system to it's knees on occasion.  There are a lot of other stupid
-programs out there too, I've seen stuff that does it's own caching, but
-doesn't free any of the cached items until it either gets a failed
-malloc() or the system starts swapping it out.
->=20
-> Currently we have no way to react to anonymous memory + swap usage
-> growth inside a container: the memsw counter accounts both anonymous
-> memory and file caches and swap, so we have neither a limit for
-> anon+swap nor a threshold notification. Actually, memsw is totally
-> useless if one wants to make full use of soft limits: it should be set
-> to a very large value or infinity then, otherwise it just makes no
-> sense.
->=20
-> That's one of the reasons why I think we should replace memsw with a
-> kind of anonsw so that it'd account only anon+swap. This way we'd still=
+>
+>> >> +
+>> >>               vdev->irq[i].count = 1;
+>> >>               vdev->irq[i].hwirq = hwirq;
+>> >> +             vdev->irq[i].masked = false;
+>> >>       }
+>> >>
+>> >>       vdev->num_irqs = cnt;
+>> >> @@ -77,11 +85,27 @@ void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+>> >>
+>> >>  static irqreturn_t vfio_irq_handler(int irq, void *dev_id)
+>> >>  {
+>> >> -     struct eventfd_ctx *trigger = dev_id;
+>> >> +     struct vfio_platform_irq *irq_ctx = dev_id;
+>> >> +     unsigned long flags;
+>> >> +     int ret = IRQ_NONE;
+>> >> +
+>> >> +     spin_lock_irqsave(&irq_ctx->lock, flags);
+>> >> +
+>> >> +     if (!irq_ctx->masked) {
+>> >> +             ret = IRQ_HANDLED;
+>> >> +
+>> >> +             if (irq_ctx->flags & VFIO_IRQ_INFO_AUTOMASKED) {
+>> >> +                     disable_irq_nosync(irq_ctx->hwirq);
+>> >> +                     irq_ctx->masked = true;
+>> >> +             }
+>> >> +     }
+>> >>
+>> >> -     eventfd_signal(trigger, 1);
+>> >> +     spin_unlock_irqrestore(&irq_ctx->lock, flags);
+>> >>
+>> >> -     return IRQ_HANDLED;
+>> >> +     if (ret == IRQ_HANDLED)
+>> >> +             eventfd_signal(irq_ctx->trigger, 1);
+>> >> +
+>> >> +     return ret;
+>> >>  }
+>> >>
+>> >>  static int vfio_set_trigger(struct vfio_platform_device *vdev,
+>> >> @@ -162,6 +186,82 @@ static int vfio_platform_set_irq_trigger(struct vfio_platform_device *vdev,
+>> >>       return -EFAULT;
+>> >>  }
+>> >>
+>> >> +static int vfio_platform_set_irq_unmask(struct vfio_platform_device *vdev,
+>> >> +                                 unsigned index, unsigned start,
+>> >> +                                 unsigned count, uint32_t flags, void *data)
+>> >> +{
+>> >> +     uint8_t arr;
+>> >
+>> >
+>> > arr?
+>>
+>> arr for array! As in, the VFIO API allows an array of IRQs. However
+>> for platform devices we don't use this, each IRQ is exposed
+>> independently as an array of 1 IRQ.
+>>
+>
+> but it's not an array.  If it contains IRQs, call it irqs.  Unless this
+> is referring specifically to a field *named* array, I don't remember the
+> API at current, but reading the code along it didn't make sense to me to
+> have a uint8_t called arr, and code should make as much sense
+> independenly as possible.
+>
+> This reminds me of people writing code like:
+>
+> String str;
+>
+> yuck.
 
-> be able to sand-box apps, but it'd also allow us to avoid nasty
-> surprises like the one I described above. For more arguments for and
-> against this idea, please see the following thread:
->=20
-> http://www.spinics.net/lists/linux-mm/msg78180.html
->=20
-> There's an alternative to this approach backed by Kamezawa. He thinks
-> that OOM on anon+swap limit hit is a no-go and proposes to use memory
-> thresholds for it. I still strongly disagree with the proposal, because=
+You are completely right, the naming is unfortunate. I will change it
+to something clearer, (e.g. irq_bitmap?)
 
-> it's unsafe (what if the userspace handler won't react in time?).
-> Nevertheless, I implement his idea in this RFC. I hope this will fuel
-> the debate, because sadly enough nobody seems to care about this
-> problem.
+>
+>> >
+>> >> +
+>> >> +     if (start != 0 || count != 1)
+>> >> +             return -EINVAL;
+>> >> +
+>> >> +     switch (flags & VFIO_IRQ_SET_DATA_TYPE_MASK) {
+>> >> +     case VFIO_IRQ_SET_DATA_BOOL:
+>> >> +             if (copy_from_user(&arr, data, sizeof(uint8_t)))
+>> >> +                     return -EFAULT;
+>> >> +
+>> >> +             if (arr != 0x1)
+>> >> +                     return -EINVAL;
+>> >
+>> > why the fallthrough, what's this about?
+>>
+>> The VFIO API allows to unmask/mask an array of IRQs, however with
+>> platform devices we only have arrays of 1 IRQ (so not really arrays).
+>>
+>> So if the user uses VFIO_IRQ_SET_DATA_BOOL, we need to check that arr
+>> == 0x1. When that is the case, a fallthrough to the same code for
+>> VFIO_IRQ_SET_DATA_NONE is safe.
+>>
+>> If that is not readable enough, then I can add a comment or duplicate
+>> the code that does the unmasking. I realize that if you don't know the
+>> VFIO API well, then this can look confusing.
+>>
+>
+> yeah, please put a big fat comment explaining the fallthrough.
 
-So, I've actually been following the discussion mentioned above rather
-closely, I just haven't had the time to comment on it.
-Personally, I think both ideas have merits, but would like to propose a
-third solution.
+Ack.
 
-I would propose that we keep memsw like it is right now (because being
-able to limit the sum of anon+cache+swap is useful, especially if you
-are using cgroups to do strict partitioning of a machine), but give it a
-better name (vss maybe?), add a separate counter for anonymous memory
-and swap, and then provide for each of them an option to control whether
-the OOM killer is used when the limit is hit (possibly with the option
-of a delay before running the OOM killer), and a separate option for
-threshold notifications.  Users than would be able to choose whether
-they want a particular container killed when it hits a particular limit,
-and whether or not they want notifications when it gets within a certain
-percentage of the limit, or potentially both.
-
-We still need to have a way to hard limit sum of anon+cache+swap (and
-ideally kmem once that is working correctly), because that useful for
-systems that have to provide guaranteed minimum amounts of virtual
-memory to containers.
+>
+> -Christoffer
 
 
---------------ms000609080005020801020809
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIFuDCC
-BbQwggOcoAMCAQICAw9gVDANBgkqhkiG9w0BAQ0FADB5MRAwDgYDVQQKEwdSb290IENBMR4w
-HAYDVQQLExVodHRwOi8vd3d3LmNhY2VydC5vcmcxIjAgBgNVBAMTGUNBIENlcnQgU2lnbmlu
-ZyBBdXRob3JpdHkxITAfBgkqhkiG9w0BCQEWEnN1cHBvcnRAY2FjZXJ0Lm9yZzAeFw0xNDA4
-MDgxMTMwNDRaFw0xNTAyMDQxMTMwNDRaMGMxGDAWBgNVBAMTD0NBY2VydCBXb1QgVXNlcjEj
-MCEGCSqGSIb3DQEJARYUYWhmZXJyb2luN0BnbWFpbC5jb20xIjAgBgkqhkiG9w0BCQEWE2Fo
-ZW1tZWxnQG9oaW9ndC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDdmm8R
-BM5D6fGiB6rpogPZbLYu6CkU6834rcJepfmxKnLarYUYM593/VGygfaaHAyuc8qLaRA3u1M0
-Qp29flqmhv1VDTBZ+zFu6JgHjTDniBii1KOZRo0qV3jC5NvaS8KUM67+eQBjm29LhBWVi3+e
-a8jLxmogFXV0NGej+GHIr5zA9qKz2WJOEoGh0EfqZ2MQTmozcGI43/oqIYhRj8fRMkWXLUAF
-WsLzPQMpK19hD8fqwlxQWhBV8gsGRG54K5pyaQsjne7m89SF5M8JkNJPH39tHEvfv2Vhf7EM
-Y4WGyhLAULSlym1AI1uUHR1FfJaj3AChaEJZli/AdajYsqc7AgMBAAGjggFZMIIBVTAMBgNV
-HRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlmaWNhdGUg
-Zm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzAOBgNVHQ8BAf8E
-BAMCA6gwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEE
-AYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8v
-b2NzcC5jYWNlcnQub3JnMDEGA1UdHwQqMCgwJqAkoCKGIGh0dHA6Ly9jcmwuY2FjZXJ0Lm9y
-Zy9yZXZva2UuY3JsMDQGA1UdEQQtMCuBFGFoZmVycm9pbjdAZ21haWwuY29tgRNhaGVtbWVs
-Z0BvaGlvZ3QuY29tMA0GCSqGSIb3DQEBDQUAA4ICAQCr4klxcZU/PDRBpUtlb+d6JXl2dfto
-OUP/6g19dpx6Ekt2pV1eujpIj5whh5KlCSPUgtHZI7BcksLSczQbxNDvRu6LNKqGJGvcp99k
-cWL1Z6BsgtvxWKkOmy1vB+2aPfDiQQiMCCLAqXwHiNDZhSkwmGsJ7KHMWgF/dRVDnsl6aOQZ
-jAcBMpUZxzA/bv4nY2PylVdqJWp9N7x86TF9sda1zRZiyUwy83eFTDNzefYPtc4MLppcaD4g
-Wt8U6T2ffQfCWVzDirhg4WmDH3MybDItjkSB2/+pgGOS4lgtEBMHzAGQqQ+5PojTHRyqu9Jc
-O59oIGrTaOtKV9nDeDtzNaQZgygJItJi9GoAl68AmIHxpS1rZUNV6X8ydFrEweFdRTVWhUEL
-70Cnx84YBojXv01LYBSZaq18K8cERPLaIrUD2go+2ffjdE9ejvYDhNBllY+ufvRizIjQA1uC
-OdktVAN6auQob94kOOsWpoMSrzHHvOvVW/kbokmKzaLtcs9+nJoL+vPi2AyzbaoQASVZYOGW
-pE3daA0F5FJfcPZKCwd5wdnmT3dU1IRUxa5vMmgjP20lkfP8tCPtvZv2mmI2Nw5SaXNY4gVu
-WQrvkV2in+TnGqgEIwUrLVbx9G6PSYZZs07czhO+Q1iVuKdAwjL/AYK0Us9v50acIzbl5CWw
-ZGj3wjGCA6EwggOdAgEBMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6
-Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEh
-MB8GCSqGSIb3DQEJARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwCQYFKw4DAhoFAKCCAfUw
-GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQwOTExMTcyMDM0
-WjAjBgkqhkiG9w0BCQQxFgQUPHIim/I1Bri2mtmLnmAebTwaQR4wbAYJKoZIhvcNAQkPMV8w
-XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBkQYJKwYBBAGCNxAE
-MYGDMIGAMHkxEDAOBgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0
-Lm9yZzEiMCAGA1UEAxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJ
-ARYSc3VwcG9ydEBjYWNlcnQub3JnAgMPYFQwgZMGCyqGSIb3DQEJEAILMYGDoIGAMHkxEDAO
-BgNVBAoTB1Jvb3QgQ0ExHjAcBgNVBAsTFWh0dHA6Ly93d3cuY2FjZXJ0Lm9yZzEiMCAGA1UE
-AxMZQ0EgQ2VydCBTaWduaW5nIEF1dGhvcml0eTEhMB8GCSqGSIb3DQEJARYSc3VwcG9ydEBj
-YWNlcnQub3JnAgMPYFQwDQYJKoZIhvcNAQEBBQAEggEApvJsx/WUDBKpYkXn9FaLggpOpWUB
-sB36Ipc8d3jtAcwO2Sdfse+wL/o/jaJTDh8s86Plsg7qKPg/or0W/5RGaNWUbkOLZWspDU07
-qiNT6FBpQ105O639xnzB4BtwpcBNdfpEDVM0cX+LsU/JqIlzYPZdKmNJfDwTDNN53XVhqOZ4
-2UBYjD2yoEjiK++uuvYImNC37LUbeQ7EBsNGQx3yJl6qFuOsgwxtuBlGUp0DNgRY8Q4cfo8w
-BQqwYCdU+v4GHhVANgyBTFcVvsDEI8/1BYTSN78ZefJdyPCI+EwQGjAJjgaeggwXHhNXnRMK
-Mvpg0ggk1ZGhRxPYHMmg2as+rQAAAAAAAA==
---------------ms000609080005020801020809--
+-- 
+Antonios Motakis
+Virtual Open Systems
