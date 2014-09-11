@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaIKM4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:56:14 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:18824 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaIKM4L (ORCPT
+	id S1756481AbaIKMxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:53:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51563 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755395AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:56:11 -0400
-Message-ID: <54119BE8.5020605@imgtec.com>
-Date: Thu, 11 Sep 2014 13:56:08 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, <linux-mips@linux-mips.org>,
-        <nbd@openwrt.org>, <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
-        <david.daney@cavium.com>, <linux-kernel@vger.kernel.org>,
-        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
-        <macro@linux-mips.org>, <manuel.lauss@gmail.com>,
-        <jerinjacobk@gmail.com>, <chenhc@lemote.com>, <blogic@openwrt.org>
-Subject: Re: [PATCH V2] MIPS: bugfix of coherentio variable default setup
-References: <20140908191002.13852.47842.stgit@linux-yegoshin>
-In-Reply-To: <20140908191002.13852.47842.stgit@linux-yegoshin>
-X-Enigmail-Version: 1.6
+	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Shriraj-Rai P" <shriraj-rai.p@amd.com>,
+        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
+        "Arindam Nath" <arindam.nath@amd.com>, "Huang Rui" <ray.huang@amd.com>
+Date: Thu, 11 Sep 2014 13:32:13 +0100
+Message-ID: <lsq.1410438733.852594374@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 078/131] usb: xhci: amd chipset also needs short TX quirk
+In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/14 20:10, Leonid Yegoshin wrote:
-> diff --git a/arch/mips/include/asm/mach-generic/dma-coherence.h b/arch/mips/include/asm/mach-generic/dma-coherence.h
-> index 7629c35..b4563df 100644
-> --- a/arch/mips/include/asm/mach-generic/dma-coherence.h
-> +++ b/arch/mips/include/asm/mach-generic/dma-coherence.h
-> @@ -49,7 +49,12 @@ static inline int plat_dma_supported(struct device *dev, u64 mask)
->  
->  static inline int plat_device_is_coherent(struct device *dev)
->  {
-> -	return coherentio;
-> +#ifdef CONFIG_DMA_COHERENT
-> +	return 1;
+3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
 
-if DMA_COHERENT=y (which seems to imply DMA_MAYBE_COHERENT=n),
-coherentio is already defined as 1 in
-arch/mips/include/asm/dma-coherent.h, so I don't think you need this case.
+------------------
 
-> +#else
-> +	return (coherentio > 0);
-> +#endif
-> +
+From: Huang Rui <ray.huang@amd.com>
 
-No need for a new blank line here
+commit 2597fe99bb0259387111d0431691f5daac84f5a5 upstream.
 
->  }
+AMD xHC also needs short tx quirk after tested on most of chipset
+generations. That's because there is the same incorrect behavior like
+Fresco Logic host. Please see below message with on USB webcam
+attached on xHC host:
 
-...
+[  139.262944] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.266934] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.270913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.274937] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.278914] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.282936] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.286915] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.290938] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.294913] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
+[  139.298917] xhci_hcd 0000:00:10.0: WARN Successful completion on short TX: needs XHCI_TRUST_TX_LENGTH quirk?
 
-> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-> index 44b6dff..42c819a 100644
-> --- a/arch/mips/mm/dma-default.c
-> +++ b/arch/mips/mm/dma-default.c
-> @@ -24,7 +24,7 @@
->  #include <dma-coherence.h>
->  
->  #ifdef CONFIG_DMA_MAYBE_COHERENT
-> -int coherentio = 0;	/* User defined DMA coherency from command line. */
-> +int coherentio = -1;    /* User defined DMA coherency is not defined yet. */
+Reported-by: Arindam Nath <arindam.nath@amd.com>
+Tested-by: Shriraj-Rai P <shriraj-rai.p@amd.com>
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/host/xhci-pci.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Please avoid unnecessarily turned tabs into spaces. It makes files
-inconsistent.
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -98,6 +98,10 @@ static void xhci_pci_quirks(struct devic
+ 	/* AMD PLL quirk */
+ 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
+ 		xhci->quirks |= XHCI_AMD_PLL_FIX;
++
++	if (pdev->vendor == PCI_VENDOR_ID_AMD)
++		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
++
+ 	if (pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 			pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI) {
+ 		xhci->quirks |= XHCI_EP_LIMIT_QUIRK;
 
-Other than that and Markos' style comment it looks reasonable to me.
-
-Cheers
-James
