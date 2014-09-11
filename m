@@ -1,116 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbaIKM2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:28:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11394 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689AbaIKM2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:28:13 -0400
-Date: Thu, 11 Sep 2014 14:27:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 14/14] perf evlist: Unmap ring buffer when fd is nuked
-Message-ID: <20140911122751.GD13634@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-15-git-send-email-acme@kernel.org>
+	id S1754957AbaIKM2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:28:54 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:45372 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741AbaIKM2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:28:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410358129-9965-15-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
+References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
+	<20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
+	<1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com>
+	<27732.1410437386@warthog.procyon.org.uk>
+	<CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
+Date: Thu, 11 Sep 2014 15:28:44 +0300
+Message-ID: <CACE9dm-2TB-CKkYB+p7ESSOKR-Bfjmy7nACowzsbK0nEexM=tA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
+ with a '.'
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
+        keyrings <keyrings@linux-nfs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:08:49AM -0300, Arnaldo Carvalho de Melo wrote:
+On 11 September 2014 15:27, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+> On 11 September 2014 15:09, David Howells <dhowells@redhat.com> wrote:
+>> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>>
+>>> On Wed, 2014-09-10 at 19:36 -0400, Mimi Zohar wrote:
+>>> > On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote:
+>>> > > Reinstate the generation of EPERM for a key type name beginning with a
+>>> > > '.' in a userspace call.  Types whose name begins with a '.' are
+>>> > > internal only.
+>>>
+>>> After re-reading your comment and looking at the different types,
+>>> testing for dot prefixed types now makes sense.  Both dot prefixed types
+>>> and keyring names are reserved for the kernel.
+>>
+>> Are you withdrawing your objection, then?
+>>
+>
+> For me, type test looks unrelated to "." prefixed key/keyring names...
+>
+> The rest of that patch does following:
+>
+> + } else if ((description[0] == '.') &&
+> +                    (strncmp(type, "keyring", 7) == 0)) {
+> +             ret = -EPERM;
+> +             goto error2;
+>
+>
+> I wonder why this test is only disallowing keyrings...
+> Why not also keys?
+>
+> keyctl add user ".ring1" Hello @u
+>
+> keyctl show
+>   50463278 --alswrv      0     0       \_ user: .ring1
+>
+>
 
-SNIP
+sorry... it was confusing name
 
-> +}
-> +
->  int perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd)
->  {
-> -	return fdarray__add(&evlist->pollfd, fd, POLLIN | POLLERR | POLLHUP);
-> +	return __perf_evlist__add_pollfd(evlist, fd, -1);
-> +}
-> +
-> +static void perf_evlist__munmap_filtered(struct fdarray *fda, int fd)
-> +{
-> +	struct perf_evlist *evlist = container_of(fda, struct perf_evlist, pollfd);
-> +
-> +	perf_evlist__mmap_put(evlist, fda->priv[fd]);
+keyctl newring ".ring1" @u
+add_key: Operation not permitted
 
-we cannot do this.. because of the way we read the map
+But for keys..
 
-getting error or hup does not mean the mmap is empty,
-it can still have data, which we loose if we unmap it
+ keyctl add user ".key1" Hello @u
 
-following test will get data only with attached patch:
+ keyctl show
+   50463298 --alswrv      0     0       \_ user: .key1
 
----
-term1:
-  $ cat
+- Dmitry
 
-term2:
-  $ cat perf record -p `pgrep cat`
-
-term1:
-  ^D
----
-
-we get poll READ notification based on the wattermart settings,
-which by default is half size of the ring buffer.. so for small
-amount of perf data we dont get the poll read notification
-
-I think we need to handle this in the record command context
-and read out the mmap before we unmap it
-
-jirka
+> - Dmitry
+>
+>> David
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
+>
+> --
+> Thanks,
+> Dmitry
 
 
 
->  }
->  
->  int perf_evlist__filter_pollfd(struct perf_evlist *evlist, short revents_and_mask)
->  {
-> -	return fdarray__filter(&evlist->pollfd, revents_and_mask, NULL);
-> +	return fdarray__filter(&evlist->pollfd, revents_and_mask,
-> +			       perf_evlist__munmap_filtered);
->  }
->  
->  int perf_evlist__poll(struct perf_evlist *evlist, int timeout)
-> @@ -751,7 +774,7 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
->  			perf_evlist__mmap_get(evlist, idx);
->  		}
->  
-> -		if (perf_evlist__add_pollfd(evlist, fd) < 0) {
-> +		if (__perf_evlist__add_pollfd(evlist, fd, idx) < 0) {
->  			perf_evlist__mmap_put(evlist, idx);
->  			return -1;
->  		}
-> -- 
-> 1.9.3
-> 
-
----
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index fdb755f..9e71a47 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -448,6 +448,7 @@ static void perf_evlist__munmap_filtered(struct fdarray *fda, int fd)
- {
- 	struct perf_evlist *evlist = container_of(fda, struct perf_evlist, pollfd);
- 
-+if (0)
- 	perf_evlist__mmap_put(evlist, fda->priv[fd]);
- }
- 
+-- 
+Thanks,
+Dmitry
