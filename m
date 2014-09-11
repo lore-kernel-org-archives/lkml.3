@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaIKM63 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:58:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51572 "EHLO
+	id S1752753AbaIKM60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:58:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51567 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755406AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755401AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "Neil Horman" <nhorman@tuxdriver.com>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Dave Jones" <davej@redhat.com>
+CC: akpm@linux-foundation.org, "Marti Raudsepp" <marti@juffo.org>,
+        "Joerg Roedel" <jroedel@suse.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.178965058@decadent.org.uk>
+Message-ID: <lsq.1410438733.318712973@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 107/131] sctp: fix possible seqlock seadlock in 
- sctp_packet_transmit()
+Subject: [PATCH 3.2 074/131] iommu/amd: Fix cleanup_domain for mass device
+ removal
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,72 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Joerg Roedel <jroedel@suse.de>
 
-[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
+commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+When multiple devices are detached in __detach_device, they
+are also removed from the domains dev_list. This makes it
+unsafe to use list_for_each_entry_safe, as the next pointer
+might also not be in the list anymore after __detach_device
+returns. So just repeatedly remove the first element of the
+list until it is empty.
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
-
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Marti Raudsepp <marti@juffo.org>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/output.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index cf3e22c..5bd9aa9 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -587,7 +587,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(&init_net, IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(&init_net, IPSTATS_MIB_OUTNOROUTES);
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2592,14 +2592,16 @@ free_domains:
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+ static void cleanup_domain(struct protection_domain *domain)
+ {
+-	struct iommu_dev_data *dev_data, *next;
++	struct iommu_dev_data *entry;
+ 	unsigned long flags;
+ 
+ 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
+ 
+-	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
+-		__detach_device(dev_data);
+-		atomic_set(&dev_data->bind, 0);
++	while (!list_empty(&domain->dev_list)) {
++		entry = list_first_entry(&domain->dev_list,
++					 struct iommu_dev_data, list);
++		__detach_device(entry);
++		atomic_set(&entry->bind, 0);
+ 	}
+ 
+ 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
 
