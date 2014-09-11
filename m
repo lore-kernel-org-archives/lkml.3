@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaIKMmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:42:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51651 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755442AbaIKMeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:08 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1755975AbaIKMnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:43:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29929 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754829AbaIKMnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:43:00 -0400
+Date: Thu, 11 Sep 2014 14:42:49 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20140911124248.GA18490@dhcp-27-160.brq.redhat.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+ <20130521235003.GE6985@mtj.dyndns.org>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        "Antti Palosaari" <crope@iki.fi>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.525606601@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 007/131] [media] tda10071: force modulation to QPSK on
- DVB-S
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130521235003.GE6985@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On Wed, May 22, 2013 at 08:50:03AM +0900, Tejun Heo wrote:
+> Hmmmmmm..... I'd normally apply this patch but block layer is just
+> growing multi-queue support and libata is likely to be converted to mq
+> in foreseeable future, so I'm a bit hesitant to make irq handling more
+> sophiscated right now.  Would you be interested in looking into
+> converting libata to blk mq support?  I'm pretty sure it'd yield far
+> better outcome if done properly.
 
-------------------
+Hi Tejun,
 
-From: Antti Palosaari <crope@iki.fi>
+As conversion of libata to blk mq has long done I tried the change
+against the recent version and the results still appear worthwhile.
 
-commit db4175ae2095634dbecd4c847da439f9c83e1b3b upstream.
+The numbers are taken by running 'dd if=/dev/sd{a,b} of=/dev/null'
+in parallel. All time values are in us.
 
-Only supported modulation for DVB-S is QPSK. Modulation parameter
-contains invalid value for DVB-S on some cases, which leads driver
-refusing tuning attempt. Due to that, hard code modulation to QPSK
-in case of DVB-S.
+Before this update host lock average holdtime was 2.45 and
+average waittime was 1.24. After the update average holdtime
+dropped to 0.29 (about eight times) while average waittime
+decreased to 0.58 (about two times).
 
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[bwh: Backported to 3.2: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/media/dvb/frontends/tda10071.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Also, port events are handled with local interrupts enabled
+and compete on individual per-port locks with average holdtime
+1.25 and average waittime 1.48. So combined average holdtime
+spent while holding host and port locks decreased from 2.45 to
+0.29 + 1.25 = 1.54 (about 1.6 times).
 
---- a/drivers/media/dvb/frontends/tda10071.c
-+++ b/drivers/media/dvb/frontends/tda10071.c
-@@ -644,6 +644,7 @@ static int tda10071_set_frontend(struct
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
- 	int ret, i;
- 	u8 mode, rolloff, pilot, inversion, div;
-+	fe_modulation_t modulation;
- 
- 	dbg("%s: delivery_system=%d modulation=%d frequency=%d " \
- 		"symbol_rate=%d inversion=%d pilot=%d rolloff=%d", __func__,
-@@ -677,10 +678,13 @@ static int tda10071_set_frontend(struct
- 
- 	switch (c->delivery_system) {
- 	case SYS_DVBS:
-+		modulation = QPSK;
- 		rolloff = 0;
- 		pilot = 2;
- 		break;
- 	case SYS_DVBS2:
-+		modulation = c->modulation;
-+
- 		switch (c->rolloff) {
- 		case ROLLOFF_20:
- 			rolloff = 2;
-@@ -722,7 +726,7 @@ static int tda10071_set_frontend(struct
- 
- 	for (i = 0, mode = 0xff; i < ARRAY_SIZE(TDA10071_MODCOD); i++) {
- 		if (c->delivery_system == TDA10071_MODCOD[i].delivery_system &&
--			c->modulation == TDA10071_MODCOD[i].modulation &&
-+			modulation == TDA10071_MODCOD[i].modulation &&
- 			c->fec_inner == TDA10071_MODCOD[i].fec) {
- 			mode = TDA10071_MODCOD[i].val;
- 			dbg("%s: mode found=%02x", __func__, mode);
+The downside of this change is introduction of a kernel thread.
 
+The upside is shorter access time to port locks and moving port
+interrupts handling out of the hardware interrupt context.
+
+Thanks!
+
+> -- 
+> tejun
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
