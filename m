@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaIKFhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 01:37:21 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:13147 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752424AbaIKFhR (ORCPT
+	id S1752559AbaIKFhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 01:37:52 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:43684 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170AbaIKFhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 01:37:17 -0400
-X-IronPort-AV: E=Sophos;i="5.04,504,1406563200"; 
-   d="scan'208";a="35792889"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
-        <jan.kiszka@web.de>, <pbonzini@redhat.com>
-CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v5 7/7] kvm, mem-hotplug: Unpin and remove nested_vmx->apic_access_page.
-Date: Thu, 11 Sep 2014 13:38:06 +0800
-Message-ID: <1410413886-32213-8-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.71]
+	Thu, 11 Sep 2014 01:37:47 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-3e-54113528718d
+Message-id: <5411339E.8080007@samsung.com>
+Date: Thu, 11 Sep 2014 09:31:10 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.7.0
+MIME-version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Cc: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>, x86@kernel.org,
+        linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC/PATCH v2 02/10] x86_64: add KASan support
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com>
+ <1410359487-31938-3-git-send-email-a.ryabinin@samsung.com>
+ <54111E99.7080309@zytor.com>
+In-reply-to: <54111E99.7080309@zytor.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKIsWRmVeSWpSXmKPExsVy+t/xy7qapoIhBl3XGC1+753JajFn/Ro2
+	iyPXvrNbXP/2htHi08sHjBbPHz5kt5jwsI3dYtpGcYuV3c1sFtufvWWyWNn5gNXi8q45bBb3
+	1vxntbh0YAGTxeIjt5kt3j2bzGyxedNUZourqw6yW/zY8JjVQdhj/s6PjB47Z91l91iwqdRj
+	8Z6XTB6bVnWyeWz6NIndo+vtFSaPd+fOsXucmPGbxePJlelMHh+f3mLxeL/vKpvH501yHida
+	vrAG8EVx2aSk5mSWpRbp2yVwZbR2fWcqaBCu2H1kGksD40L+LkZODgkBE4lJH/azQ9hiEhfu
+	rWfrYuTiEBJYyigxZ9YmKKeZSeLQlMnMIFW8AloS6yZ9B7NZBFQlVn66AGazCehJ/Ju1nQ3E
+	FhWIkPj5+Rs7RL2gxI/J91hAbBEBJ4lDR54ygwxlFnjLInHnzV6wZmEBa4mNe/exQmy7xyjx
+	oWUpE0iCU0BT4unKm0BFHEAdehL3L2qBhJkF5CU2r3nLPIFRYBaSHbMQqmYhqVrAyLyKUTS1
+	NLmgOCk911CvODG3uDQvXS85P3cTIyRqv+xgXHzM6hCjAAejEg9v4UX+ECHWxLLiytxDjBIc
+	zEoivAkPBEKEeFMSK6tSi/Lji0pzUosPMTJxcEo1MGb9WTznwv43TS9tZTy23Lhz8vr94J6t
+	nj0ThX7rmds9iQwJvXg8ZIXOl5z5NmKi5Xobb/zWdA0tLjd82DFh9yrfx88FREs6dK4nTata
+	GH7yQMn+ddz/Thw/kbV467yI3KbYoCMhTKcTLA33Tjh95pzCkXULmiz9dH44Fm5kkfK4NYM3
+	WWMT00MlluKMREMt5qLiRAC83+/puAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just like we removed kvm_arch->apic_access_page, nested_vmx->apic_access_page
-becomes useless for the same reason. This patch removes nested_vmx->apic_access_page,
-and use gfn_to_page() to pin it in memory when we need it, and unpin it after then.
+On 09/11/2014 08:01 AM, H. Peter Anvin wrote:
+> On 09/10/2014 07:31 AM, Andrey Ryabinin wrote:
+>> This patch add arch specific code for kernel address sanitizer.
+>>
+>> 16TB of virtual addressed used for shadow memory.
+>> It's located in range [0xffff800000000000 - 0xffff900000000000]
+>> Therefore PAGE_OFFSET has to be changed from 0xffff880000000000
+>> to 0xffff900000000000.
+> 
+> NAK on this.
+> 
+> 0xffff880000000000 is the lowest usable address because we have agreed
+> to leave 0xffff800000000000-0xffff880000000000 for the hypervisor or
+> other non-OS uses.
+> 
+> Bumping PAGE_OFFSET seems needlessly messy, why not just designate a
+> zone higher up in memory?
+> 
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- arch/x86/kvm/vmx.c | 31 +++++++++----------------------
- 1 file changed, 9 insertions(+), 22 deletions(-)
+I already answered to Dave why I choose to place shadow bellow PAGE_OFFSET (answer copied bellow).
+In short - yes, shadow could be higher. But for some sort of kernel bugs we could have confusing oopses in kasan kernel.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 058c373..4aa73cb 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -374,11 +374,6 @@ struct nested_vmx {
- 	u64 vmcs01_tsc_offset;
- 	/* L2 must run next, and mustn't decide to exit to L1. */
- 	bool nested_run_pending;
--	/*
--	 * Guest pages referred to in vmcs02 with host-physical pointers, so
--	 * we must keep them pinned while L2 runs.
--	 */
--	struct page *apic_access_page;
- 	u64 msr_ia32_feature_control;
- 
- 	struct hrtimer preemption_timer;
-@@ -6154,11 +6149,6 @@ static void free_nested(struct vcpu_vmx *vmx)
- 	nested_release_vmcs12(vmx);
- 	if (enable_shadow_vmcs)
- 		free_vmcs(vmx->nested.current_shadow_vmcs);
--	/* Unpin physical memory we referred to in current vmcs02 */
--	if (vmx->nested.apic_access_page) {
--		nested_release_page(vmx->nested.apic_access_page);
--		vmx->nested.apic_access_page = 0;
--	}
- 
- 	nested_free_all_saved_vmcss(vmx);
- }
-@@ -7983,28 +7973,31 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
- 			exec_control |= vmcs12->secondary_vm_exec_control;
- 
- 		if (exec_control & SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES) {
-+			struct page *page;
- 			/*
- 			 * Translate L1 physical address to host physical
- 			 * address for vmcs02. Keep the page pinned, so this
- 			 * physical address remains valid. We keep a reference
- 			 * to it so we can release it later.
- 			 */
--			if (vmx->nested.apic_access_page) /* shouldn't happen */
--				nested_release_page(vmx->nested.apic_access_page);
--			vmx->nested.apic_access_page =
--				nested_get_page(vcpu, vmcs12->apic_access_addr);
-+			page = nested_get_page(vcpu, vmcs12->apic_access_addr);
- 			/*
- 			 * If translation failed, no matter: This feature asks
- 			 * to exit when accessing the given address, and if it
- 			 * can never be accessed, this feature won't do
- 			 * anything anyway.
- 			 */
--			if (!vmx->nested.apic_access_page)
-+			if (!page)
- 				exec_control &=
- 				  ~SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES;
- 			else
- 				vmcs_write64(APIC_ACCESS_ADDR,
--				  page_to_phys(vmx->nested.apic_access_page));
-+					     page_to_phys(page));
-+			/*
-+			 * Do not pin nested vm's apic access page in memory so
-+			 * that memory hotplug process is able to migrate it.
-+			 */
-+			put_page(page);
- 		} else if (vm_need_virtualize_apic_accesses(vmx->vcpu.kvm)) {
- 			struct page *page = gfn_to_page(vmx->vcpu.kvm,
- 				APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
-@@ -8807,12 +8800,6 @@ static void nested_vmx_vmexit(struct kvm_vcpu *vcpu, u32 exit_reason,
- 	/* This is needed for same reason as it was needed in prepare_vmcs02 */
- 	vmx->host_rsp = 0;
- 
--	/* Unpin physical memory we referred to in vmcs02 */
--	if (vmx->nested.apic_access_page) {
--		nested_release_page(vmx->nested.apic_access_page);
--		vmx->nested.apic_access_page = 0;
--	}
--
- 	/*
- 	 * Do not call kvm_reload_apic_access_page() because we are now
- 	 * running, mmu_notifier will force to reload the page's hpa for L2
--- 
-1.8.3.1
+On 09/11/2014 12:30 AM, Andrey Ryabinin wrote:
+> 2014-09-10 19:46 GMT+04:00 Dave Hansen <dave.hansen@intel.com>:
+>>
+>> Is there a reason this has to be _below_ the linear map?  Couldn't we
+>> just carve some space out of the vmalloc() area for the kasan area?
+>>
+>
+> Yes, there is a reason for this. For inline instrumentation we need to
+> catch access to userspace without any additional check.
+> This means that we need shadow of 1 << 61 bytes and we don't have so
+> many addresses available. However, we could use
+> hole between userspace and kernelspace for that. For any address
+> between [0 - 0xffff800000000000], shadow address will be
+> in this hole, so checking shadow value will produce general protection
+> fault (GPF). We may even try handle GPF in a special way
+> and print more user-friendly report (this will be under CONFIG_KASAN of course).
+>
+> But now I realized that we even if we put shadow in vmalloc, shadow
+> addresses  corresponding to userspace addresses
+> still will be in between userspace - kernelspace, so we also will get GPF.
+> There is the only problem I see now in such approach. Lets consider
+> that because of some bug in kernel we are trying to access
+> memory slightly bellow 0xffff800000000000. In this case kasan will try
+> to check some shadow which in fact is not a shadow byte at all.
+> It's not a big deal though, kernel will crash anyway. In only means
+> that debugging of such problems could be a little more complex
+> than without kasan.
+>
+>
 
