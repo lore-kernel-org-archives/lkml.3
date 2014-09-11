@@ -1,183 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaIKIth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 04:49:37 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:35942 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaIKIte (ORCPT
+	id S1753523AbaIKIvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:51:16 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:34148 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097AbaIKIvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 04:49:34 -0400
-Message-ID: <54116204.6000403@linaro.org>
-Date: Thu, 11 Sep 2014 10:49:08 +0200
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 11 Sep 2014 04:51:13 -0400
 MIME-Version: 1.0
-To: Christoffer Dall <christoffer.dall@linaro.org>
-CC: eric.auger@st.com, marc.zyngier@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, alex.williamson@redhat.com, joel.schopp@amd.com,
-        kim.phillips@freescale.com, paulus@samba.org, gleb@kernel.org,
-        pbonzini@redhat.com, linux-kernel@vger.kernel.org, patches@linaro.org,
-        will.deacon@arm.com, a.motakis@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, john.liuli@huawei.com
-Subject: Re: [RFC v2 5/9] KVM: KVM-VFIO: update user API to program forwarded
- IRQ
-References: <1409575968-5329-1-git-send-email-eric.auger@linaro.org> <1409575968-5329-6-git-send-email-eric.auger@linaro.org> <20140911031005.GF2784@lvm>
-In-Reply-To: <20140911031005.GF2784@lvm>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+Date: Thu, 11 Sep 2014 10:51:11 +0200
+X-Google-Sender-Auth: DKD2FjmMAKvtnjaJhq5v4sci1Ls
+Message-ID: <CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
+Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct generic_pm_domain-s
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Maciej Matraszek <m.matraszek@samsung.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 05:10 AM, Christoffer Dall wrote:
-> On Mon, Sep 01, 2014 at 02:52:44PM +0200, Eric Auger wrote:
->> add new device group commands:
->> - KVM_DEV_VFIO_DEVICE_FORWARD_IRQ and
->>   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ
->>
->> which enable to turn forwarded IRQ mode on/off.
->>
->> the kvm_arch_forwarded_irq struct embodies a forwarded IRQ
->>
->> Signed-off-by: Eric Auger <eric.auger@linaro.org>
->>
->> ---
->>
->> v1 -> v2:
->> - struct kvm_arch_forwarded_irq moved from arch/arm/include/uapi/asm/kvm.h
->>   to include/uapi/linux/kvm.h
->>   also irq_index renamed into index and guest_irq renamed into gsi
->> - ASSIGN/DEASSIGN renamed into FORWARD/UNFORWARD
->> ---
->>  Documentation/virtual/kvm/devices/vfio.txt | 26 ++++++++++++++++++++++++++
->>  include/uapi/linux/kvm.h                   |  9 +++++++++
->>  2 files changed, 35 insertions(+)
->>
->> diff --git a/Documentation/virtual/kvm/devices/vfio.txt b/Documentation/virtual/kvm/devices/vfio.txt
->> index ef51740..048baa0 100644
->> --- a/Documentation/virtual/kvm/devices/vfio.txt
->> +++ b/Documentation/virtual/kvm/devices/vfio.txt
->> @@ -13,6 +13,7 @@ VFIO-group is held by KVM.
->>  
->>  Groups:
->>    KVM_DEV_VFIO_GROUP
->> +  KVM_DEV_VFIO_DEVICE
->>  
->>  KVM_DEV_VFIO_GROUP attributes:
->>    KVM_DEV_VFIO_GROUP_ADD: Add a VFIO group to VFIO-KVM device tracking
->> @@ -20,3 +21,28 @@ KVM_DEV_VFIO_GROUP attributes:
->>  
->>  For each, kvm_device_attr.addr points to an int32_t file descriptor
->>  for the VFIO group.
->> +
->> +KVM_DEV_VFIO_DEVICE attributes:
->> +  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ
->> +  KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ
->> +
->> +For each, kvm_device_attr.addr points to a kvm_arch_forwarded_irq struct.
->> +This user API makes possible to create a special IRQ handling mode,
-> 
->   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ enables a special IRQ handling mode on
->   hardware that supports it,
-OK
-> 
->> +where KVM and a VFIO platform driver collaborate to improve IRQ
->> +handling performance.
->> +
->> +'fd represents the file descriptor of a valid VFIO device whose physical
-> 
-> fd is described out of context here.  Can you copy the struct definition
-> into this document, perhaps right after the "For each, ..." line above.
-yes sure
-> 
->> +IRQ, referenced by its index, is injected into the VM guest irq (gsi).
->                                              as a virtual IRQ (specified
-> 					     by the gsi field) into the
-> 					     VM.
-> 
->> +
->> +On FORWARD_IRQ, KVM-VFIO device programs:
->    When setting the  KVM_DEV_VFIO_DEVICE_FORWARD_IRQ attribute, the
->    KVM-VFIO device tells the host (or VFIO?) to not complete the
->    physical IRQ, and instead ensures that KVM (or the VM) completes the
->    physical IRQ.
-> 
->> +- the host, to not complete the physical IRQ itself.
->> +- the GIC, to automatically complete the physical IRQ when the guest
->> +  completes the virtual IRQ.
-> 
-> and drop this bullet form.
-ok
-> 
->> +This avoids trapping the end-of-interrupt for level sensitive IRQ.
-> 
-> avoid this last line, it's specific to ARM.
-ok
-> 
->> +
->> +On UNFORWARD_IRQ, one returns to the mode where the host completes the
->    When setting the KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ attribute, the
->    host (VFIO?) will again complete the physical IRQ and KVM will not...
->  
->> +physical IRQ and the guest completes the virtual IRQ.
->> +
->> +It is up to the caller of this API to make sure the IRQ is not
->> +outstanding when the FORWARD/UNFORWARD is called. This could lead to
-> 
-> outstanding? can you be specific?
-active? and I should add *physical* IRQ
-> 
-> don't refer to FOWARD/UNFORWARD, either refer to these attributes by
-> their full name or use a clear reference in proper English.
-ok
-> 
->> +some inconsistency on who is going to complete the IRQ.
-> 
-> This sounds like the whole thing is fragile and if userspace doesn't do
-> things right, IRQ handling of a piece of hardware is going to be
-> inconsistent?  Is this the case?  If so, we need some stronger
-> semantics.  If not, this should be rephrased.
-Actually the KVM-VFIO device rejects any attempt to change the
-forwarding mode if the physical IRQ is active. So I hope this is robust
-and will change the explanation.
+Hi Maciej,
 
-Thanks
+On Wed, Sep 10, 2014 at 1:28 PM, Maciej Matraszek
+<m.matraszek@samsung.com> wrote:
+> Add /sys/kernel/debug/pm_genpd/pm_genpd_summary file, which
+> lists power domains in the system, their statuses and attached devices,
+> resembling /sys/kernel/debug/clk/clk_summary.
+>
+> Currently it is impossible to inspect (from userland) whether
+> a power domain is on or off. And, if it is on, which device blocks it
+> from powering down. This change allows developers working on
+> embedded devices power efficiency to list all necessary information
+> about generic power domains in one place.
 
-Eric
-> 
->> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->> index cf3a2ff..8cd7b0e 100644
->> --- a/include/uapi/linux/kvm.h
->> +++ b/include/uapi/linux/kvm.h
->> @@ -947,6 +947,12 @@ struct kvm_device_attr {
->>  	__u64	addr;		/* userspace address of attr data */
->>  };
->>  
->> +struct kvm_arch_forwarded_irq {
->> +	__u32 fd; /* file desciptor of the VFIO device */
->> +	__u32 index; /* VFIO device IRQ index */
->> +	__u32 gsi; /* gsi, ie. virtual IRQ number */
->> +};
->> +
->>  #define KVM_DEV_TYPE_FSL_MPIC_20	1
->>  #define KVM_DEV_TYPE_FSL_MPIC_42	2
->>  #define KVM_DEV_TYPE_XICS		3
->> @@ -954,6 +960,9 @@ struct kvm_device_attr {
->>  #define  KVM_DEV_VFIO_GROUP			1
->>  #define   KVM_DEV_VFIO_GROUP_ADD			1
->>  #define   KVM_DEV_VFIO_GROUP_DEL			2
->> +#define  KVM_DEV_VFIO_DEVICE			2
->> +#define   KVM_DEV_VFIO_DEVICE_FORWARD_IRQ			1
->> +#define   KVM_DEV_VFIO_DEVICE_UNFORWARD_IRQ			2
->>  #define KVM_DEV_TYPE_ARM_VGIC_V2	5
->>  #define KVM_DEV_TYPE_FLIC		6
->>  
->> -- 
->> 1.9.1
->>
-> 
-> Thanks,
-> -Christoffer
-> 
+Thanks, this is _very_ useful!
 
+> The content of pm_genpd/pm_genpd_summary file is generated by iterating
+> over all generic power domain in the system, and, for each,
+> over registered devices.
+
+... and over the subdomains, if present.
+
+I can confirm that part is working, too, cfr. the slaves column on r8a7740
+
+    domain                      status         slaves
+           /device                                      runtime status
+----------------------------------------------------------------------
+a4su                            off
+a3sg                            off
+a3sm                            on
+a3sp                            on
+    /devices/e6600000.pwm                               suspended
+    /devices/e6c50000.serial                            active
+    /devices/e6850000.sd                                suspended
+    /devices/e6bd0000.mmc                               active
+a4s                             on               a3sp, a3sm, a3sg
+    /devices/e6900000.irqpin                            unsupported
+    /devices/e6900004.irqpin                            unsupported
+    /devices/e6900008.irqpin                            unsupported
+    /devices/e690000c.irqpin                            unsupported
+    /devices/e9a00000.ethernet                          active
+a3rv                            off
+a4r                             off              a3rv
+    /devices/fff20000.i2c                               suspended
+a4lc                            off
+c5                              on               a4lc, a4r, a4s, a4su
+    /devices/e6050000.pfc                               unsupported
+    /devices/e6138000.timer                             active
+
+> Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+
+Tested-by: Geert Uytterhoeven <geert+renesas@glider.be>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
