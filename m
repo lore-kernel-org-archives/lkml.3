@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaIKON1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:13:27 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:37976 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932AbaIKONY (ORCPT
+	id S1755803AbaIKOOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:14:10 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:39393 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752063AbaIKOOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:13:24 -0400
-Date: Thu, 11 Sep 2014 10:13:09 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Haggai Eran <haggaie@mellanox.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, joro@8bytes.org,
-        Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Brendan Conoboy <blc@redhat.com>,
-        Joe Donohue <jdonohue@redhat.com>, Duncan Poole <dpoole@nvidia.com>,
-        Sherry Cheung <SCheung@nvidia.com>, Subhash Gutti <sgutti@nvidia.com>,
-        John Hubbard <jhubbard@nvidia.com>,
-        Mark Hairgrove <mhairgrove@nvidia.com>,
-        Lucien Dunning <ldunning@nvidia.com>,
-        Cameron Buschardt <cabuschardt@nvidia.com>,
-        Arvind Gopalakrishnan <arvindg@nvidia.com>,
-        Shachar Raindel <raindel@mellanox.com>,
-        Liran Liss <liranl@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Ben Sander <ben.sander@amd.com>, Greg Stoner <Greg.Stoner@amd.com>,
-        John Bridgman <John.Bridgman@amd.com>,
-        Michael Mantor <Michael.Mantor@amd.com>,
-        Paul Blinzer <Paul.Blinzer@amd.com>,
-        Laurent Morichetti <Laurent.Morichetti@amd.com>,
-        Alexander Deucher <Alexander.Deucher@amd.com>,
-        Oded Gabbay <Oded.Gabbay@amd.com>,
-        =?iso-8859-1?B?Suly9G1l?= Glisse <jglisse@redhat.com>
-Subject: Re: [RFC PATCH 1/6] mmu_notifier: add event information to address
- invalidation v4
-Message-ID: <20140911141308.GA1969@gmail.com>
-References: <1409339415-3626-1-git-send-email-j.glisse@gmail.com>
- <1409339415-3626-2-git-send-email-j.glisse@gmail.com>
- <541172D4.50608@mellanox.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <541172D4.50608@mellanox.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 11 Sep 2014 10:14:09 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: sre@kernel.org, dbaryshkov@gmail.com, wmw2@infradead.org,
+        santosh.shilimkar@ti.com, maxime.ripard@free-electrons.com
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] power: Make of_device_id array const
+Date: Thu, 11 Sep 2014 19:41:43 +0530
+Message-Id: <1410444703-27451-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 01:00:52PM +0300, Haggai Eran wrote:
-> On 29/08/2014 22:10, j.glisse@gmail.com wrote:
-> > + * - MMU_MUNMAP: the range is being unmapped (outcome of a munmap syscall or
-> > + * process destruction). However, access is still allowed, up until the
-> > + * invalidate_range_free_pages callback. This also implies that secondary
-> > + * page table can be trimmed, because the address range is no longer valid.
-> 
-> I couldn't find the invalidate_range_free_pages callback. Is that a left over 
-> from a previous version of the patch?
-> 
-> Also, I think that you have to invalidate the secondary PTEs of the range being 
-> unmapped immediately, because put_page may be called immediately after the 
-> invalidate_range_start returns.
+Make of_device_id array const, because all OF functions handle it as const.
 
-This is because patchset was originaly on top of a variation of another
-patchset :
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ drivers/power/charger-manager.c         |    2 +-
+ drivers/power/reset/hisi-reboot.c       |    2 +-
+ drivers/power/reset/keystone-reset.c    |    2 +-
+ drivers/power/reset/sun6i-reboot.c      |    2 +-
+ drivers/power/reset/vexpress-poweroff.c |    2 +-
+ drivers/power/reset/xgene-reboot.c      |    2 +-
+ drivers/power/tps65090-charger.c        |    2 +-
+ 7 files changed, 7 insertions(+), 7 deletions(-)
 
-https://lkml.org/lkml/2014/9/9/601
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 9e4dab4..eea4dad 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -1529,7 +1529,7 @@ static int cm_init_thermal_data(struct charger_manager *cm)
+ 	return ret;
+ }
+ 
+-static struct of_device_id charger_manager_match[] = {
++static const struct of_device_id charger_manager_match[] = {
+ 	{
+ 		.compatible = "charger-manager",
+ 	},
+diff --git a/drivers/power/reset/hisi-reboot.c b/drivers/power/reset/hisi-reboot.c
+index 0c91d02..df2ad92 100644
+--- a/drivers/power/reset/hisi-reboot.c
++++ b/drivers/power/reset/hisi-reboot.c
+@@ -52,7 +52,7 @@ static int hisi_reboot_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id hisi_reboot_of_match[] = {
++static const struct of_device_id hisi_reboot_of_match[] = {
+ 	{ .compatible = "hisilicon,sysctrl" },
+ 	{}
+ };
+diff --git a/drivers/power/reset/keystone-reset.c b/drivers/power/reset/keystone-reset.c
+index 408a18f..a8c22c3 100644
+--- a/drivers/power/reset/keystone-reset.c
++++ b/drivers/power/reset/keystone-reset.c
+@@ -62,7 +62,7 @@ static void rsctrl_restart(enum reboot_mode mode, const char *cmd)
+ 			   RSCTRL_RESET_MASK, 0);
+ }
+ 
+-static struct of_device_id rsctrl_of_match[] = {
++static const struct of_device_id rsctrl_of_match[] = {
+ 	{.compatible = "ti,keystone-reset", },
+ 	{},
+ };
+diff --git a/drivers/power/reset/sun6i-reboot.c b/drivers/power/reset/sun6i-reboot.c
+index af2cd7f..b3b010f 100644
+--- a/drivers/power/reset/sun6i-reboot.c
++++ b/drivers/power/reset/sun6i-reboot.c
+@@ -70,7 +70,7 @@ static int sun6i_reboot_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id sun6i_reboot_of_match[] = {
++static const struct of_device_id sun6i_reboot_of_match[] = {
+ 	{ .compatible = "allwinner,sun6i-a31-wdt" },
+ 	{}
+ };
+diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+index 4dc102e2..c199d34 100644
+--- a/drivers/power/reset/vexpress-poweroff.c
++++ b/drivers/power/reset/vexpress-poweroff.c
+@@ -72,7 +72,7 @@ DEVICE_ATTR(active, S_IRUGO | S_IWUSR, vexpress_reset_active_show,
+ 
+ enum vexpress_reset_func { FUNC_RESET, FUNC_SHUTDOWN, FUNC_REBOOT };
+ 
+-static struct of_device_id vexpress_reset_of_match[] = {
++static const struct of_device_id vexpress_reset_of_match[] = {
+ 	{
+ 		.compatible = "arm,vexpress-reset",
+ 		.data = (void *)FUNC_RESET,
+diff --git a/drivers/power/reset/xgene-reboot.c b/drivers/power/reset/xgene-reboot.c
+index ecd55f8..b5542bf 100644
+--- a/drivers/power/reset/xgene-reboot.c
++++ b/drivers/power/reset/xgene-reboot.c
+@@ -83,7 +83,7 @@ static int xgene_reboot_probe(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id xgene_reboot_of_match[] = {
++static const struct of_device_id xgene_reboot_of_match[] = {
+ 	{ .compatible = "apm,xgene-reboot" },
+ 	{}
+ };
+diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+index 3e8ba97..48e402f 100644
+--- a/drivers/power/tps65090-charger.c
++++ b/drivers/power/tps65090-charger.c
+@@ -344,7 +344,7 @@ static int tps65090_charger_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static struct of_device_id of_tps65090_charger_match[] = {
++static const struct of_device_id of_tps65090_charger_match[] = {
+ 	{ .compatible = "ti,tps65090-charger", },
+ 	{ /* end */ }
+ };
+-- 
+1.7.9.5
 
-In which invalidate_range_free_pages was a function call right after cpu
-page table is updated but before page are free. Hence the comment was
-right if on top of that patchset but on top of master you are right this
-comment is wrong.
-
-Cheers,
-Jérôme
-
-> 
-> Haggai
