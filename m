@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211AbaIKUyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 16:54:00 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:47069 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755259AbaIKUx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 16:53:59 -0400
-Date: Thu, 11 Sep 2014 13:53:54 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/ttm: make sure format string cannot leak in
-Message-ID: <20140911205354.GA2959@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S932234AbaIKUym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:54:42 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:57485 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932213AbaIKUyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 16:54:40 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Streetman <ddstreet@ieee.org>
+Subject: [PATCH 00/10] implement zsmalloc shrinking
+Date: Thu, 11 Sep 2014 16:53:51 -0400
+Message-Id: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While zone->name is currently hard coded, the call to kobject_init_and_add()
-should follow the more defensive argument list usage (as already done in
-other places in ttm_memory.c) where "%s" is used instead of directly passing
-in a variable as a format string.
+Now that zswap can use zsmalloc as a storage pool via zpool, it will
+try to shrink its zsmalloc zs_pool once it reaches its max_pool_percent
+limit.  These patches implement zsmalloc shrinking.  The way the pool is
+shrunk is by finding a zspage and reclaiming it, by evicting each of its
+objects that is in use.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Without these patches zswap, and any other future user of zpool/zsmalloc
+that attempts to shrink the zpool/zs_pool, will only get errors and will
+be unable to shrink its zpool/zs_pool.  With the ability to shrink, zswap
+can keep the most recent compressed pages in memory.
+
+Note that the design of zsmalloc makes it impossible to actually find the
+LRU zspage, so each class and fullness group is searched in a round-robin
+method to find the next zspage to reclaim.  Each fullness group orders its
+zspages in LRU order, so the oldest zspage is used for each fullness group.
+
 ---
- drivers/gpu/drm/ttm/ttm_memory.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
-index fa53df487875..1e688b603e46 100644
---- a/drivers/gpu/drm/ttm/ttm_memory.c
-+++ b/drivers/gpu/drm/ttm/ttm_memory.c
-@@ -300,7 +300,8 @@ static int ttm_mem_init_highmem_zone(struct ttm_mem_global *glob,
- 	zone->glob = glob;
- 	glob->zone_highmem = zone;
- 	ret = kobject_init_and_add(
--		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
-+		&zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, "%s",
-+		zone->name);
- 	if (unlikely(ret != 0)) {
- 		kobject_put(&zone->kobj);
- 		return ret;
+This patch set applies to linux-next.
+
+Dan Streetman (10):
+  zsmalloc: fix init_zspage free obj linking
+  zsmalloc: add fullness group list for ZS_FULL zspages
+  zsmalloc: always update lru ordering of each zspage
+  zsmalloc: move zspage obj freeing to separate function
+  zsmalloc: add atomic index to find zspage to reclaim
+  zsmalloc: add zs_ops to zs_pool
+  zsmalloc: add obj_handle_is_free()
+  zsmalloc: add reclaim_zspage()
+  zsmalloc: add zs_shrink()
+  zsmalloc: implement zs_zpool_shrink() with zs_shrink()
+
+ drivers/block/zram/zram_drv.c |   2 +-
+ include/linux/zsmalloc.h      |   7 +-
+ mm/zsmalloc.c                 | 314 +++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 290 insertions(+), 33 deletions(-)
+
 -- 
-1.9.1
+1.8.3.1
 
-
--- 
-Kees Cook
-Chrome OS Security
