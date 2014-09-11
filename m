@@ -1,74 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529AbaIKMx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:53:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22894 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755405AbaIKMx4 (ORCPT
+	id S1756558AbaIKMyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:54:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57473 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755096AbaIKMy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:53:56 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-e7-54119b61ad24
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: paulz@synopsys.com
-Cc: gregkh@linuxfoundation.org, dinguyen@opensource.altera.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com, b.zolnierkie@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 2/2] Revert
- "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
-Date: Thu, 11 Sep 2014 14:53:31 +0200
-Message-id: <1410440011-9106-3-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
-References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t9jAd3E2YIhBpvaLS02zljParHq0xpm
-	i+bF69ksLu+aw2axaFkrs8XaI3fZLbZPmc5k8eDwTnYHDo/9c9ewe/Rfm8Tu0bdlFaPHlv2f
-	GT0+b5ILYI3isklJzcksSy3St0vgypi736PgF2fF1i8vWRsYN3B0MXJySAiYSPTuXcEOYYtJ
-	XLi3nq2LkYtDSGARo8TiaVMZIZx2Jol1/5+wglSxCehIbPk+ASjBwSEC1PH9AydIDbPATUaJ
-	+csnsYPEhQViJOa1O4CYLAKqEh93OIOYvAIuEg8fukGskpM4eWwy2EBOAVeJ9b17wE4QAir5
-	uOc82wRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxggPrmfQOxlUNFocYBTgYlXh4
-	K1kEQ4RYE8uKK3MPMUpwMCuJ8N6YDhTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2x
-	JDU7NbUgtQgmy8TBKdXAyPIoi9c38moex9riT0d0rVl95BcXF6u8NPb5fuO25jr1j4yv05ac
-	7HOfoMaTcl+xOkY3TbZwc1xbzN96F3ah52rc7iyOkgbPlS7mPPabUniktHGro7PJjeWe8Tkv
-	731f45gRP89bp8pqevDCSdZzS7byl7ZNbp+xgcNDQSCn/kdMu+Da3UFKLMUZiYZazEXFiQAT
-	ly7hKAIAAA==
+	Thu, 11 Sep 2014 08:54:28 -0400
+X-AuditID: cbfee68f-f797f6d000001173-92-54119b82b097
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>
+Subject: [PATCH v4 1/4] mfd: max77693: Initialize haptic register map
+Date: Thu, 11 Sep 2014 21:54:19 +0900
+Message-id: <1410440062-19963-2-git-send-email-jaewon02.kim@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1410440062-19963-1-git-send-email-jaewon02.kim@samsung.com>
+References: <1410440062-19963-1-git-send-email-jaewon02.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsWyRsSkWLdptmCIwbZfhhbXvzxntTi86AWj
+	xY6GI6wW978eZbS4+ekbq8XlXXPYLE53szqwe+ycdZfd4861PWwe804GevRtWcXo8XmTXABr
+	FJdNSmpOZllqkb5dAlfGjZ4bzAXThStOzjzC2sD4n7+LkZNDQsBE4veLR2wQtpjEhXvrgWwu
+	DiGBpYwSb55dZoUpmrTgNliRkMAiRokPy90hitqYJLpW/QZLsAloS3xfvxisQUSgUqK/+wUr
+	SBGzQA+jxNJVS9lBEsICrhLPTrwEauDgYBFQlXj+RAskzCvgIXFjzzewsISAgsScSTYgYU4B
+	T4lb3XPYIfZ6SJzrWckCcc9kdonOWR4gNouAgMS3yYdYIFplJTYdYIYokZQ4uOIGywRG4QWM
+	DKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAsP79L9n/TsY7x6wPsQowMGoxMNbwSIYIsSa
+	WFZcmXuI0RRow0RmKdHkfGAU5ZXEGxqbGVmYmpgaG5lbmimJ8y6U+hksJJCeWJKanZpakFoU
+	X1Sak1p8iJGJg1OqgVHsO9PllwrqoX3yLV9OBN57MSslZrlk5cndC9gTpLxubd3dIbIzlS/s
+	qaHun8Us8v4F8048/WE8Mzv/ebPssrc1L3MW6Rklij+YFr9WMXjOAhOLbSbLqqSLX7l9yQsw
+	WMOU05RsVlAQ4nbmkNP7TelxX9v4l1geYVgw4fyOoFNFftPY771+oKrEUpyRaKjFXFScCAAh
+	9hFOagIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAd2m2YIhBgeeallc//Kc1eLwoheM
+	FjsajrBa3P96lNHi5qdvrBaXd81hszjdzerA7rFz1l12jzvX9rB5zDsZ6NG3ZRWjx+dNcgGs
+	UQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAVygp
+	lCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM2703GAumC5ccXLmEdYGxv/8
+	XYycHBICJhKTFtxmg7DFJC7cWw9mCwksYpT4sNy9i5ELyG5jkuha9RsswSagLfF9/WJWEFtE
+	oFKiv/sFK0gRs0APo8TSVUvZQRLCAq4Sz068BGrg4GARUJV4/kQLJMwr4CFxY883sLCEgILE
+	nEk2IGFOAU+JW91z2CH2ekic61nJMoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M
+	4Ph5JrWDcWWDxSFGAQ5GJR7eChbBECHWxLLiytxDjBIczEoivDemA4V4UxIrq1KL8uOLSnNS
+	iw8xmgLdNJFZSjQ5HxjbeSXxhsYmZkaWRuaGFkbG5krivAdarQOFBNITS1KzU1MLUotg+pg4
+	OKUaGHe4dPxQra3gNwl4J1RaL7W/fvJG0ZNqL6SUp23Nmy/v/3m2maqHFsexlZ+zt//xT5SS
+	bdgqVXzAKrSC0WHvVmX2f27fVMsDJuzWDxK6x6qweNOyqV2ylVM8v8TO9TdSmjGhkqH7dafU
+	PwMLxr8ZClsnZz/8fXDP4e/X3F3bF6bPLWOKK0/oVWIpzkg01GIuKk4EAIoWRLu1AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 8df438571cdbd5c4fcd1b25b19eea1ad5c3cf777.
+This patch add regmap_haptic initialization to use haptic register map
+in haptic device driver.
 
-This patch breaks building dwc2 driver in gadget mode at samsung
-platforms.
+Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/usb/dwc2/gadget.c   | 1 +
- drivers/usb/dwc2/platform.c | 1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 0eb60ef..ce6071d 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -3640,6 +3640,7 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 249c139..fbfed56 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+ 	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
+ };
  
- #ifdef CONFIG_OF
- static const struct of_device_id s3c_hsotg_of_ids[] = {
-+	{ .compatible = "samsung,s3c6400-hsotg", },
- 	{ .compatible = "snps,dwc2", },
- 	{ /* sentinel */ }
- };
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 544a13e..121dbda 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -129,7 +129,6 @@ static const struct of_device_id dwc2_of_match_table[] = {
- 	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
- 	{ .compatible = "rockchip,rk3066-usb", .data = &params_rk3066 },
- 	{ .compatible = "snps,dwc2", .data = NULL },
--	{ .compatible = "samsung,s3c6400-hsotg", .data = NULL},
- 	{},
- };
- MODULE_DEVICE_TABLE(of, dwc2_of_match_table);
++static const struct regmap_config max77693_regmap_haptic_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = MAX77693_HAPTIC_REG_END,
++};
++
+ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+@@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 	}
+ 	i2c_set_clientdata(max77693->haptic, max77693);
+ 
++	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
++					&max77693_regmap_haptic_config);
++	if (IS_ERR(max77693->regmap_haptic)) {
++		ret = PTR_ERR(max77693->regmap_haptic);
++		dev_err(max77693->dev,
++			"failed to initialize haptic register map: %d\n", ret);
++		goto err_regmap;
++	}
++
+ 	/*
+ 	 * Initialize register map for MUIC device because use regmap-muic
+ 	 * instance of MUIC device when irq of max77693 is initialized
+@@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		ret = PTR_ERR(max77693->regmap_muic);
+ 		dev_err(max77693->dev,
+ 			"failed to allocate register map: %d\n", ret);
+-		goto err_regmap_muic;
++		goto err_regmap;
+ 	}
+ 
+ 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+@@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 				&max77693->irq_data_led);
+ 	if (ret) {
+ 		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+-		goto err_regmap_muic;
++		goto err_regmap;
+ 	}
+ 
+ 	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+@@ -265,7 +280,7 @@ err_irq_charger:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+ err_irq_topsys:
+ 	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+-err_regmap_muic:
++err_regmap:
+ 	i2c_unregister_device(max77693->haptic);
+ err_i2c_haptic:
+ 	i2c_unregister_device(max77693->muic);
 -- 
-1.9.1
+1.7.9.5
 
