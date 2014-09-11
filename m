@@ -1,102 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbaIKPbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:31:25 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47528 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752709AbaIKPbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:31:23 -0400
-Date: Thu, 11 Sep 2014 17:31:19 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, balbi@ti.com, p.zabel@pengutronix.de,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140911153119.GA11275@kwain>
-References: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
- <1409730511-16101-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140911010709.GE3609@peterchendt>
+	id S1756188AbaIKPdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:33:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48727 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753619AbaIKPdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:33:13 -0400
+Message-ID: <5411C0B2.3060505@ti.com>
+Date: Thu, 11 Sep 2014 21:03:06 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140911010709.GE3609@peterchendt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/6] phy: improved lookup method
+References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com> <1408620803-10464-3-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1408620803-10464-3-git-send-email-heikki.krogerus@linux.intel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+Hi,
 
-On Thu, Sep 11, 2014 at 09:07:10AM +0800, Peter Chen wrote:
-> On Wed, Sep 03, 2014 at 09:48:26AM +0200, Antoine Tenart wrote:
-> > +
-> > +static int ci_hdrc_usb2_dt_probe(struct device *dev,
-> > +				 struct ci_hdrc_platform_data *ci_pdata)
-> > +{
-> > +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
-> > +	if (IS_ERR(ci_pdata->phy)) {
-> > +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
-> > +			return -EPROBE_DEFER;
-> > +
-> > +		/* PHY is optional */
-> > +		ci_pdata->phy = NULL;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
+On Thursday 21 August 2014 05:03 PM, Heikki Krogerus wrote:
+> Removes the need for the phys to be aware of their users
+> even when not using DT. The method is copied from clkdev.c.
 > 
-> You may also need to consider usb_phy case.
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> Tested-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>
+.
+.
+<skip>
+.
+.
 
-Don't we try using the generic PHY framework for new drivers?
+>  
+> diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+> index ff5eec5..67a8c726 100644
+> --- a/drivers/phy/phy-core.c
+> +++ b/drivers/phy/phy-core.c
+> @@ -26,6 +26,7 @@
+>  static struct class *phy_class;
+>  static DEFINE_MUTEX(phy_provider_mutex);
+>  static LIST_HEAD(phy_provider_list);
+> +static LIST_HEAD(phys);
+>  static DEFINE_IDA(phy_ida);
+>  
+>  static void devm_phy_release(struct device *dev, void *res)
+> @@ -84,6 +85,138 @@ static struct phy *phy_lookup(struct device *device, const char *port)
+>  	return ERR_PTR(-ENODEV);
+>  }
+>  
+> +/**
+> + * phy_register_lookup() - register PHY/device association
+> + * @pl: association to register
+> + */
+> +void phy_register_lookup(struct phy_lookup *pl)
+> +{
+> +	mutex_lock(&phy_provider_mutex);
+> +	list_add_tail(&pl->node, &phys);
+> +	mutex_unlock(&phy_provider_mutex);
+> +}
+> +
+> +/**
+> + * phy_unregister_lookup() - remove PHY/device association
+> + * @pl: association to be removed
+> + */
+> +void phy_unregister_lookup(struct phy_lookup *pl)
+> +{
+> +	mutex_lock(&phy_provider_mutex);
+> +	list_del(&pl->node);
+> +	mutex_unlock(&phy_provider_mutex);
+> +}
+> +
+> +/**
+> + * phy_create_lookup() - allocate and register PHY/device association
+> + * @phy: the phy of the association
+> + * @con_id: connection ID string on device
+> + * @dev_id: the device of the association
+> + *
+> + * Creates and registers phy_lookup entry.
+> + */
+> +int phy_create_lookup(struct phy *phy, const char *con_id, const char *dev_id)
+> +{
+> +	struct phy_lookup *pl;
+> +
+> +	if (!phy || (!dev_id && !con_id))
+> +		return -EINVAL;
+> +
+> +	pl = kzalloc(sizeof(*pl), GFP_KERNEL);
+> +	if (!pl)
+> +		return -ENOMEM;
+> +
+> +	pl->phy_name = dev_name(&phy->dev);
+> +	pl->dev_id = dev_id;
+> +	pl->con_id = con_id;
+> +
+> +	phy_register_lookup(pl);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(phy_create_lookup);
+> +
+> +/**
+> + * phy_remove_lookup() - find and remove PHY/device association
+> + * @phy: the phy of the association
+> + * @con_id: connection ID string on device
+> + * @dev_id: the device of the association
+> + *
+> + * Finds and unregisters phy_lookup entry that was created with
+> + * phy_create_lookup().
+> + */
+> +void phy_remove_lookup(struct phy *phy, const char *con_id, const char *dev_id)
+> +{
+> +	struct phy_lookup *pl;
+> +
+> +	if (!phy || (!dev_id && !con_id))
+> +		return;
+> +
+> +	list_for_each_entry(pl, &phys, node)
+> +		if (!strcmp(pl->phy_name, dev_name(&phy->dev)) &&
+> +		    !strcmp(pl->dev_id, dev_id) &&
+> +		    !strcmp(pl->con_id, con_id)) {
+> +			phy_unregister_lookup(pl);
+> +			kfree(pl);
+> +			return;
+> +		}
+> +}
+> +EXPORT_SYMBOL_GPL(phy_remove_lookup);
+> +
+> +static struct phy *phy_find(struct device *dev, const char *con_id)
+> +{
+> +	const char *dev_id = dev ? dev_name(dev) : NULL;
+> +	int match, best_found = 0, best_possible = 0;
+> +	struct phy *phy = ERR_PTR(-ENODEV);
+> +	struct phy_lookup *p, *pl = NULL;
+> +
+> +	if (dev_id)
+> +		best_possible += 2;
+> +	if (con_id)
+> +		best_possible += 1;
+> +
+> +	list_for_each_entry(p, &phys, node) {
+> +		match = 0;
+> +		if (p->dev_id) {
+> +			if (!dev_id || strcmp(p->dev_id, dev_id))
+> +				continue;
+> +			match += 2;
+> +		}
+> +		if (p->con_id) {
+> +			if (!con_id || strcmp(p->con_id, con_id))
+> +				continue;
+> +			match += 1;
+> +		}
+> +
+> +		if (match > best_found) {
+> +			pl = p;
+> +			if (match != best_possible)
+> +				best_found = match;
+> +			else
+> +				break;
+> +		}
+> +	}
+> +
+> +	if (pl) {
+> +		struct class_dev_iter iter;
+> +		struct device *phy_dev;
+> +
+> +		class_dev_iter_init(&iter, phy_class, NULL, NULL);
+> +		while ((phy_dev = class_dev_iter_next(&iter))) {
+> +			if (!strcmp(dev_name(phy_dev), pl->phy_name)) {
 
-Since there is no need for supporting an usb_phy case I don't think we
-have to consider this case yet. And no doing so could encourage people
-to add PHY drivers to the common PHY framework.
+I'm not sure how it'll work with systems which has multiple PHYs since the "id"
+component of the device is determined purely in runtime.
 
-> > +
-> > +	if (dev->of_node) {
-> > +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
-> > +		if (ret)
-> > +			return ret;
-> > +	} else {
-> > +		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32));
-> > +		if (ret)
-> > +			return ret;
-> > +	}
-> 
-> You may need to do clk_disable_unprepare for above error cases.
+I'd assume we'll be constantly patching the lookup data for non-dt boot :-/
 
-Sure, I'll fix that.
-
-> > +
-> > +	ci_pdata->name = dev_name(&pdev->dev);
-> > +
-> > +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
-> > +					   pdev->num_resources, ci_pdata);
-> > +	if (IS_ERR(priv->ci_pdev)) {
-> > +		ret = PTR_ERR(priv->ci_pdev);
-> > +		if (ret != -EPROBE_DEFER)
-> > +			dev_err(dev,
-> > +				"failed to register ci_hdrc platform device: %d\n",
-> > +				ret);
-> 
-> Why you don't want the error message for deferral probe?
-
-A driver can return an EPROBE_DEFER error and still probe successfully
-later. This would be confusing to have this kind of error message in
-this case. And when a driver returns -EPROBE_DEFER, there is an error
-message already.
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks
+Kishon
