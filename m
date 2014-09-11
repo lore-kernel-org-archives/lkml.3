@@ -1,171 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaIKLR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:17:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64140 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233AbaIKLR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:17:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,505,1406617200"; 
-   d="scan'208";a="571696909"
-Date: Thu, 11 Sep 2014 14:17:21 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140911111721.GB17476@xps8300>
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de>
- <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
+	id S1754252AbaIKLRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:17:52 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46111 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaIKLRu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 07:17:50 -0400
+Message-ID: <541184DB.1050606@arm.com>
+Date: Thu, 11 Sep 2014 12:17:47 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410377411-26656-10-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Christoph Lameter <cl@linux.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: linux-next: Tree for Sep 1
+References: <20140901230728.GM29327@sirena.org.uk> <20140910174141.GH12361@n2100.arm.linux.org.uk> <5410943E.3050505@arm.com> <3931811.uoPC70E0Og@amdc1032>
+In-Reply-To: <3931811.uoPC70E0Og@amdc1032>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 11 Sep 2014 11:17:48.0151 (UTC) FILETIME=[0490E070:01CFCDB2]
+X-MC-Unique: 114091112174807701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 09:30:04PM +0200, Sebastian Andrzej Siewior wrote:
-> At least on AM335x the following problem exists: Even if the TX FIFO is
-> empty and a TX transfer is programmed (and started) the UART does not
-> trigger the DMA transfer.
-> After $TRESHOLD number of bytes have been written to the FIFO manually the
-> UART reevaluates the whole situation and decides that now there is enough
-> room in the FIFO and so the transfer begins.
-> This problem has not been seen on DRA7 or beagle board xm (OMAP3). I am not
-> sure if this is UART-IP core specific or DMA engine.
+Hi Bartlomiej,
+
+On 11/09/14 12:01, Bartlomiej Zolnierkiewicz wrote:
 > 
-> The workaround is to use a threshold of one byte, program the DMA
-> transfer minus one byte and then to put the first byte into the FIFO to
-> kick start the transfer.
+> Hi,
 > 
-> v7…v8:
-> 	- fix the problem when get invoked and the FIFO is full.
+> On Wednesday, September 10, 2014 07:11:10 PM Marc Zyngier wrote:
+>> Hi Russell,
+>>
+>> On 10/09/14 18:41, Russell King - ARM Linux wrote:
+>>> On Fri, Sep 05, 2014 at 03:27:51PM -0400, Nicolas Pitre wrote:
+>>>> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+>>>>
+>>>>> On Tue, 2 Sep 2014, Christoph Lameter wrote:
+>>>>>
+>>>>>> Oww.. This is double indirection deal there. A percpu offset pointing to
+>>>>>> a pointer?
+>>>>>>
+>>>>>> Generally the following is true (definition from
+>>>>>> include/asm-generic/percpu.h that is used for ARM for raw_cpu_read):
+>>>>>>
+>>>>>> #define raw_cpu_read_4(pcp)             (*raw_cpu_ptr(&(pcp)))
+>>>>>
+>>>>> I think what the issue is that we dropped the fetch of the percpu offset
+>>>>> in the patch. Instead we are using the address of the variable that
+>>>>> contains the offset. Does this patch fix it?
+>>>>>
+>>>>>
+>>>>> Subject: irqchip: Properly fetch the per cpu offset
+>>>>>
+>>>>> The raw_cpu_read() conversion dropped the fetch of the offset
+>>>>> from base->percpu_base in gic_get_percpu_base.
+>>>>>
+>>>>> Signed-off-by: Christoph Lameter <cl@linux.com>
+>>>>>
+>>>>> Index: linux/drivers/irqchip/irq-gic.c
+>>>>> ===================================================================
+>>>>> --- linux.orig/drivers/irqchip/irq-gic.c
+>>>>> +++ linux/drivers/irqchip/irq-gic.c
+>>>>> @@ -102,7 +102,7 @@ static struct gic_chip_data gic_data[MAX
+>>>>>  #ifdef CONFIG_GIC_NON_BANKED
+>>>>>  static void __iomem *gic_get_percpu_base(union gic_base *base)
+>>>>>  {
+>>>>> -	return raw_cpu_read(base->percpu_base);
+>>>>> +	return raw_cpu_read(*base->percpu_base);
+>>>>
+>>>> Isn't the pointer dereference supposed to be performed _outside_ the per 
+>>>> CPU accessor?
+>>>
+>>> I think this is correct.
+>>>
+>>> Let's start from the depths of raw_cpu_read(), where the pointer is
+>>> verified to be the correct type:
+>>>
+>>> #define __verify_pcpu_ptr(ptr)                                          \
+>>> do {                                                                    \
+>>>         const void __percpu *__vpp_verify = (typeof((ptr) + 0))NULL;    \
+>>>         (void)__vpp_verify;                                             \
+>>> } while (0)
+>>>
+>>> So, "ptr" should be of type "const void __percpu *" (note the __percpu
+>>> annotation there, which makes it sparse-checkable.)
+>>>
+>>> The next level up is this:
+>>>
+>>> #define __pcpu_size_call_return(stem, variable)                         \
+>>> ({                                                                      \
+>>>         typeof(variable) pscr_ret__;                                    \
+>>>         __verify_pcpu_ptr(&(variable));                                 \
+>>>
+>>> So, we pass the address of the variable to the verification function.
+>>> That makes it a void-typed variable - "const void __percpu".
+>>>
+>>> #define raw_cpu_read(pcp)   __pcpu_size_call_return(raw_cpu_read_, pcp)
+>>>
+>>> So this also makes "pcp" a "const void __percpu".
+>>>
+>>> Now, what type is base->percpu_base?
+>>>
+>>>         void __percpu * __iomem *percpu_base;
+>>>
+>>> The thing we want to be per-cpu is a "void __iomem *" pointer.  However,
+>>> we have a pointer to the per-cpu instance.  That's the "void __percpu *"
+>>> bit.
+>>>
+>>> So, for this to match the requirements for raw_cpu_read(), we need to
+>>> do one dereference to end up with "void __percpu".
+>>>
+>>> Hence, to me, the patch looks correct.
+>>>
+>>> Whether it works or not is a /completely/ different matter.  As has been
+>>> pointed out, the only place this code gets used is on a very small number
+>>> of platforms, which I don't have, and that gives me zero way to test it.
+>>> If it's Exynos which is affected by this, we need to call on Samsung to
+>>> test this patch.
+>>>
+>>> Now, this code was introduced by Marc Zyngier in order to support Exynos,
+>>> probably the result of another patch on the mailing list from Samsung.
+>>> (I've added Marc and another Samsung guy to the Cc list.)  Whatever,
+>>> *someone* needs to verify this but it needs to be done with the affected
+>>> hardware.  Whether Marc can, or whether it has to be someone from Samsung,
+>>> I don't care which.
+>>
+>> Thanks for looping me in. I indeed introduced this as an alternative to
+>> an utterly broken patch that was submitted at the time.
+>>
+>> As far as I can tell, and by reading your analysis, this patch looks
+>> perfectly sensible.
+>>
+>> Now, I have long given up on trying to run *anything* on a Samsung
+>> platform other than my Chromebook - the various maintainers don't seem
+>> to care at all. I may be able to revive an Origen board though (I think
+>> I have one collecting the proverbial dust in a cupboard), assuming I can
+>> locate a bootloader for it.
 > 
-> Reviewed-by: Tony Lindgren <tony@atomide.com>
-> Tested-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/tty/serial/8250/8250.h     |  3 +++
->  drivers/tty/serial/8250/8250_dma.c | 39 +++++++++++++++++++++++++++++++++++---
->  include/uapi/linux/serial_reg.h    |  1 +
->  3 files changed, 40 insertions(+), 3 deletions(-)
+> Well, I'm not a maintainer but I try keep linux-next working on at least:
 > 
-> diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-> index fbed1636e9c4..09489b391568 100644
-> --- a/drivers/tty/serial/8250/8250.h
-> +++ b/drivers/tty/serial/8250/8250.h
-> @@ -82,6 +82,9 @@ struct serial8250_config {
->  #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
->  #define UART_BUG_DMA_RX	(1 << 5)	/* UART needs DMA RX req before there is
->  					   data in FIFO */
-> +#define UART_BUG_DMA_TX	(1 << 6)	/* UART needs one byte in FIFO for
-> +					   kickstart */
+> Origen (Exynos4210)
+> Origen Quad (Exynos4412)
+> ODROID U3 (Exynos4412)
+> Trats2 (Exynos4412)
+> Arndale (Exynos5250)
+> 
+> If you have problems booting linux-next on any of the above boards please
+> let me know.
 
-I don't think we should go ahead with this patch. I'm pretty sure
-this is AM335 specific problem, or at least limited to only few
-platforms. And I don't think we should take any more "BUG" flags.
+My first problem is getting mainline u-boot to work on the Origen (the
+4210 flavour). I compiled "something", but how you get that to run is a
+mystery. If I can get that to work, then I'll try to move on to the
+kernel...
 
-We should add hooks like tx_dma and rx_dma to struct uart_8250_dma so
-that the probe drivers can replace serial8250_tx_dma and
-seria8250_rx_dma, like I think Alan already suggested.
+Thanks,
 
-Let's keep serial8250_tx_dma/rx_dma as the default, and not add any
-quirks to them. Only if there is a very common case should it be
-handled in those. The case of RX req needing to be sent before data in
-FIFO maybe one of those, but I'm no sure.
-
-
->  #define PROBE_RSA	(1 << 0)
->  #define PROBE_ANY	(~0)
->  
-> diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-> index 3674900a1f14..48dc57aad0dd 100644
-> --- a/drivers/tty/serial/8250/8250_dma.c
-> +++ b/drivers/tty/serial/8250/8250_dma.c
-> @@ -83,6 +83,7 @@ int serial8250_tx_dma(struct uart_8250_port *p)
->  	struct uart_8250_dma		*dma = p->dma;
->  	struct circ_buf			*xmit = &p->port.state->xmit;
->  	struct dma_async_tx_descriptor	*desc;
-> +	unsigned int			skip_byte = 0;
->  	int ret;
->  
->  	if (uart_tx_stopped(&p->port) || dma->tx_running ||
-> @@ -91,10 +92,40 @@ int serial8250_tx_dma(struct uart_8250_port *p)
->  
->  	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
->  
-> +	if (p->bugs & UART_BUG_DMA_TX) {
-> +		u8 tx_lvl;
-> +
-> +		/*
-> +		 * We need to put the first byte into the FIFO in order to start
-> +		 * the DMA transfer. For transfers smaller than four bytes we
-> +		 * don't bother doing DMA at all. It seem not matter if there
-> +		 * are still bytes in the FIFO from the last transfer (in case
-> +		 * we got here directly from __dma_tx_complete()). Bytes leaving
-> +		 * the FIFO seem not to trigger the DMA transfer. It is really
-> +		 * the byte that we put into the FIFO.
-> +		 * If the FIFO is already full then we most likely got here from
-> +		 * __dma_tx_complete(). And this means the DMA engine just
-> +		 * completed its work. We don't have to wait the complete 86us
-> +		 * at 115200,8n1 but around 60us (not to mention lower
-> +		 * baudrates). So in that case we take the interrupt and try
-> +		 * again with an empty FIFO.
-> +		 */
-> +		tx_lvl = serial_in(p, UART_OMAP_TX_LVL);
-> +		if (tx_lvl == p->tx_loadsz) {
-> +			ret = -EBUSY;
-> +			goto err;
-> +		}
-> +		if (dma->tx_size < 4) {
-> +			ret = -EINVAL;
-> +			goto err;
-> +		}
-> +		skip_byte = 1;
-> +	}
-> +
->  	desc = dmaengine_prep_slave_single(dma->txchan,
-> -					   dma->tx_addr + xmit->tail,
-> -					   dma->tx_size, DMA_MEM_TO_DEV,
-> -					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-> +			dma->tx_addr + xmit->tail + skip_byte,
-> +			dma->tx_size - skip_byte, DMA_MEM_TO_DEV,
-> +			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
->  	if (!desc) {
->  		ret = -EBUSY;
->  		goto err;
-> @@ -118,6 +149,8 @@ int serial8250_tx_dma(struct uart_8250_port *p)
->  			serial_out(p, UART_IER, p->ier);
->  		}
->  	}
-> +	if (skip_byte)
-> +		serial_out(p, UART_TX, xmit->buf[xmit->tail]);
->  	return 0;
->  err:
->  	dma->tx_err = 1;
-> diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
-> index df6c9ab6b0cd..53af3b790129 100644
-> --- a/include/uapi/linux/serial_reg.h
-> +++ b/include/uapi/linux/serial_reg.h
-> @@ -359,6 +359,7 @@
->  #define UART_OMAP_SYSC		0x15	/* System configuration register */
->  #define UART_OMAP_SYSS		0x16	/* System status register */
->  #define UART_OMAP_WER		0x17	/* Wake-up enable register */
-> +#define UART_OMAP_TX_LVL	0x1a	/* TX FIFO level register */
->  
->  /*
->   * These are the definitions for the MDR1 register
-> -- 
-> 2.1.0
-
-Cheers,
-
+	M.
 -- 
-heikki
+Jazz is not dead. It just smells funny...
+
