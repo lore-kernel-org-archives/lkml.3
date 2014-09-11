@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaIKJK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:10:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737AbaIKJKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:10:52 -0400
-Message-ID: <5411670D.9000801@redhat.com>
-Date: Thu, 11 Sep 2014 11:10:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753533AbaIKJLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:11:06 -0400
+Received: from mail-bl2on0060.outbound.protection.outlook.com ([65.55.169.60]:8269
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752148AbaIKJK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:10:59 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Sep 2014 05:10:58 EDT
+From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
+To: <jic23@kernel.org>, <lars@metafoo.de>, <linux-iio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <michals@xilinx.com>, <svemula@xilinx.com>, <anirudh@xilinx.com>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: [PATCH] iio: adc: xilinx-xadc: assign auxiliary channels address correctly
+Date: Thu, 11 Sep 2014 14:25:39 +0530
+X-Mailer: git-send-email 1.7.4
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20940.006
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <344d9464-c489-42cd-b9c4-a63759f8f6da@BL2FFO11FD040.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(64706001)(4396001)(92566001)(50986999)(83322001)(95666004)(81542001)(19580395003)(44976005)(19580405001)(74662001)(31696002)(87936001)(50226001)(99396002)(81342001)(79102001)(102836001)(20776003)(6806004)(88136002)(46102001)(104166001)(2201001)(89996001)(47776003)(77982001)(93916002)(77096002)(80022001)(74502001)(92726001)(31966008)(87286001)(70736001)(85852003)(104016003)(83072002)(48376002)(50466002)(229853001)(1496007)(76482001)(62966002)(77156001)(74316001)(53416004)(86362001)(21056001)(90102001)(106466001)(107046002)(85306004)(107986001)(23106004)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB018;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/7] kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic
- access page address.
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-2-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1410413886-32213-2-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=subbaraya.sundeep.bhatta@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 07:38, Tang Chen ha scritto:
-> We have APIC_DEFAULT_PHYS_BASE defined as 0xfee00000, which is also the address of
-> apic access page. So use this macro.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Gleb Natapov <gleb@kernel.org>
-> ---
->  arch/x86/kvm/svm.c | 3 ++-
->  arch/x86/kvm/vmx.c | 6 +++---
->  2 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-> index ddf7427..1d941ad 100644
-> --- a/arch/x86/kvm/svm.c
-> +++ b/arch/x86/kvm/svm.c
-> @@ -1257,7 +1257,8 @@ static struct kvm_vcpu *svm_create_vcpu(struct kvm *kvm, unsigned int id)
->  	svm->asid_generation = 0;
->  	init_vmcb(svm);
->  
-> -	svm->vcpu.arch.apic_base = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
-> +	svm->vcpu.arch.apic_base = APIC_DEFAULT_PHYS_BASE |
-> +				   MSR_IA32_APICBASE_ENABLE;
->  	if (kvm_vcpu_is_bsp(&svm->vcpu))
->  		svm->vcpu.arch.apic_base |= MSR_IA32_APICBASE_BSP;
->  
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index bfe11cf..4b80ead 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -3999,13 +3999,13 @@ static int alloc_apic_access_page(struct kvm *kvm)
->  		goto out;
->  	kvm_userspace_mem.slot = APIC_ACCESS_PAGE_PRIVATE_MEMSLOT;
->  	kvm_userspace_mem.flags = 0;
-> -	kvm_userspace_mem.guest_phys_addr = 0xfee00000ULL;
-> +	kvm_userspace_mem.guest_phys_addr = APIC_DEFAULT_PHYS_BASE;
->  	kvm_userspace_mem.memory_size = PAGE_SIZE;
->  	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
->  	if (r)
->  		goto out;
->  
-> -	page = gfn_to_page(kvm, 0xfee00);
-> +	page = gfn_to_page(kvm, APIC_DEFAULT_PHYS_BASE >> PAGE_SHIFT);
->  	if (is_error_page(page)) {
->  		r = -EFAULT;
->  		goto out;
-> @@ -4477,7 +4477,7 @@ static void vmx_vcpu_reset(struct kvm_vcpu *vcpu)
->  
->  	vmx->vcpu.arch.regs[VCPU_REGS_RDX] = get_rdx_init_val();
->  	kvm_set_cr8(&vmx->vcpu, 0);
-> -	apic_base_msr.data = 0xfee00000 | MSR_IA32_APICBASE_ENABLE;
-> +	apic_base_msr.data = APIC_DEFAULT_PHYS_BASE | MSR_IA32_APICBASE_ENABLE;
->  	if (kvm_vcpu_is_bsp(&vmx->vcpu))
->  		apic_base_msr.data |= MSR_IA32_APICBASE_BSP;
->  	apic_base_msr.host_initiated = true;
-> 
+This patch fixes incorrect logic for assigning address
+to auxiliary channels of xilinx xadc.
 
-Applied, thanks.
+Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+---
+ drivers/iio/adc/xilinx-xadc-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Paolo
+diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+index fd2745c..626b397 100644
+--- a/drivers/iio/adc/xilinx-xadc-core.c
++++ b/drivers/iio/adc/xilinx-xadc-core.c
+@@ -1126,7 +1126,7 @@ static int xadc_parse_dt(struct iio_dev *indio_dev, struct device_node *np,
+ 				chan->address = XADC_REG_VPVN;
+ 			} else {
+ 				chan->scan_index = 15 + reg;
+-				chan->scan_index = XADC_REG_VAUX(reg - 1);
++				chan->address = XADC_REG_VAUX(reg - 1);
+ 			}
+ 			num_channels++;
+ 			chan++;
+-- 
+1.7.4
+
