@@ -1,111 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaIKJs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:48:57 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:21600 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753699AbaIKJs4 (ORCPT
+	id S1753905AbaIKJu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:50:58 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:59790 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaIKJu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:48:56 -0400
-X-IronPort-AV: E=Sophos;i="5.04,504,1406563200"; 
-   d="scan'208";a="35807506"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Oleg Nesterov" <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: RE: [RFC PATCH 2/3] procfs: show hierarchy of pid namespace
-Thread-Topic: [RFC PATCH 2/3] procfs: show hierarchy of pid namespace
-Thread-Index: AQHPzXW52D39IzxcskeTy6zc+7EDiZv7qnVA
-Date: Thu, 11 Sep 2014 09:48:51 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5A0375@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1409740200-26461-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <1409740200-26461-3-git-send-email-chenhanxiao@cn.fujitsu.com>
- <20140910162315.GB7748@mail.hallyn.com>
-In-Reply-To: <20140910162315.GB7748@mail.hallyn.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 11 Sep 2014 05:50:56 -0400
+Date: Thu, 11 Sep 2014 13:50:37 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+Message-ID: <20140911095037.GC4151@esperanza>
+References: <20140905082846.GA25641@esperanza>
+ <5409C6BB.7060009@jp.fujitsu.com>
+ <20140905160029.GF25641@esperanza>
+ <540A4420.2030504@jp.fujitsu.com>
+ <20140908110131.GA11812@esperanza>
+ <540DB4EC.6060100@jp.fujitsu.com>
+ <20140909103943.GA29897@esperanza>
+ <54110339.6000702@jp.fujitsu.com>
+ <20140911082311.GB4151@esperanza>
+ <54116324.7000200@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <54116324.7000200@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8B9n3PO022826
 
-
-
-> -----Original Message-----
-> From: Serge E. Hallyn [mailto:serge@hallyn.com]
-> Sent: Thursday, September 11, 2014 12:23 AM
-> To: Chen, Hanxiao/é™ˆ æ™—éœ„
-> Cc: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
-> Richard Weinberger; Serge Hallyn; Oleg Nesterov; David Howells; Eric W. Biederman;
-> Al Viro
-> Subject: Re: [RFC PATCH 2/3] procfs: show hierarchy of pid namespace
+On Thu, Sep 11, 2014 at 05:53:56PM +0900, Kamezawa Hiroyuki wrote:
+> (2014/09/11 17:23), Vladimir Davydov wrote:
+> >For example, there are two cgroups, one having a huge soft limit excess
+> >and full of anon memory and another not exceeding its soft limit but
+> >using primarily clean file caches. This prioritizing/weighting stuff
+> >would result in shrinking the first group first on global pressure,
+> >though it's way slower than shrinking the second one.
 > 
-> Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
-> > This patch will show the hierarchy of pid namespace
-> > under /proc/pidns like:
-> > /proc/pidns
-> > â”œâ”€â”€ hierarchy
-> > â”‚   â”œâ”€â”€ pidns4026532399
-> > â”‚   â”‚   â”œâ”€â”€ pidns -> /proc/2863/ns/pid
-> > â”‚   â”‚   â””â”€â”€ pidns4026532515
-> > â”‚   â”‚       â””â”€â”€ pidns -> /proc/10611/ns/pid
-> > â”‚   â””â”€â”€ pidns4026532504
-> > â”‚       â””â”€â”€ pidns -> /proc/4450/ns/pid
-> > â””â”€â”€ refresh
+> Current implementation just round-robin all memcgs under the tree.
+> With re-designed soft-limit, things will be changed, you can change it.
+> 
+> 
+> >That means a latency spike in other containers.
+> 
+> why ? you said the other container just contains file caches.
+
+A container wants some mem (anon, file, whatever) under pressure. If the
+pressure is high, it falls into direct reclaim and starts shrinking the
+container with a lot of anon memory, which is going to be slow, - here
+goes a latency spike.
+
+> latency-spike just because file cache drops ?
+> If the service is such naive, please use hard limit.
+
+File caches are evicted much easier than anon memory, simply because the
+latter is (almost) always dirty, However, file caches still can be a
+vital part of the working set. It all depends on the load. What's wrong
+with a web server that most of the time sends the same set of web pages
+to clients? The data it needs are stored on the disk and mostly clean,
+but it's still its working set. Evicting it will lower the server
+responsiveness, which will result in clients getting upset and stopping
+visiting the web site. Or do you suppose the web server must cache disk
+data in anon memory on its own? Why do we keep clean caches at all then?
+
+> Hmm.
+> How about raising kswapd's scheduling threshold in some situation ?
+> Per-memcg-kswapd-for-helping-softlimit may work.
+
+Instead of preventing the worst case you propose to prepare the
+after-treatment...
+
+> >The heuristics you proposed above
+> >will only make it non-critical - the system will get over sooner or
+> >later.
+> 
+> My idea is always based on there is a container-manager on the system,
+> which can do enough clever decision based on a policy, admin specified.
+> IIUC, reducing cpu-hog caused by memory pressure is always helpful.
+> 
+> >However, it's still a kind of DOS, which anon+swap hard limit would prevent.
+> 
+> by oom-killer.
+
+*Local* oom-killer inside the container behaving badly. This is way
+better than waiting until it puts the whole system under heavy pressure.
+
+> >On Tue, Sep 09, 2014 at 02:39:43PM +0400, Vladimir Davydov wrote:
+> >>However, there's one thing, which made me start this discussion, and it
+> >>still bothers me. It's about memsw.limit_in_bytes knob itself.
+> >>
+> >>First, its value must be greater or equal to memory.limit_in_bytes.
+> >>IMO, such a dependency in the user interface isn't great, but it isn't
+> >>the worst thing. What is worse, there's only point in setting it to
+> >>infinity if one wants to fully make use of soft limits as I pointed out
+> >>earlier.
+> >>
+> >>So, we have a userspace knob that suits only for strict sand-boxing when
+> >>one wants to hard-limit the amount of memory and swap an app can use.
+> >>When it comes to soft limits, you have to set it to infinity, and it'll
+> >>still be accounted at the cost of performance, but without any purpose.
+> >>It just seems meaningless to me.
+> >>
+> >>Not counting that the knob itself is a kind of confusing IMO. memsw
+> >>means memory+swap, so one would mistakenly think memsw.limit-mem.limit
+> >>is the limit on swap usage, but that's wrong.
+> >>
+> >>My point is that anon+swap accounting instead of the current
+> >>anon+file+swap memsw implementation would be more flexible. We could
+> >>still sandbox apps by setting hard anon+swap and memory limits, but it
+> >>would also be possible to make use of it in "soft" environments. It
+> >>wouldn't be mandatory though. If one doesn't like OOM, he can use
+> >>threshold notifications to restart the container when it starts to
+> >>behave badly. But if the user just doesn't want to bother about
+> >>configuration or is OK with OOM-killer, he could set hard anon+swap
+> >>limit. Besides, it would untie mem.limit knob from memsw.limit, which
+> >>would make the user interface simpler and cleaner.
+> >>
+> >>So, I think anon+swap limit would be more flexible than file+anon+swap
+> >>limit we have now. Is there any use case where anon+swap and anon+file
+> >>accounting couldn't satisfy the user requirements while the
+> >>anon+file+swap and anon+file pair could?
 > >
-> > a) hierarchy dir:
-> >   use to show hierarchy infomation using dir and symlinks.
-> >   dirs are named as pidns($inum)
-> >   a symlink is created under pidns($inum), and linked to
-> >   that pid namespace.
+> >I would appreciate if anybody could answer this.
 > >
-> > b) refresh
-> >   trigger key.
-> >   We need to write sth to /proc/nspid/refresh,
-> >   then we could get hierarchy info
-> >   under /proc/pidns/hierarchy.
 > 
-> Ouch.  There may not be a better way, but it sure would be nice if
-> we could simply have the list update in real-time.
-> 
-> If we have to 'echo 1 > /proc/pidns/refresh' to update the fs tree under
-> /proc/pidns/ to reflect new pidns activity, then why not just make this
-> a text file?  I suppose if it were a textfile you'd be encouraging ppl
-> to 'cat pidlist | while read line; do grep line /proc/pidns; done',
-> which would cause a refresh of that file for every grep?
+> I can't understand why you want to use OOM killer for resource controlling .
 
-Let's expose it in a text file
-and refresh it when user open it.
-style like:
+Because there are situations when an app inside a container goes mad.
+There must be a reliable way to stop it. It's all about the compromise
+between safety (sand-boxing) and efficiency (soft limits). Currently we
+can't mix them. Soft limits are intrinsically unsafe though must be
+efficient while hard limits guarantee safety at cost of performance.
+Anon+swap limit would allow us to combine them to yield an efficient yet
+safe setup.
 
-level1                    level2
-/proc/2863/ns/pid /proc/10611/ns/pid 
-/proc/4450/ns/pid
+Besides, memsw limit eventually means OOM too, why is it better?
 
-It provided fairly the same information as dir trees.
-And easy to use too.
-
-> 
-> My concern with this approach is that it is unlike any other pseudo-fs
-> that I know of, and people may simply expect the fs contents to be
-> uptodate rather than a snapshot.
-> 
-You're right, snapshot is not a good idea.
-v2 will use a file /proc/pidns_hierarchy to show.
+What I propose is to give the admin a choice. If he thinks the app is
+100% safe, let him rely on userspace handling and in-kernel after-care.
+But if there's a possibility of a malicious and/or badly designed app,
+let him configure in-kernel OOM per container to prevent a disaster for
+sure. The latter is usually the case when you sell containers to
+third-party users.
 
 Thanks,
-- Chen
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Vladimir
