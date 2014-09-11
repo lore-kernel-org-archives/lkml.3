@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaIKMdJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:33:09 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:51544 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754377AbaIKMdF (ORCPT
+	id S1755341AbaIKMdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:33:36 -0400
+Received: from zimbra13.linbit.com ([212.69.166.240]:47844 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755004AbaIKM3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:33:05 -0400
-Message-ID: <5411967A.6090406@hurleysoftware.com>
-Date: Thu, 11 Sep 2014 08:32:58 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de>
-In-Reply-To: <54118AAB.2010205@linutronix.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 11 Sep 2014 08:29:18 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: drbd-dev@lists.linbit.com
+Subject: [PATCH 5/9] drbd: Get rid of the __no_warn and __cond_lock macros
+Date: Thu, 11 Sep 2014 14:29:09 +0200
+Message-Id: <1410438553-30440-6-git-send-email-philipp.reisner@linbit.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
+References: <1410438553-30440-1-git-send-email-philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 07:42 AM, Sebastian Andrzej Siewior wrote:
-> I also need a watchdog timer for TX since it seems that on omap3 the
-> DMA engine suddenly forgets to continue with DMA…
+From: Andreas Gruenbacher <andreas.gruenbacher@gmail.com>
 
-One difference I noticed between the omap driver and the 8250 driver is
-the way modem status interrupts are handled.
+These macros can easily be replaced with its definition.
 
-The omap driver only checks modem status for the UART_IIR_MSI interrupt type.
-The 8250 driver checks modem status at every interrupt (other than NO_INT).
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+---
+ drivers/block/drbd/drbd_int.h    | 11 ++++++-----
+ drivers/block/drbd/drbd_worker.c |  9 ++++++---
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-I think the UART_MSR_DCTS bit always reflects that the CTS input has changed
-between reads of the MSR _even if auto CTS is on_. So perhaps the hardware
-is being stopped by uart_handle_cts_change() when auto CTS is on?
+diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
+index f424dc0..9b22f8f 100644
+--- a/drivers/block/drbd/drbd_int.h
++++ b/drivers/block/drbd/drbd_int.h
+@@ -61,8 +61,6 @@
+ # define __must_hold(x)
+ #endif
+ 
+-#define __no_warn(lock, stmt) do { __acquire(lock); stmt; __release(lock); } while (0)
+-
+ /* module parameter, defined in drbd_main.c */
+ extern unsigned int minor_count;
+ extern bool disable_sendpage;
+@@ -2100,12 +2098,15 @@ static inline bool is_sync_state(enum drbd_conns connection_state)
+ 
+ /**
+  * get_ldev() - Increase the ref count on device->ldev. Returns 0 if there is no ldev
+- * @M:		DRBD device.
++ * @_device:		DRBD device.
++ * @_min_state:		Minimum device state required for success.
+  *
+  * You have to call put_ldev() when finished working with device->ldev.
+  */
+-#define get_ldev(M) __cond_lock(local, _get_ldev_if_state(M,D_INCONSISTENT))
+-#define get_ldev_if_state(M,MINS) __cond_lock(local, _get_ldev_if_state(M,MINS))
++#define get_ldev_if_state(_device, _min_state)				\
++	(_get_ldev_if_state((_device), (_min_state)) ?			\
++	 ({ __acquire(x); true; }) : false)
++#define get_ldev(_device) get_ldev_if_state(_device, D_INCONSISTENT)
+ 
+ static inline void put_ldev(struct drbd_device *device)
+ {
+diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
+index 6e01e62..b20cd21 100644
+--- a/drivers/block/drbd/drbd_worker.c
++++ b/drivers/block/drbd/drbd_worker.c
+@@ -1853,9 +1853,12 @@ static void drbd_ldev_destroy(struct drbd_device *device)
+ 	device->resync = NULL;
+ 	lc_destroy(device->act_log);
+ 	device->act_log = NULL;
+-	__no_warn(local,
+-		drbd_free_ldev(device->ldev);
+-		device->ldev = NULL;);
++
++	__acquire(local);
++	drbd_free_ldev(device->ldev);
++	device->ldev = NULL;
++	__release(local);
++
+ 	clear_bit(GOING_DISKLESS, &device->flags);
+ 	wake_up(&device->misc_wait);
+ }
+-- 
+1.9.1
 
-Regards,
-Peter Hurley
-
-[The UPF_HARD_FLOW thing was pretty much just done for omap even though
-8250 already had auto CTS/auto RTS. Serial core hardware flow control support
-needs a redo as drivers have pretty much tacked stuff on randomly.]
