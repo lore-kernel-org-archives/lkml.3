@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718AbaIKGBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 02:01:35 -0400
-Received: from david.siemens.de ([192.35.17.14]:37662 "EHLO david.siemens.de"
+	id S1752198AbaIKGFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 02:05:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19091 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074AbaIKGBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 02:01:33 -0400
-Message-ID: <54113AB2.3020801@siemens.com>
-Date: Thu, 11 Sep 2014 08:01:22 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1750970AbaIKGFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 02:05:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
+   d="scan'208";a="601278491"
+Message-ID: <54113BAC.10505@linux.intel.com>
+Date: Thu, 11 Sep 2014 14:05:32 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Chris J Arges <chris.j.arges@canonical.com>, kvm@vger.kernel.org
-CC: Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: ioapic: add check for RTC_GSI
-References: <1410368033-23628-1-git-send-email-chris.j.arges@canonical.com>
-In-Reply-To: <1410368033-23628-1-git-send-email-chris.j.arges@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        x86@kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch v4 12/16] x86, irq, ACPI: Implement interface to support
+ ACPI based IOAPIC hot-addition
+References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-13-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091417120.11037@nanos> <540FC1C2.40100@linux.intel.com> <alpine.DEB.2.10.1409102202530.4178@nanos>
+In-Reply-To: <alpine.DEB.2.10.1409102202530.4178@nanos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-10 18:53, Chris J Arges wrote:
-> cppcheck found the following error:
-> [ioapic.c:114]: (error) Array index -1 is out of bounds.
+On 2014/9/11 4:06, Thomas Gleixner wrote:
+> On Wed, 10 Sep 2014, Jiang Liu wrote:
+>>>>  int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>>>> @@ -3867,8 +3873,15 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>>>>  	}
+>>>>  	for_each_ioapic(ioapic)
+>>>>  		if (ioapics[ioapic].mp_config.apicaddr == address) {
+>>>> -			pr_warn("address 0x%x conflicts with IOAPIC%d\n",
+>>>> -				address, ioapic);
+>>>> +			/*
+>>>> +			 * IOAPIC unit may also be visible in PCI scope.
+>>>> +			 * When ioapic PCI driver's probe() is called,
+>>>> +			 * the IOAPIC unit may have already been initialized
+>>>> +			 * at boot time.
+>>>> +			 */
+>>>> +			if (!ioapic_initialized)
+>>>> +				pr_warn("address 0x%x conflicts with IOAPIC%d\n",
+>>>> +					address, ioapic);
+>>>
+>>> Hmm. This smells fishy. Why do we allow multiple initializations of
+>>> the same IOAPIC in the first place. Either it's done via ACPI or via
+>>> PCI, but not both.
+>> The ACPI subsystem will register and initialize all IOAPICs when walking
+>> ACPI MADT table during boot, before initializing PCI subsystem.
+>> Later when binding ioapic PCI driver to IOAPIC PCI device, it will try
+>> to register the IOAPIC device again.
+>>
+>> After this patchset is applied, we could remove the !ioapic_initialized
+>> check. We check acpi_ioapic_register() before calling
+>> acpi_register_ioapic(). So the check becomes redundant.
+>> Or we could remove the temporary code from this patch.
 > 
-> If CONFIG_X86 is not defined, RTC_GSI == -1U which means that an out of bounds
+> How about removing the disfunctional ioapic PCI driver first and then
+> implementing the whole thing cleanly?
+Good suggestion:)
 
-That issue is limited to the dead ia64 architecture, no other builds
-ioapic.c (besides x86, of course). Maybe finally remove KVM support for
-that arch instead of bloating otherwise correct code?
-
-Jan
-
-> error could occur when accessing &ioapic->redirtbl[RTC_GSI].
-> 
-> This patch adds a check to kvm_rtc_eoi_tracking_restore_one that is similar to
-> how kvm_rtc_eoi_tracking_restore_all checks this condition.
-> 
-> Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-> ---
->  virt/kvm/ioapic.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index e8ce34c..859f5b8 100644
-> --- a/virt/kvm/ioapic.c
-> +++ b/virt/kvm/ioapic.c
-> @@ -136,6 +136,9 @@ void kvm_rtc_eoi_tracking_restore_one(struct kvm_vcpu *vcpu)
->  {
->  	struct kvm_ioapic *ioapic = vcpu->kvm->arch.vioapic;
 >  
-> +	if (RTC_GSI >= IOAPIC_NUM_PINS)
-> +		return;
-> +
->  	spin_lock(&ioapic->lock);
->  	__rtc_irq_eoi_tracking_restore_one(vcpu);
->  	spin_unlock(&ioapic->lock);
+>>>
+>>>>  			return -EEXIST;
+>>>>  		}
+>>>>  
+>>>> @@ -3918,6 +3931,14 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+>>>>  	ioapics[idx].irqdomain = NULL;
+>>>>  	ioapics[idx].irqdomain_cfg = *cfg;
+>>>>  
+>>>> +	if (ioapic_initialized) {
+>>>
+>>> I have a hard time to understand this conditional. Why can't we do
+>>> that unconditionally?
+>> How about following comments?
+>> /*
+>>  * If mp_register_ioapic() is called during early boot stage when
+>>  * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
+>>  * we are still using bootmem allocator. So delay it to setup_IO_APIC().
+>>  */
 > 
+> Fine, but then the "if (ioapic_initialized)" conditional still does
+> not make sense. We surely have some global non ioapic specific
+> indicator that bootmem is done and the proper memory allocator is
+> available, right?
+Flag ioapic_initialized will be used to check whether we have created
+irqdomains for IOAPICs. Currently function arch_dynirq_lower_bound()
+uses that flag, and alloc_irq_from_domain() will use it too later.
 
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+> 
+> Aside of that is there a point to walk those tables before we actually
+> can make any use of their content?
+At least we depend on walking those tables to detect whether system has
+IOAPICs available:)
 
+Regards!
+Gerry
+> 
+> Thanks,
+> 
+> 	tglx
+> 
