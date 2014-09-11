@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaIKHS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 03:18:59 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:33348 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaIKHS5 (ORCPT
+	id S1752648AbaIKHTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 03:19:50 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:60832 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211AbaIKHTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 03:18:57 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8B7HuOo004708, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 1/2] mfd: rtsx: fix PM suspend for 5227
-Date: Thu, 11 Sep 2014 15:17:52 +0800
-Message-ID: <c13c93e9f5fca1a46df2b141899d50c13b28aaa0.1410330111.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1410330111.git.micky_ching@realsil.com.cn>
-References: <cover.1410330111.git.micky_ching@realsil.com.cn>
+	Thu, 11 Sep 2014 03:19:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+In-Reply-To: <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+References: <20140908181524.GA11839@www.outflux.net>
+	<20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+Date: Thu, 11 Sep 2014 09:19:46 +0200
+X-Google-Sender-Auth: JgeM4A6LN0isa5t_xTEbKWE6bnc
+Message-ID: <CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        linux-doc <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+On Thu, Sep 11, 2014 at 12:52 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Mon, 8 Sep 2014 11:15:24 -0700 Kees Cook <keescook@chromium.org> wrote:
+>
+>> Check for misspellings, based on Debian's lintian list. Several false
+>> positives were removed, and several additional words added that were
+>> common in the kernel:
+>>
+>>       backword backwords
+>>       invalide valide
+>>       recieves
+>>       singed unsinged
+>>
+>> While going back and fixing existing spelling mistakes isn't a high
+>> priority, it'd be nice to try to catch them before they hit the tree.
+>
+> I have a feeling this is going to be a rat hole and that
+> scripts/spelling.txt will grow to consume the planet.  Oh well, whatev.
 
-Fix rts5227 failed send buffer cmd after suspend,
-PM_CTRL3 should reset before send any buffer cmd after suspend.
-Otherwise, buffer cmd will failed, this will lead resume fail.
+What about making checkpatch use the codespell dictionay if codespell
+is installed?
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mfd/rts5227.c        |   23 +++++++++++++++++++++++
- include/linux/mfd/rtsx_pci.h |   13 +++++++++++++
- 2 files changed, 36 insertions(+)
+Codespell is in Ubuntu 14.04LTS (but not in 12.04LTS).
 
-diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
-index 9c8eec8..3d4998e 100644
---- a/drivers/mfd/rts5227.c
-+++ b/drivers/mfd/rts5227.c
-@@ -128,8 +128,31 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
+Gr{oetje,eeting}s,
 
-+static int rts5227_pm_reset(struct rtsx_pcr *pcr)
-+{
-+	int err;
-+
-+	/* init aspm */
-+	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
-+	if (err < 0)
-+		return err;
-+
-+	/* reset PM_CTRL3 before send buffer cmd */
-+	err = rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-+	if (err < 0)
-+		return err;
-+
-+	return err;
-+}
-+
- static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
- {
-+	int err;
-+
-+	err = rts5227_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	/* Optimize RX sensitivity */
- 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
- }
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 74346d5..037fbc5 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -967,4 +967,17 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
- 	return (u8 *)(pcr->host_cmds_ptr);
- }
+                        Geert
 
-+static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-+		u8 mask, u8 append)
-+{
-+	int err;
-+	u8 val;
-+
-+	err = pci_read_config_byte(pcr->pci, addr, &val);
-+	if (err)
-+		return err;
-+	err = pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-+	return err;
-+}
-+
- #endif
 --
-1.7.9.5
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
