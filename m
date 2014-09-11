@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaIKVae (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:30:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39287 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123AbaIKVac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:30:32 -0400
-Date: Thu, 11 Sep 2014 18:30:27 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: perf top -g -U --sort=symbol --children == lalalalala?
-Message-ID: <20140911213027.GB1801@kernel.org>
-References: <1410263641.15383.8.camel@marge.simpson.net>
- <20140909133737.GK2773@kernel.org>
- <CAM9d7cgCuVVNrA7DU=t_CgENLa-dxRW2HXoO3Uo6=2izshSjhg@mail.gmail.com>
- <1410439392.20184.17.camel@marge.simpson.net>
- <20140911134338.GE10158@kernel.org>
+	id S1753274AbaIKVeh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:34:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44702 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaIKVeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:34:36 -0400
+Date: Thu, 11 Sep 2014 14:34:11 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-c8128cceb4f4b02c53096cb173628184c7e9bc36@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        dave.hansen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com,
+        bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, dave.hansen@linux.intel.com, bp@suse.de,
+        hpa@linux.intel.com
+In-Reply-To: <20140911211511.AD76E774@viggo.jf.intel.com>
+References: <20140911211511.AD76E774@viggo.jf.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpufeature] x86: Axe the lightly-used cpu_has_pae
+Git-Commit-ID: c8128cceb4f4b02c53096cb173628184c7e9bc36
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140911134338.GE10158@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 11, 2014 at 10:43:38AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Sep 11, 2014 at 02:43:12PM +0200, Mike Galbraith escreveu:
-> > On Thu, 2014-09-11 at 17:09 +0900, Namhyung Kim wrote: 
-> > > On Tue, Sep 9, 2014 at 10:37 PM, Arnaldo Carvalho de Melo
-> > > <acme@ghostprotocols.net> wrote:
-> > > > Em Tue, Sep 09, 2014 at 01:54:01PM +0200, Mike Galbraith escreveu:
-> > > >> Seems the now default on --children thingy doesn't like -U much.
+Commit-ID:  c8128cceb4f4b02c53096cb173628184c7e9bc36
+Gitweb:     http://git.kernel.org/tip/c8128cceb4f4b02c53096cb173628184c7e9bc36
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Thu, 11 Sep 2014 14:15:11 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 11 Sep 2014 14:30:01 -0700
 
-> > > > Namhyung, can you please take a look at this?
+x86: Axe the lightly-used cpu_has_pae
 
-> > > So what is the problem here?
+cpu_has_pae is only referenced in one place: the X86_32 kexec
+code (in a file not even built on 64-bit).  It hardly warrants
+its own macro, or the trouble we go to ensuring that it can't
+be called in X86_64 code.
 
-> > Well, if you don't see anything wrong, I guess nothing at all.
+Axe the macro and replace it with a direct cpu feature check.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Link: http://lkml.kernel.org/r/20140911211511.AD76E774@viggo.jf.intel.com
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h  | 4 ----
+ arch/x86/kernel/machine_kexec_32.c | 3 ++-
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index bb9b258..7b50875 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -300,7 +300,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ #define cpu_has_de		boot_cpu_has(X86_FEATURE_DE)
+ #define cpu_has_pse		boot_cpu_has(X86_FEATURE_PSE)
+ #define cpu_has_tsc		boot_cpu_has(X86_FEATURE_TSC)
+-#define cpu_has_pae		boot_cpu_has(X86_FEATURE_PAE)
+ #define cpu_has_pge		boot_cpu_has(X86_FEATURE_PGE)
+ #define cpu_has_apic		boot_cpu_has(X86_FEATURE_APIC)
+ #define cpu_has_sep		boot_cpu_has(X86_FEATURE_SEP)
+@@ -358,9 +357,6 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
+ #undef  cpu_has_vme
+ #define cpu_has_vme		0
  
-> :-)
+-#undef  cpu_has_pae
+-#define cpu_has_pae		___BUG___
+-
+ #undef  cpu_has_k6_mtrr
+ #define cpu_has_k6_mtrr		0
  
-> I think that when we decide that it is so better to change defaults like
-> we did this time, we should be required to add a big fat warning (a
-> --tui popup, use the first lines on --stdio, etc) about why the default
-> was changed and allow quick, easy opt out, restoring previous behaviour
-> after the user, being warned, knows what to expect, tries it, and then
-> is in a better position to decide if keeping the new default is what is
-> desired.
-
-Also, looking at the changelog entries and at tools/perf/Documentation/
-the only description for --children, the default, is:
-
-----------------
---children::
-        Accumulate callchain of children to parent entry so that then can
-        show up in the output.  The output will have a new "Children" column
-        and will be sorted on the data.  It requires callchains are recorded.
-----------------
-
-I think that a longer/clearer entry in the 'perf record' man page is
-required.
-
-Perhaps the description got lost in a --cover-letter for the patch
-series implementing it?
-
-- Arnaldo
-
->  
-> > > >> Samples: 5K of event 'cycles', Event count (approx.): 2268660922
-> > > >>   Children      Self  Symbol
-> > > >> +   46.42%     0.04%  [k] system_call_fastpath
->  
-> > I'll just turn it off until I figure out what cool stuff this is telling
-> > me. why that symbol becomes the number one hit, and why total% > 100.
->  
-> > To me, it looks like top smoked it's breakfast, went to lala land ;-)
-> 
-> Yeah, its confusing, I'll let Namhyung explain it ;-)
-> 
-> :-)
-> 
-> - Arnaldo
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index 1667b1d..72e8e31 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -247,7 +247,8 @@ void machine_kexec(struct kimage *image)
+ 	/* now call it */
+ 	image->start = relocate_kernel_ptr((unsigned long)image->head,
+ 					   (unsigned long)page_list,
+-					   image->start, cpu_has_pae,
++					   image->start,
++					   boot_cpu_has(X86_FEATURE_PAE),
+ 					   image->preserve_context);
+ 
+ #ifdef CONFIG_KEXEC_JUMP
