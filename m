@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639AbaIKMJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:09:49 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:35527 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499AbaIKMJs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:09:48 -0400
-Date: Thu, 11 Sep 2014 20:09:30 +0800
-From: Huang Shijie <shijie8@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Huang Shijie <b32955@freescale.com>,
-        Mike Voytovich <mvoytovich@paypal.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Roy Lee <roylee@paypal.com>
-Subject: Re: [PATCH] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20140911120928.GA1585@localhost.localdomain>
-References: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S1754776AbaIKMKB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:10:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754499AbaIKMKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:10:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com> <20140910212154.10752.23343.stgit@warthog.procyon.org.uk> <20140910212206.10752.21818.stgit@warthog.procyon.org.uk> <1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, jmorris@namei.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning with a '.'
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <27731.1410437386.1@warthog.procyon.org.uk>
+Date: Thu, 11 Sep 2014 13:09:46 +0100
+Message-ID: <27732.1410437386@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 10:55:39AM +0200, Boris BREZILLON wrote:
-> Several MTD users (either in user or kernel space) expect a valid raw
-> access support to NAND chip devices.
-> This is particularly true for testing tools which are often touching the
-> data stored in a NAND chip in raw mode to artificially generate errors.
-> 
-> The GPMI drivers do not implemenent raw access functions, and thus rely on
-> default HW_ECC scheme implementation.
-> The default implementation consider the data and OOB area as properly
-> separated in their respective NAND section, which is not true for the GPMI
-> controller.
-> In this driver/controller some OOB data are stored at the beginning of the
-> NAND data area (these data are called metadata in the driver), then ECC
-> bytes are interleaved with data chunk (which is similar to the
-> HW_ECC_SYNDROME scheme), and eventually the remaining bytes are used as
-> OOB data.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
-> Hello,
-> 
-> This patch is providing raw access support to the GPMI driver which is
-> particularly useful to run some tests on the NAND (the one coming in
-> mind is the mtd_nandbiterrs testsuite).
-> 
-> I know this rework might break several user space tools which are relying
-> on the default raw access implementation (I already experienced an issue
-> with the kobs-ng tool provided by freescale), but many other tools will
-> now work as expected.
-If the kobs-ng can not works, there is no meaning that other tools
-works.  So I do not think we need to implement these hooks. 
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-sorry, I will not Ack this patch.
+> On Wed, 2014-09-10 at 19:36 -0400, Mimi Zohar wrote: 
+> > On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote: 
+> > > Reinstate the generation of EPERM for a key type name beginning with a
+> > > '.' in a userspace call.  Types whose name begins with a '.' are
+> > > internal only.
+> 
+> After re-reading your comment and looking at the different types,
+> testing for dot prefixed types now makes sense.  Both dot prefixed types
+> and keyring names are reserved for the kernel.
 
-thanks
-Huang Shijie
+Are you withdrawing your objection, then?
+
+David
