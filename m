@@ -1,110 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229AbaIKMty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:49:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13813 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756181AbaIKMsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:48:51 -0400
-Message-ID: <54119A1C.4020501@redhat.com>
-Date: Thu, 11 Sep 2014 08:48:28 -0400
-From: Vlad Yasevich <vyasevic@redhat.com>
-Reply-To: vyasevic@redhat.com
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-CC: akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.2 105/131] net: Correctly set segment mac_len in skb_segment().
-References: <lsq.1410438733.15448606@decadent.org.uk>
-In-Reply-To: <lsq.1410438733.15448606@decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756238AbaIKMub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:50:31 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57118 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185AbaIKMu0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:50:26 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-47-54119a90c4e2
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <54119A90.7080107@samsung.com>
+Date: Thu, 11 Sep 2014 21:50:24 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        dri-devel@lists.freedesktop.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH v2 00/17] drm/exynos/ipp: image post processing fixes and
+ improvements, part four
+References: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1409216861-12452-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkQHfCLMEQg0WfzS1urTvHanHl63s2
+	ixf3LrJYnG16w25xedccNosZ5/cxWaw9cpfdYsbkl2wOHB73u48zefRtWcXo8XmTXABzFJdN
+	SmpOZllqkb5dAlfG7JPfWQo+81dsnHiCuYHxDU8XIyeHhICJxNMXXcwQtpjEhXvr2boYuTiE
+	BJYySuxZ8pcRpmhdw2QWiMQiRokV266xgyR4BQQlfky+xwJiMwuoS0yat4gZwhaReHB1ExOE
+	rS2xbOFrZojmV4wSm1eeYYZo1pLYdrIbzGYRUJX4MrMVrIENyJ644j4biC0qECbx4tUusBoR
+	oAWzT94BG8QscIZJ4uSBNWDnCQukS8w/+wWsWUjAWWL3+c9gNqeAi8TG42/YQRokBI6xSyz8
+	t50VYpuAxLfJh4DO5gBKyEpsOgD1v6TEwRU3WCYwis9C8twsJM/NQvLcLCTPLWBkWcUomlqQ
+	XFCclF5kpFecmFtcmpeul5yfu4kRGKGn/z3r28F484D1IUYBDkYlHt4KFsEQIdbEsuLK3EOM
+	pkAXTWSWEk3OB6aBvJJ4Q2MzIwtTE1NjI3NLMyVx3gSpn8FCAumJJanZqakFqUXxRaU5qcWH
+	GJk4OKUaGMt+Tkgr/3DF4afPxqJGjawjSYZd7p7KH07nP/vJ8UJ1onzonl8fNls83F8wSW7K
+	NGMjtzKXGKUpEbemPf78tluquK3HI5kh4fS8bSdeOkxi2mI6d06Ns9cFG8uLFUd/OHv9zz/Z
+	k3g1yuDpNmW5P5p5i5bv8bW2/Snx/kPf1RXPp6++9u3TNxMlluKMREMt5qLiRAABEPiwywIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jAd0JswRDDJ7/0Le4te4cq8WVr+/Z
+	LF7cu8hicbbpDbvF5V1z2CxmnN/HZLH2yF12ixmTX7I5cHjc7z7O5NG3ZRWjx+dNcgHMUQ2M
+	NhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAJygplCXm
+	lAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM7af/cZU8JC/ovnmWvYGxls8XYyc
+	HBICJhLrGiazQNhiEhfurWfrYuTiEBJYxCixYts1dpAEr4CgxI/J94CKODiYBeQljlzKBgkz
+	C6hLTJq3iBmi/hWjxOaVZ5gh6rUktp3sBrNZBFQlvsxsZQKx2YDsiSvus4HYogJhEi9e7QKr
+	EQEaNPvkHbBBzAJnmCROHljDCJIQFkiXmH/2C1izkICzxO7zn8FsTgEXiY3H37BPYBSYheS+
+	WQj3zUJy3wJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwbH8THoH46oGi0OMAhyMSjy8
+	lSyCIUKsiWXFlbmHGCU4mJVEeG9MBwrxpiRWVqUW5ccXleakFh9iNAX6biKzlGhyPjDN5JXE
+	GxqbmBlZGpkbWhgZmyuJ8x5stQ4UEkhPLEnNTk0tSC2C6WPi4JRqYNR4Iq9iO8HU09ghYO6R
+	RUYapTni3st3Cqt90JJZ3acz++ljW6H17UdVH//tNXJ7G/Y4UtEt7pThzNeazAyBeq92KR15
+	mJTUp6XxZdVjQ7GZqVs9jhx5JFysOD9X/Upp9YXb74zb2ha86Ht15EDJhvMreE/7JmXk661N
+	rAjeUBnsJ1txUuj6NSWW4oxEQy3mouJEABpiE1j7AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 08:32 AM, Ben Hutchings wrote:
-> 3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On 2014년 08월 28일 18:07, Andrzej Hajda wrote:
+> This set of patches contains various improvement and fixes
+> for exynos_drm ipp framework.
+> The patchset is based on exynos-drm-next branch.
 > 
-> ------------------
+> IPP framework was tested for regressions on exynos4210-trats target.
 > 
-> From: Vlad Yasevich <vyasevic@redhat.com>
-> 
-> [ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
-> 
-> When performing segmentation, the mac_len value is copied right
-> out of the original skb.  However, this value is not always set correctly
-> (like when the packet is VLAN-tagged) and we'll end up copying a bad
-> value.
-> 
-> One way to demonstrate this is to configure a VM which tags
-> packets internally and turn off VLAN acceleration on the forwarding
-> bridge port.  The packets show up corrupt like this:
-> 16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-> (0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
->         0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
->         0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
->         0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
->         0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
->         0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
->         0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
->         0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
->         ...
-> 
-> This also leads to awful throughput as GSO packets are dropped and
-> cause retransmissions.
-> 
-> The solution is to set the mac_len using the values already available
-> in then new skb.  We've already adjusted all of the header offset, so we
-> might as well correctly figure out the mac_len using skb_reset_mac_len().
-> After this change, packets are segmented correctly and performance
-> is restored.
-> 
-> CC: Eric Dumazet <edumazet@google.com>
-> Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  net/core/skbuff.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 7121d9b..0ccfb53 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -2669,7 +2669,6 @@ struct sk_buff *skb_segment(struct sk_buff *skb, u32 features)
->  		tail = nskb;
->  
->  		__copy_skb_header(nskb, skb);
-> -		nskb->mac_len = skb->mac_len;
->  
->  		/* nskb and skb might have different headroom */
->  		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-> @@ -2679,6 +2678,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, u32 features)
->  		skb_set_network_header(nskb, skb->mac_len);
->  		nskb->transport_header = (nskb->network_header +
->  					  skb_network_header_len(skb));
-> +		skb_reset_mac_len(nskb);
+> In the 2nd version of the series I have included changes proposed by Joonyoung Shim.
+> I have decided to resend whole series because the changes caused merge conflicts and
+> two separate patches have been added to the series.
+> Changes are described in comit messages.
 
-This will not fix the problem here because the network header above will
-already be set incorrectly based on the old mac_len.
+Applied.
 
-This patch depends on
-commit 030737bcc3c404e273e97dbe06fe9561699a411b
-Author: Eric Dumazet <edumazet@google.com>
-Date:   Sat Oct 19 11:42:54 2013 -0700
+Thanks,
+Inki Dae
 
-    net: generalize skb_segment()
-
-that correctly populates the header offsets in the new segment.
-
--vlad
-
->  		skb_copy_from_linear_data(skb, nskb->data, doffset);
->  
->  		if (fskb != skb_shinfo(skb)->frag_list)
+> 
+> Regards
+> Andrzej
+> 
+> 
+> Andrzej Hajda (17):
+>   drm/exynos/ipp: remove fake pm callbacks
+>   drm/exynos/ipp: cancel works before command node clean
+>   drm/exynos/ipp: move file reference from memory to command node
+>   drm/exynos/ipp: remove only related commands on file close
+>   drm/exynos/ipp: remove unused field in command node
+>   drm/exynos/ipp: free partially allocated resources on error
+>   drm/exynos/ipp: move nodes cleaning to separate function
+>   drm/exynos/ipp: clean memory nodes on command node cleaning
+>   drm/exynos/ipp: replace work_struct casting with better constructs
+>   drm/exynos/ipp: stop hardware before freeing memory
+>   drm/exynos/ipp: remove events during command cleaning
+>   drm/exynos/fimc: avoid clearing overflow bits
+>   drm/exynos/fimc: do not enable fimc twice
+>   drm/exynos/fimc: simplify buffer queuing
+>   drm/exynos/fimc: fix source buffer registers
+>   drm/exynos/ipp: remove file argument from node related functions
+>   drm/exynos/ipp: add file checks for ioctls
+> 
+>  drivers/gpu/drm/exynos/exynos_drm_fimc.c    |  90 ++-----
+>  drivers/gpu/drm/exynos/exynos_drm_gsc.c     |   3 +-
+>  drivers/gpu/drm/exynos/exynos_drm_ipp.c     | 397 ++++++++++++----------------
+>  drivers/gpu/drm/exynos/exynos_drm_ipp.h     |   4 +-
+>  drivers/gpu/drm/exynos/exynos_drm_rotator.c |   3 +-
+>  5 files changed, 195 insertions(+), 302 deletions(-)
 > 
 
