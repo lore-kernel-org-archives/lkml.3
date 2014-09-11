@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756148AbaIKMsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:48:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51606 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755427AbaIKMeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:06 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1756270AbaIKMvk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:51:40 -0400
+Received: from mail.anarazel.de ([217.115.131.40]:42622 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810AbaIKMvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 08:51:37 -0400
+Date: Thu, 11 Sep 2014 14:51:31 +0200
+From: Andres Freund <andres@anarazel.de>
+To: "Alexander Y. Fomichev" <git.user@gmail.com>,
+        Vlad Yasevich <vyasevic@redhat.com>
+Cc: Cong Wang <cwang@twopensource.com>, David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Macvlan WARNiNGS about duplicate sysfs filenames (Was [GIT]
+ Networking)
+Message-ID: <20140911125131.GW24649@awork2.anarazel.de>
+References: <20140907.164109.1944849896872238507.davem@davemloft.net>
+ <20140908212514.GA2348@awork2.anarazel.de>
+ <CAHA+R7NCwhMaWX0Mhr7AqHH4x5RZ6TEEiJB7906yVzQouXD3Lg@mail.gmail.com>
+ <20140909234806.GG24649@awork2.anarazel.de>
+ <20140909235534.GH24649@awork2.anarazel.de>
+ <CAChDUfQtoi2ZeeqdHE_RghyUxdE4TBBOGcnyRmfFTthUVskWpw@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Axel Lin" <axel.lin@ingics.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.478628018@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 056/131] hwmon: (ads1015) Fix out-of-bounds array access
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAChDUfQtoi2ZeeqdHE_RghyUxdE4TBBOGcnyRmfFTthUVskWpw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+On 2014-09-10 13:32:00 +0400, Alexander Y. Fomichev wrote:
+> > I've reproduced the problem on another machine where it's perfectly
+> > reproducible (except being about mv-bond0).
+> 
+> did you mean this is a macvlan which has bond as a real device?
 
-------------------
+Only on the other machine where I tried it. It's not dependent on that.
 
-From: Axel Lin <axel.lin@ingics.com>
+Here's a reproducer running in a stock kernel:
+# ip netns add testns
+# ip link add link eth0 name eth0-mv1 netns testns type macvlan
+# readlink -f /sys/class/net/eth0/upper_eth0-mv1
+/sys/devices/virtual/net/eth0-mv1
+# ls -l /sys/devices/virtual/net/eth0-mv1
+ls: cannot access /sys/devices/virtual/net/eth0-mv1: No such file or directory
+# ip netns exec testns readlink -f /sys/class/net/eth0-mv1/lower_eth0
+/sys/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0
+# ip netns exec testns ls -l /sys/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0
+ls: cannot access /sys/devices/pci0000:00/0000:00:1c.4/0000:03:00.0/net/eth0: No such file or directory
+# ip netns exec testns ip link delete eth0-mv1
+# ip link add link eth0 name eth0-mv1 netns testns type macvlan
+RTNETLINK answers: File exists
 
-commit e981429557cbe10c780fab1c1a237cb832757652 upstream.
+Afaics the behaviour with the broken symlinks is old, and the actual
+root cause for the bug. The new thing is that it causes re-adding the
+same interface to fail.
 
-Current code uses data_rate as array index in ads1015_read_adc() and uses pga
-as array index in ads1015_reg_to_mv, so we must make sure both data_rate and
-pga settings are in valid value range.
-Return -EINVAL if the setting is out-of-range.
+Note that the issue is *not* reproducible when moving the interface into
+the namespace after creation. So I guess that's the problem.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/hwmon/ads1015.c | 2 ++
- 1 file changed, 2 insertions(+)
+> hmm... current implementation of bonding unconditionally
+> refuses to switch ns due to NETIF_F_NETNS_LOCAL flag afaik,
+> macvlan steals flags from lowerdev so it should behave the same.
+> just to clarify: custom patches?
 
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -200,6 +200,7 @@ static int ads1015_get_channels_config_o
- 				dev_err(&client->dev,
- 					"invalid gain on %s\n",
- 					node->full_name);
-+				return -EINVAL;
- 			}
- 		}
- 
-@@ -210,6 +211,7 @@ static int ads1015_get_channels_config_o
- 				dev_err(&client->dev,
- 					"invalid data_rate on %s\n",
- 					node->full_name);
-+				return -EINVAL;
- 			}
- 		}
- 
+No custom patches. And this really isn't related to bonding - the only
+reason bond0 was mentioned was because one of the machines I could
+reboot used bonding. As seen above it's independant of that.
 
+> btw, could i ask you to try attached patch?
+
+I'll try later. Thought it made sense to give you the above reproducer
+alone.
+
+Greetings,
+
+Andres Freund
