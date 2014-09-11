@@ -1,118 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaIKJB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:01:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41925 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752AbaIKJBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:01:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="571645492"
-From: Jani Nikula <jani.nikula@linux.intel.com>
-To: David Herrmann <dh.herrmann@gmail.com>, dri-devel@lists.freedesktop.org
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Bryan Wu <cooloney@gmail.com>,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH RFC 2/4] backlight: use spin-lock to protect device list
-In-Reply-To: <1410364463-12692-3-git-send-email-dh.herrmann@gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com> <1410364463-12692-3-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Notmuch/0.18.1+85~gcca05ac (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 11 Sep 2014 12:00:27 +0300
-Message-ID: <87tx4ecz10.fsf@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753994AbaIKI4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 04:56:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43409 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753913AbaIKI4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 04:56:14 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Johan Hovold <jhovold@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 3/8] rtc: at91sam9: replace devm_ioremap by devm_ioremap_resource
+Date: Thu, 11 Sep 2014 10:56:02 +0200
+Message-Id: <1410425767-17874-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1410425767-17874-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Sep 2014, David Herrmann <dh.herrmann@gmail.com> wrote:
-> There is really no reason to use a mutex to protect a simple list. Convert
-> the list-lock to a simple spinlock instead.
->
-> The spin-locks prepare for a backlight_find() helper, which should
-> preferably be usable from atomic context. A mutex would prevent that, so
-> use an irq-save spinlock instead.
->
-> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Replace devm_ioremap calls by devm_ioremap_resource which already check
+resource consistency (resource != NULL) and print an error in case of
+failure.
 
-Reviewed-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/rtc/rtc-at91sam9.c | 29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
 
-> ---
->  drivers/video/backlight/backlight.c | 16 +++++++++-------
->  1 file changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
-> index 726c6c6..33b64be 100644
-> --- a/drivers/video/backlight/backlight.c
-> +++ b/drivers/video/backlight/backlight.c
-> @@ -16,13 +16,14 @@
->  #include <linux/err.h>
->  #include <linux/fb.h>
->  #include <linux/slab.h>
-> +#include <linux/spinlock.h>
->  
->  #ifdef CONFIG_PMAC_BACKLIGHT
->  #include <asm/backlight.h>
->  #endif
->  
->  static LIST_HEAD(backlight_dev_list);
-> -static DEFINE_MUTEX(backlight_dev_list_mutex);
-> +static DEFINE_SPINLOCK(backlight_dev_list_lock);
->  static BLOCKING_NOTIFIER_HEAD(backlight_notifier);
->  
->  static const char *const backlight_types[] = {
-> @@ -369,9 +370,9 @@ struct backlight_device *backlight_device_register(const char *name,
->  	mutex_unlock(&pmac_backlight_mutex);
->  #endif
->  
-> -	mutex_lock(&backlight_dev_list_mutex);
-> +	spin_lock_irq(&backlight_dev_list_lock);
->  	list_add(&new_bd->entry, &backlight_dev_list);
-> -	mutex_unlock(&backlight_dev_list_mutex);
-> +	spin_unlock_irq(&backlight_dev_list_lock);
->  
->  	blocking_notifier_call_chain(&backlight_notifier,
->  				     BACKLIGHT_REGISTERED, new_bd);
-> @@ -384,15 +385,16 @@ bool backlight_device_registered(enum backlight_type type)
->  {
->  	bool found = false;
->  	struct backlight_device *bd;
-> +	unsigned long flags;
->  
-> -	mutex_lock(&backlight_dev_list_mutex);
-> +	spin_lock_irqsave(&backlight_dev_list_lock, flags);
->  	list_for_each_entry(bd, &backlight_dev_list, entry) {
->  		if (bd->props.type == type) {
->  			found = true;
->  			break;
->  		}
->  	}
-> -	mutex_unlock(&backlight_dev_list_mutex);
-> +	spin_unlock_irqrestore(&backlight_dev_list_lock, flags);
->  
->  	return found;
->  }
-> @@ -409,9 +411,9 @@ void backlight_device_unregister(struct backlight_device *bd)
->  	if (!bd)
->  		return;
->  
-> -	mutex_lock(&backlight_dev_list_mutex);
-> +	spin_lock_irq(&backlight_dev_list_lock);
->  	list_del(&bd->entry);
-> -	mutex_unlock(&backlight_dev_list_mutex);
-> +	spin_unlock_irq(&backlight_dev_list_lock);
->  
->  #ifdef CONFIG_PMAC_BACKLIGHT
->  	mutex_lock(&pmac_backlight_mutex);
-> -- 
-> 2.1.0
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 74a9ca0..38a2693 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -306,18 +306,11 @@ static const struct rtc_class_ops at91_rtc_ops = {
+  */
+ static int at91_rtc_probe(struct platform_device *pdev)
+ {
+-	struct resource	*r, *r_gpbr;
++	struct resource	*r;
+ 	struct sam9_rtc	*rtc;
+ 	int		ret, irq;
+ 	u32		mr;
+ 
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	r_gpbr = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	if (!r || !r_gpbr) {
+-		dev_err(&pdev->dev, "need 2 ressources\n");
+-		return -ENODEV;
+-	}
+-
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "failed to get interrupt resource\n");
+@@ -335,18 +328,16 @@ static int at91_rtc_probe(struct platform_device *pdev)
+ 		device_init_wakeup(&pdev->dev, 1);
+ 
+ 	platform_set_drvdata(pdev, rtc);
+-	rtc->rtt = devm_ioremap(&pdev->dev, r->start, resource_size(r));
+-	if (!rtc->rtt) {
+-		dev_err(&pdev->dev, "failed to map registers, aborting.\n");
+-		return -ENOMEM;
+-	}
+ 
+-	rtc->gpbr = devm_ioremap(&pdev->dev, r_gpbr->start,
+-				resource_size(r_gpbr));
+-	if (!rtc->gpbr) {
+-		dev_err(&pdev->dev, "failed to map gpbr registers, aborting.\n");
+-		return -ENOMEM;
+-	}
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	rtc->rtt = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(rtc->rtt))
++		return PTR_ERR(rtc->rtt);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
++	if (IS_ERR(rtc->gpbr))
++		return PTR_ERR(rtc->rtt);
+ 
+ 	mr = rtt_readl(rtc, MR);
+ 
 -- 
-Jani Nikula, Intel Open Source Technology Center
+1.9.1
+
