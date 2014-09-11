@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaIKKH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:07:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55151 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaIKKHY (ORCPT
+	id S1754139AbaIKKJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:09:51 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:43806 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaIKKJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:07:24 -0400
-Date: Thu, 11 Sep 2014 12:07:21 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        riel@redhat.com, Morten.Rasmussen@arm.com, efault@gmx.de,
-        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
-        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com
-Subject: Re: [PATCH v5 08/12] sched: move cfs task on a CPU with higher
- capacity
-Message-ID: <20140911100721.GT3190@worktop.ger.corp.intel.com>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
+	Thu, 11 Sep 2014 06:09:49 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <dsd@gentoo.org>
+CC: <kune@deine-taler.de>, <linux-wireless@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH v2] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
+Date: Thu, 11 Sep 2014 15:39:39 +0530
+Message-ID: <1410430179-19944-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1410418407.1825.0.camel@jlt4.sipsolutions.net>
+References: <1410418407.1825.0.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409051215-16788-9-git-send-email-vincent.guittot@linaro.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 01:06:51PM +0200, Vincent Guittot wrote:
+on some architecture spin_is_locked() always return false in
+uniprocessor configuration and therefore it would be advise
+to replace with lockdep_assert_held().
 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 18db43e..60ae1ce 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -6049,6 +6049,14 @@ static bool update_sd_pick_busiest(struct lb_env *env,
->  			return true;
->  	}
->  
-> +	/*
-> +	 * The group capacity is reduced probably because of activity from other
-> +	 * sched class or interrupts which use part of the available capacity
-> +	 */
-> +	if ((sg->sgc->capacity_orig * 100) > (sgs->group_capacity *
-> +				env->sd->imbalance_pct))
-> +		return true;
-> +
->  	return false;
->  }
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+Changes in v2:
+  - corrected the typo
 
-This is unlikely to have worked as intended. You will never reach this,
-except on PowerPC >= 7. All other machines will have bailed at the
-!ASYM_PACKING check above this.
+ drivers/net/wireless/zd1211rw/zd_mac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/zd1211rw/zd_mac.c b/drivers/net/wireless/zd1211rw/zd_mac.c
+index e7af261..adce2ee 100644
+--- a/drivers/net/wireless/zd1211rw/zd_mac.c
++++ b/drivers/net/wireless/zd1211rw/zd_mac.c
+@@ -235,7 +235,7 @@ void zd_mac_clear(struct zd_mac *mac)
+ {
+ 	flush_workqueue(zd_workqueue);
+ 	zd_chip_clear(&mac->chip);
+-	ZD_ASSERT(!spin_is_locked(&mac->lock));
++	lockdep_assert_held(&mac->lock);
+ 	ZD_MEMCLEAR(mac, sizeof(struct zd_mac));
+ }
+ 
+-- 
+1.7.11.7
+
