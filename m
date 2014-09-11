@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaIKOtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:49:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41665 "EHLO
+	id S1755995AbaIKOth (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:49:37 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:22696 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752434AbaIKOtK (ORCPT
+	by vger.kernel.org with ESMTP id S1752022AbaIKOtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:49:10 -0400
-Message-Id: <20140911144908.056256622@goodmis.org>
+	Thu, 11 Sep 2014 10:49:13 -0400
+Message-Id: <20140911144909.070571056@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 11 Sep 2014 10:47:47 -0400
+Date: Thu, 11 Sep 2014 10:47:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 3/9] ftrace: Set callback to ftrace_stub when no ops are registered
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Subject: [for-next][PATCH 9/9] kernel: trace_syscalls: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
 References: <20140911144744.907770249@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0003-ftrace-Set-callback-to-ftrace_stub-when-no-ops-are-r.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0009-kernel-trace_syscalls-Replace-rcu_assign_pointer-wit.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 
-The clean up that adds the helper function ftrace_ops_get_func()
-caused the default function to not change when DYNAMIC_FTRACE was not
-set and no ftrace_ops were registered. Although static tracing is
-not very useful (not having DYNAMIC_FTRACE set), it is still supported
-and we don't want to break it.
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
-Clean up the if statement even more to specifically have the default
-function call ftrace_stub when no ftrace_ops are registered. This
-fixes the small bug for static tracing as well as makes the code a
-bit more understandable.
+The following Coccinelle semantic patch was used:
+@@
+@@
 
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Link: http://lkml.kernel.org/p/20140822142822.GA32391@ada
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ kernel/trace/trace_syscalls.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index dabf734f909c..708aea493d96 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -254,17 +254,24 @@ static void update_ftrace_function(void)
- 	ftrace_func_t func;
- 
- 	/*
-+	 * Prepare the ftrace_ops that the arch callback will use.
-+	 * If there's only one ftrace_ops registered, the ftrace_ops_list
-+	 * will point to the ops we want.
-+	 */
-+	set_function_trace_op = ftrace_ops_list;
-+
-+	/* If there's no ftrace_ops registered, just call the stub function */
-+	if (ftrace_ops_list == &ftrace_list_end) {
-+		func = ftrace_stub;
-+
-+	/*
- 	 * If we are at the end of the list and this ops is
- 	 * recursion safe and not dynamic and the arch supports passing ops,
- 	 * then have the mcount trampoline call the function directly.
- 	 */
--	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list->next == &ftrace_list_end)) {
--
--		/* Set the ftrace_ops that the arch callback uses */
--		set_function_trace_op = ftrace_ops_list;
--
-+	} else if (ftrace_ops_list->next == &ftrace_list_end) {
- 		func = ftrace_ops_get_func(ftrace_ops_list);
-+
- 	} else {
- 		/* Just use the default ftrace_ops */
- 		set_function_trace_op = &ftrace_list_end;
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 759d5e004517..4dc8b79c5f75 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_enter--;
+-	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_enter)
+ 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+@@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_exit--;
+-	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_exit)
+ 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	mutex_unlock(&syscall_trace_lock);
 -- 
 2.0.1
 
