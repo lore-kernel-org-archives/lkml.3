@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaIKW1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 18:27:53 -0400
-Received: from mga14.intel.com ([192.55.52.115]:29417 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751605AbaIKW1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 18:27:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="384978831"
-Date: Thu, 11 Sep 2014 15:26:50 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Mark Brown <broonie@debian.org>
-Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH 3/4] regulator/axp20x: use axp2xx consolidated header
-Message-ID: <20140911152650.74767024@ultegra>
-In-Reply-To: <20140909112516.GR2601@sirena.org.uk>
-References: <1410215046-31751-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1410215046-31751-4-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20140909112516.GR2601@sirena.org.uk>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754095AbaIKW3e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 18:29:34 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:64308 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536AbaIKW3b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 18:29:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
+References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
+	<541013CE.6020307@redhat.com>
+	<CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
+	<5411FC42.3070505@redhat.com>
+	<CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
+	<CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
+Date: Thu, 11 Sep 2014 15:29:30 -0700
+Message-ID: <CAMEtUuyzOgCZutgsAXs60BO0=0WJGpVAeTYN2hf0Bh1sZ5PMVg@mail.gmail.com>
+Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014 12:25:16 +0100
-Mark Brown <broonie@debian.org> wrote:
+On Thu, Sep 11, 2014 at 2:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>
+>> the verifier log contains full trace. Last unsafe instruction + error
+>> in many cases is useless. What we found empirically from using
+>> it over last 2 years is that developers have different learning curve
+>> to adjust to 'safe' style of C. Pretty much everyone couldn't
+>> figure out why program is rejected based on last error. Therefore
+>> verifier emits full log. From the 1st insn all the way till the last
+>> 'unsafe' instruction. So the log is multiline output.
+>> 'Understanding eBPF verifier messages' section of
+>> Documentation/networking/filter.txt provides few trivial
+>> examples of these multiline messages.
+>> Like for the program:
+>>   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
+>>   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
+>>   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
+>>   BPF_LD_MAP_FD(BPF_REG_1, 0),
+>>   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
+>>   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
+>>   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
+>>   BPF_EXIT_INSN(),
+>> the verifier log_buf is:
+>>   0: (7a) *(u64 *)(r10 -8) = 0
+>>   1: (bf) r2 = r10
+>>   2: (07) r2 += -8
+>>   3: (b7) r1 = 0
+>>   4: (85) call 1
+>>   5: (15) if r0 == 0x0 goto pc+1
+>>    R0=map_ptr R10=fp
+>>   6: (7a) *(u64 *)(r0 +4) = 0
+>>   misaligned access off 4 size 8
+>>
+>> It will surely change over time as verifier becomes smarter,
+>> supports new types, optimizations and so on.
+>> So this log is not an ABI. It's for humans to read.
+>> The log explains _how_ verifier came to conclusion
+>> that the program is unsafe.
+>
+> Given that you've already arranged (I think) for the verifier to be
+> compilable in the kernel and in userspace, would it make more sense to
+> have the kernel version just say yes or no and to make it easy for
+> user code to retry verification in userspace if they want a full
+> explanation?
 
-> On Mon, Sep 08, 2014 at 03:24:05PM -0700, Jacob Pan wrote:
-> > AXP20x driver has been extended to support axp288 variant. Header
-> > file and common data structures has also been renamed to suit the
-> > new scope of devices supported.
-> > 
-> > This patch makes use of the renamed header and structure.
-> 
-> > -#include <linux/mfd/axp20x.h>
-> > +#include <linux/mfd/axp2xx.h>
-> 
-> Acked-by: Mark Brown <broonie@kernel.org>
-> 
-> but is it really worth the effort of renaming everything?  That's
-> going to cause problems for things like the stable workflow.
+Good memory :) Long ago I had a hack where I compiled
+verifier.o for kernel and linked it with userspace wrappers to
+have the same verifier for userspace. It was very fragile.
+and maps were not separate objects and there were no fds.
+It's not feasible anymore, since different subsystems
+will configure different bpf_context and helper functions and
+verifier output is dynamic based on maps that were created.
+For example, if user's samples/bpf/sock_example.c does
+bpf_create_map(HASH, sizeof(key) * 2, ...);
+instead of
+bpf_create_map(HASH, sizeof(key), ...);
+the same program will be rejected in first case and will be
+accepted in the second, because map sizes and ebpf
+program expectations are mismatching.
+For the 1st case verifier will complain that program is
+trying to pass uninitialized stack into bpf_lookup(key,...)
+method or stack may be out of bounds.
+Human insight is needed to understand what is going on.
 
-sorry for the late reply. IMHO, consistent and correct naming has
-longer term benefit. how can i help to make the stable workflow easier?
+I think more important is that source of truth needs to be
+in one place == kernel. If we have two verifiers they will
+diverge sooner or later and cause confusion for users.
+I think as long as we document that verifier log
+messages are not cast in stone and will change, we're fine.
+I consider them as continuation of compiler warnings/errors.
+They are meant for humans and do change from time to time.
