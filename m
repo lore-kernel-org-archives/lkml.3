@@ -1,121 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaIKVyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:54:33 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:48621 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaIKVyb (ORCPT
+	id S1752655AbaIKV7N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 17:59:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43030 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaIKV7K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 17:54:31 -0400
+	Thu, 11 Sep 2014 17:59:10 -0400
+Message-ID: <54121B2C.5090702@codeaurora.org>
+Date: Thu, 11 Sep 2014 14:59:08 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
- <541013CE.6020307@redhat.com> <CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
- <5411FC42.3070505@redhat.com> <CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 11 Sep 2014 14:54:09 -0700
-Message-ID: <CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: a case for a common efuse API?
+References: <53BC4DD7.20906@codeaurora.org> <20140709083509.GQ13423@lukather> <53BDD0F3.7040906@codeaurora.org> <20140710142616.GD27469@lukather>
+In-Reply-To: <20140710142616.GD27469@lukather>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 1:33 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Thu, Sep 11, 2014 at 12:47 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> On 09/10/2014 07:32 PM, Alexei Starovoitov wrote:
->>>
->>> On Wed, Sep 10, 2014 at 2:03 AM, Daniel Borkmann <dborkman@redhat.com>
->>> wrote:
->>>>>
->>>>>              struct { /* anonymous struct used by BPF_PROG_LOAD command
->>>>> */
->>>>>                  enum bpf_prog_type    prog_type;
->>>>>                  __u32                 insn_cnt;
->>>>>                  const struct bpf_insn *insns;
->>>>>                  const char            *license;
->>>>>                  __u32                 log_level; /* verbosity level of
->>>>> eBPF verifier */
->>>>>                  __u32                 log_size;  /* size of user buffer
->>>>> */
->>>>>                  void                  *log_buf;  /* user supplied
->>>>> buffer
->>>>> */
->>>>
->>>>
->>>>
->>>> What is log buffer? Would that mean the verifier will return an error
->>>> string if the program will not pass it, or if not, what other data?
->>>> I think the man page is missing how to examine the returned verifier
->>>> log buffer data.
->>>
->>>
->>> yes. it's an error log (as text string for humans) from verifier.
->>
->> I was confused due to the void pointer. But that also means that the text
+On 07/10/14 07:26, Maxime Ripard wrote:
 >
-> ahh. ok. will change it to 'char *' then.
+> I guess that the kind of things we could discuss after posting these
+> patches, but yep, it looks reasonnable.
 >
->> string becomes part of the ABI; aren't eBPF specific error codes (perhaps
->> a tuple of [line + error code]), though ugly as well, but perhaps the better
->> solution to this [which user space can then map to an actual string]?
+> I'll try to get things a bit cleaner, and post them in the next days.
 >
-> the verifier log contains full trace. Last unsafe instruction + error
-> in many cases is useless. What we found empirically from using
-> it over last 2 years is that developers have different learning curve
-> to adjust to 'safe' style of C. Pretty much everyone couldn't
-> figure out why program is rejected based on last error. Therefore
-> verifier emits full log. From the 1st insn all the way till the last
-> 'unsafe' instruction. So the log is multiline output.
-> 'Understanding eBPF verifier messages' section of
-> Documentation/networking/filter.txt provides few trivial
-> examples of these multiline messages.
-> Like for the program:
->   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
->   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
->   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
->   BPF_LD_MAP_FD(BPF_REG_1, 0),
->   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
->   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
->   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
->   BPF_EXIT_INSN(),
-> the verifier log_buf is:
->   0: (7a) *(u64 *)(r10 -8) = 0
->   1: (bf) r2 = r10
->   2: (07) r2 += -8
->   3: (b7) r1 = 0
->   4: (85) call 1
->   5: (15) if r0 == 0x0 goto pc+1
->    R0=map_ptr R10=fp
->   6: (7a) *(u64 *)(r0 +4) = 0
->   misaligned access off 4 size 8
->
-> It will surely change over time as verifier becomes smarter,
-> supports new types, optimizations and so on.
-> So this log is not an ABI. It's for humans to read.
-> The log explains _how_ verifier came to conclusion
-> that the program is unsafe.
 
-Given that you've already arranged (I think) for the verifier to be
-compilable in the kernel and in userspace, would it make more sense to
-have the kernel version just say yes or no and to make it easy for
-user code to retry verification in userspace if they want a full
-explanation?
+I never saw anything. Did you do any cleaning/posting? I'm going to try
+it out today/tomorrow to see if it can make some things cleaner.
 
---Andy
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
