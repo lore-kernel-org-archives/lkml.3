@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058AbaIKPCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:02:51 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54052 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754636AbaIKPCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:02:49 -0400
-Date: Thu, 11 Sep 2014 16:02:12 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Yang Yingliang <yangyingliang@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v2] arm64: add guard macros of unistd.h to prevent double
- inclusion
-Message-ID: <20140911150212.GP6158@arm.com>
-References: <1410235185-16652-1-git-send-email-yangyingliang@huawei.com>
- <20140909123938.GL1754@arm.com>
- <54115583.8080306@huawei.com>
- <5411698E.3000402@huawei.com>
+	id S1755430AbaIKPEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:04:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42616 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753507AbaIKPEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:04:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
+   d="scan'208";a="601495794"
+Message-ID: <5411B9BD.2000900@intel.com>
+Date: Thu, 11 Sep 2014 08:03:25 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5411698E.3000402@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com>
+In-Reply-To: <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 10:21:18AM +0100, Yang Yingliang wrote:
-> From: Yang Yingliang <yangyingliang@huawei.com>
-> 
-> Add guard macros for uapi/asm/unistd.h, asm/unistd.h and
-> asm/unistd32.h.
+On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
+> +
+> +	return (void __user *)(unsigned long)(xsave_buf->bndcsr.cfg_reg_u &
+> +			MPX_BNDCFG_ADDR_MASK);
+> +}
 
-Hmm, so I applied this and now my machine panics when we hit userspace. I
-think the issue is that we no longer generate our syscall table in
-arch/arm64/kernel/sys.c, because unistd.h is already included via
-linux/syscalls.h but without the __SYSCALL definition.
-
-So, a couple of questions:
-
-  (1) Is the lack of header guards actually causing you a problem?
-  (2) How did you test this?
-
-I've dropped the patch.
-
-Will
+I don't think casting a u64 to a ulong, then to a pointer is useful.
+Just take the '(unsigned long)' out.
