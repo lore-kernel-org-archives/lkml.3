@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043AbaIKNVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:21:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45982 "EHLO
+	id S1757149AbaIKNXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:23:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:45960 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757003AbaIKNVw (ORCPT
+	with ESMTP id S1756987AbaIKNVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:21:52 -0400
+	Thu, 11 Sep 2014 09:21:44 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -20,9 +20,9 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v4 7/9] rtc: at91sam9: use clk API instead of relying on AT91_SLOW_CLOCK
-Date: Thu, 11 Sep 2014 15:18:43 +0200
-Message-Id: <1410441525-25258-8-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v4 5/9] rtc: at91sam9: make use of syscon/regmap to access GPBR registers
+Date: Thu, 11 Sep 2014 15:18:41 +0200
+Message-Id: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -30,95 +30,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RTT block is using the slow clock which is accessible through the clk
-API.
-Use the clk API to retrieve, enable and get the slow clk rate instead of
-the AT91_SLOW_CLOCK macro (which hardcodes the slow clk rate).
-Doing this allows us to reference the clk thus preventing the CCF from
-disabling it during the "disable unused" phase.
+The GPBR registers are not part of the RTT block and thus should not be
+defined in the reg property of the rtt node.
+
+Use syscon to provide a proper DT representation and reference the GPBR
+syscon device in a new "atmel,time-reg" property which store both the
+syscon device phandle and the register offset within the GPBR block.
+
+When using non DT boards, we won't be able to retrieve the syscon regmap,
+hence we need to create our own regmap using the memory region defined
+in the 2nd memory resource assigned to the RTT platform device.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/rtc/rtc-at91sam9.c | 28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ drivers/rtc/Kconfig        |  1 +
+ drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 51 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index a168e96..7d76da8 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
+ config RTC_DRV_AT91SAM9
+ 	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
+ 	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
++	select MFD_SYSCON
+ 	help
+ 	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
+ 	  (Real Time Timer). These timers are powered by the backup power
 diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-index e1b7109..f4e5c93 100644
+index d72c34d..e1b7109 100644
 --- a/drivers/rtc/rtc-at91sam9.c
 +++ b/drivers/rtc/rtc-at91sam9.c
-@@ -23,6 +23,7 @@
+@@ -21,6 +21,8 @@
+ #include <linux/slab.h>
+ #include <linux/platform_data/atmel.h>
  #include <linux/io.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/clk.h>
++#include <linux/mfd/syscon.h>
++#include <linux/regmap.h>
  
  /*
   * This driver uses two configurable hardware resources that live in the
-@@ -61,8 +62,6 @@
- #define AT91_RTT_ALMS		(1 << 0)		/* Real-time Alarm Status */
- #define AT91_RTT_RTTINC		(1 << 1)		/* Real-time Timer Increment */
- 
--#define AT91_SLOW_CLOCK		32768
--
- /*
-  * We store ALARM_DISABLED in ALMV to record that no alarm is set.
-  * It's also the reset value for that field.
-@@ -77,6 +76,7 @@ struct sam9_rtc {
- 	struct regmap		*gpbr;
- 	unsigned int		gpbr_offset;
+@@ -72,7 +74,8 @@ struct sam9_rtc {
+ 	void __iomem		*rtt;
+ 	struct rtc_device	*rtcdev;
+ 	u32			imr;
+-	void __iomem		*gpbr;
++	struct regmap		*gpbr;
++	unsigned int		gpbr_offset;
  	int 			irq;
-+	struct clk		*sclk;
  };
  
- #define rtt_readl(rtc, field) \
-@@ -328,6 +328,7 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 	struct sam9_rtc	*rtc;
- 	int		ret, irq;
- 	u32		mr;
-+	unsigned int	sclk_rate;
+@@ -81,10 +84,19 @@ struct sam9_rtc {
+ #define rtt_writel(rtc, field, val) \
+ 	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
  
- 	irq = platform_get_irq(pdev, 0);
- 	if (irq < 0) {
-@@ -380,11 +381,27 @@ static int at91_rtc_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	rtc->sclk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(rtc->sclk))
-+		return PTR_ERR(rtc->sclk);
+-#define gpbr_readl(rtc) \
+-	readl((rtc)->gpbr)
+-#define gpbr_writel(rtc, val) \
+-	writel((val), (rtc)->gpbr)
++static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
++{
++	unsigned int val;
 +
-+	sclk_rate = clk_get_rate(rtc->sclk);
-+	if (!sclk_rate || sclk_rate > AT91_RTT_RTTRST) {
-+		dev_err(&pdev->dev, "Invalid slow clock rate");
-+		return -EINVAL;
++	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
++
++	return val;
++}
++
++static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
++{
++	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
++}
+ 
+ /*
+  * Read current time and date in RTC
+@@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
+ 	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
+ };
+ 
++static struct regmap_config gpbr_regmap_config = {
++	.reg_bits = 32,
++	.val_bits = 32,
++	.reg_stride = 4,
++};
++
+ /*
+  * Initialize and install RTC driver
+  */
+@@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
+ 	if (IS_ERR(rtc->rtt))
+ 		return PTR_ERR(rtc->rtt);
+ 
+-	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+-	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
+-	if (IS_ERR(rtc->gpbr))
+-		return PTR_ERR(rtc->rtt);
++	if (!pdev->dev.of_node) {
++		void __iomem *gpbr;
++
++		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++		gpbr = devm_ioremap_resource(&pdev->dev, r);
++		if (IS_ERR(gpbr))
++			return PTR_ERR(gpbr);
++
++		rtc->gpbr = regmap_init_mmio(NULL, gpbr,
++					     &gpbr_regmap_config);
++	} else {
++		struct of_phandle_args args;
++
++		ret = of_parse_phandle_with_fixed_args(pdev->dev.of_node,
++						       "atmel,time-reg", 1, 0,
++						       &args);
++		if (ret)
++			return ret;
++
++		rtc->gpbr = syscon_node_to_regmap(args.np);
++		rtc->gpbr_offset = args.args[0];
 +	}
 +
-+	ret = clk_prepare_enable(rtc->sclk);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Could not enable slow clock");
-+		return ret;
++	if (IS_ERR(rtc->gpbr)) {
++		dev_err(&pdev->dev, "failed to retrieve gpbr regmap, aborting.\n");
++		return -ENOMEM;
 +	}
-+
+ 
  	mr = rtt_readl(rtc, MR);
- 
- 	/* unless RTT is counting at 1 Hz, re-initialize it */
--	if ((mr & AT91_RTT_RTPRES) != AT91_SLOW_CLOCK) {
--		mr = AT91_RTT_RTTRST | (AT91_SLOW_CLOCK & AT91_RTT_RTPRES);
-+	if ((mr & AT91_RTT_RTPRES) != sclk_rate) {
-+		mr = AT91_RTT_RTTRST | (sclk_rate & AT91_RTT_RTPRES);
- 		gpbr_writel(rtc, 0);
- 	}
- 
-@@ -429,6 +446,9 @@ static int at91_rtc_remove(struct platform_device *pdev)
- 	/* disable all interrupts */
- 	rtt_writel(rtc, MR, mr & ~(AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN));
- 
-+	if (!IS_ERR(rtc->sclk))
-+		clk_disable_unprepare(rtc->sclk);
-+
- 	return 0;
- }
  
 -- 
 1.9.1
