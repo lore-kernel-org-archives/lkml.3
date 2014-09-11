@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaIKHSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 03:18:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6292 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaIKHSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 03:18:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,504,1406617200"; 
-   d="scan'208";a="601305817"
-Message-ID: <54114CA4.9030503@linux.intel.com>
-Date: Thu, 11 Sep 2014 15:17:56 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752519AbaIKHS7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 03:18:59 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:33348 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaIKHS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 03:18:57 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8B7HuOo004708, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 1/2] mfd: rtsx: fix PM suspend for 5227
+Date: Thu, 11 Sep 2014 15:17:52 +0800
+Message-ID: <c13c93e9f5fca1a46df2b141899d50c13b28aaa0.1410330111.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1410330111.git.micky_ching@realsil.com.cn>
+References: <cover.1410330111.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        x86@kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Prarit Bhargava <prarit@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-pm@vger.kernel.org
-Subject: Re: [Patch v4 14/16] x86, irq: Introduce helper to check whether
- an IOAPIC has been registered
-References: <1409192561-19744-1-git-send-email-jiang.liu@linux.intel.com> <1409192561-19744-15-git-send-email-jiang.liu@linux.intel.com> <alpine.DEB.2.10.1409091433150.11037@nanos> <540FBB93.4020509@linux.intel.com> <alpine.DEB.2.10.1409102206300.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409102206300.4178@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Micky Ching <micky_ching@realsil.com.cn>
 
+Fix rts5227 failed send buffer cmd after suspend,
+PM_CTRL3 should reset before send any buffer cmd after suspend.
+Otherwise, buffer cmd will failed, this will lead resume fail.
 
-On 2014/9/11 4:08, Thomas Gleixner wrote:
-> On Wed, 10 Sep 2014, Jiang Liu wrote:
->> On 2014/9/9 20:37, Thomas Gleixner wrote:
->>>> +	ret  = mp_ioapic_registered(gsi_base);
->>>> +	up_write(&acpi_ioapic_rwsem);
->>>> +
->>>> +	return ret;
->>>> +}
->>>
->>> So I assume that this is for a particular caller in the apci ioapic
->>> hotplug code and that call site has its own serialization. Otherwise
->>> the return value is not protected at all.
->>>
->>> Please add a Docbook comment to that function, and document the
->>> locking rules as thats pretty non obvious.
->> How about this comments about locking rules?
->> /*
->>  * Locks related to IOAPIC hotplug
->>  * Hotplug side:
->>  *      ->lock_device_hotplug() //device_hotplug_lock
->>  *              ->acpi_ioapic_rwsem
->>  *                      ->ioapic_lock
->>  * Interrupt mapping side:
->>  *      ->acpi_ioapic_rwsem
->>  *              ->ioapic_mutex
->>  *                      ->ioapic_lock
->>  */
-> 
-> That looks asymetric. Why is the hotplug side not taking ioapic_mutex?
-Hi Thomas,
-	We decide to protect system from IOAPIC hotplug in the ACPI
-layer. For ACPI enumerated IOAPICs, ioapic_mutex is redundant and
-it's used to protect MPPARSE, SFI, OF enumerated IOAPICs.
-Regards!
-Gerry
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mfd/rts5227.c        |   23 +++++++++++++++++++++++
+ include/linux/mfd/rtsx_pci.h |   13 +++++++++++++
+ 2 files changed, 36 insertions(+)
 
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 9c8eec8..3d4998e 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -128,8 +128,31 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+
++static int rts5227_pm_reset(struct rtsx_pcr *pcr)
++{
++	int err;
++
++	/* init aspm */
++	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
++	if (err < 0)
++		return err;
++
++	/* reset PM_CTRL3 before send buffer cmd */
++	err = rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
++	if (err < 0)
++		return err;
++
++	return err;
++}
++
+ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+ {
++	int err;
++
++	err = rts5227_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	/* Optimize RX sensitivity */
+ 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+ }
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 74346d5..037fbc5 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -967,4 +967,17 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+ 	return (u8 *)(pcr->host_cmds_ptr);
+ }
+
++static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
++		u8 mask, u8 append)
++{
++	int err;
++	u8 val;
++
++	err = pci_read_config_byte(pcr->pci, addr, &val);
++	if (err)
++		return err;
++	err = pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
++	return err;
++}
++
+ #endif
+--
+1.7.9.5
