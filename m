@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134AbaIKQTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:19:33 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:29047 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630AbaIKQTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:19:32 -0400
-Message-ID: <5411CB8F.4070006@atmel.com>
-Date: Thu, 11 Sep 2014 18:19:27 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757188AbaIKQUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:20:08 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42304 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751091AbaIKQUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:20:06 -0400
+Date: Thu, 11 Sep 2014 09:19:31 -0700
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Baoquan He <bhe@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Pavel Machek <pavel@ucw.cz>
+Subject: [PATCH] x86, kaslr: avoid setup_data when picking location
+Message-ID: <20140911161931.GA12001@www.outflux.net>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] ARM: at91: add sama5d4 support to sama5_defconfig
-References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com> <1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1410450852-1834-8-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 17:54, Alexandre Belloni :
-> Add sama5d4 to sama5_defconfig to build kernel booting on both sama5d3 and
-> samad4.
-> 
-> Note that earlyprintk can only be working for one or the other.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/configs/sama5_defconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
-> index 96c15b775d57..a6c2409c4e14 100644
-> --- a/arch/arm/configs/sama5_defconfig
-> +++ b/arch/arm/configs/sama5_defconfig
-> @@ -19,6 +19,7 @@ CONFIG_MODULE_FORCE_UNLOAD=y
->  CONFIG_ARCH_AT91=y
->  CONFIG_SOC_SAM_V7=y
->  CONFIG_SOC_SAMA5D3=y
-> +CONFIG_SOC_SAMA5D4=y
->  CONFIG_MACH_SAMA5_DT=y
->  CONFIG_AEABI=y
->  CONFIG_UACCESS_WITH_MEMCPY=y
-> @@ -66,7 +67,6 @@ CONFIG_MTD=y
->  CONFIG_MTD_CMDLINE_PARTS=y
->  CONFIG_MTD_BLOCK=y
->  CONFIG_MTD_CFI=y
-> -CONFIG_MTD_M25P80=y
+The KASLR location-choosing logic needs to avoid the setup_data list
+memory areas as well. Without this, it would be possible to have the
+ASLR position stomp on the memory, ultimately causing the boot to fail.
 
-Well I would keep this one...
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Tested-by: Baoquan He <bhe@redhat.com>
+Cc: stable@vger.kernel.org
+---
+ arch/x86/boot/compressed/aslr.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
->  CONFIG_MTD_NAND=y
->  CONFIG_MTD_NAND_ATMEL=y
->  CONFIG_MTD_SPI_NOR=y
-> 
+diff --git a/arch/x86/boot/compressed/aslr.c b/arch/x86/boot/compressed/aslr.c
+index fc6091abedb7..d39189ba7f8e 100644
+--- a/arch/x86/boot/compressed/aslr.c
++++ b/arch/x86/boot/compressed/aslr.c
+@@ -183,12 +183,27 @@ static void mem_avoid_init(unsigned long input, unsigned long input_size,
+ static bool mem_avoid_overlap(struct mem_vector *img)
+ {
+ 	int i;
++	struct setup_data *ptr;
+ 
+ 	for (i = 0; i < MEM_AVOID_MAX; i++) {
+ 		if (mem_overlaps(img, &mem_avoid[i]))
+ 			return true;
+ 	}
+ 
++	/* Avoid all entries in the setup_data linked list. */
++	ptr = (struct setup_data *)(unsigned long)real_mode->hdr.setup_data;
++	while (ptr) {
++		struct mem_vector avoid;
++
++		avoid.start = (u64)ptr;
++		avoid.size = sizeof(*ptr) + ptr->len;
++
++		if (mem_overlaps(img, &avoid))
++			return true;
++
++		ptr = (struct setup_data *)(unsigned long)ptr->next;
++	}
++
+ 	return false;
+ }
+ 
+-- 
+1.9.1
 
 
 -- 
-Nicolas Ferre
+Kees Cook
+Chrome OS Security
