@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572AbaIKNA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51518 "EHLO
+	id S1755393AbaIKNAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51528 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755380AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755023AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,22 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.939697826@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Borislav Petkov" <bp@alien8.de>,
+        "comex" <comexk@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Alexander van Heukelum" <heukelum@fastmail.fm>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Arjan van de Ven" <arjan.van.de.ven@intel.com>,
+        "Dirk Hohndel" <dirk@hohndel.org>, "Brian Gerst" <brgerst@gmail.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Andrew Lutomriski" <amluto@gmail.com>
+Date: Thu, 11 Sep 2014 13:32:14 +0100
+Message-ID: <lsq.1410438734.986536040@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 099/131] inetpeer: get rid of ip_id_count
+Subject: [PATCH 3.2 124/131] x86-64, espfix: Don't leak bits 31:16 of %esp
+ returning  to 16-bit stack
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,547 +41,593 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-[ Upstream commit 73f156a6e8c1074ac6327e0abd1169e95eb66463 ]
+commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
 
-Ideally, we would need to generate IP ID using a per destination IP
-generator.
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  This
+causes some 16-bit software to break, but it also leaks kernel state
+to user space.  We have a software workaround for that ("espfix") for
+the 32-bit kernel, but it relies on a nonzero stack segment base which
+is not available in 64-bit mode.
 
-linux kernels used inet_peer cache for this purpose, but this had a huge
-cost on servers disabling MTU discovery.
+In checkin:
 
-1) each inet_peer struct consumes 192 bytes
+    b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-2) inetpeer cache uses a binary tree of inet_peer structs,
-   with a nominal size of ~66000 elements under load.
+we "solved" this by forbidding 16-bit segments on 64-bit kernels, with
+the logic that 16-bit support is crippled on 64-bit kernels anyway (no
+V86 support), but it turns out that people are doing stuff like
+running old Win16 binaries under Wine and expect it to work.
 
-3) lookups in this tree are hitting a lot of cache lines, as tree depth
-   is about 20.
+This works around this by creating percpu "ministacks", each of which
+is mapped 2^16 times 64K apart.  When we detect that the return SS is
+on the LDT, we copy the IRET frame to the ministack and use the
+relevant alias to return to userspace.  The ministacks are mapped
+readonly, so if IRET faults we promote #GP to #DF which is an IST
+vector and thus has its own stack; we then do the fixup in the #DF
+handler.
 
-4) If server deals with many tcp flows, we have a high probability of
-   not finding the inet_peer, allocating a fresh one, inserting it in
-   the tree with same initial ip_id_count, (cf secure_ip_id())
+(Making #GP an IST exception would make the msr_safe functions unsafe
+in NMI/MC context, and quite possibly have other effects.)
 
-5) We garbage collect inet_peer aggressively.
+Special thanks to:
 
-IP ID generation do not have to be 'perfect'
+- Andy Lutomirski, for the suggestion of using very small stack slots
+  and copy (as opposed to map) the IRET frame there, and for the
+  suggestion to mark them readonly and let the fault promote to #DF.
+- Konrad Wilk for paravirt fixup and testing.
+- Borislav Petkov for testing help and useful comments.
 
-Goal is trying to avoid duplicates in a short period of time,
-so that reassembly units have a chance to complete reassembly of
-fragments belonging to one message before receiving other fragments
-with a recycled ID.
-
-We simply use an array of generators, and a Jenkin hash using the dst IP
-as a key.
-
-ipv6_select_ident() is put back into net/ipv6/ip6_output.c where it
-belongs (it is only used from this file)
-
-secure_ip_id() and secure_ipv6_id() no longer are needed.
-
-Rename ip_select_ident_more() to ip_select_ident_segs() to avoid
-unnecessary decrement/increment of the number of segments.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Lutomriski <amluto@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dirk Hohndel <dirk@hohndel.org>
+Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
+Cc: comex <comexk@gmail.com>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ppp/pptp.c          |  2 +-
- include/net/inetpeer.h          | 14 ++---------
- include/net/ip.h                | 40 ++++++++++++++++-------------
- include/net/ipip.h              |  2 +-
- include/net/ipv6.h              |  9 +++++--
- include/net/secure_seq.h        |  2 --
- net/core/secure_seq.c           | 23 -----------------
- net/ipv4/igmp.c                 |  4 +--
- net/ipv4/inetpeer.c             | 18 -------------
- net/ipv4/ip_output.c            |  7 +++---
- net/ipv4/ipmr.c                 |  2 +-
- net/ipv4/raw.c                  |  2 +-
- net/ipv4/route.c                | 56 ++++++++++++++---------------------------
- net/ipv4/xfrm4_mode_tunnel.c    |  2 +-
- net/ipv6/ip6_output.c           | 23 +++++++----------
- net/netfilter/ipvs/ip_vs_xmit.c |  2 +-
- 16 files changed, 71 insertions(+), 137 deletions(-)
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   3 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_64.S              |  73 ++++++++++-
+ arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  11 --
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  39 ++++--
+ init/main.c                             |   4 +
+ 10 files changed, 324 insertions(+), 26 deletions(-)
+ create mode 100644 arch/x86/kernel/espfix_64.c
 
-diff --git a/drivers/net/ppp/pptp.c b/drivers/net/ppp/pptp.c
-index 2b349d3..c974581 100644
---- a/drivers/net/ppp/pptp.c
-+++ b/drivers/net/ppp/pptp.c
-@@ -281,7 +281,7 @@ static int pptp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
- 	nf_reset(skb);
+--- a/Documentation/x86/x86_64/mm.txt
++++ b/Documentation/x86/x86_64/mm.txt
+@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45
+ ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
+ ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+ ... unused hole ...
++ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
++... unused hole ...
+ ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+ ffffffffa0000000 - fffffffffff00000 (=1536 MB) module mapping space
  
- 	skb->ip_summed = CHECKSUM_NONE;
--	ip_select_ident(skb, &rt->dst, NULL);
-+	ip_select_ident(skb, NULL);
- 	ip_send_check(iph);
+--- a/arch/x86/include/asm/pgtable_64_types.h
++++ b/arch/x86/include/asm/pgtable_64_types.h
+@@ -59,5 +59,7 @@ typedef struct { pteval_t pte; } pte_t;
+ #define MODULES_VADDR    _AC(0xffffffffa0000000, UL)
+ #define MODULES_END      _AC(0xffffffffff000000, UL)
+ #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
++#define ESPFIX_PGD_ENTRY _AC(-2, UL)
++#define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
  
- 	ip_local_out(skb);
-diff --git a/include/net/inetpeer.h b/include/net/inetpeer.h
-index ba0ddb0..6172a44 100644
---- a/include/net/inetpeer.h
-+++ b/include/net/inetpeer.h
-@@ -47,13 +47,12 @@ struct inet_peer {
- 	};
- 	/*
- 	 * Once inet_peer is queued for deletion (refcnt == -1), following fields
--	 * are not available: rid, ip_id_count, tcp_ts, tcp_ts_stamp
-+	 * are not available: rid, tcp_ts, tcp_ts_stamp
- 	 * We can share memory with rcu_head to help keep inet_peer small.
- 	 */
- 	union {
- 		struct {
- 			atomic_t			rid;		/* Frag reception counter */
--			atomic_t			ip_id_count;	/* IP ID for the next packet */
- 			__u32				tcp_ts;
- 			__u32				tcp_ts_stamp;
- 		};
-@@ -103,7 +102,7 @@ extern bool inet_peer_xrlim_allow(struct inet_peer *peer, int timeout);
- extern void inetpeer_invalidate_tree(int family);
- 
- /*
-- * temporary check to make sure we dont access rid, ip_id_count, tcp_ts,
-+ * temporary check to make sure we dont access rid, tcp_ts,
-  * tcp_ts_stamp if no refcount is taken on inet_peer
-  */
- static inline void inet_peer_refcheck(const struct inet_peer *p)
-@@ -111,13 +110,4 @@ static inline void inet_peer_refcheck(const struct inet_peer *p)
- 	WARN_ON_ONCE(atomic_read(&p->refcnt) <= 0);
- }
- 
--
--/* can be called with or without local BH being disabled */
--static inline int inet_getid(struct inet_peer *p, int more)
--{
--	more++;
--	inet_peer_refcheck(p);
--	return atomic_add_return(more, &p->ip_id_count) - more;
--}
--
- #endif /* _NET_INETPEER_H */
-diff --git a/include/net/ip.h b/include/net/ip.h
-index b935e6c..f4ccdd6 100644
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -264,9 +264,19 @@ int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
- 		 !(dst_metric_locked(dst, RTAX_MTU)));
- }
- 
--extern void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more);
-+#define IP_IDENTS_SZ 2048u
-+extern atomic_t *ip_idents;
- 
--static inline void ip_select_ident(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk)
-+static inline u32 ip_idents_reserve(u32 hash, int segs)
-+{
-+	atomic_t *id_ptr = ip_idents + hash % IP_IDENTS_SZ;
-+
-+	return atomic_add_return(segs, id_ptr) - segs;
-+}
-+
-+void __ip_select_ident(struct iphdr *iph, int segs);
-+
-+static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, int segs)
- {
- 	struct iphdr *iph = ip_hdr(skb);
- 
-@@ -276,24 +286,20 @@ static inline void ip_select_ident(struct sk_buff *skb, struct dst_entry *dst, s
- 		 * does not change, they drop every other packet in
- 		 * a TCP stream using header compression.
- 		 */
--		iph->id = (sk && inet_sk(sk)->inet_daddr) ?
--					htons(inet_sk(sk)->inet_id++) : 0;
--	} else
--		__ip_select_ident(iph, dst, 0);
--}
--
--static inline void ip_select_ident_more(struct sk_buff *skb, struct dst_entry *dst, struct sock *sk, int more)
--{
--	struct iphdr *iph = ip_hdr(skb);
--
--	if ((iph->frag_off & htons(IP_DF)) && !skb->local_df) {
- 		if (sk && inet_sk(sk)->inet_daddr) {
- 			iph->id = htons(inet_sk(sk)->inet_id);
--			inet_sk(sk)->inet_id += 1 + more;
--		} else
-+			inet_sk(sk)->inet_id += segs;
-+		} else {
- 			iph->id = 0;
--	} else
--		__ip_select_ident(iph, dst, more);
-+		}
-+	} else {
-+		__ip_select_ident(iph, segs);
-+	}
-+}
-+
-+static inline void ip_select_ident(struct sk_buff *skb, struct sock *sk)
-+{
-+	ip_select_ident_segs(skb, sk, 1);
- }
- 
- /*
-diff --git a/include/net/ipip.h b/include/net/ipip.h
-index 4dccfe3..e8ee3bb 100644
---- a/include/net/ipip.h
-+++ b/include/net/ipip.h
-@@ -50,7 +50,7 @@ struct ip_tunnel_prl_entry {
- 	int pkt_len = skb->len - skb_transport_offset(skb);		\
- 									\
- 	skb->ip_summed = CHECKSUM_NONE;					\
--	ip_select_ident(skb, &rt->dst, NULL);				\
-+	ip_select_ident(skb, NULL);				\
- 									\
- 	err = ip_local_out(skb);					\
- 	if (likely(net_xmit_eval(err) == 0)) {				\
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 0580673..00a2eb6 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -388,14 +388,19 @@ void ip6_frag_init(struct inet_frag_queue *q, void *a);
- int ip6_frag_match(struct inet_frag_queue *q, void *a);
- 
- /* more secured version of ipv6_addr_hash() */
--static inline u32 ipv6_addr_jhash(const struct in6_addr *a)
-+static inline u32 __ipv6_addr_jhash(const struct in6_addr *a, const u32 initval)
- {
- 	u32 v = (__force u32)a->s6_addr32[0] ^ (__force u32)a->s6_addr32[1];
- 
- 	return jhash_3words(v,
- 			    (__force u32)a->s6_addr32[2],
- 			    (__force u32)a->s6_addr32[3],
--			    ipv6_hash_secret);
-+			    initval);
-+}
-+
-+static inline u32 ipv6_addr_jhash(const struct in6_addr *a)
-+{
-+	return __ipv6_addr_jhash(a, ipv6_hash_secret);
- }
- 
- static inline int ipv6_addr_any(const struct in6_addr *a)
-diff --git a/include/net/secure_seq.h b/include/net/secure_seq.h
-index c2e542b..b1c3d1c 100644
---- a/include/net/secure_seq.h
-+++ b/include/net/secure_seq.h
-@@ -3,8 +3,6 @@
- 
- #include <linux/types.h>
- 
--extern __u32 secure_ip_id(__be32 daddr);
--extern __u32 secure_ipv6_id(const __be32 daddr[4]);
- extern u32 secure_ipv4_port_ephemeral(__be32 saddr, __be32 daddr, __be16 dport);
- extern u32 secure_ipv6_port_ephemeral(const __be32 *saddr, const __be32 *daddr,
- 				      __be16 dport);
-diff --git a/net/core/secure_seq.c b/net/core/secure_seq.c
-index 925991a..fd53919 100644
---- a/net/core/secure_seq.c
-+++ b/net/core/secure_seq.c
-@@ -79,29 +79,6 @@ u32 secure_ipv6_port_ephemeral(const __be32 *saddr, const __be32 *daddr,
+ #endif /* _ASM_X86_PGTABLE_64_DEFS_H */
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -59,6 +59,9 @@ extern void x86_ce4100_early_setup(void)
+ static inline void x86_ce4100_early_setup(void) { }
  #endif
  
- #ifdef CONFIG_INET
--__u32 secure_ip_id(__be32 daddr)
--{
--	u32 hash[MD5_DIGEST_WORDS];
--
--	hash[0] = (__force __u32) daddr;
--	hash[1] = net_secret[13];
--	hash[2] = net_secret[14];
--	hash[3] = net_secret[15];
--
--	md5_transform(hash, net_secret);
--
--	return hash[0];
--}
--
--__u32 secure_ipv6_id(const __be32 daddr[4])
--{
--	__u32 hash[4];
--
--	memcpy(hash, daddr, 16);
--	md5_transform(hash, net_secret);
--
--	return hash[0];
--}
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
+ #ifndef _SETUP
  
- __u32 secure_tcp_sequence_number(__be32 saddr, __be32 daddr,
- 				 __be16 sport, __be16 dport)
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index 7f7e670..7fe66d9 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -342,7 +342,7 @@ static struct sk_buff *igmpv3_newpack(struct net_device *dev, int size)
- 	pip->saddr    = fl4.saddr;
- 	pip->protocol = IPPROTO_IGMP;
- 	pip->tot_len  = 0;	/* filled in later */
--	ip_select_ident(skb, &rt->dst, NULL);
-+	ip_select_ident(skb, NULL);
- 	((u8*)&pip[1])[0] = IPOPT_RA;
- 	((u8*)&pip[1])[1] = 4;
- 	((u8*)&pip[1])[2] = 0;
-@@ -683,7 +683,7 @@ static int igmp_send_report(struct in_device *in_dev, struct ip_mc_list *pmc,
- 	iph->daddr    = dst;
- 	iph->saddr    = fl4.saddr;
- 	iph->protocol = IPPROTO_IGMP;
--	ip_select_ident(skb, &rt->dst, NULL);
-+	ip_select_ident(skb, NULL);
- 	((u8*)&iph[1])[0] = IPOPT_RA;
- 	((u8*)&iph[1])[1] = 4;
- 	((u8*)&iph[1])[2] = 0;
-diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index 58c4e696..9d74cc7 100644
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -26,20 +26,7 @@
-  *  Theory of operations.
-  *  We keep one entry for each peer IP address.  The nodes contains long-living
-  *  information about the peer which doesn't depend on routes.
-- *  At this moment this information consists only of ID field for the next
-- *  outgoing IP packet.  This field is incremented with each packet as encoded
-- *  in inet_getid() function (include/net/inetpeer.h).
-- *  At the moment of writing this notes identifier of IP packets is generated
-- *  to be unpredictable using this code only for packets subjected
-- *  (actually or potentially) to defragmentation.  I.e. DF packets less than
-- *  PMTU in size when local fragmentation is disabled use a constant ID and do
-- *  not use this code (see ip_select_ident() in include/net/ip.h).
-  *
-- *  Route cache entries hold references to our nodes.
-- *  New cache entries get references via lookup by destination IP address in
-- *  the avl tree.  The reference is grabbed only when it's needed i.e. only
-- *  when we try to output IP packet which needs an unpredictable ID (see
-- *  __ip_select_ident() in net/ipv4/route.c).
-  *  Nodes are removed only when reference counter goes to 0.
-  *  When it's happened the node may be removed when a sufficient amount of
-  *  time has been passed since its last use.  The less-recently-used entry can
-@@ -62,7 +49,6 @@
-  *		refcnt: atomically against modifications on other CPU;
-  *		   usually under some other lock to prevent node disappearing
-  *		daddr: unchangeable
-- *		ip_id_count: atomic value (no lock needed)
+ /*
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_X86_32)	+= sys_i386_32.o i3
+ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-$(CONFIG_X86_64)	+= syscall_64.o vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
++obj-$(CONFIG_X86_64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -55,6 +55,7 @@
+ #include <asm/paravirt.h>
+ #include <asm/ftrace.h>
+ #include <asm/percpu.h>
++#include <asm/pgtable_types.h>
+ 
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+ #include <linux/elf-em.h>
+@@ -860,10 +861,18 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	/*
++	 * Are we returning to a stack segment from the LDT?  Note: in
++	 * 64-bit mode SS:RSP on the exception stack is always valid.
++	 */
++	testb $4,(SS-RIP)(%rsp)
++	jnz irq_return_ldt
++
++irq_return_iret:
+ 	INTERRUPT_RETURN
+ 
+ 	.section __ex_table, "a"
+-	.quad irq_return, bad_iret
++	.quad irq_return_iret, bad_iret
+ 	.previous
+ 
+ #ifdef CONFIG_PARAVIRT
+@@ -875,6 +884,30 @@ ENTRY(native_iret)
+ 	.previous
+ #endif
+ 
++irq_return_ldt:
++	pushq_cfi %rax
++	pushq_cfi %rdi
++	SWAPGS
++	movq PER_CPU_VAR(espfix_waddr),%rdi
++	movq %rax,(0*8)(%rdi)	/* RAX */
++	movq (2*8)(%rsp),%rax	/* RIP */
++	movq %rax,(1*8)(%rdi)
++	movq (3*8)(%rsp),%rax	/* CS */
++	movq %rax,(2*8)(%rdi)
++	movq (4*8)(%rsp),%rax	/* RFLAGS */
++	movq %rax,(3*8)(%rdi)
++	movq (6*8)(%rsp),%rax	/* SS */
++	movq %rax,(5*8)(%rdi)
++	movq (5*8)(%rsp),%rax	/* RSP */
++	movq %rax,(4*8)(%rdi)
++	andl $0xffff0000,%eax
++	popq_cfi %rdi
++	orq PER_CPU_VAR(espfix_stack),%rax
++	SWAPGS
++	movq %rax,%rsp
++	popq_cfi %rax
++	jmp irq_return_iret
++
+ 	.section .fixup,"ax"
+ bad_iret:
+ 	/*
+@@ -938,9 +971,41 @@ ENTRY(retint_kernel)
+ 	call preempt_schedule_irq
+ 	jmp exit_intr
+ #endif
+-
+ 	CFI_ENDPROC
+ END(common_interrupt)
++
++	/*
++	 * If IRET takes a fault on the espfix stack, then we
++	 * end up promoting it to a doublefault.  In that case,
++	 * modify the stack to make it look like we just entered
++	 * the #GP handler from user space, similar to bad_iret.
++	 */
++	ALIGN
++__do_double_fault:
++	XCPT_FRAME 1 RDI+8
++	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
++	sarq $PGDIR_SHIFT,%rax
++	cmpl $ESPFIX_PGD_ENTRY,%eax
++	jne do_double_fault		/* No, just deliver the fault */
++	cmpl $__KERNEL_CS,CS(%rdi)
++	jne do_double_fault
++	movq RIP(%rdi),%rax
++	cmpq $irq_return_iret,%rax
++#ifdef CONFIG_PARAVIRT
++	je 1f
++	cmpq $native_iret,%rax
++#endif
++	jne do_double_fault		/* This shouldn't happen... */
++1:
++	movq PER_CPU_VAR(kernel_stack),%rax
++	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
++	movq %rax,RSP(%rdi)
++	movq $0,(%rax)			/* Missing (lost) #GP error code */
++	movq $general_protection,RIP(%rdi)
++	retq
++	CFI_ENDPROC
++END(__do_double_fault)
++
+ /*
+  * End of kprobes section
   */
- 
- static struct kmem_cache *peer_cachep __read_mostly;
-@@ -488,10 +474,6 @@ relookup:
- 		p->daddr = *daddr;
- 		atomic_set(&p->refcnt, 1);
- 		atomic_set(&p->rid, 0);
--		atomic_set(&p->ip_id_count,
--				(daddr->family == AF_INET) ?
--					secure_ip_id(daddr->addr.a4) :
--					secure_ipv6_id(daddr->addr.a6));
- 		p->tcp_ts_stamp = 0;
- 		p->metrics[RTAX_LOCK-1] = INETPEER_METRICS_NEW;
- 		p->rate_tokens = 0;
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 16191f0..223085f 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -162,7 +162,7 @@ int ip_build_and_send_pkt(struct sk_buff *skb, struct sock *sk,
- 	iph->daddr    = (opt && opt->opt.srr ? opt->opt.faddr : daddr);
- 	iph->saddr    = saddr;
- 	iph->protocol = sk->sk_protocol;
--	ip_select_ident(skb, &rt->dst, sk);
-+	ip_select_ident(skb, sk);
- 
- 	if (opt && opt->opt.optlen) {
- 		iph->ihl += opt->opt.optlen>>2;
-@@ -390,8 +390,7 @@ packet_routed:
- 		ip_options_build(skb, &inet_opt->opt, inet->inet_daddr, rt, 0);
- 	}
- 
--	ip_select_ident_more(skb, &rt->dst, sk,
--			     (skb_shinfo(skb)->gso_segs ?: 1) - 1);
-+	ip_select_ident_segs(skb, sk, skb_shinfo(skb)->gso_segs ?: 1);
- 
- 	skb->priority = sk->sk_priority;
- 	skb->mark = sk->sk_mark;
-@@ -1334,7 +1333,7 @@ struct sk_buff *__ip_make_skb(struct sock *sk,
- 	iph->ihl = 5;
- 	iph->tos = inet->tos;
- 	iph->frag_off = df;
--	ip_select_ident(skb, &rt->dst, sk);
-+	ip_select_ident(skb, sk);
- 	iph->ttl = ttl;
- 	iph->protocol = sk->sk_protocol;
- 	iph->saddr = fl4->saddr;
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index 140d377..7993d16 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -1579,7 +1579,7 @@ static void ip_encap(struct sk_buff *skb, __be32 saddr, __be32 daddr)
- 	iph->protocol	=	IPPROTO_IPIP;
- 	iph->ihl	=	5;
- 	iph->tot_len	=	htons(skb->len);
--	ip_select_ident(skb, skb_dst(skb), NULL);
-+	ip_select_ident(skb, NULL);
- 	ip_send_check(iph);
- 
- 	memset(&(IPCB(skb)->opt), 0, sizeof(IPCB(skb)->opt));
-diff --git a/net/ipv4/raw.c b/net/ipv4/raw.c
-index cfded93..75fea1f 100644
---- a/net/ipv4/raw.c
-+++ b/net/ipv4/raw.c
-@@ -380,7 +380,7 @@ static int raw_send_hdrinc(struct sock *sk, struct flowi4 *fl4,
- 		iph->check   = 0;
- 		iph->tot_len = htons(length);
- 		if (!iph->id)
--			ip_select_ident(skb, &rt->dst, NULL);
-+			ip_select_ident(skb, NULL);
- 
- 		iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
- 	}
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 6526110..278784e 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1344,46 +1344,23 @@ void rt_bind_peer(struct rtable *rt, __be32 daddr, int create)
- 		rt->rt_peer_genid = rt_peer_genid();
- }
- 
--/*
-- * Peer allocation may fail only in serious out-of-memory conditions.  However
-- * we still can generate some output.
-- * Random ID selection looks a bit dangerous because we have no chances to
-- * select ID being unique in a reasonable period of time.
-- * But broken packet identifier may be better than no packet at all.
-- */
--static void ip_select_fb_ident(struct iphdr *iph)
--{
--	static DEFINE_SPINLOCK(ip_fb_id_lock);
--	static u32 ip_fallback_id;
--	u32 salt;
-+atomic_t *ip_idents __read_mostly;
-+EXPORT_SYMBOL(ip_idents);
- 
--	spin_lock_bh(&ip_fb_id_lock);
--	salt = secure_ip_id((__force __be32)ip_fallback_id ^ iph->daddr);
--	iph->id = htons(salt & 0xFFFF);
--	ip_fallback_id = salt;
--	spin_unlock_bh(&ip_fb_id_lock);
--}
--
--void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst, int more)
-+void __ip_select_ident(struct iphdr *iph, int segs)
- {
--	struct rtable *rt = (struct rtable *) dst;
-+	static u32 ip_idents_hashrnd __read_mostly;
-+	static bool hashrnd_initialized = false;
-+	u32 hash, id;
- 
--	if (rt && !(rt->dst.flags & DST_NOPEER)) {
--		if (rt->peer == NULL)
--			rt_bind_peer(rt, rt->rt_dst, 1);
--
--		/* If peer is attached to destination, it is never detached,
--		   so that we need not to grab a lock to dereference it.
--		 */
--		if (rt->peer) {
--			iph->id = htons(inet_getid(rt->peer, more));
--			return;
--		}
--	} else if (!rt)
--		printk(KERN_DEBUG "rt_bind_peer(0) @%p\n",
--		       __builtin_return_address(0));
-+	if (unlikely(!hashrnd_initialized)) {
-+		hashrnd_initialized = true;
-+		get_random_bytes(&ip_idents_hashrnd, sizeof(ip_idents_hashrnd));
+@@ -1107,7 +1172,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault do_double_fault
++paranoiderrorentry double_fault __do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+@@ -1438,7 +1503,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return(%rip),%rcx
++	leaq irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+--- /dev/null
++++ b/arch/x86/kernel/espfix_64.c
+@@ -0,0 +1,208 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2014 Intel Corporation; author: H. Peter Anvin
++ *
++ *   This program is free software; you can redistribute it and/or modify it
++ *   under the terms and conditions of the GNU General Public License,
++ *   version 2, as published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but WITHOUT
++ *   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ *   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ *   more details.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * The IRET instruction, when returning to a 16-bit segment, only
++ * restores the bottom 16 bits of the user space stack pointer.  This
++ * causes some 16-bit software to break, but it also leaks kernel state
++ * to user space.
++ *
++ * This works around this by creating percpu "ministacks", each of which
++ * is mapped 2^16 times 64K apart.  When we detect that the return SS is
++ * on the LDT, we copy the IRET frame to the ministack and use the
++ * relevant alias to return to userspace.  The ministacks are mapped
++ * readonly, so if the IRET fault we promote #GP to #DF which is an IST
++ * vector and thus has its own stack; we then do the fixup in the #DF
++ * handler.
++ *
++ * This file sets up the ministacks and the related page tables.  The
++ * actual ministack invocation is in entry_64.S.
++ */
++
++#include <linux/init.h>
++#include <linux/init_task.h>
++#include <linux/kernel.h>
++#include <linux/percpu.h>
++#include <linux/gfp.h>
++#include <linux/random.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/setup.h>
++
++/*
++ * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
++ * it up to a cache line to avoid unnecessary sharing.
++ */
++#define ESPFIX_STACK_SIZE	(8*8UL)
++#define ESPFIX_STACKS_PER_PAGE	(PAGE_SIZE/ESPFIX_STACK_SIZE)
++
++/* There is address space for how many espfix pages? */
++#define ESPFIX_PAGE_SPACE	(1UL << (PGDIR_SHIFT-PAGE_SHIFT-16))
++
++#define ESPFIX_MAX_CPUS		(ESPFIX_STACKS_PER_PAGE * ESPFIX_PAGE_SPACE)
++#if CONFIG_NR_CPUS > ESPFIX_MAX_CPUS
++# error "Need more than one PGD for the ESPFIX hack"
++#endif
++
++#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
++
++/* This contains the *bottom* address of the espfix stack */
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++/* Initialization mutex - should this be a spinlock? */
++static DEFINE_MUTEX(espfix_init_mutex);
++
++/* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
++#define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
++static void *espfix_pages[ESPFIX_MAX_PAGES];
++
++static __page_aligned_bss pud_t espfix_pud_page[PTRS_PER_PUD]
++	__aligned(PAGE_SIZE);
++
++static unsigned int page_random, slot_random;
++
++/*
++ * This returns the bottom address of the espfix stack for a specific CPU.
++ * The math allows for a non-power-of-two ESPFIX_STACK_SIZE, in which case
++ * we have to account for some amount of padding at the end of each page.
++ */
++static inline unsigned long espfix_base_addr(unsigned int cpu)
++{
++	unsigned long page, slot;
++	unsigned long addr;
++
++	page = (cpu / ESPFIX_STACKS_PER_PAGE) ^ page_random;
++	slot = (cpu + slot_random) % ESPFIX_STACKS_PER_PAGE;
++	addr = (page << PAGE_SHIFT) + (slot * ESPFIX_STACK_SIZE);
++	addr = (addr & 0xffffUL) | ((addr & ~0xffffUL) << 16);
++	addr += ESPFIX_BASE_ADDR;
++	return addr;
++}
++
++#define PTE_STRIDE        (65536/PAGE_SIZE)
++#define ESPFIX_PTE_CLONES (PTRS_PER_PTE/PTE_STRIDE)
++#define ESPFIX_PMD_CLONES PTRS_PER_PMD
++#define ESPFIX_PUD_CLONES (65536/(ESPFIX_PTE_CLONES*ESPFIX_PMD_CLONES))
++
++#define PGTABLE_PROT	  ((_KERNPG_TABLE & ~_PAGE_RW) | _PAGE_NX)
++
++static void init_espfix_random(void)
++{
++	unsigned long rand;
++
++	/*
++	 * This is run before the entropy pools are initialized,
++	 * but this is hopefully better than nothing.
++	 */
++	if (!arch_get_random_long(&rand)) {
++		/* The constant is an arbitrary large prime */
++		rdtscll(rand);
++		rand *= 0xc345c6b72fd16123UL;
 +	}
- 
--	ip_select_fb_ident(iph);
-+	hash = jhash_1word((__force u32)iph->daddr, ip_idents_hashrnd);
-+	id = ip_idents_reserve(hash, segs);
-+	iph->id = htons(id);
- }
- EXPORT_SYMBOL(__ip_select_ident);
- 
-@@ -3023,7 +3000,6 @@ static int rt_fill_info(struct net *net,
- 	error = rt->dst.error;
- 	if (peer) {
- 		inet_peer_refcheck(rt->peer);
--		id = atomic_read(&peer->ip_id_count) & 0xffff;
- 		if (peer->tcp_ts_stamp) {
- 			ts = peer->tcp_ts;
- 			tsage = get_seconds() - peer->tcp_ts_stamp;
-@@ -3455,6 +3431,12 @@ int __init ip_rt_init(void)
- {
- 	int rc = 0;
- 
-+	ip_idents = kmalloc(IP_IDENTS_SZ * sizeof(*ip_idents), GFP_KERNEL);
-+	if (!ip_idents)
-+		panic("IP: failed to allocate ip_idents\n");
 +
-+	get_random_bytes(ip_idents, IP_IDENTS_SZ * sizeof(*ip_idents));
++	slot_random = rand % ESPFIX_STACKS_PER_PAGE;
++	page_random = (rand / ESPFIX_STACKS_PER_PAGE)
++		& (ESPFIX_PAGE_SPACE - 1);
++}
 +
- #ifdef CONFIG_IP_ROUTE_CLASSID
- 	ip_rt_acct = __alloc_percpu(256 * sizeof(struct ip_rt_acct), __alignof__(struct ip_rt_acct));
- 	if (!ip_rt_acct)
-diff --git a/net/ipv4/xfrm4_mode_tunnel.c b/net/ipv4/xfrm4_mode_tunnel.c
-index 938553e..5531eb2 100644
---- a/net/ipv4/xfrm4_mode_tunnel.c
-+++ b/net/ipv4/xfrm4_mode_tunnel.c
-@@ -54,12 +54,12 @@ static int xfrm4_mode_tunnel_output(struct xfrm_state *x, struct sk_buff *skb)
- 
- 	top_iph->frag_off = (flags & XFRM_STATE_NOPMTUDISC) ?
- 		0 : (XFRM_MODE_SKB_CB(skb)->frag_off & htons(IP_DF));
--	ip_select_ident(skb, dst->child, NULL);
- 
- 	top_iph->ttl = ip4_dst_hoplimit(dst->child);
- 
- 	top_iph->saddr = x->props.saddr.a4;
- 	top_iph->daddr = x->id.daddr.a4;
-+	ip_select_ident(skb, NULL);
- 
- 	return 0;
- }
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 064b5c9..f79defc 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -600,22 +600,17 @@ int ip6_find_1stfragopt(struct sk_buff *skb, u8 **nexthdr)
- 
- void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
- {
--	static atomic_t ipv6_fragmentation_id;
--	int ident;
-+	static u32 ip6_idents_hashrnd __read_mostly;
-+	static bool hashrnd_initialized = false;
-+	u32 hash, id;
- 
--	if (rt && !(rt->dst.flags & DST_NOPEER)) {
--		struct inet_peer *peer;
--
--		if (!rt->rt6i_peer)
--			rt6_bind_peer(rt, 1);
--		peer = rt->rt6i_peer;
--		if (peer) {
--			fhdr->identification = htonl(inet_getid(peer, 0));
--			return;
--		}
-+	if (unlikely(!hashrnd_initialized)) {
-+		hashrnd_initialized = true;
-+		get_random_bytes(&ip6_idents_hashrnd, sizeof(ip6_idents_hashrnd));
++void __init init_espfix_bsp(void)
++{
++	pgd_t *pgd_p;
++	pteval_t ptemask;
++
++	ptemask = __supported_pte_mask;
++
++	/* Install the espfix pud into the kernel page directory */
++	pgd_p = &init_level4_pgt[pgd_index(ESPFIX_BASE_ADDR)];
++	pgd_populate(&init_mm, pgd_p, (pud_t *)espfix_pud_page);
++
++	/* Randomize the locations */
++	init_espfix_random();
++
++	/* The rest is the same as for any other processor */
++	init_espfix_ap();
++}
++
++void init_espfix_ap(void)
++{
++	unsigned int cpu, page;
++	unsigned long addr;
++	pud_t pud, *pud_p;
++	pmd_t pmd, *pmd_p;
++	pte_t pte, *pte_p;
++	int n;
++	void *stack_page;
++	pteval_t ptemask;
++
++	/* We only have to do this once... */
++	if (likely(this_cpu_read(espfix_stack)))
++		return;		/* Already initialized */
++
++	cpu = smp_processor_id();
++	addr = espfix_base_addr(cpu);
++	page = cpu/ESPFIX_STACKS_PER_PAGE;
++
++	/* Did another CPU already set this up? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (likely(stack_page))
++		goto done;
++
++	mutex_lock(&espfix_init_mutex);
++
++	/* Did we race on the lock? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (stack_page)
++		goto unlock_done;
++
++	ptemask = __supported_pte_mask;
++
++	pud_p = &espfix_pud_page[pud_index(addr)];
++	pud = *pud_p;
++	if (!pud_present(pud)) {
++		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
++		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
++			set_pud(&pud_p[n], pud);
++	}
++
++	pmd_p = pmd_offset(&pud, addr);
++	pmd = *pmd_p;
++	if (!pmd_present(pmd)) {
++		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
++		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
++			set_pmd(&pmd_p[n], pmd);
++	}
++
++	pte_p = pte_offset_kernel(&pmd, addr);
++	stack_page = (void *)__get_free_page(GFP_KERNEL);
++	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
++	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
++	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
++		set_pte(&pte_p[n*PTE_STRIDE], pte);
++
++	/* Job is done for this CPU and any CPU which shares this page */
++	ACCESS_ONCE(espfix_pages[page]) = stack_page;
++
++unlock_done:
++	mutex_unlock(&espfix_init_mutex);
++done:
++	this_cpu_write(espfix_stack, addr);
++	this_cpu_write(espfix_waddr, (unsigned long)stack_page
++		       + (addr & ~PAGE_MASK));
++}
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -230,17 +230,6 @@ static int write_ldt(void __user *ptr, u
+ 		}
  	}
--	ident = atomic_inc_return(&ipv6_fragmentation_id);
--	fhdr->identification = htonl(ident);
-+	hash = __ipv6_addr_jhash(&rt->rt6i_dst.addr, ip6_idents_hashrnd);
-+	id = ip_idents_reserve(hash, 1);
-+	fhdr->identification = htonl(id);
- }
  
- int ip6_fragment(struct sk_buff *skb, int (*output)(struct sk_buff *))
-diff --git a/net/netfilter/ipvs/ip_vs_xmit.c b/net/netfilter/ipvs/ip_vs_xmit.c
-index 38c0813..cc8f8b4 100644
---- a/net/netfilter/ipvs/ip_vs_xmit.c
-+++ b/net/netfilter/ipvs/ip_vs_xmit.c
-@@ -853,7 +853,7 @@ ip_vs_tunnel_xmit(struct sk_buff *skb, struct ip_vs_conn *cp,
- 	iph->daddr		=	cp->daddr.ip;
- 	iph->saddr		=	saddr;
- 	iph->ttl		=	old_iph->ttl;
--	ip_select_ident(skb, &rt->dst, NULL);
-+	ip_select_ident(skb, NULL);
+-	/*
+-	 * On x86-64 we do not support 16-bit segments due to
+-	 * IRET leaking the high bits of the kernel stack address.
+-	 */
+-#ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
+-		error = -EINVAL;
+-		goto out_unlock;
+-	}
+-#endif
+-
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -266,6 +266,13 @@ notrace static void __cpuinit start_seco
+ 	check_tsc_sync_target();
  
- 	/* Another hack: avoid icmp_send in ip_fragment */
- 	skb->local_df = 1;
+ 	/*
++	 * Enable the espfix hack for this CPU
++	 */
++#ifdef CONFIG_X86_64
++	init_espfix_ap();
++#endif
++
++	/*
+ 	 * We need to hold call_lock, so there is no inconsistency
+ 	 * between the time smp_call_function() determines number of
+ 	 * IPI recipients, and the time when the determination is made
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -30,11 +30,13 @@ struct pg_state {
+ 	unsigned long start_address;
+ 	unsigned long current_address;
+ 	const struct addr_marker *marker;
++	unsigned long lines;
+ };
+ 
+ struct addr_marker {
+ 	unsigned long start_address;
+ 	const char *name;
++	unsigned long max_lines;
+ };
+ 
+ /* indices for address_markers; keep sync'd w/ address_markers below */
+@@ -45,6 +47,7 @@ enum address_markers_idx {
+ 	LOW_KERNEL_NR,
+ 	VMALLOC_START_NR,
+ 	VMEMMAP_START_NR,
++	ESPFIX_START_NR,
+ 	HIGH_KERNEL_NR,
+ 	MODULES_VADDR_NR,
+ 	MODULES_END_NR,
+@@ -67,6 +70,7 @@ static struct addr_marker address_marker
+ 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
+ 	{ VMALLOC_START,        "vmalloc() Area" },
+ 	{ VMEMMAP_START,        "Vmemmap" },
++	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
+ 	{ __START_KERNEL_map,   "High Kernel Mapping" },
+ 	{ MODULES_VADDR,        "Modules" },
+ 	{ MODULES_END,          "End Modules" },
+@@ -163,7 +167,7 @@ static void note_page(struct seq_file *m
+ 		      pgprot_t new_prot, int level)
+ {
+ 	pgprotval_t prot, cur;
+-	static const char units[] = "KMGTPE";
++	static const char units[] = "BKMGTPE";
+ 
+ 	/*
+ 	 * If we have a "break" in the series, we need to flush the state that
+@@ -178,6 +182,7 @@ static void note_page(struct seq_file *m
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
++		st->lines = 0;
+ 		seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+ 		   st->current_address >= st->marker[1].start_address) {
+@@ -188,17 +193,21 @@ static void note_page(struct seq_file *m
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		seq_printf(m, "0x%0*lx-0x%0*lx   ",
+-			   width, st->start_address,
+-			   width, st->current_address);
+-
+-		delta = (st->current_address - st->start_address) >> 10;
+-		while (!(delta & 1023) && unit[1]) {
+-			delta >>= 10;
+-			unit++;
++		if (!st->marker->max_lines ||
++		    st->lines < st->marker->max_lines) {
++			seq_printf(m, "0x%0*lx-0x%0*lx   ",
++				   width, st->start_address,
++				   width, st->current_address);
++
++			delta = (st->current_address - st->start_address);
++			while (!(delta & 1023) && unit[1]) {
++				delta >>= 10;
++				unit++;
++			}
++			seq_printf(m, "%9lu%c ", delta, *unit);
++			printk_prot(m, st->current_prot, st->level);
+ 		}
+-		seq_printf(m, "%9lu%c ", delta, *unit);
+-		printk_prot(m, st->current_prot, st->level);
++		st->lines++;
+ 
+ 		/*
+ 		 * We print markers for special areas of address space,
+@@ -206,7 +215,15 @@ static void note_page(struct seq_file *m
+ 		 * This helps in the interpretation.
+ 		 */
+ 		if (st->current_address >= st->marker[1].start_address) {
++			if (st->marker->max_lines &&
++			    st->lines > st->marker->max_lines) {
++				unsigned long nskip =
++					st->lines - st->marker->max_lines;
++				seq_printf(m, "... %lu entr%s skipped ... \n",
++					   nskip, nskip == 1 ? "y" : "ies");
++			}
+ 			st->marker++;
++			st->lines = 0;
+ 			seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 		}
+ 
+--- a/init/main.c
++++ b/init/main.c
+@@ -610,6 +610,10 @@ asmlinkage void __init start_kernel(void
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
++#ifdef CONFIG_X86_64
++	/* Should be run before the first non-init thread is created */
++	init_espfix_bsp();
++#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
 
