@@ -1,79 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaIKGPG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 02:15:06 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40204 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaIKGPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 02:15:03 -0400
-Message-ID: <54113DDD.1030804@linux.vnet.ibm.com>
-Date: Thu, 11 Sep 2014 11:44:53 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752155AbaIKG0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 02:26:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52688 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaIKG0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 02:26:07 -0400
+Message-ID: <54114078.8090007@ti.com>
+Date: Thu, 11 Sep 2014 11:56:00 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de
-CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
-        Paul.Clothier@imgtec.com, palves@redhat.com, oleg@redhat.com,
-        dhowells@redhat.com, davej@redhat.com, davem@davemloft.net,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Sam Bobroff <sam.bobroff@au1.ibm.com>
-Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
-References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
-In-Reply-To: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Nishanth Menon <nm@ti.com>, <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] ARM: dts: dra7-evm: Enable CPSW and MDIO for dra7xx
+ EVM
+References: <1410356247-25925-1-git-send-email-mugunthanvnm@ti.com> <1410356247-25925-3-git-send-email-mugunthanvnm@ti.com> <54105893.70804@ti.com>
+In-Reply-To: <54105893.70804@ti.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091106-8878-0000-0000-000000DF0CF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2014 08:45 PM, Anshuman Khandual wrote:
-> 	This patch series adds five new ELF core note sections which can be
-> used with existing ptrace request PTRACE_GETREGSET/SETREGSET for accessing
-> various transactional memory and miscellaneous register sets on PowerPC
-> platform. Please find a test program exploiting these new ELF core note
-> types on a POWER8 system.
+On Wednesday 10 September 2014 07:26 PM, Nishanth Menon wrote:
+> On 09/10/2014 08:37 AM, Mugunthan V N wrote:
+>> Adding CPSW phy-id, CPSW and MDIO pinmux configuration for active and
+>> sleep states and enable them in board evm dts file.
+>>
+>> Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+>> ---
+>>  arch/arm/boot/dts/dra7-evm.dts | 107 +++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 107 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+>> index 50f8022..e5c4e33 100644
+>> --- a/arch/arm/boot/dts/dra7-evm.dts
+>> +++ b/arch/arm/boot/dts/dra7-evm.dts
+>> @@ -151,6 +151,87 @@
+>>  			0xd0	(PIN_OUTPUT | MUX_MODE0)	/* gpmc_be0n_cle */
+>>  		>;
+>>  	};
+>> +
+>> +	cpsw_default: cpsw_default {
+>> +		pinctrl-single,pins = <
+>> +			/* Slave 1 */
+>> +			0x250 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tclk */
+>> +			0x254 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_tctl */
+>> +			0x258 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td3 */
+>> +			0x25c (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td2 */
+>> +			0x260 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td1 */
+>> +			0x264 (PIN_OUTPUT | MUX_MODE0)	/* rgmii1_td0 */
+>> +			0x268 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rclk */
+>> +			0x26c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rctl */
+>> +			0x270 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd3 */
+>> +			0x274 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd2 */
+>> +			0x278 (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd1 */
+>> +			0x27c (PIN_INPUT | MUX_MODE0)	/* rgmii1_rd0 */
 > 
-> RFC: https://lkml.org/lkml/2014/4/1/292
-> V1:  https://lkml.org/lkml/2014/4/2/43
-> V2:  https://lkml.org/lkml/2014/5/5/88
-> 
-> Changes in V3
-> =============
-> (1) Added two new error paths in every TM related get/set functions when regset
->     support is not present on the system (ENODEV) or when the process does not
->     have any transaction active (ENODATA) in the context
-> 
-> (2) Installed the active hooks for all the newly added regset core note types
-> 
-> Changes in V2
-> =============
-> (1) Removed all the power specific ptrace requests corresponding to new NT_PPC_*
->     elf core note types. Now all the register sets can be accessed from ptrace
->     through PTRACE_GETREGSET/PTRACE_SETREGSET using the individual NT_PPC* core
->     note type instead
-> (2) Fixed couple of attribute values for REGSET_TM_CGPR register set
-> (3) Renamed flush_tmreg_to_thread as flush_tmregs_to_thread
-> (4) Fixed 32 bit checkpointed GPR support
-> (5) Changed commit messages accordingly
-> 
-> Outstanding Issues
-> ==================
-> (1) Running DSCR register value inside a transaction does not seem to be saved
->     at thread.dscr when the process stops for ptrace examination.
+> Cant we do this based on emac0 and emac1?
 
-Hey Sam and Suka,
+Cant because CPSW is a single ethernet device and dual EMAC is just a
+feature done by register two network device.
 
-Thanks for reviewing this patch series. I was busy with some other work
-for last couple of months. Went through your comments, will get back to
-this patch series in some time and work on the comments.
+> 
+>> +
+>> +			/* Slave 2 */
+>> +			0x198 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tclk */
+> 
+> NAK. reason comment style -> we use the style:
+>  /* mode0_name.mode3_name */
 
-Thanks again.
+Will fix this in next version
 
-Regards
-Anshuman
+> 
+>> +			0x19c (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_tctl */
+>> +			0x1a0 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td3 */
+>> +			0x1a4 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td2 */
+>> +			0x1a8 (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td1 */
+>> +			0x1ac (PIN_OUTPUT | MUX_MODE3)	/* rgmii2_td0 */
+>> +			0x1b0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rclk */
+>> +			0x1b4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rctl */
+>> +			0x1b8 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd3 */
+>> +			0x1bc (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd2 */
+>> +			0x1c0 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd1 */
+>> +			0x1c4 (PIN_INPUT | MUX_MODE3)	/* rgmii2_rd0 */
+>> +		>;
+>> +
+>> +	};
+>> +
+>> +	cpsw_sleep: cpsw_sleep {
+>> +		pinctrl-single,pins = <
+>> +			/* Slave 1 */
+>> +			0x250 (MUX_MODE15)
+>> +			0x254 (MUX_MODE15)
+>> +			0x258 (MUX_MODE15)
+>> +			0x25c (MUX_MODE15)
+>> +			0x260 (MUX_MODE15)
+>> +			0x264 (MUX_MODE15)
+>> +			0x268 (MUX_MODE15)
+>> +			0x26c (MUX_MODE15)
+>> +			0x270 (MUX_MODE15)
+>> +			0x274 (MUX_MODE15)
+>> +			0x278 (MUX_MODE15)
+>> +			0x27c (MUX_MODE15)
+>> +
+>> +			/* Slave 1 */
+> ^^ Slave 1?
+
+Will fix this in next version
+
+>> +			0x198 (MUX_MODE15)
+>> +			0x19c (MUX_MODE15)
+>> +			0x1a0 (MUX_MODE15)
+>> +			0x1a4 (MUX_MODE15)
+>> +			0x1a8 (MUX_MODE15)
+>> +			0x1ac (MUX_MODE15)
+>> +			0x1b0 (MUX_MODE15)
+>> +			0x1b4 (MUX_MODE15)
+>> +			0x1b8 (MUX_MODE15)
+>> +			0x1bc (MUX_MODE15)
+>> +			0x1c0 (MUX_MODE15)
+>> +			0x1c4 (MUX_MODE15)
+>> +		>;
+>> +	};
+>> +
+>> +	davinci_mdio_default: davinci_mdio_default {
+>> +		pinctrl-single,pins = <
+>> +			/* MDIO */
+> ^^ you can drop the comment. it is redundant.
+
+Will remove this in next version
+
+>> +			0x23c (PIN_OUTPUT_PULLUP | MUX_MODE0)	/* mdio_data */
+>> +			0x240 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mdio_clk */
+>> +		>;
+>> +	};
+>> +
+>> +	davinci_mdio_sleep: davinci_mdio_sleep {
+>> +		pinctrl-single,pins = <
+>> +			0x23c (MUX_MODE15)
+>> +			0x240 (MUX_MODE15)
+>> +		>;
+>> +	};
+>> +
+>>  };
+>>  
+>>  &i2c1 {
+>> @@ -504,3 +585,29 @@
+>>  &usb2_phy2 {
+>>  	phy-supply = <&ldousb_reg>;
+>>  };
+>> +
+>> +&mac {
+>> +	status = "okay";
+>> +	pinctrl-names = "default", "sleep";
+>> +	pinctrl-0 = <&cpsw_default>;
+>> +	pinctrl-1 = <&cpsw_sleep>;
+>> +	dual_emac;
+>> +};
+>> +
+>> +&cpsw_emac0 {
+>> +	phy_id = <&davinci_mdio>, <2>;
+>> +	phy-mode = "rgmii";
+>> +	dual_emac_res_vlan = <1>;
+>> +};
+>> +
+>> +&cpsw_emac1 {
+>> +	phy_id = <&davinci_mdio>, <3>;
+>> +	phy-mode = "rgmii";
+>> +	dual_emac_res_vlan = <2>;
+>> +};
+>> +
+>> +&davinci_mdio {
+>> +	pinctrl-names = "default", "sleep";
+>> +	pinctrl-0 = <&davinci_mdio_default>;
+>> +	pinctrl-1 = <&davinci_mdio_sleep>;
+>> +};
+>>
+> 
+> 
 
