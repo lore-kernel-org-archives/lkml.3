@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943AbaIKNAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51541 "EHLO
+	id S1755756AbaIKNAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51531 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754892AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755042AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Tissoires" <benjamin.tissoires@redhat.com>,
-        "Jiri Kosina" <jkosina@suse.cz>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Daniel Borkmann" <dborkman@redhat.com>,
+        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
+        "Vlad Yasevich" <vyasevich@gmail.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.74994208@decadent.org.uk>
+Message-ID: <lsq.1410438733.82051424@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 085/131] HID: logitech-dj: prevent false errors to be
- shown
+Subject: [PATCH 3.2 103/131] net: sctp: inherit auth_capable on INIT
+ collisions
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,110 +34,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 5abfe85c1d4694d5d4bbd13ecc166262b937adf0 upstream.
+[ Upstream commit 1be9a950c646c9092fb3618197f7b6bfb50e82aa ]
 
-Commit "HID: logitech: perform bounds checking on device_id early
-enough" unfortunately leaks some errors to dmesg which are not real
-ones:
-- if the report is not a DJ one, then there is not point in checking
-  the device_id
-- the receiver (index 0) can also receive some notifications which
-  can be safely ignored given the current implementation
+Jason reported an oops caused by SCTP on his ARM machine with
+SCTP authentication enabled:
 
-Move out the test regarding the report_id and also discards
-printing errors when the receiver got notified.
+Internal error: Oops: 17 [#1] ARM
+CPU: 0 PID: 104 Comm: sctp-test Not tainted 3.13.0-68744-g3632f30c9b20-dirty #1
+task: c6eefa40 ti: c6f52000 task.ti: c6f52000
+PC is at sctp_auth_calculate_hmac+0xc4/0x10c
+LR is at sg_init_table+0x20/0x38
+pc : [<c024bb80>]    lr : [<c00f32dc>]    psr: 40000013
+sp : c6f538e8  ip : 00000000  fp : c6f53924
+r10: c6f50d80  r9 : 00000000  r8 : 00010000
+r7 : 00000000  r6 : c7be4000  r5 : 00000000  r4 : c6f56254
+r3 : c00c8170  r2 : 00000001  r1 : 00000008  r0 : c6f1e660
+Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 0005397f  Table: 06f28000  DAC: 00000015
+Process sctp-test (pid: 104, stack limit = 0xc6f521c0)
+Stack: (0xc6f538e8 to 0xc6f54000)
+[...]
+Backtrace:
+[<c024babc>] (sctp_auth_calculate_hmac+0x0/0x10c) from [<c0249af8>] (sctp_packet_transmit+0x33c/0x5c8)
+[<c02497bc>] (sctp_packet_transmit+0x0/0x5c8) from [<c023e96c>] (sctp_outq_flush+0x7fc/0x844)
+[<c023e170>] (sctp_outq_flush+0x0/0x844) from [<c023ef78>] (sctp_outq_uncork+0x24/0x28)
+[<c023ef54>] (sctp_outq_uncork+0x0/0x28) from [<c0234364>] (sctp_side_effects+0x1134/0x1220)
+[<c0233230>] (sctp_side_effects+0x0/0x1220) from [<c02330b0>] (sctp_do_sm+0xac/0xd4)
+[<c0233004>] (sctp_do_sm+0x0/0xd4) from [<c023675c>] (sctp_assoc_bh_rcv+0x118/0x160)
+[<c0236644>] (sctp_assoc_bh_rcv+0x0/0x160) from [<c023d5bc>] (sctp_inq_push+0x6c/0x74)
+[<c023d550>] (sctp_inq_push+0x0/0x74) from [<c024a6b0>] (sctp_rcv+0x7d8/0x888)
 
-Fixes: ad3e14d7c5268c2e24477c6ef54bbdf88add5d36
+While we already had various kind of bugs in that area
+ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to verify if
+we/peer is AUTH capable") and b14878ccb7fa ("net: sctp: cache
+auth_enable per endpoint"), this one is a bit of a different
+kind.
 
-Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Giving a bit more background on why SCTP authentication is
+needed can be found in RFC4895:
+
+  SCTP uses 32-bit verification tags to protect itself against
+  blind attackers. These values are not changed during the
+  lifetime of an SCTP association.
+
+  Looking at new SCTP extensions, there is the need to have a
+  method of proving that an SCTP chunk(s) was really sent by
+  the original peer that started the association and not by a
+  malicious attacker.
+
+To cause this bug, we're triggering an INIT collision between
+peers; normal SCTP handshake where both sides intent to
+authenticate packets contains RANDOM; CHUNKS; HMAC-ALGO
+parameters that are being negotiated among peers:
+
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  -------------------- COOKIE-ECHO -------------------->
+  <-------------------- COOKIE-ACK ---------------------
+
+RFC4895 says that each endpoint therefore knows its own random
+number and the peer's random number *after* the association
+has been established. The local and peer's random number along
+with the shared key are then part of the secret used for
+calculating the HMAC in the AUTH chunk.
+
+Now, in our scenario, we have 2 threads with 1 non-blocking
+SEQ_PACKET socket each, setting up common shared SCTP_AUTH_KEY
+and SCTP_AUTH_ACTIVE_KEY properly, and each of them calling
+sctp_bindx(3), listen(2) and connect(2) against each other,
+thus the handshake looks similar to this, e.g.:
+
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  <--------- INIT[RANDOM; CHUNKS; HMAC-ALGO] -----------
+  -------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] -------->
+  ...
+
+Since such collisions can also happen with verification tags,
+the RFC4895 for AUTH rather vaguely says under section 6.1:
+
+  In case of INIT collision, the rules governing the handling
+  of this Random Number follow the same pattern as those for
+  the Verification Tag, as explained in Section 5.2.4 of
+  RFC 2960 [5]. Therefore, each endpoint knows its own Random
+  Number and the peer's Random Number after the association
+  has been established.
+
+In RFC2960, section 5.2.4, we're eventually hitting Action B:
+
+  B) In this case, both sides may be attempting to start an
+     association at about the same time but the peer endpoint
+     started its INIT after responding to the local endpoint's
+     INIT. Thus it may have picked a new Verification Tag not
+     being aware of the previous Tag it had sent this endpoint.
+     The endpoint should stay in or enter the ESTABLISHED
+     state but it MUST update its peer's Verification Tag from
+     the State Cookie, stop any init or cookie timers that may
+     running and send a COOKIE ACK.
+
+In other words, the handling of the Random parameter is the
+same as behavior for the Verification Tag as described in
+Action B of section 5.2.4.
+
+Looking at the code, we exactly hit the sctp_sf_do_dupcook_b()
+case which triggers an SCTP_CMD_UPDATE_ASSOC command to the
+side effect interpreter, and in fact it properly copies over
+peer_{random, hmacs, chunks} parameters from the newly created
+association to update the existing one.
+
+Also, the old asoc_shared_key is being released and based on
+the new params, sctp_auth_asoc_init_active_key() updated.
+However, the issue observed in this case is that the previous
+asoc->peer.auth_capable was 0, and has *not* been updated, so
+that instead of creating a new secret, we're doing an early
+return from the function sctp_auth_asoc_init_active_key()
+leaving asoc->asoc_shared_key as NULL. However, we now have to
+authenticate chunks from the updated chunk list (e.g. COOKIE-ACK).
+
+That in fact causes the server side when responding with ...
+
+  <------------------ AUTH; COOKIE-ACK -----------------
+
+... to trigger a NULL pointer dereference, since in
+sctp_packet_transmit(), it discovers that an AUTH chunk is
+being queued for xmit, and thus it calls sctp_auth_calculate_hmac().
+
+Since the asoc->active_key_id is still inherited from the
+endpoint, and the same as encoded into the chunk, it uses
+asoc->asoc_shared_key, which is still NULL, as an asoc_key
+and dereferences it in ...
+
+  crypto_hash_setkey(desc.tfm, &asoc_key->data[0], asoc_key->len)
+
+... causing an oops. All this happens because sctp_make_cookie_ack()
+called with the *new* association has the peer.auth_capable=1
+and therefore marks the chunk with auth=1 after checking
+sctp_auth_send_cid(), but it is *actually* sent later on over
+the then *updated* association's transport that didn't initialize
+its shared key due to peer.auth_capable=0. Since control chunks
+in that case are not sent by the temporary association which
+are scheduled for deletion, they are issued for xmit via
+SCTP_CMD_REPLY in the interpreter with the context of the
+*updated* association. peer.auth_capable was 0 in the updated
+association (which went from COOKIE_WAIT into ESTABLISHED state),
+since all previous processing that performed sctp_process_init()
+was being done on temporary associations, that we eventually
+throw away each time.
+
+The correct fix is to update to the new peer.auth_capable
+value as well in the collision case via sctp_assoc_update(),
+so that in case the collision migrated from 0 -> 1,
+sctp_auth_asoc_init_active_key() can properly recalculate
+the secret. This therefore fixes the observed server panic.
+
+Fixes: 730fc3d05cd4 ("[SCTP]: Implete SCTP-AUTH parameter processing")
+Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-logitech-dj.c | 43 +++++++++++++++++++++++++------------------
- drivers/hid/hid-logitech-dj.h |  1 +
- 2 files changed, 26 insertions(+), 18 deletions(-)
+ net/sctp/associola.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -679,7 +679,6 @@ static int logi_dj_raw_event(struct hid_
- 	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
- 	struct dj_report *dj_report = (struct dj_report *) data;
- 	unsigned long flags;
--	bool report_processed = false;
- 
- 	dbg_hid("%s, size:%d\n", __func__, size);
- 
-@@ -706,34 +705,42 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+
-+	/* case 1) */
-+	if (data[0] != REPORT_ID_DJ_SHORT)
-+		return false;
-+
- 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
- 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+		/*
-+		 * Device index is wrong, bail out.
-+		 * This driver can ignore safely the receiver notifications,
-+		 * so ignore those reports too.
-+		 */
-+		if (dj_report->device_index != DJ_RECEIVER_INDEX)
-+			dev_err(&hdev->dev, "%s: invalid device index:%d\n",
- 				__func__, dj_report->device_index);
- 		return false;
- 	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
--	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
--		switch (dj_report->report_type) {
--		case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
--		case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
--			logi_dj_recv_queue_notification(djrcv_dev, dj_report);
--			break;
--		case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
--			if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
--			    STATUS_LINKLOSS) {
--				logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
--			}
--			break;
--		default:
--			logi_dj_recv_forward_report(djrcv_dev, dj_report);
-+	switch (dj_report->report_type) {
-+	case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-+	case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-+		logi_dj_recv_queue_notification(djrcv_dev, dj_report);
-+		break;
-+	case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
-+		if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
-+		    STATUS_LINKLOSS) {
-+			logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
- 		}
--		report_processed = true;
-+		break;
-+	default:
-+		logi_dj_recv_forward_report(djrcv_dev, dj_report);
- 	}
- 	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
- 
--	return report_processed;
-+	return true;
- }
- 
- static int logi_dj_probe(struct hid_device *hdev,
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -27,6 +27,7 @@
- 
- #define DJ_MAX_PAIRED_DEVICES			6
- #define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_RECEIVER_INDEX			0
- #define DJ_DEVICE_INDEX_MIN 			1
- #define DJ_DEVICE_INDEX_MAX 			6
- 
+diff --git a/net/sctp/associola.c b/net/sctp/associola.c
+index 25b207b..da54d29 100644
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -1188,6 +1188,7 @@ void sctp_assoc_update(struct sctp_association *asoc,
+ 	asoc->c = new->c;
+ 	asoc->peer.rwnd = new->peer.rwnd;
+ 	asoc->peer.sack_needed = new->peer.sack_needed;
++	asoc->peer.auth_capable = new->peer.auth_capable;
+ 	asoc->peer.i = new->peer.i;
+ 	sctp_tsnmap_init(&asoc->peer.tsn_map, SCTP_TSN_MAP_INITIAL,
+ 			 asoc->peer.i.initial_tsn, GFP_ATOMIC);
 
