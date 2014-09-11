@@ -1,74 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884AbaIKAZB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 20:25:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59125 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaIKAZA (ORCPT
+	id S1753928AbaIKAcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 20:32:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58499 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019AbaIKAcN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 20:25:00 -0400
-Date: Wed, 10 Sep 2014 17:24:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-Message-ID: <20140911002410.GA11732@kroah.com>
-References: <1410384499-4982-1-git-send-email-peter@hurleysoftware.com>
- <20140911000343.GA5328@kroah.com>
- <5410E8A2.5030802@hurleysoftware.com>
+	Wed, 10 Sep 2014 20:32:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="384440619"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: atull <atull@opensource.altera.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHPzVfQBzfVE95SwUGw/dcbz4wqaA==
+Date: Thu, 11 Sep 2014 00:32:06 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E98F95D@SHSMSX101.ccr.corp.intel.com>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+ <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
+ <alpine.DEB.2.02.1409101353500.2790@atx-linux-37>
+In-Reply-To: <alpine.DEB.2.02.1409101353500.2790@atx-linux-37>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5410E8A2.5030802@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 08:11:14PM -0400, Peter Hurley wrote:
-> On 09/10/2014 08:03 PM, Greg Kroah-Hartman wrote:
-> > On Wed, Sep 10, 2014 at 05:28:19PM -0400, Peter Hurley wrote:
-> >> This patch changes user-space behavior (for the better) but I'm not sure
-> >> that it's consequence-free. Also, it might not be enough to unwedge the
-> >> terminal if the driver got its own flow control state mangled.
-> >>
-> >> Thoughts?
-> >>
-> >> --- >% ---
-> >> Subject: [RFC] tty: Always allow tcflow(TCOON) to unwedge terminal
-> >>
-> >> If terminal flow has been stopped, the terminal can be unwedged
-> >> by:
-> >> 	tcflow(fd, TCOOFF);
-> >> 	tcflow(fd, TCOON);
-> >> This works because tcflow(TCOOFF) ensures that ->flow_stopped is set,
-> >> which allows tcflow(TCOON) to override the terminal flow state in
-> >> __start_tty().
-> >>
-> >> Instead, allow unwedging with only:
-> >>         tcflow(fd, TCOON);
-> >> by disregarding the existing ->flow_stopped state.
-> > 
-> > I don't see the benifit here, what are you trying to solve?  Sending one
-> > extra tcflow command?
 > 
-> It's not common knowledge (and its certainly counterintuitive) that
-> turning off output when output is already turned off (ie., tcflow(TCOOFF))
-> is the required trickery to unwedge a terminal.
+> Hi Alvin,
 > 
-> Unwedging directly seems the straightforward approach.
+> I did a quick test and this looks like it works for me (with device tree).
+> I had a couple of small fixes below.
+It is very appreciated to help testing.
 
-What's the odds we break POSIX with this type of change?
 
-I'm all for working around broken hardware in the kernel, but this seems
-like a very old issue, if it's even one at all, that we would be
-changing for no one who has reported it (that I know of...)
+> Alan
+> 
+> >
+> > -	port->bgc.gc.ngpio = ngpio;
+> > -	port->bgc.gc.of_node = port_np;
+> > +#ifdef CONFIG_OF_GPIO
+> > +	port->bgc.gc.of_node = pp->node;
+> > +#endif
+> 
+> Please use 'if (IS_ENABLED(CONFIG_OF_GPIO)) as a conditional as you do
+> elsewhere.
+OK.
 
-In other words, I'm really leary of changing userspace functionality
-without having a real need/reason to.
+> 
+> >  static int dwapb_gpio_probe(struct platform_device *pdev)  {
+> > +	int i;
+> >  	struct resource *res;
+> >  	struct dwapb_gpio *gpio;
+> > -	struct device_node *np;
+> >  	int err;
+> > -	unsigned int offs = 0;
+> > +	struct device *dev = &pdev->dev;
+> > +	struct dwapb_platform_data *pdata = dev_get_platdata(dev);
+> > +	bool is_pdata_alloc = !pdata;
+> 
+> Please combine the int's in one line (int err, i;) and put them as the last one on
+> this list.  It looks the same to the compiler of course, but more uniform for
+> human eyes :)
+OK.
 
-thanks,
-
-greg k-h
