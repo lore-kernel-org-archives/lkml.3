@@ -1,131 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaIKOWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40127 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752392AbaIKOWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:22:12 -0400
-Message-ID: <5411AFF3.5090708@redhat.com>
-Date: Thu, 11 Sep 2014 16:21:39 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753492AbaIKOX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:23:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35019 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaIKOX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:23:26 -0400
+Message-ID: <5411B032.7050205@oracle.com>
+Date: Thu, 11 Sep 2014 10:22:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Ching Huang <ching2048@areca.com.tw>,
-        Christoph Hellwig <hch@infradead.org>
-CC: jbottomley@parallels.com, dan.carpenter@oracle.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
-References: <1408433122.4748.73.camel@Centos6.3-64>	 <53FDE490.1070201@redhat.com> <1409240809.4762.259.camel@Centos6.3-64>	 <53FF2544.8020601@redhat.com> <20140909163057.GA25745@infradead.org>	 <541020CB.8010302@redhat.com> <1410407950.4753.18.camel@Centos6.3-64>
-In-Reply-To: <1410407950.4753.18.camel@Centos6.3-64>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: Hugh Dickins <hughd@google.com>
+CC: Mel Gorman <mgorman@suse.de>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: mm: BUG in unmap_page_range
+References: <53E989FB.5000904@oracle.com> <53FD4D9F.6050500@oracle.com> <20140827152622.GC12424@suse.de> <540127AC.4040804@oracle.com> <54082B25.9090600@oracle.com> <20140908171853.GN17501@suse.de> <540DEDE7.4020300@oracle.com> <20140909213309.GQ17501@suse.de> <540F7D42.1020402@oracle.com> <alpine.LSU.2.11.1409091903390.10989@eggly.anvils> <20140910124732.GT17501@suse.de> <alpine.LSU.2.11.1409101210520.1744@eggly.anvils> <54110C62.4030702@oracle.com> <alpine.LSU.2.11.1409110356280.2116@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1409110356280.2116@eggly.anvils>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 05:59 AM, Ching Huang wrote:
-> On Wed, 2014-09-10 at 11:58 +0200, Tomas Henzl wrote:
->> On 09/09/2014 06:30 PM, Christoph Hellwig wrote:
->>> Ching,
->>>
->>> do you have a chance to address Thomas second concern below?  As
->>> far as I can tell (Thomas, please correct me) that's the last
->>> outstanding concern, and I'd really like to merge the arcmsr updates
->>> for the Linux 3.18 merge window.
->> Correct, still awaiting a response.
-> Christoph, Tomas,
->
-> Sorry for the late reply.
->
-> I think I misunderstand Tomas' meaning.
-> The spin lock in arcmsr_hbaD_polling_ccbdone() is necessary to protect doneq_index and have to be modified as following.
+On 09/11/2014 07:39 AM, Hugh Dickins wrote:
+> On Wed, 10 Sep 2014, Sasha Levin wrote:
+>> On 09/10/2014 03:36 PM, Hugh Dickins wrote:
+>>> Right, and Sasha  reports that that can fire, but he sees the bug
+>>> with this patch in and without that firing.
+>>
+>> I've changed that WARN_ON_ONCE() to a VM_BUG_ON_VMA() to get some useful
+>> VMA information out, and got the following:
+> 
+> Well, thanks, but Mel and I have both failed to perceive any actual
+> problem arising from that peculiarity.  And Mel's warning, and the 900s
+> in yesterday's dumps, have shown that it is not correlated with the
+> pte_mknuma() bug we are chasing.  So there isn't anything that I want to
+> look up in these vmas.  Or did you notice something interesting in them?
 
-OK, so you are going to repost 16/17 ? If so, please describe all changes you'll do, in that new post.
+I thought this was a separate issue that would need taking care of as well.
 
->
-> static int arcmsr_hbaD_polling_ccbdone(struct AdapterControlBlock *acb,
-> 				struct CommandControlBlock *poll_ccb)
-> {
-> 	bool error;
-> 	uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
-> 	int rtn, doneq_index, index_stripped, outbound_write_pointer, toggle;
-> 	unsigned long flags;
-> 	struct ARCMSR_CDB *arcmsr_cdb;
-> 	struct CommandControlBlock *pCCB;
-> 	struct MessageUnit_D *pmu = acb->pmuD;
->
-> polling_hbaD_ccb_retry:
-> 	poll_count++;
-> 	while (1) {
-> 		spin_lock_irqsave(&acb->doneq_lock, flags);
-> 		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
-> 		doneq_index = pmu->doneq_index;
-> 		if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
-> 			spin_unlock_irqrestore(&acb->doneq_lock, flags);
-> 			if (poll_ccb_done) {
-> 				rtn = SUCCESS;
-> 				break;
-> 			} else {
-> 				msleep(25);
-> 				if (poll_count > 40) {
-> 					rtn = FAILED;
-> 					break;
-> 				}
-> 				goto polling_hbaD_ccb_retry;
-> 			}
-> 		}
-> 		toggle = doneq_index & 0x4000;
-> 		index_stripped = (doneq_index & 0xFFF) + 1;
-> 		index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
-> 		pmu->doneq_index = index_stripped ? (index_stripped | toggle) :
-> 			((index_stripped + 1) | (toggle ^ 0x4000));
-> 		spin_unlock_irqrestore(&acb->doneq_lock, flags);
-> 		doneq_index = pmu->doneq_index;
-> 		flag_ccb = pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;
-> 		ccb_cdb_phy = (flag_ccb & 0xFFFFFFF0);
-> 		arcmsr_cdb = (struct ARCMSR_CDB *)(acb->vir2phy_offset +
-> 			ccb_cdb_phy);
-> 		pCCB = container_of(arcmsr_cdb, struct CommandControlBlock,
-> 			arcmsr_cdb);
-> 		poll_ccb_done |= (pCCB == poll_ccb) ? 1 : 0;
-> 		if ((pCCB->acb != acb) ||
-> 			(pCCB->startdone != ARCMSR_CCB_START)) {
-> 			if (pCCB->startdone == ARCMSR_CCB_ABORTED) {
-> 				pr_notice("arcmsr%d: scsi id = %d "
-> 					"lun = %d ccb = '0x%p' poll command "
-> 					"abort successfully\n"
-> 					, acb->host->host_no
-> 					, pCCB->pcmd->device->id
-> 					, (u32)pCCB->pcmd->device->lun
-> 					, pCCB);
-> 				pCCB->pcmd->result = DID_ABORT << 16;
-> 				arcmsr_ccb_complete(pCCB);
-> 				continue;
-> 			}
-> 			pr_notice("arcmsr%d: polling an illegal "
-> 				"ccb command done ccb = '0x%p' "
-> 				"ccboutstandingcount = %d\n"
-> 				, acb->host->host_no
-> 				, pCCB
-> 				, atomic_read(&acb->ccboutstandingcount));
-> 			continue;
-> 		}
-> 		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE1)
-> 			? true : false;
-> 		arcmsr_report_ccb_state(acb, pCCB, error);
-> 	}
-> 	return rtn;
-> }
->
->
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> And on a maybe related note, I've started seeing the following today. It may
+>> be because we fixed mbind() in trinity but it could also be related to
+> 
+> The fixed trinity may be counter-productive for now, since we think
+> there is an understandable pte_mknuma() bug coming from that direction,
+> but have not posted a patch for it yet.
+
+I'm still seeing the bug with fixed trinity, it was a matter of adding more flags
+to mbind.
+
+>> this issue (free_pgtables() is in the call chain). If you don't think it has
+>> anything to do with it let me know and I'll start a new thread:
+>>
+>> [ 1195.996803] BUG: unable to handle kernel NULL pointer dereference at           (null)
+>> [ 1196.001744] IP: __rb_erase_color (include/linux/rbtree_augmented.h:107 lib/rbtree.c:229 lib/rbtree.c:367)
+>> [ 1196.001744] Call Trace:
+>> [ 1196.001744] vma_interval_tree_remove (mm/interval_tree.c:24)
+>> [ 1196.001744] __remove_shared_vm_struct (mm/mmap.c:232)
+>> [ 1196.001744] unlink_file_vma (mm/mmap.c:246)
+>> [ 1196.001744] free_pgtables (mm/memory.c:547)
+>> [ 1196.001744] exit_mmap (mm/mmap.c:2826)
+>> [ 1196.001744] mmput (kernel/fork.c:654)
+>> [ 1196.001744] do_exit (./arch/x86/include/asm/thread_info.h:168 kernel/exit.c:461 kernel/exit.c:746)
+> 
+> I didn't study in any detail, but this one seems much more like the
+> zeroing and vma corruption that you've been seeing in other dumps.
+> 
+> Though a single pte_mknuma() crash could presumably be caused by vma
+> corruption (but I think not mere zeroing), the recurrent way in which
+> you hit that pte_mknuma() bug in particular makes it unlikely to be
+> caused by random corruption.
+> 
+> You are generating new crashes faster than we can keep up with them.
+> Would this be a suitable point for you to switch over to testing
+> 3.17-rc, to see if that is as unstable for you as -next is?
+> 
+> That VM_BUG_ON(!(val & _PAGE_PRESENT)) is not in the 3.17-rc tree,
+> but I think you can "safely" add it to 3.17-rc.  Quotes around
+> "safely" meaning that we know that there's a bug to hit, at least
+> in -next, but I don't think it's going to be hit for stupid obvious
+> reasons.
+
+I'll try it, usually I just hit a bunch of issues that were already fixed
+in -next, which is why I try sticking to one tree.
+
+> And you're using a gcc 5 these days?  That's another variable to
+> try removing from the mix, to see if it makes a difference.
+
+I'm seeing the BUG getting hit with 4.7.2, so I don't think it's compiler
+dependant. I'll try reproducing everything I reported yesterday with 4.7.2
+just in case, but I don't think that this is the issue.
+
+
+Thanks,
+Sasha
 
