@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400AbaIKP1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:27:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:33487 "EHLO mail.kernel.org"
+	id S1756140AbaIKPax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:30:53 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53200 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830AbaIKP1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:27:33 -0400
-Date: Thu, 11 Sep 2014 12:27:26 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] tools lib fd array: Do not set fd as non blocking evlist
-Message-ID: <20140911152726.GJ10158@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-12-git-send-email-acme@kernel.org>
- <20140911150943.GD32722@krava.brq.redhat.com>
+	id S1750860AbaIKPav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:30:51 -0400
+Message-ID: <5411C005.10108@ti.com>
+Date: Thu, 11 Sep 2014 11:30:13 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911150943.GD32722@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jamal Hadi Salim <jhs@mojatatu.com>, David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <sandeep_n@ti.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        shrijeet Mukherjee <shm@cumulusnetworks.com>
+Subject: Re: [PATCH v2 0/3] net: Add Keystone NetCP ethernet driver support
+References: <1408115562-22487-1-git-send-email-santosh.shilimkar@ti.com> <20140821.163612.282672926741753926.davem@davemloft.net> <53F79DC5.8030003@ti.com> <540DC00F.1080103@ti.com> <540EE809.9020901@mojatatu.com> <540F1A9A.1020309@ti.com> <541036F0.2030001@mojatatu.com>
+In-Reply-To: <541036F0.2030001@mojatatu.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Sep 11, 2014 at 05:09:43PM +0200, Jiri Olsa escreveu:
-> On Wed, Sep 10, 2014 at 11:08:46AM -0300, Arnaldo Carvalho de Melo wrote:
+On Wednesday 10 September 2014 07:33 AM, Jamal Hadi Salim wrote:
+> On 09/09/14 11:19, Santosh Shilimkar wrote:
 > 
-> SNIP
+>> All the documentation is open including packet accelerator offload
+>> in ti.com.
 > 
-> > +}
-> > +
-> > +void fdarray__exit(struct fdarray *fda)
-> > +{
-> > +	free(fda->entries);
-> > +	fdarray__init(fda, 0);
-> > +}
-> > +
-> > +void fdarray__delete(struct fdarray *fda)
-> > +{
-> > +	fdarray__exit(fda);
-> > +	free(fda);
-> > +}
-> > +
-> > +int fdarray__add(struct fdarray *fda, int fd, short revents)
-> > +{
-> > +	if (fda->nr == fda->nr_alloc &&
-> > +	    fdarray__grow(fda, fda->nr_autogrow) < 0)
-> > +		return -ENOMEM;
-> > +
-> > +	fcntl(fd, F_SETFL, O_NONBLOCK);
-> 
-> also I spot this one and couldn't think of reason for it, attached
-> patch makes no behaviour difference for me..
+> Very nice.
+> Would you do me a kindness and point to the switch interface
+> documentation (and other ones on that soc)?
+>
+You can find it here [1], [2], [3]
 
-Have to look why it is there, perhaps there is some changeset
-specifically made for this, will do some research...
- 
-> I might be missing something, but I dont see any blocking operation
-> in perf related data reads. The git log history says it was there
-> since early days.
+>> We got such requests from customers but couldn't
+>> support it for Linux.
+> 
+> It has been difficult because every chip vendor is trying
+> to do their own thing. Some have huge (fugly) SDKs in user space
+> which make it worse. Thats the struggle we are trying to
+> deal with. Of course none of those vendors want to open
+> up their specs. You present a nice opportunity to not follow
+> that path.
+> 
+>> We are also looking for such
+>> support and any direction are welcome. Your slide
+>> deck seems to capture the key topics like L2/IPSEC
+>> offload which we are also interested to hear.
+>>
+> 
+> The slides list the most popular offloads. But not necessarily
+> all known offloads.
+> 
+>> Just to be clear, your point was about L2 switch offload
+>> which the driver don't support at the moment. It might confuse
+>> others. The driver doesn't implements anything non-standard.
+>>
+> 
+> If i understood you correctly:
+> Your initial patches dont intend to expose any offloads - you are just
+> abstracting this as a NIC. I think that is a legit reason.
+Yes. The NetCP hardware is abstracted as a regular NIC.
 
-Oops, you did that research already, have you followed the history all
-the way to when this code lived in Documentation/ ?
+> However, the problem is you are also exposing the packet processors
+> and switch offloading in a proprietary way.
+> For a sample of how L2 basic functions like FDB tables are controlled
+> within a NIC - take a look at the Intel NICs.
+> Either that or you hide all the offload interfaces and over time add
+> them (starting with L2 - NICs with L2 are common).
+>
+Switch offload isn't supported but we do agree that for packet
+accelerator, we are using custom hooks because of lack of other
+mechanism.
 
-But yes, I agree with your comment that this is something up to the
-users to do, not for a general purpose class as fdarray is set out to
-be.
+We will definitely use the new ndo based fdb offload scheme when
+we get to it. We understand that the forward direction is to
+have ndo operation based offloads and its the right way probably.
 
-I think the way to do this is to not move this fcntl when introducing
-the fdarray class, but instead leave it at the perf_evlist__add_pollfd()
-function, then, in a later patch, if we determine that it is not needed
-at all, nuke it, ok?
+We will update the patch and drop all the custom exports. Anyway
+the current driver doesn't support any offloads now. We can add
+support for it as the frameworks evolves.
 
-- Arnaldo
- 
-> jirka
-> 
-> 
-> ---
-> There's no reason for the current user of this API
-> to have non blocking fds. Also it should be up to
-> user to set this, not this object.
-> 
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> ---
->  tools/lib/api/fd/array.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/lib/api/fd/array.c b/tools/lib/api/fd/array.c
-> index 3f6d1a0..0e636c4 100644
-> --- a/tools/lib/api/fd/array.c
-> +++ b/tools/lib/api/fd/array.c
-> @@ -78,7 +78,6 @@ int fdarray__add(struct fdarray *fda, int fd, short revents)
->  	    fdarray__grow(fda, fda->nr_autogrow) < 0)
->  		return -ENOMEM;
->  
-> -	fcntl(fd, F_SETFL, O_NONBLOCK);
->  	fda->entries[fda->nr].fd     = fd;
->  	fda->entries[fda->nr].events = revents;
->  	fda->nr++;
-> -- 
-> 1.7.7.6
-> 
+Thanks a lot for informative discussion and those links.
+
+Regards,
+Santosh
+[1] http://www.ti.com/lit/pdf/sprugv9
+[2] http://www.ti.com/lit/pdf/spruhj5
+[3] http://www.ti.com/lit/pdf/sprugs4
+
+
