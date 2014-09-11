@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763AbaIKMif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:38:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51675 "EHLO
+	id S1755773AbaIKMig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:38:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51682 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755468AbaIKMeJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755454AbaIKMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:09 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Bjorn Helgaas" <bhelgaas@google.com>,
+        "Christoph Schulz" <develop@kristov.de>,
+        "Robert Resch" <fli4l@robert.reschpara.de>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.392622110@decadent.org.uk>
+Message-ID: <lsq.1410438733.959519814@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 063/131] powerpc: Fix build errors STRICT_MM_TYPECHECKS
+Subject: [PATCH 3.2 010/131] x86: don't exclude low BIOS area when
+ allocating address space for non-PCI cards
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,62 +33,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Christoph Schulz <develop@kristov.de>
 
-commit 83d5e64b7efa7f39b10ff5e92792e807a720289c upstream.
+commit cbace46a9710a480cae51e4611697df5de41713e upstream.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
+space") moved the test for resource allocations that fall within the first
+1MB of address space from the PCI-specific path to a generic path, such
+that all resource allocations will avoid this area.  However, this breaks
+ISA cards which need to allocate a memory region within the first 1MB.  An
+example is the i82365 PCMCIA controller and derivatives like the Ricoh
+RF5C296/396 which map part of the PCMCIA socket memory address space into
+the first 1MB of system memory address space.  They do not work anymore as
+no usable memory region exists due to this change:
+
+  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
+  host opts [0]: none
+  host opts [1]: none
+  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
+  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
+  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
+  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
+  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
+
+If filtering out the first 1MB is reverted, everything works as expected.
+
+Tested-by: Robert Resch <fli4l@robert.reschpara.de>
+Signed-off-by: Christoph Schulz <develop@kristov.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/powerpc/include/asm/pte-hash64-64k.h | 2 +-
- arch/powerpc/kernel/pci-common.c          | 5 ++---
- arch/powerpc/mm/init_64.c                 | 3 ++-
- 3 files changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/kernel/resource.c | 8 +++++---
+ arch/x86/pci/i386.c        | 4 ++++
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/include/asm/pte-hash64-64k.h
-+++ b/arch/powerpc/include/asm/pte-hash64-64k.h
-@@ -47,7 +47,7 @@
-  * generic accessors and iterators here
-  */
- #define __real_pte(e,p) 	((real_pte_t) { \
--			(e), ((e) & _PAGE_COMBO) ? \
-+			(e), (pte_val(e) & _PAGE_COMBO) ? \
- 				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
- #define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
-         (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
---- a/arch/powerpc/kernel/pci-common.c
-+++ b/arch/powerpc/kernel/pci-common.c
-@@ -363,7 +363,6 @@ static pgprot_t __pci_mmap_set_pgprot(st
- 				      enum pci_mmap_state mmap_state,
- 				      int write_combine)
+--- a/arch/x86/kernel/resource.c
++++ b/arch/x86/kernel/resource.c
+@@ -37,10 +37,12 @@ static void remove_e820_regions(struct r
+ 
+ void arch_remove_reservations(struct resource *avail)
  {
--	unsigned long prot = pgprot_val(protection);
+-	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
++	/*
++	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
++	 * the low 1MB unconditionally, as this area is needed for some ISA
++	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
++	 */
+ 	if (avail->flags & IORESOURCE_MEM) {
+-		if (avail->start < BIOS_END)
+-			avail->start = BIOS_END;
+ 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
  
- 	/* Write combine is always 0 on non-memory space mappings. On
- 	 * memory space, if the user didn't pass 1, we check for a
-@@ -380,9 +379,9 @@ static pgprot_t __pci_mmap_set_pgprot(st
- 
- 	/* XXX would be nice to have a way to ask for write-through */
- 	if (write_combine)
--		return pgprot_noncached_wc(prot);
-+		return pgprot_noncached_wc(protection);
- 	else
--		return pgprot_noncached(prot);
-+		return pgprot_noncached(protection);
- }
- 
- /*
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -218,7 +218,8 @@ static void __meminit vmemmap_create_map
- 					     unsigned long phys)
- {
- 	int  mapped = htab_bolt_mapping(start, start + page_size, phys,
--					PAGE_KERNEL, mmu_vmemmap_psize,
-+					pgprot_val(PAGE_KERNEL),
-+					mmu_vmemmap_psize,
- 					mmu_kernel_ssize);
- 	BUG_ON(mapped < 0);
+ 		remove_e820_regions(avail);
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -73,6 +73,10 @@ pcibios_align_resource(void *data, const
+ 			return start;
+ 		if (start & 0x300)
+ 			start = (start + 0x3ff) & ~0x3ff;
++	} else if (res->flags & IORESOURCE_MEM) {
++		/* The low 1MB range is reserved for ISA cards */
++		if (start < BIOS_END)
++			start = BIOS_END;
+ 	}
+ 	return start;
  }
 
