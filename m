@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578AbaIKPRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:17:34 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:47491 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaIKPRb (ORCPT
+	id S1756037AbaIKPSs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:18:48 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42899 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042AbaIKPSq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:17:31 -0400
-Message-ID: <5411BD03.3010206@linux.vnet.ibm.com>
-Date: Thu, 11 Sep 2014 20:47:23 +0530
-From: Shreyas B Prabhu <shreyas@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 11 Sep 2014 11:18:46 -0400
+Date: Thu, 11 Sep 2014 16:18:35 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v3 16/17] ARM64 / ACPI: Enable ARM64 in Kconfig
+Message-ID: <20140911151835.GA28298@e102568-lin.cambridge.arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <1409583475-6978-17-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-CC: Paul Mackerras <paulus@samba.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Srivatsa S. Bhat" <srivatsa@MIT.EDU>,
-        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-pm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 0/9] powerpc/powernv: Support for fastsleep and winkle
-References: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
-In-Reply-To: <1408989673-14137-1-git-send-email-shreyas@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091115-0005-0000-0000-000000F57306
+In-Reply-To: <1409583475-6978-17-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 11 Sep 2014 15:18:39.0261 (UTC) FILETIME=[AA1944D0:01CFCDD3]
+X-MC-Unique: 114091116184305601
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Any updates on this patch series?
+On Mon, Sep 01, 2014 at 03:57:54PM +0100, Hanjun Guo wrote:
+> From: Graeme Gregory <graeme.gregory@linaro.org>
+> 
+> Add Kconfigs to build ACPI on ARM64, and make ACPI available on ARM64.
+> 
+> acpi_idle driver is x86/IA64 dependent now, so make CONFIG_ACPI_PROCESSOR
+> depend on X86 || IA64, and implement it on ARM64 in the future.
 
-On Monday 25 August 2014 11:31 PM, Shreyas B. Prabhu wrote:
-> Fast sleep is an idle state, where the core and the L1 and L2
-> caches are brought down to a threshold voltage. This also means that
-> the communication between L2 and L3 caches have to be fenced. However
-> the current P8 chips have a bug wherein this fencing between L2 and
-> L3 caches get delayed by a cpu cycle. This can delay L3 response to
-> the other cpus if they request for data during this time. Thus they
-> would fetch the same data from the memory which could lead to data
-> corruption if L3 cache is not flushed.
-> Patch 4 adds support to work around this.
+So are S states. Maybe I am being pedantic, but why can't you do
+the same thing for drivers/acpi/sleep.c ? Is it really that complicated to add
+a config option and avoid compiling it (that file supports a part
+of the ACPI specs that is completely undefined for ARM64), and with that
+removing the need for useless hooks on ARM64 ?
+
+Why do we have to compile that code at all on ARM64 ?
+
+Thanks,
+Lorenzo
+
+> Reviewed-by: Grant Likely <grant.likely@linaro.org>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Al Stone <al.stone@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/arm64/Kconfig   |    2 ++
+>  drivers/acpi/Kconfig |    6 +++---
+>  2 files changed, 5 insertions(+), 3 deletions(-)
 > 
-> 'Deep Winkle' is a deeper idle state where core and private L2 are powered
-> off. While it offers higher power savings, it is at the cost of losing
-> hypervisor register state and higher latency.
-> Patch 5-9 adds support for winkle and uses it for offline cpus.
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 065438c..8dabaeb 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -422,6 +422,8 @@ source "drivers/Kconfig"
+>  
+>  source "drivers/firmware/Kconfig"
+>  
+> +source "drivers/acpi/Kconfig"
+> +
+>  source "fs/Kconfig"
+>  
+>  source "arch/arm64/kvm/Kconfig"
+> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+> index d0f3265..f935d2e 100644
+> --- a/drivers/acpi/Kconfig
+> +++ b/drivers/acpi/Kconfig
+> @@ -5,8 +5,7 @@
+>  menuconfig ACPI
+>  	bool "ACPI (Advanced Configuration and Power Interface) Support"
+>  	depends on !IA64_HP_SIM
+> -	depends on IA64 || X86
+> -	depends on PCI
+> +	depends on ((IA64 || X86) && PCI) || (ARM64 && EXPERT)
+>  	select PNP
+>  	default y
+>  	help
+> @@ -163,6 +162,7 @@ config ACPI_PROCESSOR
+>  	tristate "Processor"
+>  	select THERMAL
+>  	select CPU_IDLE
+> +	depends on X86 || IA64
+>  	default y
+>  	help
+>  	  This driver installs ACPI as the idle handler for Linux and uses
+> @@ -263,7 +263,7 @@ config ACPI_DEBUG
+>  
+>  config ACPI_PCI_SLOT
+>  	bool "PCI slot detection driver"
+> -	depends on SYSFS
+> +	depends on SYSFS && PCI
+>  	default n
+>  	help
+>  	  This driver creates entries in /sys/bus/pci/slots/ for all PCI
+> -- 
+> 1.7.9.5
 > 
-> Patch 1 - Moves parameters required discover idle states to a location 
-> common to both cpuidle driver and powernv core code
-> Patch 2 - Populates idle state details from device tree
-> Patch 3 - Enables cpus to run guest after waking up from fastsleep/winkle
-> 
-> 
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Michael Ellerman <mpe@ellerman.id.au>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Srivatsa S. Bhat <srivatsa@MIT.EDU>
-> Cc: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
-> Cc: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-pm@vger.kernel.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> 
-> Preeti U Murthy (2):
->   cpuidle/powernv: Populate cpuidle state details by querying the
->     device-tree
->   powerpc/powernv/cpuidle: Add workaround to enable fastsleep
-> 
-> Shreyas B. Prabhu (6):
->   powerpc/kvm/book3s_hv: Enable CPUs to run guest after waking up from
->     fast-sleep
->   powerpc/powernv: Add OPAL call to save and restore
->   powerpc: Adding macro for accessing Thread Switch Control Register
->   powerpc/powernv: Add winkle infrastructure
->   powerpc/powernv: Discover and enable winkle
->   powerpc/powernv: Enter deepest supported idle state in offline
-> 
-> Srivatsa S. Bhat (1):
->   powerpc/powernv: Enable Offline CPUs to enter deep idle states
-> 
->  arch/powerpc/include/asm/machdep.h             |   4 +
->  arch/powerpc/include/asm/opal.h                |  10 ++
->  arch/powerpc/include/asm/paca.h                |   3 +
->  arch/powerpc/include/asm/ppc-opcode.h          |   2 +
->  arch/powerpc/include/asm/processor.h           |   6 +-
->  arch/powerpc/include/asm/reg.h                 |   1 +
->  arch/powerpc/kernel/asm-offsets.c              |   1 +
->  arch/powerpc/kernel/exceptions-64s.S           |  37 ++---
->  arch/powerpc/kernel/idle.c                     |  30 ++++
->  arch/powerpc/kernel/idle_power7.S              |  83 +++++++++-
->  arch/powerpc/platforms/powernv/opal-wrappers.S |   2 +
->  arch/powerpc/platforms/powernv/powernv.h       |   8 +
->  arch/powerpc/platforms/powernv/setup.c         | 217 +++++++++++++++++++++++++
->  arch/powerpc/platforms/powernv/smp.c           |  13 +-
->  arch/powerpc/platforms/powernv/subcore.c       |  15 ++
->  drivers/cpuidle/cpuidle-powernv.c              |  40 ++++-
->  16 files changed, 439 insertions(+), 33 deletions(-)
 > 
 
