@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269AbaIKKYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:24:43 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:44265 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaIKKYl (ORCPT
+	id S1754318AbaIKKZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:25:17 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49839 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754294AbaIKKZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:24:41 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v3 09/17] ARM64 / ACPI: Parse MADT for SMP
- initialization
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-In-Reply-To: <1409583475-6978-10-git-send-email-hanjun.guo@linaro.org>
-References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
-	<1409583475-6978-10-git-send-email-hanjun.guo@linaro.org>
-Date: Thu, 11 Sep 2014 11:24:36 +0100
-Message-Id: <20140911102436.B6671C40862@trevor.secretlab.ca>
+	Thu, 11 Sep 2014 06:25:12 -0400
+Date: Thu, 11 Sep 2014 11:23:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Mikael Pettersson <mikpelinux@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Henderson <rth@twiddle.net>, Oleg Nesterov <oleg@redhat.com>,
+        Miroslav Franc <mfranc@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
+Subject: Re: bit fields && data tearing
+Message-ID: <20140911102356.GA6158@arm.com>
+References: <20140905040645.GO5001@linux.vnet.ibm.com>
+ <1410066442.12512.13.camel@jarvis.lan>
+ <20140907162146.GK5001@linux.vnet.ibm.com>
+ <1410116687.2027.19.camel@jarvis.lan>
+ <540CC305.8010407@hurleysoftware.com>
+ <1410155407.2027.29.camel@jarvis.lan>
+ <540E3BFF.7080307@hurleysoftware.com>
+ <1410231392.2028.15.camel@jarvis.lan>
+ <540ED929.5040305@hurleysoftware.com>
+ <1410385686.28237.5.camel@jarvis>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410385686.28237.5.camel@jarvis>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  1 Sep 2014 22:57:47 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> MADT contains the information for MPIDR which is essential for
-> SMP initialization, parse the GIC cpu interface structures to
-> get the MPIDR value and map it to cpu_logical_map(), and add
-> enabled cpu with valid MPIDR into cpu_possible_map.
+On Wed, Sep 10, 2014 at 10:48:06PM +0100, James Bottomley wrote:
+> On Tue, 2014-09-09 at 06:40 -0400, Peter Hurley wrote:
+> > >> The processor is free to re-order this to:
+> > >>
+> > >> 	STORE C
+> > >> 	STORE B
+> > >> 	UNLOCK
+> > >>
+> > >> That's because the unlock() only guarantees that:
+> > >>
+> > >> Stores before the unlock in program order are guaranteed to complete
+> > >> before the unlock completes. Stores after the unlock _may_ complete
+> > >> before the unlock completes.
+> > >>
+> > >> My point was that even if compiler barriers had the same semantics
+> > >> as memory barriers, the situation would be no worse. That is, code
+> > >> that is sensitive to memory barriers (like the example I gave above)
+> > >> would merely have the same fragility with one-way compiler barriers
+> > >> (with respect to the compiler combining writes).
+> > >>
+> > >> That's what I meant by "no worse than would otherwise exist".
+> > > 
+> > > Actually, that's not correct.  This is actually deja vu with me on the
+> > > other side of the argument.  When we first did spinlocks on PA, I argued
+> > > as you did: lock only a barrier for code after and unlock for code
+> > > before.  The failing case is that you can have a critical section which
+> > > performs an atomically required operation and a following unit which
+> > > depends on it being performed.  If you begin the following unit before
+> > > the atomic requirement, you may end up losing.  It turns out this kind
+> > > of pattern is inherent in a lot of mail box device drivers: you need to
+> > > set up the mailbox atomically then poke it.  Setup is usually atomic,
+> > > deciding which mailbox to prime and actually poking it is in the
+> > > following unit.  Priming often involves an I/O bus transaction and if
+> > > you poke before priming, you get a misfire.
+> > 
+> > Take it up with the man because this was discussed extensively last
+> > year and it was decided that unlocks would not be full barriers.
+> > Thus the changes to memory-barriers.txt that explicitly note this
+> > and the addition of smp_mb__after_unlock_lock() (for two different
+> > locks; an unlock followed by a lock on the same lock is a full barrier).
+> > 
+> > Code that expects ordered writes after an unlock needs to explicitly
+> > add the memory barrier.
 > 
-> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
-> Parking protocol, but the Parking protocol is only specified for
-> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
-> before some updates for the ACPI spec or the Parking protocol spec.
-> 
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> ---
-> +/**
-> + * acpi_map_gic_cpu_interface - generates a logical cpu number
-> + * and map to MPIDR represented by GICC structure
-> + * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
-> + * @enabled: this cpu is enabled or not
-> + *
-> + * Returns the logical cpu number which maps to MPIDR
-> + */
-> +static int acpi_map_gic_cpu_interface(u64 mpidr, u8 enabled)
-> +{
-> +	int cpu;
-> +
-> +	if (mpidr == INVALID_HWID) {
-> +		pr_info("Skip invalid cpu hardware ID\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	total_cpus++;
-> +	if (!enabled)
-> +		return -EINVAL;
-> +
-> +	if (enabled_cpus >=  NR_CPUS) {
-> +		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
-> +			NR_CPUS, total_cpus, mpidr);
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* No need to check duplicate MPIDRs for the first CPU */
-> +	if (enabled_cpus) {
-> +		/*
-> +		 * Duplicate MPIDRs are a recipe for disaster. Scan
-> +		 * all initialized entries and check for
-> +		 * duplicates. If any is found just ignore the CPU.
-> +		 */
-> +		for_each_possible_cpu(cpu) {
-> +			if (cpu_logical_map(cpu) == mpidr) {
-> +				pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
-> +				mpidr);
-> +				return -EINVAL;
-> +			}
-> +		}
-> +	} else {
-> +		/* Fist GICC entry must be BSP as ACPI spec said */
-> +		if  (cpu_logical_map(0) != mpidr) {
-> +			pr_err("First GICC entry is not BSP for MPIDR 0x%llx\n",
-> +			       mpidr);
-> +			return -EINVAL;
-> +		}
-> +	}
-> +
-> +	/* allocate a logical cpu id for the new comer */
-> +	if (cpu_logical_map(0) == mpidr) {
-> +		/*
-> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
-> +		 * for BSP, no need to allocate again.
-> +		 */
-> +		cpu = 0;
-> +	} else {
-> +		cpu = cpumask_next_zero(-1, cpu_possible_mask);
-> +	}
+> I don't really care what ARM does; spin locks are full barriers on
+> architectures that need them.  The driver problem we had that detected
+> our semi permeable spinlocks was an LSI 53c875 which is enterprise class
+> PCI, so presumably not relevant to ARM anyway.
 
-Nit: so the above two if/else blocks are essentially testing for the
-same condition: Is this the first cpu? or a secondary cpu? I would
-merge the two into a single if/else block.
+FWIW, unlock is always fully ordered against non-relaxed IO accesses. We
+have pretty heavy barriers in readX/writeX to ensure this on ARM/arm64.
 
-g.
+PPC do tricks in their unlock to avoid the overhead on each IO access.
+
+Will
