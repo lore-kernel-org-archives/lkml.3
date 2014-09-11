@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaIKT7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:59:35 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34823 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751691AbaIKT7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:59:33 -0400
-Message-ID: <1410465565.10549.19.camel@jarvis>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare@suse.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Cas ey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Date: Thu, 11 Sep 2014 12:59:25 -0700
-In-Reply-To: <5762134.BLS0EbmNJd@dtor-glaptop>
-References: <20140905174925.GA12991@mtj.dyndns.org>
-	 <20140909224143.GB3154@mtj.dyndns.org>
-	 <1410302783.13298.50.camel@jarvis.lan> <5762134.BLS0EbmNJd@dtor-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756239AbaIKUBh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 16:01:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798AbaIKUBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 16:01:36 -0400
+Date: Thu, 11 Sep 2014 16:01:10 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
+Message-ID: <20140911200110.GA24699@redhat.com>
+References: <20140905183314.23690175@hananiah.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140905183314.23690175@hananiah.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 05, 2014 at 06:33:14PM +0200, Petr Tesarik wrote:
+> On architectures that use percpu-vm, the percpu region is not guaranteed
+> to be contiguous in physical space.
 
-On Tue, 2014-09-09 at 16:01 -0700, Dmitry Torokhov wrote:
-> On Tuesday, September 09, 2014 03:46:23 PM James Bottomley wrote:
-> > On Wed, 2014-09-10 at 07:41 +0900, Tejun Heo wrote:
-> > > 
-> > > The thing is that we have to have dynamic mechanism to listen for
-> > > device attachments no matter what and such mechanism has been in place
-> > > for a long time at this point.  The synchronous wait simply doesn't
-> > > serve any purpose anymore and kinda gets in the way in that it makes
-> > > it a possibly extremely slow process to tell whether loading of a
-> > > module succeeded or not because the wait for the initial round of
-> > > probe is piggybacked.
-> > 
-> > OK, so we just fire and forget in userland ... why bother inventing an
-> > elaborate new infrastructure in the kernel to do exactly what
-> > 
-> > modprobe <mod> &
-> > 
-> > would do?
+Petr,
+
+Which are those arches?
+
+> However, fs/proc/vmcore.c expects
+> all ELF notes to be contiguous. If the ELF note happens to occupy
+> two non-adjacent physical pages, part of the note may be read from an
+> incorrect memory location by the kdump kernel, resulting in failure to
+> initialize /proc/vmcore (if the content of the following physical page,
+> incorrectly interpreted as an ELF note specifies a large number), wrong
+> register values or other apparent random memory corruption.
 > 
-> Just so we do not forget: we also want the no-modules case to also be able
-> to probe asynchronously so that a slow device does not stall kernel booting.
+> There is currently no mechanism to pass the virtual-to-physical mapping
+> of the percpu allocation to the kdump kernel. So, instead, I'm changing
+> the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
+> than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
+> is enough to make sure that the buffer cannot cross a page boundary,
+> effectively ensuring that the whole buffer is contiguous in physical
+> space.
+> 
+> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> ---
+>  kernel/kexec.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 2bee072..cdab59d 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+>  static int __init crash_notes_memory_init(void)
+>  {
+>  	/* Allocate memory for saving cpu registers. */
+> -	crash_notes = alloc_percpu(note_buf_t);
+> +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
+> +				     roundup_pow_of_two(sizeof(note_buf_t)));
 
-Yes, but we mostly do this anyway.  SCSI for instance does asynchronous
-scanning of attached devices (once the cards are probed) but has a sync
-point for ordering.
+I think some of the changelog should show up here as comment in short
+form. I don't think it is obvious that why we are using __alloc_percpu()
+and why aligning to nearst higher power of 2 is needed here. Please also
+mention here which arches run into issues.
 
-The problem of speeding up boot is different from the one of init
-processes killing modprobes.  There are elements in common, but by and
-large the biggest headaches at least in large device number boots have
-already been tackled by the enterprise crowd (they don't like their
-S390's or 1024 core NUMA systems taking half an hour to come up).
+Thanks
+Vivek
 
-James
-
-
+>  	if (!crash_notes) {
+>  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
+>  		return -ENOMEM;
+> -- 
+> 1.8.4.5
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
