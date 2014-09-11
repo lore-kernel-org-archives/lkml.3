@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaIKTdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 15:33:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35448 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaIKTdu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 15:33:50 -0400
-Date: Thu, 11 Sep 2014 20:33:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        wsa@the-dreams.de, sjoerd.simons@collabora.co.uk
-Message-ID: <20140911193325.GT4015@sirena.org.uk>
-References: <54119DB6.8020807@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uLzYCuFow5JXEQYy"
-Content-Disposition: inline
-In-Reply-To: <54119DB6.8020807@collabora.co.uk>
-X-Cookie: See label for sequence.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: SPI and module auto-loading
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1756077AbaIKTht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 15:37:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42753 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752886AbaIKThs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 15:37:48 -0400
+Date: Thu, 11 Sep 2014 21:37:44 +0200
+From: Petr Tesarik <ptesarik@suse.cz>
+To: Eric Biederman <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Put each per-cpu kdump ELF notes into a single page
+Message-ID: <20140911213744.42735c3c@hananiah.suse.cz>
+In-Reply-To: <20140905183314.23690175@hananiah.suse.cz>
+References: <20140905183314.23690175@hananiah.suse.cz>
+Organization: SUSE Linux, s.r.o.
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---uLzYCuFow5JXEQYy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+is anything wrong with the patch below? Are there questions? I thought
+this would be an easy one-line bugfix...
 
-On Thu, Sep 11, 2014 at 03:03:50PM +0200, Javier Martinez Canillas wrote:
+Regards,
+Petr Tesarik
 
-> This can be easily worked around (and probably why it never was an issue)=
- if
-> the OF and SPI tables are kept in sync but I don't know if that is a hard
-> requirement for all use-cases (e.g: a SPI driver that is DT only?).
+On Fri, 5 Sep 2014 18:33:14 +0200
+Petr Tesarik <ptesarik@suse.cz> wrote:
 
-I'm not sure I see that as an interesting use case, it seems better to
-have drivers usable without DT and it's trivial to do so.
+> On architectures that use percpu-vm, the percpu region is not guaranteed
+> to be contiguous in physical space. However, fs/proc/vmcore.c expects
+> all ELF notes to be contiguous. If the ELF note happens to occupy
+> two non-adjacent physical pages, part of the note may be read from an
+> incorrect memory location by the kdump kernel, resulting in failure to
+> initialize /proc/vmcore (if the content of the following physical page,
+> incorrectly interpreted as an ELF note specifies a large number), wrong
+> register values or other apparent random memory corruption.
+> 
+> There is currently no mechanism to pass the virtual-to-physical mapping
+> of the percpu allocation to the kdump kernel. So, instead, I'm changing
+> the alignment of the ELF note buffer. Since sizeof(note_buf_t) is less
+> than PAGE_SIZE, aligning the buffer to the nearest higher power of 2
+> is enough to make sure that the buffer cannot cross a page boundary,
+> effectively ensuring that the whole buffer is contiguous in physical
+> space.
+> 
+> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> ---
+>  kernel/kexec.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 2bee072..cdab59d 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1610,7 +1610,8 @@ void crash_save_cpu(struct pt_regs *regs, int cpu)
+>  static int __init crash_notes_memory_init(void)
+>  {
+>  	/* Allocate memory for saving cpu registers. */
+> -	crash_notes = alloc_percpu(note_buf_t);
+> +	crash_notes = __alloc_percpu(sizeof(note_buf_t),
+> +				     roundup_pow_of_two(sizeof(note_buf_t)));
+>  	if (!crash_notes) {
+>  		pr_warn("Kexec: Memory allocation for saving cpu register states failed\n");
+>  		return -ENOMEM;
 
-> I'm sending an RFC patch [1] to know what you think about it.
->=20
-> Thanks a lot and best regards,
-> Javier
->=20
-> [0]: https://lkml.org/lkml/2014/9/11/127
-> [1]
-> From a7cd35209a597a578df6c801e5ff7b63b584bf3e Mon Sep 17 00:00:00 2001
-> From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Date: Thu, 11 Sep 2014 14:31:04 +0200
-> Subject: [PATCH RFC] spi: core: report OF style modalias when probing usi=
-ng DT
-
-We already have a perfectly good way of sending patches.
-
---uLzYCuFow5JXEQYy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUEfkFAAoJECTWi3JdVIfQBKMH/AvgdddkgsAuZXg0uSXksiX3
-UvFMGkZKC3GPQFagIuItNqMVzR7VCNfAQE84RX7ms7tuoco07mTRj+C9rcktxdxy
-qtHavXlHzRtCNIUttL4RSA9R1vLxyKj5AF5D0IsWuzetcyZ2SVF/uWUO/+Gk8hGr
-NSujW8pNQLSjWp5J+3/C5cjjELhp+QHuSYB7Zyozks9PDpmKZ7lFhiPSR3TDDQ25
-s7TTVWZIXmpm5Tr/agx2GuKLbQyE6oc2tSgypSPcjTmnezCeZ3ksKT3qWKvdDEyF
-1wgLuNW6Iskv2YCG6w1LgX1rqZOe2vCp7uheK06fXke86P2GlieE/MonOm7AIQc=
-=ysPq
------END PGP SIGNATURE-----
-
---uLzYCuFow5JXEQYy--
