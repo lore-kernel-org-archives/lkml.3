@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaIKCHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Sep 2014 22:07:35 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:47644 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaIKCHe (ORCPT
+	id S1751970AbaIKCKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Sep 2014 22:10:35 -0400
+Received: from smtprelay0028.hostedemail.com ([216.40.44.28]:43991 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751635AbaIKCKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Sep 2014 22:07:34 -0400
-From: Chris Zhong <zyw@rock-chips.com>
-To: akpm@linux-foundation.org
-Cc: zhangqing@rock-chips.com, xxx@rock-chips.com, dianders@chromium.org,
-        heiko@sntech.de, Chris Zhong <zyw@rock-chips.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] RTC: RK808: remove tm_def structure
-Date: Thu, 11 Sep 2014 10:04:52 +0800
-Message-Id: <1410401092-8355-1-git-send-email-zyw@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Sep 2014 22:10:33 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3876:3877:4321:5007:6114:6312:6642:7652:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pear11_3eb931a8e4760
+X-Filterd-Recvd-Size: 1197
+Message-ID: <1410401429.24028.55.camel@joe-AO725>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-doc <linux-doc@vger.kernel.org>
+Date: Wed, 10 Sep 2014 19:10:29 -0700
+In-Reply-To: <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+References: <20140908181524.GA11839@www.outflux.net>
+	 <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+On Wed, 2014-09-10 at 15:52 -0700, Andrew Morton wrote:
+> Have a kernel joke:
+[]
+> @@ -553,6 +553,7 @@ jeffies||jiffies
+> +kubys|linus
 
----
+Gimmu Smftre///
 
- drivers/rtc/rtc-rk808.c |   17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
-index 22c8514..df42257 100644
---- a/drivers/rtc/rtc-rk808.c
-+++ b/drivers/rtc/rtc-rk808.c
-@@ -325,17 +325,6 @@ static int rk808_rtc_resume(struct device *dev)
- static SIMPLE_DEV_PM_OPS(rk808_rtc_pm_ops,
- 	rk808_rtc_suspend, rk808_rtc_resume);
- 
--/* 2014.1.1 12:00:00 Saturday */
--static struct rtc_time tm_def = {
--	.tm_wday = 6,
--	.tm_year = 114,
--	.tm_mon = 0,
--	.tm_mday = 1,
--	.tm_hour = 12,
--	.tm_min = 0,
--	.tm_sec = 0,
--};
--
- static int rk808_rtc_probe(struct platform_device *pdev)
- {
- 	struct rk808 *rk808 = dev_get_drvdata(pdev->dev.parent);
-@@ -376,10 +365,8 @@ static int rk808_rtc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 	ret = rtc_valid_tm(&tm);
--	if (ret) {
--		dev_warn(&pdev->dev, "invalid date/time and init time\n");
--		rk808_rtc_set_time(&pdev->dev, &tm_def);
--	}
-+	if (ret)
-+		dev_warn(&pdev->dev, "invalid date/time\n");
- 
- 	device_init_wakeup(&pdev->dev, 1);
- 
--- 
-1.7.9.5
 
