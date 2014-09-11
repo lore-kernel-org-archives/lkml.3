@@ -1,195 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092AbaIKJOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 05:14:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146AbaIKJOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 05:14:37 -0400
-Message-ID: <541167EE.202@redhat.com>
-Date: Thu, 11 Sep 2014 11:14:22 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753394AbaIKJOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 05:14:54 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:47388 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174AbaIKJOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 05:14:50 -0400
+From: Wang Kai <morgan.wang@huawei.com>
+To: <rmk+kernel@arm.linux.org.uk>, <k.khlebnikov@samsung.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <wangnan0@huawei.com>, <kernel.openeuler@huawei.com>
+Subject: [PATCH] ARM:stacktrace: make stacktrace skip always right.
+Date: Thu, 11 Sep 2014 17:02:23 +0800
+Message-ID: <1410426143-9455-1-git-send-email-morgan.wang@huawei.com>
+X-Mailer: git-send-email 1.8.5.5
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de
-CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 2/7] kvm: Remove ept_identity_pagetable from struct
- kvm_arch.
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-3-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1410413886-32213-3-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/09/2014 07:38, Tang Chen ha scritto:
-> kvm_arch->ept_identity_pagetable holds the ept identity pagetable page. But
-> it is never used to refer to the page at all.
-> 
-> In vcpu initialization, it indicates two things:
-> 1. indicates if ept page is allocated
-> 2. indicates if a memory slot for identity page is initialized
-> 
-> Actually, kvm_arch->ept_identity_pagetable_done is enough to tell if the ept
-> identity pagetable is initialized. So we can remove ept_identity_pagetable.
-> 
-> NOTE: In the original code, ept identity pagetable page is pinned in memroy.
->       As a result, it cannot be migrated/hot-removed. After this patch, since
->       kvm_arch->ept_identity_pagetable is removed, ept identity pagetable page
->       is no longer pinned in memory. And it can be migrated/hot-removed.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Gleb Natapov <gleb@kernel.org>
-> ---
->  arch/x86/include/asm/kvm_host.h |  1 -
->  arch/x86/kvm/vmx.c              | 50 ++++++++++++++++++++---------------------
->  arch/x86/kvm/x86.c              |  2 --
->  3 files changed, 25 insertions(+), 28 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 7c492ed..35171c7 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -580,7 +580,6 @@ struct kvm_arch {
->  
->  	gpa_t wall_clock;
->  
-> -	struct page *ept_identity_pagetable;
->  	bool ept_identity_pagetable_done;
->  	gpa_t ept_identity_map_addr;
->  
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 4b80ead..953d529 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -743,6 +743,7 @@ static u32 vmx_segment_access_rights(struct kvm_segment *var);
->  static void vmx_sync_pir_to_irr_dummy(struct kvm_vcpu *vcpu);
->  static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx);
->  static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx);
-> +static int alloc_identity_pagetable(struct kvm *kvm);
->  
->  static DEFINE_PER_CPU(struct vmcs *, vmxarea);
->  static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
-> @@ -3938,21 +3939,27 @@ out:
->  
->  static int init_rmode_identity_map(struct kvm *kvm)
->  {
-> -	int i, idx, r, ret;
-> +	int i, idx, r, ret = 0;
->  	pfn_t identity_map_pfn;
->  	u32 tmp;
->  
->  	if (!enable_ept)
->  		return 1;
-> -	if (unlikely(!kvm->arch.ept_identity_pagetable)) {
-> -		printk(KERN_ERR "EPT: identity-mapping pagetable "
-> -			"haven't been allocated!\n");
-> -		return 0;
-> +
-> +	/* Protect kvm->arch.ept_identity_pagetable_done. */
-> +	mutex_lock(&kvm->slots_lock);
-> +
-> +	if (likely(kvm->arch.ept_identity_pagetable_done)) {
-> +		ret = 1;
-> +		goto out2;
->  	}
-> -	if (likely(kvm->arch.ept_identity_pagetable_done))
-> -		return 1;
-> -	ret = 0;
-> +
->  	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
-> +
-> +	r = alloc_identity_pagetable(kvm);
-> +	if (r)
-> +		goto out2;
-> +
->  	idx = srcu_read_lock(&kvm->srcu);
->  	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
->  	if (r < 0)
-> @@ -3970,6 +3977,9 @@ static int init_rmode_identity_map(struct kvm *kvm)
->  	ret = 1;
->  out:
->  	srcu_read_unlock(&kvm->srcu, idx);
-> +
-> +out2:
-> +	mutex_unlock(&kvm->slots_lock);
->  	return ret;
->  }
->  
-> @@ -4019,31 +4029,23 @@ out:
->  
->  static int alloc_identity_pagetable(struct kvm *kvm)
->  {
-> -	struct page *page;
-> +	/*
-> +	 * In init_rmode_identity_map(), kvm->arch.ept_identity_pagetable_done
-> +	 * is checked before calling this function and set to true after the
-> +	 * calling. The access to kvm->arch.ept_identity_pagetable_done should
-> +	 * be protected by kvm->slots_lock.
-> +	 */
+This patch is for commit 3683f44c42e991d313dc301504ee0fca1aeb8580,
+that makes stacktrace NOT begin from stacktrace self function,
+which are: __save_stack_trace and save_stack_trace.
 
-Not just the access, also the call to this function must be protected by
-the lock.
+But save_stack_trace will NOT have stacktrace information when build
+with '-O2', assemble code looks like below:
+   00000154 <save_stack_trace>:
+    154:   e1a0200d        mov     r2, sp
+    158:   e1a01000        mov     r1, r0
+    15c:   e3c23d7f        bic     r3, r2, #8128   ; 0x1fc0
+    160:   e3a02000        mov     r2, #0
+    164:   e3c3303f        bic     r3, r3, #63     ; 0x3f
+    168:   e593000c        ldr     r0, [r3, #12]
+    16c:   eaffffd0        b       b4 <__save_stack_trace>
 
-So replace this commend by just
+In this situation, the "data.skip +=2" operation will skip the last
+user call function, make user stacktrace strange/incorrect.
 
-/* Called with kvm->slots_lock held.  */
+To fix this, we have to make sure save_stack_trace has stacktrace info,
+then skip 2 function will be OK.
 
-and add a BUG_ON that ept_identity_pagetable_done is false.
+Signed-off-by: Wang Kai <morgan.wang@huawei.com>
+---
+ arch/arm/kernel/stacktrace.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Paolo
-
->  	struct kvm_userspace_memory_region kvm_userspace_mem;
->  	int r = 0;
->  
-> -	mutex_lock(&kvm->slots_lock);
-> -	if (kvm->arch.ept_identity_pagetable)
-> -		goto out;
->  	kvm_userspace_mem.slot = IDENTITY_PAGETABLE_PRIVATE_MEMSLOT;
->  	kvm_userspace_mem.flags = 0;
->  	kvm_userspace_mem.guest_phys_addr =
->  		kvm->arch.ept_identity_map_addr;
->  	kvm_userspace_mem.memory_size = PAGE_SIZE;
->  	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
-> -	if (r)
-> -		goto out;
->  
-> -	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
-> -	if (is_error_page(page)) {
-> -		r = -EFAULT;
-> -		goto out;
-> -	}
-> -
-> -	kvm->arch.ept_identity_pagetable = page;
-> -out:
-> -	mutex_unlock(&kvm->slots_lock);
->  	return r;
->  }
->  
-> @@ -7643,8 +7645,6 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
->  			kvm->arch.ept_identity_map_addr =
->  				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
->  		err = -ENOMEM;
-> -		if (alloc_identity_pagetable(kvm) != 0)
-> -			goto free_vmcs;
->  		if (!init_rmode_identity_map(kvm))
->  			goto free_vmcs;
->  	}
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 8f1e22d..e05bd58 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -7239,8 +7239,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
->  	kvm_free_vcpus(kvm);
->  	if (kvm->arch.apic_access_page)
->  		put_page(kvm->arch.apic_access_page);
-> -	if (kvm->arch.ept_identity_pagetable)
-> -		put_page(kvm->arch.ept_identity_pagetable);
->  	kfree(rcu_dereference_check(kvm->arch.apic_map, 1));
->  }
->  
-> 
+diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+index 6582c4a..1eb1b5ae 100644
+--- a/arch/arm/kernel/stacktrace.c
++++ b/arch/arm/kernel/stacktrace.c
+@@ -134,6 +134,7 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ void save_stack_trace(struct stack_trace *trace)
+ {
+ 	__save_stack_trace(current, trace, 0);
++	asm volatile("" : : : "memory");
+ }
+ EXPORT_SYMBOL_GPL(save_stack_trace);
+ #endif
+-- 
+1.8.5.5
 
