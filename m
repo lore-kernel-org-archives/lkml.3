@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780AbaIKPeh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:34:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55954 "EHLO
+	id S1756793AbaIKPev (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:34:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55953 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756627AbaIKPdZ (ORCPT
+	with ESMTP id S1756621AbaIKPdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 11:33:25 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
@@ -17,9 +17,9 @@ Cc: linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v3 3/8] of: Decrement refcount of previous endpoint in of_graph_get_next_endpoint
-Date: Thu, 11 Sep 2014 17:33:02 +0200
-Message-Id: <1410449587-1677-4-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH v3 2/8] imx-drm: Do not decrement endpoint node refcount in the loop
+Date: Thu, 11 Sep 2014 17:33:01 +0200
+Message-Id: <1410449587-1677-3-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 2.0.1
 In-Reply-To: <1410449587-1677-1-git-send-email-p.zabel@pengutronix.de>
 References: <1410449587-1677-1-git-send-email-p.zabel@pengutronix.de>
@@ -31,45 +31,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Decrementing the reference count of the previous endpoint node allows to
-use the of_graph_get_next_endpoint function in a for_each_... style macro.
-Prior to this patch, all current users of this function that actually pass
-a non-NULL prev parameter should be changed to not decrement the passed
-prev argument's refcount themselves.
+In preparation for the following patch, stop decrementing the endpoint node
+refcount in the loop. This temporarily leaks a reference to the endpoint node,
+which will be fixed by having of_graph_get_next_endpoint decrement the refcount
+of its prev argument instead.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/of/base.c | 9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/staging/imx-drm/imx-drm-core.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index d8574ad..a49b5628 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -2058,8 +2058,7 @@ EXPORT_SYMBOL(of_graph_parse_endpoint);
-  * @prev: previous endpoint node, or NULL to get first
-  *
-  * Return: An 'endpoint' node pointer with refcount incremented. Refcount
-- * of the passed @prev node is not decremented, the caller have to use
-- * of_node_put() on it when done.
-+ * of the passed @prev node is decremented.
-  */
- struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 					struct device_node *prev)
-@@ -2095,12 +2094,6 @@ struct device_node *of_graph_get_next_endpoint(const struct device_node *parent,
- 		if (WARN_ONCE(!port, "%s(): endpoint %s has no parent node\n",
- 			      __func__, prev->full_name))
- 			return NULL;
--
--		/*
--		 * Avoid dropping prev node refcount to 0 when getting the next
--		 * child below.
--		 */
--		of_node_get(prev);
- 	}
+diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+index 6b22106..12303b3 100644
+--- a/drivers/staging/imx-drm/imx-drm-core.c
++++ b/drivers/staging/imx-drm/imx-drm-core.c
+@@ -434,14 +434,6 @@ static uint32_t imx_drm_find_crtc_mask(struct imx_drm_device *imxdrm,
+ 	return 0;
+ }
  
- 	while (1) {
+-static struct device_node *imx_drm_of_get_next_endpoint(
+-		const struct device_node *parent, struct device_node *prev)
+-{
+-	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
+-	of_node_put(prev);
+-	return node;
+-}
+-
+ int imx_drm_encoder_parse_of(struct drm_device *drm,
+ 	struct drm_encoder *encoder, struct device_node *np)
+ {
+@@ -453,7 +445,7 @@ int imx_drm_encoder_parse_of(struct drm_device *drm,
+ 	for (i = 0; ; i++) {
+ 		u32 mask;
+ 
+-		ep = imx_drm_of_get_next_endpoint(np, ep);
++		ep = of_graph_get_next_endpoint(np, ep);
+ 		if (!ep)
+ 			break;
+ 
+@@ -502,7 +494,7 @@ int imx_drm_encoder_get_mux_id(struct device_node *node,
+ 		return -EINVAL;
+ 
+ 	do {
+-		ep = imx_drm_of_get_next_endpoint(node, ep);
++		ep = of_graph_get_next_endpoint(node, ep);
+ 		if (!ep)
+ 			break;
+ 
 -- 
 2.1.0
 
