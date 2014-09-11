@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaIKMxz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:53:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51573 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755405AbaIKMeF (ORCPT
+	id S1756529AbaIKMx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:53:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:22894 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755405AbaIKMx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:05 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
-        "=?UTF-8?q?Ja=C5=A1a=20Bartelj?=" <jasa.bartelj@gmail.com>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.727606033@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 073/131] USB: ftdi_sio: Added PID for new ekey device
-In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 11 Sep 2014 08:53:56 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-e7-54119b61ad24
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: paulz@synopsys.com
+Cc: gregkh@linuxfoundation.org, dinguyen@opensource.altera.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.szyprowski@samsung.com, b.zolnierkie@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 2/2] Revert
+ "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
+Date: Thu, 11 Sep 2014 14:53:31 +0200
+Message-id: <1410440011-9106-3-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
+References: <1410440011-9106-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t9jAd3E2YIhBpvaLS02zljParHq0xpm
+	i+bF69ksLu+aw2axaFkrs8XaI3fZLbZPmc5k8eDwTnYHDo/9c9ewe/Rfm8Tu0bdlFaPHlv2f
+	GT0+b5ILYI3isklJzcksSy3St0vgypi736PgF2fF1i8vWRsYN3B0MXJySAiYSPTuXcEOYYtJ
+	XLi3nq2LkYtDSGARo8TiaVMZIZx2Jol1/5+wglSxCehIbPk+ASjBwSEC1PH9AydIDbPATUaJ
+	+csnsYPEhQViJOa1O4CYLAKqEh93OIOYvAIuEg8fukGskpM4eWwy2EBOAVeJ9b17wE4QAir5
+	uOc82wRG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxggPrmfQOxlUNFocYBTgYlXh4
+	K1kEQ4RYE8uKK3MPMUpwMCuJ8N6YDhTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DVOlBIID2x
+	JDU7NbUgtQgmy8TBKdXAyPIoi9c38moex9riT0d0rVl95BcXF6u8NPb5fuO25jr1j4yv05ac
+	7HOfoMaTcl+xOkY3TbZwc1xbzN96F3ah52rc7iyOkgbPlS7mPPabUniktHGro7PJjeWe8Tkv
+	731f45gRP89bp8pqevDCSdZzS7byl7ZNbp+xgcNDQSCn/kdMu+Da3UFKLMUZiYZazEXFiQAT
+	ly7hKAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.63-rc1 review patch.  If anyone has any objections, please let me know.
+This reverts commit 8df438571cdbd5c4fcd1b25b19eea1ad5c3cf777.
 
-------------------
-
-From: Jaša Bartelj <jasa.bartelj@gmail.com>
-
-commit 646907f5bfb0782c731ae9ff6fb63471a3566132 upstream.
-
-Added support to the ftdi_sio driver for ekey Converter USB which
-uses an FT232BM chip.
-
-Signed-off-by: Jaša Bartelj <jasa.bartelj@gmail.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+This patch breaks building dwc2 driver in gadget mode at samsung
+platforms.
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 5 +++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/dwc2/gadget.c   | 1 +
+ drivers/usb/dwc2/platform.c | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -959,6 +959,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
- 	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
-+	/* ekey Devices */
-+	{ USB_DEVICE(FTDI_VID, FTDI_EKEY_CONV_USB_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 0eb60ef..ce6071d 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -3640,6 +3640,7 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id s3c_hsotg_of_ids[] = {
++	{ .compatible = "samsung,s3c6400-hsotg", },
+ 	{ .compatible = "snps,dwc2", },
+ 	{ /* sentinel */ }
  };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1374,3 +1374,8 @@
- #define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
- #define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
- #define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
-+
-+/*
-+ * ekey biometric systems GmbH (http://ekey.net/)
-+ */
-+#define FTDI_EKEY_CONV_USB_PID		0xCB08	/* Converter USB */
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index 544a13e..121dbda 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -129,7 +129,6 @@ static const struct of_device_id dwc2_of_match_table[] = {
+ 	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
+ 	{ .compatible = "rockchip,rk3066-usb", .data = &params_rk3066 },
+ 	{ .compatible = "snps,dwc2", .data = NULL },
+-	{ .compatible = "samsung,s3c6400-hsotg", .data = NULL},
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, dwc2_of_match_table);
+-- 
+1.9.1
 
