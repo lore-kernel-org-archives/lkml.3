@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbaIKPKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 11:10:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21659 "EHLO mx1.redhat.com"
+	id S1754914AbaIKPLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 11:11:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26412 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042AbaIKPKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 11:10:10 -0400
-Date: Thu, 11 Sep 2014 17:09:43 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] tools lib fd array: Do not set fd as non blocking evlist
-Message-ID: <20140911150943.GD32722@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-12-git-send-email-acme@kernel.org>
+	id S1751774AbaIKPLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 11:11:05 -0400
+Date: Thu, 11 Sep 2014 11:10:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: futex_wait_setup sleeping while atomic bug.
+Message-ID: <20140911151040.GB3008@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Thomas Gleixner <tglx@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410358129-9965-12-git-send-email-acme@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 11:08:46AM -0300, Arnaldo Carvalho de Melo wrote:
+Hit this overnight on Linus tree from yesterday.
 
-SNIP
+BUG: sleeping function called from invalid context at include/linux/freezer.h:56
+in_atomic(): 1, irqs_disabled(): 0, pid: 31948, name: trinity-c121
+Preemption disabled at:[<ffffffffb90f2512>] futex_wait_setup+0xb2/0x140
 
-> +}
-> +
-> +void fdarray__exit(struct fdarray *fda)
-> +{
-> +	free(fda->entries);
-> +	fdarray__init(fda, 0);
-> +}
-> +
-> +void fdarray__delete(struct fdarray *fda)
-> +{
-> +	fdarray__exit(fda);
-> +	free(fda);
-> +}
-> +
-> +int fdarray__add(struct fdarray *fda, int fd, short revents)
-> +{
-> +	if (fda->nr == fda->nr_alloc &&
-> +	    fdarray__grow(fda, fda->nr_autogrow) < 0)
-> +		return -ENOMEM;
-> +
-> +	fcntl(fd, F_SETFL, O_NONBLOCK);
+CPU: 0 PID: 31948 Comm: trinity-c121 Not tainted 3.17.0-rc4+ #52
+ ffffffffb9a52f2a 00000000d3f40479 ffff88008a32fd90 ffffffffb9771ba4
+ 0000000000000000 ffff88008a32fdb8 ffffffffb909f02c ffff88008a32ff58
+ ffff88008a32ff58 0000000000000010 ffff88008a32fe30 ffffffffb90887bc
+Call Trace:
+ [<ffffffffb9771ba4>] dump_stack+0x4e/0x7a
+ [<ffffffffb909f02c>] __might_sleep+0x11c/0x1b0
+ [<ffffffffb90887bc>] get_signal+0x6c/0x720
+ [<ffffffffb9002577>] do_signal+0x37/0x6f0
+ [<ffffffffb9126ddb>] ? __acct_update_integrals+0x8b/0x120
+ [<ffffffffb912728c>] ? acct_account_cputime+0x1c/0x20
+ [<ffffffffb90ab1ab>] ? account_user_time+0x9b/0xb0
+ [<ffffffffb9002c8c>] do_notify_resume+0x5c/0xa0
+ [<ffffffffb977be23>] retint_signal+0x46/0x83
+BUG: scheduling while atomic: trinity-c121/31948/0x00000002
+Preemption disabled at:[<ffffffffb90f2512>] futex_wait_setup+0xb2/0x140
 
-also I spot this one and couldn't think of reason for it, attached
-patch makes no behaviour difference for me..
-
-I might be missing something, but I dont see any blocking operation
-in perf related data reads. The git log history says it was there
-since early days.
-
-jirka
-
-
----
-There's no reason for the current user of this API
-to have non blocking fds. Also it should be up to
-user to set this, not this object.
-
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/lib/api/fd/array.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/tools/lib/api/fd/array.c b/tools/lib/api/fd/array.c
-index 3f6d1a0..0e636c4 100644
---- a/tools/lib/api/fd/array.c
-+++ b/tools/lib/api/fd/array.c
-@@ -78,7 +78,6 @@ int fdarray__add(struct fdarray *fda, int fd, short revents)
- 	    fdarray__grow(fda, fda->nr_autogrow) < 0)
- 		return -ENOMEM;
- 
--	fcntl(fd, F_SETFL, O_NONBLOCK);
- 	fda->entries[fda->nr].fd     = fd;
- 	fda->entries[fda->nr].events = revents;
- 	fda->nr++;
--- 
-1.7.7.6
-
+CPU: 0 PID: 31948 Comm: trinity-c121 Not tainted 3.17.0-rc4+ #52
+ ffff88024d013740 00000000d3f40479 ffff88008a32fec8 ffffffffb9771ba4
+ ffff8802403eee00 ffff88008a32fee0 ffffffffb909e725 0000000000000000
+ ffff88008a32ff60 ffffffffb9774db7 000000000000a000 ffff8802403eee00
+Call Trace:
+ [<ffffffffb9771ba4>] dump_stack+0x4e/0x7a
+ [<ffffffffb909e725>] __schedule_bug+0x65/0xc0
+ [<ffffffffb9774db7>] __schedule+0x6a7/0xa70
+ [<ffffffffb97756ee>] schedule_user+0x2e/0x90
+ [<ffffffffb977bdc1>] retint_careful+0x12/0x2e
+note: trinity-c121[31948] exited with preempt_count 1
 
