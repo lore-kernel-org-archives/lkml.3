@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaIKKgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 06:36:47 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:45928 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863AbaIKKgp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 06:36:45 -0400
-From: "Sharma, Sanjeev" <Sanjeev_Sharma@mentor.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: "dsd@gentoo.org" <dsd@gentoo.org>,
-        "kune@deine-taler.de" <kune@deine-taler.de>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: RE: [PATCH v2] zd1211rw: replace ZD_ASSERT with
- lockdep_assert_held()
-Thread-Topic: [PATCH v2] zd1211rw: replace ZD_ASSERT with
- lockdep_assert_held()
-Thread-Index: AQHPzaji67ru1uysWEKojhy3lQjAn5v7vMNQ
-Date: Thu, 11 Sep 2014 10:36:42 +0000
-Message-ID: <FDC088D3B5555644AE135ED28A7ABDE94DF5256D@EU-MBX-02.mgc.mentorg.com>
-References: <1410418407.1825.0.camel@jlt4.sipsolutions.net>
-	 <1410430179-19944-1-git-send-email-sanjeev_sharma@mentor.com>
-	 (sfid-20140911_121019_335368_163BEA7C)
- <1410430345.22863.0.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1410430345.22863.0.camel@jlt4.sipsolutions.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.202.0.76]
-Content-Type: text/plain; charset="utf-8"
+	id S1753637AbaIKKja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 06:39:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112AbaIKKj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 06:39:29 -0400
+Message-ID: <54117BD3.5000506@redhat.com>
+Date: Thu, 11 Sep 2014 12:39:15 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: tangchen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page
+ on migration in vcpu_enter_guest().
+References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com> <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com> <541169AD.6060908@redhat.com> <5411776B.3070302@cn.fujitsu.com>
+In-Reply-To: <5411776B.3070302@cn.fujitsu.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8BAapus023169
 
------Original Message-----
-From: Johannes Berg [mailto:johannes@sipsolutions.net] 
-Sent: Thursday, September 11, 2014 3:42 PM
-To: Sharma, Sanjeev
-Cc: dsd@gentoo.org; kune@deine-taler.de; linux-wireless@vger.kernel.org; linux-kernel@vger.kernel.org; netdev@vger.kernel.org
-Subject: Re: [PATCH v2] zd1211rw: replace ZD_ASSERT with lockdep_assert_held()
-
-On Thu, 2014-09-11 at 15:39 +0530, Sanjeev Sharma wrote:
-> on some architecture spin_is_locked() always return false in 
-> uniprocessor configuration and therefore it would be advise to replace 
-> with lockdep_assert_held().
+Il 11/09/2014 12:20, tangchen ha scritto:
+>>>
+>>> +    vmcs_write64(APIC_ACCESS_ADDR, hpa);
+>> This has to be guarded by "if (!is_guest_mode(vcpu))".
 > 
-> Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
-> ---
-> Changes in v2:
->   - corrected the typo
+> Since we cannot get vcpu through kvm, I'd like to move this check to
+> vcpu_reload_apic_access_page() when
+> kvm_x86_ops->set_apic_access_page_addr()
+> is called.
 
-> Now it compiles, but you got the logic wrong.
+Good idea!  Though passing the vcpu to vmx_set_apic_access_page_addr
+would also work.
 
-> +++ b/drivers/net/wireless/zd1211rw/zd_mac.c
-> @@ -235,7 +235,7 @@ void zd_mac_clear(struct zd_mac *mac)  {
->  	flush_workqueue(zd_workqueue);
->  	zd_chip_clear(&mac->chip);
-> -	ZD_ASSERT(!spin_is_locked(&mac->lock));
-> +	lockdep_assert_held(&mac->lock);
->  	ZD_MEMCLEAR(mac, sizeof(struct zd_mac));  }
-
->Look closely at this again.
-
-I didn't understand where I  put wrong logic  ?
-
-Regards
-Sanjeev Sharma
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Paolo
