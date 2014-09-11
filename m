@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494AbaIKMeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:34:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51467 "EHLO
+	id S1755846AbaIKMje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:39:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51683 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754970AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755455AbaIKMeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:04 -0400
+	Thu, 11 Sep 2014 08:34:09 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Malcolm Priestley" <tvboxspy@gmail.com>
+CC: akpm@linux-foundation.org, "David Vrabel" <david.vrabel@citrix.com>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.729514735@decadent.org.uk>
+Message-ID: <lsq.1410438733.279914844@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 019/131] staging: vt6655: Fix Warning on boot
- handle_irq_event_percpu.
+Subject: [PATCH 3.2 060/131] x86/xen: resume timer irqs early
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,51 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 6cff1f6ad4c615319c1a146b2aa0af1043c5e9f5 upstream.
+commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
 
-WARNING: CPU: 0 PID: 929 at /home/apw/COD/linux/kernel/irq/handle.c:147 handle_irq_event_percpu+0x1d1/0x1e0()
-irq 17 handler device_intr+0x0/0xa80 [vt6655_stage] enabled interrupts
+If the timer irqs are resumed during device resume it is possible in
+certain circumstances for the resume to hang early on, before device
+interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
+occur in ~0.5% of resume attempts.
 
-Using spin_lock_irqsave appears to fix this.
+It is not entirely clear what is occuring the point of the hang but I
+think a task necessary for the resume calls schedule_timeout(),
+waiting for a timer interrupt (which never arrives).  This failure may
+require specific tasks to be running on the other VCPUs to trigger
+(processes are not frozen during a suspend/resume if PREEMPT is
+disabled).
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
+syscore_resume().
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6655/device_main.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/xen/time.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -2679,6 +2679,7 @@ static  irqreturn_t  device_intr(int irq
-     unsigned char byData = 0;
-     int             ii= 0;
- //    unsigned char byRSSI;
-+    unsigned long flags;
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -397,7 +397,7 @@ void xen_setup_timer(int cpu)
+ 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
+ 				      IRQF_DISABLED|IRQF_PERCPU|
+ 				      IRQF_NOBALANCING|IRQF_TIMER|
+-				      IRQF_FORCE_RESUME,
++				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
+ 				      name, NULL);
  
- 
-     MACvReadISR(pDevice->PortOffset, &pDevice->dwIsr);
-@@ -2704,7 +2705,8 @@ static  irqreturn_t  device_intr(int irq
- 
-     handled = 1;
-     MACvIntDisable(pDevice->PortOffset);
--    spin_lock_irq(&pDevice->lock);
-+
-+    spin_lock_irqsave(&pDevice->lock, flags);
- 
-     //Make sure current page is 0
-     VNSvInPortB(pDevice->PortOffset + MAC_REG_PAGE1SEL, &byOrgPageSel);
-@@ -2952,7 +2954,8 @@ static  irqreturn_t  device_intr(int irq
-         MACvSelectPage1(pDevice->PortOffset);
-     }
- 
--    spin_unlock_irq(&pDevice->lock);
-+    spin_unlock_irqrestore(&pDevice->lock, flags);
-+
-     MACvIntEnable(pDevice->PortOffset, IMR_MASK_VALUE);
- 
-     return IRQ_RETVAL(handled);
+ 	evt = &per_cpu(xen_clock_events, cpu);
 
