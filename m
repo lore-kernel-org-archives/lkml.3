@@ -1,104 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaIKM2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:28:54 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:45372 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741AbaIKM2x (ORCPT
+	id S1754984AbaIKM3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:29:00 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:57196 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961AbaIKM25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:28:53 -0400
+	Thu, 11 Sep 2014 08:28:57 -0400
+Date: Thu, 11 Sep 2014 05:27:06 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Hugh Dickins <hughd@google.com>, Chintan Pandya <cpandya@codeaurora.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 2/2] ksm: provide support to use deferrable timers
+ for scanner thread
+In-Reply-To: <20140910081000.GN6758@twins.programming.kicks-ass.net>
+Message-ID: <alpine.LSU.2.11.1409110450520.2465@eggly.anvils>
+References: <1408536628-29379-1-git-send-email-cpandya@codeaurora.org> <1408536628-29379-2-git-send-email-cpandya@codeaurora.org> <alpine.LSU.2.11.1408272258050.10518@eggly.anvils> <20140903095815.GK4783@worktop.ger.corp.intel.com>
+ <alpine.LSU.2.11.1409080023100.1610@eggly.anvils> <20140908093949.GZ6758@twins.programming.kicks-ass.net> <alpine.LSU.2.11.1409091225310.8432@eggly.anvils> <20140910081000.GN6758@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
-References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
-	<20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
-	<1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com>
-	<27732.1410437386@warthog.procyon.org.uk>
-	<CACE9dm-4tURS7ZvJ45W81L5d3yaO8VDyvrcn1-SU_6UsHkmuQw@mail.gmail.com>
-Date: Thu, 11 Sep 2014 15:28:44 +0300
-Message-ID: <CACE9dm-2TB-CKkYB+p7ESSOKR-Bfjmy7nACowzsbK0nEexM=tA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
- with a '.'
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, James Morris <jmorris@namei.org>,
-        keyrings <keyrings@linux-nfs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2014 15:27, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-> On 11 September 2014 15:09, David Howells <dhowells@redhat.com> wrote:
->> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->>
->>> On Wed, 2014-09-10 at 19:36 -0400, Mimi Zohar wrote:
->>> > On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote:
->>> > > Reinstate the generation of EPERM for a key type name beginning with a
->>> > > '.' in a userspace call.  Types whose name begins with a '.' are
->>> > > internal only.
->>>
->>> After re-reading your comment and looking at the different types,
->>> testing for dot prefixed types now makes sense.  Both dot prefixed types
->>> and keyring names are reserved for the kernel.
->>
->> Are you withdrawing your objection, then?
->>
->
-> For me, type test looks unrelated to "." prefixed key/keyring names...
->
-> The rest of that patch does following:
->
-> + } else if ((description[0] == '.') &&
-> +                    (strncmp(type, "keyring", 7) == 0)) {
-> +             ret = -EPERM;
-> +             goto error2;
->
->
-> I wonder why this test is only disallowing keyrings...
-> Why not also keys?
->
-> keyctl add user ".ring1" Hello @u
->
-> keyctl show
->   50463278 --alswrv      0     0       \_ user: .ring1
->
->
+On Wed, 10 Sep 2014, Peter Zijlstra wrote:
+> 
+> So if this were switch_to(), we'd see next->mm as before the last
+> context switch. And since that switch fully happened, it would also
+> already have done the finish_task_switch() -> mmdrop().
 
-sorry... it was confusing name
+Useful words of warning, thank you, which jolted me into realizing
+an idiot defect in the patch I posted - and more reason why you're
+right to keep me away from context_switch() - though it is still a
+very handy place for a quick patch to see if going in this direction
+(quiescent KSM rather than idle CPU) will be useful to Chintan.
 
-keyctl newring ".ring1" @u
-add_key: Operation not permitted
+The problem was my wake_ksm variable on the stack of context_switch():
+when we emerge from switch_to() on a different stack, what's in wake_ksm
+is whatever was placed there, perhaps years ago, by some earlier task.
+It may work well enough most of the time (just as the deferrable timer
+did despite its defect), but could sometimes delay KSM for years.
 
-But for keys..
+Here's a replacement patch, looks like a replacement will be more
+useful to Chintan than an incremental.  No need to worry overmuch
+about cachelines and placing mm references close together, if we
+won't be going forward with a solution in context_switch() anyway.
 
- keyctl add user ".key1" Hello @u
+[PATCH v2] ksm: avoid periodic wakeup while mergeable mms are quiet
 
- keyctl show
-   50463298 --alswrv      0     0       \_ user: .key1
+Description yet to be written!
 
-- Dmitry
+Reported-by: Chintan Pandya <cpandya@codeaurora.org>
+Not-Signed-off-by: Hugh Dickins <hughd@google.com>
+---
 
-> - Dmitry
->
->> David
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
->
-> --
-> Thanks,
-> Dmitry
+ include/linux/ksm.h   |   11 +++++++++
+ include/linux/sched.h |    1 
+ kernel/sched/core.c   |    5 ++++
+ mm/ksm.c              |   48 +++++++++++++++++++++++++++-------------
+ 4 files changed, 50 insertions(+), 15 deletions(-)
 
-
-
--- 
-Thanks,
-Dmitry
+--- 3.17-rc4/include/linux/ksm.h	2014-03-30 20:40:15.000000000 -0700
++++ linux/include/linux/ksm.h	2014-09-11 04:44:57.884104998 -0700
+@@ -21,6 +21,7 @@ int ksm_madvise(struct vm_area_struct *v
+ 		unsigned long end, int advice, unsigned long *vm_flags);
+ int __ksm_enter(struct mm_struct *mm);
+ void __ksm_exit(struct mm_struct *mm);
++void __ksm_switch(struct mm_struct *mm);
+ 
+ static inline int ksm_fork(struct mm_struct *mm, struct mm_struct *oldmm)
+ {
+@@ -35,6 +36,12 @@ static inline void ksm_exit(struct mm_st
+ 		__ksm_exit(mm);
+ }
+ 
++static inline void ksm_switch(struct mm_struct *mm)
++{
++	if (unlikely(test_bit(MMF_SWITCH_TO_KSM, &mm->flags)))
++		__ksm_switch(mm);
++}
++
+ /*
+  * A KSM page is one of those write-protected "shared pages" or "merged pages"
+  * which KSM maps into multiple mms, wherever identical anonymous page content
+@@ -87,6 +94,10 @@ static inline void ksm_exit(struct mm_st
+ {
+ }
+ 
++static inline void ksm_switch(struct mm_struct *mm)
++{
++}
++
+ static inline int PageKsm(struct page *page)
+ {
+ 	return 0;
+--- 3.17-rc4/include/linux/sched.h	2014-08-16 16:00:53.909189060 -0700
++++ linux/include/linux/sched.h	2014-09-11 04:44:57.888104998 -0700
+@@ -453,6 +453,7 @@ static inline int get_dumpable(struct mm
+ 
+ #define MMF_HAS_UPROBES		19	/* has uprobes */
+ #define MMF_RECALC_UPROBES	20	/* MMF_HAS_UPROBES can be wrong */
++#define MMF_SWITCH_TO_KSM	21	/* notify KSM of switch to this mm */
+ 
+ #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
+ 
+--- 3.17-rc4/kernel/sched/core.c	2014-08-16 16:00:54.062189063 -0700
++++ linux/kernel/sched/core.c	2014-09-11 04:44:57.896104998 -0700
+@@ -61,6 +61,7 @@
+ #include <linux/times.h>
+ #include <linux/tsacct_kern.h>
+ #include <linux/kprobes.h>
++#include <linux/ksm.h>
+ #include <linux/delayacct.h>
+ #include <linux/unistd.h>
+ #include <linux/pagemap.h>
+@@ -2348,6 +2349,10 @@ context_switch(struct rq *rq, struct tas
+ 	 * frame will be invalid.
+ 	 */
+ 	finish_task_switch(this_rq(), prev);
++
++	mm = current->mm;
++	if (mm)
++		ksm_switch(mm);
+ }
+ 
+ /*
+--- 3.17-rc4/mm/ksm.c	2014-08-16 16:00:54.132189065 -0700
++++ linux/mm/ksm.c	2014-09-11 04:44:57.900104998 -0700
+@@ -205,6 +205,9 @@ static struct kmem_cache *rmap_item_cach
+ static struct kmem_cache *stable_node_cache;
+ static struct kmem_cache *mm_slot_cache;
+ 
++/* The number of mergeable mms which have recently run */
++static atomic_t active_mergeable_mms = ATOMIC_INIT(0);
++
+ /* The number of nodes in the stable tree */
+ static unsigned long ksm_pages_shared;
+ 
+@@ -313,9 +316,13 @@ static inline struct mm_slot *alloc_mm_s
+ 	return kmem_cache_zalloc(mm_slot_cache, GFP_KERNEL);
+ }
+ 
+-static inline void free_mm_slot(struct mm_slot *mm_slot)
++static void free_mm_slot(struct mm_struct *mm, struct mm_slot *mm_slot)
+ {
+ 	kmem_cache_free(mm_slot_cache, mm_slot);
++
++	clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++	if (!test_and_clear_bit(MMF_SWITCH_TO_KSM, &mm->flags))
++		atomic_dec(&active_mergeable_mms);
+ }
+ 
+ static struct mm_slot *get_mm_slot(struct mm_struct *mm)
+@@ -801,8 +808,7 @@ static int unmerge_and_remove_all_rmap_i
+ 			list_del(&mm_slot->mm_list);
+ 			spin_unlock(&ksm_mmlist_lock);
+ 
+-			free_mm_slot(mm_slot);
+-			clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++			free_mm_slot(mm, mm_slot);
+ 			up_read(&mm->mmap_sem);
+ 			mmdrop(mm);
+ 		} else {
+@@ -1668,12 +1674,20 @@ next_mm:
+ 		list_del(&slot->mm_list);
+ 		spin_unlock(&ksm_mmlist_lock);
+ 
+-		free_mm_slot(slot);
+-		clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++		free_mm_slot(mm, slot);
+ 		up_read(&mm->mmap_sem);
+ 		mmdrop(mm);
+ 	} else {
+ 		spin_unlock(&ksm_mmlist_lock);
++		/*
++		 * After completing its scan, assume this mm to be inactive,
++		 * but set a flag for context_switch() to notify us as soon
++		 * as it is used again: see ksm_switch().  If the number of
++		 * active_mergeable_mms goes down to zero, ksmd will sleep
++		 * to save power, until awoken by mergeable context_switch().
++		 */
++		if (!test_and_set_bit(MMF_SWITCH_TO_KSM, &mm->flags))
++			atomic_dec(&active_mergeable_mms);
+ 		up_read(&mm->mmap_sem);
+ 	}
+ 
+@@ -1707,7 +1721,7 @@ static void ksm_do_scan(unsigned int sca
+ 
+ static int ksmd_should_run(void)
+ {
+-	return (ksm_run & KSM_RUN_MERGE) && !list_empty(&ksm_mm_head.mm_list);
++	return (ksm_run & KSM_RUN_MERGE) && atomic_read(&active_mergeable_mms);
+ }
+ 
+ static int ksm_scan_thread(void *nothing)
+@@ -1785,15 +1799,11 @@ int ksm_madvise(struct vm_area_struct *v
+ int __ksm_enter(struct mm_struct *mm)
+ {
+ 	struct mm_slot *mm_slot;
+-	int needs_wakeup;
+ 
+ 	mm_slot = alloc_mm_slot();
+ 	if (!mm_slot)
+ 		return -ENOMEM;
+ 
+-	/* Check ksm_run too?  Would need tighter locking */
+-	needs_wakeup = list_empty(&ksm_mm_head.mm_list);
+-
+ 	spin_lock(&ksm_mmlist_lock);
+ 	insert_to_mm_slots_hash(mm, mm_slot);
+ 	/*
+@@ -1812,10 +1822,9 @@ int __ksm_enter(struct mm_struct *mm)
+ 		list_add_tail(&mm_slot->mm_list, &ksm_scan.mm_slot->mm_list);
+ 	spin_unlock(&ksm_mmlist_lock);
+ 
+-	set_bit(MMF_VM_MERGEABLE, &mm->flags);
+ 	atomic_inc(&mm->mm_count);
+-
+-	if (needs_wakeup)
++	set_bit(MMF_VM_MERGEABLE, &mm->flags);
++	if (atomic_inc_return(&active_mergeable_mms) == 1)
+ 		wake_up_interruptible(&ksm_thread_wait);
+ 
+ 	return 0;
+@@ -1850,8 +1859,7 @@ void __ksm_exit(struct mm_struct *mm)
+ 	spin_unlock(&ksm_mmlist_lock);
+ 
+ 	if (easy_to_free) {
+-		free_mm_slot(mm_slot);
+-		clear_bit(MMF_VM_MERGEABLE, &mm->flags);
++		free_mm_slot(mm, mm_slot);
+ 		mmdrop(mm);
+ 	} else if (mm_slot) {
+ 		down_write(&mm->mmap_sem);
+@@ -1859,6 +1867,16 @@ void __ksm_exit(struct mm_struct *mm)
+ 	}
+ }
+ 
++void __ksm_switch(struct mm_struct *mm)
++{
++	/*
++	 * Called by context_switch() to a hitherto inactive mergeable mm.
++	 */
++	if (test_and_clear_bit(MMF_SWITCH_TO_KSM, &mm->flags) &&
++	    atomic_inc_return(&active_mergeable_mms) == 1)
++		wake_up_interruptible(&ksm_thread_wait);
++}
++
+ struct page *ksm_might_need_to_copy(struct page *page,
+ 			struct vm_area_struct *vma, unsigned long address)
+ {
