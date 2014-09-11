@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237AbaIKQ1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:27:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48301 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757177AbaIKQ1a (ORCPT
+	id S1757265AbaIKQ15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:27:57 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:16527 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756354AbaIKQ1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:27:30 -0400
-Date: Thu, 11 Sep 2014 18:27:27 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, linux-kernel@vger.kernel.org,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/7] irqchip: atmel-aic5: Add sama5d4 support
-Message-ID: <20140911162727.GA3131@piout.net>
-References: <1410450852-1834-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1410450852-1834-2-git-send-email-alexandre.belloni@free-electrons.com>
- <20140911182411.0366ad98@free-electrons.com>
+	Thu, 11 Sep 2014 12:27:55 -0400
+Message-ID: <5411CD86.2030900@atmel.com>
+Date: Thu, 11 Sep 2014 18:27:50 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911182411.0366ad98@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] irqchip: atmel-aic5: sama5d3 has 48 IRQs
+References: <1410446511-29477-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1410446511-29477-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 at 18:24:11 +0200, Thomas Petazzoni wrote :
-> Dear Alexandre Belloni,
+On 11/09/2014 16:41, Alexandre Belloni :
+> The FUSE and RAM controllers don't have any connected IRQs, reducing the number
+> of IRQs to 48.
 > 
-> On Thu, 11 Sep 2014 17:54:06 +0200, Alexandre Belloni wrote:
-> > Add sama5d4 support to irq-atmel-aic5.
-> > 
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > ---
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> >  drivers/irqchip/irq-atmel-aic5.c | 10 ++++++++++
-> >  1 file changed, 10 insertions(+)
-> > 
-> > diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
-> > index dc7d98607a89..a11aae8fb006 100644
-> > --- a/drivers/irqchip/irq-atmel-aic5.c
-> > +++ b/drivers/irqchip/irq-atmel-aic5.c
-> > @@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
-> >  
-> >  static const struct of_device_id __initdata aic5_irq_fixups[] = {
-> >  	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
-> > +	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
-> >  	{ /* sentinel */ },
-> >  };
-> 
-> Sorry for the nitpick, but this seems to lack an updated to the DT
-> binding documentation, to add the new compatible string.
-> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-The Atmel SoC compatibles are not actually documented anywhere, yet...
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+> ---
+>  drivers/irqchip/irq-atmel-aic5.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
+> index 04fe2c1b5178..dc7d98607a89 100644
+> --- a/drivers/irqchip/irq-atmel-aic5.c
+> +++ b/drivers/irqchip/irq-atmel-aic5.c
+> @@ -341,7 +341,7 @@ static int __init aic5_of_init(struct device_node *node,
+>  	return 0;
+>  }
+>  
+> -#define NR_SAMA5D3_IRQS		50
+> +#define NR_SAMA5D3_IRQS		48
+>  
+>  static int __init sama5d3_aic5_of_init(struct device_node *node,
+>  				       struct device_node *parent)
+> 
 
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Nicolas Ferre
