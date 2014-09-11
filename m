@@ -1,202 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447AbaIKVer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 17:34:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44711 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753287AbaIKVeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753378AbaIKVeo (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Sep 2014 17:34:44 -0400
-Date: Thu, 11 Sep 2014 14:34:30 -0700
-From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-381aa07a9b4e1f82969203e9e4863da2a157781d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        dave.hansen@linux.intel.com, tglx@linutronix.de, hpa@linux.intel.com,
-        bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, dave.hansen@linux.intel.com, bp@suse.de,
-        hpa@linux.intel.com
-In-Reply-To: <20140911211513.9E35E931@viggo.jf.intel.com>
-References: <20140911211513.9E35E931@viggo.jf.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpufeature] x86: Introduce disabled-features
-Git-Commit-ID: 381aa07a9b4e1f82969203e9e4863da2a157781d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Received: from comal.ext.ti.com ([198.47.26.152]:60978 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988AbaIKVek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 17:34:40 -0400
+Message-ID: <541214A7.3040402@ti.com>
+Date: Thu, 11 Sep 2014 17:31:19 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Heiko Stuebner <heiko@sntech.de>,
+        Kevin Hilman <khilman@linaro.org>
+CC: Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nishanth Menon <nm@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@kernel.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        <linux-arm-kernel@lists.infradead.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] PM / AVS: rockchip-io: add driver handling Rockchip
+ io domains
+References: <1410469229-30167-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1410469229-30167-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  381aa07a9b4e1f82969203e9e4863da2a157781d
-Gitweb:     http://git.kernel.org/tip/381aa07a9b4e1f82969203e9e4863da2a157781d
-Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Thu, 11 Sep 2014 14:15:13 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 11 Sep 2014 14:30:02 -0700
+On Thursday 11 September 2014 05:00 PM, Doug Anderson wrote:
+> From: Heiko Stübner <heiko@sntech.de>
+> 
+> IO domain voltages on some Rockchip SoCs are variable but need to be
+> kept in sync between the regulators and the SoC using a special
+> register.
+> 
+> A specific example using rk3288:
+> - If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
+>   bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
+>   that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
+> 
+> Said another way, this driver simply handles keeping bits in the SoC's
+> general register file (GRF) in sync with the actual value of a voltage
+> hooked up to the pins.
+> 
+> Note that this driver specifically doesn't include:
+> - any logic for deciding what voltage we should set regulators to
+> - any logic for deciding whether regulators (or internal SoC blocks)
+>   should have power or not have power
+> 
+> If there were some other software that had the smarts of making
+> decisions about regulators, it would work in conjunction with this
+> driver.  When that other software adjusted a regulator's voltage then
+> this driver would handle telling the SoC about it.  A good example is
+> vqmmc for SD.  In that case the dw_mmc driver simply is told about a
+> regulator.  It changes the regulator between 3.3V and 1.8V at the
+> right time.  This driver notices the change and makes sure that the
+> SoC is on the same page.
+> 
+> Signed-off-by: Heiko Stübner <heiko@sntech.de>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v2:
+> - Regulator patch landed, so just io-domain patch now.
+> - Now in AVS as per Kevin Hilman.
+> - Updated commit message to make it clear why I think this driver
+>   doesn't fit into some other framework.
+> - Updated bindings to also include better description.
+>
+Nice to see that your driver is getting better home. Minor
+comments below....
 
-x86: Introduce disabled-features
-
-I believe the REQUIRED_MASK aproach was taken so that it was
-easier to consult in assembly (arch/x86/kernel/verify_cpu.S).
-DISABLED_MASK does not have the same restriction, but I
-implemented it the same way for consistency.
-
-We have a REQUIRED_MASK... which does two things:
-1. Keeps a list of cpuid bits to check in very early boot and
-   refuse to boot if those are not present.
-2. Consulted during cpu_has() checks, which allows us to
-   optimize out things at compile-time.  In other words, if we
-   *KNOW* we will not boot with the feature off, then we can
-   safely assume that it will be present forever.
-
-But, we don't have a similar mechanism for CPU features which
-may be present but that we know we will not use.  We simply
-use our existing mechanisms to repeatedly check the status of
-the bit at runtime (well, the alternatives patching helps here
-but it does not provide compile-time optimization).
-
-Adding a feature to disabled-features.h allows the bit to be
-checked via a new macro: cpu_feature_enabled().  Note that
-for features in DISABLED_MASK, checks with this macro have
-all of the benefits of an #ifdef.  Before, we would have done
-this in a header:
-
-#ifdef CONFIG_X86_INTEL_MPX
-#define cpu_has_mpx cpu_has(X86_FEATURE_MPX)
-#else
-#define cpu_has_mpx 0
-#endif
-
-and this in the code:
-
-	if (cpu_has_mpx)
-		do_some_mpx_thing();
-
-Now, just add your feature to DISABLED_MASK and you can do this
-everywhere, and get the same benefits you would have from
-#ifdefs:
-
-	if (cpu_feature_enabled(X86_FEATURE_MPX))
-		do_some_mpx_thing();
-
-We need a new function and *not* a modification to cpu_has()
-because there are cases where we actually need to check the CPU
-itself, despite what features the kernel supports.  The best
-example of this is a hypervisor which has no control over what
-features its guests are using and where the guest does not depend
-on the host for support.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Link: http://lkml.kernel.org/r/20140911211513.9E35E931@viggo.jf.intel.com
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/mkcpustr.c                 |  1 +
- arch/x86/include/asm/cpufeature.h        | 28 ++++++++++++++++++++++++++++
- arch/x86/include/asm/disabled-features.h | 27 +++++++++++++++++++++++++++
- 3 files changed, 56 insertions(+)
-
-diff --git a/arch/x86/boot/mkcpustr.c b/arch/x86/boot/mkcpustr.c
-index 4579eff..637097e 100644
---- a/arch/x86/boot/mkcpustr.c
-+++ b/arch/x86/boot/mkcpustr.c
-@@ -16,6 +16,7 @@
- #include <stdio.h>
  
- #include "../include/asm/required-features.h"
-+#include "../include/asm/disabled-features.h"
- #include "../include/asm/cpufeature.h"
- #include "../kernel/cpu/capflags.c"
- 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 7b50875..1492041 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -8,6 +8,10 @@
- #include <asm/required-features.h>
- #endif
- 
-+#ifndef _ASM_X86_DISABLED_FEATURES_H
-+#include <asm/disabled-features.h>
-+#endif
-+
- #define NCAPINTS	11	/* N 32-bit words worth of info */
- #define NBUGINTS	1	/* N 32-bit bug flags */
- 
-@@ -274,6 +278,18 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
- 	   (((bit)>>5)==8 && (1UL<<((bit)&31) & REQUIRED_MASK8)) ||	\
- 	   (((bit)>>5)==9 && (1UL<<((bit)&31) & REQUIRED_MASK9)) )
- 
-+#define DISABLED_MASK_BIT_SET(bit)					\
-+	 ( (((bit)>>5)==0 && (1UL<<((bit)&31) & DISABLED_MASK0)) ||	\
-+	   (((bit)>>5)==1 && (1UL<<((bit)&31) & DISABLED_MASK1)) ||	\
-+	   (((bit)>>5)==2 && (1UL<<((bit)&31) & DISABLED_MASK2)) ||	\
-+	   (((bit)>>5)==3 && (1UL<<((bit)&31) & DISABLED_MASK3)) ||	\
-+	   (((bit)>>5)==4 && (1UL<<((bit)&31) & DISABLED_MASK4)) ||	\
-+	   (((bit)>>5)==5 && (1UL<<((bit)&31) & DISABLED_MASK5)) ||	\
-+	   (((bit)>>5)==6 && (1UL<<((bit)&31) & DISABLED_MASK6)) ||	\
-+	   (((bit)>>5)==7 && (1UL<<((bit)&31) & DISABLED_MASK7)) ||	\
-+	   (((bit)>>5)==8 && (1UL<<((bit)&31) & DISABLED_MASK8)) ||	\
-+	   (((bit)>>5)==9 && (1UL<<((bit)&31) & DISABLED_MASK9)) )
-+
- #define cpu_has(c, bit)							\
- 	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 :	\
- 	 test_cpu_cap(c, bit))
-@@ -282,6 +298,18 @@ extern const char * const x86_bug_flags[NBUGINTS*32];
- 	(__builtin_constant_p(bit) && REQUIRED_MASK_BIT_SET(bit) ? 1 : 	\
- 	 x86_this_cpu_test_bit(bit, (unsigned long *)&cpu_info.x86_capability))
- 
-+/*
-+ * This macro is for detection of features which need kernel
-+ * infrastructure to be used.  It may *not* directly test the CPU
-+ * itself.  Use the cpu_has() family if you want true runtime
-+ * testing of CPU features, like in hypervisor code where you are
-+ * supporting a possible guest feature where host support for it
-+ * is not relevant.
-+ */
-+#define cpu_feature_enabled(bit)	\
-+	(__builtin_constant_p(bit) && DISABLED_MASK_BIT_SET(bit) ? 0 :	\
-+	 cpu_has(&boot_cpu_data, bit))
-+
- #define boot_cpu_has(bit)	cpu_has(&boot_cpu_data, bit)
- 
- #define set_cpu_cap(c, bit)	set_bit(bit, (unsigned long *)((c)->x86_capability))
-diff --git a/arch/x86/include/asm/disabled-features.h b/arch/x86/include/asm/disabled-features.h
-new file mode 100644
-index 0000000..1a9955d
---- /dev/null
-+++ b/arch/x86/include/asm/disabled-features.h
-@@ -0,0 +1,27 @@
-+#ifndef _ASM_X86_DISABLED_FEATURES_H
-+#define _ASM_X86_DISABLED_FEATURES_H
-+
-+/* These features, although they might be available in a CPU
-+ * will not be used because the compile options to support
-+ * them are not present.
-+ *
-+ * This code allows them to be checked and disabled at
-+ * compile time without an explicit #ifdef.  Use
-+ * cpu_feature_enabled().
-+ */
-+
-+/*
-+ * Make sure to add features to the correct mask
-+ */
-+#define DISABLED_MASK0	0
-+#define DISABLED_MASK1	0
-+#define DISABLED_MASK2	0
-+#define DISABLED_MASK3	0
-+#define DISABLED_MASK4	0
-+#define DISABLED_MASK5	0
-+#define DISABLED_MASK6	0
-+#define DISABLED_MASK7	0
-+#define DISABLED_MASK8	0
-+#define DISABLED_MASK9	0
-+
-+#endif /* _ASM_X86_DISABLED_FEATURES_H */
+>  .../bindings/power/rockchip-io-domain.txt          |  83 +++++
+>  drivers/power/avs/Kconfig                          |   8 +
+>  drivers/power/avs/Makefile                         |   1 +
+>  drivers/power/avs/rockchip-io-domain.c             | 333 +++++++++++++++++++++
+>  4 files changed, 425 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/power/rockchip-io-domain.txt
+>  create mode 100644 drivers/power/avs/rockchip-io-domain.c
+> 
+> diff --git a/Documentation/devicetree/bindings/power/rockchip-io-domain.txt b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
+> new file mode 100644
+> index 0000000..e663255
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/power/rockchip-io-domain.txt
+> @@ -0,0 +1,83 @@
+> +Rockchip SRAM for IO Voltage Domains:
+> +-------------------------------------
+> +
+> +IO domain voltages on some Rockchip SoCs are variable but need to be
+> +kept in sync between the regulators and the SoC using a special
+> +register.
+> +
+> +A specific example using rk3288:
+> +- If the regulator hooked up to a pin like SDMMC0_VDD is 3.3V then
+> +  bit 7 of GRF_IO_VSEL needs to be 0.  If the regulator hooked up to
+> +  that same pin is 1.8V then bit 7 of GRF_IO_VSEL needs to be 1.
+> +
+> +Said another way, this driver simply handles keeping bits in the SoC's
+> +general register file (GRF) in sync with the actual value of a voltage
+> +hooked up to the pins.
+> +
+> +Note that this driver specifically doesn't include:
+> +- any logic for deciding what voltage we should set regulators to
+> +- any logic for deciding whether regulators (or internal SoC blocks)
+> +  should have power or not have power
+> +
+> +If there were some other software that had the smarts of making
+> +decisions about regulators, it would work in conjunction with this
+> +driver.  When that other software adjusted a regulator's voltage then
+> +this driver would handle telling the SoC about it.  A good example is
+> +vqmmc for SD.  In that case the dw_mmc driver simply is told about a
+> +regulator.  It changes the regulator between 3.3V and 1.8V at the
+> +right time.  This driver notices the change and makes sure that the
+> +SoC is on the same page.
+> +
+> +
+> +Required properties:
+> +- compatible: should be one of:
+> +  - "rockchip,rk3188-iodomain" for rk3188
+> +  - "rockchip,rk3288-iodomain" for rk3288
+The key word 'voltage' is missing from the compatible. iodomain itself
+doesn't convey what it is actually.
+
+> +- rockchip,grf: phandle to the syscon managing the "general register files"
+> +
+> +
+> +You specify supplies using the standard regulator bindings by including
+> +a phandle the the relevant regulator.  All specified supplies must be able
+> +to report their voltage.  The IO Voltage Domain for any non-specified
+> +supplies will be not be touched.
+> +
+> +Possible supplies for rk3188:
+> +- ap0-supply:    The supply connected to AP0_VCC.
+> +- ap1-supply:    The supply connected to AP1_VCC.
+> +- cif-supply:    The supply connected to CIF_VCC.
+> +- flash-supply:  The supply connected to FLASH_VCC.
+> +- lcdc0-supply:  The supply connected to LCD0_VCC.
+> +- lcdc1-supply:  The supply connected to LCD1_VCC.
+> +- vccio0-supply: The supply connected to VCCIO0.
+> +- vccio1-supply: The supply connected to VCCIO1.
+> +                 Sometimes also labeled VCCIO1 and VCCIO2.
+> +
+> +Possible supplies for rk3288:
+> +- audio-supply:  The supply connected to APIO4_VDD.
+> +- bb-supply:     The supply connected to APIO5_VDD.
+> +- dvp-supply:    The supply connected to DVPIO_VDD.
+> +- flash0-supply: The supply connected to FLASH0_VDD.  Typically for eMMC
+> +- flash1-supply: The supply connected to FLASH1_VDD.  Also known as SDIO1.
+> +- gpio30-supply: The supply connected to APIO1_VDD.
+> +- gpio1830       The supply connected to APIO2_VDD.
+> +- lcdc-supply:   The supply connected to LCDC_VDD.
+> +- sdcard-supply: The supply connected to SDMMC0_VDD.
+> +- wifi-supply:   The supply connected to APIO3_VDD.  Also known as SDIO0.
+> +
+> +
+> +Example:
+> +
+> +	io-domains {
+> +		compatible = "rockchip,rk3288-iodomain";
+> +		rockchip,grf = <&grf>;
+> +
+> +		audio-supply = <&vcc18_codec>;
+> +		bb-supply = <&vcc33_io>;
+> +		dvp-supply = <&vcc_18>;
+> +		flash0-supply = <&vcc18_flashio>;
+> +		gpio1830-supply = <&vcc33_io>;
+> +		gpio30-supply = <&vcc33_pmuio>;
+> +		lcdc-supply = <&vcc33_lcd>;
+> +		sdcard-supply = <&vccio_sd>;
+> +		wifi-supply = <&vcc18_wl>;
+> +	};
+> diff --git a/drivers/power/avs/Kconfig b/drivers/power/avs/Kconfig
+> index 2a1008b..7f3d389 100644
+> --- a/drivers/power/avs/Kconfig
+> +++ b/drivers/power/avs/Kconfig
+> @@ -10,3 +10,11 @@ menuconfig POWER_AVS
+>  	  AVS is also called SmartReflex on OMAP devices.
+>  
+>  	  Say Y here to enable Adaptive Voltage Scaling class support.
+> +
+> +config ROCKCHIP_IODOMAIN
+> +        tristate "Rockchip IO domain support"
+> +        depends on ARCH_ROCKCHIP && OF
+> +        help
+> +          Say y here to enable support io domains on Rockchip SoCs. It is
+> +          necessary for the io domain setting of the SoC to match the
+> +          voltage supplied by the regulators.
+> diff --git a/drivers/power/avs/Makefile b/drivers/power/avs/Makefile
+> index 0843386..ba4c7bc 100644
+> --- a/drivers/power/avs/Makefile
+> +++ b/drivers/power/avs/Makefile
+> @@ -1 +1,2 @@
+>  obj-$(CONFIG_POWER_AVS_OMAP)		+= smartreflex.o
+> +obj-$(CONFIG_ROCKCHIP_IODOMAIN)		+= rockchip-io-domain.o
+> diff --git a/drivers/power/avs/rockchip-io-domain.c b/drivers/power/avs/rockchip-io-domain.c
+> new file mode 100644
+> index 0000000..f4e0ebc
+> --- /dev/null
+> +++ b/drivers/power/avs/rockchip-io-domain.c
+> @@ -0,0 +1,333 @@
+> +/*
+> + * Rockchip IO Voltage Domain driver
+> + *
+> + * Copyright 2014 MundoReader S.L.
+> + * Copyright 2014 Google, Inc.
+> + *
+> + * This software is licensed under the terms of the GNU General Public
+> + * License version 2, as published by the Free Software Foundation, and
+> + * may be copied, distributed, and modified under those terms.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +#include <linux/mfd/syscon.h>
+The bindings are not talking about syscon usage. You might
+want to document it appropriately to make the usage clear.
+
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/regulator/consumer.h>
+> +
+> +#define MAX_SUPPLIES		16
+> +
+> +#define MAX_VOLTAGE_1_8		1980000
+This is close to 2V, Is that intentional.
+
+> +#define MAX_VOLTAGE_3_3		3600000
+> +
+Same here.
+
+> +struct rockchip_iodomain;
+> +
+> +/**
+> + * @supplies: voltage settings matching the register bits.
+> + */
+> +struct rockchip_iodomain_soc_data {
+> +	int grf_offset;
+> +	const char *supply_names[MAX_SUPPLIES];
+> +	void (*init)(struct rockchip_iodomain *iod);
+> +};
+> +
+> +struct rockchip_iodomain_supply {
+> +	struct rockchip_iodomain *iod;
+> +	struct regulator *reg;
+> +	struct notifier_block nb;
+> +	int idx;
+> +};
+> +
+> +struct rockchip_iodomain {
+> +	struct device *dev;
+> +	struct regmap *grf;
+> +	struct rockchip_iodomain_soc_data *soc_data;
+> +	struct rockchip_iodomain_supply supplies[MAX_SUPPLIES];
+> +};
+> +
+> +static int rockchip_iodomain_write(struct rockchip_iodomain_supply *supply,
+> +				   int uV)
+> +{
+> +	struct rockchip_iodomain *iod = supply->iod;
+> +	u32 val;
+> +	int ret;
+> +
+> +	/* set value bit */
+> +	val = (uV > MAX_VOLTAGE_1_8) ? 0 : 1;
+> +	val <<= supply->idx;
+> +
+> +	/* apply hiword-mask */
+> +	val |= (BIT(supply->idx) << 16);
+> +
+> +	ret = regmap_write(iod->grf, iod->soc_data->grf_offset, val);
+> +	if (ret)
+> +		dev_err(iod->dev, "Couldn't write to GRF\n");
+> +
+> +	return ret;
+> +}
+> +
+> +static int rockchip_iodomain_notify(struct notifier_block *nb,
+> +				    unsigned long event,
+> +				    void *data)
+> +{
+> +	struct rockchip_iodomain_supply *supply =
+> +			container_of(nb, struct rockchip_iodomain_supply, nb);
+> +	int uV;
+> +	int ret;
+> +
+> +	/*
+> +	 * According to Rockchip it's important to keep the SoC IO domain
+> +	 * higher than (or equal to) the external voltage.  That means we need
+> +	 * to change it before external voltage changes happen in the case
+> +	 * of an increase.
+> +	 */
+> +	if (event & REGULATOR_EVENT_PRE_VOLTAGE_CHANGE) {
+> +		struct pre_voltage_change_data *pvc_data = data;
+> +
+> +		uV = max_t(unsigned long, pvc_data->old_uV, pvc_data->max_uV);
+> +	} else if (event & (REGULATOR_EVENT_VOLTAGE_CHANGE |
+> +			    REGULATOR_EVENT_ABORT_VOLTAGE_CHANGE)) {
+> +		uV = (unsigned long)data;
+> +	} else {
+> +		return NOTIFY_OK;
+> +	}
+> +
+> +	dev_dbg(supply->iod->dev, "Setting to %d\n", uV);
+> +
+> +	if (uV > MAX_VOLTAGE_3_3) {
+> +		dev_err(supply->iod->dev, "Voltage too high: %d\n", uV);
+> +
+> +		if (event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
+> +			return NOTIFY_BAD;
+> +	}
+> +
+> +	ret = rockchip_iodomain_write(supply, uV);
+> +	if (ret && event == REGULATOR_EVENT_PRE_VOLTAGE_CHANGE)
+> +		return NOTIFY_BAD;
+> +
+> +	dev_info(supply->iod->dev, "Setting to %d done\n", uV);
+> +	return NOTIFY_OK;
+> +}
+> +
+> +#define RK3288_SOC_CON2			0x24c
+> +#define RK3288_SOC_CON2_FLASH0		BIT(7)
+> +#define RK3288_SOC_FLASH_SUPPLY_NUM	2
+> +
+Not a strong opinion but you can club all the defines on top
+of the file.
+
+Regards,
+Santosh
