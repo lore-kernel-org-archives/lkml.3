@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaIKRDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:03:08 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:11379 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaIKRDF (ORCPT
+	id S1752756AbaIKRDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:03:31 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:50752 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752315AbaIKRDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:03:05 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-d7-5411d5c681c4
-Message-id: <1410454978.8852.18.camel@AMDC723>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
- generic_pm_domain-s
-From: Maciej Matraszek <m.matraszek@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Thu, 11 Sep 2014 19:02:58 +0200
-In-reply-to: <20140910182712.GE14642@kroah.com>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
- <20140910144340.GA17967@kroah.com> <1410363493.15593.26.camel@AMDC723>
- <20140910182712.GE14642@kroah.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xy7rHrgqGGCxbyGuxccZ6VovmxevZ
-	LF6/MLSYNWUvk8XlXXPYLD73HmG0uHvqKJvFmdOXWB04PBbvecnksX/uGnaPLVfbWTz6tqxi
-	9Fix+ju7x+dNcgFsUVw2Kak5mWWpRfp2CVwZj3fwFSxiq7g+cxJjA+MTli5GTg4JAROJ9ZO3
-	MkPYYhIX7q1n62Lk4hASWMoo8aRrFROE85lR4uiazUAZDg5eAT2JwzuUQBqEBcIk/vRvZgWx
-	2QQMJDb/6wcbKiJgLNF/dhY7SC+zQA+TxN9th9lAEiwCqhJdvz6BFXEK6EucP9nKArFgK6PE
-	4rczwBLMAuoSk+YtYgZZJiGgLNHY7wYS5hUQlPgx+R5UibzE5jVvmScwCsxC0jELSdksJGUL
-	GJlXMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoSE/dcdjEuPWR1iFOBgVOLh/ZArGCLEmlhW
-	XJl7iFGCg1lJhNd5IVCINyWxsiq1KD++qDQntfgQIxMHp1QDo/Z5i8O7JR7O/Mp7T7VU7RKH
-	jb2uwZvOU0uYOmYm3fY94b7U6IZiVsDCGIGrW8VlW9J2nb21kOPh8g3R4Qc25esd/1/w1+nB
-	4T2O7Tfd/zaWrGvuF9FuPJ5lXaW9Iv3F5ZP8bU/CN4ZF/90Qqbf0sd2HA6+Vw7OSl0mnX6rf
-	v21jxaf75+5f11JiKc5INNRiLipOBADixXfsWQIAAA==
+	Thu, 11 Sep 2014 13:03:09 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kishon@ti.com, maxime.coquelin@st.com, srinivas.kandagatla@gmail.com,
+        b.zolnierkie@samsung.com, patrice.chotard@st.com, arnd@arndb.de
+Cc: peter.griffin@linaro.org, lee.jones@linaro.org, devicetree@vger.kernel.org,
+        peppe.cavallaro@st.com
+Subject: [PATCH v3 2/4] phy: phy-stih407-usb: Add dt documentation for USB picophy found on stih407 SoC family
+Date: Thu, 11 Sep 2014 18:02:45 +0100
+Message-Id: <1410454967-21500-3-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410454967-21500-1-git-send-email-peter.griffin@linaro.org>
+References: <1410454967-21500-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 11:27 -0700, Greg Kroah-Hartman wrote:
-> > > 
-> > > > +	if (!d)
-> > > > +		return -ENOMEM;
-> > > > +
-> > > > +	return 0;
-> > > > +}
-> > > > +late_initcall(pm_genpd_debug_init);
-> > > > +#endif /* CONFIG_PM_ADVANCED_DEBUG */
-> > > 
-> > > No tear-down of the debugfs files on shutdown?
-> > 
-> > In drivers/clk/clk.c, there is no tear-down of debugfs files paired
-> > with clk_debug_init(), same with wakeup_sources_debugfs_init() from
-> > drivers/base/power/wakeup.c. On the other hand, some subsystems
-> > perform it. What would you prefer?
-> 
-> In my quest for symmetry I prefer to see files you add to be removed at
-> the proper time. :)
+This patch adds the dt documentation for the usb picophy found on stih407 SoC family
+available from STMicroelectronics.
 
-And they will be! (in v2 :)
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+---
+ .../devicetree/bindings/phy/phy-stih407-usb.txt    | 30 ++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
 
-
-Thanks,
+diff --git a/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+new file mode 100644
+index 0000000..1ef8228
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+@@ -0,0 +1,30 @@
++ST STiH407 USB PHY controller
++
++This file documents the dt bindings for the usb picoPHY driver which is the PHY for both USB2 and USB3
++host controllers (when controlling usb2/1.1 devices) available on STiH407 SoC family from STMicroelectronics.
++
++Required properties:
++- compatible		: should be "st,stih407-usb2-phy"
++- reg			: contain the offset and length of the system configuration registers
++			  used as glue logic to control & parameter phy
++- reg-names		: the names of the system configuration registers in "reg", should be "param" and "reg"
++- st,syscfg		: sysconfig register to manage phy parameter at driver level
++- resets		: list of phandle and reset specifier pairs. There should be two entries, one
++			  for the whole phy and one for the port
++- reset-names		: list of reset signal names. Should be "global" and "port"
++See: Documentation/devicetree/bindings/reset/st,sti-powerdown.txt
++See: Documentation/devicetree/bindings/reset/reset.txt
++
++Example:
++
++usb2_picophy0: usbpicophy@f8 {
++	compatible	= "st,stih407-usb2-phy";
++	reg		= <0xf8 0x04>,	/* syscfg 5062 */
++			  <0xf4 0x04>;	/* syscfg 5061 */
++	reg-names	= "param", "ctrl";
++	#phy-cells	= <0>;
++	st,syscfg	= <&syscfg_core>;
++	resets		= <&softreset STIH407_PICOPHY_SOFTRESET>,
++			  <&picophyreset STIH407_PICOPHY0_RESET>;
++	reset-names	= "global", "port";
++};
 -- 
-Maciej Matraszek
-Samsung R&D Institute Poland
-Samsung Electronics
-
+1.9.1
 
