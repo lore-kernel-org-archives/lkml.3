@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaIKNPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:15:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51514 "EHLO
+	id S1755544AbaIKNPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:15:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51515 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755378AbaIKMeE (ORCPT
+	by vger.kernel.org with ESMTP id S1755379AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Christoph Paasch" <christoph.paasch@uclouvain.be>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.666983400@decadent.org.uk>
+Message-ID: <lsq.1410438733.558332480@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 101/131] tcp: Fix integer-overflows in TCP veno
+Subject: [PATCH 3.2 094/131] USB: serial: fix potential heap buffer overflow
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,37 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+From: Johan Hovold <johan@kernel.org>
 
-[ Upstream commit 45a07695bc64b3ab5d6d2215f9677e5b8c05a7d0 ]
+commit 5654699fb38512bdbfc0f892ce54fce75bdc2bab upstream.
 
-In veno we do a multiplication of the cwnd and the rtt. This
-may overflow and thus their result is stored in a u64. However, we first
-need to cast the cwnd so that actually 64-bit arithmetic is done.
+Make sure to verify the number of ports requested by subdriver to avoid
+writing beyond the end of fixed-size array in interface data.
 
-A first attempt at fixing 76f1017757aa0 ([TCP]: TCP Veno congestion
-control) was made by 159131149c2 (tcp: Overflow bug in Vegas), but it
-failed to add the required cast in tcp_veno_cong_avoid().
+The current usb-serial implementation is limited to eight ports per
+interface but failed to verify that the number of ports requested by a
+subdriver (which could have been determined from device descriptors) did
+not exceed this limit.
 
-Fixes: 76f1017757aa0 ([TCP]: TCP Veno congestion control)
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: s/ddev/\&interface->dev/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_veno.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/usb-serial.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/ipv4/tcp_veno.c b/net/ipv4/tcp_veno.c
-index ac43cd7..b4d1858 100644
---- a/net/ipv4/tcp_veno.c
-+++ b/net/ipv4/tcp_veno.c
-@@ -144,7 +144,7 @@ static void tcp_veno_cong_avoid(struct sock *sk, u32 ack, u32 in_flight)
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -888,6 +888,11 @@ int usb_serial_probe(struct usb_interfac
+ 			num_ports = type->num_ports;
+ 	}
  
- 		rtt = veno->minrtt;
- 
--		target_cwnd = (tp->snd_cwnd * veno->basertt);
-+		target_cwnd = (u64)tp->snd_cwnd * veno->basertt;
- 		target_cwnd <<= V_PARAM_SHIFT;
- 		do_div(target_cwnd, rtt);
- 
++	if (num_ports > MAX_NUM_PORTS) {
++		dev_warn(&interface->dev, "too many ports requested: %d\n", num_ports);
++		num_ports = MAX_NUM_PORTS;
++	}
++
+ 	serial->num_ports = num_ports;
+ 	serial->num_bulk_in = num_bulk_in;
+ 	serial->num_bulk_out = num_bulk_out;
 
