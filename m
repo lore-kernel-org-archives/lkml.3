@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168AbaIKQ5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:57:03 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48230 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755868AbaIKQ5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:57:01 -0400
-Date: Thu, 11 Sep 2014 11:56:38 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Felipe Balbi <balbi@ti.com>, Dan Carpenter <dan.carpenter@oracle.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] usb: f_fs: replace BUG in dead-code with less serious
- WARN_ON
-Message-ID: <20140911165638.GE1840@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410364225-6087-1-git-send-email-mina86@mina86.com>
- <1410364225-6087-2-git-send-email-mina86@mina86.com>
- <20140910161337.GL667@saruman.home>
- <xa1tegvi14m6.fsf@mina86.com>
+	id S1757298AbaIKQ75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:59:57 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:46150 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066AbaIKQ7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:59:54 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1Y7d0dPL928TPQbc"
-Content-Disposition: inline
-In-Reply-To: <xa1tegvi14m6.fsf@mina86.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140911164710.GW6158@arm.com>
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
+	<20140911164710.GW6158@arm.com>
+Date: Thu, 11 Sep 2014 09:59:53 -0700
+X-Google-Sender-Auth: Eai5KqLtE3tbqaBFKXnnUYnvjRk
+Message-ID: <CAD=FV=WECbZ4L=-C+F9K6kfiPUi7ar3a4a7Upq2TqDYYPGoOrA@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+From: Doug Anderson <dianders@chromium.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1Y7d0dPL928TPQbc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Will,
 
-On Thu, Sep 11, 2014 at 06:52:49PM +0200, Michal Nazarewicz wrote:
-> Even though the BUG() in __ffs_event_add is a dead-code, it is still
-> better to warn rather then crash the system if that code ever gets
-> executed.
->=20
-> Reported-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> ---
->  drivers/usb/gadget/function/f_fs.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> On Wed, Sep 10 2014, Felipe Balbi <balbi@ti.com> wrote:
-> > WARN(1, "unknown event type %d\n", type);
-> > Then you can drop pr_vdebug();
->=20
-> True, but the printk call will stay in the binary whereas pr_vdebug is not
+On Thu, Sep 11, 2014 at 9:47 AM, Will Deacon <will.deacon@arm.com> wrote:
+> On Thu, Sep 11, 2014 at 05:16:44PM +0100, Doug Anderson wrote:
+>> Some 32-bit (ARMv7) systems are architected like this:
+>>
+>> * The firmware doesn't know and doesn't care about hypervisor mode and
+>>   we don't want to add the complexity of hypervisor there.
+>>
+>> * The firmware isn't involved in SMP bringup or resume.
+>>
+>> * The ARCH timer come up with an uninitialized offset between the
+>>   virtual and physical counters.  Each core gets a different random
+>>   offset.
+>>
+>> On systems like the above, it doesn't make sense to use the virtual
+>> counter.  There's nobody managing the offset and each time a core goes
+>> down and comes back up it will get reinitialized to some other random
+>> value.
+>
+> You probably need to rephrase this slightly, as there *is* still a
+> requirement on the hypervisor/firmware (actually, two!). See below.
 
-not a big deal. I'd rather get a message all the time this triggers.
+Sure.  I added two more bullet points.
 
-> included in non-debug builds.  Furthermore, WARN() does not use pr_fmt.
 
-not a big deal either, we will get a stack dump and can easily figure
-out where that comes from.
+>> Let's add a property to the device tree to say that we shouldn't use
+>> the virtual timer.  Firmware could potentially remove this property
+>> before passing the device tree to the kernel if it really wants the
+>> kernel to use a virtual timer.
+>>
+>> Note that it's been said that ARM64 (ARMv8) systems the firmware and
+>> kernel really can't be architected as described above.  That means
+>> using the physical timer like this really only makes sense for ARMv7
+>> systems.
+>
+> I'd go further: this only makes sense if you're booting in secure SVC
+> mode.
 
---=20
-balbi
+OK.
 
---1Y7d0dPL928TPQbc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+>> In order for this patch to do anything useful, we also need Sonny's
+>> patch at <https://patchwork.kernel.org/patch/4790921/>
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>> ---
+>> Changes in v2:
+>> - Add "#ifdef CONFIG_ARM" as per Will Deacon
+>>
+>>  Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
+>>  drivers/clocksource/arm_arch_timer.c                 | 5 +++++
+>>  2 files changed, 11 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> index 37b2caf..876d32b 100644
+>> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+>> @@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
+>>  - always-on : a boolean property. If present, the timer is powered through an
+>>    always-on power domain, therefore it never loses context.
+>>
+>> +** Optional properties:
+>> +
+>> +- arm,use-physical-timer : Don't ever use the virtual timer, just use the
+>> +  physical one.  Not supported for ARM64.
+>
+> I'd say `Only supported for ARM' to better match what we've done. Probably
+> also worth mentioning that this relies on the hypervisor/firmware having set
+> CNTHCTL.PL1PCEN and CNTHCTL.EL1PCTEN (but assumedly made a mess of CNTVOFF
+> ;) if you want to boot on the non-secure side (e.g. as a guest).
 
-iQIcBAEBAgAGBQJUEdRFAAoJEIaOsuA1yqRE3osP/iE18Ke6fSou3bLxw36C2wyA
-YsZ68AujJftMI8JkICcaYctQOZlORQnDFqWKVnWfEhYAcwubVWjyp82wb2O47liK
-7zaWhxwPkGL548up8rhlEZhm6a+5P0buDxA858ZfXsmvj4tXig9Fv3TjwxZTli+N
-yPcOZYEOJbO/d2mx8833E5zfRIlO9NmQRhdnFglpFXzxCMkX4BEVyALWiyybRI7e
-RII2kH4/K6e2sEhl3G8uaMBCgsfb/DwooM03dNCPviJDzrqO7ZV+lSFmBaGFK3yv
-AMaq0P16CkqMjDy7mT94bvJSM9+9Z878iZRKp6BNbzcfaNyW3Y6KRZy1cxsg/rBT
-h5AFqR6HKWJDeyp6CjIUVoUw5Ys6kEfL+dmEwCnhQSupkpZ5jfaj9BqbCeCFg3ap
-LH/3igcpuIWSp/p0Qf1zugE48QV6CEcbiuxTOmNLwPVeHtVOmXe84BRncZgD13nB
-9OMC+xPJuCbSWaBd7G11S1BZBJ7jjCK1pLTQ27eHYTGR0XTuWv8IRGPsOUcKifCB
-K+f7kzWydx7qCzTwEbMZTv9o9B3WgCMk0UUwVWlci56xSKlOhJm6xHwsRaNrha8S
-aASeiNx5+YnXAi2cnZ3nO8iZgBdPyLVTaN26FMAkPg5sM1KYdq6aj58CsWqhvexP
-EtPNzDvfn2Zh+GT+j+z6
-=uubL
------END PGP SIGNATURE-----
+Note that the reset value of CNTHCTL.PL1PCEN and CNTHCTL.PL1PCTEN are
+both 1 in my version of the ARM ARM.  On the other hand CNTVOFF is
+documented to have an UNKNOWN reset value.  If only ARM had guaranteed
+that CNTVOFF started out as 0 (which seems like it would have been
+sensible) we wouldn't be in this mess.  :-/
 
---1Y7d0dPL928TPQbc--
+I've adjusted the wording.  Hopefully it looks good to you.
+
+-Doug
