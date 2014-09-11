@@ -1,63 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaIKOII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:08:08 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:52320 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831AbaIKOIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:08:04 -0400
-Date: Thu, 11 Sep 2014 16:59:56 +0300
-From: Gleb Natapov <gleb@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, mtosatti@redhat.com,
-        nadav.amit@gmail.com, jan.kiszka@web.de, kvm@vger.kernel.org,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/7] kvm, mem-hotplug: Reload L1' apic access page on
- migration in vcpu_enter_guest().
-Message-ID: <20140911135956.GC26540@minantech.com>
-References: <1410413886-32213-1-git-send-email-tangchen@cn.fujitsu.com>
- <1410413886-32213-5-git-send-email-tangchen@cn.fujitsu.com>
- <541169AD.6060908@redhat.com>
- <20140911101200.GF25317@minantech.com>
- <54117DB4.307@redhat.com>
- <20140911113051.GG25317@minantech.com>
- <54119E01.9000908@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54119E01.9000908@redhat.com>
+	id S1755837AbaIKOIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:08:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39913 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752376AbaIKOCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:02:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="384738874"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [RFC Part2 v1 08/21] x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+Date: Thu, 11 Sep 2014 22:03:35 +0800
+Message-Id: <1410444228-3134-9-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 03:05:05PM +0200, Paolo Bonzini wrote:
-> Il 11/09/2014 13:30, Gleb Natapov ha scritto:
-> >> > +			vmcs_write64(APIC_ACCESS_ADDR, page_to_phys(page));
-> >> > +			/*
-> >> > +			 * Do not pin apic access page in memory so that memory
-> >> > +			 * hotplug process is able to migrate it.
-> >> > +			 */
-> >> > +			put_page(page);
-> >> >  		}
-> > This code is in prepare_vmcs02() and is executed during L1->L2 vmentry. What happens
-> > when apic access page is migrated while L2 is running? It needs to be update somewhere.
-> 
-> Before it is migrated, the MMU notifier is called and will force a
-> vmexit on all CPUs.  The reload code will call GUP again on the page
-> again and swap it in.
-> 
-This is how it will work without "if (!is_guest_mode(vcpu))". But,
-unless I am missing something, with this check it will not work while
-vcpu is in L2.
+Use new irqdomain interfaces to allocate/free IRQ for HTIRQ, so we could
+kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
 
-Suppose vmcs01->APIC_ACCESS_ADDR = 0xf000. During L2 entry
-vmcs02->APIC_ACCESS_ADDR is set to 0xf000 too (by prepare_vmcs02). Now
-0xf000 is migrated to 0x8000, mmu notifier is called, it forces vmexit,
-but vcpu is in a guest mode so vmcs02->APIC_ACCESS_ADDR is never updated
-to 0x8000 because of "if (!is_guest_mode(vcpu))" check. So what am I
-missing here?
+This patch changes the interfaces between arch independent PCI driver
+and arch specific code. Currently HT_IRQ is only enabled on x86, so it
+shouldn't break other architectures.
 
---
-			Gleb.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/apic/htirq.c |   26 +++++++++++++-------------
+ drivers/pci/htirq.c          |    7 +++----
+ include/linux/htirq.h        |    2 ++
+ 3 files changed, 18 insertions(+), 17 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index 6f527b02ac4c..55cb061a95cb 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -14,6 +14,7 @@
+ #include <linux/device.h>
+ #include <linux/pci.h>
+ #include <linux/htirq.h>
++#include <linux/irqdomain.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
+ #include <asm/hypertransport.h>
+@@ -60,31 +61,30 @@ static struct irq_chip ht_irq_chip = {
+ 	.irq_retrigger		= apic_retrigger_irq,
+ };
+ 
++int arch_alloc_ht_irq(struct pci_dev *dev)
++{
++	return irq_domain_alloc_irqs(NULL, -1, 1, dev_to_node(&dev->dev), NULL);
++}
++
++void arch_free_ht_irq(int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
++
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+ {
+ 	struct irq_cfg *cfg;
+ 	struct ht_irq_msg msg;
+-	unsigned dest;
+-	int err;
+ 
+ 	if (disable_apic)
+ 		return -ENXIO;
+ 
+ 	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
++	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
+ 
+ 	msg.address_lo =
+ 		HT_IRQ_LOW_BASE |
+-		HT_IRQ_LOW_DEST_ID(dest) |
++		HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
+ 		HT_IRQ_LOW_VECTOR(cfg->vector) |
+ 		((apic->irq_dest_mode == 0) ?
+ 			HT_IRQ_LOW_DM_PHYSICAL :
+diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
+index a94dd2c4183a..ceb0ebeb7b5f 100644
+--- a/drivers/pci/htirq.c
++++ b/drivers/pci/htirq.c
+@@ -117,8 +117,8 @@ int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
+ 	cfg->msg.address_lo = 0xffffffff;
+ 	cfg->msg.address_hi = 0xffffffff;
+ 
+-	irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
+-	if (!irq) {
++	irq = arch_alloc_ht_irq(dev);
++	if (irq <= 0) {
+ 		kfree(cfg);
+ 		return -EBUSY;
+ 	}
+@@ -163,8 +163,7 @@ void ht_destroy_irq(unsigned int irq)
+ 	cfg = irq_get_handler_data(irq);
+ 	irq_set_chip(irq, NULL);
+ 	irq_set_handler_data(irq, NULL);
+-	irq_free_hwirq(irq);
+-
++	arch_free_ht_irq(irq);
+ 	kfree(cfg);
+ }
+ EXPORT_SYMBOL(ht_destroy_irq);
+diff --git a/include/linux/htirq.h b/include/linux/htirq.h
+index 70a1dbbf2093..5caa51b7b95c 100644
+--- a/include/linux/htirq.h
++++ b/include/linux/htirq.h
+@@ -15,6 +15,8 @@ void unmask_ht_irq(struct irq_data *data);
+ 
+ /* The arch hook for getting things started */
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev);
++int arch_alloc_ht_irq(struct pci_dev *dev);
++void arch_free_ht_irq(int irq);
+ 
+ /* For drivers of buggy hardware */
+ typedef void (ht_irq_update_t)(struct pci_dev *dev, int irq,
+-- 
+1.7.10.4
+
