@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040AbaIKQH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:07:27 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:52271 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaIKQHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:07:25 -0400
+	id S1757229AbaIKQHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:07:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756657AbaIKQHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 12:07:36 -0400
+Date: Thu, 11 Sep 2014 18:07:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 13/14] tools lib fd array: Allow associating an integer
+ cookie with each entry
+Message-ID: <20140911160711.GF32722@krava.brq.redhat.com>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <1410358129-9965-14-git-send-email-acme@kernel.org>
+ <20140911103319.GA13634@krava.brq.redhat.com>
+ <20140911132911.GB10158@kernel.org>
+ <20140911145945.GC32722@krava.brq.redhat.com>
+ <20140911152330.GI10158@kernel.org>
+ <20140911153527.GE32722@krava.brq.redhat.com>
+ <20140911154922.GK10158@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140911130624.GJ15520@phenom.ffwll.local>
-References: <1410364463-12692-1-git-send-email-dh.herrmann@gmail.com>
-	<1410364463-12692-5-git-send-email-dh.herrmann@gmail.com>
-	<20140911064834.GA15520@phenom.ffwll.local>
-	<CANq1E4Q1RJCPACB0Cg7A79BB7Ly-zEUDik7PKyQ9oNuEizFPxA@mail.gmail.com>
-	<20140911130624.GJ15520@phenom.ffwll.local>
-Date: Thu, 11 Sep 2014 18:07:24 +0200
-Message-ID: <CANq1E4Tt0+cb0YHZcTdQYkBmFXyAkbwNkofcyJ6bHsYQW9vH7g@mail.gmail.com>
-Subject: Re: [PATCH RFC 4/4] drm: link connectors to backlight devices
-From: David Herrmann <dh.herrmann@gmail.com>
-To: David Herrmann <dh.herrmann@gmail.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Adam Jackson <ajax@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911154922.GK10158@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Sep 11, 2014 at 12:49:22PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Sep 11, 2014 at 05:35:27PM +0200, Jiri Olsa escreveu:
+> > On Thu, Sep 11, 2014 at 12:23:30PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Thu, Sep 11, 2014 at 04:59:45PM +0200, Jiri Olsa escreveu:
+> > > > On Thu, Sep 11, 2014 at 10:29:11AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > But then I had no use whatsoever for the ->ptr one at this point, so I
+> > > > > just nuked it, to keep _just_ what is used _right now_, and added the
+> > > > > comment to the changelog :-)
+> 
+> > > > if we are treeting tools/lib/api as 'external' lib, I think we should
+> > > > use 'void *' for priv and let the user retype it to whatever he wants
+> 
+> > > > but I dont care/insist here too much.. it just seems strange to me ;-)
+> > > 
+> > > Ok, so perhaps it should be:
+> > > 
+> > > 	struct fdarray {
+> > > 		...
+> > > 		union {
+> > > 			int idx;
+> > > 		} *priv;
+> > > 		...
+> > > }
+> > > 
+> > > And then perf's evlist will use:
+> > > 
+> > > 	fda->priv[fd].idx;
+> > > 
+> > > 	Then, when we get the need for a pointer, we can go there and
+> > > add it to the union.
+> > > 
+> > > 	This will make tools/lib/api/fd/ a little bit more friendly to
+> > > use outside the kernel sources, since then a new version will be source
+> > > code compatible (but not necessarily binary compatible).
+> > 
+> > you lost me ;-)
+> > 
+> > could you please make an example of the !compatibility you mentioned?
+> 
+> If I leave it as is now, when I add that void * pointer to each entry in
+> fdarray->priv[], I will have to change fdarray's users, i.e. right now I
+> will have to go and change evlist.h, i.e. every place that has:
+> 
+> 	fda->priv[fd];
+> 
+> 	will have to be changed to:
+> 
+> 	fda->priv[fd].idx;
+> 
+> If I instead change it to:
+> 
+>  	struct fdarray {
+>  		...
+>  		union {
+>  			int idx;
+>  		} *priv;
+>  		...
+> 	}
+> 
+> Then I will not have to change anything when I add that void * pointer
+> to the union.
 
-On Thu, Sep 11, 2014 at 3:06 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Thu, Sep 11, 2014 at 02:22:55PM +0200, David Herrmann wrote:
->> actual-brightness is a bit more tricky. Currently, DRM caches property
->> values, so there is no read_property() hook. We'd have to add this.
->> But it'll be quite nasty as we have to call into the backlight driver.
->> So I think we want to run an async-interruptible worker on the
->> backlight, drop the locks in the ioctl and wait for the job to finish.
->> Not sure whether it's worth it.. maybe we can add this later.
->
-> See Jani's reply - we probably don't need it, at least not in version 1.
+I dont think there's any trouble like that if you keep
+just void* priv pointer and let users to store there
+whatever they like
 
-I couldn't see any comment regarding "actual-brightness". But I'm
-totally fine with dropping this.
+>  
+> > > 	If we commit to that we can't just go on and change all its
+> > > users as we can now do for things like 'struct sk_buff', 'struct sock'
+> > > and any other kernel data structures.
+> > > 	There are costs in making it 'external' in the sense you're
+> > > implying. I want to make it a bit less 'external' (in your sense), at
+> > > least while we initially implement new stuff like this one.
+>  
+> > and the costs?
+>  
+> > also I did not mean that union above, what I meant was:
+>  
+> > struct fdarray {
+> > 	...
+> > 	void *priv;
+> > 	...
+> > }
+> 
+> Yeah, that is what I am trying to avoid. This will make it use
+> sizeof(void *) for each entry, and I have no use for that right now. All
+> I need is sizeof(int) for each entry.
 
->>
->> > - How does udev match on the drm connector name? They are not terribly
->> >   stable atm, and if you reload your drm driver, or much more likely, have
->> >   two gpus with two drm drivers they change. We probably should change the
->> >   name allocation scheme to be per device instance instead of global
->> >   first. Within a driver probe order is hopefully deterministic on a given
->> >   platform, since even with super dynamic setups (based on dt/acpi) the
->> >   firmware tables should change really.
->>
->> You can match on EDID attributes. Ok, so far this is pretty ugly as
->> the EDID property is binary. But we can add rather trivial udev
->> extensions to make EDID binary against text matching possible.
->
-> Why EDID? This is purely about the drm connector name, e.g. if I have 2
-> gpus, both with an eDP connector (optimus, so just one panel) then the
-> first driver gets eDP-1 as the name of it and the 2nd one eDP-2. Which is
-> ok if both should control backlight brightness through the same driver,
-> but a total mess if not just gpus get switched, but also backlight
-> controllers.
->
-> And if you reload you get then eDP-2 and eDP-3. Well at least in the past,
-> that hilarity at least was fixed in
->
-> commit b21e3afe2357c0f49348a5fb61247012bf8262ec
-> Author: Ilia Mirkin <imirkin@alum.mit.edu>
-> Date:   Wed Aug 7 22:34:48 2013 -0400
->
->     drm: use ida to allocate connector id
->
-> What I think we need to do is to make these ida allocators per-device, so
-> that both drivers have an eDP-1 connector. Otherwise you need to either
-> match both or do funny tricks like "the first eDP connector, no matter
-> which one on this gpu". After all we can now support more than one eDP
-> (and more than one LVDS since a long time actually).
->
-> Or how exactly is the udev hw db supposed to match this stuff for special
-> cases. In general we need to duplicate the existing logic from
-> libbacklight, like Matthew suggested.
+hm? but you're using pointer (int*) not int .. size will be sizeof(unsigned long) anyway
 
-Yeah, I get what you mean. Names are not stable so even if we can
-match on the internal card, we cannot match on "lowest available eDP
-display". per-device IDs should be totally fine and fix this issue. We
-prefix connectors with the device name anyway, so no conflicts can
-arise.
-
-But I think we want to make this a udev builtin anyway. So we can
-easily implement the same logic as libbacklight.
-
-Thanks
-David
+jirka
