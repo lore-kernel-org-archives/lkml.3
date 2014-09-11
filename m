@@ -1,137 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220AbaIKQU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 12:20:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40283 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786AbaIKQUW (ORCPT
+	id S1756436AbaIKQW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 12:22:28 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46680 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146AbaIKQWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 12:20:22 -0400
-Message-ID: <5411CBC3.5080308@codeaurora.org>
-Date: Thu, 11 Sep 2014 12:20:19 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Olof Johansson <olof@lixom.net>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Will Deacon <will.deacon@arm.com>,
+	Thu, 11 Sep 2014 12:22:24 -0400
+Date: Thu, 11 Sep 2014 09:16:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Peter Hurley <peter@hurleysoftware.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>
-Subject: Re: [PATCH] clocksource: arch_timer: Allow the device tree to specify
- the physical timer
-References: <1410450727-8182-1-git-send-email-dianders@chromium.org> <5411C68B.6090308@codeaurora.org> <CAD=FV=XPqma5sYbn65NLEAipZFq96t_HcX96ym_cEQrqTKddOQ@mail.gmail.com>
-In-Reply-To: <CAD=FV=XPqma5sYbn65NLEAipZFq96t_HcX96ym_cEQrqTKddOQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Miroslav Franc <mfranc@redhat.com>,
+        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
+Subject: Re: bit fields && data tearing
+Message-ID: <20140911161653.GA4775@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1409824374.4246.62.camel@pasglop>
+ <5408E458.3@zytor.com>
+ <54090AF4.7060406@hurleysoftware.com>
+ <54091B30.7080100@zytor.com>
+ <5409D76D.2070203@hurleysoftware.com>
+ <5409D9C0.7030403@zytor.com>
+ <20140908185240.21f52ca0@alan.etchedpixels.co.uk>
+ <540DEE6C.2060904@zytor.com>
+ <540E3207.7090007@hurleysoftware.com>
+ <20140911110411.2de01944@alan.etchedpixels.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140911110411.2de01944@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091116-0928-0000-0000-000004CE3EE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 12:04 PM, Doug Anderson wrote:
-> Christopher,
+On Thu, Sep 11, 2014 at 11:04:11AM +0100, One Thousand Gnomes wrote:
+> > > Is *that* what we are talking about?  I was added to this conversation
+> > > in the middle where it had already generalized, so I had no idea.
+> > 
+> > No, this is just what brought this craziness to my attention.
 > 
-> On Thu, Sep 11, 2014 at 8:58 AM, Christopher Covington
-> <cov@codeaurora.org> wrote:
->> Hi Doug,
->>
->> On 09/11/2014 11:52 AM, Doug Anderson wrote:
->>> Some 32-bit (ARMv7) systems are architected like this:
->>>
->>> * The firmware doesn't know and doesn't care about hypervisor mode and
->>>   we don't want to add the complexity of hypervisor there.
->>>
->>> * The firmware isn't involved in SMP bringup or resume.
->>>
->>> * The ARCH timer come up with an uninitialized offset between the
->>>   virtual and physical counters.  Each core gets a different random
->>>   offset.
->>>
->>> On systems like the above, it doesn't make sense to use the virtual
->>> counter.  There's nobody managing the offset and each time a core goes
->>> down and comes back up it will get reinitialized to some other random
->>> value.
->>>
->>> Let's add a property to the device tree to say that we shouldn't use
->>> the virtual timer.  Firmware could potentially remove this property
->>> before passing the device tree to the kernel if it really wants the
->>> kernel to use a virtual timer.
->>>
->>> Note that it's been said that ARM64 (ARMv8) systems the firmware and
->>> kernel really can't be architected as described above.  That means
->>> using the physical timer like this really only makes sense for ARMv7
->>> systems.
->>>
->>> In order for this patch to do anything useful, we also need Sonny's
->>> patch at <https://patchwork.kernel.org/patch/4790921/>
->>>
->>> Signed-off-by: Doug Anderson <dianders@chromium.org>
->>> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->>> ---
->>>  Documentation/devicetree/bindings/arm/arch_timer.txt | 6 ++++++
->>>  drivers/clocksource/arm_arch_timer.c                 | 3 +++
->>>  2 files changed, 9 insertions(+)
->>>
->>> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
->>> index 37b2caf..876d32b 100644
->>> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
->>> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
->>> @@ -22,6 +22,12 @@ to deliver its interrupts via SPIs.
->>>  - always-on : a boolean property. If present, the timer is powered through an
->>>    always-on power domain, therefore it never loses context.
->>>
->>> +** Optional properties:
->>> +
->>> +- arm,use-physical-timer : Don't ever use the virtual timer, just use the
->>> +  physical one.  Not supported for ARM64.
->>> +
->>> +
->>>  Example:
->>>
->>>       timer {
->>> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
->>> index 5163ec1..8ca07a9 100644
->>> --- a/drivers/clocksource/arm_arch_timer.c
->>> +++ b/drivers/clocksource/arm_arch_timer.c
->>> @@ -649,6 +649,9 @@ static void __init arch_timer_init(struct device_node *np)
->>>               arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
->>>       arch_timer_detect_rate(NULL, np);
->>>
->>> +     if (of_property_read_bool(np, "arm,use-physical-timer"))
->>> +             arch_timer_use_virtual = false;
->>> +
->>>       /*
->>>        * If HYP mode is available, we know that the physical timer
->>>        * has been configured to be accessible from PL1. Use it, so
->>>
->>
->> How's the VDSO supposed to deal with this? It currently does:
->>
->> cycle_now = arch_counter_get_cntvct()
+> None of it is craziness. It's the real world leaking into the crazy
+> delusional world of sequential programming. Machines are going to get
+> more not less parallel.
+
+Amen to that!!!
+
+> > For example, byte- and short-sized circular buffers could not possibly
+> > be safe either, when the head nears the tail.
+> > 
+> > Who has audited global storage and ensured that _every_ byte-sized write
+> > doesn't happen to be adjacent to some other storage that may not happen
+> > to be protected by the same (or any) lock?
 > 
-> I don't see that line of code anywhere when I do a "git grep" on linux
-> or linuxnext.  Can you give me a clearer pointer?
+> Thats a meaningless question. Have you audited it all for correctness of
+> any other form. Have you mathematically verified the functionality as a
+> set of formal proofs ? If you can't prove its formally mathematically
+> functionally correct why are you worried about this ?
+> 
+> Alpha works, maybe it has a near theoretical race on that point. It's not
+> any worse than it was 15 years ago and nobody has really hit a problem
+> with it. So from that you can usefully infer that those buffer cases are
+> not proving a real problem.
 
-As Nathan mentioned, the code on the 32 bit side isn't merged yet.
+Fair enough, I guess.
 
-http://www.spinics.net/lists/arm-kernel/msg356336.html
+But Alpha's limitations were given as a reason to restrict
+smp_store_release() and smp_load_acquire() from providing one-byte and
+two-byte variants.  Of course, I am OK "probabilistically supporting"
+pre-EV56 Alpha CPUs, but only if they don't get in the way of us doing
+smp_store_release() and smp_load_acquire() on chars and shorts.  So if
+pre-EV56 support has to go in order to allow smp_store_release() and
+smp_load_acquire() on small data types, then pre-EV56 support simply
+has to go.
 
-Christopher
+Alternatively, one way to support this old hardware on a more
+deterministic basis is to make the compiler use ll/sc sequences to do
+byte and short accesses.  That would be fine as well.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+						Thanx, Paul
+
+> The tty locks together on the other hand are asking to hit it, and the
+> problem you were trying to fix were the ones that need set_bit() to make
+> the guarantees.
+> 
+> Alan
+> 
+
