@@ -1,152 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaIKLc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:32:28 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:44631 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaIKLbj (ORCPT
+	id S1754654AbaIKLdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:33:25 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:50541 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579AbaIKLdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:31:39 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.17-rc4 v5 5/6] ARM: add basic support for on-demand backtrace of other CPUs
-Date: Thu, 11 Sep 2014 12:31:17 +0100
-Message-Id: <1410435078-28462-6-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org>
- <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 11 Sep 2014 07:33:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410430423-1246-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
+References: <1410430423-1246-1-git-send-email-shilpa.bhat@linux.vnet.ibm.com>
+Date: Thu, 11 Sep 2014 17:03:22 +0530
+Message-ID: <CAKohpo=uB252XLfx3tHPA8uk5RPkWB0SPQ_UxzVw70c-DWuHWg@mail.gmail.com>
+Subject: Re: [PATCH v3] cpufreq: powernv: Set the cpus to nominal frequency
+ during reboot/kexec
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        David Laight <David.Laight@aculab.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic infrastructure for triggering a backtrace of other CPUs
-via an IPI, preferably at FIQ level.  It is intended that this shall
-be used for cases where we have detected that something has already
-failed in the kernel.
+On 11 September 2014 15:43, Shilpasri G Bhat
+<shilpa.bhat@linux.vnet.ibm.com> wrote:
+> This patch ensures the cpus to kexec/reboot at nominal frequency.
+> Nominal frequency is the highest cpu frequency on PowerPC at
+> which the cores can run without getting throttled.
+>
+> If the host kernel had set the cpus to a low pstate and then it
+> kexecs/reboots to a cpufreq disabled kernel it would cause the target
+> kernel to perform poorly. It will also increase the boot up time of
+> the target kernel. So set the cpus to high pstate, in this case to
+> nominal frequency before rebooting to avoid such scenarios.
+>
+> The reboot notifier will set the cpus to nominal frequncy.
+>
+> Signed-off-by: Shilpasri G Bhat <shilpa.bhat@linux.vnet.ibm.com>
+> Suggested-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> ---
+> Changes v2->v3:
+> We return EBUSY when cpufreq governor tries to change the frequency
+> after rebooting is set to true. This results in console being flushed
+> with error messages indicating failed attempts to change the
+> frequency. So instead of returning EBUSY we return 0 to stop the
+> governor from changing the frequency without alerting a failure to
+> do the same on reboot, as this  is not an errorneaos condition.
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/include/asm/irq.h |  5 ++++
- arch/arm/kernel/smp.c      | 62 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+)
-
-diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
-index 53c15de..be1d07d 100644
---- a/arch/arm/include/asm/irq.h
-+++ b/arch/arm/include/asm/irq.h
-@@ -35,6 +35,11 @@ extern void (*handle_arch_irq)(struct pt_regs *);
- extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
- #endif
- 
-+#ifdef CONFIG_SMP
-+extern void arch_trigger_all_cpu_backtrace(bool);
-+#define arch_trigger_all_cpu_backtrace(x) arch_trigger_all_cpu_backtrace(x)
-+#endif
-+
- #endif
- 
- #endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 9388a3d..94959f9 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -72,8 +72,12 @@ enum ipi_msg_type {
- 	IPI_CPU_STOP,
- 	IPI_IRQ_WORK,
- 	IPI_COMPLETION,
-+	IPI_CPU_BACKTRACE,
- };
- 
-+/* For reliability, we're prepared to waste bits here. */
-+static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
-+
- static DECLARE_COMPLETION(cpu_running);
- 
- static struct smp_operations smp_ops;
-@@ -539,6 +543,21 @@ static void ipi_cpu_stop(unsigned int cpu)
- 		cpu_relax();
- }
- 
-+static void ipi_cpu_backtrace(struct pt_regs *regs)
-+{
-+	int cpu = smp_processor_id();
-+
-+	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
-+		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
-+
-+		arch_spin_lock(&lock);
-+		printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
-+		show_regs(regs);
-+		arch_spin_unlock(&lock);
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+	}
-+}
-+
- static DEFINE_PER_CPU(struct completion *, cpu_completion);
- 
- int register_ipi_completion(struct completion *completion, int cpu)
-@@ -618,6 +637,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
- 		irq_exit();
- 		break;
- 
-+	case IPI_CPU_BACKTRACE:
-+		irq_enter();
-+		ipi_cpu_backtrace(regs);
-+		irq_exit();
-+		break;
-+
- 	default:
- 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
- 		       cpu, ipinr);
-@@ -712,3 +737,40 @@ static int __init register_cpufreq_notifier(void)
- core_initcall(register_cpufreq_notifier);
- 
- #endif
-+
-+void arch_trigger_all_cpu_backtrace(bool include_self)
-+{
-+	static unsigned long backtrace_flag;
-+	int i, cpu = get_cpu();
-+
-+	if (test_and_set_bit(0, &backtrace_flag)) {
-+		/*
-+		 * If there is already a trigger_all_cpu_backtrace() in progress
-+		 * (backtrace_flag == 1), don't output double cpu dump infos.
-+		 */
-+		put_cpu();
-+		return;
-+	}
-+
-+	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
-+	if (!include_self)
-+		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
-+
-+	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
-+		pr_info("Sending FIQ to %s CPUs:\n",
-+			(include_self ? "all" : "other"));
-+		smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
-+	}
-+
-+	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
-+	for (i = 0; i < 10 * 1000; i++) {
-+		if (cpumask_empty(to_cpumask(backtrace_mask)))
-+			break;
-+
-+		mdelay(1);
-+	}
-+
-+	clear_bit(0, &backtrace_flag);
-+	smp_mb__after_atomic();
-+	put_cpu();
-+}
--- 
-1.9.3
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
