@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaIKM60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:58:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51567 "EHLO
+	id S1756208AbaIKNAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51529 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755401AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755385AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:05 -0400
+	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marti Raudsepp" <marti@juffo.org>,
-        "Joerg Roedel" <jroedel@suse.de>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Johan Hovold" <johan@kernel.org>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.318712973@decadent.org.uk>
+Message-ID: <lsq.1410438733.826997492@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 074/131] iommu/amd: Fix cleanup_domain for mass device
- removal
+Subject: [PATCH 3.2 093/131] USB: serial: fix potential stack buffer overflow
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +32,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <jroedel@suse.de>
+From: Johan Hovold <johan@kernel.org>
 
-commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
+commit d979e9f9ecab04c1ecca741370e30a8a498893f5 upstream.
 
-When multiple devices are detached in __detach_device, they
-are also removed from the domains dev_list. This makes it
-unsafe to use list_for_each_entry_safe, as the next pointer
-might also not be in the list anymore after __detach_device
-returns. So just repeatedly remove the first element of the
-list until it is empty.
+Make sure to verify the maximum number of endpoints per type to avoid
+writing beyond the end of a stack-allocated array.
 
-Tested-by: Marti Raudsepp <marti@juffo.org>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+The current usb-serial implementation is limited to eight ports per
+interface but failed to verify that the number of endpoints of a certain
+type reported by a device did not exceed this limit.
+
+Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/amd_iommu.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/usb-serial.c | 32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2592,14 +2592,16 @@ free_domains:
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -791,29 +791,39 @@ int usb_serial_probe(struct usb_interfac
+ 		if (usb_endpoint_is_bulk_in(endpoint)) {
+ 			/* we found a bulk in endpoint */
+ 			dbg("found bulk in on endpoint %d", i);
+-			bulk_in_endpoint[num_bulk_in] = endpoint;
+-			++num_bulk_in;
++			if (num_bulk_in < MAX_NUM_PORTS) {
++				bulk_in_endpoint[num_bulk_in] = endpoint;
++				++num_bulk_in;
++			}
+ 		}
  
- static void cleanup_domain(struct protection_domain *domain)
- {
--	struct iommu_dev_data *dev_data, *next;
-+	struct iommu_dev_data *entry;
- 	unsigned long flags;
+ 		if (usb_endpoint_is_bulk_out(endpoint)) {
+ 			/* we found a bulk out endpoint */
+ 			dbg("found bulk out on endpoint %d", i);
+-			bulk_out_endpoint[num_bulk_out] = endpoint;
+-			++num_bulk_out;
++			if (num_bulk_out < MAX_NUM_PORTS) {
++				bulk_out_endpoint[num_bulk_out] = endpoint;
++				++num_bulk_out;
++			}
+ 		}
  
- 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
+ 		if (usb_endpoint_is_int_in(endpoint)) {
+ 			/* we found a interrupt in endpoint */
+ 			dbg("found interrupt in on endpoint %d", i);
+-			interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-			++num_interrupt_in;
++			if (num_interrupt_in < MAX_NUM_PORTS) {
++				interrupt_in_endpoint[num_interrupt_in] =
++						endpoint;
++				++num_interrupt_in;
++			}
+ 		}
  
--	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
--		__detach_device(dev_data);
--		atomic_set(&dev_data->bind, 0);
-+	while (!list_empty(&domain->dev_list)) {
-+		entry = list_first_entry(&domain->dev_list,
-+					 struct iommu_dev_data, list);
-+		__detach_device(entry);
-+		atomic_set(&entry->bind, 0);
+ 		if (usb_endpoint_is_int_out(endpoint)) {
+ 			/* we found an interrupt out endpoint */
+ 			dbg("found interrupt out on endpoint %d", i);
+-			interrupt_out_endpoint[num_interrupt_out] = endpoint;
+-			++num_interrupt_out;
++			if (num_interrupt_out < MAX_NUM_PORTS) {
++				interrupt_out_endpoint[num_interrupt_out] =
++						endpoint;
++				++num_interrupt_out;
++			}
+ 		}
  	}
  
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
+@@ -836,8 +846,10 @@ int usb_serial_probe(struct usb_interfac
+ 				if (usb_endpoint_is_int_in(endpoint)) {
+ 					/* we found a interrupt in endpoint */
+ 					dbg("found interrupt in for Prolific device on separate interface");
+-					interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-					++num_interrupt_in;
++					if (num_interrupt_in < MAX_NUM_PORTS) {
++						interrupt_in_endpoint[num_interrupt_in] = endpoint;
++						++num_interrupt_in;
++					}
+ 				}
+ 			}
+ 		}
 
