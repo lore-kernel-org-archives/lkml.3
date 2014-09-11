@@ -1,126 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171AbaIKRnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 13:43:25 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43531 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaIKRnX (ORCPT
+	id S1753518AbaIKRoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 13:44:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36657 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366AbaIKRoD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 13:43:23 -0400
-Message-ID: <1410457391.4011.87.camel@paszta.hi.pengutronix.de>
-Subject: Re: [PATCH] [media] coda: Improve runtime PM support
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Sep 2014 19:43:11 +0200
-In-Reply-To: <1410356613-16811-1-git-send-email-ulf.hansson@linaro.org>
-References: <1410356613-16811-1-git-send-email-ulf.hansson@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 11 Sep 2014 13:44:03 -0400
+Message-ID: <5411DF5D.8060906@arm.com>
+Date: Thu, 11 Sep 2014 18:43:57 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com>	<5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+In-Reply-To: <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+X-OriginalArrivalTime: 11 Sep 2014 17:43:58.0563 (UTC) FILETIME=[F7352B30:01CFCDE7]
+X-MC-Unique: 114091118440101201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
-
-thanks for the patch!
-
-Am Mittwoch, den 10.09.2014, 15:43 +0200 schrieb Ulf Hansson:
-> For several reasons it's good practice to leave devices in runtime PM
-> active state while those have been probed.
-
-It would be nice to mention those reasons.
-
-> In this cases we also want to prevent the device from going inactive,
-> until the firmware has been completely installed, especially when using
-> a PM domain.
+On 11/09/14 18:29, Doug Anderson wrote:
+> Marc,
 > 
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-> ---
->  drivers/media/platform/coda/coda-common.c | 42 ++++++++-----------------------
->  1 file changed, 11 insertions(+), 31 deletions(-)
+> On Thu, Sep 11, 2014 at 10:22 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>> We would need to run this code potentially at processor bringup and
+>>> after suspend/resume, but that seems possible too.
+>>
+>> Note that this would be an ARMv7 only thing (you can't do that on ARMv8,
+>> at all).
 > 
-> diff --git a/drivers/media/platform/coda/coda-common.c b/drivers/media/platform/coda/coda-common.c
-> index 0997b5c..361f28d 100644
-> --- a/drivers/media/platform/coda/coda-common.c
-> +++ b/drivers/media/platform/coda/coda-common.c
-> @@ -1703,39 +1703,16 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
->  	memcpy(dev->codebuf.vaddr, fw->data, fw->size);
->  	release_firmware(fw);
->  
-> -	if (pm_runtime_enabled(&pdev->dev) && pdev->dev.pm_domain) {
-> -		/*
-> -		 * Enabling power temporarily will cause coda_hw_init to be
-> -		 * called via coda_runtime_resume by the pm domain.
-> -		 */
-> -		ret = pm_runtime_get_sync(&dev->plat_dev->dev);
-> -		if (ret < 0) {
-> -			v4l2_err(&dev->v4l2_dev, "failed to power on: %d\n",
-> -				 ret);
-> -			return;
-> -		}
-> -
-> -		ret = coda_check_firmware(dev);
-> -		if (ret < 0)
-> -			return;
-> -
-> -		pm_runtime_put_sync(&dev->plat_dev->dev);
-> -	} else {
-> -		/*
-> -		 * If runtime pm is disabled or pm_domain is not set,
-> -		 * initialize once manually.
-> -		 */
-> -		ret = coda_hw_init(dev);
-> -		if (ret < 0) {
-> -			v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
-> -			return;
-> -		}
-> -
-> -		ret = coda_check_firmware(dev);
-> -		if (ret < 0)
-> -			return;
-> +	ret = coda_hw_init(dev);
-> +	if (ret < 0) {
-> +		v4l2_err(&dev->v4l2_dev, "HW initialization failed\n");
-> +		return;
->  	}
->  
-> +	ret = coda_check_firmware(dev);
-> +	if (ret < 0)
-> +		return;
-> +
+> Yes, of course.
+> 
+> 
+>>> Is the transition to monitor mode and back simple?  Where would you
+>>> suggest putting this code?  It would definitely need to be pretty
+>>> early.  We'd also need to be able to detect that we're in Secure SVC
+>>> and not mess up anyone else who happened to boot in Non Secure SVC.
+>>
+>> This would have to live in some very early platform-specific code. The
+>> ugly part is that you cannot find out what world you're in (accessing
+>> SCR is going to send you to UNDEF-land if accessed from NS).
+> 
+> Yup, so the question is: would such code be accepted upstream, or are
+> we going to embark on a big job for someone to figure out how to do
+> this only to get NAKed?
+> 
+> If there was some indication that folks would take this, I think we
+> might be able to get it coded up.  If someone else wanted to volunteer
+> to code it that would make me even happier, but maybe that's pushing
+> my luck.  ;)
 
-Won't this keep the PM domain active indefinitely if hw_init or
-check_firmware fails? Other than that, this is a great change.
+Writing the code is a 5 minute job. Getting it accepted is another
+story, and I'm not sure everyone would agree on that.
 
->  	dev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
->  	if (IS_ERR(dev->alloc_ctx)) {
->  		v4l2_err(&dev->v4l2_dev, "Failed to alloc vb2 context\n");
-> @@ -1771,6 +1748,7 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
->  	v4l2_info(&dev->v4l2_dev, "codec registered as /dev/video[%d-%d]\n",
->  		  dev->vfd[0].num, dev->vfd[1].num);
->  
-> +	pm_runtime_put_sync(&pdev->dev);
->  	return;
->  
->  rel_m2m:
-> @@ -1998,6 +1976,8 @@ static int coda_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, dev);
->  
-> +	pm_runtime_get_noresume(&pdev->dev);
-> +	pm_runtime_set_active(&pdev->dev);
+>> If I was suicidal, I'd suggest you could pass a parameter to the command
+>> line, interpreted by the timer code... But I since I'm not, let's
+>> pretend I haven't said anything... ;-)
+> 
+> I did this in the past (again, see Sonny's thread), but didn't
+> consider myself knowledgeable to know if that was truly a good test:
+> 
+>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
+>        pr_info("DOUG: val is %#010x", val);
+>        val |= (1 << 2);
+>        asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
+>        val = 0xffffffff;
+>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
+>        pr_info("DOUG: val is %#010x", val);
+> 
+> The idea being that if you can make modifications to the SCR register
+> (and see your changes take effect) then you must be in secure mode.
+> In my case the first printout was 0x0 and the second was 0x4.
 
-Should we have a comment here why this is necessary?
+The main issue is when you're *not* in secure mode. It is likely that
+this will explode badly. This is why I suggested something that is set
+by the bootloader (after all. it knows which mode it is booted in), and
+that the timer driver can use when the CPU comes up.
 
-regards
-Philipp
+Still, very ugly...
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
 
