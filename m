@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756AbaIKNAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:00:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51531 "EHLO
+	id S1755659AbaIKNAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:00:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51536 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755042AbaIKMeF (ORCPT
+	by vger.kernel.org with ESMTP id S1755388AbaIKMeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Sep 2014 08:34:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Daniel Borkmann" <dborkman@redhat.com>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        "Vlad Yasevich" <vyasevich@gmail.com>
+        "Eric Dumazet" <edumazet@google.com>, "Willy Tarreau" <w@1wt.eu>,
+        "Hannes Frederic Sowa" <hannes@redhat.com>,
+        "Jeffrey Knockel" <jeffk@cs.unm.edu>,
+        "Jedidiah R. Crandall" <crandall@cs.unm.edu>
 Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.82051424@decadent.org.uk>
+Message-ID: <lsq.1410438733.72431652@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 103/131] net: sctp: inherit auth_capable on INIT
- collisions
+Subject: [PATCH 3.2 100/131] ip: make IP identifiers less predictable
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,183 +34,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 1be9a950c646c9092fb3618197f7b6bfb50e82aa ]
+[ Upstream commit 04ca6973f7c1a0d8537f2d9906a0cf8e69886d75 ]
 
-Jason reported an oops caused by SCTP on his ARM machine with
-SCTP authentication enabled:
+In "Counting Packets Sent Between Arbitrary Internet Hosts", Jeffrey and
+Jedidiah describe ways exploiting linux IP identifier generation to
+infer whether two machines are exchanging packets.
 
-Internal error: Oops: 17 [#1] ARM
-CPU: 0 PID: 104 Comm: sctp-test Not tainted 3.13.0-68744-g3632f30c9b20-dirty #1
-task: c6eefa40 ti: c6f52000 task.ti: c6f52000
-PC is at sctp_auth_calculate_hmac+0xc4/0x10c
-LR is at sg_init_table+0x20/0x38
-pc : [<c024bb80>]    lr : [<c00f32dc>]    psr: 40000013
-sp : c6f538e8  ip : 00000000  fp : c6f53924
-r10: c6f50d80  r9 : 00000000  r8 : 00010000
-r7 : 00000000  r6 : c7be4000  r5 : 00000000  r4 : c6f56254
-r3 : c00c8170  r2 : 00000001  r1 : 00000008  r0 : c6f1e660
-Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 0005397f  Table: 06f28000  DAC: 00000015
-Process sctp-test (pid: 104, stack limit = 0xc6f521c0)
-Stack: (0xc6f538e8 to 0xc6f54000)
-[...]
-Backtrace:
-[<c024babc>] (sctp_auth_calculate_hmac+0x0/0x10c) from [<c0249af8>] (sctp_packet_transmit+0x33c/0x5c8)
-[<c02497bc>] (sctp_packet_transmit+0x0/0x5c8) from [<c023e96c>] (sctp_outq_flush+0x7fc/0x844)
-[<c023e170>] (sctp_outq_flush+0x0/0x844) from [<c023ef78>] (sctp_outq_uncork+0x24/0x28)
-[<c023ef54>] (sctp_outq_uncork+0x0/0x28) from [<c0234364>] (sctp_side_effects+0x1134/0x1220)
-[<c0233230>] (sctp_side_effects+0x0/0x1220) from [<c02330b0>] (sctp_do_sm+0xac/0xd4)
-[<c0233004>] (sctp_do_sm+0x0/0xd4) from [<c023675c>] (sctp_assoc_bh_rcv+0x118/0x160)
-[<c0236644>] (sctp_assoc_bh_rcv+0x0/0x160) from [<c023d5bc>] (sctp_inq_push+0x6c/0x74)
-[<c023d550>] (sctp_inq_push+0x0/0x74) from [<c024a6b0>] (sctp_rcv+0x7d8/0x888)
+With commit 73f156a6e8c1 ("inetpeer: get rid of ip_id_count"), we
+changed IP id generation, but this does not really prevent this
+side-channel technique.
 
-While we already had various kind of bugs in that area
-ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to verify if
-we/peer is AUTH capable") and b14878ccb7fa ("net: sctp: cache
-auth_enable per endpoint"), this one is a bit of a different
-kind.
+This patch adds a random amount of perturbation so that IP identifiers
+for a given destination [1] are no longer monotonically increasing after
+an idle period.
 
-Giving a bit more background on why SCTP authentication is
-needed can be found in RFC4895:
+Note that prandom_u32_max(1) returns 0, so if generator is used at most
+once per jiffy, this patch inserts no hole in the ID suite and do not
+increase collision probability.
 
-  SCTP uses 32-bit verification tags to protect itself against
-  blind attackers. These values are not changed during the
-  lifetime of an SCTP association.
+This is jiffies based, so in the worst case (HZ=1000), the id can
+rollover after ~65 seconds of idle time, which should be fine.
 
-  Looking at new SCTP extensions, there is the need to have a
-  method of proving that an SCTP chunk(s) was really sent by
-  the original peer that started the association and not by a
-  malicious attacker.
+We also change the hash used in __ip_select_ident() to not only hash
+on daddr, but also saddr and protocol, so that ICMP probes can not be
+used to infer information for other protocols.
 
-To cause this bug, we're triggering an INIT collision between
-peers; normal SCTP handshake where both sides intent to
-authenticate packets contains RANDOM; CHUNKS; HMAC-ALGO
-parameters that are being negotiated among peers:
+For IPv6, adds saddr into the hash as well, but not nexthdr.
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
+If I ping the patched target, we can see ID are now hard to predict.
 
-RFC4895 says that each endpoint therefore knows its own random
-number and the peer's random number *after* the association
-has been established. The local and peer's random number along
-with the shared key are then part of the secret used for
-calculating the HMAC in the AUTH chunk.
+21:57:11.008086 IP (...)
+    A > target: ICMP echo request, seq 1, length 64
+21:57:11.010752 IP (... id 2081 ...)
+    target > A: ICMP echo reply, seq 1, length 64
 
-Now, in our scenario, we have 2 threads with 1 non-blocking
-SEQ_PACKET socket each, setting up common shared SCTP_AUTH_KEY
-and SCTP_AUTH_ACTIVE_KEY properly, and each of them calling
-sctp_bindx(3), listen(2) and connect(2) against each other,
-thus the handshake looks similar to this, e.g.:
+21:57:12.013133 IP (...)
+    A > target: ICMP echo request, seq 2, length 64
+21:57:12.015737 IP (... id 3039 ...)
+    target > A: ICMP echo reply, seq 2, length 64
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  <--------- INIT[RANDOM; CHUNKS; HMAC-ALGO] -----------
-  -------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] -------->
-  ...
+21:57:13.016580 IP (...)
+    A > target: ICMP echo request, seq 3, length 64
+21:57:13.019251 IP (... id 3437 ...)
+    target > A: ICMP echo reply, seq 3, length 64
 
-Since such collisions can also happen with verification tags,
-the RFC4895 for AUTH rather vaguely says under section 6.1:
+[1] TCP sessions uses a per flow ID generator not changed by this patch.
 
-  In case of INIT collision, the rules governing the handling
-  of this Random Number follow the same pattern as those for
-  the Verification Tag, as explained in Section 5.2.4 of
-  RFC 2960 [5]. Therefore, each endpoint knows its own Random
-  Number and the peer's Random Number after the association
-  has been established.
-
-In RFC2960, section 5.2.4, we're eventually hitting Action B:
-
-  B) In this case, both sides may be attempting to start an
-     association at about the same time but the peer endpoint
-     started its INIT after responding to the local endpoint's
-     INIT. Thus it may have picked a new Verification Tag not
-     being aware of the previous Tag it had sent this endpoint.
-     The endpoint should stay in or enter the ESTABLISHED
-     state but it MUST update its peer's Verification Tag from
-     the State Cookie, stop any init or cookie timers that may
-     running and send a COOKIE ACK.
-
-In other words, the handling of the Random parameter is the
-same as behavior for the Verification Tag as described in
-Action B of section 5.2.4.
-
-Looking at the code, we exactly hit the sctp_sf_do_dupcook_b()
-case which triggers an SCTP_CMD_UPDATE_ASSOC command to the
-side effect interpreter, and in fact it properly copies over
-peer_{random, hmacs, chunks} parameters from the newly created
-association to update the existing one.
-
-Also, the old asoc_shared_key is being released and based on
-the new params, sctp_auth_asoc_init_active_key() updated.
-However, the issue observed in this case is that the previous
-asoc->peer.auth_capable was 0, and has *not* been updated, so
-that instead of creating a new secret, we're doing an early
-return from the function sctp_auth_asoc_init_active_key()
-leaving asoc->asoc_shared_key as NULL. However, we now have to
-authenticate chunks from the updated chunk list (e.g. COOKIE-ACK).
-
-That in fact causes the server side when responding with ...
-
-  <------------------ AUTH; COOKIE-ACK -----------------
-
-... to trigger a NULL pointer dereference, since in
-sctp_packet_transmit(), it discovers that an AUTH chunk is
-being queued for xmit, and thus it calls sctp_auth_calculate_hmac().
-
-Since the asoc->active_key_id is still inherited from the
-endpoint, and the same as encoded into the chunk, it uses
-asoc->asoc_shared_key, which is still NULL, as an asoc_key
-and dereferences it in ...
-
-  crypto_hash_setkey(desc.tfm, &asoc_key->data[0], asoc_key->len)
-
-... causing an oops. All this happens because sctp_make_cookie_ack()
-called with the *new* association has the peer.auth_capable=1
-and therefore marks the chunk with auth=1 after checking
-sctp_auth_send_cid(), but it is *actually* sent later on over
-the then *updated* association's transport that didn't initialize
-its shared key due to peer.auth_capable=0. Since control chunks
-in that case are not sent by the temporary association which
-are scheduled for deletion, they are issued for xmit via
-SCTP_CMD_REPLY in the interpreter with the context of the
-*updated* association. peer.auth_capable was 0 in the updated
-association (which went from COOKIE_WAIT into ESTABLISHED state),
-since all previous processing that performed sctp_process_init()
-was being done on temporary associations, that we eventually
-throw away each time.
-
-The correct fix is to update to the new peer.auth_capable
-value as well in the collision case via sctp_assoc_update(),
-so that in case the collision migrated from 0 -> 1,
-sctp_auth_asoc_init_active_key() can properly recalculate
-the secret. This therefore fixes the observed server panic.
-
-Fixes: 730fc3d05cd4 ("[SCTP]: Implete SCTP-AUTH parameter processing")
-Reported-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jeffrey Knockel <jeffk@cs.unm.edu>
+Reported-by: Jedidiah R. Crandall <crandall@cs.unm.edu>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: Hannes Frederic Sowa <hannes@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/associola.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/net/ip.h      | 11 +----------
+ net/ipv4/route.c      | 36 +++++++++++++++++++++++++++++++++---
+ net/ipv6/ip6_output.c |  2 ++
+ 3 files changed, 36 insertions(+), 13 deletions(-)
 
-diff --git a/net/sctp/associola.c b/net/sctp/associola.c
-index 25b207b..da54d29 100644
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -1188,6 +1188,7 @@ void sctp_assoc_update(struct sctp_association *asoc,
- 	asoc->c = new->c;
- 	asoc->peer.rwnd = new->peer.rwnd;
- 	asoc->peer.sack_needed = new->peer.sack_needed;
-+	asoc->peer.auth_capable = new->peer.auth_capable;
- 	asoc->peer.i = new->peer.i;
- 	sctp_tsnmap_init(&asoc->peer.tsn_map, SCTP_TSN_MAP_INITIAL,
- 			 asoc->peer.i.initial_tsn, GFP_ATOMIC);
+diff --git a/include/net/ip.h b/include/net/ip.h
+index f4ccdd6..1ee535b 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -264,16 +264,7 @@ int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
+ 		 !(dst_metric_locked(dst, RTAX_MTU)));
+ }
+ 
+-#define IP_IDENTS_SZ 2048u
+-extern atomic_t *ip_idents;
+-
+-static inline u32 ip_idents_reserve(u32 hash, int segs)
+-{
+-	atomic_t *id_ptr = ip_idents + hash % IP_IDENTS_SZ;
+-
+-	return atomic_add_return(segs, id_ptr) - segs;
+-}
+-
++u32 ip_idents_reserve(u32 hash, int segs);
+ void __ip_select_ident(struct iphdr *iph, int segs);
+ 
+ static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, int segs)
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index 278784e..d361dc0 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1344,8 +1344,35 @@ void rt_bind_peer(struct rtable *rt, __be32 daddr, int create)
+ 		rt->rt_peer_genid = rt_peer_genid();
+ }
+ 
+-atomic_t *ip_idents __read_mostly;
+-EXPORT_SYMBOL(ip_idents);
++#define IP_IDENTS_SZ 2048u
++struct ip_ident_bucket {
++	atomic_t	id;
++	u32		stamp32;
++};
++
++static struct ip_ident_bucket *ip_idents __read_mostly;
++
++/* In order to protect privacy, we add a perturbation to identifiers
++ * if one generator is seldom used. This makes hard for an attacker
++ * to infer how many packets were sent between two points in time.
++ */
++u32 ip_idents_reserve(u32 hash, int segs)
++{
++	struct ip_ident_bucket *bucket = ip_idents + hash % IP_IDENTS_SZ;
++	u32 old = ACCESS_ONCE(bucket->stamp32);
++	u32 now = (u32)jiffies;
++	u32 delta = 0;
++
++	if (old != now && cmpxchg(&bucket->stamp32, old, now) == old) {
++		u64 x = random32();
++
++		x *= (now - old);
++		delta = (u32)(x >> 32);
++	}
++
++	return atomic_add_return(segs + delta, &bucket->id) - segs;
++}
++EXPORT_SYMBOL(ip_idents_reserve);
+ 
+ void __ip_select_ident(struct iphdr *iph, int segs)
+ {
+@@ -1358,7 +1385,10 @@ void __ip_select_ident(struct iphdr *iph, int segs)
+ 		get_random_bytes(&ip_idents_hashrnd, sizeof(ip_idents_hashrnd));
+ 	}
+ 
+-	hash = jhash_1word((__force u32)iph->daddr, ip_idents_hashrnd);
++	hash = jhash_3words((__force u32)iph->daddr,
++			    (__force u32)iph->saddr,
++			    iph->protocol,
++			    ip_idents_hashrnd);
+ 	id = ip_idents_reserve(hash, segs);
+ 	iph->id = htons(id);
+ }
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index f79defc..46fc6a3 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -609,6 +609,8 @@ void ipv6_select_ident(struct frag_hdr *fhdr, struct rt6_info *rt)
+ 		get_random_bytes(&ip6_idents_hashrnd, sizeof(ip6_idents_hashrnd));
+ 	}
+ 	hash = __ipv6_addr_jhash(&rt->rt6i_dst.addr, ip6_idents_hashrnd);
++	hash = __ipv6_addr_jhash(&rt->rt6i_src.addr, hash);
++
+ 	id = ip_idents_reserve(hash, 1);
+ 	fhdr->identification = htonl(id);
+ }
 
