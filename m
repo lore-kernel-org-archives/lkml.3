@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837AbaIKOIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:08:53 -0400
+	id S1755855AbaIKOJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:09:27 -0400
 Received: from mga01.intel.com ([192.55.52.88]:39913 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376AbaIKOCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:02:51 -0400
+	id S1753899AbaIKOCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 10:02:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="384738874"
+   d="scan'208";a="384738816"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC Part2 v1 08/21] x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
-Date: Thu, 11 Sep 2014 22:03:35 +0800
-Message-Id: <1410444228-3134-9-git-send-email-jiang.liu@linux.intel.com>
+Subject: [RFC Part2 v1 06/21] x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
+Date: Thu, 11 Sep 2014 22:03:33 +0800
+Message-Id: <1410444228-3134-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1410444228-3134-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,114 +35,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new irqdomain interfaces to allocate/free IRQ for HTIRQ, so we could
+Use new irqdomain interfaces to allocate/free IRQ for MSI, so we could
 kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
-
-This patch changes the interfaces between arch independent PCI driver
-and arch specific code. Currently HT_IRQ is only enabled on x86, so it
-shouldn't break other architectures.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/kernel/apic/htirq.c |   26 +++++++++++++-------------
- drivers/pci/htirq.c          |    7 +++----
- include/linux/htirq.h        |    2 ++
- 3 files changed, 18 insertions(+), 17 deletions(-)
+ arch/x86/kernel/apic/msi.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-index 6f527b02ac4c..55cb061a95cb 100644
---- a/arch/x86/kernel/apic/htirq.c
-+++ b/arch/x86/kernel/apic/htirq.c
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index fb45663395ca..2439d383c10c 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
 @@ -14,6 +14,7 @@
- #include <linux/device.h>
- #include <linux/pci.h>
- #include <linux/htirq.h>
+ #include <linux/dmar.h>
+ #include <linux/hpet.h>
+ #include <linux/msi.h>
 +#include <linux/irqdomain.h>
+ #include <asm/msidef.h>
+ #include <asm/hpet.h>
  #include <asm/hw_irq.h>
- #include <asm/apic.h>
- #include <asm/hypertransport.h>
-@@ -60,31 +61,30 @@ static struct irq_chip ht_irq_chip = {
- 	.irq_retrigger		= apic_retrigger_irq,
- };
- 
-+int arch_alloc_ht_irq(struct pci_dev *dev)
-+{
-+	return irq_domain_alloc_irqs(NULL, -1, 1, dev_to_node(&dev->dev), NULL);
-+}
-+
-+void arch_free_ht_irq(int irq)
-+{
-+	irq_domain_free_irqs(irq, 1);
-+}
-+
- int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+@@ -145,23 +146,20 @@ int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc,
+ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
  {
- 	struct irq_cfg *cfg;
- 	struct ht_irq_msg msg;
--	unsigned dest;
--	int err;
+ 	struct msi_desc *msidesc;
+-	unsigned int irq;
+-	int node, ret;
++	int irq, ret;
  
- 	if (disable_apic)
- 		return -ENXIO;
+ 	/* Multiple MSI vectors only supported with interrupt remapping */
+ 	if (type == PCI_CAP_ID_MSI && nvec > 1)
+ 		return 1;
  
- 	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
+-	node = dev_to_node(&dev->dev);
 -
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
-+	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+-		irq = irq_alloc_hwirq(node);
+-		if (!irq)
++		irq = irq_domain_alloc_irqs(NULL, -1, 1, NUMA_NO_NODE, NULL);
++		if (irq <= 0)
+ 			return -ENOSPC;
  
- 	msg.address_lo =
- 		HT_IRQ_LOW_BASE |
--		HT_IRQ_LOW_DEST_ID(dest) |
-+		HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
- 		HT_IRQ_LOW_VECTOR(cfg->vector) |
- 		((apic->irq_dest_mode == 0) ?
- 			HT_IRQ_LOW_DM_PHYSICAL :
-diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
-index a94dd2c4183a..ceb0ebeb7b5f 100644
---- a/drivers/pci/htirq.c
-+++ b/drivers/pci/htirq.c
-@@ -117,8 +117,8 @@ int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
- 	cfg->msg.address_lo = 0xffffffff;
- 	cfg->msg.address_hi = 0xffffffff;
+ 		ret = setup_msi_irq(dev, msidesc, irq, 0);
+ 		if (ret < 0) {
+-			irq_free_hwirq(irq);
++			irq_domain_free_irqs(irq, 1);
+ 			return ret;
+ 		}
  
--	irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
--	if (!irq) {
-+	irq = arch_alloc_ht_irq(dev);
-+	if (irq <= 0) {
- 		kfree(cfg);
- 		return -EBUSY;
- 	}
-@@ -163,8 +163,7 @@ void ht_destroy_irq(unsigned int irq)
- 	cfg = irq_get_handler_data(irq);
- 	irq_set_chip(irq, NULL);
- 	irq_set_handler_data(irq, NULL);
+@@ -171,7 +169,7 @@ int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 
+ void native_teardown_msi_irq(unsigned int irq)
+ {
 -	irq_free_hwirq(irq);
--
-+	arch_free_ht_irq(irq);
- 	kfree(cfg);
++	irq_domain_free_irqs(irq, 1);
  }
- EXPORT_SYMBOL(ht_destroy_irq);
-diff --git a/include/linux/htirq.h b/include/linux/htirq.h
-index 70a1dbbf2093..5caa51b7b95c 100644
---- a/include/linux/htirq.h
-+++ b/include/linux/htirq.h
-@@ -15,6 +15,8 @@ void unmask_ht_irq(struct irq_data *data);
  
- /* The arch hook for getting things started */
- int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev);
-+int arch_alloc_ht_irq(struct pci_dev *dev);
-+void arch_free_ht_irq(int irq);
- 
- /* For drivers of buggy hardware */
- typedef void (ht_irq_update_t)(struct pci_dev *dev, int irq,
+ #ifdef CONFIG_DMAR_TABLE
 -- 
 1.7.10.4
 
