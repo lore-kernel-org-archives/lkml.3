@@ -1,104 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248AbaIKOn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 10:43:56 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47037 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751222AbaIKOnz (ORCPT
+	id S1754486AbaIKOp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 10:45:27 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:60037 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaIKOpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 10:43:55 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mtd: nand: atmel_nand: retrieve NFC clock
-Date: Thu, 11 Sep 2014 16:43:37 +0200
-Message-Id: <1410446617-29572-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 11 Sep 2014 10:45:25 -0400
+Date: Thu, 11 Sep 2014 16:45:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>, Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140911144509.GM22042@dhcp22.suse.cz>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <1973496.9q6IzlQu6V@vostro.rjw.lan>
+ <20140911142822.GL22042@dhcp22.suse.cz>
+ <23520581.7q253rZGaa@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <23520581.7q253rZGaa@vostro.rjw.lan>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+On Thu 11-09-14 16:52:50, Rafael J. Wysocki wrote:
+> On Thursday, September 11, 2014 04:28:22 PM Michal Hocko wrote:
+> > On Thu 11-09-14 16:32:50, Rafael J. Wysocki wrote:
+> > > On Thursday, September 11, 2014 04:10:51 PM Michal Hocko wrote:
+> > > > On Thu 11-09-14 16:26:56, Rafael J. Wysocki wrote:
+> > > > > On Thursday, September 11, 2014 04:04:48 PM Michal Hocko wrote:
+> > > > > > On Thu 11-09-14 16:17:56, Rafael J. Wysocki wrote:
+> > > > > > [...]
+> > > > > > > And I'm still wondering if the OOM killer may be made avoid killing frozen
+> > > > > > > tasks.
+> > > > > > 
+> > > > > > This is really tricky. OOM killer aims at the biggest memory hog. We
+> > > > > > shouldn't ignore it just because it hides into the fridge... So even
+> > > > > > if we "fix" oom killer to ignore frozen tasks (which is inherently
+> > > > > > racy btw.) then we have a potential problem of freezer abuse (e.g. in
+> > > > > > container environments). So I strongly believe that the OOM killer has
+> > > > > > to be able to kill a frozen tasks.
+> > > > > 
+> > > > > OK
+> > > > > 
+> > > > > Is the OOM killer the only place where TIF_MEMDIE is set?
+> > > > 
+> > > > Yes. To be precise, lowmemorykiller (staging android thingy), global OOM
+> > > > killer and memcg OOM killer. Any other users would be an abuse.
+> > > 
+> > > OK
+> > > 
+> > > So can we ensure that those things don't trigger during system suspend (or
+> > > equivalent) and then simply use the TIF_MEMDIE check in __refrigerator()?
+> > 
+> > That would require that no memory allocation triggers OOM killer during
+> > suspend. I don't think this will work out. OOM killer is the last resort
+> > action. We cannot simply give access to memory reserves just because the
+> > current context is in the middle of suspend.
+> 
+> But we can fail the allocation, can't we?
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/mtd/nand/atmel_nand.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+We already do that by oom_killer_disable after all tasks are frozen in
+freeze_processes. This is before all other device specific things are
+done so I guess we cannot start killing after any device is suspended,
+right? This should be sufficient.
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 9c5f717bda54..ba64b1c91314 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -27,6 +27,7 @@
-  *
-  */
- 
-+#include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -96,6 +97,8 @@ struct atmel_nfc {
- 	bool			use_nfc_sram;
- 	bool			write_by_sram;
- 
-+	struct clk		*clk;
-+
- 	bool			is_initialized;
- 	struct completion	comp_ready;
- 	struct completion	comp_cmd_done;
-@@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
- {
- 	struct atmel_nfc *nfc = &nand_nfc;
- 	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
-+	int ret;
- 
- 	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
-@@ -2276,6 +2280,16 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	nfc->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(nfc->clk)) {
-+		dev_warn(&pdev->dev, "NFC clock is missing");
-+		return 0;
-+	}
-+
-+	ret = clk_prepare_enable(nfc->clk);
-+	if (ret)
-+		return ret;
-+
- 	nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
- 	nfc_readl(nfc->hsmc_regs, SR);	/* clear the NFC_SR */
- 
-@@ -2284,6 +2298,16 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static int atmel_nand_nfc_remove(struct platform_device *pdev)
-+{
-+	struct atmel_nfc *nfc = &nand_nfc;
-+
-+	if (!IS_ERR(nfc->clk))
-+		clk_disable_unprepare(nfc->clk);
-+
-+	return 0;
-+}
-+
- static const struct of_device_id atmel_nand_nfc_match[] = {
- 	{ .compatible = "atmel,sama5d3-nfc" },
- 	{ /* sentinel */ }
-@@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
- 		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
- 	},
- 	.probe = atmel_nand_nfc_probe,
-+	.remove = atmel_nand_nfc_remove,
- };
- 
- static struct platform_driver atmel_nand_driver = {
+> > What is the worst thing that might happen when a task is killed in the
+> > middle of suspend? I thought that suspend would fail after several
+> > attempts to suspend all existing tasks.
+> 
+> The problem is what to do when we need to kill a frozen task.
+> 
+> In that case we need to thaw it and then it will die eventually.  Unfortunately,
+> it generally can do something undesirable before dying.  That may be accessing
+> a suspended device, for example.
+
+OK, I have misunderstood you obviously. I thought we were discussing OOM
+while we are in the middle of freezing tasks. After they are frozen
+there is no OOM killer as per above.
 -- 
-1.9.1
-
+Michal Hocko
+SUSE Labs
