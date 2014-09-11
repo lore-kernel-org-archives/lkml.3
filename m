@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaIKMen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 08:34:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51553 "EHLO
+	id S1755509AbaIKMeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 08:34:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51476 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754994AbaIKMe0 (ORCPT
+	by vger.kernel.org with ESMTP id S1754992AbaIKMeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 08:34:26 -0400
+	Thu, 11 Sep 2014 08:34:04 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>
-Date: Thu, 11 Sep 2014 13:32:13 +0100
-Message-ID: <lsq.1410438733.290741435@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Thu, 11 Sep 2014 13:32:14 +0100
+Message-ID: <lsq.1410438734.230798163@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 115/131] sparc64: Do not insert non-valid PTEs into
- the TSB hash  table.
+Subject: [PATCH 3.2 130/131] x86/espfix/xen: Fix allocation of pages for
+ paravirt  page tables
 In-Reply-To: <lsq.1410438733.176537304@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,45 +34,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
+commit 8762e5092828c4dc0f49da5a47a644c670df77f3 upstream.
 
-The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
-only be called when the PTE being installed will be accessible by the user.
+init_espfix_ap() is currently off by one level when informing hypervisor
+that allocated pages will be used for ministacks' page tables.
 
-This is not true for code paths originating from remove_migration_pte().
+The most immediate effect of this on a PV guest is that if
+'stack_page = __get_free_page()' returns a non-zeroed-out page the hypervisor
+will refuse to use it for a page table (which it shouldn't be anyway). This will
+result in warnings by both Xen and Linux.
 
-There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
-miss frramework assumes thatwhen a TSB entry matches we can just load it into
-the TLB and return from the TLB miss trap.
+More importantly, a subsequent write to that page (again, by a PV guest) is
+likely to result in fatal page fault.
 
-So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
-and over, never satisfying the miss.
-
-Just exit early from update_mmu_cache() and friends in this situation.
-
-Based upon a report and patch from Christopher Alexander Tobias Schulze.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1404926298-5565-1-git-send-email-boris.ostrovsky@oracle.com
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/mm/init_64.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/espfix_64.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index b4989f9..77ad815 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -309,6 +309,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
- 	tsb_index = MM_TSB_BASE;
- 	tsb_hash_shift = PAGE_SHIFT;
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -175,7 +175,7 @@ void init_espfix_ap(void)
+ 	if (!pud_present(pud)) {
+ 		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
+ 		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		paravirt_alloc_pmd(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
+ 			set_pud(&pud_p[n], pud);
+ 	}
+@@ -185,7 +185,7 @@ void init_espfix_ap(void)
+ 	if (!pmd_present(pmd)) {
+ 		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
+-		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		paravirt_alloc_pte(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
+ 		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
+ 			set_pmd(&pmd_p[n], pmd);
+ 	}
+@@ -193,7 +193,6 @@ void init_espfix_ap(void)
+ 	pte_p = pte_offset_kernel(&pmd, addr);
+ 	stack_page = (void *)__get_free_page(GFP_KERNEL);
+ 	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
+-	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
+ 	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
+ 		set_pte(&pte_p[n*PTE_STRIDE], pte);
  
-+	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
-+	if (!(pte_val(pte) & _PAGE_VALID))
-+		return;
-+
- 	spin_lock_irqsave(&mm->context.lock, flags);
- 
- #ifdef CONFIG_HUGETLB_PAGE
 
