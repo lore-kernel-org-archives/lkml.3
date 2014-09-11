@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaIKNwA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 09:52:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19131 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751306AbaIKNv7 convert rfc822-to-8bit (ORCPT
+	id S1754761AbaIKNwM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 09:52:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52936 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751166AbaIKNwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 09:51:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,506,1406617200"; 
-   d="scan'208";a="598066693"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "acme@kernel.org" <acme@kernel.org>,
+	Thu, 11 Sep 2014 09:52:10 -0400
+Date: Thu, 11 Sep 2014 14:51:19 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: "joro@8bytes.org" <joro@8bytes.org>, "hdoyu@nvidia.com" <hdoyu@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V5 2/3] perf tools: parse the pmu event prefix and surfix
-Thread-Topic: [PATCH V5 2/3] perf tools: parse the pmu event prefix and
- surfix
-Thread-Index: AQHPzSCSmS9bwFjEk0yqARYzBLKY0Zv7GtqAgADXitA=
-Date: Thu, 11 Sep 2014 13:50:50 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077015C6EDB@SHSMSX103.ccr.corp.intel.com>
-References: <1410371732-1185-1-git-send-email-kan.liang@intel.com>
- <1410371732-1185-2-git-send-email-kan.liang@intel.com>
- <20140911085143.GB7326@krava.brq.redhat.com>
-In-Reply-To: <20140911085143.GB7326@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] iommu: Make of_device_id array const
+Message-ID: <20140911135119.GH6158@arm.com>
+References: <1410442656-21112-1-git-send-email-kiran.padwal@smartplayin.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410442656-21112-1-git-send-email-kiran.padwal@smartplayin.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> On Wed, Sep 10, 2014 at 01:55:31PM -0400, kan.liang@intel.com wrote:
+On Thu, Sep 11, 2014 at 02:37:36PM +0100, Kiran Padwal wrote:
+> Make of_device_id array const, because all OF functions handle it as const.
 > 
-> SNIP
-> 
-> > +	struct perf_pmu_event_symbol *pmu2 =
-> > +			(struct perf_pmu_event_symbol *) p2;
-> > +
-> > +	return strcmp(pmu1->symbol, pmu2->symbol); }
-> > +
-> > +/*
-> > + * Read the pmu events list from sysfs
-> > + * Save it into perf_pmu_events_list
-> > + */
-> > +static void perf_pmu__parse_init(void) {
-> > +
-> > +	struct perf_pmu *pmu = NULL;
-> > +	struct perf_pmu_alias *alias;
-> > +	int len = 0;
-> > +
-> > +	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-> > +		list_for_each_entry(alias, &pmu->aliases, list) {
-> > +			if (!strcmp(pmu->name, "cpu")) {
-> > +				if (strchr(alias->name, '-'))
-> > +					len++;
-> > +				len++;
-> > +			}
-> > +	}
-> > +	if (len == 0)
-> > +		return;
-> 
-> s oif 'len' is 0 we will scan all the time? maybe we want some separate 'init'
-> variable..
-> 
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+> ---
+>  drivers/iommu/arm-smmu.c   |    2 +-
+>  drivers/iommu/omap-iommu.c |    2 +-
+>  drivers/iommu/tegra-gart.c |    2 +-
+>  drivers/iommu/tegra-smmu.c |    2 +-
+>  4 files changed, 4 insertions(+), 4 deletions(-)
 
-Maybe we can reuse the "perf_pmu_events_list_num".
-static int perf_pmu_events_list_num;
+Ha, I've seen a few of these patches recently. Did some tool just get
+support for detecting this?
 
-If len is 0, we just set perf_pmu_events_list_num to -1.
-Is it OK?
+Anyway, looks fine and should probably go via Joerg.
 
-Thanks,
-Kan
+Will
