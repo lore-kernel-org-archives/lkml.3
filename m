@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaIKLmv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 07:42:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39312 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313AbaIKLmt (ORCPT
+	id S1754644AbaIKLnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 07:43:41 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:47693 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524AbaIKLnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 07:42:49 -0400
-Message-ID: <54118AAB.2010205@linutronix.de>
-Date: Thu, 11 Sep 2014 13:42:35 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300>
-In-Reply-To: <20140911111721.GB17476@xps8300>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 11 Sep 2014 07:43:39 -0400
+Message-ID: <1410435813.5187.36.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 2/6] KEYS: Reinstate EPERM for a key type name beginning
+ with a '.'
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: jmorris@namei.org, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
+Date: Thu, 11 Sep 2014 07:43:33 -0400
+In-Reply-To: <1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <20140910212154.10752.23343.stgit@warthog.procyon.org.uk>
+	 <20140910212206.10752.21818.stgit@warthog.procyon.org.uk>
+	 <1410392204.5187.14.camel@dhcp-9-2-203-236.watson.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091111-8236-0000-0000-0000054F2055
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 01:17 PM, Heikki Krogerus wrote:
->> diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
->> index fbed1636e9c4..09489b391568 100644
->> --- a/drivers/tty/serial/8250/8250.h
->> +++ b/drivers/tty/serial/8250/8250.h
->> @@ -82,6 +82,9 @@ struct serial8250_config {
->>  #define UART_BUG_PARITY	(1 << 4)	/* UART mishandles parity if FIFO enabled */
->>  #define UART_BUG_DMA_RX	(1 << 5)	/* UART needs DMA RX req before there is
->>  					   data in FIFO */
->> +#define UART_BUG_DMA_TX	(1 << 6)	/* UART needs one byte in FIFO for
->> +					   kickstart */
-> 
-> I don't think we should go ahead with this patch. I'm pretty sure
-> this is AM335 specific problem, or at least limited to only few
-> platforms. And I don't think we should take any more "BUG" flags.
-> 
-> We should add hooks like tx_dma and rx_dma to struct uart_8250_dma so
-> that the probe drivers can replace serial8250_tx_dma and
-> seria8250_rx_dma, like I think Alan already suggested.
+On Wed, 2014-09-10 at 19:36 -0400, Mimi Zohar wrote: 
+> On Wed, 2014-09-10 at 22:22 +0100, David Howells wrote: 
+> > Reinstate the generation of EPERM for a key type name beginning with a '.' in
+> > a userspace call.  Types whose name begins with a '.' are internal only.
 
-Okay. Wasn't aware that Alan already suggested that.
-I also need a watchdog timer for TX since it seems that on omap3 the
-DMA engine suddenly forgets to continue with DMA…
+After re-reading your comment and looking at the different types,
+testing for dot prefixed types now makes sense.  Both dot prefixed types
+and keyring names are reserved for the kernel.
 
-If this is really what we want, I would need to refactor a few things…
+Mimi
 
-> Let's keep serial8250_tx_dma/rx_dma as the default, and not add any
-> quirks to them. Only if there is a very common case should it be
-> handled in those. The case of RX req needing to be sent before data in
-> FIFO maybe one of those, but I'm no sure.
 
-keep in mind that both (RX & TX bugs/hacks) need also a bit of handling
-in the 8250-core so it works together (like the tx_err member so we
-fall back to manual xmit)
-
-Sebastian
