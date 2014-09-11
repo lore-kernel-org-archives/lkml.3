@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaIKSIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 14:08:13 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:43847 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053AbaIKSIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 14:08:11 -0400
+	id S1753536AbaIKSIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 14:08:53 -0400
+Received: from mail-bl2on0140.outbound.protection.outlook.com ([65.55.169.140]:3645
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750908AbaIKSIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 14:08:51 -0400
+From: "J. German Rivera" <German.Rivera@freescale.com>
+To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
+        <scottwood@freescale.com>, <agraf@suse.de>,
+        <linuxppc-release@linux.freescale.net>
+Subject: [PATCH 0/4] drivers/bus: Freescale Management Complex bus driver patch series
+Date: Thu, 11 Sep 2014 12:34:20 -0500
+Message-ID: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
+X-Mailer: git-send-email 1.7.9.7
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(105606002)(50986999)(77156001)(4396001)(50226001)(15975445006)(62966002)(87286001)(84676001)(15202345003)(229853001)(107046002)(106466001)(104166001)(80022001)(64706001)(95666004)(102836001)(26826002)(81342001)(21056001)(81542001)(46102001)(77982001)(44976005)(19580395003)(6806004)(47776003)(68736004)(83322001)(20776003)(104016003)(90102001)(85306004)(83072002)(85852003)(86362001)(89996001)(93916002)(74502001)(48376002)(2201001)(92566001)(92726001)(36756003)(31966008)(99396002)(74662001)(97736003)(76482001)(50466002)(79102001)(87936001)(88136002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0729;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <CAF8JNh+U80vPUQ7263cRGFJCZkzsO7nSAg3KOtfOy5Bsp_Xajw@mail.gmail.com>
-References: <1410455644-11732-1-git-send-email-benjamin.tissoires@redhat.com>
-	<CAF8JNh+U80vPUQ7263cRGFJCZkzsO7nSAg3KOtfOy5Bsp_Xajw@mail.gmail.com>
-Date: Thu, 11 Sep 2014 11:08:04 -0700
-Message-ID: <CAF8JNh+uckyW160F8QORrTLNq8GMcLrwA9WpW1AR8SL_nej1nA@mail.gmail.com>
-Subject: Fwd: [PATCH] HID: wacom: make the WL connection friendly for the desktop
-From: Ping Cheng <pinglinux@gmail.com>
-To: linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03319F6FEF
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=German.Rivera@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 10:14 AM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
->
-> Currently, tablets connected to the WL receiver all share the same
-> VID/PID. There is no way for the user space to know which one is which
-> besides parsing the name. We can force the PID to be set to the
-> actual hardware. This way, the input device will have the correct PID
-> which can be match in libwacom.
+This patch series introduces Linux support for the Freescale
+Management Complex (fsl-mc) hardware.
 
+The fsl-mc is a hardware resource manager that manages specialized
+hardware objects used in network-oriented packet processing
+applications.  After the fsl-mc block is enabled, pools of hardware
+resources are available, such as queues, buffer poools, I/O
+interfaces.  These resources are building blocks that can be
+used to create functional hardware objects such as network
+interfaces, crypto accelerator instances, or L2 switches.
 
-Nice job, Benjamin! Thank you, on behalf of wireless tablet users ;-).
+All the fsl-mc managed hardware resources/objects are represented in
+a physical grouping mechanism called a 'container' or DPRC (data
+path resource container).
 
->
-> With only this trick, the pad input does not inherit the ID_INPUT_TABLET
-> udev property from its parent. We can force udev to accept it by declaring
-> a BTN_STYLUS which is never used.
+>From the point of view of an OS, a DPRC functions similar to a plug
+and play bus.  Using fsl-mc commands software can enumerate the
+contents of the DPRC discovering the hardware objects present
+and binding them to drivers.  Hardware objects can be created
+and removed dynamically, providing hot pluggability of the hardware
+objects.
 
+Software contexts interact with the fsl-mc by sending commands through
+a memory mapped hardware interface called an "MC portal". Every
+fsl-mc object type has a command set to manage the objects. Key
+DPRC commands include:
+   -create/destroy a DPRC
+   -enumerate objects and resource pools in the DPRC, including
+    identifying mappable regions and the number of IRQs an object
+    may have
+   -IRQ configuration
+   -move objects/resources between DPRCs
+   -connecting objects (e.g. connecting a network interface to
+    an L2 switch port)
+   -reset
 
-BTN_STYLUS can be confusing to userland clients that retrieve it to
-decide tool types. But, without it, the client is already confused
-with joystick. So, unless we introduce a new tool type, which I
-proposed a few years ago and was rejected, we may have to keep clients
-confused. With that said, the patch is
+Patch 1 contains a minimal set of low level functions to send an
+d receive commands to the fsl-mc. It includes support for basic
+management commands and commands to manipulate DPRC objects.
 
->
-> This way, tablets connected through WL can be used from the user point of
-> view in the same way they are used while connected through wire.
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Patch 2 contains a platform device driver that sets up and registers
+the basic bus infrastructure including support for adding/removing
+devices, register/unregister of drivers, and bus match support
+to bind devices to drivers.
 
+Patch 3 contains an driver that manages DPRC objects (the
+container that holds the hardware resources). This driver
+functions as a bus controller and handles enumeration
+of the objects in the container and hotplug events.
 
-Reviewed-by: Ping Cheng <pingc@wacom.com>
+Patch 4 contains the update to the MAINTAINERS file.
 
-Cheers,
+CHANGE HISTORY
 
-Ping
+No changes since RFC v4
 
-> ---
->
-> Hi guys,
->
-> to continue on Ping's work regarding the Wireless reciever, here is a patch
-> which allows to have the same user experience regardless the transport layer.
-> Unfortunately, a libwacom patch is also required, but once both are applied,
-> there is no differences between the wired and wireless connections. Yeah!
->
-> Cheers,
-> Benjamin
->
->  drivers/hid/wacom_sys.c | 2 +-
->  drivers/hid/wacom_wac.c | 3 +++
->  2 files changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/hid/wacom_sys.c b/drivers/hid/wacom_sys.c
-> index 9e4e188..a8b7f16 100644
-> --- a/drivers/hid/wacom_sys.c
-> +++ b/drivers/hid/wacom_sys.c
-> @@ -1035,7 +1035,7 @@ static struct input_dev *wacom_allocate_input(struct wacom *wacom)
->         input_dev->uniq = hdev->uniq;
->         input_dev->id.bustype = hdev->bus;
->         input_dev->id.vendor  = hdev->vendor;
-> -       input_dev->id.product = hdev->product;
-> +       input_dev->id.product = wacom_wac->pid ? wacom_wac->pid : hdev->product;
->         input_dev->id.version = hdev->version;
->         input_set_drvdata(input_dev, wacom);
->
-> diff --git a/drivers/hid/wacom_wac.c b/drivers/hid/wacom_wac.c
-> index c3cbbfb..b8180e4 100644
-> --- a/drivers/hid/wacom_wac.c
-> +++ b/drivers/hid/wacom_wac.c
-> @@ -1990,6 +1990,9 @@ int wacom_setup_pad_input_capabilities(struct input_dev *input_dev,
->         input_set_abs_params(input_dev, ABS_X, 0, 1, 0, 0);
->         input_set_abs_params(input_dev, ABS_Y, 0, 1, 0, 0);
->
-> +       /* kept for making udev and libwacom accepting the pad */
-> +       __set_bit(BTN_STYLUS, input_dev->keybit);
-> +
->         switch (features->type) {
->         case GRAPHIRE_BT:
->                 __set_bit(BTN_0, input_dev->keybit);
-> --
-> 2.1.0
->
+Changes in RFC v4:
+- Fixed parameter mismatch for device_find_child() call in fsl_mc_dprc.c
+- Added back the dma_mask field to struct fsl_mc_device as it is needed
+  by some MC child device drivers. However, the default DMA mask now
+  does not have the 32-bit limitation of the original patch series (v1).
+
+Changes in RFC v3:
+Rework to address comments from Arnd Bergmann:
+- Removed per-bus list of children, and instead use device_for_each_child()
+- Use the same structure (struct fsl_mc_device) to represent both
+  bus devices and their children.
+http://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg711301.html
+
+Changes in RFC v2:
+Rework to address comments from Arnd Bergmann:
+- Removed fsl_mc_bus structure and global variable
+- Removed the 'magic' fields from all structs
+- Removed NULL initializers
+- Replaced all occurrences of EXPORT_SYMBOL() with EXPORT_SYMBOL_GPL()
+- Removed function dprc_parse_dt_node(), and replaced its call by a
+  direct call to of_address_to_resource()
+- Removed struct fsl_mc_device_region and use standard 'struct resource'
+  instead.
+- Removed dma_mask field from 'struct fsl_mc_device' as it is not currently
+  being used.
+- Removed redundant 'driver' field from struct fsl_mc_device
+- Removed the container field. We can get the parent DPRC of a given dev,
+  from its dev.parent field.
+http://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg708858.html
+
