@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaILQdC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:33:02 -0400
-Received: from www.xora.org.uk ([80.68.91.202]:46628 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846AbaILQc6 (ORCPT
+	id S1752260AbaILQel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:34:41 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58284 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaILQej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:32:58 -0400
-Date: Fri, 12 Sep 2014 17:32:54 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 05/18] ARM64 / ACPI: Introduce sleep-arm.c
-Message-ID: <20140912163254.GC9234@xora-haswell.xora.org.uk>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-6-git-send-email-hanjun.guo@linaro.org>
- <20140912145102.GB5532@arm.com>
- <20140912151850.GB9234@xora-haswell.xora.org.uk>
- <20140912154903.GE5532@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912154903.GE5532@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 12 Sep 2014 12:34:39 -0400
+X-AuditID: cbfee61b-f79f86d00000144c-11-5413209d3240
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: dinguyen@opensource.altera.com
+Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, balbi@ti.com,
+        dinh.linux@gmail.com, swarren@wwwdotorg.org, matthijs@stdin.nl,
+        r.baldyga@samsung.com, jg1.han@samsung.com, sachin.kamat@linaro.org,
+        ben-linux@fluff.org, dianders@chromium.org, kever.yang@rock-chips.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 09/12] usb: dwc2: initialize the spin_lock for both host
+ and gadget
+Date: Fri, 12 Sep 2014 18:34:19 +0200
+Message-id: <4251641.n6Nv53rcYW@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1409070003-21195-10-git-send-email-dinguyen@opensource.altera.com>
+References: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
+ <1409070003-21195-10-git-send-email-dinguyen@opensource.altera.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jAd25CsIhBg+vSlgcvF9vMWndASaL
+	s8sOslms+rSG2WLlSW2L5sXr2SwuL7zEarFt+k8ga9ccNotFy1qZLRa+vsZisX3KdCaLB4d3
+	sluc/NPLaPHqYBuLA7/H7IaLLB5/V71g9tg56y67x51re9g89s9dw+7Rf20Su8ffWftZPPq2
+	rGL0+PLjH4vHlv2fGT2O39jO5PF5k5zHxrmhAbxRXDYpqTmZZalF+nYJXBnzf65jLLjCW7Gu
+	5SVTA+Nk7i5GTg4JAROJvxP+skPYYhIX7q1n62Lk4hASWMQoMe3HeyaQhJBAC5PEt91yIDab
+	gJXExPZVjCC2iICSRO+qlywgDcwCZ5kkVuxaywySEBaIluhdcpENxGYRUJWYureRBcTmFdCU
+	OLzuPSuILSrgKbFj+0qwGk6BAIlNf5dBbZ7CKLHjxQNWiAZBiR+T74E1MwvIS+zbP5UVwtaR
+	2N86jW0Co8AsJGWzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwDD6T3sG4
+	qsHiEKMAB6MSD28li2CIEGtiWXFl7iFGCQ5mJRFeRVHhECHelMTKqtSi/Pii0pzU4kOM0hws
+	SuK8B1utA4UE0hNLUrNTUwtSi2CyTBycUg2MGXz3t3Q+5Nx5+I5s9qx7Xjrrj4VF6z2Z9Svo
+	X31izcZPQnvvHWl5Kb9j4fVlJotEjkZxvqj87mIvb9D1JLDjWASH6db7vhwqx1c/iJ7u68O1
+	rHuPe27Q3h/3Jk26vftCxPXG0k2ZO9+vOHuhvUAsJZ57Qc2zuZJP9vEYZk84Olu+oNosP1DD
+	RYmlOCPRUIu5qDgRAOv/6Qy9AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 04:49:03PM +0100, Catalin Marinas wrote:
-> On Fri, Sep 12, 2014 at 04:18:51PM +0100, Graeme Gregory wrote:
-> > On Fri, Sep 12, 2014 at 03:51:02PM +0100, Catalin Marinas wrote:
-> > > On Fri, Sep 12, 2014 at 03:00:03PM +0100, Hanjun Guo wrote:
-> > > > --- a/drivers/acpi/Makefile
-> > > > +++ b/drivers/acpi/Makefile
-> > > > @@ -23,7 +23,11 @@ acpi-y				+= nvs.o
-> > > >  
-> > > >  # Power management related files
-> > > >  acpi-y				+= wakeup.o
-> > > > +ifeq ($(ARCH), arm64)
-> > > > +acpi-y				+= sleep-arm.o
-> > > > +else # X86, IA64
-> > > >  acpi-y				+= sleep.o
-> > > > +endif
-> > > >  acpi-y				+= device_pm.o
-> > > >  acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
-> > > 
-> > > What about:
-> > > 
-> > > -acpi-y				+= sleep.o
-> > > +acpi-$(CONFIG_ACPI_SLEEP)	+= sleep.o
-> > > 
-> > > and make CONFIG_ACPI_SLEEP depend on !ARM64? Does the kernel compile if
-> > > you disable CONFIG_ACPI_SLEEP?
-> > 
-> > sleep.c is still needed in the case CONFIG_ACPI_SLEEP=n
-> > 
-> > basically the two functions I stubbed are always called by bus.c
-> 
-> So the two functions are:
-> 
-> acpi_target_system_state() - already defined in acpi_bus.h when
-> CONFIG_ACPI_SLEEP is off.
-> 
-> acpi_sleep_init() - this one doesn't have a dummy implementation for
-> !ACPI_SLEEP.
-> 
-> Now, for x86, do we need acpi_sleep_init() when CONFIG_ACPI_SLEEP is
-> off? If not, we could simply add a dummy acpi_sleep_init() function when
-> !ACPI_SLEEP and don't enable the config option for arm64.
-> 
-It looks to me that it still does processing for the S5 state which is
-soft off.
 
-It sets up the operations to be called when entering this state and also
-sets up a notifier.
+[ added linux-kernel ML to cc: ]
 
-Graeme
+Hi,
+
+On Tuesday, August 26, 2014 11:20:00 AM dinguyen@opensource.altera.com wrote:
+> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+> 
+> Move spin_lock_init to common location for both host and gadget.
+
+This should be done at the same time that gadget/host probing is merged
+to preserve bisectability.
+
+Also patch #12 ("usb: dwc2: pci: Update pci portion of the dwc2 driver")
+should be merged into this one.
+
+> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+> ---
+> v4: move spin_lock_init up to make sure sure no locks can be taken before
+>     the init.
+> ---
+>  drivers/usb/dwc2/hcd.c      | 1 -
+>  drivers/usb/dwc2/platform.c | 1 +
+>  2 files changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
+> index 07a7bcd..c6778d9 100644
+> --- a/drivers/usb/dwc2/hcd.c
+> +++ b/drivers/usb/dwc2/hcd.c
+> @@ -2824,7 +2824,6 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
+>  
+>  	hcd->has_tt = 1;
+>  
+> -	spin_lock_init(&hsotg->lock);
+>  	((struct wrapper_priv_data *) &hcd->hcd_priv)->hsotg = hsotg;
+>  	hsotg->priv = hcd;
+>  
+> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+> index 2871f351..278135d 100644
+> --- a/drivers/usb/dwc2/platform.c
+> +++ b/drivers/usb/dwc2/platform.c
+> @@ -183,6 +183,7 @@ static int dwc2_driver_probe(struct platform_device *dev)
+>  
+>  	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+>  
+> +	spin_lock_init(&hsotg->lock);
+>  	if (IS_ENABLED(CONFIG_USB_DWC2_DUAL_ROLE)) {
+>  		retval = dwc2_gadget_init(hsotg, irq);
+>  		if (retval)
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
