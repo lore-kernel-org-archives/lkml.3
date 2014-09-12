@@ -1,111 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaILR0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:26:23 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55289 "EHLO
+	id S1751597AbaILR37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:29:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55627 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaILR0V (ORCPT
+	with ESMTP id S1750997AbaILR34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:26:21 -0400
-Message-ID: <54132CBC.6030003@codeaurora.org>
-Date: Fri, 12 Sep 2014 10:26:20 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Rob Herring <robh@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH/RESEND] tty: serial: msm: Add DT based earlycon support
-References: <1410473644-19103-1-git-send-email-sboyd@codeaurora.org> <CAL_JsqLtx9+P1-O+gVRRhpjntHuNQZp4ASV8ScBhZB7gWDsGFw@mail.gmail.com>
-In-Reply-To: <CAL_JsqLtx9+P1-O+gVRRhpjntHuNQZp4ASV8ScBhZB7gWDsGFw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Sep 2014 13:29:56 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH v8 0/3] DWC3 USB support for Qualcomm platform
+Date: Fri, 12 Sep 2014 12:29:43 -0500
+Message-Id: <1410542986-24419-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/14 18:56, Rob Herring wrote:
-> On Thu, Sep 11, 2014 at 5:14 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> Add support for DT based early console on platforms with the msm
->> serial hardware.
->>
->> Cc: Rob Herring <robh@kernel.org>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> One comment, but looks good to me.
->
-> Acked-by: Rob Herring <robh@kernel.org>
+These patches add basic support for USB3.0 controllers found
+on MSM platforms. USB3.0 core is based on Synopsys DesignWare
+SuperSpeed IP.
 
-Thanks.
+This work was started by Ivan Ivanov and went through a number of iterations.  I
+picked these patches up and did a little rework to get them working.
 
->> +static int __init
->> +msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
->> +{
->> +       if (!device->port.membase)
->> +               return -ENODEV;
->> +
->> +       device->con->write = msm_serial_early_write;
->> +       return 0;
->> +}
->> +OF_EARLYCON_DECLARE(msm_serial, "qcom,msm-uart",
->> +                   msm_serial_early_console_setup);
-> Don't you want to support kernel command line as well? Then if you
-> can't change the DT or bootloader's command line, you can add it into
-> the kernel build with the appended command line. Don't forget to
-> document it in kernel-parameters.txt if you do.
->
->
+Changes since v7:
+* Reworked phy driver to conform to the generic phy framework.
+* Collapsed HS and SS phy drivers into same source file.
+* Dropped regulators from the drivers.  The only platform where we can utilize
+  this driver has regulators on all the time.  Will add regulators back in when
+  they are required.
+* Added timeouts to the phy register accesses
+* Put in definitions for the phy specific registers and bitfields
+* Removed unnecessary workarounds.
 
-Ok. Here's the interdiff. I'll send a v2.
+Changes since v6:
+* Renamed all MSM references to qcom, including file names
+* Removed direct TCSR manipulation.  This done from new TCSR driver.
+* Added defines for register bits
+* XO clk is optional on some platforms.  Corrected logic to handle this.
+* Ignore set_voltage failures.  This allows us to support dummy regulators on
+  platforms where there is no voltage control.
+* Reworked devicetree binding to remove TCSR reg resources
 
----8<----
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5ae8608ca9f5..22302931e9d4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -936,6 +936,18 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			must already be setup and configured. Options are not
- 			yet supported.
- 
-+		msm_serial,<addr>
-+			Start an early, polled-mode console on an msm serial
-+			port at the specified address. The serial port
-+			must already be setup and configured. Options are not
-+			yet supported.
-+
-+		msm_serial_dm,<addr>
-+			Start an early, polled-mode console on an msm serial
-+			dm port at the specified address. The serial port
-+			must already be setup and configured. Options are not
-+			yet supported.
-+
- 		smh	Use ARM semihosting calls for early console.
- 
- 	earlyprintk=	[X86,SH,BLACKFIN,ARM,M68k]
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index d3881991e8d3..4b6c78331a64 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -976,6 +976,7 @@ msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
- 	device->con->write = msm_serial_early_write;
- 	return 0;
- }
-+EARLYCON_DECLARE(msm_serial, msm_serial_early_console_setup);
- OF_EARLYCON_DECLARE(msm_serial, "qcom,msm-uart",
- 		    msm_serial_early_console_setup);
- 
-@@ -997,6 +998,7 @@ msm_serial_early_console_setup_dm(struct earlycon_device *device,
- 	device->con->write = msm_serial_early_write_dm;
- 	return 0;
- }
-+EARLYCON_DECLARE(msm_serial_dm, msm_serial_early_console_setup_dm);
- OF_EARLYCON_DECLARE(msm_serial_dm, "qcom,msm-uartdm",
- 		    msm_serial_early_console_setup_dm);
- 
+Changes since v5:
+* devicetree bindings descriptions fixes
+* Fixed NULL pointer dereferences in dev_prink's
+* Removed extra space in "sleep " clock name
+
+Changes since v4:
+* Substitute references to "wc3" with just "dw" in USB PHY drivers and
+  file names. This is to indicate that the PHY's are DesignWare, but
+  not necessarily related to DWC3 IP core.
+
+Changes since v3:
+* Remove "_clk" suffix from clock names
+* Clarify required child node for qcom,dwc3
+* Fix comments in functions headers
+* Use dbg instead err in drivers probe functions.
+
+Changes since v2:
+* Several improvements in devicetree bindings description
+* Disable regulators in glue layer if there is error during
+  ioremap.
+
+Changes since first version:
+* Split devicetree bindings description file to separate patch
+* Address comments for device bindings description
+* Fix typo in 'gdsc' requlator name.
+
+Andy Gross (1):
+  phy: Add Qualcomm DWC3 HS/SS PHY driver
+
+Ivan T. Ivanov (2):
+  usb: dwc3: qcom: Add device tree binding
+  usb: dwc3: Add Qualcomm DWC3 glue layer driver
+
+ .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 ++
+ .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 +++
+ drivers/phy/Kconfig                                |   11 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-qcom-dwc3.c                        |  500 ++++++++++++++++++++
+ drivers/usb/dwc3/Kconfig                           |    9 +
+ drivers/usb/dwc3/Makefile                          |    1 +
+ drivers/usb/dwc3/dwc3-qcom.c                       |  133 ++++++
+ 8 files changed, 760 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
+ create mode 100644 drivers/phy/phy-qcom-dwc3.c
+ create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
 
