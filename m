@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028AbaILJyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:54:53 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:32698 "EHLO
-	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751003AbaILJyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:54:51 -0400
-Message-ID: <5412C2E6.8030602@atmel.com>
-Date: Fri, 12 Sep 2014 17:54:46 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752277AbaILJ4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:56:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40205 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236AbaILJ4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:56:02 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] TPM: Add new TPMs to the tail of the list to prevent
+ inadvertent change of dev
+From: David Howells <dhowells@redhat.com>
+To: jmorris@namei.org
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        linux-security-module@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, Peter Huewe <peterhuewe@gmx.de>
+Date: Fri, 12 Sep 2014 10:55:35 +0100
+Message-ID: <20140912095535.9166.60056.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4] mtd: nand: atmel_nand: retrieve NFC clock
-References: <1410514809-25650-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1410514809-25650-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Alexandre
+Add newly registered TPMs to the tail of the list, not the beginning, so that
+things that are specifying TPM_ANY_NUM don't find that the device they're
+using has inadvertently changed.  Adding a second device would break IMA, for
+instance.
 
-On 9/12/2014 5:40 PM, Alexandre Belloni wrote:
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
->
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+cc: stable@vger.kernel.org
+---
 
-Thanks for the patch.
-Acked-by: Josh Wu <josh.wu@atmel.com>
+ drivers/char/tpm/tpm-interface.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Best Regards,
-Josh Wu
-
->
-> Changes in v4:
->   - fix typo in the documentation
->
->   .../devicetree/bindings/mtd/atmel-nand.txt         |  2 ++
->   drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
->   2 files changed, 27 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> index c4728839d0c1..6edc3b616e98 100644
-> --- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> @@ -36,6 +36,7 @@ Optional properties:
->       - reg : should specify the address and size used for NFC command registers,
->               NFC registers and NFC Sram. NFC Sram address and size can be absent
->               if don't want to use it.
-> +    - clocks: phandle to the peripheral clock
->     - Optional properties:
->       - atmel,write-by-sram: boolean to enable NFC write by sram.
->   
-> @@ -98,6 +99,7 @@ nand0: nand@40000000 {
->   		compatible = "atmel,sama5d3-nfc";
->   		#address-cells = <1>;
->   		#size-cells = <1>;
-> +		clocks = <&hsmc_clk>
->   		reg = <
->   			0x70000000 0x10000000	/* NFC Command Registers */
->   			0xffffc000 0x00000070	/* NFC HSMC regs */
-> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-> index 9c5f717bda54..d1e502f8dbd0 100644
-> --- a/drivers/mtd/nand/atmel_nand.c
-> +++ b/drivers/mtd/nand/atmel_nand.c
-> @@ -27,6 +27,7 @@
->    *
->    */
->   
-> +#include <linux/clk.h>
->   #include <linux/dma-mapping.h>
->   #include <linux/slab.h>
->   #include <linux/module.h>
-> @@ -96,6 +97,8 @@ struct atmel_nfc {
->   	bool			use_nfc_sram;
->   	bool			write_by_sram;
->   
-> +	struct clk		*clk;
-> +
->   	bool			is_initialized;
->   	struct completion	comp_ready;
->   	struct completion	comp_cmd_done;
-> @@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->   {
->   	struct atmel_nfc *nfc = &nand_nfc;
->   	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
-> +	int ret;
->   
->   	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->   	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
-> @@ -2279,8 +2283,28 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->   	nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
->   	nfc_readl(nfc->hsmc_regs, SR);	/* clear the NFC_SR */
->   
-> +	nfc->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (!IS_ERR(nfc->clk)) {
-> +		ret = clk_prepare_enable(nfc->clk);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
-> +	}
-> +
->   	nfc->is_initialized = true;
->   	dev_info(&pdev->dev, "NFC is probed.\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmel_nand_nfc_remove(struct platform_device *pdev)
-> +{
-> +	struct atmel_nfc *nfc = &nand_nfc;
-> +
-> +	if (!IS_ERR(nfc->clk))
-> +		clk_disable_unprepare(nfc->clk);
-> +
->   	return 0;
->   }
->   
-> @@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
->   		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
->   	},
->   	.probe = atmel_nand_nfc_probe,
-> +	.remove = atmel_nand_nfc_remove,
->   };
->   
->   static struct platform_driver atmel_nand_driver = {
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 6af17002a115..cfb9089887bd 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -1122,7 +1122,7 @@ struct tpm_chip *tpm_register_hardware(struct device *dev,
+ 
+ 	/* Make chip available */
+ 	spin_lock(&driver_lock);
+-	list_add_rcu(&chip->list, &tpm_chip_list);
++	list_add_tail_rcu(&chip->list, &tpm_chip_list);
+ 	spin_unlock(&driver_lock);
+ 
+ 	return chip;
 
