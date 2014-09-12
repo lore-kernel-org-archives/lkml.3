@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175AbaILKJr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:09:47 -0400
-Received: from exprod7og115.obsmtp.com ([64.18.2.217]:58112 "EHLO
-	exprod7og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441AbaILKG7 (ORCPT
+	id S1754142AbaILKJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:09:46 -0400
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:37073 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451AbaILKG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Sep 2014 06:06:59 -0400
 From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
@@ -14,9 +14,9 @@ Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
         JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
         Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
         Elliott@hp.com, Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v2 11/18][SCSI] mpt3sas: Clear PFA Status on SGPIO when PFA Drive is Removed or Replaced
-Date: Fri, 12 Sep 2014 15:35:26 +0530
-Message-Id: <1410516333-3678-12-git-send-email-Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v2 09/18][SCSI] mpt2sas: Bump mpt2sas driver version to 18.100.00.00
+Date: Fri, 12 Sep 2014 15:35:24 +0530
+Message-Id: <1410516333-3678-10-git-send-email-Sreekanth.Reddy@avagotech.com>
 X-Mailer: git-send-email 2.0.2
 In-Reply-To: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 References: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
@@ -24,189 +24,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added code to send an SEP message that turns off the Predictive
-Failure LED when a drive is removed (if Predictive Failure LED was turned on).
-
-Added a new flag 'pfa_led_on' per device that tracks the status of Predictive
-Failure LED. When the drive is removed, this flag is checked and
-sends an SEP message to turn off the respective Predictive Failure LED.
+Bump mpt2sas driver version to 18.100.00.00.
 
 Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
 Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 ---
- drivers/scsi/mpt3sas/mpt3sas_base.h  |  5 ++-
- drivers/scsi/mpt3sas/mpt3sas_scsih.c | 67 ++++++++++++++++++++++++++++++------
- 2 files changed, 61 insertions(+), 11 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.h b/drivers/scsi/mpt3sas/mpt3sas_base.h
-index 9b90a6f..184826c 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_base.h
-+++ b/drivers/scsi/mpt3sas/mpt3sas_base.h
-@@ -272,8 +272,10 @@ struct _internal_cmd {
-  * @channel: target channel
-  * @slot: number number
-  * @phy: phy identifier provided in sas device page 0
-- * @fast_path: fast path feature enable bit
-  * @responding: used in _scsih_sas_device_mark_responding
-+ * @fast_path: fast path feature enable bit
-+ * @pfa_led_on: flag for PFA LED status
-+ *
-  */
- struct _sas_device {
- 	struct list_head list;
-@@ -293,6 +295,7 @@ struct _sas_device {
- 	u8	phy;
- 	u8	responding;
- 	u8	fast_path;
-+	u8	pfa_led_on;
- };
- 
- /**
-diff --git a/drivers/scsi/mpt3sas/mpt3sas_scsih.c b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-index 135f12c..77a5bfa 100644
---- a/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-@@ -159,7 +159,7 @@ struct sense_info {
- };
- 
- #define MPT3SAS_PROCESS_TRIGGER_DIAG (0xFFFB)
--#define MPT3SAS_TURN_ON_FAULT_LED (0xFFFC)
-+#define MPT3SAS_TURN_ON_PFA_LED (0xFFFC)
- #define MPT3SAS_PORT_ENABLE_COMPLETE (0xFFFD)
- #define MPT3SAS_ABRT_TASK_SET (0xFFFE)
- #define MPT3SAS_REMOVE_UNRESPONDING_DEVICES (0xFFFF)
-@@ -3885,7 +3885,7 @@ _scsih_scsi_ioc_info(struct MPT3SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
- #endif
- 
- /**
-- * _scsih_turn_on_fault_led - illuminate Fault LED
-+ * _scsih_turn_on_pfa_led - illuminate PFA LED
-  * @ioc: per adapter object
-  * @handle: device handle
-  * Context: process
-@@ -3893,10 +3893,15 @@ _scsih_scsi_ioc_info(struct MPT3SAS_ADAPTER *ioc, struct scsi_cmnd *scmd,
-  * Return nothing.
-  */
- static void
--_scsih_turn_on_fault_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
-+_scsih_turn_on_pfa_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
- {
- 	Mpi2SepReply_t mpi_reply;
- 	Mpi2SepRequest_t mpi_request;
-+	struct _sas_device *sas_device;
-+
-+	sas_device = _scsih_sas_device_find_by_handle(ioc, handle);
-+	if (!sas_device)
-+		return;
- 
- 	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
- 	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
-@@ -3911,6 +3916,7 @@ _scsih_turn_on_fault_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
- 		__FILE__, __LINE__, __func__);
- 		return;
- 	}
-+	sas_device->pfa_led_on = 1;
- 
- 	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
- 		dewtprintk(ioc, pr_info(MPT3SAS_FMT
-@@ -3920,9 +3926,46 @@ _scsih_turn_on_fault_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
- 		return;
- 	}
- }
-+/**
-+ * _scsih_turn_off_pfa_led - turn off Fault LED
-+ * @ioc: per adapter object
-+ * @sas_device: sas device whose PFA LED has to turned off
-+ * Context: process
-+ *
-+ * Return nothing.
-+ */
-+static void
-+_scsih_turn_off_pfa_led(struct MPT3SAS_ADAPTER *ioc,
-+	struct _sas_device *sas_device)
-+{
-+	Mpi2SepReply_t mpi_reply;
-+	Mpi2SepRequest_t mpi_request;
- 
-+	memset(&mpi_request, 0, sizeof(Mpi2SepRequest_t));
-+	mpi_request.Function = MPI2_FUNCTION_SCSI_ENCLOSURE_PROCESSOR;
-+	mpi_request.Action = MPI2_SEP_REQ_ACTION_WRITE_STATUS;
-+	mpi_request.SlotStatus = 0;
-+	mpi_request.Slot = cpu_to_le16(sas_device->slot);
-+	mpi_request.DevHandle = 0;
-+	mpi_request.EnclosureHandle = cpu_to_le16(sas_device->enclosure_handle);
-+	mpi_request.Flags = MPI2_SEP_REQ_FLAGS_ENCLOSURE_SLOT_ADDRESS;
-+	if ((mpt3sas_base_scsi_enclosure_processor(ioc, &mpi_reply,
-+		&mpi_request)) != 0) {
-+		printk(MPT3SAS_FMT "failure at %s:%d/%s()!\n", ioc->name,
-+		__FILE__, __LINE__, __func__);
-+		return;
-+	}
-+
-+	if (mpi_reply.IOCStatus || mpi_reply.IOCLogInfo) {
-+		dewtprintk(ioc, printk(MPT3SAS_FMT
-+		 "enclosure_processor: ioc_status (0x%04x), loginfo(0x%08x)\n",
-+		 ioc->name, le16_to_cpu(mpi_reply.IOCStatus),
-+		 le32_to_cpu(mpi_reply.IOCLogInfo)));
-+		return;
-+	}
-+}
- /**
-- * _scsih_send_event_to_turn_on_fault_led - fire delayed event
-+ * _scsih_send_event_to_turn_on_pfa_led - fire delayed event
-  * @ioc: per adapter object
-  * @handle: device handle
-  * Context: interrupt.
-@@ -3930,14 +3973,14 @@ _scsih_turn_on_fault_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
-  * Return nothing.
-  */
- static void
--_scsih_send_event_to_turn_on_fault_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
-+_scsih_send_event_to_turn_on_pfa_led(struct MPT3SAS_ADAPTER *ioc, u16 handle)
- {
- 	struct fw_event_work *fw_event;
- 
- 	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
- 	if (!fw_event)
- 		return;
--	fw_event->event = MPT3SAS_TURN_ON_FAULT_LED;
-+	fw_event->event = MPT3SAS_TURN_ON_PFA_LED;
- 	fw_event->device_handle = handle;
- 	fw_event->ioc = ioc;
- 	_scsih_fw_event_add(ioc, fw_event);
-@@ -3981,7 +4024,7 @@ _scsih_smart_predicted_fault(struct MPT3SAS_ADAPTER *ioc, u16 handle)
- 	spin_unlock_irqrestore(&ioc->sas_device_lock, flags);
- 
- 	if (ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM)
--		_scsih_send_event_to_turn_on_fault_led(ioc, handle);
-+		_scsih_send_event_to_turn_on_pfa_led(ioc, handle);
- 
- 	/* insert into event log */
- 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
-@@ -4911,7 +4954,11 @@ _scsih_remove_device(struct MPT3SAS_ADAPTER *ioc,
- {
- 	struct MPT3SAS_TARGET *sas_target_priv_data;
- 
--
-+	if ((ioc->pdev->subsystem_vendor == PCI_VENDOR_ID_IBM) &&
-+	     (sas_device->pfa_led_on)) {
-+		_scsih_turn_off_pfa_led(ioc, sas_device);
-+		sas_device->pfa_led_on = 0;
-+	}
- 	dewtprintk(ioc, pr_info(MPT3SAS_FMT
- 		"%s: enter: handle(0x%04x), sas_addr(0x%016llx)\n",
- 		ioc->name, __func__,
-@@ -7065,8 +7112,8 @@ _mpt3sas_fw_work(struct MPT3SAS_ADAPTER *ioc, struct fw_event_work *fw_event)
- 			"port enable: complete from worker thread\n",
- 			ioc->name));
- 		break;
--	case MPT3SAS_TURN_ON_FAULT_LED:
--		_scsih_turn_on_fault_led(ioc, fw_event->device_handle);
-+	case MPT3SAS_TURN_ON_PFA_LED:
-+		_scsih_turn_on_pfa_led(ioc, fw_event->device_handle);
- 		break;
- 	case MPI2_EVENT_SAS_TOPOLOGY_CHANGE_LIST:
- 		_scsih_sas_topology_change_event(ioc, fw_event);
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
+index 9bc8e0b..239f169 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -69,8 +69,8 @@
+ #define MPT2SAS_DRIVER_NAME		"mpt2sas"
+ #define MPT2SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
+ #define MPT2SAS_DESCRIPTION	"LSI MPT Fusion SAS 2.0 Device Driver"
+-#define MPT2SAS_DRIVER_VERSION		"17.100.00.00"
+-#define MPT2SAS_MAJOR_VERSION		17
++#define MPT2SAS_DRIVER_VERSION		"18.100.00.00"
++#define MPT2SAS_MAJOR_VERSION		18
+ #define MPT2SAS_MINOR_VERSION		100
+ #define MPT2SAS_BUILD_VERSION		00
+ #define MPT2SAS_RELEASE_VERSION		00
 -- 
 2.0.2
 
