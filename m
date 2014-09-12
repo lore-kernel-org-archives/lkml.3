@@ -1,158 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbaILFdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 01:33:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51962 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752126AbaILFdL (ORCPT
+	id S1752326AbaILFfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 01:35:55 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:33019 "EHLO
+	homiemail-a8.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751337AbaILFfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 01:33:11 -0400
-Date: Fri, 12 Sep 2014 07:33:06 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 5/9] rtc: at91sam9: make use of syscon/regmap to
- access GPBR registers
-Message-ID: <20140912073306.5ac2c295@bbrezillon>
-In-Reply-To: <20140911174209.GE3131@piout.net>
-References: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
-	<1410443588-9092-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140911174209.GE3131@piout.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Sep 2014 01:35:54 -0400
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: peterz@infradead.org, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, dave@stgolabs.net, dbueso@suse.de
+Subject: [PATCH 1/2] locking/rwsem: EXPORT_SYMBOL follows function definition
+Date: Thu, 11 Sep 2014 22:34:25 -0700
+Message-Id: <1410500066-5909-1-git-send-email-dave@stgolabs.net>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014 19:42:09 +0200
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+rw-semaphore is the only type of lock doing this ugliness of
+exporting at the end of the file.
 
-> On 11/09/2014 at 15:53:08 +0200, Boris Brezillon wrote :
-> > The GPBR registers are not part of the RTT block and thus should not be
-> > defined in the reg property of the rtt node.
-> > 
-> > Use syscon to provide a proper DT representation and reference the GPBR
-> > syscon device in a new "atmel,time-reg" property which store both the
-> > syscon device phandle and the register offset within the GPBR block.
-> > 
-> > When using non DT boards, we won't be able to retrieve the syscon regmap,
-> > hence we need to create our own regmap using the memory region defined
-> > in the 2nd memory resource assigned to the RTT platform device.
-> > 
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > ---
-> >  drivers/rtc/Kconfig        |  1 +
-> >  drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
-> >  2 files changed, 51 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> > index a168e96..7d76da8 100644
-> > --- a/drivers/rtc/Kconfig
-> > +++ b/drivers/rtc/Kconfig
-> > @@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
-> >  config RTC_DRV_AT91SAM9
-> >  	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
-> >  	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
-> > +	select MFD_SYSCON
-> >  	help
-> >  	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
-> >  	  (Real Time Timer). These timers are powered by the backup power
-> > diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
-> > index d72c34d..944e317 100644
-> > --- a/drivers/rtc/rtc-at91sam9.c
-> > +++ b/drivers/rtc/rtc-at91sam9.c
-> > @@ -21,6 +21,8 @@
-> >  #include <linux/slab.h>
-> >  #include <linux/platform_data/atmel.h>
-> >  #include <linux/io.h>
-> > +#include <linux/mfd/syscon.h>
-> > +#include <linux/regmap.h>
-> >  
-> >  /*
-> >   * This driver uses two configurable hardware resources that live in the
-> > @@ -72,7 +74,8 @@ struct sam9_rtc {
-> >  	void __iomem		*rtt;
-> >  	struct rtc_device	*rtcdev;
-> >  	u32			imr;
-> > -	void __iomem		*gpbr;
-> > +	struct regmap		*gpbr;
-> > +	unsigned int		gpbr_offset;
-> >  	int 			irq;
-> >  };
-> >  
-> > @@ -81,10 +84,19 @@ struct sam9_rtc {
-> >  #define rtt_writel(rtc, field, val) \
-> >  	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
-> >  
-> > -#define gpbr_readl(rtc) \
-> > -	readl((rtc)->gpbr)
-> > -#define gpbr_writel(rtc, val) \
-> > -	writel((val), (rtc)->gpbr)
-> > +static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
-> > +{
-> > +	unsigned int val;
-> > +
-> > +	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
-> > +
-> > +	return val;
-> > +}
-> > +
-> > +static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
-> > +{
-> > +	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
-> > +}
-> >  
-> >  /*
-> >   * Read current time and date in RTC
-> > @@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
-> >  	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
-> >  };
-> >  
-> > +static struct regmap_config gpbr_regmap_config = {
-> > +	.reg_bits = 32,
-> > +	.val_bits = 32,
-> > +	.reg_stride = 4,
-> > +};
-> > +
-> >  /*
-> >   * Initialize and install RTC driver
-> >   */
-> > @@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
-> >  	if (IS_ERR(rtc->rtt))
-> >  		return PTR_ERR(rtc->rtt);
-> >  
-> > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> > -	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
-> > -	if (IS_ERR(rtc->gpbr))
-> > -		return PTR_ERR(rtc->rtt);
-> > +	if (!pdev->dev.of_node) {
-> > +		void __iomem *gpbr;
-> > +
-> > +		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> > +		gpbr = devm_ioremap_resource(&pdev->dev, r);
-> > +		if (IS_ERR(gpbr))
-> > +			return PTR_ERR(gpbr);
-> > +
-> 
-> Maybe you could add a comment here as this is soon to be dead code.
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+---
+ kernel/locking/rwsem-xadd.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Sure. I'll add a TODO comment.
-
-Thanks.
-
-Boris
-
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index d6203fa..12166ec 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -246,6 +246,7 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ 
+ 	return sem;
+ }
++EXPORT_SYMBOL(rwsem_down_read_failed);
+ 
+ static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
+ {
+@@ -465,6 +466,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 
+ 	return sem;
+ }
++EXPORT_SYMBOL(rwsem_down_write_failed);
+ 
+ /*
+  * handle waking up a waiter on the semaphore
+@@ -485,6 +487,7 @@ struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+ 
+ 	return sem;
+ }
++EXPORT_SYMBOL(rwsem_wake);
+ 
+ /*
+  * downgrade a write lock into a read lock
+@@ -506,8 +509,4 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
+ 
+ 	return sem;
+ }
+-
+-EXPORT_SYMBOL(rwsem_down_read_failed);
+-EXPORT_SYMBOL(rwsem_down_write_failed);
+-EXPORT_SYMBOL(rwsem_wake);
+ EXPORT_SYMBOL(rwsem_downgrade_wake);
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.4.5
+
