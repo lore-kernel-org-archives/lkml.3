@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaILP5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:57:01 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56549 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508AbaILP47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:56:59 -0400
-X-AuditID: cbfee61b-f79f86d00000144c-40-541317c96deb
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: dinguyen@opensource.altera.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, balbi@ti.com,
-        dinh.linux@gmail.com, swarren@wwwdotorg.org, matthijs@stdin.nl,
-        r.baldyga@samsung.com, jg1.han@samsung.com, sachin.kamat@linaro.org,
-        ben-linux@fluff.org, dianders@chromium.org, kever.yang@rock-chips.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 02/12] usb: dwc2: move "samsung,s3c6400-hsotg" into
- common platform
-Date: Fri, 12 Sep 2014 17:56:54 +0200
-Message-id: <1813730.yGZdjFHdNk@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1409070003-21195-3-git-send-email-dinguyen@opensource.altera.com>
-References: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
- <1409070003-21195-3-git-send-email-dinguyen@opensource.altera.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd2T4sIhBj0vTCwO3q+3mLTuAJPF
-	2WUH2SxWfVrDbLHypLZF8+L1bBaXF15itdg2/SeQtWsOm8WiZa3MFgtfX2Ox2D5lOpPFg8M7
-	2S1O/ulltHh1sI3Fgd9jdsNFFo+/q14we+ycdZfd4861PWwe++euYffovzaJ3ePvrP0sHn1b
-	VjF6fPnxj8Vjy/7PjB7Hb2xn8vi8Sc5j49zQAN4oLpuU1JzMstQifbsErozjTdUFm/krprYv
-	ZG9gvMnTxcjJISFgIrF3dSsbhC0mceHeeiCbi0NIYDqjxMfOQ4wQTguTRPP1B6wgVWwCVhIT
-	21cxgtgiAkoSvatesoAUMQucZZJYsWstM0hCWCBaovffFiYQm0VAVeJLx1sWEJtXQFNi3vuF
-	YM2iAp4SO7avBFvNKeAvMfvmTnaIbZOBVr/Zwg7RICjxY/I9sGZmAXmJffunskLYOhL7W6ex
-	TWAUmIWkbBaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7BZ9I7GFc1WBxi
-	FOBgVOLhrWQRDBFiTSwrrsw9xCjBwawkwqsoKhwixJuSWFmVWpQfX1Sak1p8iFGag0VJnPdg
-	q3WgkEB6YklqdmpqQWoRTJaJg1OqgXFS/jHHhrV5F85ekGRKVpiwt3ux5s4XmhIiTBfqpWr3
-	qHpWBkexC1fufFeTXfOrrnvmcVNx2/nr3p8zF3Tua+95ZxmdUZPQcP7XgvfvA53+Ni26JyN4
-	4v3GTr/SzUrXF7/InGQt2tW3pqRIsEeqd2PvGU6z2E+LdXW7RGet2f5q4dM90zfZVimxFGck
-	GmoxFxUnAgANsN8LvQIAAA==
+	id S1752237AbaILP7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:59:13 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:38978 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676AbaILP7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 11:59:12 -0400
+Date: Fri, 12 Sep 2014 09:59:05 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH] tpm: use tpm_pcr_read_dev() in
+ tpm_do_selftest()
+Message-ID: <20140912155905.GA14805@obsidianresearch.com>
+References: <1410527201-32428-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410527201-32428-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 12, 2014 at 04:06:41PM +0300, Jarkko Sakkinen wrote:
+> It does not make sense to construct the PCR read command in
+> tpm_do_selftest() when there is already a function that does
+> the job.
 
-[ added linux-kernel ML to cc: ]
+This would seem to undo an older patch, I don't think things have
+changed enough for that to make sense.. Can you comment?
 
-Hi,
+It looks to me like the aim was to not print a warning on faliure
+while looping, tpm_pcr_read_dev will print an error.
 
-On Tuesday, August 26, 2014 11:19:53 AM dinguyen@opensource.altera.com wrote:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> 
-> Move the "samsung,s3c6400-hsotg" binding as the probe function in the gadget
-> driver will get removed when the dual-role driver is implemented.
+Though, it would be better to use transmit_cmd with a null desc than
+tpm_transmit.
 
-Sorry but no.  In the current form this just breaks gadget support for
-Samsung devices as probe function for gadget will no longer be called.
+Also:
 
-[ This should be done in the same patch that aggregates gadget and host
-  initializations into one driver. ]
+-               if (rc < TPM_HEADER_SIZE)
++               if (rc < 0)
+                        return -EFAULT;
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Should be return rc;
 
-> Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
-> Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> ---
->  drivers/usb/dwc2/gadget.c   | 1 -
->  drivers/usb/dwc2/platform.c | 1 +
->  2 files changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> index 94f7a3f..8c45b4c 100644
-> --- a/drivers/usb/dwc2/gadget.c
-> +++ b/drivers/usb/dwc2/gadget.c
-> @@ -3674,7 +3674,6 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
->  
->  #ifdef CONFIG_OF
->  static const struct of_device_id s3c_hsotg_of_ids[] = {
-> -	{ .compatible = "samsung,s3c6400-hsotg", },
->  	{ .compatible = "snps,dwc2", },
->  	{ /* sentinel */ }
->  };
-> diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-> index 5f0c4bb..dd2f8f5 100644
-> --- a/drivers/usb/dwc2/platform.c
-> +++ b/drivers/usb/dwc2/platform.c
-> @@ -100,6 +100,7 @@ static int dwc2_driver_remove(struct platform_device *dev)
->  static const struct of_device_id dwc2_of_match_table[] = {
->  	{ .compatible = "brcm,bcm2835-usb", .data = &params_bcm2835 },
->  	{ .compatible = "snps,dwc2", .data = NULL },
-> +	{ .compatible = "samsung,s3c6400-hsotg", .data = NULL},
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, dwc2_of_match_table);
+commit 24ebe6670de3d1f0dca11c9eb372134c7ab05503
+Author: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Date:   Tue Apr 24 17:38:17 2012 -0300
+
+    TPM: chip disabled state erronously being reported as error
+    
+    tpm_do_selftest() attempts to read a PCR in order to
+    decide if one can rely on the TPM being used or not.
+    The function that's used by __tpm_pcr_read() does not
+    expect the TPM to be disabled or deactivated, and if so,
+    reports an error.
+    
+    It's fine if the TPM returns this error when trying to
+    use it for the first time after a power cycle, but it's
+    definitely not if it already returned success for a
+    previous attempt to read one of its PCRs.
+    
+    The tpm_do_selftest() was modified so that the driver only
+    reports this return code as an error when it really is.
+    
+    Reported-and-tested-by: Paul Bolle <pebolle@tiscali.nl>
+    Cc: Stable <stable@vger.kernel.org>
+    Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index ad7c7320dd1b..08427abf5fa5 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -827,10 +827,10 @@ EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+ int tpm_do_selftest(struct tpm_chip *chip)
+ {
+        int rc;
+-       u8 digest[TPM_DIGEST_SIZE];
+        unsigned int loops;
+        unsigned int delay_msec = 1000;
+        unsigned long duration;
++       struct tpm_cmd_t cmd;
+ 
+        duration = tpm_calc_ordinal_duration(chip,
+                                             TPM_ORD_CONTINUE_SELFTEST);
+@@ -845,7 +845,15 @@ int tpm_do_selftest(struct tpm_chip *chip)
+                return rc;
+ 
+        do {
+-               rc = __tpm_pcr_read(chip, 0, digest);
++               /* Attempt to read a PCR value */
++               cmd.header.in = pcrread_header;
++               cmd.params.pcrread_in.pcr_idx = cpu_to_be32(0);
++               rc = tpm_transmit(chip, (u8 *) &cmd, READ_PCR_RESULT_SIZE);
++
++               if (rc < TPM_HEADER_SIZE)
++                       return -EFAULT;
++
++               rc = be32_to_cpu(cmd.header.out.return_code);
+                if (rc == TPM_ERR_DISABLED || rc == TPM_ERR_DEACTIVATED) {
+                        dev_info(chip->dev,
+                                 "TPM is disabled/deactivated (0x%X)\n", rc);
 
