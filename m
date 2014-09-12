@@ -1,108 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaILVXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 17:23:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10823 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083AbaILVXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 17:23:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,515,1406617200"; 
-   d="scan'208";a="572501378"
-Message-ID: <54136459.1070700@intel.com>
-Date: Fri, 12 Sep 2014 14:23:37 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752530AbaILV3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 17:29:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56154 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaILV3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 17:29:19 -0400
+Date: Fri, 12 Sep 2014 14:29:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Matt <jackdachef@gmail.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>
+Subject: Re: linux-3.16.2 queue (3.16.1+)
+Message-ID: <20140912212918.GA9690@kroah.com>
+References: <CAG-aW06Q9VVyW-atZEsURs0rfjysdEbxb_dC4Tm3K-tZg++tQg@mail.gmail.com>
+ <20140828152205.GA18432@kroah.com>
+ <CAG-aW05qkQKgntBM87XHSMECjD-GMjeRt+m0-0CkezBG_weCOg@mail.gmail.com>
+ <20140828153252.GA18868@kroah.com>
+ <CAG-aW07Lx=WOEf+j=_+G5T57uzhvKiP3-ZpaadKvoafW=iJKrw@mail.gmail.com>
+ <CAG-aW04YvZVxKBhSAYqhr5OBFovA3HHHWgdfEQU_jXKzQK7QdA@mail.gmail.com>
+ <20140907031814.GA961@kroah.com>
+ <5411252A.1030901@suse.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 00/10] Intel MPX support
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <54124379.5090502@intel.com> <alpine.DEB.2.10.1409121543090.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409121543090.4178@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5411252A.1030901@suse.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 12:21 PM, Thomas Gleixner wrote:
-> Yes, the most important question is WHY must the kernel handle the
-> bound table memory allocation in the first place. The "documentation"
-> patch completely fails to tell that.
+On Thu, Sep 11, 2014 at 12:29:30AM -0400, Jeff Mahoney wrote:
+> On 9/6/14, 11:18 PM, Greg KH wrote:
+> > On Sun, Sep 07, 2014 at 02:47:55AM +0200, Matt wrote:
+> >> On Thu, Aug 28, 2014 at 9:18 PM, Matt <jackdachef@gmail.com>
+> >> wrote:
+> >>> On Thu, Aug 28, 2014 at 5:32 PM, Greg KH
+> >>> <gregkh@linuxfoundation.org> wrote:
+> >>>> On Thu, Aug 28, 2014 at 05:27:27PM +0200, Matt wrote:
+> >>>>> On Thu, Aug 28, 2014 at 5:22 PM, Greg KH
+> >>>>> <gregkh@linuxfoundation.org> wrote:
+> >>>>>> On Thu, Aug 28, 2014 at 05:16:58PM +0200, Matt wrote:
+> >>>>>>> Hi Greg,
+> >>>>>>> 
+> >>>>>>> 
+> >>>>>>> please consider adding the following 2 patches to
+> >>>>>>> 3.16.2:
+> >>>>>>> 
+> >>>>>>> Jan Kara (1): reiserfs: Fix use after free in journal
+> >>>>>>> teardown
+> >>>>>>> 
+> >>>>>>> Jeff Mahoney (1): reiserfs: fix corruption introduced
+> >>>>>>> by balance_leaf refactor
+> >>>>>>> 
+> >>>>>>> 
+> >>>>>>> 
+> >>>>>>> Reason/Related:
+> >>>>>>> 
+> >>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=83121
+> >>>>>>> 
+> >>>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=83321
+> >>>>>>> 
+> >>>>>>> http://forums.gentoo.org/viewtopic-t-998538-postdays-0-postorder-asc-start-0.html
+> >>>>>>>
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> 
+> Many thanks in advance
+> >>>>>> 
+> >>>>>> I need git commit ids of these patches in Linus's tree,
+> >>>>>> can you provide those please?
+> >>>>>> 
+> >>>>>> thanks,
+> >>>>>> 
+> >>>>>> greg k-h
+> >>>>> 
+> >>>>> 
+> >>>>> Sure:
+> >>>>> 
+> >>>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d
+> >>>>>
+> >>>>> 
+> reiserfs: fix corruption introduced by balance_leaf refactor
+> >>>>> 
+> >>>>> 
+> >>>>> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=01777836c87081e4f68c4a43c9abe6114805f91e
+> >>>>>
+> >>>>> 
+> reiserfs: Fix use after free in journal teardown
+> >>>>> 
+> >>>>> 
+> >>>>> 
+> >>>>> are checkpatch warnings usually also fixed within stable
+> >>>>> releases ?
+> >>>> 
+> >>>> No, not at all, please read
+> >>>> Documentation/stable_kernel_patches.txt for what is
+> >>>> acceptable for stable kernel patches.
+> >>>> 
+> >>>> thanks,
+> >>>> 
+> >>>> greg k-h
+> >>> 
+> >>> 
+> >>> okay, will do
+> >>> 
+> >>> thanks for pointing that out
+> >>> 
+> >>> 
+> >>> Regards
+> >>> 
+> >>> Matt
+> >> 
+> >> Hi Greg,
+> >> 
+> >> could you please add the above mentioned two patches
+> >> 
+> >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d
+> >>
+> >> 
+> reiserfs: fix corruption introduced by balance_leaf refactor
+> >> 
+> >> 
+> >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=01777836c87081e4f68c4a43c9abe6114805f91e
+> >>
+> >> 
+> reiserfs: Fix use after free in journal teardown
+> >> 
+> >> in next stable (3.16.3) kernel ?
+> >> 
+> >> more and more people seem to be affected by the data corruption 
+> >> introduced by the recent changes.
+> >> 
+> >> 
+> >> Reading through Documentation/stable_kernel_rules.txt, 
+> >> http://cwe.mitre.org/data/definitions/416.html and 
+> >> http://www.hpenterprisesecurity.com/vulncat/en/vulncat/cpp/use_after_free.html
+> >>
+> >>
+> >> 
+> both patches seem relevant enough (concerning data integrity
+> >> filesystem-wise and security) to be included for the stable
+> >> branch
+> > 
+> > I'll queue this up when I get a chance, there are over 300 patches 
+> > pending for the stable kernels right now :(
+> > 
+> > Also, in the future, always cc stable@vger.kernel.org for any
+> > stable requests so that they don't get lost.
+> 
+> Hi Greg -
+> 
+> 27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d
+> Author: Jeff Mahoney <jeffm@suse.com>
+> Date:   Mon Aug 4 19:51:47 2014 -0400
+> 
+>     reiserfs: fix corruption introduced by balance_leaf refactor
+> 
+>     Commits f1f007c308e (reiserfs: balance_leaf refactor, pull out
+>     balance_leaf_insert_left) and cf22df182bf (reiserfs: balance_leaf
+>     refactor, pull out balance_leaf_paste_left) missed that the `body'
+>     pointer was getting repositioned. Subsequent users of the pointer
+>     would expect it to be repositioned, and as a result, parts of the
+>     tree would get overwritten. The most common observed corruption
+>     is indirect block pointers being overwritten.
+> 
+>     Since the body value isn't actually used anymore in the called
+> routines,
+>     we can pass back the offset it should be shifted. We constify the body
+>     and ih pointers in the balance_leaf as a mostly-free preventative
+> measure.
+> 
+>     Cc: <stable@vger.kernel.org> # 3.16
+>     Reported-and-tested-by: Jeff Chua <jeff.chua.linux@gmail.com>
+>     Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+>     Signed-off-by: Jan Kara <jack@suse.cz>
+> 
+> Should there have been more? I thought it was enough to add the Cc
+> tag. This one has been in the tree, with the tags and with
+> "corruption" in the Subject since 13 Aug. I know you're busy but this
+> seems like a pretty obvious candidate for stable inclusion.
 
-This will become the description of "patch 04/10".  Feel free to wait
-until we repost these to read it, but I'm posting it here because it's
-going to be a couple of days before we actually get a new set of patches
-out.
+You marked this one just fine, it's just that, again, I have over 300+
+patches in the "marked for stable" queue right now, this patch is in
+good company...
 
-Any suggestions for how much of this is appropriate for Documentation/
-would be much appreciated.  I don't have a good feel for it.
-
----
-
-Subject: x86: mpx: on-demand kernel allocation of bounds tables
-MPX only has 4 hardware registers for storing bounds information.
-If MPX-enabled code needs more than these 4 registers, it needs
-to spill them somewhere.  It has two special instructions for
-this which allow the bounds to be moved between the bounds
-registers and some new "bounds tables".
-
-#BR exceptions are a new class of exceptions just for MPX.  They
-are similar conceptually to a page fault and will be raised by
-the MPX hardware during both bounds violations or when the tables
-are not present.  This patch handles those #BR exceptions for
-not-present tables by carving the space out of the normal
-processes address space (essentially calling mmap() from inside
-the kernel) and then pointing the bounds-directory over to it.
-
-The tables *need* to be accessed and controlled by userspace
-because the instructions for moving bounds in and out of them are
-extremely frequent.  They potentially happen every time a
-register points to memory.  Any direct kernel involvement (like a
-syscall) to access the tables would obviously destroy
-performance.
-
-==== Why not do this in userspace? ====
-
-This patch is obviously doing this allocation in the kernel.
-However, MPX does not strictly *require* anything in the kernel.
-It can theoretically be done completely from userspace.  Here are
-a few ways this *could* be done.  I don't think any of them are
-practical in the real-world, but here they are.
-
-Q: Can virtual space simply be reserved for the bounds tables so
-   that we never have to allocate them?
-A: As noted earlier, these tables are *HUGE*.  An X-GB virtual
-   area needs 4*X GB of virtual space, plus 2GB for the bounds
-   directory.  If we were to preallocate them for the 128TB of
-   user virtual address space, we would need to reserve 512TB+2GB,
-   which is larger than the entire virtual address space today.
-   This means they can not be reserved ahead of time.  Also, a
-   single process's pre-popualated bounds directory consumes 2GB
-   of virtual *AND* physical memory.  IOW, it's completely
-   infeasible to prepopulate bounds directories.
-
-Q: Can we preallocate bounds table space at the same time memory
-   is allocated which might contain pointers that might eventually
-   need bounds tables?
-A: This would work if we could hook the site of each and every
-   memory allocation syscall.  This can be done for small,
-   constrained applications.  But, it isn't practical at a larger
-   scale since a given app has no way of controlling how all the
-   parts of the app migth allocate memory (think libraries).  The
-   kernel is really the only place to intercept these calls.
-
-Q: Could a bounds fault be handed to userspace and the tables
-   allocated there in a signal handler intead of in the kernel?
-A: (thanks to tglx) mmap() is not on the list of safe async
-   handler functions and even if mmap() would work it still
-   requires locking or nasty tricks to keep track of the
-   allocation state there.
-
-Having ruled out all of the userspace-only approaches for managing
-bounds tables that we could think of, we create them on demand
-in the kernel.
-
-
+greg k-h
