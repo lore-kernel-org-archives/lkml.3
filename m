@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460AbaILHl6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 03:41:58 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:49323 "EHLO
+	id S1752903AbaILHqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 03:46:16 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:36788 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645AbaILHl4 (ORCPT
+	with ESMTP id S1751652AbaILHqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 03:41:56 -0400
+	Fri, 12 Sep 2014 03:46:14 -0400
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: jay.xu@rock-chips.com
 X-FST-TO: robh+dt@kernel.org
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <884e79200d171b35b474bd3cf2f65c79>
+X-UNIQUE-TAG: <f0d2e10babd65f0a7c7dc3f2ca6e3dfb>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 1
 From: Jianqun <jay.xu@rock-chips.com>
@@ -27,9 +27,9 @@ To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: huangtao@rock-chips.com, cf@rock-chips.com
-Subject: [PATCH] ASoC: rockchip-max98090: add driver for rockchip board using a max98090
-Date: Fri, 12 Sep 2014 15:39:48 +0800
-Message-Id: <1410507588-15719-1-git-send-email-jay.xu@rock-chips.com>
+Subject: [PATCH 2/2] ASoC: rockchip-max98090: add driver for rockchip board using a max98090
+Date: Fri, 12 Sep 2014 15:43:27 +0800
+Message-Id: <1410507807-15795-1-git-send-email-jay.xu@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com>
 References: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com>
