@@ -1,106 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaILXhs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 19:37:48 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:57840 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaILXhq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 19:37:46 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
+	id S1752354AbaILXnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 19:43:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52584 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751475AbaILXny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 19:43:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,515,1406617200"; 
+   d="asc'?scan'208";a="602268516"
+From: "Rustad, Mark D" <mark.d.rustad@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mark Rustad <mark.d.rustad@intel.com>,
-        "Kirsher\, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+CC: Michal Nazarewicz <mina86@mina86.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Hagen Paul Pfeifer <hagen@jauu.net>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 2/2] kernel.h: use __COUNTER__ in min and max macros to avoid -Wshadow warnings
+        "Steven Rostedt" <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] kernel.h: use __COUNTER__ in min and max macros to
+ avoid -Wshadow warnings
+Thread-Topic: [PATCH 2/2] kernel.h: use __COUNTER__ in min and max macros to
+ avoid -Wshadow warnings
+Thread-Index: AQHPzgjr4XQh5i+Ls0OYfXxAxZdst5v+jk6AgAARxwA=
+Date: Fri, 12 Sep 2014 23:43:51 +0000
+Message-ID: <19E5FFA3-9630-4FD7-8E8A-2754D14AFEC2@intel.com>
+References: <1410471576-12053-1-git-send-email-mina86@mina86.com>
+ <1410471576-12053-2-git-send-email-mina86@mina86.com>
+ <20140912154013.47dad90e7519146c6da115e5@linux-foundation.org>
 In-Reply-To: <20140912154013.47dad90e7519146c6da115e5@linux-foundation.org>
-Organization: http://mina86.com/
-References: <1410471576-12053-1-git-send-email-mina86@mina86.com> <1410471576-12053-2-git-send-email-mina86@mina86.com> <20140912154013.47dad90e7519146c6da115e5@linux-foundation.org>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:140912:jeffrey.t.kirsher@intel.com::c2wZrh4nxI2VCW71:00000000000000000000000000000000001Gp3
-X-Hashcash: 1:20:140912:mark.d.rustad@intel.com::9sr6xfe9TLhSWe7A:000000000000000000000000000000000000002Bm9
-X-Hashcash: 1:20:140912:linux-kernel@vger.kernel.org::4Cv5s6b6o/dH6CWz:0000000000000000000000000000000002SdT
-X-Hashcash: 1:20:140912:rostedt@goodmis.org::wDbyJTO2YIhGN/eL:0000000000000000000000000000000000000000002oZb
-X-Hashcash: 1:20:140912:hagen@jauu.net::QH7kt2BKO9bn2Alu:0004ouw
-X-Hashcash: 1:20:140912:akpm@linux-foundation.org::db2wX8ph4wMVNMcx:0000000000000000000000000000000000004GJu
-Date: Sat, 13 Sep 2014 01:37:40 +0200
-Message-ID: <xa1tppf0xvej.fsf@mina86.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [134.134.176.172]
+Content-Type: multipart/signed;
+	boundary="Apple-Mail=_EF550AB8-022E-452B-8461-3B6C62B588F0";
+	protocol="application/pgp-signature"; micalg=pgp-sha1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 11 Sep 2014 23:39:36 +0200 Michal Nazarewicz <mina86@mina86.com> wrote:
->
+--Apple-Mail=_EF550AB8-022E-452B-8461-3B6C62B588F0
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain;
+	charset=us-ascii
+
+On Sep 12, 2014, at 3:40 PM, Andrew Morton <akpm@linux-foundation.org> =
+wrote:
+
+> On Thu, 11 Sep 2014 23:39:36 +0200 Michal Nazarewicz =
+<mina86@mina86.com> wrote:
+>=20
 >> Because min and max macros use the same variable names no matter
 >> how many times they are called (or how deep the nesting of their
 >> calls), each time min or max calls are nested, the same variables
 >> are declared.  This is especially noisy after min3 and max3 have
 >> been changed to nest min/max calls.
->> 
+>>=20
 >> Using __COUNTER__ solves the problem since each variable will get
 >> a unique number aadded to it.  The code will still work even if
 >> the compiler does not support __COUNTER__, but then the protection
 >> from shadow warning won't work.
->> 
+>>=20
 >> The same applies to min_t and max_t macros.
->> 
+>>=20
 >> ...
->>
+>>=20
 >> --- a/include/linux/kernel.h
 >> +++ b/include/linux/kernel.h
->> @@ -695,15 +695,27 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
->>  #endif /* CONFIG_TRACING */
->>  
->>  /*
->> + * Preprocessor magic generating unique identifiers to avoid -Wshadow warnings
->> + * used by min, max, min_t and max_t macros.  cnt is __COUNTER__, op is the
->> + * comparison operator; tx (ty) is type of the first (second) argument,
->> + * xx (yy) is name of a temporary variable to hold the first (second) argument,
+>> @@ -695,15 +695,27 @@ static inline void ftrace_dump(enum =
+ftrace_dump_mode oops_dump_mode) { }
+>> #endif /* CONFIG_TRACING */
+>>=20
+>> /*
+>> + * Preprocessor magic generating unique identifiers to avoid =
+-Wshadow warnings
+>> + * used by min, max, min_t and max_t macros.  cnt is __COUNTER__, op =
+is the
+>> + * comparison operator; tx (ty) is type of the first (second) =
+argument,
+>> + * xx (yy) is name of a temporary variable to hold the first =
+(second) argument,
 >> + * and x (y) is the first (second) argument.
 >> + */
 >> +#define _min_max_var(cnt, base) _mm_ ## cnt ## base
 >> +#define _min_max__(op, tx, xx, x, ty, yy, y) ({		\
->> +	tx xx = (x);					\
->> +	ty yy = (y);					\
->> +	(void) (&xx == &yy);				\
+>> +	tx xx =3D (x);					\
+>> +	ty yy =3D (y);					\
+>> +	(void) (&xx =3D=3D &yy);				\
 >> +	xx op yy ? xx : yy; })
 >> +#define _min_max_(cnt, op, tx, x, ty, y)		\
->> +	_min_max__(op, tx, _min_max_var(cnt, a), x, ty, _min_max_var(cnt, b), y)
+>> +	_min_max__(op, tx, _min_max_var(cnt, a), x, ty, =
+_min_max_var(cnt, b), y)
 >> +#define _min_max(...) _min_max_(__COUNTER__, __VA_ARGS__)
->
+>=20
 > The fact that __COUNTER__ is used in compiler-gcc4.h but not in
 > compiler-gcc3.h makes me suspicious about its availability?
 
-http://gcc.gnu.org/ml/gcc-patches/2007-05/msg01579.html so looks like it
-has 7 years.  But as the commit message says, the code will still work,
-even w/o working __COUNTER__.
+AFAICT not having __COUNTER__ simply means that the shadow warnings will =
+appear in W=3D2 builds,
+so it is no worse off than before. That is, __COUNTER__ will simply =
+expand as __COUNTER__. No
+error will result from this kind of use.
 
-> I do think that [1/2] made the code significantly worse-looking
+> I do think that [1/2] made the code significantly worse-looking and
+> this one is getting crazy.
 
-Oh?  I actually thought [1/2] makes it nicer by having a single place
-where the min/max logic is implemented.
+It is a little crazy, but I find that I would feel differently about it =
+if I had come up with
+the idea. Actually, I am really impressed with the discoveries that =
+arose from my original patch,
+including recognizing that the min3/max3 generated worse code than =
+nested macro calls. I had
+never considered that possibility.
 
-> and this one is getting crazy.  How useful is W=2 anyway?
+> How useful is W=3D2 anyway?  Has anyone found
+> a bug using it?
 
-I actually do agree with that.  I didn't have high hopes about getting
-this patch accepted, but wanted to send it out to show that it can be
-done, if it's really deemed useful.
+Yes. But it is really hard to find anything useful when my normal kernel =
+build throws 125000
+warnings - for completely expected things - in W=3D2 builds. We do =
+routinely build our drivers
+with W=3D12, but we have a special hack to ignore the large number of =
+warnings that the kernel
+include files generate, while still getting warnings from our driver's =
+code and include files.
+They do sometimes catch problems.
 
-> Has anyone found a bug using it?  The number of warnings in default
-> builds is already way too high :(
+> The number of warnings in default builds is already way
+> too high :(
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Do you mean the number of warnings enabled, or the number of warning =
+messages being generated?
+I am a fan of enabling lots of warnings, but it is not effective if =
+doing so emits thousands of
+messages. Back in the 2.4 kernel era, there was a time when I maintained =
+a MIPS-based kernel
+that built completely cleanly with way more warnings enabled than W=3D12 =
+uses today. It took work
+to get to that state, but we were able to maintain that for several =
+kernel versions for our particular environment. These days, the kernel =
+as a whole is in a much better state than we
+started with for that old 2.4 kernel.
+
+I'll say that there aren't really that many warnings that are the result =
+of nested min/max
+macros. There are *much* heavier hitters out there. For example "nested =
+externs" account for
+tens of thousands of warnings in W=3D2 builds. Such noise makes using =
+W=3D2 kind of ridiculous
+on the whole kernel. I'd like it to not be so ridiculous eventually. =
+Some 60 patches got my
+build down under 1400 W=3D2 warnings. Then I realized that I had pushed =
+that rock too far up the
+hill without getting feedback on what I was doing.
+
+I have been working on patches that add macros to allow disabling =
+certain warnings in select
+pieces of code. In that way the warning is silenced, but the macro =
+remains as a sign to the
+reader that there is something special going on. Unfortunately, those =
+macros fail miserably
+in the expansion of any macro called in the parameter of other macros, =
+as the compile time
+asserts sometimes are. And the compile time asserts make use of a nested =
+extern by design.
+
+It is enough to make me want to suggest dropping the nested externs =
+warning from W=3D2, but
+recognize that every nested extern that actually calls a function is a =
+redundant prototype
+declaration that could get to be inconsistent with the function it =
+calls. They have disentangled
+the include files some, but added a bit of risk and maintenance burden.
+
+This whole area is full of judgement calls, so people will disagree. =
+Hopefully any debate will
+be worthwhile. My first reaction to the patch above was that it was kind =
+of wild, but it does
+well and truly fix the problem and does no harm on compilers that don't =
+have __COUNTER__, so
+I am ok with it. Yes, I have compiled it.
+
+--=20
+Mark Rustad, Networking Division, Intel Corporation
+
+
+--Apple-Mail=_EF550AB8-022E-452B-8461-3B6C62B588F0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="signature.asc"
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Message signed with OpenPGP using GPGMail
+
+-----BEGIN PGP SIGNATURE-----
+Comment: GPGTools - http://gpgtools.org
+
+iQIcBAEBAgAGBQJUE4U3AAoJEDwO/+eO4+5uGr0P/2axQtwqdOnLxs01j62t4XBr
+5aMNfywA2joU4OXBNYVoiKbIZFbWFxyIxEych5z+KeClkG7UeIs76FcyVPjvvOMo
+KaICh0yhP1L47bgrxarEIxxGhe2LMmQw0rMvOS0FChHtnjnBaquEMBLdjhhGs3mA
+djUyV/8UThoVTECR4Bk+u2Y2N52oIO7ZwqrfmRAcOhAPUQSgYA0iUSMXMbFVkSZt
+svoXJhV47qmMGhGTaKhwUJSGeASKFek6ct/OAJplIF80yIwtjMqcY67ubBy7OTW/
+v4WsCSQe9ZErPXXUugX/dk1fNxEW8Oczb2iRXAzSFLNFOqYn3eXIgxOjoOL1CjGd
+OtgrATA6WEUbRIhtpv82z0E1CnRUCEesqvzLZ84IvEVExFWPXQsETWW+R3yNTqPX
+5cJK1hVAmkyEh4hzKM9L3mkftSAGIzCjSyDfTU+7KVSAs0u7kM3XHn2wn8w38TRq
++wC0HuhH2Ni68JsYRsmqHRC9hQSGuB9ZB+5RI5Dka9QZk7Mjvtt/MC6W7/tnkx3V
+WSvFMJobkxKp7rh5lopdcMwRKHkcv6yf+pS80ahVGhvWnwrD3FaXSPfuaqVWWXSa
+2T2VSW/P6FqD8gW7BXpVrmaYjmiGSo6r1YlRrOhGFcNYJAM3kErZtcZ3mx1B9Kkz
+uQB0ZAbEsrSO9QmU80gw
+=GHAf
+-----END PGP SIGNATURE-----
+
+--Apple-Mail=_EF550AB8-022E-452B-8461-3B6C62B588F0--
