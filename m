@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244AbaILKLw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:11:52 -0400
-Received: from exprod7og110.obsmtp.com ([64.18.2.173]:57330 "EHLO
-	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaILKG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:06:28 -0400
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Elliott@hp.com, Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v2 01/18][SCSI] mpt2sas: Added driver module parameter max_msix_vectors
-Date: Fri, 12 Sep 2014 15:35:16 +0530
-Message-Id: <1410516333-3678-2-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-References: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	id S1754268AbaILKMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:12:15 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:16972 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754255AbaILKMK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 06:12:10 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>,
+        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
+Date: Fri, 12 Sep 2014 18:05:04 +0800
+Subject: [PATCH] arm:free_initrd_mem should also free the memblock
+Thread-Topic: [PATCH] arm:free_initrd_mem should also free the memblock
+Thread-Index: Ac/OcQYK+iHegZKaRzKAERxvRcdQnQ==
+Message-ID: <35FD53F367049845BC99AC72306C23D103CDBFBFB028@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added driver module parameter max_msix_vectors. Using this
-module parameter the maximum number of MSI-X vectors could be set.
+this patch fix the memblock statics for memblock
+in file /sys/kernel/debug/memblock/reserved
+if we don't call memblock_free the initrd will still
+be marked as reserved, even they are freed.
 
-The number of MSI-X vectors used would be the minimum of MSI-X vectors
-supported by the HBA, the number of CPU cores and the value set to
-max_msix_vectors module parameters.
-
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ arch/arm/mm/init.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index 2f262be..982703a 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -80,6 +80,10 @@ static int msix_disable = -1;
- module_param(msix_disable, int, 0);
- MODULE_PARM_DESC(msix_disable, " disable msix routed interrupts (default=0)");
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 659c75d..7bc8e5b 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -638,6 +638,7 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+ 	if (!keep_initrd) {
+ 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+ 		free_reserved_area((void *)start, (void *)end, -1, "initrd");
++		memblock_free(__pa(start), end - start);
+ 	}
+ }
  
-+static int max_msix_vectors = -1;
-+module_param(max_msix_vectors, int, 0);
-+MODULE_PARM_DESC(max_msix_vectors, " max msix vectors ");
-+
- static int mpt2sas_fwfault_debug;
- MODULE_PARM_DESC(mpt2sas_fwfault_debug, " enable detection of firmware fault "
- 	"and halt firmware - (default=0)");
-@@ -1402,6 +1406,16 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
- 	ioc->reply_queue_count = min_t(int, ioc->cpu_count,
- 	    ioc->msix_vector_count);
- 
-+	if (max_msix_vectors > 0) {
-+		ioc->reply_queue_count = min_t(int, max_msix_vectors,
-+		    ioc->reply_queue_count);
-+		ioc->msix_vector_count = ioc->reply_queue_count;
-+	}
-+
-+	printk(MPT2SAS_INFO_FMT
-+	"MSI-X vectors supported: %d, no of cores: %d, max_msix_vectors: %d\n",
-+	 ioc->name, ioc->msix_vector_count, ioc->cpu_count, max_msix_vectors);
-+
- 	entries = kcalloc(ioc->reply_queue_count, sizeof(struct msix_entry),
- 	    GFP_KERNEL);
- 	if (!entries) {
 -- 
-2.0.2
-
+2.1.0
