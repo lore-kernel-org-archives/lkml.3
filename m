@@ -1,27 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaILUih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:38:37 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:52685 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbaILUig (ORCPT
+	id S1752907AbaILUjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:39:08 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:37232 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365AbaILUjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:38:36 -0400
+	Fri, 12 Sep 2014 16:39:06 -0400
 MIME-Version: 1.0
 In-Reply-To: <ghbnqkeh9k.fsf@quad.gouders.net>
-References: <ghiol53r9u.fsf@lena.gouders.net> <CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
- <ghwq9k3m6z.fsf@lena.gouders.net> <CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
- <ghioku5l29.fsf@lena.gouders.net> <CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
- <CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
- <ghppf15236.fsf@quad.gouders.net> <CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
- <ghd2b1svdw.fsf@quad.gouders.net> <CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
- <ghvbotd8es.fsf@quad.gouders.net> <ghzje5f5zt.fsf@lena.gouders.net> <ghbnqkeh9k.fsf@quad.gouders.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 12 Sep 2014 14:38:12 -0600
-Message-ID: <CAErSpo7knOrXNqimWXP0t7eGWYZhEhy1=i6358pBtk9Nd5RO8g@mail.gmail.com>
+References: <ghiol53r9u.fsf@lena.gouders.net>
+	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
+	<ghwq9k3m6z.fsf@lena.gouders.net>
+	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
+	<ghioku5l29.fsf@lena.gouders.net>
+	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
+	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
+	<ghppf15236.fsf@quad.gouders.net>
+	<CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
+	<ghd2b1svdw.fsf@quad.gouders.net>
+	<CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
+	<ghvbotd8es.fsf@quad.gouders.net>
+	<ghzje5f5zt.fsf@lena.gouders.net>
+	<ghbnqkeh9k.fsf@quad.gouders.net>
+Date: Fri, 12 Sep 2014 13:39:04 -0700
+X-Google-Sender-Auth: BiNzF_Y4sJ0M0fui9dYP7jzifeY
+Message-ID: <CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
 Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+From: Yinghai Lu <yinghai@kernel.org>
 To: Dirk Gouders <dirk@gouders.net>
-Cc: Yinghai Lu <yinghai@kernel.org>,
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andreas Noever <andreas.noever@gmail.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
@@ -31,9 +39,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 2:05 PM, Dirk Gouders <dirk@gouders.net> wrote:
-> ...
-> Yinghai,
+On Fri, Sep 12, 2014 at 1:05 PM, Dirk Gouders <dirk@gouders.net> wrote:
+> Dirk Gouders <dirk@gouders.net> writes:
 >
 > I now applied your patches and tested them:
 >
@@ -51,18 +58,11 @@ On Fri, Sep 12, 2014 at 2:05 PM, Dirk Gouders <dirk@gouders.net> wrote:
 > So, probably my test environment does not work as expected and I have to
 > test it on the failing machine.
 
-I think you probably did reproduce the problem, it's just that it
-wasn't fixed by bouncing the link.  What if you try the following:
+You need to rescan the pci devices.
+like
 
-    DEV=00:0a.0
-    setpci -s$DEV BRIDGE_CONTROL.W=0x0040
-    sleep 1
-    setpci -s$DEV BRIDGE_CONTROL.W=0x0000
-    sleep 1
-    echo 1 > /sys/bus/pci/rescan
+echo 1 >  /sys/bus/pci/rescan
 
-Thanks to your patch, we reconfigured the secondary bus number of
-bridge 00:0a.0.  The commands above should reset the FC device behind
-that bridge.  I suspect it will then respond when we rescan that bus.
+Thanks
 
-Bjorn
+Yinghai
