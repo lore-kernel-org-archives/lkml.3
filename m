@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649AbaILQDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:03:51 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:50969 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaILQDu convert rfc822-to-8bit (ORCPT
+	id S1752700AbaILQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:03:56 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:52308 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaILQDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:03:50 -0400
-Date: Fri, 12 Sep 2014 17:03:45 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "zlim.lnx@gmail.com" <zlim.lnx@gmail.com>,
-        "ast@plumgrid.com" <ast@plumgrid.com>,
+	Fri, 12 Sep 2014 12:03:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <5413173A.9070705@collabora.co.uk>
+References: <1410509864-10019-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1410509864-10019-2-git-send-email-javier.martinez@collabora.co.uk>
+	<CAD=FV=Vu3u=KfUNUpL6qcr0Fp42WbY8AqfOXyWr-D3KW1PucxA@mail.gmail.com>
+	<5413173A.9070705@collabora.co.uk>
+Date: Fri, 12 Sep 2014 09:03:50 -0700
+X-Google-Sender-Auth: i5UQMhGR77weEWgvxJIZZO4GOBI
+Message-ID: <CAD=FV=W3soOh2yf0pDcP0cXVGvxcbyTkO7z-1k0rV7DJAyhf=g@mail.gmail.com>
+Subject: Re: [PATCH RESEND v9 1/5] rtc: max77686: Allow the max77686 rtc to
+ wakeup the system
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Olof Johansson <olof@lixom.net>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        rtc-linux@googlegroups.com,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH arm64-next] net: bpf: arm64: address randomize and write
- protect JIT code
-Message-ID: <20140912160345.GF5532@arm.com>
-References: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
-MIME-Version: 1.0
-In-Reply-To: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Sep 2014 16:03:46.0718 (UTC) FILETIME=[22482BE0:01CFCEA3]
-X-MC-Unique: 114091217034801501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel,
+Hi,
 
-On Fri, Sep 12, 2014 at 08:11:37AM +0100, Daniel Borkmann wrote:
->  Will, Catalin, Dave, this is more or less a heads-up: when net-next and
->  arm64-next tree will get both merged into Linus' tree, we will run into
->  a 'silent' merge conflict until someone actually runs eBPF JIT on ARM64
->  and might notice (I presume) an oops when JIT is freeing bpf_prog. I'd
->  assume nobody actually _runs_ linux-next, but not sure about that though.
+On Fri, Sep 12, 2014 at 8:54 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> You are right, I completely forgot to check if that actually landed and to
+> remove the note in that case...
+>
+> Maybe when the set is applied the note can be removed from this patch or do
+> you think that I should re-spin the series for that?
 
-Some people do.
+This seems like something a maintainer could handle removing, but I
+guess it's totally up to the maintainer.  If I were the maintainer I'd
+rather remove the note myself then see a whole spin of a 5-part series
+just to fix this.  ;)
 
->  How do we handle this? Would I need to resend this patch when the time
->  comes or would you ARM64 guys take care of it automagically? ;)
 
-I think we could disable BPF for arm64 until -rc1 and re-enable it
-together with this patch.
-
-One comment below:
-
-> --- a/arch/arm64/net/bpf_jit_comp.c
-> +++ b/arch/arm64/net/bpf_jit_comp.c
-[...]
-> +static void jit_fill_hole(void *area, unsigned int size)
-> +{
-> +	/* Insert illegal UND instructions. */
-> +	u32 *ptr, fill_ins = 0xe7ffffff;
-
-On arm64 we don't have a guaranteed undefined instruction space (and
-Will tells me that on Thumb-2 for the 32-bit arm port it actually is a
-valid instruction, it seems that you used the same value).
-
-I think the only guaranteed way is to use the BRK #imm instruction but
-it requires some changes to the handling code as it is currently used
-for kgdb (unless you can use two instructions for filling in which could
-generate a NULL pointer access).
-
--- 
-Catalin
-
+-Doug
