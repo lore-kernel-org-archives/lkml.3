@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaILREP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:04:15 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:38224 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaILREO (ORCPT
+	id S1751488AbaILRFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:05:33 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:64492 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaILRFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:04:14 -0400
-Message-ID: <1410541450.66768.1.camel@leira.trondhjem.org>
-Subject: [GIT PULL] Please pull NFS client fixes
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Sep 2014 13:04:10 -0400
-Organization: Primary Data, Inc
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Sep 2014 13:05:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140912054640.GB2160@bbox>
+References: <1410468841-320-1-git-send-email-ddstreet@ieee.org> <20140912054640.GB2160@bbox>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 12 Sep 2014 13:05:11 -0400
+X-Google-Sender-Auth: cSPP97Z1oawBJIBd1pNRLJkIeLw
+Message-ID: <CALZtONAzfUaXpxPc83KA6edB21uptWWGZkWZZa5DTFi=CMpgXA@mail.gmail.com>
+Subject: Re: [PATCH 00/10] implement zsmalloc shrinking
+To: Minchan Kim <minchan@kernel.org>
+Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Sep 12, 2014 at 1:46 AM, Minchan Kim <minchan@kernel.org> wrote:
+> On Thu, Sep 11, 2014 at 04:53:51PM -0400, Dan Streetman wrote:
+>> Now that zswap can use zsmalloc as a storage pool via zpool, it will
+>> try to shrink its zsmalloc zs_pool once it reaches its max_pool_percent
+>> limit.  These patches implement zsmalloc shrinking.  The way the pool is
+>> shrunk is by finding a zspage and reclaiming it, by evicting each of its
+>> objects that is in use.
+>>
+>> Without these patches zswap, and any other future user of zpool/zsmalloc
+>> that attempts to shrink the zpool/zs_pool, will only get errors and will
+>> be unable to shrink its zpool/zs_pool.  With the ability to shrink, zswap
+>> can keep the most recent compressed pages in memory.
+>>
+>> Note that the design of zsmalloc makes it impossible to actually find the
+>> LRU zspage, so each class and fullness group is searched in a round-robin
+>> method to find the next zspage to reclaim.  Each fullness group orders its
+>> zspages in LRU order, so the oldest zspage is used for each fullness group.
+>>
+>
+> 1. Pz, Cc Mel who was strong against zswap with zsmalloc.
+> 2. I don't think LRU stuff should be in allocator layer. Exp, it's really
+>    hard to work well in zsmalloc design.
 
-The following changes since commit 2ce7598c9a453e0acd0e07be7be3f5eb39608ebd:
+I didn't add any LRU - the existing fullness group LRU ordering is
+already there.  And yes, the zsmalloc design prevents any real LRU
+ordering, beyond per-fullness-group LRU ordering.
 
-  Linux 3.17-rc4 (2014-09-07 16:09:43 -0700)
+> 3. If you want to add another writeback, make zswap writeback sane first.
+>    current implemenation(zswap store -> zbud reclaim -> zswap writeback,
+>    even) is really ugly.
 
-are available in the git repository at:
+why what's wrong with that?  how else can zbud/zsmalloc evict stored objects?
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.17-4
+> 4. Don't make zsmalloc complicated without any data(benefit, regression)
+>    I will never ack if you don't give any number and real usecase.
 
-for you to fetch changes up to 224ecbf5a674ec7da3a3b3ea21ca62e2853653fa:
+ok, i'll run performance tests then, but let me know if you see any
+technical problems with any of the patches before then.
 
-  pnfs: fix filelayout_retry_commit when idx > 0 (2014-09-10 12:43:45 -0700)
+thanks!
 
-----------------------------------------------------------------
-NFS client fixes for 3.17
-
-Highlights:
-- Fix a kernel warning when removing /proc/net/nfsfs
-- Revert commit 49a4bda22e18 due to Oopses
-- Fix a typo in the pNFS file layout commit code
-
-----------------------------------------------------------------
-Cong Wang (1):
-      nfs: fix kernel warning when removing proc entry
-
-Jeff Layton (1):
-      nfs: revert "nfs4: queue free_lock_state job submission to nfsiod"
-
-Weston Andros Adamson (1):
-      pnfs: fix filelayout_retry_commit when idx > 0
-
- fs/nfs/client.c                | 12 +++---------
- fs/nfs/filelayout/filelayout.c |  5 +++--
- fs/nfs/nfs4_fs.h               | 13 ++++++-------
- fs/nfs/nfs4state.c             | 24 ++++++------------------
- 4 files changed, 18 insertions(+), 36 deletions(-)
-
-
+>
+>> ---
+>>
+>> This patch set applies to linux-next.
+>>
+>> Dan Streetman (10):
+>>   zsmalloc: fix init_zspage free obj linking
+>>   zsmalloc: add fullness group list for ZS_FULL zspages
+>>   zsmalloc: always update lru ordering of each zspage
+>>   zsmalloc: move zspage obj freeing to separate function
+>>   zsmalloc: add atomic index to find zspage to reclaim
+>>   zsmalloc: add zs_ops to zs_pool
+>>   zsmalloc: add obj_handle_is_free()
+>>   zsmalloc: add reclaim_zspage()
+>>   zsmalloc: add zs_shrink()
+>>   zsmalloc: implement zs_zpool_shrink() with zs_shrink()
+>>
+>>  drivers/block/zram/zram_drv.c |   2 +-
+>>  include/linux/zsmalloc.h      |   7 +-
+>>  mm/zsmalloc.c                 | 314 +++++++++++++++++++++++++++++++++++++-----
+>>  3 files changed, 290 insertions(+), 33 deletions(-)
+>>
+>> --
+>> 1.8.3.1
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
