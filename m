@@ -1,73 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaILKKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:10:46 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:65105 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaILKKl (ORCPT
+	id S1754202AbaILKKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:10:45 -0400
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:49556 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880AbaILKGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:10:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140912095821.GB1930@katana>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
-	<9935938.eKOCvCAtLt@fb07-iapwap2>
-	<20140912083348.GA1289@katana>
-	<7627175.tG5quZH0VN@fb07-iapwap2>
-	<20140912095821.GB1930@katana>
-Date: Fri, 12 Sep 2014 12:10:37 +0200
-X-Google-Sender-Auth: V1MGY5w7ql1hIO_oWFCjHHQFtPI
-Message-ID: <CAMuHMdVi+6TXH68ddQ-UWfUif0Mv=ETu6dnpiy1Apike6zfAbg@mail.gmail.com>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Marc Dietrich <marvin24@gmx.de>, Linux I2C <linux-i2c@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 06:06:49 -0400
+From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
+X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+To: jejb@kernel.org, hch@infradead.org
+Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
+        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
+        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
+        Elliott@hp.com, Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Subject: [PATCH v2 08/18][SCSI] mpt2sas: Get IOC_FACTS information using handshake protocol only after HBA card gets into READY or Operational state.
+Date: Fri, 12 Sep 2014 15:35:23 +0530
+Message-Id: <1410516333-3678-9-git-send-email-Sreekanth.Reddy@avagotech.com>
+X-Mailer: git-send-email 2.0.2
+In-Reply-To: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+References: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+Driver initialization fails if driver tries to send IOC facts request message when the IOC is in reset or in a fault state.
 
-On Fri, Sep 12, 2014 at 11:58 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> 2) Slave mode is needed for board bringup
->
-> Some other components need a specific I2C slave to be present before
-> userspace is available, otherwise the system is unusable. This is IMO
-> then a hardware description and justifies DT entries:
+This patch will make sure that
+ 1.Driver to send IOC facts request message only if HBA is in operational or ready state.
+ 2.If IOC is in fault state, a diagnostic reset would be issued.
+ 3.If IOC is in reset state then driver will wait for 10 seconds to exit out of reset state.
+   If the HBA continues to be in reset state, then the HBA wouldn't be claimed by the driver.
 
-OK, I didn't think this case, which is similar to an external device requiring
-a GPIO to be at a specific level.
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c | 68 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
 
-> DT pseudocode:
->
->         i2c {
->                 compatible = "nvidia, tegra-i2c";
->
->                 ec-slave@42 {
->                         compatible = "nvidia, ax100-ec-slave";
->                         reg = <0x42>;
->                 };
->         };
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 51a83d7..32cd7fa 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -95,6 +95,9 @@ MODULE_PARM_DESC(disable_discovery, " disable discovery ");
+ static int
+ _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
+ 
++static int
++_base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag);
++
+ /**
+  * _scsih_set_fwfault_debug - global setting of ioc->fwfault_debug.
+  *
+@@ -3461,6 +3464,64 @@ _base_get_port_facts(struct MPT2SAS_ADAPTER *ioc, int port, int sleep_flag)
+ }
+ 
+ /**
++ * _base_wait_for_iocstate - Wait until the card is in READY or OPERATIONAL
++ * @ioc: per adapter object
++ * @timeout:
++ * @sleep_flag: CAN_SLEEP or NO_SLEEP
++ *
++ * Returns 0 for success, non-zero for failure.
++ */
++static int
++_base_wait_for_iocstate(struct MPT2SAS_ADAPTER *ioc, int timeout,
++	int sleep_flag)
++{
++	u32 ioc_state, doorbell;
++	int rc;
++
++	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
++	    __func__));
++
++	if (ioc->pci_error_recovery)
++		return 0;
++
++	doorbell = mpt2sas_base_get_iocstate(ioc, 0);
++	ioc_state = doorbell & MPI2_IOC_STATE_MASK;
++	dhsprintk(ioc, printk(MPT2SAS_INFO_FMT "%s: ioc_state(0x%08x)\n",
++	    ioc->name, __func__, ioc_state));
++
++	switch (ioc_state) {
++	case MPI2_IOC_STATE_READY:
++	case MPI2_IOC_STATE_OPERATIONAL:
++		return 0;
++	}
++
++	if (doorbell & MPI2_DOORBELL_USED) {
++		dhsprintk(ioc, printk(MPT2SAS_INFO_FMT
++		    "unexpected doorbell activ!e\n", ioc->name));
++		goto issue_diag_reset;
++	}
++
++	if (ioc_state == MPI2_IOC_STATE_FAULT) {
++		mpt2sas_base_fault_info(ioc, doorbell &
++		    MPI2_DOORBELL_DATA_MASK);
++		goto issue_diag_reset;
++	}
++
++	ioc_state = _base_wait_on_iocstate(ioc, MPI2_IOC_STATE_READY,
++	    timeout, sleep_flag);
++	if (ioc_state) {
++		printk(MPT2SAS_ERR_FMT
++		    "%s: failed going to ready state (ioc_state=0x%x)\n",
++		    ioc->name, __func__, ioc_state);
++		return -EFAULT;
++	}
++
++ issue_diag_reset:
++	rc = _base_diag_reset(ioc, sleep_flag);
++	return rc;
++}
++
++/**
+  * _base_get_ioc_facts - obtain ioc facts reply and save in ioc
+  * @ioc: per adapter object
+  * @sleep_flag: CAN_SLEEP or NO_SLEEP
+@@ -3478,6 +3539,13 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "%s\n", ioc->name,
+ 	    __func__));
+ 
++	r = _base_wait_for_iocstate(ioc, 10, sleep_flag);
++	if (r) {
++		printk(MPT2SAS_ERR_FMT "%s: failed getting to correct state\n",
++			ioc->name, __func__);
++		return r;
++	}
++
+ 	mpi_reply_sz = sizeof(Mpi2IOCFactsReply_t);
+ 	mpi_request_sz = sizeof(Mpi2IOCFactsRequest_t);
+ 	memset(&mpi_request, 0, mpi_request_sz);
+-- 
+2.0.2
 
-So distinguishing between drivers providing slave services (using slave
-mode) and drivers driving actual slave hardware (using master mode) is
-done based on the compatible-property.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
