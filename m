@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaILABP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 20:01:15 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:51149 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaILABM (ORCPT
+	id S1754222AbaILAGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 20:06:00 -0400
+Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:19744
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751120AbaILAF6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 20:01:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <54123697.4070804@codeaurora.org>
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
-	<20140911164710.GW6158@arm.com>
-	<5411D528.4050605@arm.com>
-	<CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
-	<5411DA67.2040402@arm.com>
-	<CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
-	<5411DF5D.8060906@arm.com>
-	<54123697.4070804@codeaurora.org>
-Date: Thu, 11 Sep 2014 17:01:11 -0700
-X-Google-Sender-Auth: cgATx4HY8_hCAi5kMVg71IPIYWQ
-Message-ID: <CAD=FV=XZVs-Xr72Rah1YwnTqB6Zj=ZwkvsEytctO9sp5dL=eCA@mail.gmail.com>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-From: Doug Anderson <dianders@chromium.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
+	Thu, 11 Sep 2014 20:05:58 -0400
+X-Greylist: delayed 81825 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Sep 2014 20:05:57 EDT
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "p.zabel@pengutronix.de" <p.zabel@pengutronix.de>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: RE: [PATCH v4 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Topic: [PATCH v4 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Thread-Index: AQHPx0uAsMVpf/rFTEKtVSbBVZb2Ypv7sPGAgABrVYCAAI7ywA==
+Date: Fri, 12 Sep 2014 00:05:55 +0000
+Message-ID: <600c4437f5d14520931aabc242fd69f4@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1409730511-16101-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730511-16101-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140911010709.GE3609@peterchendt> <20140911153119.GA11275@kwain>
+In-Reply-To: <20140911153119.GA11275@kwain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 0332AACBC3
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(199003)(51704005)(74502001)(76482001)(87936001)(108616004)(83072002)(92566001)(93886004)(77982001)(85306004)(90102001)(74662001)(99396002)(79102001)(46102001)(86362001)(97736003)(50986999)(85852003)(77096002)(31966008)(74316001)(4396001)(54356999)(76176999)(76576001)(101416001)(105586002)(106356001)(110136001)(2656002)(106116001)(83322001)(80022001)(33646002)(20776003)(21056001)(99286002)(81542001)(107046002)(64706001)(81342001)(66066001)(95666004)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0771;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
 
-On Thu, Sep 11, 2014 at 4:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 09/11/14 10:43, Marc Zyngier wrote:
->>>> If I was suicidal, I'd suggest you could pass a parameter to the command
->>>> line, interpreted by the timer code... But I since I'm not, let's
->>>> pretend I haven't said anything... ;-)
->>> I did this in the past (again, see Sonny's thread), but didn't
->>> consider myself knowledgeable to know if that was truly a good test:
->>>
->>>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>>        pr_info("DOUG: val is %#010x", val);
->>>        val |= (1 << 2);
->>>        asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
->>>        val = 0xffffffff;
->>>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>>        pr_info("DOUG: val is %#010x", val);
->>>
->>> The idea being that if you can make modifications to the SCR register
->>> (and see your changes take effect) then you must be in secure mode.
->>> In my case the first printout was 0x0 and the second was 0x4.
->> The main issue is when you're *not* in secure mode. It is likely that
->> this will explode badly. This is why I suggested something that is set
->> by the bootloader (after all. it knows which mode it is booted in), and
->> that the timer driver can use when the CPU comes up.
->
-> Where does this platform jump to when a CPU comes up? Is it
-> rockchip_secondary_startup()? I wonder if that path could have this
-> little bit of assembly to poke the cntvoff in monitor mode and then jump
-> to secondary_startup()? Before we boot any secondary CPUs we could also
-> read the cntvoff for CPU0 in the platform specific layer (where we know
-> we're running in secure mode) and then use that value as the "reset"
-> value for the secondaries. Or does this platform boot up in secure mode
-> some times and non-secure mode other times?
+ 
+> On Thu, Sep 11, 2014 at 09:07:10AM +0800, Peter Chen wrote:
+> > On Wed, Sep 03, 2014 at 09:48:26AM +0200, Antoine Tenart wrote:
+> > > +
+> > > +static int ci_hdrc_usb2_dt_probe(struct device *dev,
+> > > +				 struct ci_hdrc_platform_data *ci_pdata) {
+> > > +	ci_pdata->phy = of_phy_get(dev->of_node, 0);
+> > > +	if (IS_ERR(ci_pdata->phy)) {
+> > > +		if (PTR_ERR(ci_pdata->phy) == -EPROBE_DEFER)
+> > > +			return -EPROBE_DEFER;
+> > > +
+> > > +		/* PHY is optional */
+> > > +		ci_pdata->phy = NULL;
+> > > +	}
+> > > +
+> > > +	return 0;
+> > > +}
+> >
+> > You may also need to consider usb_phy case.
+> 
+> Don't we try using the generic PHY framework for new drivers?
+> 
+> Since there is no need for supporting an usb_phy case I don't think we have to
+> consider this case yet. And no doing so could encourage people to add PHY
+> drivers to the common PHY framework.
+> 
 
-I guess it would depend a whole lot on the bootloader, wouldn't it?
+If the common PHY framework is the only right way in future, you don't
+need to change it.
 
-With our current "get out of the way" bootloader, Linux always sees
-"Secure SVC".  ...but if someone decided to put a new bootloader on
-the system that wanted to do something different (implement security
-and boot the kernel in nonsecure HYP or implement a hypervisor and
-boot the kernel in nonsecure SVC) then everything would be different.
+> > > +
+> > > +	if (dev->of_node) {
+> > > +		ret = ci_hdrc_usb2_dt_probe(dev, ci_pdata);
+> > > +		if (ret)
+> > > +			return ret;
+> > > +	} else {
+> > > +		ret = dma_set_mask_and_coherent(&pdev->dev,
+> DMA_BIT_MASK(32));
+> > > +		if (ret)
+> > > +			return ret;
+> > > +	}
+> >
+> > You may need to do clk_disable_unprepare for above error cases.
+> 
+> Sure, I'll fix that.
+> 
+> > > +
+> > > +	ci_pdata->name = dev_name(&pdev->dev);
+> > > +
+> > > +	priv->ci_pdev = ci_hdrc_add_device(dev, pdev->resource,
+> > > +					   pdev->num_resources, ci_pdata);
+> > > +	if (IS_ERR(priv->ci_pdev)) {
+> > > +		ret = PTR_ERR(priv->ci_pdev);
+> > > +		if (ret != -EPROBE_DEFER)
+> > > +			dev_err(dev,
+> > > +				"failed to register ci_hdrc platform
+> device: %d\n",
+> > > +				ret);
+> >
+> > Why you don't want the error message for deferral probe?
+> 
+> A driver can return an EPROBE_DEFER error and still probe successfully later.
+> This would be confusing to have this kind of error message in this case. And
+> when a driver returns -EPROBE_DEFER, there is an error message already.
+> 
 
-If someone were to write a bootloader like that (or perhaps if we're
-running in a VM?) then I'd imagine that the whole world would be
-different.  Somehow this secure bootloader and/or hypervisor would
-_have_ to be involved in processor bringup and suspend/resume.  Since
-I've never looked at code implementing either of these I'm just making
-assumptions, though.
+OK, agree.
 
--Doug
+Peter
