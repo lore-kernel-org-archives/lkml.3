@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaILKJq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:09:46 -0400
-Received: from exprod7og110.obsmtp.com ([64.18.2.173]:37073 "EHLO
-	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaILKG7 (ORCPT
+	id S1754229AbaILKKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:10:46 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:65105 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108AbaILKKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:06:59 -0400
-From: Sreekanth Reddy <sreekanth.reddy@avagotech.com>
-X-Google-Original-From: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-To: jejb@kernel.org, hch@infradead.org
-Cc: martin.petersen@oracle.com, linux-scsi@vger.kernel.org,
-        JBottomley@Parallels.com, Sathya.Prakash@avagotech.com,
-        Nagalakshmi.Nandigama@avagotech.com, linux-kernel@vger.kernel.org,
-        Elliott@hp.com, Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Subject: [PATCH v2 09/18][SCSI] mpt2sas: Bump mpt2sas driver version to 18.100.00.00
-Date: Fri, 12 Sep 2014 15:35:24 +0530
-Message-Id: <1410516333-3678-10-git-send-email-Sreekanth.Reddy@avagotech.com>
-X-Mailer: git-send-email 2.0.2
-In-Reply-To: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-References: <1410516333-3678-1-git-send-email-Sreekanth.Reddy@avagotech.com>
+	Fri, 12 Sep 2014 06:10:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140912095821.GB1930@katana>
+References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
+	<9935938.eKOCvCAtLt@fb07-iapwap2>
+	<20140912083348.GA1289@katana>
+	<7627175.tG5quZH0VN@fb07-iapwap2>
+	<20140912095821.GB1930@katana>
+Date: Fri, 12 Sep 2014 12:10:37 +0200
+X-Google-Sender-Auth: V1MGY5w7ql1hIO_oWFCjHHQFtPI
+Message-ID: <CAMuHMdVi+6TXH68ddQ-UWfUif0Mv=ETu6dnpiy1Apike6zfAbg@mail.gmail.com>
+Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Marc Dietrich <marvin24@gmx.de>, Linux I2C <linux-i2c@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
+        Andrey Danin <danindrey@mail.ru>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bump mpt2sas driver version to 18.100.00.00.
+Hi Wolfram,
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@avagotech.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Fri, Sep 12, 2014 at 11:58 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> 2) Slave mode is needed for board bringup
+>
+> Some other components need a specific I2C slave to be present before
+> userspace is available, otherwise the system is unusable. This is IMO
+> then a hardware description and justifies DT entries:
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
-index 9bc8e0b..239f169 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -69,8 +69,8 @@
- #define MPT2SAS_DRIVER_NAME		"mpt2sas"
- #define MPT2SAS_AUTHOR	"LSI Corporation <DL-MPTFusionLinux@lsi.com>"
- #define MPT2SAS_DESCRIPTION	"LSI MPT Fusion SAS 2.0 Device Driver"
--#define MPT2SAS_DRIVER_VERSION		"17.100.00.00"
--#define MPT2SAS_MAJOR_VERSION		17
-+#define MPT2SAS_DRIVER_VERSION		"18.100.00.00"
-+#define MPT2SAS_MAJOR_VERSION		18
- #define MPT2SAS_MINOR_VERSION		100
- #define MPT2SAS_BUILD_VERSION		00
- #define MPT2SAS_RELEASE_VERSION		00
--- 
-2.0.2
+OK, I didn't think this case, which is similar to an external device requiring
+a GPIO to be at a specific level.
 
+> DT pseudocode:
+>
+>         i2c {
+>                 compatible = "nvidia, tegra-i2c";
+>
+>                 ec-slave@42 {
+>                         compatible = "nvidia, ax100-ec-slave";
+>                         reg = <0x42>;
+>                 };
+>         };
+
+So distinguishing between drivers providing slave services (using slave
+mode) and drivers driving actual slave hardware (using master mode) is
+done based on the compatible-property.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
