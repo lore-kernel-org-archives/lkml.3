@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaILSV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:21:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53606 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaILSV0 (ORCPT
+	id S1752138AbaILSVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:21:34 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.99]:18797 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751038AbaILSVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:21:26 -0400
-Date: Fri, 12 Sep 2014 11:21:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.17-rc5
-Message-ID: <20140912182125.GA2099@kroah.com>
+	Fri, 12 Sep 2014 14:21:31 -0400
+X-Env-Sender: Benjamin.Romer@unisys.com
+X-Msg-Ref: server-6.tower-201.messagelabs.com!1410546089!16943237!3
+X-Originating-IP: [192.61.61.104]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.3; banners=-,-,-
+X-VirusChecked: Checked
+Date: Fri, 12 Sep 2014 14:20:41 -0400
+To: <sudipm.mukherjee@gmail.com>, <David.Kershner@unisys.com>,
+        <Benjamin.Romer@unisys.com>
+CC: <sudipm.mukherjee@gmail.com>, <SParMaintainer@unisys.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <devel@driverdev.osuosl.org>
+Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
+ context imbalance
+References: <1410524846-10732-1-git-send-email-sudipm.mukherjee@gmail.com>
+In-Reply-To: <1410524846-10732-1-git-send-email-sudipm.mukherjee@gmail.com>
+User-Agent: Heirloom mailx 12.5 6/20/10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <E1XSVSb-0001dp-Ro@ustr-romerbm-3.na.uis.unisys.com>
+From: Ben Romer <benjamin.romer@unisys.com>
+X-OriginalArrivalTime: 12 Sep 2014 18:21:29.0134 (UTC) FILETIME=[5F10CCE0:01CFCEB6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+Sudip Mukherjee <sudipm.mukherjee@gmail.com> wrote:
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+> fixed sparse warning : context imbalance in 'destroy_device'
+>                         unexpected unlock
+> this patch will generate warning from checkpatch for
+> lines over 80 character , but since those are user-visible strings
+> so it was not modified.
+>
+> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 
-are available in the git repository at:
+I tested this patch and it looks good also. Thanks! :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.17-rc5
+-- Ben
 
-for you to fetch changes up to 3ea411c56ef58a1827cf06fdcdeb14fa9265be09:
-
-  android: fix reference leak in sync_fence_create (2014-09-08 13:42:00 -0700)
-
-----------------------------------------------------------------
-Staging driver fixes for 3.17-rc5
-
-Here are 3 tiny staging driver fixes for 3.17-rc5.  Two are fixes for
-the imx-drm driver, resolving issues that have been reported.  The other
-is a memory leak fix for the Android sync driver, due to changes that
-went into 3.17-rc1.
-
-All have been in linux-next for a while.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Maarten Lankhorst (1):
-      android: fix reference leak in sync_fence_create
-
-Russell King (2):
-      imx-drm: ipuv3-plane: fix ipu_plane_dpms()
-      imx-drm: imx-ldb: fix NULL pointer in imx_ldb_unbind()
-
- drivers/staging/android/sync.c        | 1 -
- drivers/staging/imx-drm/imx-ldb.c     | 3 +++
- drivers/staging/imx-drm/ipuv3-plane.c | 3 ++-
- 3 files changed, 5 insertions(+), 2 deletions(-)
+Tested-by: Benjamin Romer <benjamin.romer@unisys.com>
+Acked-by: Benjamin Romer <benjamin.romer@unisys.com>
