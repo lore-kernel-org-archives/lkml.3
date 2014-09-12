@@ -1,92 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaILJBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:01:31 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:41937 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaILJB0 (ORCPT
+	id S1753480AbaILJDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:03:17 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:49978 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaILJDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:01:26 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH/RFC 1/2] lib: string: Remove duplicated function
-Organization: D03
-References: <1409124962-11527-1-git-send-email-linux@rasmusvillemoes.dk>
-	<1409124962-11527-2-git-send-email-linux@rasmusvillemoes.dk>
-	<20140911152241.22ce7f1ebecef7ce7e01b112@linux-foundation.org>
-X-Hashcash: 1:20:140912:ak@linux.intel.com::PghHT6Kl/ESBk/9w:00000000000000000000000000000000000000000000HGU
-X-Hashcash: 1:20:140912:linux-kernel@vger.kernel.org::5uJqo5igtiOaIVni:0000000000000000000000000000000001RMG
-X-Hashcash: 1:20:140912:dan.carpenter@oracle.com::8/ItIgjkserP804T:00000000000000000000000000000000000001zJh
-X-Hashcash: 1:20:140912:hpa@linux.intel.com::WgL2vOCnrMsNtllP:0000000000000000000000000000000000000000002ppk
-X-Hashcash: 1:20:140912:akpm@linux-foundation.org::Rs5a91ZjQNpA4vKQ:0000000000000000000000000000000000003d/h
-X-Hashcash: 1:20:140912:grant.likely@linaro.org::A7EuDIABJh49xKPh:000000000000000000000000000000000000005vWM
-Date: Fri, 12 Sep 2014 11:01:17 +0200
-In-Reply-To: <20140911152241.22ce7f1ebecef7ce7e01b112@linux-foundation.org>
-	(Andrew Morton's message of "Thu, 11 Sep 2014 15:22:41 -0700")
-Message-ID: <87d2b1jjqa.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 12 Sep 2014 05:03:12 -0400
+Date: Fri, 12 Sep 2014 13:02:58 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] memcg: add threshold for anon rss
+Message-ID: <20140912090258.GI4151@esperanza>
+References: <cover.1410447097.git.vdavydov@parallels.com>
+ <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
+ <54124AFC.6020700@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <54124AFC.6020700@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
+On Fri, Sep 12, 2014 at 10:23:08AM +0900, Kamezawa Hiroyuki wrote:
+> (2014/09/12 0:41), Vladimir Davydov wrote:
+> > Though hard memory limits suit perfectly for sand-boxing, they are not
+> > that efficient when it comes to partitioning a server's resources among
+> > multiple containers. The point is a container consuming a particular
+> > amount of memory most of time may have infrequent spikes in the load.
+> > Setting the hard limit to the maximal possible usage (spike) will lower
+> > server utilization while setting it to the "normal" usage will result in
+> > heavy lags during the spikes.
+> > 
+> > To handle such scenarios soft limits were introduced. The idea is to
+> > allow a container to breach the limit freely when there's enough free
+> > memory, but shrink it back to the limit aggressively on global memory
+> > pressure. However, the concept of soft limits is intrinsically unsafe
+> > by itself: if a container eats too much anonymous memory, it will be
+> > very slow or even impossible (if there's no swap) to reclaim its
+> > resources back to the limit. As a result the whole system will be
+> > feeling bad until it finally realizes the culprit must die.
+> > 
+> > Currently we have no way to react to anonymous memory + swap usage
+> > growth inside a container: the memsw counter accounts both anonymous
+> > memory and file caches and swap, so we have neither a limit for
+> > anon+swap nor a threshold notification. Actually, memsw is totally
+> > useless if one wants to make full use of soft limits: it should be set
+> > to a very large value or infinity then, otherwise it just makes no
+> > sense.
+> > 
+> > That's one of the reasons why I think we should replace memsw with a
+> > kind of anonsw so that it'd account only anon+swap. This way we'd still
+> > be able to sand-box apps, but it'd also allow us to avoid nasty
+> > surprises like the one I described above. For more arguments for and
+> > against this idea, please see the following thread:
+> > 
+> > http://www.spinics.net/lists/linux-mm/msg78180.html
+> > 
+> > There's an alternative to this approach backed by Kamezawa. He thinks
+> > that OOM on anon+swap limit hit is a no-go and proposes to use memory
+> > thresholds for it. I still strongly disagree with the proposal, because
+> > it's unsafe (what if the userspace handler won't react in time?).
+> > Nevertheless, I implement his idea in this RFC. I hope this will fuel
+> > the debate, because sadly enough nobody seems to care about this
+> > problem.
+> > 
+> > So this patch adds the "memory.rss" file that shows the amount of
+> > anonymous memory consumed by a cgroup and the event to handle threshold
+> > notifications coming from it. The notification works exactly in the same
+> > fashion as the existing memory/memsw usage notifications.
+> > 
+> >
+> 
+> So, now, you know you can handle "threshould".
+> 
+> If you want to implement "automatic-oom-killall-in-a-contanier-threshold-in-kernel",
+> I don't have any objections.
+> 
+> What you want is not limit, you want a trigger for killing process.
+> Threshold + Kill is enough, using res_counter for that is overspec.
 
-> On Wed, 27 Aug 2014 09:36:01 +0200 Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
->
->> lib/string.c contains two functions, strnicmp and strncasecmp, which
->> do roughly the same thing, namely compare two strings
->> case-insensitively up to a given bound. They have slightly different
->> implementations, but the only important difference is that strncasecmp
->> doesn't handle len==0 appropriately; it effectively becomes strcasecmp
->> in that case. strnicmp correctly says that two strings are always
->> equal in their first 0 characters.
->> 
->> strncasecmp is the POSIX name for this functionality. So rename the
->> non-broken function to the standard name. To minimize the impact on
->> the rest of the kernel (and since both are exported to modules), make
->> strnicmp a wrapper for strncasecmp.
->
-> I guess it's safe to assume that nobody was depending on the
-> strncasecmp() bug.
+I'm still unsure if it's always enough. Handing this job out to the
+userspace may work in 90% percent of situations, but fail under some
+circumstances (a bunch of containers go mad so that the userspace daemon
+doesn't react in time). Can the admin take a risk like that?
 
-Hm, I thought so as well, but decided to double check. I found one minor
-issue; maybe Tejun can tell if my analysis is correct.
+> You don't need res_counter and don't need to break other guy's use case.
 
-In drivers/ata/libata-core.c, ata_parse_force_one(), it is not
-immediately clear to me that val cannot end up being the empty
-string. With the buggy strncasecmp, the continue branch is always
-followed (since fp->name is not empty); however, with strncasecmp with
-the correct semantics, the empty string is obviously a prefix of every
-fp->name. So even though the comment says that "1.5" is an ok
-abbreviation of "1.5Gbps", I don't think the intention was to allow ""
-to be an abbreviation of everything. Anyway, the worst that can happen
-seems to be that "ambigious value" [sic] becomes the *reason instead
-of "unknown value".
+This is the time when we have a great chance to rework the user
+interface. That's why I started this thread.
 
-I may have overlooked similar issues; my checking was basically "is the
-length parameter an explicit non-zero number or strlen() of some static
-data in some table (where I assume empty strings do not lurk)".
-
-> Yes, please prepare the strnicmp()->strncasecmp() patches and let's get
-> them merged up.  After a kernel release or two we can zap the
-> back-compat wrapper.
-
-Will do. Is there a fixed SHA1 I can refer to in the commit logs?
-
-> And it isn't just "out of tree modules" that we should be concerned
-> about - we'll commonly find that "to be in tree" code is using
-> interfaces which we're trying to alter or remove, so it takes a cycle
-> or two to get everything propagated.  Most of this code can be found in
-> linux-next.
-
-Would it make sense to add a checkpatch warning to ensure new users
-are not introduced, and then remove it when the wrapper is also removed?
+>From what I read from the comment to the memsw patch and slides,
+anon+swap wasn't even considered as an alternative to anon+cache+swap.
+The only question raised was "Why not a separate swap limit, why
+mem+swap?". It was clearly answered "no need to recharge on swap
+in/out", but anon+swap isn't a bit worse in this respect - caches can't
+migrate from swap to mem anyway. I guess nobody considered the anon+swap
+alternative, simply because there was no notion of soft limits at that
+time, so mem+swap had no problems. But today the things have changed, so
+let's face it now. Why not anon+swap?
 
 Thanks,
-Rasmus
+Vladimir
