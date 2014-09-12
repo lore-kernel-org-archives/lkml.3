@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761AbaILNQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:16:08 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:58625 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754674AbaILNP0 (ORCPT
+	id S1754778AbaILNQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:16:32 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:36613 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610AbaILNP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Sep 2014 09:15:26 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -13,9 +13,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
 Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 2/4] irqchip: renesas-intc-irqpin: Add minimal runtime PM support
-Date: Fri, 12 Sep 2014 15:15:18 +0200
-Message-Id: <1410527720-18061-3-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH 1/4] irqchip: renesas-intc-irqpin: Add helper variable dev = &pdev->dev
+Date: Fri, 12 Sep 2014 15:15:17 +0200
+Message-Id: <1410527720-18061-2-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
 References: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
@@ -23,123 +23,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just enough to let pm_clk_*() enable the functional clock, and
-manage it for suspend/resume, if present.
-Before, it was assumed enabled by the bootloader or reset state.
-
-To prevent the clock from being disabled while the module is needed for
-wake-up, implement irq_chip.irq_set_wake(), which increments/decrements
-the clock's enable_count when needed.
-
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- drivers/irqchip/irq-renesas-intc-irqpin.c | 38 +++++++++++++++++++++++++++----
- 1 file changed, 34 insertions(+), 4 deletions(-)
+ drivers/irqchip/irq-renesas-intc-irqpin.c | 45 +++++++++++++++----------------
+ 1 file changed, 22 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/irqchip/irq-renesas-intc-irqpin.c b/drivers/irqchip/irq-renesas-intc-irqpin.c
-index a6b205b72c9b..542e850f4946 100644
+index a9efceb0c4a0..a6b205b72c9b 100644
 --- a/drivers/irqchip/irq-renesas-intc-irqpin.c
 +++ b/drivers/irqchip/irq-renesas-intc-irqpin.c
-@@ -17,6 +17,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
+@@ -329,7 +329,8 @@ static struct irq_domain_ops intc_irqpin_irq_domain_ops = {
  
-+#include <linux/clk.h>
- #include <linux/init.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-@@ -30,6 +31,7 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/platform_data/irq-renesas-intc-irqpin.h>
-+#include <linux/pm_runtime.h>
- 
- #define INTC_IRQPIN_MAX 8 /* maximum 8 interrupts per driver instance */
- 
-@@ -75,6 +77,7 @@ struct intc_irqpin_priv {
- 	struct platform_device *pdev;
- 	struct irq_chip irq_chip;
- 	struct irq_domain *irq_domain;
-+	struct clk *clk;
- 	bool shared_irqs;
- 	u8 shared_irq_mask;
- };
-@@ -270,6 +273,21 @@ static int intc_irqpin_irq_set_type(struct irq_data *d, unsigned int type)
- 				     value ^ INTC_IRQ_SENSE_VALID);
- }
- 
-+static int intc_irqpin_irq_set_wake(struct irq_data *d, unsigned int on)
-+{
-+	struct intc_irqpin_priv *p = irq_data_get_irq_chip_data(d);
-+
-+	if (!p->clk)
-+		return 0;
-+
-+	if (on)
-+		clk_enable(p->clk);
-+	else
-+		clk_disable(p->clk);
-+
-+	return 0;
-+}
-+
- static irqreturn_t intc_irqpin_irq_handler(int irq, void *dev_id)
+ static int intc_irqpin_probe(struct platform_device *pdev)
  {
- 	struct intc_irqpin_irq *i = dev_id;
-@@ -346,8 +364,7 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
+-	struct renesas_intc_irqpin_config *pdata = pdev->dev.platform_data;
++	struct device *dev = &pdev->dev;
++	struct renesas_intc_irqpin_config *pdata = dev->platform_data;
+ 	struct intc_irqpin_priv *p;
+ 	struct intc_irqpin_iomem *i;
+ 	struct resource *io[INTC_IRQPIN_REG_NR];
+@@ -337,14 +338,14 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 	struct irq_chip *irq_chip;
+ 	void (*enable_fn)(struct irq_data *d);
+ 	void (*disable_fn)(struct irq_data *d);
+-	const char *name = dev_name(&pdev->dev);
++	const char *name = dev_name(dev);
+ 	int ref_irq;
+ 	int ret;
+ 	int k;
+ 
+-	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
++	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
  	if (!p) {
- 		dev_err(dev, "failed to allocate driver data\n");
--		ret = -ENOMEM;
--		goto err0;
-+		return -ENOMEM;
+-		dev_err(&pdev->dev, "failed to allocate driver data\n");
++		dev_err(dev, "failed to allocate driver data\n");
+ 		ret = -ENOMEM;
+ 		goto err0;
  	}
- 
- 	/* deal with driver instance configuration */
-@@ -365,6 +382,15 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	p->pdev = pdev;
- 	platform_set_drvdata(pdev, p);
- 
-+	p->clk = devm_clk_get(dev, NULL);
-+	if (IS_ERR(p->clk)) {
-+		dev_warn(dev, "unable to get clock\n");
-+		p->clk = NULL;
-+	}
-+
-+	pm_runtime_enable(dev);
-+	pm_runtime_get_sync(dev);
-+
- 	/* get hold of manadatory IOMEM */
+@@ -353,9 +354,9 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 	if (pdata) {
+ 		memcpy(&p->config, pdata, sizeof(*pdata));
+ 	} else {
+-		of_property_read_u32(pdev->dev.of_node, "sense-bitfield-width",
++		of_property_read_u32(dev->of_node, "sense-bitfield-width",
+ 				     &p->config.sense_bitfield_width);
+-		p->config.control_parent = of_property_read_bool(pdev->dev.of_node,
++		p->config.control_parent = of_property_read_bool(dev->of_node,
+ 								 "control-parent");
+ 	}
+ 	if (!p->config.sense_bitfield_width)
+@@ -368,7 +369,7 @@ static int intc_irqpin_probe(struct platform_device *pdev)
  	for (k = 0; k < INTC_IRQPIN_REG_NR; k++) {
  		io[k] = platform_get_resource(pdev, IORESOURCE_MEM, k);
-@@ -456,7 +482,8 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- 	irq_chip->irq_mask = disable_fn;
- 	irq_chip->irq_unmask = enable_fn;
+ 		if (!io[k]) {
+-			dev_err(&pdev->dev, "not enough IOMEM resources\n");
++			dev_err(dev, "not enough IOMEM resources\n");
+ 			ret = -EINVAL;
+ 			goto err0;
+ 		}
+@@ -386,7 +387,7 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 
+ 	p->number_of_irqs = k;
+ 	if (p->number_of_irqs < 1) {
+-		dev_err(&pdev->dev, "not enough IRQ resources\n");
++		dev_err(dev, "not enough IRQ resources\n");
+ 		ret = -EINVAL;
+ 		goto err0;
+ 	}
+@@ -407,15 +408,15 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 			i->write = intc_irqpin_write32;
+ 			break;
+ 		default:
+-			dev_err(&pdev->dev, "IOMEM size mismatch\n");
++			dev_err(dev, "IOMEM size mismatch\n");
+ 			ret = -EINVAL;
+ 			goto err0;
+ 		}
+ 
+-		i->iomem = devm_ioremap_nocache(&pdev->dev, io[k]->start,
++		i->iomem = devm_ioremap_nocache(dev, io[k]->start,
+ 						resource_size(io[k]));
+ 		if (!i->iomem) {
+-			dev_err(&pdev->dev, "failed to remap IOMEM\n");
++			dev_err(dev, "failed to remap IOMEM\n");
+ 			ret = -ENXIO;
+ 			goto err0;
+ 		}
+@@ -457,34 +458,32 @@ static int intc_irqpin_probe(struct platform_device *pdev)
  	irq_chip->irq_set_type = intc_irqpin_irq_set_type;
--	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
-+	irq_chip->irq_set_wake = intc_irqpin_irq_set_wake;
-+	irq_chip->flags	= IRQCHIP_MASK_ON_SUSPEND;
+ 	irq_chip->flags	= IRQCHIP_SKIP_SET_WAKE | IRQCHIP_MASK_ON_SUSPEND;
  
- 	p->irq_domain = irq_domain_add_simple(dev->of_node,
+-	p->irq_domain = irq_domain_add_simple(pdev->dev.of_node,
++	p->irq_domain = irq_domain_add_simple(dev->of_node,
  					      p->number_of_irqs,
-@@ -508,6 +535,8 @@ static int intc_irqpin_probe(struct platform_device *pdev)
- err1:
- 	irq_domain_remove(p->irq_domain);
- err0:
-+	pm_runtime_put(dev);
-+	pm_runtime_disable(dev);
- 	return ret;
- }
+ 					      p->config.irq_base,
+ 					      &intc_irqpin_irq_domain_ops, p);
+ 	if (!p->irq_domain) {
+ 		ret = -ENXIO;
+-		dev_err(&pdev->dev, "cannot initialize irq domain\n");
++		dev_err(dev, "cannot initialize irq domain\n");
+ 		goto err0;
+ 	}
  
-@@ -516,7 +545,8 @@ static int intc_irqpin_remove(struct platform_device *pdev)
- 	struct intc_irqpin_priv *p = platform_get_drvdata(pdev);
+ 	if (p->shared_irqs) {
+ 		/* request one shared interrupt */
+-		if (devm_request_irq(&pdev->dev, p->irq[0].requested_irq,
++		if (devm_request_irq(dev, p->irq[0].requested_irq,
+ 				intc_irqpin_shared_irq_handler,
+ 				IRQF_SHARED, name, p)) {
+-			dev_err(&pdev->dev, "failed to request low IRQ\n");
++			dev_err(dev, "failed to request low IRQ\n");
+ 			ret = -ENOENT;
+ 			goto err1;
+ 		}
+ 	} else {
+ 		/* request interrupts one by one */
+ 		for (k = 0; k < p->number_of_irqs; k++) {
+-			if (devm_request_irq(&pdev->dev,
+-					p->irq[k].requested_irq,
+-					intc_irqpin_irq_handler,
+-					0, name, &p->irq[k])) {
+-				dev_err(&pdev->dev,
+-					"failed to request low IRQ\n");
++			if (devm_request_irq(dev, p->irq[k].requested_irq,
++					     intc_irqpin_irq_handler, 0, name,
++					     &p->irq[k])) {
++				dev_err(dev, "failed to request low IRQ\n");
+ 				ret = -ENOENT;
+ 				goto err1;
+ 			}
+@@ -495,12 +494,12 @@ static int intc_irqpin_probe(struct platform_device *pdev)
+ 	for (k = 0; k < p->number_of_irqs; k++)
+ 		intc_irqpin_mask_unmask_prio(p, k, 0);
  
- 	irq_domain_remove(p->irq_domain);
--
-+	pm_runtime_put(&pdev->dev);
-+	pm_runtime_disable(&pdev->dev);
- 	return 0;
- }
+-	dev_info(&pdev->dev, "driving %d irqs\n", p->number_of_irqs);
++	dev_info(dev, "driving %d irqs\n", p->number_of_irqs);
+ 
+ 	/* warn in case of mismatch if irq base is specified */
+ 	if (p->config.irq_base) {
+ 		if (p->config.irq_base != p->irq[0].domain_irq)
+-			dev_warn(&pdev->dev, "irq base mismatch (%d/%d)\n",
++			dev_warn(dev, "irq base mismatch (%d/%d)\n",
+ 				 p->config.irq_base, p->irq[0].domain_irq);
+ 	}
  
 -- 
 1.9.1
