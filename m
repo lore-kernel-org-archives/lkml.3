@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaILOsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:48:17 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:47386 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbaILOsO (ORCPT
+	id S1752790AbaILOsN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:48:13 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45260 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaILOsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:48:14 -0400
+	Fri, 12 Sep 2014 10:48:11 -0400
 From: Ming Lei <ming.lei@canonical.com>
 To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canonical.com>,
-        Ming Lei <ming.lei@canoical.com>
-Subject: [PATCH v2 8/9] blk-mq: handle failure path for initializing hctx
-Date: Fri, 12 Sep 2014 22:47:32 +0800
-Message-Id: <1410533253-8045-9-git-send-email-ming.lei@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH v2 7/9] block: introduce 'blk_mq_ctx' parameter to blk_get_flush_queue
+Date: Fri, 12 Sep 2014 22:47:31 +0800
+Message-Id: <1410533253-8045-8-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410533253-8045-1-git-send-email-ming.lei@canonical.com>
 References: <1410533253-8045-1-git-send-email-ming.lei@canonical.com>
@@ -21,167 +20,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Failure of initializing one hctx isn't handled, so this patch
-introduces blk_mq_init_hctx() and its pair to handle it explicitly.
-Also this patch makes code cleaner.
+This patch adds 'blk_mq_ctx' parameter to blk_get_flush_queue(),
+so that this function can find the corresponding blk_flush_queue
+bound with current mq context since the flush queue will become
+per hw-queue.
 
-Signed-off-by: Ming Lei <ming.lei@canoical.com>
+For legacy queue, the parameter can be simply 'NULL'.
+
+For multiqueue case, the parameter should be set as the context
+from which the related request is originated. With this context
+info, the hw queue and related flush queue can be found easily.
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- block/blk-mq.c |  114 ++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 69 insertions(+), 45 deletions(-)
+ block/blk-core.c  |    2 +-
+ block/blk-flush.c |   11 +++++------
+ block/blk-mq.c    |    3 ++-
+ block/blk.h       |    4 ++--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 07c3e0a..afb0dfe 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1527,6 +1527,20 @@ static int blk_mq_hctx_notify(void *data, unsigned long action,
- 	return NOTIFY_OK;
- }
+diff --git a/block/blk-core.c b/block/blk-core.c
+index d278a30..40a5d37 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -390,7 +390,7 @@ static void __blk_drain_queue(struct request_queue *q, bool drain_all)
+ 		 * be drained.  Check all the queues and counters.
+ 		 */
+ 		if (drain_all) {
+-			struct blk_flush_queue *fq = blk_get_flush_queue(q);
++			struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
+ 			drain |= !list_empty(&q->queue_head);
+ 			for (i = 0; i < 2; i++) {
+ 				drain |= q->nr_rqs[i];
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 682b46e..f8cc690 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -225,7 +225,7 @@ static void flush_end_io(struct request *flush_rq, int error)
+ 	bool queued = false;
+ 	struct request *rq, *n;
+ 	unsigned long flags = 0;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q, flush_rq->mq_ctx);
  
-+static void blk_mq_exit_hctx(struct request_queue *q,
-+		struct blk_mq_tag_set *set,
-+		struct blk_mq_hw_ctx *hctx, unsigned int hctx_idx)
-+{
-+	blk_mq_tag_idle(hctx);
-+
-+	if (set->ops->exit_hctx)
-+		set->ops->exit_hctx(hctx, hctx_idx);
-+
-+	blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
-+	kfree(hctx->ctxs);
-+	blk_mq_free_bitmap(&hctx->ctx_map);
-+}
-+
- static void blk_mq_exit_hw_queues(struct request_queue *q,
- 		struct blk_mq_tag_set *set, int nr_queue)
+ 	if (q->mq_ops) {
+ 		spin_lock_irqsave(&fq->mq_flush_lock, flags);
+@@ -321,7 +321,7 @@ static bool blk_kick_flush(struct request_queue *q, struct blk_flush_queue *fq)
+ static void flush_data_end_io(struct request *rq, int error)
  {
-@@ -1536,17 +1550,8 @@ static void blk_mq_exit_hw_queues(struct request_queue *q,
- 	queue_for_each_hw_ctx(q, hctx, i) {
- 		if (i == nr_queue)
- 			break;
--
--		blk_mq_tag_idle(hctx);
--
--		if (set->ops->exit_hctx)
--			set->ops->exit_hctx(hctx, i);
--
--		blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
--		kfree(hctx->ctxs);
--		blk_mq_free_bitmap(&hctx->ctx_map);
-+		blk_mq_exit_hctx(q, set, hctx, i);
- 	}
--
- }
- 
- static void blk_mq_free_hw_queues(struct request_queue *q,
-@@ -1561,53 +1566,72 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
- 	}
- }
- 
--static int blk_mq_init_hw_queues(struct request_queue *q,
--		struct blk_mq_tag_set *set)
-+static int blk_mq_init_hctx(struct request_queue *q,
-+		struct blk_mq_tag_set *set,
-+		struct blk_mq_hw_ctx *hctx, unsigned hctx_idx)
- {
--	struct blk_mq_hw_ctx *hctx;
--	unsigned int i;
-+	int node;
-+
-+	node = hctx->numa_node;
-+	if (node == NUMA_NO_NODE)
-+		node = hctx->numa_node = set->numa_node;
-+
-+	INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
-+	INIT_DELAYED_WORK(&hctx->delay_work, blk_mq_delay_work_fn);
-+	spin_lock_init(&hctx->lock);
-+	INIT_LIST_HEAD(&hctx->dispatch);
-+	hctx->queue = q;
-+	hctx->queue_num = hctx_idx;
-+	hctx->flags = set->flags;
-+	hctx->cmd_size = set->cmd_size;
-+
-+	blk_mq_init_cpu_notifier(&hctx->cpu_notifier,
-+					blk_mq_hctx_notify, hctx);
-+	blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
-+
-+	hctx->tags = set->tags[hctx_idx];
+ 	struct request_queue *q = rq->q;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
  
  	/*
--	 * Initialize hardware queues
-+	 * Allocate space for all possible cpus to avoid allocation at
-+	 * runtime
- 	 */
--	queue_for_each_hw_ctx(q, hctx, i) {
--		int node;
-+	hctx->ctxs = kmalloc_node(nr_cpu_ids * sizeof(void *),
-+					GFP_KERNEL, node);
-+	if (!hctx->ctxs)
-+		goto unregister_cpu_notifier;
+ 	 * After populating an empty queue, kick it to avoid stall.  Read
+@@ -335,11 +335,10 @@ static void mq_flush_data_end_io(struct request *rq, int error)
+ {
+ 	struct request_queue *q = rq->q;
+ 	struct blk_mq_hw_ctx *hctx;
+-	struct blk_mq_ctx *ctx;
++	struct blk_mq_ctx *ctx = rq->mq_ctx;
+ 	unsigned long flags;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q, ctx);
  
--		node = hctx->numa_node;
--		if (node == NUMA_NO_NODE)
--			node = hctx->numa_node = set->numa_node;
-+	if (blk_mq_alloc_bitmap(&hctx->ctx_map, node))
-+		goto free_ctxs;
+-	ctx = rq->mq_ctx;
+ 	hctx = q->mq_ops->map_queue(q, ctx->cpu);
  
--		INIT_DELAYED_WORK(&hctx->run_work, blk_mq_run_work_fn);
--		INIT_DELAYED_WORK(&hctx->delay_work, blk_mq_delay_work_fn);
--		spin_lock_init(&hctx->lock);
--		INIT_LIST_HEAD(&hctx->dispatch);
--		hctx->queue = q;
--		hctx->queue_num = i;
--		hctx->flags = set->flags;
--		hctx->cmd_size = set->cmd_size;
-+	hctx->nr_ctx = 0;
+ 	/*
+@@ -369,7 +368,7 @@ void blk_insert_flush(struct request *rq)
+ 	struct request_queue *q = rq->q;
+ 	unsigned int fflags = q->flush_flags;	/* may change, cache */
+ 	unsigned int policy = blk_flush_policy(fflags, rq);
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q, rq->mq_ctx);
  
--		blk_mq_init_cpu_notifier(&hctx->cpu_notifier,
--						blk_mq_hctx_notify, hctx);
--		blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
-+	if (set->ops->init_hctx &&
-+	    set->ops->init_hctx(hctx, set->driver_data, hctx_idx))
-+		goto free_bitmap;
+ 	/*
+ 	 * @policy now records what operations need to be done.  Adjust
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index a819af4..07c3e0a 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -518,7 +518,8 @@ static inline bool is_flush_request(struct request *rq,
+ struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+ {
+ 	struct request *rq = tags->rqs[tag];
+-	struct blk_flush_queue *fq = blk_get_flush_queue(rq->q);
++	/* mq_ctx of flush rq is always cloned from the corresponding req */
++	struct blk_flush_queue *fq = blk_get_flush_queue(rq->q, rq->mq_ctx);
  
--		hctx->tags = set->tags[i];
-+	return 0;
+ 	if (!is_flush_request(rq, fq, tag))
+ 		return rq;
+diff --git a/block/blk.h b/block/blk.h
+index 2637349..30f8033 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -29,7 +29,7 @@ extern struct kobj_type blk_queue_ktype;
+ extern struct ida blk_queue_ida;
  
--		/*
--		 * Allocate space for all possible cpus to avoid allocation at
--		 * runtime
--		 */
--		hctx->ctxs = kmalloc_node(nr_cpu_ids * sizeof(void *),
--						GFP_KERNEL, node);
--		if (!hctx->ctxs)
--			break;
-+ free_bitmap:
-+	blk_mq_free_bitmap(&hctx->ctx_map);
-+ free_ctxs:
-+	kfree(hctx->ctxs);
-+ unregister_cpu_notifier:
-+	blk_mq_unregister_cpu_notifier(&hctx->cpu_notifier);
+ static inline struct blk_flush_queue *blk_get_flush_queue(
+-		struct request_queue *q)
++		struct request_queue *q, struct blk_mq_ctx *ctx)
+ {
+ 	return q->fq;
+ }
+@@ -108,7 +108,7 @@ void blk_insert_flush(struct request *rq);
+ static inline struct request *__elv_next_request(struct request_queue *q)
+ {
+ 	struct request *rq;
+-	struct blk_flush_queue *fq = blk_get_flush_queue(q);
++	struct blk_flush_queue *fq = blk_get_flush_queue(q, NULL);
  
--		if (blk_mq_alloc_bitmap(&hctx->ctx_map, node))
--			break;
-+	return -1;
-+}
- 
--		hctx->nr_ctx = 0;
-+static int blk_mq_init_hw_queues(struct request_queue *q,
-+		struct blk_mq_tag_set *set)
-+{
-+	struct blk_mq_hw_ctx *hctx;
-+	unsigned int i;
- 
--		if (set->ops->init_hctx &&
--		    set->ops->init_hctx(hctx, set->driver_data, i))
-+	/*
-+	 * Initialize hardware queues
-+	 */
-+	queue_for_each_hw_ctx(q, hctx, i) {
-+		if (blk_mq_init_hctx(q, set, hctx, i))
- 			break;
- 	}
- 
+ 	while (1) {
+ 		if (!list_empty(&q->queue_head)) {
 -- 
 1.7.9.5
 
