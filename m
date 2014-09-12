@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaILEpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 00:45:17 -0400
-Received: from smtprelay0093.hostedemail.com ([216.40.44.93]:37059 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750863AbaILEpP (ORCPT
+	id S1751477AbaILE7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 00:59:21 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:43453 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaILE7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 00:45:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3866:3867:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11854:11914:12043:12517:12519:12740:13069:13071:13161:13229:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dolls56_1070245648710
-X-Filterd-Recvd-Size: 1764
-Message-ID: <1410497111.9942.26.camel@joe-AO725>
-Subject: Re: [PATCH v2] checkpatch: look for common misspellings
-From: Joe Perches <joe@perches.com>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        linux-doc <linux-doc@vger.kernel.org>
-Date: Thu, 11 Sep 2014 21:45:11 -0700
-In-Reply-To: <CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
-References: <20140908181524.GA11839@www.outflux.net>
-	 <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
-	 <CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
-	 <1410444957.9942.3.camel@joe-AO725>
-	 <CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Sep 2014 00:59:14 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 12 Sep 2014 13:59:13 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/10] zsmalloc: fix init_zspage free obj linking
+Message-ID: <20140912045913.GA2160@bbox>
+References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+ <1410468841-320-2-git-send-email-ddstreet@ieee.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1410468841-320-2-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 13:09 +0900, Masanari Iida wrote:
-> Test with "reseting" case,  codespell found 21, grep found 26.
+On Thu, Sep 11, 2014 at 04:53:52PM -0400, Dan Streetman wrote:
+> When zsmalloc creates a new zspage, it initializes each object it contains
+> with a link to the next object, so that the zspage has a singly-linked list
+> of its free objects.  However, the logic that sets up the links is wrong,
+> and in the case of objects that are precisely aligned with the page boundries
+> (e.g. a zspage with objects that are 1/2 PAGE_SIZE) the first object on the
+> next page is skipped, due to incrementing the offset twice.  The logic can be
+> simplified, as it doesn't need to calculate how many objects can fit on the
+> current page; simply checking the offset for each object is enough.
 
-Hello Masanari.
+If objects are precisely aligned with the page boundary, pages_per_zspage
+should be 1 so there is no next page.
 
-How did codespell find any uses of reseting?
-What version of codespell are you using?
-(I tested with 1.7)
+> 
+> Change zsmalloc init_zspage() logic to iterate through each object on
+> each of its pages, checking the offset to verify the object is on the
+> current page before linking it into the zspage.
+> 
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> Cc: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/zsmalloc.c | 14 +++++---------
+>  1 file changed, 5 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index c4a9157..03aa72f 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -628,7 +628,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>  	while (page) {
+>  		struct page *next_page;
+>  		struct link_free *link;
+> -		unsigned int i, objs_on_page;
+> +		unsigned int i = 1;
+>  
+>  		/*
+>  		 * page->index stores offset of first object starting
+> @@ -641,14 +641,10 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>  
+>  		link = (struct link_free *)kmap_atomic(page) +
+>  						off / sizeof(*link);
+> -		objs_on_page = (PAGE_SIZE - off) / class->size;
+>  
+> -		for (i = 1; i <= objs_on_page; i++) {
+> -			off += class->size;
+> -			if (off < PAGE_SIZE) {
+> -				link->next = obj_location_to_handle(page, i);
+> -				link += class->size / sizeof(*link);
+> -			}
+> +		while ((off += class->size) < PAGE_SIZE) {
+> +			link->next = obj_location_to_handle(page, i++);
+> +			link += class->size / sizeof(*link);
+>  		}
+>  
+>  		/*
+> @@ -660,7 +656,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>  		link->next = obj_location_to_handle(next_page, 0);
+>  		kunmap_atomic(link);
+>  		page = next_page;
+> -		off = (off + class->size) % PAGE_SIZE;
+> +		off %= PAGE_SIZE;
+>  	}
+>  }
+>  
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Looking at the git tree for codespell,
-https://github.com/lucasdemarchi/codespell.git
-the dictionary there doesn't have reseting.
-
-If I add reseting->resetting to the dictionary,
-then codespell finds the same 31 uses that
-git grep -i does.
-
-
+-- 
+Kind regards,
+Minchan Kim
