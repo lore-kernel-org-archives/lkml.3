@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaILGyl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 02:54:41 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:37334 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699AbaILGyV (ORCPT
+	id S1752840AbaILGzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 02:55:00 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:19874 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066AbaILGyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Sep 2014 02:54:21 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-2e-5412989b0b3d
+X-AuditID: cbfec7f4-b7f156d0000063c7-33-5412989a490d
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -25,61 +25,196 @@ Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v6 8/8] Documentation: charger: max14577: Document exported
- sysfs entry
-Date: Fri, 12 Sep 2014 08:54:00 +0200
-Message-id: <1410504840-23543-9-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v6 7/8] devicetree: mfd: max14577: Add device tree bindings
+ document
+Date: Fri, 12 Sep 2014 08:53:59 +0200
+Message-id: <1410504840-23543-8-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1410504840-23543-1-git-send-email-k.kozlowski@samsung.com>
 References: <1410504840-23543-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xy7qzZwiFGGzaK2MxZ/0aNouNM9az
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xy7qzZgiFGGy/I20xZ/0aNouNM9az
 	Wkx9+ITNYtKT98wW84+cY7WYuHIys0X/m4WsFuderWS0eP3C0OJs0xt2i/tfjzJafLvSwWSx
 	+XsHm8XlXXPYLD73HmG0WHvkLrvF0usXmSwmTF/LYtG69wi7xeluVovTu0scRD3WzFvD6HG5
 	r5fJY+esu+weK5d/YfPYvELLY9OqTjaPO9f2sHmcmPGbxWPeyUCPvi2rGD0+b5IL4I7isklJ
-	zcksSy3St0vgyrjb0cNcMIurYu2BO0wNjGc4uhg5OSQETCSurepgg7DFJC7cWw9kc3EICSxl
-	lPi/fQOU08cksWZRAytIFZuAscTm5UvAOkQEFjBJXFyXC1LELDCVRWLSyhZ2kISwQKTE/187
-	mboYOThYBFQlprySAgnzCrhLLHu7CGqbnMTJY5PBZnIKeEjsuryUGcQWAqrZtKWZaQIj7wJG
-	hlWMoqmlyQXFSem5RnrFibnFpXnpesn5uZsYIVHxdQfj0mNWhxgFOBiVeHg/5AqGCLEmlhVX
-	5h5ilOBgVhLhTZ0qFCLEm5JYWZValB9fVJqTWnyIkYmDU6qBsfjfyqz16nFzHyvd5v7hxBao
-	wXdtmQD7ktrfTg8aTaf99LM/v+LzgoW7nwcx7D01NZv1z32eoMXT9PnPt4gW7bybeET2B/PL
-	zgxHrrfT2b7PKGj17hN58tXyWNzbN7UPlO1W7lsqqOq6vlLWysfLPrbR2q7S13tCtt6Nzpav
-	bGfcjzjunlGwXomlOCPRUIu5qDgRAP7DHXVoAgAA
+	zcksSy3St0vgylj+4TdLwQPVip3dHWwNjKfkuhg5OSQETCQ2vDvHCmGLSVy4t54NxBYSWMoo
+	8eBQZRcjF5DdxyTx/dU3FpAEm4CxxOblS8CKRAQWMElcXJcLUsQsMJVFYtLKFnaQhLBAmMTq
+	jevAbBYBVYnr07czgdi8Au4SS5/2QG2Tkzh5bDKYzSngIbHr8lJmiM3uEpu2NDNNYORdwMiw
+	ilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkKr7sYFx8zOoQowAHoxIPL8c5wRAh1sSy4src
+	Q4wSHMxKIrypU4VChHhTEiurUovy44tKc1KLDzEycXBKNTDmLK57HOY9Z2ruh76iq3/aHvse
+	4mnMWMUccSKo5bPmdUGmnQzygSwbTyxdO7frbfeusDAWqY/H5/d02CyZOsm5sVxHJ+COS5vX
+	ry7lF/dfaXR5u4qvk9or8cPw8s40bdkXu/yzm/98yD3FM++ZmfKX8tS2FZUsjytvaH4oPFNx
+	JCr35KSUHB8lluKMREMt5qLiRAA59sWZaAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the 'fast charge timer' setting exported by max14577 driver
-through sysfs entry.
+Add document describing device tree bindings for MAX14577 MFD
+drivers: MFD core, extcon, regulator and charger.
+
+Both MAX14577 and MAX77836 chipsets are documented.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: devicetree@vger.kernel.org
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 Acked-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- Documentation/ABI/testing/sysfs-class-power | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ Documentation/devicetree/bindings/mfd/max14577.txt | 146 +++++++++++++++++++++
+ 1 file changed, 146 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-diff --git a/Documentation/ABI/testing/sysfs-class-power b/Documentation/ABI/testing/sysfs-class-power
-index 78c7baca3587..ad4fb90ab23d 100644
---- a/Documentation/ABI/testing/sysfs-class-power
-+++ b/Documentation/ABI/testing/sysfs-class-power
-@@ -18,3 +18,17 @@ Description:
- 		This file is writeable and can be used to set the assumed
- 		battery 'full level'. As batteries age, this value has to be
- 		amended over time.
+diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+new file mode 100644
+index 000000000000..236264c10b92
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+@@ -0,0 +1,146 @@
++Maxim MAX14577/77836 Multi-Function Device
 +
-+What:		/sys/class/power_supply/max14577-charger/device/fast_charge_timer
-+Date:		July 2014
-+KernelVersion:	3.18.0
-+Contact:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+Description:
-+		This entry shows and sets the maximum time the max14577
-+		charger operates in fast-charge mode. When the timer expires
-+		the device will terminate fast-charge mode (charging current
-+		will drop to 0 A) and will trigger interrupt.
++MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
++Battery Charger and SFOUT LDO output for powering USB devices. It is
++interfaced to host controller using I2C.
 +
-+		Valid values:
-+		- 5, 6 or 7 (hours),
-+		- 0: disabled.
++MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
++
++
++Required properties:
++- compatible : Must be "maxim,max14577" or "maxim,max77836".
++- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
++- interrupts : IRQ line for the chip.
++- interrupt-parent :  The parent interrupt controller.
++
++
++Required nodes:
++ - charger :
++	Node for configuring the charger driver.
++	Required properties:
++		- compatible : "maxim,max14577-charger"
++			or "maxim,max77836-charger"
++		- maxim,fast-charge-uamp : Current in uA for Fast Charge;
++			Valid values:
++			- for max14577: 90000 - 950000;
++			- for max77836: 45000 - 475000;
++		- maxim,eoc-uamp : Current in uA for End-Of-Charge mode;
++			Valid values:
++			- for max14577: 50000 - 200000;
++			- for max77836: 5000 - 100000;
++		- maxim,ovp-uvolt : OverVoltage Protection Threshold in uV;
++			In an overvoltage condition, INT asserts and charging
++			stops. Valid values:
++			- 6000000, 6500000, 7000000, 7500000;
++		- maxim,constant-uvolt : Battery Constant Voltage in uV;
++			Valid values:
++			- 4000000 - 4280000 (step by 20000);
++			- 4350000;
++
++
++Optional nodes:
++- max14577-muic/max77836-muic :
++	Node used only by extcon consumers.
++	Required properties:
++		- compatible : "maxim,max14577-muic" or "maxim,max77836-muic"
++
++- regulators :
++	Required properties:
++		- compatible : "maxim,max14577-regulator"
++			or "maxim,max77836-regulator"
++
++	May contain a sub-node per regulator from the list below. Each
++	sub-node should contain the constraints and initialization information
++	for that regulator. See regulator.txt for a description of standard
++	properties for these sub-nodes.
++
++	List of valid regulator names:
++	- for max14577: CHARGER, SAFEOUT.
++	- for max77836: CHARGER, SAFEOUT, LDO1, LDO2.
++
++	The SAFEOUT is a fixed voltage regulator so there is no need to specify
++	voltages for it.
++
++
++Example:
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++max14577@25 {
++	compatible = "maxim,max14577";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max14577-muic {
++		compatible = "maxim,max14577-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max14577-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max14577-charger";
++
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <450000>;
++		maxim,eoc-uamp = <50000>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
++
++
++max77836@25 {
++	compatible = "maxim,max77836";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max77836-muic {
++		compatible = "maxim,max77836-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max77836-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++		LDO1 {
++			regulator-name = "LDO1";
++			regulator-min-microvolt = <2700000>;
++			regulator-max-microvolt = <2700000>;
++		};
++		LDO2 {
++			regulator-name = "LDO2";
++			regulator-min-microvolt = <800000>;
++			regulator-max-microvolt = <3950000>;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max77836-charger";
++
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <225000>;
++		maxim,eoc-uamp = <7500>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
 -- 
 1.9.1
 
