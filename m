@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaILEo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 00:44:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48090 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874AbaILEo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 00:44:28 -0400
-Message-ID: <54127A16.4030701@zytor.com>
-Date: Thu, 11 Sep 2014 21:44:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409120133330.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409120133330.4178@nanos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752063AbaILEpR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 00:45:17 -0400
+Received: from smtprelay0093.hostedemail.com ([216.40.44.93]:37059 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750863AbaILEpP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 00:45:15 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3866:3867:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:7652:8985:9025:10004:10400:10848:11232:11658:11854:11914:12043:12517:12519:12740:13069:13071:13161:13229:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dolls56_1070245648710
+X-Filterd-Recvd-Size: 1764
+Message-ID: <1410497111.9942.26.camel@joe-AO725>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Joe Perches <joe@perches.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        linux-doc <linux-doc@vger.kernel.org>
+Date: Thu, 11 Sep 2014 21:45:11 -0700
+In-Reply-To: <CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
+References: <20140908181524.GA11839@www.outflux.net>
+	 <20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+	 <CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
+	 <1410444957.9942.3.camel@joe-AO725>
+	 <CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 04:37 PM, Thomas Gleixner wrote:
->>
->> Specifically because marshaling the data in and out of the generic
->> decoder was more complex than a special-purpose decoder.
->
-> I did not look at that detail and I trust your judgement here, but
-> that is in no way explained in the changelog.
->
-> This whole patchset is a pain to review due to half baken changelogs
-> and complete lack of a proper design description.
->
+On Fri, 2014-09-12 at 13:09 +0900, Masanari Iida wrote:
+> Test with "reseting" case,  codespell found 21, grep found 26.
 
-I'm not wedded to that concept, by the way, but using the generic parser 
-had a whole bunch of its own problems, including the fact that you're 
-getting bytes from user space.
+Hello Masanari.
 
-It might be worthwhile to compare the older patchset which did use the 
-generic parser to make sure that it actually made sense.
+How did codespell find any uses of reseting?
+What version of codespell are you using?
+(I tested with 1.7)
 
-	-hpa
+Looking at the git tree for codespell,
+https://github.com/lucasdemarchi/codespell.git
+the dictionary there doesn't have reseting.
 
-
+If I add reseting->resetting to the dictionary,
+then codespell finds the same 31 uses that
+git grep -i does.
 
 
