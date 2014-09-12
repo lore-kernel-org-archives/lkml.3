@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245AbaILRDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:03:17 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53306 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750881AbaILRDQ (ORCPT
+	id S1751462AbaILREP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:04:15 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:38224 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaILREO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:03:16 -0400
-Date: Fri, 12 Sep 2014 18:03:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH 3.17-rc4 v5 2/6] arm: fiq: Replace default FIQ handler
-Message-ID: <20140912170307.GL12361@n2100.arm.linux.org.uk>
-References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-3-git-send-email-daniel.thompson@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410435078-28462-3-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 12 Sep 2014 13:04:14 -0400
+Message-ID: <1410541450.66768.1.camel@leira.trondhjem.org>
+Subject: [GIT PULL] Please pull NFS client fixes
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Sep 2014 13:04:10 -0400
+Organization: Primary Data, Inc
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 12:31:14PM +0100, Daniel Thompson wrote:
-> -	.macro	svc_entry, stack_hole=0
-> +	.macro	svc_entry, stack_hole=0, call_trace=1
->   UNWIND(.fnstart		)
->   UNWIND(.save {r0 - pc}		)
->  	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
-> @@ -183,7 +183,9 @@ ENDPROC(__und_invalid)
->  	stmia	r7, {r2 - r6}
->  
->  #ifdef CONFIG_TRACE_IRQFLAGS
-> +	.if \call_trace
->  	bl	trace_hardirqs_off
-> +	.endif
->  #endif
+Hi Linus,
 
-Good, you picked this up from my patch.  But what about the call into
-lockdep from usr_entry?
+The following changes since commit 2ce7598c9a453e0acd0e07be7be3f5eb39608ebd:
 
-Yes, it should be safe if we're entering from user mode, because by
-definition, the kernel can't be holding any locks at that point.
-However, I'd much prefer to keep to a set of simple rules here: avoid
-lockdep in FIQ code altogether.
+  Linux 3.17-rc4 (2014-09-07 16:09:43 -0700)
 
-That's much easier to understand than "we can call into lockdep provided
-we've been entered from user mode".
+are available in the git repository at:
 
-The other thing you miss is that /potentially/ call into the scheduler
-as well from a FIQ.  Do we /really/ want to do that kind of work here?
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.17-4
 
-Not happy.
+for you to fetch changes up to 224ecbf5a674ec7da3a3b3ea21ca62e2853653fa:
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+  pnfs: fix filelayout_retry_commit when idx > 0 (2014-09-10 12:43:45 -0700)
+
+----------------------------------------------------------------
+NFS client fixes for 3.17
+
+Highlights:
+- Fix a kernel warning when removing /proc/net/nfsfs
+- Revert commit 49a4bda22e18 due to Oopses
+- Fix a typo in the pNFS file layout commit code
+
+----------------------------------------------------------------
+Cong Wang (1):
+      nfs: fix kernel warning when removing proc entry
+
+Jeff Layton (1):
+      nfs: revert "nfs4: queue free_lock_state job submission to nfsiod"
+
+Weston Andros Adamson (1):
+      pnfs: fix filelayout_retry_commit when idx > 0
+
+ fs/nfs/client.c                | 12 +++---------
+ fs/nfs/filelayout/filelayout.c |  5 +++--
+ fs/nfs/nfs4_fs.h               | 13 ++++++-------
+ fs/nfs/nfs4state.c             | 24 ++++++------------------
+ 4 files changed, 18 insertions(+), 36 deletions(-)
+
+
