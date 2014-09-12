@@ -1,82 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383AbaILQhW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:37:22 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46259 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaILQhS (ORCPT
+	id S1752575AbaILQhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:37:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52840 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaILQh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:37:18 -0400
+	Fri, 12 Sep 2014 12:37:29 -0400
+Date: Fri, 12 Sep 2014 09:37:28 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, oleg.drokin@intel.com,
+        andreas.dilger@intel.com, devel <devel@driverdev.osuosl.org>
+Subject: Re: randconfig build error with next-20140912, in
+ drivers/staging/lustre/lustre/obdclass
+Message-ID: <20140912163728.GA27559@kroah.com>
+References: <CA+r1ZhiLP+JTnV2w=PgWTHgW6KbcPuactc6Mr9OkSXdERFGMtg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
-References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
-	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>
-	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>
-	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
-Date: Fri, 12 Sep 2014 09:37:17 -0700
-X-Google-Sender-Auth: bcNb-ZeBFuCxi7B1wCYOpHQXo2I
-Message-ID: <CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/9] Tegra xHCI support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tomeu Vizoso <tomeu@tomeuvizoso.net>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+r1ZhiLP+JTnV2w=PgWTHgW6KbcPuactc6Mr9OkSXdERFGMtg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 1:21 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
-> On 8 September 2014 18:22, Andrew Bresticker <abrestic@chromium.org> wrote:
->> On Mon, Sep 8, 2014 at 8:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
->>> On 2 September 2014 23:34, Andrew Bresticker <abrestic@chromium.org> wrote:
->>>>
->>>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
->>>> USB3.0 memory sticks and ethernet dongles using controller firmware
->>>> recently posted by Andrew Chew [2].
->>>
->>> I have had mixed results when testing this on a Jetson TK1 board. Of 8
->>> USB devices I tested with, about half where probed correctly, but the
->>> other half repeatedly fail in hub_port_init because in the GET_STATUS
->>> right after the reset, the C_PORT_CONNECTION bit is set.
->>>
->>> I don't see any correlation between the failure and the kind of usb
->>> device, but I don't have much experience with USB implementations
->>> either.
->>
->> Hmm... I haven't seen that before.  Which particular devices were you using?
->
-> Here they are:
->
-> work:
->
-> Genius keyboard: 05d5:6782
-> Logitech mouse: 046d:c06a
-> Denver MP3 player: 10d6:1100
-> Atheros Bluetooth dongle: 0cf3:3005
->
-> don't work:
->
-> MCS7830 ethernet dongle: 9710:7830
-> Genesys Logic hub: 05e3:0608
+On Fri, Sep 12, 2014 at 09:25:01AM -0700, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> ERROR: "obd_memory"
+> [drivers/staging/lustre/lustre/obdclass/obdclass.ko] undefined!
+> make[1]: *** [__modpost] Error 1
 
-I tried the hub and it works just fine for me... Have you tried this
-on any other boards like Big or Blaze?
+You are bit slower than the 0-day bot, the proper developers have
+already been notified of this :)
+
+thanks,
+
+greg k-h
