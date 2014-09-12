@@ -1,163 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaILRrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:47:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56742 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884AbaILRrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:47:51 -0400
-Date: Fri, 12 Sep 2014 12:47:04 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Andy Gross <agross@codeaurora.org>
-CC: Felipe Balbi <balbi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        <linux-arm-msm@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: Re: [PATCH v8 2/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-Message-ID: <20140912174704.GG8567@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1410542986-24419-1-git-send-email-agross@codeaurora.org>
- <1410542986-24419-3-git-send-email-agross@codeaurora.org>
+	id S1751787AbaILRsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:48:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49219 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaILRsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 13:48:40 -0400
+Date: Fri, 12 Sep 2014 19:48:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
+ violation information
+In-Reply-To: <5412F7AB.5040901@zytor.com>
+Message-ID: <alpine.DEB.2.10.1409121943430.4178@nanos>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409120133330.4178@nanos>
+ <54127A16.4030701@zytor.com> <alpine.DEB.2.10.1409121238290.4178@nanos> <5412F7AB.5040901@zytor.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rn7IEEq3VEzCw+ji"
-Content-Disposition: inline
-In-Reply-To: <1410542986-24419-3-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Rn7IEEq3VEzCw+ji
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 12 Sep 2014, H. Peter Anvin wrote:
+> The correct limit is 15 bytes, not anything else, so this is a bug in
+> the existing decoder.  A sequence of bytes longer than 15 bytes will
 
-Hi,
+Fine. Lets fix it there.
 
-On Fri, Sep 12, 2014 at 12:29:45PM -0500, Andy Gross wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->=20
-> DWC3 glue layer is hardware layer around Synopsys DesignWare
-> USB3 core. Its purpose is to supply Synopsys IP with required
-> clocks, voltages and interface it with the rest of the SoC.
->=20
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-> ---
->  drivers/usb/dwc3/Kconfig     |    9 +++
->  drivers/usb/dwc3/Makefile    |    1 +
->  drivers/usb/dwc3/dwc3-qcom.c |  133 ++++++++++++++++++++++++++++++++++++=
-++++++
->  3 files changed, 143 insertions(+)
->  create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
->=20
-> diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-> index 785510a..e9f258e 100644
-> --- a/drivers/usb/dwc3/Kconfig
-> +++ b/drivers/usb/dwc3/Kconfig
-> @@ -80,6 +80,15 @@ config USB_DWC3_KEYSTONE
->  	  Support of USB2/3 functionality in TI Keystone2 platforms.
->  	  Say 'Y' or 'M' here if you have one such device
-> =20
-> +config USB_DWC3_QCOM
-> +	tristate "Qualcomm Platforms"
-> +	depends on ARCH_QCOM || COMPILE_TEST
-> +	default USB_DWC3
-> +	select PHY_QCOM_DWC3
+> #UD, regardless of being "otherwise valid".
 
-I would rather steer away from selecting the PHY as it prevents having
-PHYs as modules. Also, this will add a Kconfig warning for selecting a
-symbol that doesn't exist (yet).
+> Keep in mind the instruction may not be aligned, and you could fit an
+> instruction plus a jump and still overrun a page in 15 bytes.
 
-If it's all the same with you, I can clean this up when applying.
+Fair enough. OTOH, I doubt that a text mapping will end exactly at
+that jump after the MPX instruction.
 
-> diff --git a/drivers/usb/dwc3/dwc3-qcom.c b/drivers/usb/dwc3/dwc3-qcom.c
-> new file mode 100644
-> index 0000000..2067c04
-> --- /dev/null
-> +++ b/drivers/usb/dwc3/dwc3-qcom.c
-> @@ -0,0 +1,133 @@
-> +/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/usb/phy.h>
+So that's simple to fix.
 
-doesn't look like you need regulator/consumer.h and usb/phy.h. I can
-clean it up when applying.
+Kill the hardcoded limit in lib/insn.c and let the callsites hand in a
+lenght argument. So you can still use it for MPX and avoid 200 lines
+of blindly copied and slightly different decoder code.
 
-> +struct dwc3_qcom {
-> +	struct device		*dev;
-> +
-> +	struct clk		*core_clk;
-> +	struct clk		*iface_clk;
-> +	struct clk		*sleep_clk;
-> +};
-> +
-> +static int dwc3_qcom_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node =3D pdev->dev.of_node;
-> +	struct dwc3_qcom *qdwc;
-> +	int ret =3D 0;
-> +
-> +	qdwc =3D devm_kzalloc(&pdev->dev, sizeof(*qdwc), GFP_KERNEL);
-> +	if (!qdwc)
-> +		return -ENOMEM;
-> +
-> +	platform_set_drvdata(pdev, qdwc);
-> +
-> +	qdwc->dev =3D &pdev->dev;
-> +
-> +	qdwc->core_clk =3D devm_clk_get(qdwc->dev, "core");
-> +	if (IS_ERR(qdwc->core_clk)) {
-> +		dev_dbg(qdwc->dev, "failed to get core clock\n");
+Thanks,
 
-this one would be a dev_err() since core can't work without its clock. I
-can fix when applying.
-
---=20
-balbi
-
---Rn7IEEq3VEzCw+ji
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUEzGYAAoJEIaOsuA1yqRE420QAKstJj0gzbXAGM+tChypADxD
-tJ4VvoKSK8YN/oGPoXC0uobfqG+cTM3Amq3bWCbj3f/V7w1HLTRecjMAG+Ixwwtv
-/rsJrOucdEYBXFt82LCBX1qxwAaSFF3baxzMnZ/yBMF/OP9yMn2eUR6khjy5c4q8
-4TdeQ/jCbx4bDH+vHHDai6YtjRbyg3u+PuDTNvVJp9sZpsbgu117i32Hv6xwR9d9
-F0mrWiuXYyzhY1WMUtUQ9ZtE9q+jiFbZWDPkZ+OcOlIHRu4T/yJfqDojgNcoGSrY
-IzgcHt+UAE0MAE/Ow5ndiUWwzGgX5ZGxmotNKIeDrlD7IPlFPO2ZvAs2/dsbtErm
-zLocmG95FOzFZoZME7QpGS2w1/yNnY6GbchnIvnoSKykqLjB0Te72yA75DKgqMPv
-8OiYcXX3a5r8rhE+c8dykAVMiyZsZOa7BCZjU0NRHMxJRljlnWZ6t82qGXWBCuyW
-Uwqb92kNTMOcS1TOqGlT6U1gJrKfv2VZVDTeGwBb0enzc94tbET3jwzwRRXpZOLO
-3wMuj8nUDwemSvGDns6UA7idR5amzGv+jz2sMFThfcmqstUED5FD7u1i8XtQl/Li
-ggFmZMzUNHYKr9808sgss5BeszHBoMkJiYA930CAJz+Lqfm1owwIHsiQdVwl99hI
-gleuQml1VtpL40NKA020
-=rq44
------END PGP SIGNATURE-----
-
---Rn7IEEq3VEzCw+ji--
+	tglx
