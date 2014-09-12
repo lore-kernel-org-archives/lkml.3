@@ -1,75 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaILKqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:46:18 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:57295 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753095AbaILKqP (ORCPT
+	id S1753973AbaILKqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:46:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:29811 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835AbaILKqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:46:15 -0400
-Message-ID: <1410518771.31130.22.camel@x220>
-Subject: Re: [PATCH] PM / OPP: Remove ARCH_HAS_OPP completely
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Nishanth Menon <nm@ti.com>
-Cc: Mark Brown <broonie@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Rob Herring <robh@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Sep 2014 12:46:11 +0200
-In-Reply-To: <CAGo_u6r3jXX2FS-PO5_-+zhHM3i3pVzGYumSYLh7YPNXGV98eg@mail.gmail.com>
-References: <1406551632.5397.17.camel@x220> <1410511111.31130.4.camel@x220>
-	 <CAGo_u6r3jXX2FS-PO5_-+zhHM3i3pVzGYumSYLh7YPNXGV98eg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	Fri, 12 Sep 2014 06:46:52 -0400
+X-IronPort-AV: E=Sophos;i="5.04,512,1406592000"; 
+   d="scan'208";a="171712295"
+Message-ID: <5412CF19.4020400@citrix.com>
+Date: Fri, 12 Sep 2014 11:46:49 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Arianna Avanzini <avanzini.arianna@gmail.com>, <konrad.wilk@oracle.com>,
+        <boris.ostrovsky@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <hch@infradead.org>, <bob.liu@oracle.com>, <felipe.franciosi@citrix.com>,
+        <axboe@fb.com>
+Subject: Re: [PATCH RFC v2 3/5] xen, blkfront: negotiate the number of block
+ rings with the backend
+References: <1410479844-2864-1-git-send-email-avanzini.arianna@gmail.com> <1410479844-2864-4-git-send-email-avanzini.arianna@gmail.com>
+In-Reply-To: <1410479844-2864-4-git-send-email-avanzini.arianna@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Sep 2014 10:46:11.0606 (UTC) FILETIME=[C48CD360:01CFCE76]
-X-RcptDomain: vger.kernel.org
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 05:20 -0500, Nishanth Menon wrote:
-> On Fri, Sep 12, 2014 at 3:38 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> > The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
-> > 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
-> > removed the only dependency that used it. Setting it had no effect
-> > anymore.
-> >
-> > So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
-> > some reason that commit did not remove all select statements for that
-> > symbol. These statements are useless. Remove them too.
-> >
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Done on top of next-20140912. Tested with git grep only!
-> >
-> >  arch/arm/mach-omap2/Kconfig    | 5 -----
+On 12/09/14 00:57, Arianna Avanzini wrote:
+> This commit implements the negotiation of the number of block rings
+> to be used; as a default, the number of rings is decided by the
+> frontend driver and is equal to the number of hardware queues that
+> the backend makes available. In case of guest migration towards a
+> host whose devices expose a different number of hardware queues, the
+> number of I/O rings used by the frontend driver remains the same;
+> XenStore keys may vary if the frontend needs to be compatible with
+> a host not having multi-queue support.
 > 
-> there can be conflict here:
-> https://patchwork.kernel.org/patch/4857231/
+> Signed-off-by: Arianna Avanzini <avanzini.arianna@gmail.com>
+> ---
+>  drivers/block/xen-blkfront.c | 95 +++++++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 84 insertions(+), 11 deletions(-)
 > 
-> http://marc.info/?l=linux-omap&m=141047815520894&w=2
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 9282df1..77e311d 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -137,7 +137,7 @@ struct blkfront_info
+>  	int vdevice;
+>  	blkif_vdev_t handle;
+>  	enum blkif_state connected;
+> -	unsigned int nr_rings;
+> +	unsigned int nr_rings, old_nr_rings;
 
-Thanks.
+I don't think you need old_nr_rings.  nr_rings is the current number of
+rings and you should only update nr_rings to a new number after tearing
+down all the old rings.
 
-> >  arch/arm/mach-shmobile/Kconfig | 1 -
-> >  drivers/devfreq/Kconfig        | 1 -
+>  	struct blkfront_ring_info *rinfo;
+>  	struct request_queue *rq;
+>  	unsigned int feature_flush;
+> @@ -147,6 +147,7 @@ struct blkfront_info
+>  	unsigned int discard_granularity;
+>  	unsigned int discard_alignment;
+>  	unsigned int feature_persistent:1;
+> +	unsigned int hardware_queues;
 
-Were patches submitted for these two files too? If so, we can probably
-just drop my patch.
+hardware_queues seems to have the same purpose as nr_rings and isn't
+needed.  nr_rings == 1 can mean write old keys for non-multi-queue
+capable backends (or a mq capable one that only wants 1 queue).
 
+> @@ -1351,10 +1353,24 @@ again:
+>  		goto destroy_blkring;
+>  	}
+>  
+> +	/* Advertise the number of rings */
+> +	err = xenbus_printf(xbt, dev->nodename, "nr_blk_rings",
+> +			    "%u", info->nr_rings);
+> +	if (err) {
+> +		xenbus_dev_fatal(dev, err, "advertising number of rings");
+> +		goto abort_transaction;
+> +	}
+> +
+>  	for (i = 0 ; i < info->nr_rings ; i++) {
+> -		BUG_ON(i > 0);
+> -		snprintf(ring_ref_s, 64, "ring-ref");
+> -		snprintf(evtchn_s, 64, "event-channel");
+> +		if (!info->hardware_queues) {
 
-Paul Bolle
+   if (info->nr_rings == 1)
 
+> +			BUG_ON(i > 0);
+> +			/* Support old XenStore keys */
+> +			snprintf(ring_ref_s, 64, "ring-ref");
+> +			snprintf(evtchn_s, 64, "event-channel");
+> +		} else {
+> +			snprintf(ring_ref_s, 64, "ring-ref-%d", i);
+> +			snprintf(evtchn_s, 64, "event-channel-%d", i);
+> +		}
+>  		err = xenbus_printf(xbt, dev->nodename,
+>  				    ring_ref_s, "%u", info->rinfo[i].ring_ref);
+>  		if (err) {
+[...]
+> @@ -1659,11 +1693,46 @@ static int blkfront_resume(struct xenbus_device *dev)
+>  {
+>  	struct blkfront_info *info = dev_get_drvdata(&dev->dev);
+>  	int err;
+> +	unsigned int nr_queues, prev_nr_queues;
+> +	bool mq_to_rq_transition;
+>  
+>  	dev_dbg(&dev->dev, "blkfront_resume: %s\n", dev->nodename);
+>  
+> +	prev_nr_queues = info->hardware_queues;
+> +
+> +	err = blkfront_gather_hw_queues(info, &nr_queues);
+> +	if (err < 0)
+> +		nr_queues = 0;
+> +	mq_to_rq_transition = prev_nr_queues && !nr_queues;
+> +
+> +	if (prev_nr_queues != nr_queues) {
+> +		printk(KERN_INFO "blkfront: %s: hw queues %u -> %u\n",
+> +		       info->gd->disk_name, prev_nr_queues, nr_queues);
+> +		if (mq_to_rq_transition) {
+> +			struct blk_mq_hw_ctx *hctx;
+> +			unsigned int i;
+> +			/*
+> +			 * Switch from multi-queue to single-queue:
+> +			 * update hctx-to-ring mapping before
+> +			 * resubmitting any requests
+> +			 */
+> +			queue_for_each_hw_ctx(info->rq, hctx, i)
+> +				hctx->driver_data = &info->rinfo[0];
+
+I think this does give a mechanism to change (reduce) the number of
+rings used if the backend supports fewer.  You don't need to map all
+hctxs to one ring.  You can distribute them amongst the available rings.
+
+> @@ -1863,6 +1932,10 @@ static void blkfront_connect(struct blkfront_info *info)
+>  		 * supports indirect descriptors, and how many.
+>  		 */
+>  		blkif_recover(info);
+> +		info->rinfo = krealloc(info->rinfo,
+> +				       info->nr_rings * sizeof(struct blkfront_ring_info),
+> +				       GFP_KERNEL);
+> +
+
+You don't check for allocation failure here.
+
+David
