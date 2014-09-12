@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052AbaILNqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:46:34 -0400
-Received: from sauhun.de ([89.238.76.85]:33704 "EHLO pokefinder.org"
+	id S1754861AbaILNsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:48:10 -0400
+Received: from 8bytes.org ([81.169.241.247]:57694 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753374AbaILNqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:46:32 -0400
-Date: Fri, 12 Sep 2014 15:46:48 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, grant.likely@linaro.org, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH 2/8] i2c: Add the ability to match device to compatible
- string without an of_node
-Message-ID: <20140912134648.GF1930@katana>
-References: <1409236538-21274-1-git-send-email-lee.jones@linaro.org>
- <1409236538-21274-3-git-send-email-lee.jones@linaro.org>
+	id S1753972AbaILNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:48:08 -0400
+Date: Fri, 12 Sep 2014 15:48:04 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: [git pull] IOMMU Fixes for Linux v3.17-rc4
+Message-ID: <20140912134804.GA15033@8bytes.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0rSojgWGcpz+ezC3"
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
 Content-Disposition: inline
-In-Reply-To: <1409236538-21274-3-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---0rSojgWGcpz+ezC3
+--qMm9M+Fa2AknHoGS
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Aug 28, 2014 at 03:35:32PM +0100, Lee Jones wrote:
-> A great deal of I2C devices are currently matched via DT node name, and
-> as such the compatible naming convention of '<vendor>,<device>' has gone
-> somewhat awry - some nodes don't supply one, some supply an arbitrary
-> string and others the correct device name with an arbitrary vendor prefix.
->=20
-> In an effort to correct this problem we have to supply a mechanism to
-> match a device by compatible string AND by simple device name.  This
-> function strips off the '<vendor>,' part of a supplied compatible string
-> and attempts to match without it.
->=20
-> The plan is to remove this function once all of the compatible strings
-> for each device have been brought into line.
+Hi Linus,
 
-Is this really the plan? I mean, the old matching mechanism has been out
-there for ages and I dunno how many already deployed DTs depend on it.
-I'd think we need to keep this around forever.
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
->=20
-> Acked-by: Grant Likely <grant.likely@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/i2c/i2c-core.c | 21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
->=20
-> diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> index d3c8e9f..eb46d15 100644
-> --- a/drivers/i2c/i2c-core.c
-> +++ b/drivers/i2c/i2c-core.c
-> @@ -1095,6 +1095,27 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(st=
-ruct device_node *node)
->  	return i2c_verify_adapter(dev);
->  }
->  EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-> +
-> +static const struct of_device_id*
-> +i2c_of_match_device_strip_vendor(const struct of_device_id *matches,
-> +				  struct i2c_client *client)
-> +{
-> +	const char *name;
-> +
-> +	for (; matches->compatible[0]; matches++) {
-> +		name =3D strchr(matches->compatible, ',');
-> +		if (!name)
-> +			name =3D matches->compatible;
-> +		else
-> +			name++;
-> +
-> +		if (!strnicmp(client->name, name, strlen(client->name)))
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-Are compatible-properties case-independent? I though they were not.
+are available in the git repository at:
 
-> +			return matches;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
->  #else
->  static void of_i2c_register_devices(struct i2c_adapter *adap) { }
->  #endif /* CONFIG_OF */
-> --=20
-> 1.9.1
->=20
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.17-rc4
 
---0rSojgWGcpz+ezC3
+for you to fetch changes up to 5a9137a66b521d667236e95c307b92af532fe600:
+
+  iommu/fsl: Fix warning resulting from adding PCI device twice (2014-09-05 16:01:46 +0200)
+
+----------------------------------------------------------------
+IOMMU Fixes for Linux v3.17-rc4
+
+Including:
+
+	* Two fixes for issues found by Coverity
+	* Various fixes for the ARM SMMU driver
+	* A warning fix for the FSL PAMU driver
+
+----------------------------------------------------------------
+Hans Wennborg (1):
+      iommu/arm-smmu: fix decimal printf format specifiers prefixed with 0x
+
+Joerg Roedel (3):
+      iommu/core: Make iommu_group_get_for_dev() more robust
+      iommu/vt-d: Check return value of acpi_bus_get_device()
+      Merge branch 'for-joerg/arm-smmu/fixes' of git://git.kernel.org/.../will/linux into iommu/fixes
+
+Mitchel Humpherys (1):
+      iommu/arm-smmu: avoid calling request_irq in atomic context
+
+Olav Haugan (2):
+      iommu/arm-smmu: fix programming of SMMU_CBn_TCR for stage 1
+      iommu/arm-smmu: Do not access non-existing S2CR registers
+
+Varun Sethi (1):
+      iommu/fsl: Fix warning resulting from adding PCI device twice
+
+Vladimir Murzin (1):
+      iommu/arm-smmu: remove pgtable_page_{c,d}tor()
+
+Will Deacon (2):
+      iommu/arm-smmu: fix s2cr and smr teardown on device detach from domain
+      iommu/arm-smmu: fix corner cases in address size calculations
+
+ drivers/iommu/arm-smmu.c        | 127 +++++++++++++++++++++++-----------------
+ drivers/iommu/dmar.c            |   3 +-
+ drivers/iommu/fsl_pamu_domain.c |  10 +++-
+ drivers/iommu/iommu.c           |   8 ++-
+ 4 files changed, 87 insertions(+), 61 deletions(-)
+
+Please pull.
+
+Thanks,
+
+	Joerg
+
+
+--qMm9M+Fa2AknHoGS
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJUEvlIAAoJEBQN5MwUoCm2hogP/Rl8a5R+FCyggG3KvPNScrJe
-OOLqeXDYSqPja7DotMMOnxkocpok2hWhr/lvV0cpnLfoDj+ho3XmZOrRnxR4cJ7w
-YhYI3kOqxg4tGdJyJmtdmhjeAKfD3Qs43t+fD+O+gcoCT5BGsVCIM5U85qWFRS4A
-h9CtHNgICfsa/0skhZThUNRbgRkJTUsUtZ7BM+K3CjHfKZUCiPLrIQeS3B8Om8s9
-ouz1lUr6K38hbhXM8Y0kHGzVtz9A23M8U3ve9e2VhVnQVgIeFWlqvXU5OkcmnyYi
-BBLeKi0dZVVEPlnXyV0nKcv60u75RQHTdL+COo1rDtJy1eDqEy00UHk/936pbFJd
-+sbj+JAyasbZGp+K2wrMx0gJnzpgvoRRrTiHdxvKwJCPdUf97E+hKTUHXM218qDe
-AYyjEFpNfgk7jQkPDxahWiMjELiYDLXncQVmwWHk5EjAlkx380oHnMyOAhiHrsqR
-QrNqgpFXpC/KQoH0nkUKo+2PlDizUaBintoyxZCfaMdtA2u/HbYEcuQ5umsmWHNf
-ZunPXFsXzt7utb5Scrf+752Bj+hsLiNWwIy864xoBM/sekOYfy8leJU6idT2dmEy
-TRgnaPkDgmQbmVAJzpLSaiDyyhOp1Igb06bMdzdaWXdQ97/YPvURGbfcEVwbqgD3
-/EW0RJzybz2pRNnz1Svu
-=61ql
+iQIcBAEBAgAGBQJUEvmTAAoJECvwRC2XARrjIewP/jCwy/VwfwJ2r5mwDBNOtfiY
+86o09Uy80Svs1H6sc/SfQ8Ad2FUa2Js/xAR2HPU/Goj7UAE3uhrIk7WNwUqMhAPP
+i/LSW9JmlMARVk2VL4d1LMvXtHcqvWx5OAL8kOX/SxAvJdZ9p2DB3WlVQ8XEvJQd
+9HcnZO20KNaG3bms3SrgZ0Ha6IAOYybcqP5fPiaAKY1fvdOJxReA88U1RCTE8L8J
+BENmuGkbkukb4XRRaH7C7ASfgDePBR5C/kn4egZV3brQz2qO/otHDhC8c9ng8K6q
+L5faNTGtJmgRitRzuNiYDUmHgsA+n9g9N6YVv6jF3bjWV27WbDzPQL4RFE2MDb66
+YADZB4ppZboHWVFRfpYF9Xxxc86EHzeCdE6hJkrLpgdMpQcRe/uRAAN0PKA1bOPY
+5UTWn5yWQiSElGGtnXj/MUvVwT3xN/ERtPuX8bTOZjBA0uSapkM/onIgBzMBFxRm
+NC57KS1L3LeaggUpfhAKbKRnWXZC2Y/F9hzZWpCEtp7rqIErjO54U4pA/4PzIQTP
+sDv4slQcybzy+Xl4WQaS1aeugarfNxQki7YGXf/1ciPzZg1MoOLfQs/uTvUk/GbR
+B3iFv6//X2G2Q7liol5yYHslgSY7MQWXO/El/Al6KlV2OcPsvMJdasi3eZLwcw73
+ZWfGI1wnKH6qrGygTeUa
+=Hmbl
 -----END PGP SIGNATURE-----
 
---0rSojgWGcpz+ezC3--
+--qMm9M+Fa2AknHoGS--
