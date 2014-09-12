@@ -1,133 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaILJ1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:27:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:29439 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaILJ1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:27:47 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-87-5412bc90be6c
-Content-transfer-encoding: 8BIT
-Message-id: <5412BC8D.2030007@samsung.com>
-Date: Fri, 12 Sep 2014 11:27:41 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.0
-To: Inki Dae <inki.dae@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 5/9] drm/exynos/crtc: fix framebuffer reference sequence
-References: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
- <1410268573-2297-6-git-send-email-a.hajda@samsung.com>
- <5412B02A.6040609@samsung.com> <20140912085710.GD4740@phenom.ffwll.local>
-In-reply-to: <20140912085710.GD4740@phenom.ffwll.local>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xa7oT9giFGJw8om1x5et7NotJ9yew
-	WJxtesNucXnXHDaLGef3MVmsPXKX3WLG5JdsDuwe97uPM3n0bVnF6PF5k1wAcxSXTUpqTmZZ
-	apG+XQJXxq8v1xgL+tQqpn8MbmCcqNDFyMkhIWAiMbF7DROELSZx4d56ti5GLg4hgaWMEut3
-	NLKCJHgFBCV+TL7H0sXIwcEsIC9x5FI2hKkuMWVKLkT5J0aJuV0TWCDKtSQWnj7CCGKzCKhK
-	fP67B8xmE9CU+Lv5JhuILSoQJvHs10EmkGYRgcNMErevHWIHSQgL+EgcuLqTHWLqcUaJ5vut
-	rCDbOAXMJW6tj5nAyD8LyUmzEE6ahXDSAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxgh
-	IftlB+PiY1aHGAU4GJV4eDnOCYYIsSaWFVfmHmKU4GBWEuH9uU0oRIg3JbGyKrUoP76oNCe1
-	+BAjEwenVAOjsHTHPdcT57ljDhyKXRmZICs5Teft7+/8d6eXyfFzaV7Wnmi7W+v4XCdhE0ZX
-	H72v7ZcUHeqymje5rn7VVDRfZUXAw2Nyt1R5Mk40yp6W4Uu+Mvnb2skajnPq1Q5pienv+eRx
-	9gBjjXSRwc6+5vTtytnH2sRcrmgvefFSRNPh38Mms5M8wneVWIozEg21mIuKEwEcKKLsNwIA	AA==
+	id S1754187AbaILJ2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:28:43 -0400
+Received: from mail-bn1bn0106.outbound.protection.outlook.com ([157.56.110.106]:14963
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751131AbaILJ1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:27:24 -0400
+Date: Fri, 12 Sep 2014 17:27:13 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>,
+        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Message-ID: <20140912092711.GA2463@peterchendt>
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
+ <20140911005446.GD3609@peterchendt> <20140911154222.GB11275@kwain>
+ <e1957aca004047cd9333ebac74531a65@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20140912082125.GA18774@kwain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140912082125.GA18774@kwain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(199003)(51704005)(33656002)(102836001)(99396002)(83072002)(26826002)(92566001)(68736004)(76176999)(110136001)(4396001)(95666004)(79102001)(44976005)(54356999)(23726002)(57986006)(50986999)(86362001)(85852003)(97756001)(81542001)(92726001)(87936001)(6806004)(83506001)(85306004)(83322001)(76482001)(84676001)(104016003)(46102001)(93886004)(97736003)(90102001)(81342001)(33716001)(74662001)(77982001)(80022001)(47776003)(31966008)(20776003)(64706001)(46406003)(50466002)(105606002)(21056001)(107046002)(74502001)(106466001)(41533002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1203;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 10:57 AM, Daniel Vetter wrote:
-> On Fri, Sep 12, 2014 at 05:34:50PM +0900, Inki Dae wrote:
->> Hi Andrzej,
->>
->> On 2014년 09월 09일 22:16, Andrzej Hajda wrote:
->>> Adding reference to framebuffer should be accompanied with removing
->>> reference to old framebuffer assigned to the plane.
->>> This patch removes following warning:
->>>
->>> [   95.038017] WARNING: CPU: 1 PID: 3067 at drivers/gpu/drm/drm_crtc.c:5115 drm_mode_config_cleanup+0x258/0x268()
->>> [   95.048086] Modules linked in:
->>> [   95.051430] CPU: 1 PID: 3067 Comm: bash Tainted: G        W      3.16.0-11355-g7a6eca5-dirty #3015
->>> [   95.060058] [<c0013e90>] (unwind_backtrace) from [<c0011128>] (show_stack+0x10/0x14)
->>> [   95.067766] [<c0011128>] (show_stack) from [<c04a5dc4>] (dump_stack+0x70/0xbc)
->>> [   95.074953] [<c04a5dc4>] (dump_stack) from [<c0021784>] (warn_slowpath_common+0x64/0x88)
->>> [   95.083005] [<c0021784>] (warn_slowpath_common) from [<c00217c4>] (warn_slowpath_null+0x1c/0x24)
->>> [   95.091780] [<c00217c4>] (warn_slowpath_null) from [<c0275fa0>] (drm_mode_config_cleanup+0x258/0x268)
->>> [   95.100983] [<c0275fa0>] (drm_mode_config_cleanup) from [<c0281724>] (exynos_drm_unload+0x38/0x50)
->>> [   95.109915] [<c0281724>] (exynos_drm_unload) from [<c026e248>] (drm_dev_unregister+0x24/0x98)
->>> [   95.118414] [<c026e248>] (drm_dev_unregister) from [<c026ecb0>] (drm_put_dev+0x28/0x64)
->>> [   95.126412] [<c026ecb0>] (drm_put_dev) from [<c02947c4>] (take_down_master+0x24/0x44)
->>> [   95.134218] [<c02947c4>] (take_down_master) from [<c0294870>] (component_del+0x8c/0xc8)
->>> [   95.142201] [<c0294870>] (component_del) from [<c0286c10>] (exynos_dsi_remove+0x18/0x2c)
->>> [   95.150294] [<c0286c10>] (exynos_dsi_remove) from [<c0299e04>] (platform_drv_remove+0x18/0x1c)
->>> [   95.158872] [<c0299e04>] (platform_drv_remove) from [<c02987a4>] (__device_release_driver+0x70/0xc4)
->>> [   95.167981] [<c02987a4>] (__device_release_driver) from [<c0298818>] (device_release_driver+0x20/0x2c)
->>> [   95.177268] [<c0298818>] (device_release_driver) from [<c02979d0>] (unbind_store+0x5c/0x94)
->>> [   95.185597] [<c02979d0>] (unbind_store) from [<c0297278>] (drv_attr_store+0x20/0x2c)
->>> [   95.193323] [<c0297278>] (drv_attr_store) from [<c012aa90>] (sysfs_kf_write+0x4c/0x50)
->>> [   95.201224] [<c012aa90>] (sysfs_kf_write) from [<c0129e94>] (kernfs_fop_write+0xc4/0x184)
->>> [   95.209393] [<c0129e94>] (kernfs_fop_write) from [<c00d03ec>] (vfs_write+0xa0/0x1a8)
->>> [   95.217111] [<c00d03ec>] (vfs_write) from [<c00d07f8>] (SyS_write+0x40/0x8c)
->>> [   95.224146] [<c00d07f8>] (SyS_write) from [<c000e660>] (ret_fast_syscall+0x0/0x48)
->>>
->>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
->>> ---
->>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c | 6 ++++++
->>>  1 file changed, 6 insertions(+)
->>>
->>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>> index b68e58f..bde19f4 100644
->>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>> @@ -145,10 +145,16 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
->>>  	if (ret)
->>>  		return ret;
->>>  
->>> +	/* we need to unreference current fb after replacing it with new one */
->>> +	old_fb = plane->fb;
->>> +
->>>  	plane->crtc = crtc;
->>>  	plane->fb = crtc->primary->fb;
->>>  	drm_framebuffer_reference(plane->fb);
->>>  
->>> +	if (old_fb)
->>> +		drm_framebuffer_unreference(old_fb);
->> This time would be a good chance that we can consider drm flip queue to
->> make sure that whole memory region to old_fb is scanned out completely
->> before dropping a reference of old_fb. the reference of old_fb should be
->> dropped at irq handler of each crtc devices, fimd and mixer.
-> Generally it's not a good idea to drop fb references from irq context,
-> since if you actually drop the last reference it'll blow up: fb cleanup
-> needs a bunch of mutexes.
+On Fri, Sep 12, 2014 at 10:21:25AM +0200, Antoine Tenart wrote:
+> Peter,
+> 
+> On Fri, Sep 12, 2014 at 01:10:33AM +0000, Peter Chen wrote:
+> > > On Thu, Sep 11, 2014 at 08:54:47AM +0800, Peter Chen wrote:
+> > > > On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
+> > > > > @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct platform_device
+> > > *pdev)
+> > > > >  		return -ENODEV;
+> > > > >  	}
+> > > > >
+> > > > > -	if (ci->platdata->usb_phy)
+> > > > > +	if (ci->platdata->phy)
+> > > > > +		ci->phy = ci->platdata->phy;
+> > > > > +	else if (ci->platdata->usb_phy)
+> > > > >  		ci->usb_phy = ci->platdata->usb_phy;
+> > > > >  	else
+> > > > > -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > > > > +		ci->phy = devm_phy_get(dev, "usb-phy");
+> > > > >
+> > > > > -	if (IS_ERR(ci->usb_phy)) {
+> > > > > -		ret = PTR_ERR(ci->usb_phy);
+> > > > > +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy == NULL)) {
+> > > > >  		/*
+> > > > >  		 * if -ENXIO is returned, it means PHY layer wasn't
+> > > > >  		 * enabled, so it makes no sense to return -EPROBE_DEFER
+> > > > >  		 * in that case, since no PHY driver will ever probe.
+> > > > >  		 */
+> > > > > -		if (ret == -ENXIO)
+> > > > > -			return ret;
+> > > > > +		if (PTR_ERR(ci->phy) == -ENXIO)
+> > > > > +			return -ENXIO;
+> > > > >
+> > > > > -		dev_err(dev, "no usb2 phy configured\n");
+> > > > > -		return -EPROBE_DEFER;
+> > > > > +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > > > > +		if (IS_ERR(ci->usb_phy)) {
+> > > > > +			dev_err(dev, "no usb2 phy configured\n");
+> > > > > +			return -EPROBE_DEFER;
+> > > > > +		}
+> > > > >  	}
+> > > >
+> > > > Sorry, I can't accept this change, why devm_usb_get_phy(dev,
+> > > > USB_PHY_TYPE_USB2) is put at error path? Since current get PHY
+> > > > operation is a little complicated, we may have a dedicate function to do it,
+> > > dwc3 driver is a good example.
+> > > 
+> > > It's not the error path, it's the case when there is no PHY from the generic PHY
+> > > framework available. Getting an USB PHY is a fallback solution.
+> > > 
+> > > I agree we can move this to a dedicated function. But even if doing so, we'll
+> > > have to test ci->phy first.
+> > > 
+> > > Or do you have something else in mind?
+> > > 
+> >  
+> > I still want devm_usb_get_phy(dev, USB_PHY_TYPE_USB2) to be called at the same place
+> > like generic_phy, not in later error path, in error path, we only handle error.
+> 
+> Would this fit you?
+> 
+> if (ci->platdata->phy)
+>         ci->phy = ci->platdata->phy;
+> else if (ci->platdata->usb_phy)
+>         ci->usb_phy = ci->platdata->usb_phy;
+> 
+> if (ci->phy == NULL && ci->usb_phy == NULL) {
 
-I agree with that.
+You should use else if here.
 
->
-> Also the drm core really should be taking care of this for you, you only
-> need to grab references yourself for async flips if you want the buffer to
-> survive a bit. crtc_mode_set has not need for this. I expect that the
-> refcounting bug is somewhere else, at least from my experience chasing
-> such issues in i915 ;-)
+>         ci->phy = devm_phy_get(dev, "usb-phy");
+>         ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> 
+>         /* if both generic PHY and USB PHY layers aren't enabled */
+>         if (PTR_ERR(ci->phy) == -ENOSYS && PTR_ERR(ci->usb_phy) == -ENXIO)
+>                 return -ENXIO;
+> 
+>         if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
+>                 return -EPROBE_DEFER;
+> 
+>         /* if an usb_phy is available, but no phy is there */
+>         if (PTR_ERR(ci->phy) == -ENODEV)
+>                 ci->phy = NULL;
+	if (ci->phy)
+		ci->usb_phy = NULL;
+	if (ci->usb_phy)
+		ci->phy = NULL;
 
-Hmm, maybe I miss something but I do not see the core grabbing fb reference
-on plane->fb update. On the other side drm_framebuffer_remove calls
-drm_plane_force_disable which drops plane->fb reference.
-I am not yet familiar with this code so maybe there is better solution.
+How about above?
 
-If not I guess it would be better to move this code to
-exynos_plane_mode_set.
-At least it is done this way in omap and msm, in fact it seems better place
-for such things. What do you think?
 
-Regards
-Andrzej
-
-> -Daniel
-
+-- 
+Best Regards,
+Peter Chen
