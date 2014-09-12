@@ -1,87 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaILJKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:10:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33750 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400AbaILJK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:10:27 -0400
-Message-ID: <5412B880.8000705@ti.com>
-Date: Fri, 12 Sep 2014 12:10:24 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] fbdev fixes for 3.17
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg"
+	id S1753927AbaILJLS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:11:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40771 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753889AbaILJLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:11:14 -0400
+From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+To: broonie@kernel.org, lgirdwood@gmail.com
+Cc: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH v6] ASoC: dapm: add code to configure dai link parameters
+Date: Fri, 12 Sep 2014 10:11:04 +0100
+Message-Id: <1410513064-2916-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+dai-link params for codec-codec links were fixed. The fixed
+link between codec and another chip which may be another codec,
+baseband, bluetooth codec etc may require run time configuaration
+changes. This change provides an optional alsa control to select
+one of the params from a list of params.
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c66=
-6f:
+Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+---
+ include/sound/soc-dapm.h |    3 +
+ include/sound/soc.h      |    1 +
+ sound/soc/soc-core.c     |    6 +-
+ sound/soc/soc-dapm.c     |  143 ++++++++++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 146 insertions(+), 7 deletions(-)
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index 6b59471..3ee031e 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -378,6 +378,7 @@ int snd_soc_dapm_link_dai_widgets(struct snd_soc_card *card);
+ void snd_soc_dapm_connect_dai_link_widgets(struct snd_soc_card *card);
+ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+ 			 const struct snd_soc_pcm_stream *params,
++			 unsigned int num_params,
+ 			 struct snd_soc_dapm_widget *source,
+ 			 struct snd_soc_dapm_widget *sink);
+ 
+@@ -531,6 +532,8 @@ struct snd_soc_dapm_widget {
+ 	void *priv;				/* widget specific data */
+ 	struct regulator *regulator;		/* attached regulator */
+ 	const struct snd_soc_pcm_stream *params; /* params for dai links */
++	unsigned int num_params; /* number of params for dai links */
++	unsigned int params_select; /* currently selected param for dai link */
+ 
+ 	/* dapm control */
+ 	int reg;				/* negative reg = no direct dapm */
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index ed9e2d7..51c6c4f 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -906,6 +906,7 @@ struct snd_soc_dai_link {
+ 	int be_id;	/* optional ID for machine driver BE identification */
+ 
+ 	const struct snd_soc_pcm_stream *params;
++	unsigned int num_params;
+ 
+ 	unsigned int dai_fmt;           /* format to set on init */
+ 
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index b87d7d8..1db2168 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -1461,7 +1461,8 @@ static int soc_link_dai_widgets(struct snd_soc_card *card,
+ 	capture_w = cpu_dai->capture_widget;
+ 	if (play_w && capture_w) {
+ 		ret = snd_soc_dapm_new_pcm(card, dai_link->params,
+-					   capture_w, play_w);
++					   dai_link->num_params, capture_w,
++					   play_w);
+ 		if (ret != 0) {
+ 			dev_err(card->dev, "ASoC: Can't link %s to %s: %d\n",
+ 				play_w->name, capture_w->name, ret);
+@@ -1473,7 +1474,8 @@ static int soc_link_dai_widgets(struct snd_soc_card *card,
+ 	capture_w = codec_dai->capture_widget;
+ 	if (play_w && capture_w) {
+ 		ret = snd_soc_dapm_new_pcm(card, dai_link->params,
+-					   capture_w, play_w);
++					   dai_link->num_params, capture_w,
++					   play_w);
+ 		if (ret != 0) {
+ 			dev_err(card->dev, "ASoC: Can't link %s to %s: %d\n",
+ 				play_w->name, capture_w->name, ret);
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index cdc837e..68f6057 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -729,6 +729,36 @@ static int dapm_new_pga(struct snd_soc_dapm_widget *w)
+ 	return 0;
+ }
+ 
++/* create new dapm dai link control */
++static int dapm_new_dai_link(struct snd_soc_dapm_widget *w)
++{
++	int i, ret;
++	struct snd_kcontrol *kcontrol;
++	struct snd_soc_dapm_context *dapm = w->dapm;
++	struct snd_card *card = dapm->card->snd_card;
++
++	/* skip control creation for links with 1 config */
++	if (w->num_params == 1)
++		return 0;
++
++	/* add kcontrol */
++	for (i = 0; i < w->num_kcontrols; i++) {
++		kcontrol = snd_soc_cnew(&w->kcontrol_news[i], w,
++			w->name, NULL);
++		ret = snd_ctl_add(card, kcontrol);
++		if (ret < 0) {
++			dev_err(dapm->dev,
++				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
++				w->name, w->kcontrol_news[i].name, ret);
++			return ret;
++		}
++		kcontrol->private_data = w;
++		w->kcontrols[i] = kcontrol;
++	}
++
++	return 0;
++}
++
+ /* reset 'walked' bit for each dapm path */
+ static void dapm_clear_walk_output(struct snd_soc_dapm_context *dapm,
+ 				   struct list_head *sink)
+@@ -2664,6 +2694,9 @@ int snd_soc_dapm_new_widgets(struct snd_soc_card *card)
+ 		case snd_soc_dapm_out_drv:
+ 			dapm_new_pga(w);
+ 			break;
++		case snd_soc_dapm_dai_link:
++			dapm_new_dai_link(w);
++			break;
+ 		default:
+ 			break;
+ 		}
+@@ -3142,6 +3175,9 @@ static int snd_soc_dai_link_event(struct snd_soc_dapm_widget *w,
+ 	source = source_p->source->priv;
+ 	sink = sink_p->sink->priv;
+ 
++	/* Select the configuration set by alsa control */
++	config += w->params_select;
++
+ 	/* Be a little careful as we don't want to overflow the mask array */
+ 	if (config->formats) {
+ 		fmt = ffs(config->formats) - 1;
+@@ -3222,8 +3258,35 @@ out:
+ 	return ret;
+ }
+ 
++static int snd_soc_dapm_dai_link_get(struct snd_kcontrol *kcontrol,
++			  struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_dapm_widget *w = snd_kcontrol_chip(kcontrol);
++
++	ucontrol->value.integer.value[0] = w->params_select;
++
++	return 0;
++}
++
++static int snd_soc_dapm_dai_link_put(struct snd_kcontrol *kcontrol,
++			  struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_dapm_widget *w = snd_kcontrol_chip(kcontrol);
++
++	if (ucontrol->value.integer.value[0] == w->params_select)
++		return 0;
++
++	if (ucontrol->value.integer.value[0] >= w->num_params)
++		return -EINVAL;
++
++	w->params_select = ucontrol->value.integer.value[0];
++
++	return 0;
++}
++
+ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+ 			 const struct snd_soc_pcm_stream *params,
++			 unsigned int num_params,
+ 			 struct snd_soc_dapm_widget *source,
+ 			 struct snd_soc_dapm_widget *sink)
+ {
+@@ -3231,14 +3294,48 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+ 	struct snd_soc_dapm_widget *w;
+ 	size_t len;
+ 	char *link_name;
+-	int ret;
++	int ret, count;
++	unsigned long private_value;
++	const char **w_param_text;
++	struct soc_enum w_param_enum[] = {
++		SOC_ENUM_SINGLE(0, 0, 0, NULL),
++	};
++	struct snd_kcontrol_new kcontrol_dai_link[] = {
++		SOC_ENUM_EXT(NULL, w_param_enum[0],
++			     snd_soc_dapm_dai_link_get,
++			     snd_soc_dapm_dai_link_put),
++	};
++	const struct snd_soc_pcm_stream *config = params;
++
++	w_param_text = kcalloc(num_params, sizeof(char *), GFP_KERNEL);
++	if (!w_param_text)
++		return -ENOMEM;
+ 
+ 	len = strlen(source->name) + strlen(sink->name) + 2;
+ 	link_name = devm_kzalloc(card->dev, len, GFP_KERNEL);
+-	if (!link_name)
+-		return -ENOMEM;
++	if (!link_name) {
++		ret = -ENOMEM;
++		goto  outfree_w_param;
++	}
++
+ 	snprintf(link_name, len, "%s-%s", source->name, sink->name);
+ 
++	for (count = 0 ; count < num_params; count++) {
++		if (!config->stream_name)
++			dev_warn(card->dapm.dev,
++				"ASoC: anonymous config %d for dai link %s\n",
++				count, link_name);
++		w_param_text[count] = kmemdup((void *)(config->stream_name),
++			strlen(config->stream_name) + 1, GFP_KERNEL);
++		if (!w_param_text[count]) {
++			ret = -ENOMEM;
++			goto  outfree_link_name;
++		}
++		config++;
++	}
++	w_param_enum[0].items = num_params;
++	w_param_enum[0].texts = w_param_text;
++
+ 	memset(&template, 0, sizeof(template));
+ 	template.reg = SND_SOC_NOPM;
+ 	template.id = snd_soc_dapm_dai_link;
+@@ -3246,6 +3343,25 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+ 	template.event = snd_soc_dai_link_event;
+ 	template.event_flags = SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
+ 		SND_SOC_DAPM_PRE_PMD;
++	template.num_kcontrols = 1;
++	private_value =
++	(unsigned long) kmemdup((void *)(kcontrol_dai_link[0].private_value),
++		sizeof(struct soc_enum), GFP_KERNEL);
++	if (!private_value) {
++		dev_err(card->dev, "ASoC: Failed to create control for %s widget\n",
++			link_name);
++		ret = -ENOMEM;
++		goto outfree_link_name;
++	}
++	kcontrol_dai_link[0].private_value = private_value;
++	template.kcontrol_news = kmemdup(&kcontrol_dai_link[0],
++			sizeof(struct snd_kcontrol_new), GFP_KERNEL);
++	if (!template.kcontrol_news) {
++		dev_err(card->dev, "ASoC: Failed to create control for %s widget\n",
++			link_name);
++		ret = -ENOMEM;
++		goto outfree_private_value;
++	}
+ 
+ 	dev_dbg(card->dev, "ASoC: adding %s widget\n", link_name);
+ 
+@@ -3253,15 +3369,32 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+ 	if (!w) {
+ 		dev_err(card->dev, "ASoC: Failed to create %s widget\n",
+ 			link_name);
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto outfree_kcontrol_news;
+ 	}
+ 
+ 	w->params = params;
++	w->num_params = num_params;
+ 
+ 	ret = snd_soc_dapm_add_path(&card->dapm, source, w, NULL, NULL);
+ 	if (ret)
+-		return ret;
++		goto outfree_w;
+ 	return snd_soc_dapm_add_path(&card->dapm, w, sink, NULL, NULL);
++
++outfree_w:
++	kfree(w);
++outfree_kcontrol_news:
++	kfree(template.kcontrol_news);
++outfree_private_value:
++	kfree((void *)private_value);
++outfree_link_name:
++	kfree(link_name);
++outfree_w_param:
++	for (count = 0 ; count < num_params; count++)
++		kfree(w_param_text[count]);
++	kfree(w_param_text);
++
++	return ret;
+ }
+ 
+ int snd_soc_dapm_new_dai_widgets(struct snd_soc_dapm_context *dapm,
+-- 
+1.7.9.5
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
-v-fixes-3.17
-
-for you to fetch changes up to e4cf39ea473329dfc07de1246f97d27b7fc96f79:
-
-  video: ARM CLCD: Fix color model capabilities for DT platforms (2014-09=
--12 11:45:10 +0300)
-
-----------------------------------------------------------------
-fbdev fixes for 3.17
-
-Minor fixes for amba-clcd and video DT bindings.
-
-----------------------------------------------------------------
-Pawel Moll (1):
-      video: ARM CLCD: Fix color model capabilities for DT platforms
-
-Tomi Valkeinen (1):
-      video: fix composite video connector compatible string
-
- Documentation/devicetree/bindings/video/analog-tv-connector.txt | 4 ++--=
-
- arch/arm/boot/dts/omap3-n900.dts                                | 2 +-
- drivers/video/fbdev/amba-clcd.c                                 | 4 +---=
-
- 3 files changed, 4 insertions(+), 6 deletions(-)
-
-
---pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUEriAAAoJEPo9qoy8lh71rfUP/3bT81nkZ3un+HQ+6nIE9sm+
-WKbAUeOZ4eFh0Y07ZDy+RGKTKlU36eD7cUpa6nz6K3Z3W1syUOiGp1i9zJf2599x
-qY3UwY6oQB0RFkM9wx5zJlCcf9AXGK45bVdsgrz2yR5Njy+0DiiHOJr4T3xCuGWe
-eyV3ZPIxZsVBHn3Pr1yCqo8ao1O13d13aXDWIQ0Q4Vq7ieUCSLP4T8liOvuEKy2A
-xvmIxF+Y4St7D9fLoaBj+dNNyUCLP2bJyNlvz3B33ftEEu0jI/yR311NADmja4hf
-M+eCiC9FI5M+RkyFihLh2sbXJJOgVMKeIM/ZQmNztwGEFY2jcTIa5xzjkoWBR+Yz
-Ebogx09JD3jEdXoPaTHQroo77JBLgYPrYuwWuVfVb95s2GeoX81xGjMr+Mr5OqiF
-jAzgCxxer15t4uLsMmo+I47xcSaH8JTogmAUZx6pKCnRIleNbLQQZYeYgC6A+keL
-Kfq8ZhGbmcJD+xUTaNnXDCcDWGl/T0uB9WoglgKSRfGSAnQfG2/bSet/DQ9sMK19
-Brn+Hp3aXKig6CvdJOH1rJffFDX1YhFAt5OWW7ssYDLP9elgVNsIvEteDGC+RKYz
-EeKzKPtimuFwcgOKwOGX/PCaXShgN3MX0V8RuZRl5GALr5j7ns1JBTw/N3npomAa
-oK0PnPETzGNw/z6x4suU
-=1Vh/
------END PGP SIGNATURE-----
-
---pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg--
