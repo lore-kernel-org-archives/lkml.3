@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaILJIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:08:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:53112 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751091AbaILJIG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:08:06 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-mtd@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3] mtd: nand: atmel_nand: retrieve NFC clock
-Date: Fri, 12 Sep 2014 11:07:46 +0200
-Message-Id: <1410512866-24546-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753715AbaILJKd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:10:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33750 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400AbaILJK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:10:27 -0400
+Message-ID: <5412B880.8000705@ti.com>
+Date: Fri, 12 Sep 2014 12:10:24 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.17
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+--pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c66=
+6f:
 
-Changes in v3:
- - changed the warning message to ask to update the DT
- - made the clocks property mandatory in the documentation
- - Stop claiming the NFC is probed if there is an issue when enabling the clock
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
- .../devicetree/bindings/mtd/atmel-nand.txt         |  2 ++
- drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
+are available in the git repository at:
 
-diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-index c4728839d0c1..cb6cd4f8ae7a 100644
---- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-@@ -36,6 +36,7 @@ Optional properties:
-     - reg : should specify the address and size used for NFC command registers,
-             NFC registers and NFC Sram. NFC Sram address and size can be absent
-             if don't want to use it.
-+    - clocks: phandle to the peripheral clock
-   - Optional properties:
-     - atmel,write-by-sram: boolean to enable NFC write by sram.
- 
-@@ -98,6 +99,7 @@ nand0: nand@40000000 {
- 		compatible = "atmel,sama5d3-nfc";
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-+		clocks = <&&hsmc_clk>
- 		reg = <
- 			0x70000000 0x10000000	/* NFC Command Registers */
- 			0xffffc000 0x00000070	/* NFC HSMC regs */
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 9c5f717bda54..d1e502f8dbd0 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -27,6 +27,7 @@
-  *
-  */
- 
-+#include <linux/clk.h>
- #include <linux/dma-mapping.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -96,6 +97,8 @@ struct atmel_nfc {
- 	bool			use_nfc_sram;
- 	bool			write_by_sram;
- 
-+	struct clk		*clk;
-+
- 	bool			is_initialized;
- 	struct completion	comp_ready;
- 	struct completion	comp_cmd_done;
-@@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
- {
- 	struct atmel_nfc *nfc = &nand_nfc;
- 	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
-+	int ret;
- 
- 	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
-@@ -2279,8 +2283,28 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
- 	nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
- 	nfc_readl(nfc->hsmc_regs, SR);	/* clear the NFC_SR */
- 
-+	nfc->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(nfc->clk)) {
-+		ret = clk_prepare_enable(nfc->clk);
-+		if (ret)
-+			return ret;
-+	} else {
-+		dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
-+	}
-+
- 	nfc->is_initialized = true;
- 	dev_info(&pdev->dev, "NFC is probed.\n");
-+
-+	return 0;
-+}
-+
-+static int atmel_nand_nfc_remove(struct platform_device *pdev)
-+{
-+	struct atmel_nfc *nfc = &nand_nfc;
-+
-+	if (!IS_ERR(nfc->clk))
-+		clk_disable_unprepare(nfc->clk);
-+
- 	return 0;
- }
- 
-@@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
- 		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
- 	},
- 	.probe = atmel_nand_nfc_probe,
-+	.remove = atmel_nand_nfc_remove,
- };
- 
- static struct platform_driver atmel_nand_driver = {
--- 
-1.9.1
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.17
 
+for you to fetch changes up to e4cf39ea473329dfc07de1246f97d27b7fc96f79:
+
+  video: ARM CLCD: Fix color model capabilities for DT platforms (2014-09=
+-12 11:45:10 +0300)
+
+----------------------------------------------------------------
+fbdev fixes for 3.17
+
+Minor fixes for amba-clcd and video DT bindings.
+
+----------------------------------------------------------------
+Pawel Moll (1):
+      video: ARM CLCD: Fix color model capabilities for DT platforms
+
+Tomi Valkeinen (1):
+      video: fix composite video connector compatible string
+
+ Documentation/devicetree/bindings/video/analog-tv-connector.txt | 4 ++--=
+
+ arch/arm/boot/dts/omap3-n900.dts                                | 2 +-
+ drivers/video/fbdev/amba-clcd.c                                 | 4 +---=
+
+ 3 files changed, 4 insertions(+), 6 deletions(-)
+
+
+--pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUEriAAAoJEPo9qoy8lh71rfUP/3bT81nkZ3un+HQ+6nIE9sm+
+WKbAUeOZ4eFh0Y07ZDy+RGKTKlU36eD7cUpa6nz6K3Z3W1syUOiGp1i9zJf2599x
+qY3UwY6oQB0RFkM9wx5zJlCcf9AXGK45bVdsgrz2yR5Njy+0DiiHOJr4T3xCuGWe
+eyV3ZPIxZsVBHn3Pr1yCqo8ao1O13d13aXDWIQ0Q4Vq7ieUCSLP4T8liOvuEKy2A
+xvmIxF+Y4St7D9fLoaBj+dNNyUCLP2bJyNlvz3B33ftEEu0jI/yR311NADmja4hf
+M+eCiC9FI5M+RkyFihLh2sbXJJOgVMKeIM/ZQmNztwGEFY2jcTIa5xzjkoWBR+Yz
+Ebogx09JD3jEdXoPaTHQroo77JBLgYPrYuwWuVfVb95s2GeoX81xGjMr+Mr5OqiF
+jAzgCxxer15t4uLsMmo+I47xcSaH8JTogmAUZx6pKCnRIleNbLQQZYeYgC6A+keL
+Kfq8ZhGbmcJD+xUTaNnXDCcDWGl/T0uB9WoglgKSRfGSAnQfG2/bSet/DQ9sMK19
+Brn+Hp3aXKig6CvdJOH1rJffFDX1YhFAt5OWW7ssYDLP9elgVNsIvEteDGC+RKYz
+EeKzKPtimuFwcgOKwOGX/PCaXShgN3MX0V8RuZRl5GALr5j7ns1JBTw/N3npomAa
+oK0PnPETzGNw/z6x4suU
+=1Vh/
+-----END PGP SIGNATURE-----
+
+--pNk3rP8Mb3rmjBn01mx00r2JIUlrv4Kpg--
