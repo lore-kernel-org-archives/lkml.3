@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaILQpG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:45:06 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20345 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaILQpE (ORCPT
+	id S1751453AbaILQrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:47:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42370 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaILQrD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:45:04 -0400
-X-AuditID: cbfee61a-f79e46d00000134f-9c-5413230d1fba
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: dinguyen@opensource.altera.com
-Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, balbi@ti.com,
-        dinh.linux@gmail.com, swarren@wwwdotorg.org, matthijs@stdin.nl,
-        r.baldyga@samsung.com, jg1.han@samsung.com, sachin.kamat@linaro.org,
-        ben-linux@fluff.org, dianders@chromium.org, kever.yang@rock-chips.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 00/12] usb: dwc2: Add support for dual role
-Date: Fri, 12 Sep 2014 18:44:59 +0200
-Message-id: <61330867.p68uWknPkl@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jQV1eZeEQg1U7LC0O3q+3mLTuAJPF
-	2WUH2SxWfVrDbLHypLZF8+L1bBaXF15itdg2/SeQtWsOm8WiZa3MFgtfX2Ox2D5lOpPFg8M7
-	2S1O/ulltHh1sI3Fgd9jdsNFFo+/q14we+ycdZfd4861PWwe++euYffovzaJ3ePvrP0sHn1b
-	VjF6fPnxj8Vjy/7PjB7Hb2xn8vi8Sc5j49zQAN4oLpuU1JzMstQifbsErowTi8+wFvTwVrzd
-	dpa1gXEtVxcjJ4eEgInEklf/mCBsMYkL99azdTFycQgJTGeU2HNxEyuE08IkcW7DREaQKjYB
-	K4mJ7avAbBEBJYneVS9ZQIqYBc4ySazYtZYZJCEs4CjxZO8RsLEsAqoS+zbuZAGxeQW0JJZs
-	vQ3WLCrgKbFj+0qgdRwcnAL+Eu0fDEHCQgJ+Eq13D7BClAtK/Jh8D6yVWUBeYt/+qawQto7E
-	/tZpbBMYBWYhKZuFpGwWkrIFjMyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYIj8JnUDsaV
-	DRaHGAU4GJV4eCtYBEOEWBPLiitzDzFKcDArifAqigqHCPGmJFZWpRblxxeV5qQWH2KU5mBR
-	Euc90GodKCSQnliSmp2aWpBaBJNl4uCUamDc7384OXSrzKM7FguO8UZ9zhFzSux40j61zOpQ
-	76Tfrdy3tv1reyn1pGLC+bgJL2+vl/COOXu6Xcb9jZKjwewG5vLvIacZ9X6aeNR+TeFflHi9
-	Z6tRUnb73gYHDg3FbQ7VkpwPztlunRX1bObD0F3aoqw3mjjam/1t2RX8W34t9lzhPqns63El
-	luKMREMt5qLiRAA1wlfzvAIAAA==
+	Fri, 12 Sep 2014 12:47:03 -0400
+Date: Fri, 12 Sep 2014 17:46:57 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "zlim.lnx@gmail.com" <zlim.lnx@gmail.com>,
+        "ast@plumgrid.com" <ast@plumgrid.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH arm64-next] net: bpf: arm64: address randomize and write
+ protect JIT code
+Message-ID: <20140912164656.GH5532@arm.com>
+References: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
+ <20140912160345.GF5532@arm.com>
+ <54131D87.9060008@redhat.com>
+MIME-Version: 1.0
+In-Reply-To: <54131D87.9060008@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Sep 2014 16:46:58.0574 (UTC) FILETIME=[2B2602E0:01CFCEA9]
+X-MC-Unique: 114091217470005401
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Sep 12, 2014 at 05:21:27PM +0100, Daniel Borkmann wrote:
+> On 09/12/2014 06:03 PM, Catalin Marinas wrote:
+> > On Fri, Sep 12, 2014 at 08:11:37AM +0100, Daniel Borkmann wrote:
+> >>   Will, Catalin, Dave, this is more or less a heads-up: when net-next and
+> >>   arm64-next tree will get both merged into Linus' tree, we will run into
+> >>   a 'silent' merge conflict until someone actually runs eBPF JIT on ARM64
+> >>   and might notice (I presume) an oops when JIT is freeing bpf_prog. I'd
+> >>   assume nobody actually _runs_ linux-next, but not sure about that though.
+> >
+> > Some people do.
+> >
+> >>   How do we handle this? Would I need to resend this patch when the time
+> >>   comes or would you ARM64 guys take care of it automagically? ;)
+> >
+> > I think we could disable BPF for arm64 until -rc1 and re-enable it
+> > together with this patch.
+> 
+> Ok, yes, that would mitigate it a bit. Sounds fine to me.
+> 
+> > One comment below:
+> >
+> >> --- a/arch/arm64/net/bpf_jit_comp.c
+> >> +++ b/arch/arm64/net/bpf_jit_comp.c
+> > [...]
+> >> +static void jit_fill_hole(void *area, unsigned int size)
+> >> +{
+> >> +	/* Insert illegal UND instructions. */
+> >> +	u32 *ptr, fill_ins = 0xe7ffffff;
+> >
+> > On arm64 we don't have a guaranteed undefined instruction space (and
+> > Will tells me that on Thumb-2 for the 32-bit arm port it actually is a
+> > valid instruction, it seems that you used the same value).
+> 
+> Hm, ok, the boards we've tried out and where Zi tested it too, it worked.
 
-[ added linux-kernel ML to cc: ]
+So, if I try this:
 
-Hi,
+$ echo 0xffffffe7 | xxd -r > test.bin
+$ arm-linux-gnueabihf-objdump -m arm -D -b binary test.bin
+...
+   0:   e7ffffff        udf     #65535  ; 0xffff
 
-On Tuesday, August 26, 2014 11:19:51 AM dinguyen@opensource.altera.com wrote:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> 
-> Hello,
-> 
-> This is version 4 of the patch series that combines the dwc2 gadget and host
-> driver into a single dual role driver. Here are the main differences from V2:
-> 
-> - Patch 9/12 : Move spin_lock_init() earlier up in the function to guarantee
->   no locks can be taken before the initializing the spin_lock.
-> 
-> - Patch 12/12 : Same as patch 9/12.
-> 
-> - Added Acked-by: paulz for all patches except patch 9/12 and 12/12.
-> 
-> For v4, I have rebased the series on top of Greg KH's USB usb-linus tree
-> [9b2667f usb: dwc2: gadget: Set the default EP max packet value as 8 bytes]
-> and on top of the following patches that have not yet been applied:
-> 
-> Doug Anderson: usb: dwc2: Read GNPTXFSIZ when in forced HOST mode
-> Kever Yang : usb: dwc2: add 'mode' which based on Kconfig select or dts setting
-> Robert Baldyga : usb: dwc2/gadget: fix series <- 12 patches
-> 
-> As usual, tested on SOCFPGA(host, gadget, and dual-role) and on Rpi-B
-> (host mode only).
-> 
-> I have pushed this series to a git repo to make it more convenient for people
-> to test/review.
-> 
-> git://git.rocketboards.org/linux-socfpga-next.git dwc2_dual_role_v4
+Do you use the same constant on arm32?
 
-Please also add linux-kernel ML to next revision of the patchset
-(helps to get reviewers).
+> > I think the only guaranteed way is to use the BRK #imm instruction but
+> > it requires some changes to the handling code as it is currently used
+> > for kgdb (unless you can use two instructions for filling in which could
+> > generate a NULL pointer access).
+> 
+> The trade-off would be that if we align on 8, it would certainly increase
+> the probability to jump to the right offset. Note, on x86_64 we have no
+> alignment requirements, hence 1, and on s390x only alignment of 2.
+> 
+> So, on that few (?) boards where UND would be a valid instruction [ as
+> opposed to crash the kernel ], would it translate into a NOP and just
+> 'walk' from there into the JIT image?
 
-Also sorry for the late review but people are not yet used to
-the fact that dwc2 now also means "our" good old s3c-hsotg. ;-)
+On current ARMv8 CPU implementations, the above constant is unallocated
+in the A64 instruction space. But you never know, it may be allocated in
+the future.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+I think it's easier if you just use something like BRK #0x100 (opcode
+0xd4202000) which would trigger a fault in the kernel (kgdb uses #imm
+0x400 and 0x401).
+
+An unallocated BRK would trigger a fault via do_debug_exception ->
+brk_handler and panic the kernel.
+
+-- 
+Catalin
 
