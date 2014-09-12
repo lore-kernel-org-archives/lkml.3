@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaILBRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 21:17:40 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:62748 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaILBRi (ORCPT
+	id S1755503AbaILBXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 21:23:50 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50751 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260AbaILBXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 21:17:38 -0400
+	Thu, 11 Sep 2014 21:23:48 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <54124AFC.6020700@jp.fujitsu.com>
+Date: Fri, 12 Sep 2014 10:23:08 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <CAMEtUuyzOgCZutgsAXs60BO0=0WJGpVAeTYN2hf0Bh1sZ5PMVg@mail.gmail.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
- <541013CE.6020307@redhat.com> <CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
- <5411FC42.3070505@redhat.com> <CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
- <CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com> <CAMEtUuyzOgCZutgsAXs60BO0=0WJGpVAeTYN2hf0Bh1sZ5PMVg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 11 Sep 2014 18:17:15 -0700
-Message-ID: <CALCETrXqwd=dp31fckMPruQMwVw+UAjaf=SSWp8wr_Cdz_tQdw@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Vladimir Davydov <vdavydov@parallels.com>, <linux-kernel@vger.kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>
+Subject: Re: [PATCH RFC 2/2] memcg: add threshold for anon rss
+References: <cover.1410447097.git.vdavydov@parallels.com> <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
+In-Reply-To: <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 3:29 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
-> On Thu, Sep 11, 2014 at 2:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>
->>> the verifier log contains full trace. Last unsafe instruction + error
->>> in many cases is useless. What we found empirically from using
->>> it over last 2 years is that developers have different learning curve
->>> to adjust to 'safe' style of C. Pretty much everyone couldn't
->>> figure out why program is rejected based on last error. Therefore
->>> verifier emits full log. From the 1st insn all the way till the last
->>> 'unsafe' instruction. So the log is multiline output.
->>> 'Understanding eBPF verifier messages' section of
->>> Documentation/networking/filter.txt provides few trivial
->>> examples of these multiline messages.
->>> Like for the program:
->>>   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
->>>   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
->>>   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
->>>   BPF_LD_MAP_FD(BPF_REG_1, 0),
->>>   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
->>>   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
->>>   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
->>>   BPF_EXIT_INSN(),
->>> the verifier log_buf is:
->>>   0: (7a) *(u64 *)(r10 -8) = 0
->>>   1: (bf) r2 = r10
->>>   2: (07) r2 += -8
->>>   3: (b7) r1 = 0
->>>   4: (85) call 1
->>>   5: (15) if r0 == 0x0 goto pc+1
->>>    R0=map_ptr R10=fp
->>>   6: (7a) *(u64 *)(r0 +4) = 0
->>>   misaligned access off 4 size 8
->>>
->>> It will surely change over time as verifier becomes smarter,
->>> supports new types, optimizations and so on.
->>> So this log is not an ABI. It's for humans to read.
->>> The log explains _how_ verifier came to conclusion
->>> that the program is unsafe.
->>
->> Given that you've already arranged (I think) for the verifier to be
->> compilable in the kernel and in userspace, would it make more sense to
->> have the kernel version just say yes or no and to make it easy for
->> user code to retry verification in userspace if they want a full
->> explanation?
+(2014/09/12 0:41), Vladimir Davydov wrote:
+> Though hard memory limits suit perfectly for sand-boxing, they are not
+> that efficient when it comes to partitioning a server's resources among
+> multiple containers. The point is a container consuming a particular
+> amount of memory most of time may have infrequent spikes in the load.
+> Setting the hard limit to the maximal possible usage (spike) will lower
+> server utilization while setting it to the "normal" usage will result in
+> heavy lags during the spikes.
+> 
+> To handle such scenarios soft limits were introduced. The idea is to
+> allow a container to breach the limit freely when there's enough free
+> memory, but shrink it back to the limit aggressively on global memory
+> pressure. However, the concept of soft limits is intrinsically unsafe
+> by itself: if a container eats too much anonymous memory, it will be
+> very slow or even impossible (if there's no swap) to reclaim its
+> resources back to the limit. As a result the whole system will be
+> feeling bad until it finally realizes the culprit must die.
+> 
+> Currently we have no way to react to anonymous memory + swap usage
+> growth inside a container: the memsw counter accounts both anonymous
+> memory and file caches and swap, so we have neither a limit for
+> anon+swap nor a threshold notification. Actually, memsw is totally
+> useless if one wants to make full use of soft limits: it should be set
+> to a very large value or infinity then, otherwise it just makes no
+> sense.
+> 
+> That's one of the reasons why I think we should replace memsw with a
+> kind of anonsw so that it'd account only anon+swap. This way we'd still
+> be able to sand-box apps, but it'd also allow us to avoid nasty
+> surprises like the one I described above. For more arguments for and
+> against this idea, please see the following thread:
+> 
+> http://www.spinics.net/lists/linux-mm/msg78180.html
+> 
+> There's an alternative to this approach backed by Kamezawa. He thinks
+> that OOM on anon+swap limit hit is a no-go and proposes to use memory
+> thresholds for it. I still strongly disagree with the proposal, because
+> it's unsafe (what if the userspace handler won't react in time?).
+> Nevertheless, I implement his idea in this RFC. I hope this will fuel
+> the debate, because sadly enough nobody seems to care about this
+> problem.
+> 
+> So this patch adds the "memory.rss" file that shows the amount of
+> anonymous memory consumed by a cgroup and the event to handle threshold
+> notifications coming from it. The notification works exactly in the same
+> fashion as the existing memory/memsw usage notifications.
+> 
 >
-> Good memory :) Long ago I had a hack where I compiled
-> verifier.o for kernel and linked it with userspace wrappers to
-> have the same verifier for userspace. It was very fragile.
-> and maps were not separate objects and there were no fds.
-> It's not feasible anymore, since different subsystems
-> will configure different bpf_context and helper functions and
-> verifier output is dynamic based on maps that were created.
-> For example, if user's samples/bpf/sock_example.c does
-> bpf_create_map(HASH, sizeof(key) * 2, ...);
-> instead of
-> bpf_create_map(HASH, sizeof(key), ...);
-> the same program will be rejected in first case and will be
-> accepted in the second, because map sizes and ebpf
-> program expectations are mismatching.
 
-Hmm.
+So, now, you know you can handle "threshould".
 
-This actually furthers my thought that the relocations should be a
-real relocation table.  Then you could encode the types of the
-referenced objects in the table, and a program could be verified
-without looking up the fds.  The only extra step would be to confirm
-that the actual types referenced match those in the table.
+If you want to implement "automatic-oom-killall-in-a-contanier-threshold-in-kernel",
+I don't have any objections.
 
---Andy
+What you want is not limit, you want a trigger for killing process.
+Threshold + Kill is enough, using res_counter for that is overspec.
+
+You don't need res_counter and don't need to break other guy's use case.
+
+Thanks,
+-Kame
+
+
+
+
