@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaILPLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:11:10 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56321 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaILPLJ (ORCPT
+	id S1751836AbaILPMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:12:08 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:48403 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaILPMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:11:09 -0400
+	Fri, 12 Sep 2014 11:12:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9tzuHQxPYoUZegKzwUoHBvp1UTkmtV3zcBmUxeJUr9qAWA@mail.gmail.com>
-References: <CAPM=9tyZF2S7PJcLyc=KH_NBFXju8UwvMBOF_MocNK8pPVXDYw@mail.gmail.com>
-	<20140912112619.50d3b651@www.etchedpixels.co.uk>
-	<CAPM=9tzuHQxPYoUZegKzwUoHBvp1UTkmtV3zcBmUxeJUr9qAWA@mail.gmail.com>
-Date: Fri, 12 Sep 2014 08:11:07 -0700
-X-Google-Sender-Auth: -eOw3NVE7qM2m8hdrd6Ice26ik0
-Message-ID: <CA+55aFzqUsdjyE4ZHLyKwCm-SsV4NvFNyy7FTpROTg-J9+kZmg@mail.gmail.com>
-Subject: Re: vga and 64-bit memcpy's
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1410509864-10019-2-git-send-email-javier.martinez@collabora.co.uk>
+References: <1410509864-10019-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1410509864-10019-2-git-send-email-javier.martinez@collabora.co.uk>
+Date: Fri, 12 Sep 2014 08:12:04 -0700
+X-Google-Sender-Auth: G6tguAVqpC2mWWUsm0VzDaIWJNA
+Message-ID: <CAD=FV=Vu3u=KfUNUpL6qcr0Fp42WbY8AqfOXyWr-D3KW1PucxA@mail.gmail.com>
+Subject: Re: [PATCH RESEND v9 1/5] rtc: max77686: Allow the max77686 rtc to
+ wakeup the system
+From: Doug Anderson <dianders@chromium.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Olof Johansson <olof@lixom.net>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        rtc-linux@googlegroups.com,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 3:48 AM, Dave Airlie <airlied@gmail.com> wrote:
+Hi,
+
+On Fri, Sep 12, 2014 at 1:17 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> From: Doug Anderson <dianders@chromium.org>
 >
-> Well I'm not shocked that an SMI GPU is out of spec, just not sure how
-> we can workaround it.
+> The max77686 includes an RTC that keeps power during suspend.  It's
+> convenient to be able to use it as a wakeup source.
+>
+> NOTE: due to wakeup ordering problems this patch alone doesn't work so
+> well on exynos5250-snow.  You also need something that brings the i2c
+> bus up before the max77686 wakeup runs.
 
-Try just removing the
+This note made sense when the patch was first submitted, but no longer
+does since the i2c change landed.  See:
 
-  #define scr_memcpyw(d, s, c) memcpy(d, s, c)
-  #define VT_BUF_HAVE_MEMCPYW
-
-(and perhaps MEMMOVEW case too) from the default implementation, and
-see if doing things 16-bit words at a time using the fallbacks ends up
-working. As Alan said, write combining might defeat that, but quite
-frankly, we already do this for the MEMSETW case (probably because we
-forgot, possibly because it's not as performance-sensitive)
-
-My gut feel is that we don't care deeply about performance here,
-because (a) true text-modes are less common anyway and (b) true text
-modes are pretty damn fast anyway compared to the more usual "write
-the whole glyph as graphics" fbcon case.
-
-And *maybe* it works. And maybe that SMI GPU is a piece of shit that
-isn't worth worrying about in VGA text-mode. Where the hell are they
-found anyway?
-
-               Linus
+b19c195 i2c: s3c2410: resume the I2C controller earlier
