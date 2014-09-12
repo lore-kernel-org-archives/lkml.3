@@ -1,90 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaILRkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:40:33 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47451 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaILRkb (ORCPT
+	id S1751873AbaILRla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:41:30 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:50870 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaILRl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:40:31 -0400
-Date: Fri, 12 Sep 2014 10:40:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 1/9] locktorture: Rename locktorture_runnable parameter
-Message-ID: <20140912174026.GD4775@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
- <1410493224-3312-2-git-send-email-dave@stgolabs.net>
+	Fri, 12 Sep 2014 13:41:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410493224-3312-2-git-send-email-dave@stgolabs.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091217-6688-0000-0000-000004B7BA80
+In-Reply-To: <20140912153308.GB4408@redhat.com>
+References: <1410502832-3573-1-git-send-email-bhe@redhat.com>
+	<20140912152244.GA2781@dhcp-16-105.nay.redhat.com>
+	<20140912153308.GB4408@redhat.com>
+Date: Fri, 12 Sep 2014 10:41:28 -0700
+X-Google-Sender-Auth: yxTS4DSuN5ztgvlrl9vuGNRHIeY
+Message-ID: <CAGXu5j+3vQgaCf23A-UACsjodu+TT01Gbka+YezVYNzjFrQG1Q@mail.gmail.com>
+Subject: Re: [Patch v3 1/2] kaslr: check if kernel location is changed
+From: Kees Cook <keescook@chromium.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Baoquan He <bhe@redhat.com>, "Thomas D." <whissi@whissi.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        kumagai-atsushi@mxc.nes.nec.co.jp
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 08:40:16PM -0700, Davidlohr Bueso wrote:
-> ... to just 'torture_runnable'. It follows other variable naming
-> and is shorter.
-> 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+On Fri, Sep 12, 2014 at 8:33 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Sep 12, 2014 at 11:22:44PM +0800, Baoquan He wrote:
+>> Function handle_relocations() is used to do the relocations handling
+>> for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+>> mandotary to perform. For x86_64 only when kaslr is enabled and a
+>> random kernel location is chosen successfully the relocation handling
+>> shound be done. However previous implementation only compared the
+>> kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+>> compiled to run at. This would casue system to be exceptional in
+>> few conditions like when delta between load address and compiled
+>> address is bigger than what 32bit signed relocations can handle.
+>> Also there will be limitations that delta can't be too big otherwise
+>> kernel text virtual addresses will overflow in module address space.
+>>
+>> So in this patch check if kernel location is changed after
+>> choose_kernel_location() when x86_64. If and only if in x86_64
+>> and kernel location is changed, we say a kaslr random kernel
+>> location is chosen, then the relocation handling is needed.
+>>
+>> Signed-off-by: Baoquan He <bhe@redhat.com>
+>
+> I think this patch should make kexec and kdump working with kaslr
+> enabled (CONFIG_RANDOMIZE_BASE=y).
+>
+> In case of kdump, we will need to pass "nokaslr" to make sure kernel
+> does not move from kexec chosen address.
+>
+> In case of kexec, I think it should be ok to not pass "nokaslr". This
+> case is no different than any other bootloader.
+>
+> Hence.
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Looks good -- and please see below for the corresponding change to the
-locktorture scripting.  (Which I have queued separately after this change.)
+Yup, I think this looks fine to me too. Thanks for getting this fixed!
+And as Vivek mentioned later, I think this should probably go into
+-stable as well.
 
-> ---
->  kernel/locking/locktorture.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/locking/locktorture.c b/kernel/locking/locktorture.c
-> index 0955b88..8c770b2 100644
-> --- a/kernel/locking/locktorture.c
-> +++ b/kernel/locking/locktorture.c
-> @@ -87,9 +87,9 @@ static struct lock_writer_stress_stats *lwsa;
->  #else
->  #define LOCKTORTURE_RUNNABLE_INIT 0
->  #endif
-> -int locktorture_runnable = LOCKTORTURE_RUNNABLE_INIT;
-> -module_param(locktorture_runnable, int, 0444);
-> -MODULE_PARM_DESC(locktorture_runnable, "Start locktorture at module init");
-> +int torture_runnable = LOCKTORTURE_RUNNABLE_INIT;
-> +module_param(torture_runnable, int, 0444);
-> +MODULE_PARM_DESC(torture_runnable, "Start locktorture at module init");
-> 
->  /* Forward reference. */
->  static void lock_torture_cleanup(void);
-> @@ -355,7 +355,7 @@ static int __init lock_torture_init(void)
->  		&lock_busted_ops, &spin_lock_ops, &spin_lock_irq_ops,
->  	};
-> 
-> -	if (!torture_init_begin(torture_type, verbose, &locktorture_runnable))
-> +	if (!torture_init_begin(torture_type, verbose, &torture_runnable))
->  		return -EBUSY;
-> 
->  	/* Process args and tell the world that the torturer is on the job. */
-> -- 
-> 1.8.4.5
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: stable@vger.kernel.org
 
-locktorture: Make torture scripting account for new _runnable name
+-Kees
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> Thomas D.,
+>
+> You had reported kexec issues with CONFIG_RANDOMIZE_BASE=y. Does this
+> patch resolve the issue for you?
+>
+> Thanks
+> Vivek
+>
+>> ---
+>>  arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+>>  1 file changed, 22 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+>> index 57ab74d..3bb2a17 100644
+>> --- a/arch/x86/boot/compressed/misc.c
+>> +++ b/arch/x86/boot/compressed/misc.c
+>> @@ -230,8 +230,9 @@ static void error(char *x)
+>>               asm("hlt");
+>>  }
+>>
+>> -#if CONFIG_X86_NEED_RELOCS
+>> -static void handle_relocations(void *output, unsigned long output_len)
+>> +#ifdef CONFIG_X86_NEED_RELOCS
+>> +static void handle_relocations(void *output_orig, void *output,
+>> +                            unsigned long output_len)
+>>  {
+>>       int *reloc;
+>>       unsigned long delta, map, ptr;
+>> @@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+>>       unsigned long max_addr = min_addr + output_len;
+>>
+>>       /*
+>> +     * 32bit always requires relocations to be performed. For x86_64,
+>> +     * relocations need to be performed only if kaslr has chosen a
+>> +     * different load address then kernel was originally loaded at.
+>> +     *
+>> +     * If we are here, either kaslr is not configured in or kaslr is disabled
+>> +     * or kaslr has chosen not to change the load location of kernel. Don't
+>> +     * perform any relocations.
+>> +     */
+>> +#if CONFIG_X86_64
+>> +     if (output_orig == output)
+>> +             return;
+>> +#endif
+>> +
+>> +     /*
+>>        * Calculate the delta between where vmlinux was linked to load
+>>        * and where it was actually loaded.
+>>        */
+>> @@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+>>  #endif
+>>  }
+>>  #else
+>> -static inline void handle_relocations(void *output, unsigned long output_len)
+>> +static inline void handle_relocations(void *output_orig, void *output,
+>> +                                   unsigned long output_len)
+>>  { }
+>>  #endif
+>>
+>> @@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>>                                 unsigned char *output,
+>>                                 unsigned long output_len)
+>>  {
+>> +     unsigned char *output_orig = output;
+>> +
+>>       real_mode = rmode;
+>>
+>>       sanitize_boot_params(real_mode);
+>> @@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>>       debug_putstr("\nDecompressing Linux... ");
+>>       decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>>       parse_elf(output);
+>> -     handle_relocations(output, output_len);
+>> +     handle_relocations(output_orig, output, output_len);
+>>       debug_putstr("done.\nBooting the kernel.\n");
+>>       return output;
+>>  }
+>> --
+>> 1.8.5.3
+>>
 
-diff --git a/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh b/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
-index 9746ea1cd6c7..252aae618984 100644
---- a/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
-+++ b/tools/testing/selftests/rcutorture/configs/lock/ver_functions.sh
-@@ -38,6 +38,6 @@ per_version_boot_params () {
- 	echo $1 `locktorture_param_onoff "$1" "$2"` \
- 		locktorture.stat_interval=15 \
- 		locktorture.shutdown_secs=$3 \
--		locktorture.locktorture_runnable=1 \
-+		locktorture.torture_runnable=1 \
- 		locktorture.verbose=1
- }
 
+
+-- 
+Kees Cook
+Chrome OS Security
