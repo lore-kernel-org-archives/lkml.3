@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaILCay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 22:30:54 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51034 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751616AbaILCax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 22:30:53 -0400
-Message-ID: <1410489049.5186.19.camel@marge.simpson.net>
-Subject: Re: perf top -g -U --sort=symbol --children == lalalalala?
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Namhyung Kim <namhyung@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Sep 2014 04:30:49 +0200
-In-Reply-To: <20140911213027.GB1801@kernel.org>
-References: <1410263641.15383.8.camel@marge.simpson.net>
-	 <20140909133737.GK2773@kernel.org>
-	 <CAM9d7cgCuVVNrA7DU=t_CgENLa-dxRW2HXoO3Uo6=2izshSjhg@mail.gmail.com>
-	 <1410439392.20184.17.camel@marge.simpson.net>
-	 <20140911134338.GE10158@kernel.org> <20140911213027.GB1801@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753285AbaILCdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 22:33:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014AbaILCdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 22:33:17 -0400
+Date: Thu, 11 Sep 2014 22:32:52 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        kkolasa@winsoft.pl, dm-devel@redhat.com
+Subject: Re: [PATCH] slab: implement kmalloc guard
+In-Reply-To: <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
+Message-ID: <alpine.LRH.2.02.1409112211060.30537@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409080932490.20388@gentwo.org> <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 18:30 -0300, Arnaldo Carvalho de Melo wrote:
 
-> Also, looking at the changelog entries and at tools/perf/Documentation/
-> the only description for --children, the default, is:
+
+On Mon, 8 Sep 2014, Christoph Lameter wrote:
+
+> On Mon, 8 Sep 2014, Mikulas Patocka wrote:
 > 
-> ----------------
-> --children::
->         Accumulate callchain of children to parent entry so that then can
->         show up in the output.  The output will have a new "Children" column
->         and will be sorted on the data.  It requires callchains are recorded.
-> ----------------
-
-grep of course found that, and git log found more, but nothing told me
-what the heck it's sweeping up that's so darn plentiful in my box that
-there's more than 100% of it laying about :)
-
-> I think that a longer/clearer entry in the 'perf record' man page is
-> required.
+> > I don't know what you mean. If someone allocates 10000 objects with sizes
+> > from 1 to 10000, you can't have 10000 slab caches - you can't have a slab
+> > cache for each used size. Also - you can't create a slab cache in
+> > interrupt context.
 > 
-> Perhaps the description got lost in a --cover-letter for the patch
-> series implementing it?
+> Oh you can create them up front on bootup. And I think only the small
+> sizes matter. Allocations >=8K are pushed to the page allocator anyways.
 
-If it ever existed, I can't find it.  A little blurb would be helpful.
+Only for SLUB. For SLAB, large allocations are still use SLAB caches up to 
+4M. But anyway - having 8K preallocated slab caches is too much.
 
--Mike
+If you want to integrate this patch into the slab/slub subsystem, a better 
+solution would be to store the exact size requested with kmalloc along the 
+slab/slub object itself (before the preceding redzone). But it would 
+result in duplicating the work - you'd have to repeat the logic in this 
+patch three times - once for slab, once for slub and once for 
+kmalloc_large/kmalloc_large_node.
 
+I don't know if it would be better than this patch.
+
+> > > We already have a redzone structure to check for writes over the end of
+> > > the object. Lets use that.
+> >
+> > So, change all three slab subsystems to use that.
+> 
+> SLOB has no debugging features and I think that was intentional. We are
+> trying to unify the debug checks etc. Some work on that would be
+> appreciated. I think the kmalloc creation is already in slab_common.c
+
+Mikulas
