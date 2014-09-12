@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038AbaILJxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:53:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653AbaILJxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:53:08 -0400
-Date: Fri, 12 Sep 2014 10:50:21 +0100
-From: Aaron Tomlin <atomlin@redhat.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: peterz@infradead.org, dzickus@redhat.com, jcastillo@redhat.com,
-        riel@redhat.com, x86@kernel.org, akpm@linux-foundation.org,
-        minchan@kernel.org, bmr@redhat.com, prarit@redhat.com, oleg@redhat.com,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        mingo@redhat.com, aneesh.kumar@linux.vnet.ibm.com, akpm@google.com,
-        jgh@redhat.com, linuxppc-dev@lists.ozlabs.org, tglx@linutronix.de
-Subject: Re: [PATCH v3 3/3] sched: BUG when stack end location is over written
-Message-ID: <20140912095021.GE1873@atomlin.usersys.redhat.com>
-References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
- <1410450088-18236-1-git-send-email-atomlin@redhat.com>
- <1410450088-18236-4-git-send-email-atomlin@redhat.com>
- <1410501891.17540.6.camel@concordia>
+	id S1753189AbaILJxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:53:23 -0400
+Received: from mail-bn1on0141.outbound.protection.outlook.com ([157.56.110.141]:7520
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752914AbaILJxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:53:20 -0400
+From: Robin Gong <b38343@freescale.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <sre@kernel.org>,
+        <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
+        <grant.likely@linaro.org>, <linux@arm.linux.org.uk>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v2 3/3] ARM: configs: imx_v6_v7_defconfig: add power off driver
+Date: Fri, 12 Sep 2014 16:48:59 +0800
+Message-ID: <1410511739-31122-4-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410511739-31122-1-git-send-email-b38343@freescale.com>
+References: <1410511739-31122-1-git-send-email-b38343@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(33646002)(104016003)(105606002)(50466002)(48376002)(50986999)(74502001)(80022001)(74662001)(104166001)(64706001)(36756003)(102836001)(81342001)(31966008)(62966002)(81542001)(106466001)(107046002)(79102001)(229853001)(47776003)(92726001)(50226001)(26826002)(2201001)(77156001)(84676001)(46102001)(87286001)(93916002)(76176999)(44976005)(97736003)(92566001)(87936001)(77982001)(21056001)(88136002)(83322001)(76482001)(83072002)(20776003)(85852003)(89996001)(95666004)(6806004)(19580395003)(4396001)(99396002)(90102001)(85306004)(19580405001)(68736004)(921003)(1121002)(2101003)(42262002)(83996005);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB345;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1410501891.17540.6.camel@concordia>
-X-PGP-Key: http://pgp.mit.edu/pks/lookup?search=atomlin%40redhat.com
-X-PGP-Fingerprint: 7906 84EB FA8A 9638 8D1E  6E9B E2DE 9658 19CC 77D6
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB345;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 04:04:51PM +1000, Michael Ellerman wrote:
-> On Thu, 2014-09-11 at 16:41 +0100, Aaron Tomlin wrote:
-> > Currently in the event of a stack overrun a call to schedule()
-> > does not check for this type of corruption. This corruption is
-> > often silent and can go unnoticed. However once the corrupted
-> > region is examined at a later stage, the outcome is undefined
-> > and often results in a sporadic page fault which cannot be
-> > handled.
-> > 
-> > This patch checks for a stack overrun and takes appropriate
-> > action since the damage is already done, there is no point
-> > in continuing.
-> > 
-> > Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
-> > ---
-> >  kernel/sched/core.c |  3 +++
-> >  lib/Kconfig.debug   | 12 ++++++++++++
-> >  2 files changed, 15 insertions(+)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index ec1a286..0b70b73 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
-> >   */
-> >  static inline void schedule_debug(struct task_struct *prev)
-> >  {
-> > +#ifdef CONFIG_SCHED_STACK_END_CHECK
-> > +	BUG_ON(unlikely(task_stack_end_corrupted(prev)))
-> > +#endif
-> 
-> Spot the bug? Please compile your code in future.
+Add power off driver in config file.
 
-Oops! Sorry about that.
+Signed-off-by: Robin Gong <b38343@freescale.com>
+---
+ arch/arm/configs/imx_v6_v7_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
+index 16cfec4..a310e61 100644
+--- a/arch/arm/configs/imx_v6_v7_defconfig
++++ b/arch/arm/configs/imx_v6_v7_defconfig
+@@ -165,6 +165,9 @@ CONFIG_SPI_IMX=y
+ CONFIG_GPIO_SYSFS=y
+ CONFIG_GPIO_MC9S08DZ60=y
+ CONFIG_GPIO_STMPE=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_IMX=y
+ # CONFIG_HWMON is not set
+ CONFIG_WATCHDOG=y
+ CONFIG_IMX2_WDT=y
 -- 
-Aaron Tomlin
+1.9.1
+
