@@ -1,202 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241AbaILG5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 02:57:19 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38713 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaILG4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 02:56:54 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8C6t01P005851, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <dwmw2@infradead.org>, <ben@decadent.org.uk>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hau@realtek.com>, <ivecera@redhat.com>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH firmware] rtl_nic: add firmware for RTL8168H and RTL8107E
-Date: Fri, 12 Sep 2014 14:54:23 +0800
-Message-ID: <1394712342-15778-41-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.21.71.44]
+	id S1752597AbaILHCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 03:02:10 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:35516 "EHLO sipsolutions.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752229AbaILHCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 03:02:08 -0400
+From: Johannes Berg <johannes@sipsolutions.net>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Luciano Coelho <luca@coelho.fi>, Kalle Valo <kvalo@adurom.com>,
+        dri-devel@lists.freedesktop.org, linux-wireless@vger.kernel.org
+Subject: [PATCH] device coredump: add new device coredump class
+Date: Fri, 12 Sep 2014 09:01:56 +0200
+Message-Id: <1410505316-4807-1-git-send-email-johannes@sipsolutions.net>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File: rtl_nic/rtl8168h-1.fw
-Version: 0.0.1
+From: Johannes Berg <johannes.berg@intel.com>
 
-File: rtl_nic/rtl8168h-2.fw
-Version: 0.0.1
+Many devices run firmware and/or complex hardware, and most of that
+can have bugs. When it misbehaves, however, it is often much harder
+to debug than software running on the host.
 
-File: rtl_nic/rtl8107e-1.fw
-Version: 0.0.1
+Introduce a "device coredump" mechanism to allow dumping internal
+device/firmware state through a generalized mechanism. As devices
+are different and information needed can vary accordingly, this
+doesn't prescribe a file format - it just provides mechanism to
+get data to be able to capture it in a generalized way (e.g. in
+distributions.)
 
-File: rtl_nic/rtl8107e-2.fw
-Version: 0.0.1
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+The dumped data will be readable in sysfs in the virtual device's
+data file under /sys/class/devcoredump/devcd*/. Writing to it will
+free the data and remove the device, as does a 5-minute timeout.
+
+Note that generalized capturing of such data may result in privacy
+issues, so users generally need to be involved. In order to allow
+certain users/system integrators/... to disable the feature at all,
+introduce a Kconfig option to override the drivers that would like
+to have the feature.
+
+For now, this provides two ways of dumping data:
+ 1) with a vmalloc'ed area, that is then given to the subsystem
+    and freed after retrieval or timeout
+ 2) with a generalized reader/free function method
+
+We could/should add more options, e.g. a list of pages, since the
+vmalloc area is very limited on some architectures.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 ---
- WHENCE                |  12 ++++++++++++
- rtl_nic/rtl8107e-1.fw | Bin 0 -> 2496 bytes
- rtl_nic/rtl8107e-2.fw | Bin 0 -> 2464 bytes
- rtl_nic/rtl8168h-1.fw | Bin 0 -> 2496 bytes
- rtl_nic/rtl8168h-2.fw | Bin 0 -> 2464 bytes
- 5 files changed, 12 insertions(+)
- create mode 100644 rtl_nic/rtl8107e-1.fw
- create mode 100644 rtl_nic/rtl8107e-2.fw
- create mode 100644 rtl_nic/rtl8168h-1.fw
- create mode 100644 rtl_nic/rtl8168h-2.fw
+ MAINTAINERS                 |   7 ++
+ drivers/base/Kconfig        |  21 ++++
+ drivers/base/Makefile       |   1 +
+ drivers/base/devcoredump.c  | 265 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/devcoredump.h |  35 ++++++
+ 5 files changed, 329 insertions(+)
+ create mode 100644 drivers/base/devcoredump.c
+ create mode 100644 include/linux/devcoredump.h
 
-diff --git a/WHENCE b/WHENCE
-index 26cabf4..3ffc68e 100644
---- a/WHENCE
-+++ b/WHENCE
-@@ -2149,6 +2149,18 @@ Version: 0.0.1
- File: rtl_nic/rtl8168g-3.fw
- Version: 0.0.1
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 2f85f55c8fb8..8e31d053fb14 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2847,6 +2847,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+ S:	Maintained
+ F:	drivers/usb/dwc3/
  
-+File: rtl_nic/rtl8168h-1.fw
-+Version: 0.0.1
++DEVICE COREDUMP (DEV_COREDUMP)
++M:	Johannes Berg <johannes@sipsolutions.net>
++L:	linux-kernel@vger.kernel.org
++S:	Maintained
++F:	drivers/base/devcoredump.c
++F:	include/linux/devcoredump.h
 +
-+File: rtl_nic/rtl8168h-2.fw
-+Version: 0.0.1
+ DEVICE FREQUENCY (DEVFREQ)
+ M:	MyungJoo Ham <myungjoo.ham@samsung.com>
+ M:	Kyungmin Park <kyungmin.park@samsung.com>
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 4e7f0ff83ae7..134f763d90fd 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -165,6 +165,27 @@ config FW_LOADER_USER_HELPER_FALLBACK
+ 
+ 	  If you are unsure about this, say N here.
+ 
++config WANT_DEV_COREDUMP
++	bool
++	help
++	  Drivers should "select" this option if they desire to use the
++	  device coredump mechanism.
 +
-+File: rtl_nic/rtl8107e-1.fw
-+Version: 0.0.1
++config DISABLE_DEV_COREDUMP
++	bool "Disable device coredump" if EXPERT
++	help
++	  Disable the device coredump mechanism despite drivers wanting to
++	  use it; this allows for more sensitive systems or systems that
++	  don't want to ever access the information to not have the code,
++	  nor keep any data.
 +
-+File: rtl_nic/rtl8107e-2.fw
-+Version: 0.0.1
++	  If unsure, say N.
 +
- Licence:
-  * Copyright © 2011-2013, Realtek Semiconductor Corporation
-  *
-diff --git a/rtl_nic/rtl8107e-1.fw b/rtl_nic/rtl8107e-1.fw
++config DEV_COREDUMP
++	bool
++	default y if WANT_DEV_COREDUMP
++	depends on !DISABLE_DEV_COREDUMP
++
+ config DEBUG_DRIVER
+ 	bool "Driver Core verbose debug messages"
+ 	depends on DEBUG_KERNEL
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 4aab26ec0292..6922cd6850a2 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_SYS_HYPERVISOR) += hypervisor.o
+ obj-$(CONFIG_REGMAP)	+= regmap/
+ obj-$(CONFIG_SOC_BUS) += soc.o
+ obj-$(CONFIG_PINCTRL) += pinctrl.o
++obj-$(CONFIG_DEV_COREDUMP) += devcoredump.o
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
+diff --git a/drivers/base/devcoredump.c b/drivers/base/devcoredump.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..5ac3d62bcd6adb9a28bc84dcccbccd99a0dab290
-GIT binary patch
-literal 2496
-zcmY+`aY$8J9tZH#8`lw6?5({q$7vb~2?^JE&%|{l<k3V(NQ6j4L^+P@NJxlCL_~YW
-ziHK+%iHL{@S0o~$iHMMB#F5sG2x%iCB;p|w5z$0MM1;E^o!MpPzW3qxJ?Fl2&b{~i
-z@ooqq^!4{NWYT~6+n+PL(lzOtOhx*ypJ!@6&(t}$aJ18w2;uLcwWWS-eeJH^FZ;jh
-z-c_5<)TNE9`Ks&dicDSO+Dv0+ZTN1qa$(G`WoStV*~z7!#SjW8q=;gYl#rq{eh@+~
-z`dvXT#HG1J{8KJ3F3aV|k8%ZZd9E;ioGXf-<ci~m|1$2=k~sTaD*n`58WaC4i{Z!e
-zI2TsLiQG!<3hh;~G*Kz9maELaMy{4?<aA6-)y6PhC)djja-+OXZj!U|dU=DqQEp}v
-zEo^2Bt+cU~ZER-;J87qbPP*u3H$Cj3mp=O0%RcsVfP+K^IK*L&aFk;VGQ@FCaFSD;
-z<_u>UW`t4Bah?lY<Pw*;!d0#@#&vEm&IFU(WQtqd<_^=`<sSEWz(Zzu#A9;IGRG61
-z@{H%a;3cnk%^TkGj`z$Hz6l{g9{ChdND;*(DIrBEWt6jml~k~bN>)?F8mg%wO)YiQ
-z(?BEZXd=scHn5RqHqpXnw$Mr&TiM2TcCeFnI_RW}Zg$hd9(w7cpS|p3KL<ESWPn2)
-z<_JeQ#vnr+=L9D?#c9rPmSIL1<s9d^z(p=`nJZl78e?4N2IEXH$xWuX#cl2|&0X$s
-zp9ef-hDSUm$1HO^;VI8}&I?}hir2j1E$?{GJYm58lSe)U6jDSnNlHjjN*U#>U?ml-
-zqLS5Av4(1DNK;E4^)%4PI-1C`o(*iInN75?nJu)^##XkmogM6?oenzbqMP0Hu!mmy
-z=w~nc*v|nD5*gqShdIJgjxop($2q}CPH~zuoMo61MmfiME^v`cT;>W_xyBgRxxqLS
-zOmdScZgHDCOmmle+~)xgnc)$S$uY|uPk72Rp7Vm2yy7))c*{H9Gf()|{*y;O1r$<5
-zF-b~DQA!!*tY9S-tfG?DRI!F?YDiN{9rZNO$U2(HvYriWq?t{$u$e8i(#BS{v7H_4
-zq@4~r>7tw6^st9s`simb``FI`4iXvQ5QjO!QI0Xl5XU*eNltN^Gn{3Z5k@)3c`k5~
-zOI+p(SGmR**SWzs6HIcGDQ<C_J4|zzd)(&%51HW+kI6C198Y-4GoJH;m%QRNZ+Oc)
-z-ZTI0;=4l3kF(wvl8M6jK`2}JPsk4Zap4^z>9hEqh>PveyTpPEU0EBS4T<4S4=98`
-zq`xTqELO#3F?6J2&DgTIB&6a(UxhrBNX3$2=k%r2yy{d;{?<q;F8PPP=~V2^rDAre
-z_78lYicMwu2jy?nfmEESO2zVD=gL=?n=?=SNKL5A)S&*`xP`To)?T=d5Pn(zm-|{C
-e=Km8aLRdcW|LZpHfA{?J;<@BRc5z(z-SJ;Ub$cHG
-
-literal 0
-HcmV?d00001
-
-diff --git a/rtl_nic/rtl8107e-2.fw b/rtl_nic/rtl8107e-2.fw
+index 000000000000..96614b04544c
+--- /dev/null
++++ b/drivers/base/devcoredump.c
+@@ -0,0 +1,265 @@
++/*
++ * This file is provided under the GPLv2 license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2014 Intel Mobile Communications GmbH
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * The full GNU General Public License is included in this distribution
++ * in the file called COPYING.
++ *
++ * Contact Information:
++ *  Intel Linux Wireless <ilw@linux.intel.com>
++ * Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
++ *
++ * Author: Johannes Berg <johannes@sipsolutions.net>
++ */
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/devcoredump.h>
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/workqueue.h>
++
++/* if data isn't read by userspace after 5 minutes then delete it */
++#define DEVCD_TIMEOUT	(HZ * 60 * 5)
++
++struct devcd_entry {
++	struct device devcd_dev;
++	const void *data;
++	size_t datalen;
++	struct module *owner;
++	ssize_t (*read)(char *buffer, loff_t offset, size_t count,
++			const void *data, size_t datalen);
++	void (*free)(const void *data);
++	struct delayed_work del_wk;
++	struct device *failing_dev;
++};
++
++static struct devcd_entry *dev_to_devcd(struct device *dev)
++{
++	return container_of(dev, struct devcd_entry, devcd_dev);
++}
++
++static void devcd_dev_release(struct device *dev)
++{
++	struct devcd_entry *devcd = dev_to_devcd(dev);
++
++	devcd->free(devcd->data);
++	module_put(devcd->owner);
++
++	/*
++	 * this seems racy, but I don't see a notifier or such on
++	 * a struct device to know when it goes away?
++	 */
++	if (devcd->failing_dev->kobj.sd)
++		sysfs_delete_link(&devcd->failing_dev->kobj, &dev->kobj,
++				  "devcoredump");
++
++	put_device(devcd->failing_dev);
++	kfree(devcd);
++}
++
++static void devcd_del(struct work_struct *wk)
++{
++	struct devcd_entry *devcd;
++
++	devcd = container_of(wk, struct devcd_entry, del_wk.work);
++
++	device_del(&devcd->devcd_dev);
++	put_device(&devcd->devcd_dev);
++}
++
++static ssize_t devcd_data_read(struct file *filp, struct kobject *kobj,
++			       struct bin_attribute *bin_attr,
++			       char *buffer, loff_t offset, size_t count)
++{
++	struct device *dev = kobj_to_dev(kobj);
++	struct devcd_entry *devcd = dev_to_devcd(dev);
++
++	return devcd->read(buffer, offset, count, devcd->data, devcd->datalen);
++}
++
++static ssize_t devcd_data_write(struct file *filp, struct kobject *kobj,
++				struct bin_attribute *bin_attr,
++				char *buffer, loff_t offset, size_t count)
++{
++	struct device *dev = kobj_to_dev(kobj);
++	struct devcd_entry *devcd = dev_to_devcd(dev);
++
++	mod_delayed_work(system_wq, &devcd->del_wk, 0);
++
++	return count;
++}
++
++static struct bin_attribute devcd_attr_data = {
++	.attr = { .name = "data", .mode = S_IRUSR | S_IWUSR, },
++	.size = 0,
++	.read = devcd_data_read,
++	.write = devcd_data_write,
++};
++
++static struct bin_attribute *devcd_dev_bin_attrs[] = {
++	&devcd_attr_data, NULL,
++};
++
++static const struct attribute_group devcd_dev_group = {
++	.bin_attrs = devcd_dev_bin_attrs,
++};
++
++static const struct attribute_group *devcd_dev_groups[] = {
++	&devcd_dev_group, NULL,
++};
++
++static struct class devcd_class = {
++	.name		= "devcoredump",
++	.owner		= THIS_MODULE,
++	.dev_release	= devcd_dev_release,
++	.dev_groups	= devcd_dev_groups,
++};
++
++static ssize_t devcd_readv(char *buffer, loff_t offset, size_t count,
++			   const void *data, size_t datalen)
++{
++	if (offset > datalen)
++		return -EINVAL;
++
++	if (offset + count > datalen)
++		count = datalen - offset;
++
++	if (count)
++		memcpy(buffer, ((u8 *)data) + offset, count);
++
++	return count;
++}
++
++/**
++ * dev_coredumpv - create device coredump with vmalloc data
++ * @dev: the struct device for the crashed device
++ * @data: vmalloc data containing the device coredump
++ * @datalen: length of the data
++ * @gfp: allocation flags
++ *
++ * This function takes ownership of the vmalloc'ed data and will free
++ * it when it is no longer used. See dev_coredumpm() for more information.
++ */
++void dev_coredumpv(struct device *dev, const void *data, size_t datalen,
++		   gfp_t gfp)
++{
++	dev_coredumpm(dev, NULL, data, datalen, gfp, devcd_readv, vfree);
++}
++EXPORT_SYMBOL_GPL(dev_coredumpv);
++
++static int devcd_match_failing(struct device *dev, const void *failing)
++{
++	struct devcd_entry *devcd = dev_to_devcd(dev);
++
++	return devcd->failing_dev == failing;
++}
++
++/**
++ * dev_coredumpm - create device coredump with read/free methods
++ * @dev: the struct device for the crashed device
++ * @owner: the module that contains the read/free functions, use %THIS_MODULE
++ * @data: data cookie for the @read/@free functions
++ * @datalen: length of the data
++ * @gfp: allocation flags
++ * @read: function to read from the given buffer
++ * @free: function to free the given buffer
++ *
++ * Creates a new device coredump for the given device. If a previous one hasn't
++ * been read yet, the new coredump is discarded. The data lifetime is determined
++ * by the device coredump framework and when it is no longer needed the @free
++ * function will be called to free the data.
++ */
++void dev_coredumpm(struct device *dev, struct module *owner,
++		   const void *data, size_t datalen, gfp_t gfp,
++		   ssize_t (*read)(char *buffer, loff_t offset, size_t count,
++				   const void *data, size_t datalen),
++		   void (*free)(const void *data))
++{
++	static atomic_t devcd_count = ATOMIC_INIT(0);
++	struct devcd_entry *devcd;
++	struct device *existing;
++
++	existing = class_find_device(&devcd_class, NULL, dev,
++				     devcd_match_failing);
++	if (existing) {
++		put_device(existing);
++		goto free;
++	}
++
++	if (!try_module_get(owner))
++		goto free;
++
++	devcd = kzalloc(sizeof(*devcd), gfp);
++	if (!devcd)
++		goto put_module;
++
++	devcd->owner = owner;
++	devcd->data = data;
++	devcd->datalen = datalen;
++	devcd->read = read;
++	devcd->free = free;
++	devcd->failing_dev = get_device(dev);
++
++	device_initialize(&devcd->devcd_dev);
++
++	dev_set_name(&devcd->devcd_dev, "devcd%d",
++		     atomic_inc_return(&devcd_count));
++	devcd->devcd_dev.class = &devcd_class;
++
++	if (device_add(&devcd->devcd_dev))
++		goto put_device;
++
++	if (sysfs_create_link(&devcd->devcd_dev.kobj, &dev->kobj,
++			      "failing_device"))
++		/* nothing - symlink will be missing */;
++
++	if (sysfs_create_link(&dev->kobj, &devcd->devcd_dev.kobj,
++			      "devcoredump"))
++		/* nothing - symlink will be missing */;
++
++	INIT_DELAYED_WORK(&devcd->del_wk, devcd_del);
++	schedule_delayed_work(&devcd->del_wk, DEVCD_TIMEOUT);
++
++	return;
++ put_device:
++	put_device(&devcd->devcd_dev);
++ put_module:
++	module_put(owner);
++ free:
++	free(data);
++}
++EXPORT_SYMBOL_GPL(dev_coredumpm);
++
++static int __init devcoredump_init(void)
++{
++	return class_register(&devcd_class);
++}
++__initcall(devcoredump_init);
++
++static int devcd_free(struct device *dev, void *data)
++{
++	struct devcd_entry *devcd = dev_to_devcd(dev);
++
++	flush_delayed_work(&devcd->del_wk);
++	return 0;
++}
++
++static void __exit devcoredump_exit(void)
++{
++	class_for_each_device(&devcd_class, NULL, NULL, devcd_free);
++	class_unregister(&devcd_class);
++}
++__exitcall(devcoredump_exit);
+diff --git a/include/linux/devcoredump.h b/include/linux/devcoredump.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..949ca670fa31242940caa9f2222c0e268274ae0c
-GIT binary patch
-literal 2464
-zcmYk;aY$8J9tZH#8^>`RF~{DR>$HtD5)!UGO&nJu-nb@ixDgT(5$QUPE3Jr#L`1|H
-zCnBN=iHL{@35kd{A|fPOainn~A|fIpA|4_U5p6_7MA&|GnxXsNhu`<yd(S!d-Sfvg
-zA%rk6*jrbX`sVw;RJW%pQ<YVvslTqQs$N-D<J#QO!9Nlqd>dL@YFE`(H?%jl{=IE&
-zYkU7c2fyoSZ|eJguzl^?wUys>|EsjBrhZjbebqPNr_r*xz6(M~PcHl_hLA%pdE`?-
-zAxVnjM<HaQ`*JcNF3cq2=b5ayD3cw($mGPuncVoNOkVsllOI3%Rlh$M#_6Au@#p5E
-znE0hQhX0ntnXn{IWR_}|YA=gLi86V)TyFdoa)n$er($BNI)?EYxmK=|>*dw*8aXXD
-z$c=K7+{`*!SkDGp*+?6k*vuBT(m^L(bkoB&dg-H|0S4L54tBDO-9(1i!(R5Wp936Z
-zm_r=q2uC@_aZWJ8Nk%!vY0hw#bDZY_7rDe3m$||?6HIcIDXwvy8{Fg;x4FYz?s1<7
-zJS4+3Gd$ukPk72Rp7Vm2yy7))c*`u|hY%8EkxdS{<dIJSg(NAWm=cz-lv0*a#&XJ8
-zK?RkhsHTQm>ZoTmYe>^TBTY23juzIlfmSxs#wIqig{^eZNf+Jpu#H~&=x2aIwzGqs
-z>|!^OA@;DBeeCA|2N~uNhdIJgj&Yn5jBt`sPH~zuoaG$nxxhs(F~()CFwO*%TxE)D
-zT;~Qixy5bnaF=`B=K&ANFwG2)c+3-?@{H%a;3cnk%^Th_OBk~LWRXn{x#W>g0fi(f
-zqL>nvu#{4kQO0u0SwRJrq^PEbTI#50HET%IKqE~wvyK+lvw>DN(#9q>vxTj6&`B5F
-z^stRy`sinXLAJAlo$O*aks<c5mwoK#00$Z75QjO!QI2t(6O3?@QBHB1Go0ld=efW|
-zE-}Vst}xC7lU!wrYh33BH@U@a?r@iT+~)xg$uP|fk9f=zp7M<6yx=9Tc+DH$GE4Z;
-z`jbUAIpmT@J_Qt#q=;flSi(|DSw<PlDQ5*0RFa~a8fvMdp4F@&O#_WI(abtpSkDGp
-z*+?6k*vuBT(m^L(bkoB&dg-H|0S4L54tBDO-9(1i!(R5Wp936Zm_r=q2uC@_aZWJ8
-zNk%!vY0hw#bDZY_7rDe3m$||?6HIcIDXwvy8{Fg;x4FYz?s1<7JS4+3Gd$ukPk72R
-zp7Vm2yy7))c+2dM^LvGu9jEOV3KF^Tqfk8epO7B<Y;F%x;4}Z7i1Y2xzrciZr_vTa
-z9TFp5UQh@hr~a1vRV<H-;)2d(tQ=EAGR~bVm4_3_SU9rCc*&SlvnrDD(+@28PcnX}
-z_v>UVd4GSl`fgz|X1%Y8_cf^hUX+|4zrgr&bA|BR9KSvL;xPLzl!mZ);`e8poB#LU
-Q^}qRR1rzD{e&LVf|B-EW9{>OV
-
-literal 0
-HcmV?d00001
-
-diff --git a/rtl_nic/rtl8168h-1.fw b/rtl_nic/rtl8168h-1.fw
-new file mode 100644
-index 0000000000000000000000000000000000000000..4bdd3825e3bdc9a15ddd87c199636bda4afb4169
-GIT binary patch
-literal 2496
-zcmY+`aY$8J9tZH#8^;k>?2Wz5b=pQkLc+19<2tT{JlY5ei4cj1D8~^;LPSI&BI1k_
-z5z)935fKrtNJK;%5h2ltBaIUg(nLf^#6u(^qK$}%2zNhPyX@ZgKK#Dt+;`5o_ntrA
-z4IzZS{_gtfy85oKs&}WW(pA-E>A$S2u31-I>)gW8Mr$I3p3u@<_jO&(?%r?vzw6pv
-zldi5!SEs+J`mXc)vg+D~uhR{G{wDl1TD~ymV;Nc!LS}O5mobDq@+qK@Bt@hsj-P~(
-zjeeJx4RL8U5kJr7#AVssxICK|S7h_!AF~DVi)>;1>^I~7R1{}_O2uEAieuu}k{Et2
-zjdNjToXD=yF4JBeixcJY8o9#!YvoG0N>0bbR80)ywQ`+YFE_~R<wiLpZ;&_2o8%@o
-z)65pO(n2fS*v<}ivWqs_>7bJ?_Rviaz4Xz~UiPt{0~{nWz#$HEgrgi|kRgt9f|H!$
-zG-o)=Fe8j|j`LjLBA2+#6|QoPF|KoiaVD7LCR5zvHg}ljF88?410FKNBOa4wmN}mA
-zlxIBW1uuEUYu@mdcf4nw@Iwd*a>yl*d<rNeNf9ZEDWQ~=tfGw7l(U8k)>26oX=<pY
-zj(QqcPa_#Nu#rtPv6*JJu$2~C*~WHuu#;W1(M|`Qbg_qSdg!H(e)h7D{T$#RkpT{I
-zm?IqJ7=sLPoD-bn6sI}ES%w*5lyjWt0vEZ&Wv+0QYm9N78;mo-BsZDj7Pq;>G<Uhj
-zeID?T86NSNEVIn<gr_{?IWKt0D_--4x4h#$^MnEWPY$`{kxv1IBq<_AF(s6;l2w$k
-znsU}q!CES*B25jo)KO0Z>uDsz1~#&ZCN|T|7PittE8E!44tBDOHrnZ+lP>nqO%J{F
-z(a&D?v7ZARBr?Du4s(Q~9Al6nj&p*OoZ>WRILk02jB<|iT;L*?xXcx<a*Z*rbAxdv
-znB*o?+~PKOnC33`xX%L~GQ%StlVz4Up74}sJm&>3dBtnq@RoPHXP)q*{U?W9^2n!v
-zLXs4bqL>m&S;;EOSWP)=s9-IXRFS5JTI#5$f%P<!VFMf4L=&57W(!+sp_OfHX9qjk
-zMH}sO&`B42=%$BW`simb``FI`4iXvQ5QjO!QI0Xl5XU*eNltN^Gn{3Z5k@)3c`k5~
-zOI+p(SGmR**SWzs6HIcGDQ<C_J4|zzd)(&%51HW+kI6F298Y-4GoJH;m%QRNZ+Oc)
-z-ZTH>;=4l3jkDetl8OBINhn$PPsj}XVc{Jj>9hEqh>PveyTpPET^Spn35nqj4=99B
-z(|^tXGFHT8F|?;*)!4GQB&6a(Uzt3VNX4RI=k%r2oXS*8{;!c#T=I8))2Y~-O~uSo
-z?SJsMRBSBKKPdm84y58tMJkqloGVvdVa^<NxtdUysX_hSxP`To)?T=d5I(H`;l5Uc
-e`G1A75LQh5_qvVy&prQh@mz8uvp6pN-|=rm*n1xU
-
-literal 0
-HcmV?d00001
-
-diff --git a/rtl_nic/rtl8168h-2.fw b/rtl_nic/rtl8168h-2.fw
-new file mode 100644
-index 0000000000000000000000000000000000000000..949bacc1614d6e1014736611bd371ef30a3e8daf
-GIT binary patch
-literal 2464
-zcmYk;aY&Wt9tZHJGp}<_%-NYaZ)?&dB)oQXB2HQyoQVq;At4cw&N;6%5fO=qi08V9
-zh!zqN5fKs+5iKGjB)a02<{}~@A|fIVA`uZSA|fJeA6>ibJ?F#k`@HY_JkNXH=a2J*
-z5W>J<Z(UVwUC+O&+f$XP%Bs@Tmn*BPS60=yHg|OJZ6buPLTgLy7q!(5?TxM9w5@4v
-z@BeP_`=0iuz8?nL*Q{An`F;1lORH+?zo@EDRfnHP%jWtn2q8VW@Us{~4!Pu!PXUD_
-zDT?ofkcsZg$%MEtlZYQ>vf`plcKkS#6BlQ4<0qNC_|Hs!eE&E7J}r#XKPTh=nu}uM
-z*WwudTM}o&k~ooBs$HtREEXlo<mGa?@mI(da;2P#iK*%s#%ttSxlXQ^SIMj8wA>&!
-z%1v@JYiVH}>uF^JZER!{o7qAKopjMn4_oP_kA4OiWE<Pr!A^D&8Dckk*vmflbAVwE
-za)`qm;V8#A&Il(M<s_##%^A*ej`LjLB4b?QGUH4z$rYx!$~CTYgPYvqHg~woJ?`^>
-z4Aac;kVib`2~T;(b6)V0SG?v8vxNVIkRXd}a>yl*d<rNeNfE`Au!N<QvWzm8Q_c!1
-zs3b)-HPli^J*!wvng$waqM5a{u#WY#vVk@>vWd-Xp@UAk=%$CQ^wLK^0}Qf_?d)JD
-zyNC?2n?3AhANx7LFb6rrVUBQ=V;pCM6O3|_Q=H}uXF11tE^v`CE^(Q0CYa<3Q(Wa5
-z*SWz>ZgHDC+~pqkc|e9~W_ZXW9`l5!JmWbpc*!eX^M+Z%ko6~vY;wpYk9-O!BuNp)
-zl(2-Ql(LL6mQ&6ODySqyH8s>yM?I@pO_~N8X`-36w6Ko#w6cLVHnNG$Y@vfry6C2d
-zt@P4IKLZT1jqU7UC%cFYv70^YWgq)Fz%U0n#9@wblw%xcgcFQ%l2e@K3}-pVc`k5~
-zF)neLaVD7L3R7I=8rQkOO>S|UJKW_S_jy2uX=ZrHBOddFr#$01FL=o-Uh{@o!cW$p
-zEV9WVmpt+*ppYa*6jQ<ymQu<x%2-Z0E2yB76xGyFOC9yBVl`<RXrzf|*3!Z{*3-%c
-z+Ste@HnW8eI_aXD9=6g;AN>q4$TqgKgPrUmGQ@87u$O)8=K#YT<Pe8B!cmTKoDohi
-z%1KUfnlqf`9Ot>fMaH<qWyYCck}FJcm1|t*1~<9IZSHWFd)(&%8K#-xA&+>>6Q1&n
-z=e*!0uXxQHW`COBE5z(LZNE^E$c^uX;<^8X^w5WMdx!#``R_!WZ-@Q`CY(E!w(#kY
-z80qqYLik7O>)g*`d0Z41bS7ivm>QCC?p&!noJhvPkwwN!#-y56k&GYw&4OQ&@$Y&+
-zPsWmW_h+kb7bauYyP9}cgZks5<ox&r#-E!jgg@u_^Vt`N*|(uIgvAqoJ=@&;fBmlC
-P=dTq^r04sE{~vz<lf`x)
-
-literal 0
-HcmV?d00001
-
+index 000000000000..c0a360e99f64
+--- /dev/null
++++ b/include/linux/devcoredump.h
+@@ -0,0 +1,35 @@
++#ifndef __DEVCOREDUMP_H
++#define __DEVCOREDUMP_H
++
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/vmalloc.h>
++
++#ifdef CONFIG_DEV_COREDUMP
++void dev_coredumpv(struct device *dev, const void *data, size_t datalen,
++		   gfp_t gfp);
++
++void dev_coredumpm(struct device *dev, struct module *owner,
++		   const void *data, size_t datalen, gfp_t gfp,
++		   ssize_t (*read)(char *buffer, loff_t offset, size_t count,
++				   const void *data, size_t datalen),
++		   void (*free)(const void *data));
++#else
++static inline void dev_coredumpv(struct device *dev, const void *data,
++				 size_t datalen, gfp_t gfp)
++{
++	vfree(data);
++}
++
++static inline void
++dev_coredumpm(struct device *dev, struct module *owner,
++	      const void *data, size_t datalen, gfp_t gfp,
++	      ssize_t (*read)(char *buffer, loff_t offset, size_t count,
++			      const void *data, size_t datalen),
++	      void (*free)(const void *data))
++{
++	free(data);
++}
++#endif /* CONFIG_DEV_COREDUMP */
++
++#endif /* __DEVCOREDUMP_H */
 -- 
-1.9.3
+2.1.0
 
