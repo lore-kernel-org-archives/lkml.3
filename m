@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaILB3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 21:29:15 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:64902 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821AbaILB3N (ORCPT
+	id S1753874AbaILBbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 21:31:09 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:51720 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaILBbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 21:29:13 -0400
+	Thu, 11 Sep 2014 21:31:07 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8C1Uah8013559, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v2 1/2] mfd: rtsx: fix PM suspend for 5227
+Date: Fri, 12 Sep 2014 09:30:27 +0800
+Message-ID: <62adefd6958b52490289cec7c29a064447ed6de8.1410484754.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1410484754.git.micky_ching@realsil.com.cn>
+References: <cover.1410484754.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXqwd=dp31fckMPruQMwVw+UAjaf=SSWp8wr_Cdz_tQdw@mail.gmail.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-	<541013CE.6020307@redhat.com>
-	<CAMEtUuwrHX4ENK9cZ0C+XVB=wkMz1=wLphX_GVLvd8pyJKMXeQ@mail.gmail.com>
-	<5411FC42.3070505@redhat.com>
-	<CAMEtUuziPptHxtw_7fkOdR-paB+8BatNmRPoo3txP8wOp9D6Tw@mail.gmail.com>
-	<CALCETrWCEwscbbfX7wAW-A+VQ5Y92igD36BmTXqFra04Qdwk0Q@mail.gmail.com>
-	<CAMEtUuyzOgCZutgsAXs60BO0=0WJGpVAeTYN2hf0Bh1sZ5PMVg@mail.gmail.com>
-	<CALCETrXqwd=dp31fckMPruQMwVw+UAjaf=SSWp8wr_Cdz_tQdw@mail.gmail.com>
-Date: Thu, 11 Sep 2014 18:29:11 -0700
-Message-ID: <CAMEtUuyez57dMCpVAXVMUjHmKKDuD4X2uniVkG=d-bvT7uDFNw@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 00/12] eBPF syscall, verifier, testsuite
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 6:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Thu, Sep 11, 2014 at 3:29 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
->> On Thu, Sep 11, 2014 at 2:54 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>
->>>> the verifier log contains full trace. Last unsafe instruction + error
->>>> in many cases is useless. What we found empirically from using
->>>> it over last 2 years is that developers have different learning curve
->>>> to adjust to 'safe' style of C. Pretty much everyone couldn't
->>>> figure out why program is rejected based on last error. Therefore
->>>> verifier emits full log. From the 1st insn all the way till the last
->>>> 'unsafe' instruction. So the log is multiline output.
->>>> 'Understanding eBPF verifier messages' section of
->>>> Documentation/networking/filter.txt provides few trivial
->>>> examples of these multiline messages.
->>>> Like for the program:
->>>>   BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
->>>>   BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
->>>>   BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
->>>>   BPF_LD_MAP_FD(BPF_REG_1, 0),
->>>>   BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
->>>>   BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
->>>>   BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
->>>>   BPF_EXIT_INSN(),
->>>> the verifier log_buf is:
->>>>   0: (7a) *(u64 *)(r10 -8) = 0
->>>>   1: (bf) r2 = r10
->>>>   2: (07) r2 += -8
->>>>   3: (b7) r1 = 0
->>>>   4: (85) call 1
->>>>   5: (15) if r0 == 0x0 goto pc+1
->>>>    R0=map_ptr R10=fp
->>>>   6: (7a) *(u64 *)(r0 +4) = 0
->>>>   misaligned access off 4 size 8
->>>>
->>>> It will surely change over time as verifier becomes smarter,
->>>> supports new types, optimizations and so on.
->>>> So this log is not an ABI. It's for humans to read.
->>>> The log explains _how_ verifier came to conclusion
->>>> that the program is unsafe.
->>>
->>> Given that you've already arranged (I think) for the verifier to be
->>> compilable in the kernel and in userspace, would it make more sense to
->>> have the kernel version just say yes or no and to make it easy for
->>> user code to retry verification in userspace if they want a full
->>> explanation?
->>
->> Good memory :) Long ago I had a hack where I compiled
->> verifier.o for kernel and linked it with userspace wrappers to
->> have the same verifier for userspace. It was very fragile.
->> and maps were not separate objects and there were no fds.
->> It's not feasible anymore, since different subsystems
->> will configure different bpf_context and helper functions and
->> verifier output is dynamic based on maps that were created.
->> For example, if user's samples/bpf/sock_example.c does
->> bpf_create_map(HASH, sizeof(key) * 2, ...);
->> instead of
->> bpf_create_map(HASH, sizeof(key), ...);
->> the same program will be rejected in first case and will be
->> accepted in the second, because map sizes and ebpf
->> program expectations are mismatching.
->
-> Hmm.
->
-> This actually furthers my thought that the relocations should be a
-> real relocation table.  Then you could encode the types of the
-> referenced objects in the table, and a program could be verified
-> without looking up the fds.  The only extra step would be to confirm
-> that the actual types referenced match those in the table.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-It's not the type is being checked, but one particular map instance
-with user specified key/value sizes. type is not helpful. type is not
-even used during verification. Only key_size and value_size of
-elements are meaningful and they're looked up dynamically by fd.
+Fix rts5227 failed send buffer cmd after suspend,
+PM_CTRL3 should reset before send any buffer cmd after suspend.
+Otherwise, buffer cmd will failed, this will lead resume fail.
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mfd/rts5227.c        |   19 +++++++++++++++++++
+ include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 9c8eec8..197f5c1 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -128,8 +128,27 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+ 	return rtsx_pci_send_cmd(pcr, 100);
+ }
+ 
++static int rts5227_pm_reset(struct rtsx_pcr *pcr)
++{
++	int err;
++
++	/* init aspm */
++	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
++	if (err < 0)
++		return err;
++
++	/* reset PM_CTRL3 before send buffer cmd */
++	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
++}
++
+ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+ {
++	int err;
++
++	err = rts5227_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	/* Optimize RX sensitivity */
+ 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+ }
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 74346d5..b34fec8 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+ 	return (u8 *)(pcr->host_cmds_ptr);
+ }
+ 
++static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
++		u8 mask, u8 append)
++{
++	int err;
++	u8 val;
++
++	err = pci_read_config_byte(pcr->pci, addr, &val);
++	if (err < 0)
++		return err;
++	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
++}
++
+ #endif
+-- 
+1.7.9.5
+
