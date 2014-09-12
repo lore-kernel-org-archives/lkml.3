@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaILTDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:03:37 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:43945 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaILTDg (ORCPT
+	id S1752248AbaILTDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:03:48 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35297 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaILTDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:03:36 -0400
-Date: Fri, 12 Sep 2014 12:03:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/9] torture: Address race in module cleanup
-Message-ID: <20140912190328.GK4775@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
- <1410493224-3312-7-git-send-email-dave@stgolabs.net>
- <20140912180407.GF4775@linux.vnet.ibm.com>
- <1410546516.12906.9.camel@linux-t7sj.site>
+	Fri, 12 Sep 2014 15:03:46 -0400
+Message-ID: <54134390.5030206@codeaurora.org>
+Date: Fri, 12 Sep 2014 12:03:44 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410546516.12906.9.camel@linux-t7sj.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091219-1344-0000-0000-00000429872C
+To: Andy Gross <agross@codeaurora.org>, Felipe Balbi <balbi@ti.com>
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [PATCH v8 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
+References: <1410542986-24419-1-git-send-email-agross@codeaurora.org> <1410542986-24419-4-git-send-email-agross@codeaurora.org>
+In-Reply-To: <1410542986-24419-4-git-send-email-agross@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 11:28:36AM -0700, Davidlohr Bueso wrote:
-> On Fri, 2014-09-12 at 11:04 -0700, Paul E. McKenney wrote:
-> > On Thu, Sep 11, 2014 at 08:40:21PM -0700, Davidlohr Bueso wrote:
-> > > When performing module cleanups by calling torture_cleanup() the
-> > > 'torture_type' string in nullified However, callers are not necessarily
-> > > done, and might still need to reference the variable. This impacts
-> > > both rcutorture and locktorture, causing printing things like:
-> > > 
-> > > [   94.226618] (null)-torture: Stopping lock_torture_writer task
-> > > [   94.226624] (null)-torture: Stopping lock_torture_stats task
-> > > 
-> > > Thus delay this operation until the very end of the cleanup process.
-> > > The consequence (which shouldn't matter for this kid of program) is,
-> > > of course, that we delay the window between rmmod and modprobing,
-> > > for instance in module_torture_begin().
-> > > 
-> > > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > 
-> > Good catch!  I had just been ignoring the (null), and my scripting
-> > doesn't care, but it is better to have it taken care of.
-> 
-> In addition, for locktorture this issue can cause not only null but the
-> printing the wrong cleanup string when a new module is loaded with a
-> different torture_type.
+Yay nitpicks!
 
-That would be even more annoying.  ;-)
+On 09/12/14 10:29, Andy Gross wrote:
+> +
+> +struct qcom_dwc3_usb_phy {
+> +	void __iomem		*base;
+> +	struct device		*dev;
+> +	struct phy *phy;
 
-							Thanx, Paul
+Align with other members?
+
+>
+> +
+> +static int wait_for_latch(void __iomem *addr)
+> +{
+> +	u32 retry = 10;
+
+Why not just int?
+
+> +
+> +	while (true) {
+> +		if (!readl(addr))
+> +			break;
+> +
+> +		if (--retry == 0)
+> +			return -ETIMEDOUT;
+> +
+> +		usleep_range(10, 20);
+> +	}
+> +
+> +	return 0;
+> +}
+[...]
+> +
+> +static int qcom_dwc3_ss_phy_init(struct qcom_dwc3_usb_phy *phy_dwc3)
+> +{
+> +	u32 data = 0;
+> +
+
+Unnecessary initialization.
+
+>
+>
+> +
+> +static struct phy_ops qcom_dwc3_phy_ops = {
+
+Can this be const?
+
+> +	.init		= qcom_dwc3_phy_init,
+> +	.exit		= qcom_dwc3_phy_exit,
+> +	.power_on	= qcom_dwc3_phy_power_on,
+> +	.power_off	= qcom_dwc3_phy_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+[...]
+> +
+> +static int qcom_dwc3_phy_probe(struct platform_device *pdev)
+> +{
+> +	struct qcom_dwc3_usb_phy	*phy_dwc3;
+> +	struct phy_provider		*phy_provider;
+> +	struct resource			*res;
+> +	const struct of_device_id	*match;
+> +
+> +
+
+Weird two newlines here.
+
+> +	phy_dwc3 = devm_kzalloc(&pdev->dev, sizeof(*phy_dwc3), GFP_KERNEL);
+> +	if (!phy_dwc3)
+> +		return -ENOMEM;
+> +
+>
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
