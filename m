@@ -1,163 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaILKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:45:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:47402 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaILKpx (ORCPT
+	id S1753813AbaILKqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:46:03 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43152 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaILKp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:45:53 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-f797f6d000001173-89-5412cedf16d5
-Content-transfer-encoding: 8BIT
-Message-id: <5412CEDF.7030806@samsung.com>
-Date: Fri, 12 Sep 2014 19:45:51 +0900
-From: Inki Dae <inki.dae@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
- Thunderbird/17.0.8
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 5/9] drm/exynos/crtc: fix framebuffer reference sequence
-References: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
- <1410268573-2297-6-git-send-email-a.hajda@samsung.com>
- <5412B02A.6040609@samsung.com> <20140912085710.GD4740@phenom.ffwll.local>
- <5412BC8D.2030007@samsung.com>
-In-reply-to: <5412BC8D.2030007@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsWyRsSkWPf+OaEQg9VbFC1urTvHanHl63s2
-	i7NNb9gtLu+aw2Yx4/w+Jou1R+6yW8yY/JLNgd3jfvdxJo++LasYPT5vkgtgjuKySUnNySxL
-	LdK3S+DKmPRrBVtBr1bF9PlnGRsYNyl3MXJySAiYSMw5tYQdwhaTuHBvPRuILSSwlFFixvSg
-	LkYOsJpvT3m7GLmAwtMZJdo73jGD1PAKCEr8mHyPBaSGWUBe4silbJAws4C6xKR5i5gh6l8x
-	Sqw53cIIUa8lceNmDzNIPYuAqsS13iSQMBuQOXHFfbC1ogJhEi9e7QIbLwI0Z/bJO2BzmAUW
-	MEkcebAXrEhYwEfiwNWd7BB3vmCUeLNEEmQmp4C2RH8vB0i9hMAxdokJXx4xgdSwCAhIfJt8
-	iAXiF1mJTQeYId6VlDi44gbLBEaxWUi+mYXwzSwk3yxgZF7FKJpakFxQnJReZKxXnJhbXJqX
-	rpecn7uJERhbp/8969/BePeA9SFGAQ5GJR7eChbBECHWxLLiytxDjKZAR0xklhJNzgdGcF5J
-	vKGxmZGFqYmpsZG5pZmSOO9CqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhtPeoq7K85
-	53+dnWekVnC/ZreS0wLx6Ktzc38alt5acvGew7onm9sU7+QzZ2w8ZzAp4Zu3SuyR3rxWNXHV
-	pRxbtjy0mrBHxaBBTuP39CB3Ka3z6p3qd77mT5348JB4a0+1Xv1jDfEgt3dBT+WKypk/qcpU
-	zXggdTfpkq2S13kJfT7WYvVTh5RYijMSDbWYi4oTAaA5ad6oAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQd3754RCDJ48krC4te4cq8WVr+/Z
-	LM42vWG3uLxrDpvFjPP7mCzWHrnLbjFj8ks2B3aP+93HmTz6tqxi9Pi8SS6AOaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWPSrxVsBb1aFdPnn2VsYNyk3MXIwSEhYCLx
-	7SlvFyMnkCkmceHeerYuRi4OIYHpjBLtHe+YQRK8AoISPybfYwGpZxaQlzhyKRskzCygLjFp
-	3iJmiPpXjBJrTrcwQtRrSdy42cMMUs8ioCpxrTcJJMwGZE5ccZ8NxBYVCJN48WoX2HgRoDmz
-	T94Bm8MssIBJ4siDvWBFwgI+Egeu7mQHsYUEXjBKvFkiCTKTU0Bbor+XYwKjwCwk181CuG4W
-	kusWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO3WfSOxhXNVgcYhTgYFTi4a1kEQwR
-	Yk0sK67MPcQowcGsJMJrflQoRIg3JbGyKrUoP76oNCe1+BCjKdBvE5mlRJPzgWklryTe0NjE
-	zMjSyNzQwsjYXEmc92CrdaCQQHpiSWp2ampBahFMHxMHp1QDo0/Kptnt93Zv72nMX6OtUVrw
-	J/nIaSt2/3OcketqJ4ns9np3sT5lw+bTKY1P62Xfni9c8DaCd8baBDvjjR+9TW3fL/TykPhh
-	/2yd/AmuQ5c2VGtz6X3fr7Urt++ix84bx31a7nAcOrOsIvRo4km1xMurtjz7a1TI765x23DW
-	zaQbc/puuLYsvKfEUpyRaKjFXFScCABKnf/18wIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 12 Sep 2014 06:45:59 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sound: pci: ctxfi: pr_* replaced with dev_*
+Date: Fri, 12 Sep 2014 16:15:45 +0530
+Message-Id: <1410518745-29983-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 09월 12일 18:27, Andrzej Hajda wrote:
-> On 09/12/2014 10:57 AM, Daniel Vetter wrote:
->> On Fri, Sep 12, 2014 at 05:34:50PM +0900, Inki Dae wrote:
->>> Hi Andrzej,
->>>
->>> On 2014년 09월 09일 22:16, Andrzej Hajda wrote:
->>>> Adding reference to framebuffer should be accompanied with removing
->>>> reference to old framebuffer assigned to the plane.
->>>> This patch removes following warning:
->>>>
->>>> [   95.038017] WARNING: CPU: 1 PID: 3067 at drivers/gpu/drm/drm_crtc.c:5115 drm_mode_config_cleanup+0x258/0x268()
->>>> [   95.048086] Modules linked in:
->>>> [   95.051430] CPU: 1 PID: 3067 Comm: bash Tainted: G        W      3.16.0-11355-g7a6eca5-dirty #3015
->>>> [   95.060058] [<c0013e90>] (unwind_backtrace) from [<c0011128>] (show_stack+0x10/0x14)
->>>> [   95.067766] [<c0011128>] (show_stack) from [<c04a5dc4>] (dump_stack+0x70/0xbc)
->>>> [   95.074953] [<c04a5dc4>] (dump_stack) from [<c0021784>] (warn_slowpath_common+0x64/0x88)
->>>> [   95.083005] [<c0021784>] (warn_slowpath_common) from [<c00217c4>] (warn_slowpath_null+0x1c/0x24)
->>>> [   95.091780] [<c00217c4>] (warn_slowpath_null) from [<c0275fa0>] (drm_mode_config_cleanup+0x258/0x268)
->>>> [   95.100983] [<c0275fa0>] (drm_mode_config_cleanup) from [<c0281724>] (exynos_drm_unload+0x38/0x50)
->>>> [   95.109915] [<c0281724>] (exynos_drm_unload) from [<c026e248>] (drm_dev_unregister+0x24/0x98)
->>>> [   95.118414] [<c026e248>] (drm_dev_unregister) from [<c026ecb0>] (drm_put_dev+0x28/0x64)
->>>> [   95.126412] [<c026ecb0>] (drm_put_dev) from [<c02947c4>] (take_down_master+0x24/0x44)
->>>> [   95.134218] [<c02947c4>] (take_down_master) from [<c0294870>] (component_del+0x8c/0xc8)
->>>> [   95.142201] [<c0294870>] (component_del) from [<c0286c10>] (exynos_dsi_remove+0x18/0x2c)
->>>> [   95.150294] [<c0286c10>] (exynos_dsi_remove) from [<c0299e04>] (platform_drv_remove+0x18/0x1c)
->>>> [   95.158872] [<c0299e04>] (platform_drv_remove) from [<c02987a4>] (__device_release_driver+0x70/0xc4)
->>>> [   95.167981] [<c02987a4>] (__device_release_driver) from [<c0298818>] (device_release_driver+0x20/0x2c)
->>>> [   95.177268] [<c0298818>] (device_release_driver) from [<c02979d0>] (unbind_store+0x5c/0x94)
->>>> [   95.185597] [<c02979d0>] (unbind_store) from [<c0297278>] (drv_attr_store+0x20/0x2c)
->>>> [   95.193323] [<c0297278>] (drv_attr_store) from [<c012aa90>] (sysfs_kf_write+0x4c/0x50)
->>>> [   95.201224] [<c012aa90>] (sysfs_kf_write) from [<c0129e94>] (kernfs_fop_write+0xc4/0x184)
->>>> [   95.209393] [<c0129e94>] (kernfs_fop_write) from [<c00d03ec>] (vfs_write+0xa0/0x1a8)
->>>> [   95.217111] [<c00d03ec>] (vfs_write) from [<c00d07f8>] (SyS_write+0x40/0x8c)
->>>> [   95.224146] [<c00d07f8>] (SyS_write) from [<c000e660>] (ret_fast_syscall+0x0/0x48)
->>>>
->>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
->>>> ---
->>>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c | 6 ++++++
->>>>  1 file changed, 6 insertions(+)
->>>>
->>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>>> index b68e58f..bde19f4 100644
->>>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
->>>> @@ -145,10 +145,16 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
->>>>  	if (ret)
->>>>  		return ret;
->>>>  
->>>> +	/* we need to unreference current fb after replacing it with new one */
->>>> +	old_fb = plane->fb;
->>>> +
->>>>  	plane->crtc = crtc;
->>>>  	plane->fb = crtc->primary->fb;
->>>>  	drm_framebuffer_reference(plane->fb);
->>>>  
->>>> +	if (old_fb)
->>>> +		drm_framebuffer_unreference(old_fb);
->>> This time would be a good chance that we can consider drm flip queue to
->>> make sure that whole memory region to old_fb is scanned out completely
->>> before dropping a reference of old_fb. the reference of old_fb should be
->>> dropped at irq handler of each crtc devices, fimd and mixer.
->> Generally it's not a good idea to drop fb references from irq context,
->> since if you actually drop the last reference it'll blow up: fb cleanup
->> needs a bunch of mutexes.
-> 
-> I agree with that.
-> 
->>
->> Also the drm core really should be taking care of this for you, you only
->> need to grab references yourself for async flips if you want the buffer to
->> survive a bit. crtc_mode_set has not need for this. I expect that the
->> refcounting bug is somewhere else, at least from my experience chasing
->> such issues in i915 ;-)
-> 
-> Hmm, maybe I miss something but I do not see the core grabbing fb reference
-> on plane->fb update. On the other side drm_framebuffer_remove calls
-> drm_plane_force_disable which drops plane->fb reference.
-> I am not yet familiar with this code so maybe there is better solution.
-> 
-> If not I guess it would be better to move this code to
-> exynos_plane_mode_set.
-> At least it is done this way in omap and msm, in fact it seems better place
+pr_* macros replaced with dev_* as they are more preffered over pr_*.
 
-I cannot see it in msm. In case of msm, drm flip queue is used in
-mdp4/5_crtc_mode_set function. See update_fb function there.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
+ sound/pci/ctxfi/ctamixer.c   |  6 ++++--
+ sound/pci/ctxfi/ctatc.c      | 23 ++++++++++++++---------
+ sound/pci/ctxfi/ctdaio.c     |  3 ++-
+ sound/pci/ctxfi/cthw20k1.c   | 13 ++++++++-----
+ sound/pci/ctxfi/cthw20k2.c   | 22 ++++++++++++++--------
+ sound/pci/ctxfi/ctmixer.c    |  6 ++++--
+ sound/pci/ctxfi/ctpcm.c      |  3 ++-
+ sound/pci/ctxfi/ctresource.c | 20 +++++++++++++-------
+ sound/pci/ctxfi/ctsrc.c      |  6 ++++--
+ sound/pci/ctxfi/xfi.c        | 15 +++++++++------
+ 10 files changed, 74 insertions(+), 43 deletions(-)
 
-> for such things. What do you think?
-> 
-> Regards
-> Andrzej
-> 
->> -Daniel
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+diff --git a/sound/pci/ctxfi/ctamixer.c b/sound/pci/ctxfi/ctamixer.c
+index fed6e6a..d08b8b6 100644
+--- a/sound/pci/ctxfi/ctamixer.c
++++ b/sound/pci/ctxfi/ctamixer.c
+@@ -258,7 +258,8 @@ static int get_amixer_rsc(struct amixer_mgr *mgr,
+ 	}
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
+ 	if (err) {
+-		pr_err("ctxfi: Can't meet AMIXER resource request!\n");
++		dev_err(&(((struct hw *)(mgr->mgr.hw))->pci->dev),
++			"ctxfi: Can't meet AMIXER resource request!\n");
+ 		goto error;
+ 	}
+ 
+@@ -411,7 +412,8 @@ static int get_sum_rsc(struct sum_mgr *mgr,
+ 	}
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
+ 	if (err) {
+-		pr_err("ctxfi: Can't meet SUM resource request!\n");
++		dev_err(&(((struct hw *)(mgr->mgr.hw))->pci->dev),
++			"ctxfi: Can't meet SUM resource request!\n");
+ 		goto error;
+ 	}
+ 
+diff --git a/sound/pci/ctxfi/ctatc.c b/sound/pci/ctxfi/ctatc.c
+index d92a08c..131b8d4 100644
+--- a/sound/pci/ctxfi/ctatc.c
++++ b/sound/pci/ctxfi/ctatc.c
+@@ -1282,7 +1282,8 @@ static int atc_identify_card(struct ct_atc *atc, unsigned int ssid)
+ 	p = snd_pci_quirk_lookup_id(vendor_id, device_id, list);
+ 	if (p) {
+ 		if (p->value < 0) {
+-			pr_err("ctxfi: Device %04x:%04x is black-listed\n",
++			dev_err(&atc->pci->dev,
++				"ctxfi: Device %04x:%04x is black-listed\n",
+ 			       vendor_id, device_id);
+ 			return -ENOENT;
+ 		}
+@@ -1314,7 +1315,8 @@ int ct_atc_create_alsa_devs(struct ct_atc *atc)
+ 		err = alsa_dev_funcs[i].create(atc, i,
+ 				alsa_dev_funcs[i].public_name);
+ 		if (err) {
+-			pr_err("ctxfi: Creating alsa device %d failed!\n", i);
++			dev_err(&atc->pci->dev,
++				"ctxfi: Creating alsa device %d failed!\n", i);
+ 			return err;
+ 		}
+ 	}
+@@ -1330,7 +1332,7 @@ static int atc_create_hw_devs(struct ct_atc *atc)
+ 
+ 	err = create_hw_obj(atc->pci, atc->chip_type, atc->model, &hw);
+ 	if (err) {
+-		pr_err("Failed to create hw obj!!!\n");
++		dev_err(&atc->pci->dev, "Failed to create hw obj!!!\n");
+ 		return err;
+ 	}
+ 	atc->hw = hw;
+@@ -1349,7 +1351,8 @@ static int atc_create_hw_devs(struct ct_atc *atc)
+ 
+ 		err = rsc_mgr_funcs[i].create(atc->hw, &atc->rsc_mgrs[i]);
+ 		if (err) {
+-			pr_err("ctxfi: Failed to create rsc_mgr %d!!!\n", i);
++			dev_err(&atc->pci->dev,
++				"ctxfi: Failed to create rsc_mgr %d!!!\n", i);
+ 			return err;
+ 		}
+ 	}
+@@ -1396,7 +1399,8 @@ static int atc_get_resources(struct ct_atc *atc)
+ 		err = daio_mgr->get_daio(daio_mgr, &da_desc,
+ 					(struct daio **)&atc->daios[i]);
+ 		if (err) {
+-			pr_err("ctxfi: Failed to get DAIO resource %d!!!\n",
++			dev_err(&atc->pci->dev,
++				"ctxfi: Failed to get DAIO resource %d!!!\n",
+ 				i);
+ 			return err;
+ 		}
+@@ -1600,7 +1604,8 @@ static int atc_resume(struct ct_atc *atc)
+ 	/* Do hardware resume. */
+ 	err = atc_hw_resume(atc);
+ 	if (err < 0) {
+-		pr_err("ctxfi: pci_enable_device failed, disabling device\n");
++		dev_err(&atc->pci->dev,
++			"ctxfi: pci_enable_device failed, disabling device\n");
+ 		snd_card_disconnect(atc->card);
+ 		return err;
+ 	}
+@@ -1697,7 +1702,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+ 	/* Find card model */
+ 	err = atc_identify_card(atc, ssid);
+ 	if (err < 0) {
+-		pr_err("ctatc: Card not recognised\n");
++		dev_err(&pci->dev, "ctatc: Card not recognised\n");
+ 		goto error1;
+ 	}
+ 
+@@ -1713,7 +1718,7 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+ 
+ 	err = ct_mixer_create(atc, (struct ct_mixer **)&atc->mixer);
+ 	if (err) {
+-		pr_err("ctxfi: Failed to create mixer obj!!!\n");
++		dev_err(&pci->dev, "ctxfi: Failed to create mixer obj!!!\n");
+ 		goto error1;
+ 	}
+ 
+@@ -1740,6 +1745,6 @@ int ct_atc_create(struct snd_card *card, struct pci_dev *pci,
+ 
+ error1:
+ 	ct_atc_destroy(atc);
+-	pr_err("ctxfi: Something wrong!!!\n");
++	dev_err(&pci->dev, "ctxfi: Something wrong!!!\n");
+ 	return err;
+ }
+diff --git a/sound/pci/ctxfi/ctdaio.c b/sound/pci/ctxfi/ctdaio.c
+index 6f0654e..fd64c95 100644
+--- a/sound/pci/ctxfi/ctdaio.c
++++ b/sound/pci/ctxfi/ctdaio.c
+@@ -541,7 +541,8 @@ static int get_daio_rsc(struct daio_mgr *mgr,
+ 	err = daio_mgr_get_rsc(&mgr->mgr, desc->type);
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
+ 	if (err) {
+-		pr_err("Can't meet DAIO resource request!\n");
++		dev_err(&(((struct hw *)(mgr->mgr.hw))->pci->dev),
++			"Can't meet DAIO resource request!\n");
+ 		return err;
+ 	}
+ 
+diff --git a/sound/pci/ctxfi/cthw20k1.c b/sound/pci/ctxfi/cthw20k1.c
+index 71d496f..a3d1dda 100644
+--- a/sound/pci/ctxfi/cthw20k1.c
++++ b/sound/pci/ctxfi/cthw20k1.c
+@@ -1268,7 +1268,8 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
+ 
+ 	/* Set up device page table */
+ 	if ((~0UL) == info->vm_pgt_phys) {
+-		pr_err("Wrong device page table page address!\n");
++		dev_err(&hw->pci->dev,
++			"Wrong device page table page address!\n");
+ 		return -1;
+ 	}
+ 
+@@ -1327,7 +1328,7 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
+ 		mdelay(40);
+ 	}
+ 	if (i >= 3) {
+-		pr_alert("PLL initialization failed!!!\n");
++		dev_alert(&hw->pci->dev, "PLL initialization failed!!!\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1351,7 +1352,7 @@ static int hw_auto_init(struct hw *hw)
+ 			break;
+ 	}
+ 	if (!get_field(gctl, GCTL_AID)) {
+-		pr_alert("Card Auto-init failed!!!\n");
++		dev_alert(&hw->pci->dev, "Card Auto-init failed!!!\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1911,7 +1912,8 @@ static int hw_card_start(struct hw *hw)
+ 	/* Set DMA transfer mask */
+ 	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
+ 	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
+-		pr_err("architecture does not support PCI busmaster DMA with mask 0x%llx\n",
++		dev_err(&pci->dev,
++			"architecture does not support PCI busmaster DMA with mask 0x%llx\n",
+ 		       CT_XFI_DMA_MASK);
+ 		err = -ENXIO;
+ 		goto error1;
+@@ -1941,7 +1943,8 @@ static int hw_card_start(struct hw *hw)
+ 		err = request_irq(pci->irq, ct_20k1_interrupt, IRQF_SHARED,
+ 				  KBUILD_MODNAME, hw);
+ 		if (err < 0) {
+-			pr_err("XFi: Cannot get irq %d\n", pci->irq);
++			dev_err(&pci->dev, "XFi: Cannot get irq %d\n",
++				pci->irq);
+ 			goto error2;
+ 		}
+ 		hw->irq = pci->irq;
+diff --git a/sound/pci/ctxfi/cthw20k2.c b/sound/pci/ctxfi/cthw20k2.c
+index df2d8c5..a65f3bb 100644
+--- a/sound/pci/ctxfi/cthw20k2.c
++++ b/sound/pci/ctxfi/cthw20k2.c
+@@ -1187,7 +1187,8 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
+ 		hw_write_20kx(hw, AUDIO_IO_TX_BLRCLK, 0x21212121);
+ 		hw_write_20kx(hw, AUDIO_IO_RX_BLRCLK, 0);
+ 	} else {
+-		pr_alert("ctxfi: ERROR!!! Invalid sampling rate!!!\n");
++		dev_alert(&hw->pci->dev,
++			  "ctxfi: ERROR!!! Invalid sampling rate!!!\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1246,7 +1247,8 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
+ 
+ 	/* Set up device page table */
+ 	if ((~0UL) == info->vm_pgt_phys) {
+-		pr_alert("ctxfi: Wrong device page table page address!!!\n");
++		dev_alert(&hw->pci->dev,
++			  "ctxfi: Wrong device page table page address!!!\n");
+ 		return -1;
+ 	}
+ 
+@@ -1351,7 +1353,8 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
+ 		break;
+ 	}
+ 	if (i >= 1000) {
+-		pr_alert("ctxfi: PLL initialization failed!!!\n");
++		dev_alert(&hw->pci->dev,
++			  "ctxfi: PLL initialization failed!!!\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1375,7 +1378,7 @@ static int hw_auto_init(struct hw *hw)
+ 			break;
+ 	}
+ 	if (!get_field(gctl, GCTL_AID)) {
+-		pr_alert("ctxfi: Card Auto-init failed!!!\n");
++		dev_alert(&hw->pci->dev, "ctxfi: Card Auto-init failed!!!\n");
+ 		return -EBUSY;
+ 	}
+ 
+@@ -1846,7 +1849,7 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
+ 	/* Initialize I2C */
+ 	err = hw20k2_i2c_init(hw, 0x1A, 1, 1);
+ 	if (err < 0) {
+-		pr_alert("ctxfi: Failure to acquire I2C!!!\n");
++		dev_alert(&hw->pci->dev, "ctxfi: Failure to acquire I2C!!!\n");
+ 		goto error;
+ 	}
+ 
+@@ -1889,7 +1892,8 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
+ 		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x0A),
+ 						MAKE_WM8775_DATA(0x0A));
+ 	} else {
+-		pr_alert("ctxfi: Invalid master sampling rate (msr %d)!!!\n",
++		dev_alert(&hw->pci->dev,
++			  "ctxfi: Invalid master sampling rate (msr %d)!!!\n",
+ 			info->msr);
+ 		err = -EINVAL;
+ 		goto error;
+@@ -2033,7 +2037,8 @@ static int hw_card_start(struct hw *hw)
+ 	/* Set DMA transfer mask */
+ 	if (pci_set_dma_mask(pci, CT_XFI_DMA_MASK) < 0 ||
+ 	    pci_set_consistent_dma_mask(pci, CT_XFI_DMA_MASK) < 0) {
+-		pr_err("ctxfi: architecture does not support PCI busmaster DMA with mask 0x%llx\n",
++		dev_err(&pci->dev,
++			"ctxfi: architecture does not support PCI busmaster DMA with mask 0x%llx\n",
+ 			CT_XFI_DMA_MASK);
+ 		err = -ENXIO;
+ 		goto error1;
+@@ -2062,7 +2067,8 @@ static int hw_card_start(struct hw *hw)
+ 		err = request_irq(pci->irq, ct_20k2_interrupt, IRQF_SHARED,
+ 				  KBUILD_MODNAME, hw);
+ 		if (err < 0) {
+-			pr_err("XFi: Cannot get irq %d\n", pci->irq);
++			dev_err(&pci->dev, "XFi: Cannot get irq %d\n",
++				pci->irq);
+ 			goto error2;
+ 		}
+ 		hw->irq = pci->irq;
+diff --git a/sound/pci/ctxfi/ctmixer.c b/sound/pci/ctxfi/ctmixer.c
+index 017fa91..6807ff1fc 100644
+--- a/sound/pci/ctxfi/ctmixer.c
++++ b/sound/pci/ctxfi/ctmixer.c
+@@ -854,7 +854,8 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
+ 	for (i = 0; i < (NUM_CT_SUMS * CHN_NUM); i++) {
+ 		err = sum_mgr->get_sum(sum_mgr, &sum_desc, &sum);
+ 		if (err) {
+-			pr_err("ctxfi:Failed to get sum resources for front output!\n");
++			dev_err(&mixer->atc->pci->dev,
++				"ctxfi:Failed to get sum resources for front output!\n");
+ 			break;
+ 		}
+ 		mixer->sums[i] = sum;
+@@ -868,7 +869,8 @@ static int ct_mixer_get_resources(struct ct_mixer *mixer)
+ 	for (i = 0; i < (NUM_CT_AMIXERS * CHN_NUM); i++) {
+ 		err = amixer_mgr->get_amixer(amixer_mgr, &am_desc, &amixer);
+ 		if (err) {
+-			pr_err("ctxfi:Failed to get amixer resources for mixer obj!\n");
++			dev_err(&mixer->atc->pci->dev,
++				"ctxfi:Failed to get amixer resources for mixer obj!\n");
+ 			break;
+ 		}
+ 		mixer->amixers[i] = amixer;
+diff --git a/sound/pci/ctxfi/ctpcm.c b/sound/pci/ctxfi/ctpcm.c
+index 6826c2c..48f58a5 100644
+--- a/sound/pci/ctxfi/ctpcm.c
++++ b/sound/pci/ctxfi/ctpcm.c
+@@ -435,7 +435,8 @@ int ct_alsa_pcm_create(struct ct_atc *atc,
+ 	err = snd_pcm_new(atc->card, "ctxfi", device,
+ 			  playback_count, capture_count, &pcm);
+ 	if (err < 0) {
+-		pr_err("ctxfi: snd_pcm_new failed!! Err=%d\n", err);
++		dev_err(&atc->pci->dev, "ctxfi: snd_pcm_new failed!! Err=%d\n",
++			err);
+ 		return err;
+ 	}
+ 
+diff --git a/sound/pci/ctxfi/ctresource.c b/sound/pci/ctxfi/ctresource.c
+index e49d2be..80beecb 100644
+--- a/sound/pci/ctxfi/ctresource.c
++++ b/sound/pci/ctxfi/ctresource.c
+@@ -162,12 +162,14 @@ int rsc_init(struct rsc *rsc, u32 idx, enum RSCTYP type, u32 msr, void *hw)
+ 	case DAIO:
+ 		break;
+ 	default:
+-		pr_err("ctxfi: Invalid resource type value %d!\n", type);
++		dev_err(&(((struct hw *)hw)->pci->dev),
++			"ctxfi: Invalid resource type value %d!\n", type);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if (err) {
+-		pr_err("ctxfi: Failed to get resource control block!\n");
++		dev_err(&(((struct hw *)hw)->pci->dev),
++			"ctxfi: Failed to get resource control block!\n");
+ 		return err;
+ 	}
+ 
+@@ -190,7 +192,8 @@ int rsc_uninit(struct rsc *rsc)
+ 		case DAIO:
+ 			break;
+ 		default:
+-			pr_err("ctxfi: Invalid resource type value %d!\n",
++			dev_err(&(((struct hw *)rsc->hw)->pci->dev),
++				"ctxfi: Invalid resource type value %d!\n",
+ 				rsc->type);
+ 			break;
+ 		}
+@@ -233,13 +236,15 @@ int rsc_mgr_init(struct rsc_mgr *mgr, enum RSCTYP type,
+ 	case SUM:
+ 		break;
+ 	default:
+-		pr_err("ctxfi: Invalid resource type value %d!\n", type);
++		dev_err(&hw->pci->dev,
++			"ctxfi: Invalid resource type value %d!\n", type);
+ 		err = -EINVAL;
+ 		goto error;
+ 	}
+ 
+ 	if (err) {
+-		pr_err("ctxfi: Failed to get manager control block!\n");
++		dev_err(&hw->pci->dev,
++			"ctxfi: Failed to get manager control block!\n");
+ 		goto error;
+ 	}
+ 
+@@ -282,8 +287,9 @@ int rsc_mgr_uninit(struct rsc_mgr *mgr)
+ 		case SUM:
+ 			break;
+ 		default:
+-			pr_err("ctxfi: Invalid resource type value %d!\n",
+-				mgr->type);
++			dev_err(&(((struct hw *)mgr->hw)->pci->dev),
++				"ctxfi: Invalid resource type value %d!\n",
++				 mgr->type);
+ 			break;
+ 		}
+ 
+diff --git a/sound/pci/ctxfi/ctsrc.c b/sound/pci/ctxfi/ctsrc.c
+index 19df9b4..3a6e398 100644
+--- a/sound/pci/ctxfi/ctsrc.c
++++ b/sound/pci/ctxfi/ctsrc.c
+@@ -431,7 +431,8 @@ get_src_rsc(struct src_mgr *mgr, const struct src_desc *desc, struct src **rsrc)
+ 
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
+ 	if (err) {
+-		pr_err("ctxfi: Can't meet SRC resource request!\n");
++		dev_err(&(((struct hw *)(mgr->mgr.hw))->pci->dev),
++			"ctxfi: Can't meet SRC resource request!\n");
+ 		return err;
+ 	}
+ 
+@@ -739,7 +740,8 @@ static int get_srcimp_rsc(struct srcimp_mgr *mgr,
+ 	}
+ 	spin_unlock_irqrestore(&mgr->mgr_lock, flags);
+ 	if (err) {
+-		pr_err("ctxfi: Can't meet SRCIMP resource request!\n");
++		dev_err(&(((struct hw *)(mgr->mgr.hw))->pci->dev),
++			"ctxfi: Can't meet SRCIMP resource request!\n");
+ 		goto error1;
+ 	}
+ 
+diff --git a/sound/pci/ctxfi/xfi.c b/sound/pci/ctxfi/xfi.c
+index 35e85ba..10c7896 100644
+--- a/sound/pci/ctxfi/xfi.c
++++ b/sound/pci/ctxfi/xfi.c
+@@ -76,15 +76,18 @@ ct_card_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
+ 	if (err)
+ 		return err;
+ 	if ((reference_rate != 48000) && (reference_rate != 44100)) {
+-		pr_err("ctxfi: Invalid reference_rate value %u!!!\n",
+-		       reference_rate);
+-		pr_err("ctxfi: The valid values for reference_rate are 48000 and 44100, Value 48000 is assumed.\n");
++		dev_err(&pci->dev,
++			"ctxfi: Invalid reference_rate value %u!!\n",
++			reference_rate);
++		dev_err(&pci->dev,
++			"ctxfi: The valid values for reference_rate are 48000 and 44100, Value 48000 is assumed.\n");
+ 		reference_rate = 48000;
+ 	}
+ 	if ((multiple != 1) && (multiple != 2) && (multiple != 4)) {
+-		pr_err("ctxfi: Invalid multiple value %u!!!\n",
+-		       multiple);
+-		pr_err("ctxfi: The valid values for multiple are 1, 2 and 4, Value 2 is assumed.\n");
++		dev_err(&pci->dev, "ctxfi: Invalid multiple value %u!!!\n",
++			multiple);
++		dev_err(&pci->dev,
++			"ctxfi: The valid values for multiple are 1, 2 and 4, Value 2 is assumed.\n");
+ 		multiple = 2;
+ 	}
+ 	err = ct_atc_create(card, pci, reference_rate, multiple,
+-- 
+1.8.1.2
 
