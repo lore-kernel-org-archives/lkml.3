@@ -1,59 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaILNmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:42:24 -0400
-Received: from relay.parallels.com ([195.214.232.42]:35936 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937AbaILNmX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:42:23 -0400
-Message-ID: <1410529340.3569.27.camel@tkhai>
-Subject: [PATCH 5/5] sched/dl: Simplify pick_dl_task()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        <tkhai@yandex.ru>
-Date: Fri, 12 Sep 2014 17:42:20 +0400
-In-Reply-To: <20140912132709.26840.4893.stgit@tkhai>
-References: <20140912132709.26840.4893.stgit@tkhai>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1754984AbaILNm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:42:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754937AbaILNmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:42:25 -0400
+Date: Fri, 12 Sep 2014 21:41:40 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, keescook@chromium.org, ak@linux.intel.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp
+Subject: Re: [Patch v2 1/2] kaslr: check if kernel location is changed
+Message-ID: <20140912134140.GA1694@dhcp-17-102.nay.redhat.com>
+References: <1410502832-3573-1-git-send-email-bhe@redhat.com>
+ <20140912120447.GB29945@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140912120447.GB29945@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/12/14 at 08:04am, Vivek Goyal wrote:
+> On Fri, Sep 12, 2014 at 02:20:31PM +0800, Baoquan He wrote:
+> > Function handle_relocations() is used to do the relocations handling
+> > for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+> > mandotary to perform. For x86_64 only when kaslr is enabled and a
+> > random kernel location is chosen successfully the relocation handling
+> > shound be done. However previous implementation only compared the
+> > kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+> > compiled to run at.
+> 
+> > This would casue system to hang when kernel
+> > loading address is not equal to LOAD_PHYSICAL_ADDR.
+> 
+> I don't think above is correct. It will not always fails. It will fail
+> only in few conditions like when delta between load address and compiled
+> address is bigger than what 32bit signed relocations can handle. 
+> 
+> Also there will be limitations that delta can't be too big otherwise
+> kernel text virtual addresses will overflow in module address space.
 
-1)Nobody calls pick_dl_task with negative cpu, it's old RT leftover.
+Yes, will repost with changed description.
 
-2)If p->nr_cpus_allowed is 1, than the affinity has just been changed
-in set_cpus_allowed_ptr(); we'll pick it just earlier than migration
-thread.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
----
- kernel/sched/deadline.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index cc4eb89..aaa5abb 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1121,10 +1121,8 @@ static void set_curr_task_dl(struct rq *rq)
- static int pick_dl_task(struct rq *rq, struct task_struct *p, int cpu)
- {
- 	if (!task_running(rq, p) &&
--	    (cpu < 0 || cpumask_test_cpu(cpu, &p->cpus_allowed)) &&
--	    (p->nr_cpus_allowed > 1))
-+	    cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
- 		return 1;
--
- 	return 0;
- }
- 
-
-
-
+> 
+> Thanks
+> Vivek
+> > 
+> > So in this patch check if kernel location is changed after
+> > choose_kernel_location() when x86_64. If and only if in x86_64
+> > and kernel location is changed, we say a kaslr random kernel
+> > location is chosen, then the relocation handling need be done.
+> > 
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+> >  1 file changed, 22 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> > index 57ab74d..3bb2a17 100644
+> > --- a/arch/x86/boot/compressed/misc.c
+> > +++ b/arch/x86/boot/compressed/misc.c
+> > @@ -230,8 +230,9 @@ static void error(char *x)
+> >  		asm("hlt");
+> >  }
+> >  
+> > -#if CONFIG_X86_NEED_RELOCS
+> > -static void handle_relocations(void *output, unsigned long output_len)
+> > +#ifdef CONFIG_X86_NEED_RELOCS
+> > +static void handle_relocations(void *output_orig, void *output,
+> > +			       unsigned long output_len)
+> >  {
+> >  	int *reloc;
+> >  	unsigned long delta, map, ptr;
+> > @@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+> >  	unsigned long max_addr = min_addr + output_len;
+> >  
+> >  	/*
+> > +	* 32bit always requires relocations to be performed. For x86_64,
+> > +	* relocations need to be performed only if kaslr has chosen a
+> > +	* different load address then kernel was originally loaded at.
+> > +	*
+> > +	* If we are here, either kaslr is not configured in or kaslr is disabled
+> > +	* or kaslr has chosen not to change the load location of kernel. Don't
+> > +	* perform any relocations.
+> > +	*/
+> > +#if CONFIG_X86_64
+> > +	if (output_orig == output)
+> > +		return;
+> > +#endif
+> > +
+> > +	/*
+> >  	 * Calculate the delta between where vmlinux was linked to load
+> >  	 * and where it was actually loaded.
+> >  	 */
+> > @@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+> >  #endif
+> >  }
+> >  #else
+> > -static inline void handle_relocations(void *output, unsigned long output_len)
+> > +static inline void handle_relocations(void *output_orig, void *output,
+> > +				      unsigned long output_len)
+> >  { }
+> >  #endif
+> >  
+> > @@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+> >  				  unsigned char *output,
+> >  				  unsigned long output_len)
+> >  {
+> > +	unsigned char *output_orig = output;
+> > +
+> >  	real_mode = rmode;
+> >  
+> >  	sanitize_boot_params(real_mode);
+> > @@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+> >  	debug_putstr("\nDecompressing Linux... ");
+> >  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+> >  	parse_elf(output);
+> > -	handle_relocations(output, output_len);
+> > +	handle_relocations(output_orig, output, output_len);
+> >  	debug_putstr("done.\nBooting the kernel.\n");
+> >  	return output;
+> >  }
+> > -- 
+> > 1.8.5.3
