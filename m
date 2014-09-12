@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaILQVc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:21:32 -0400
-Received: from mout.perfora.net ([74.208.4.194]:57126 "EHLO mout.perfora.net"
+	id S1752331AbaILQWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:22:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43724 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaILQVa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:21:30 -0400
-Message-ID: <1410538857.15150.22.camel@localhost.localdomain>
-Subject: Re: [PATCH v2 1/2] ARM: tegra: apalis/colibri t30: integrate audio
- support
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch, Fabio Estevam <festevam@gmail.com>
-Date: Fri, 12 Sep 2014 18:20:57 +0200
-In-Reply-To: <5410C222.2020602@wwwdotorg.org>
-References: <cover.1410362950.git.marcel@ziswiler.com>
-	 <00f249b3d648d3a8d550c5db0737f3aa6d93f07e.1410362950.git.marcel@ziswiler.com>
-	 <5410C222.2020602@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
-Mime-Version: 1.0
+	id S1750846AbaILQWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 12:22:07 -0400
+Message-ID: <54131D87.9060008@redhat.com>
+Date: Fri, 12 Sep 2014 18:21:27 +0200
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "zlim.lnx@gmail.com" <zlim.lnx@gmail.com>,
+        "ast@plumgrid.com" <ast@plumgrid.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH arm64-next] net: bpf: arm64: address randomize and write
+ protect JIT code
+References: <1410505897-20122-1-git-send-email-dborkman@redhat.com> <20140912160345.GF5532@arm.com>
+In-Reply-To: <20140912160345.GF5532@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:WUpBQhukMqIgSA2paMwaBBcSio32p4oe1z/mSaQJSE7
- xIwfip+7VxNi+kEwn7DSGRFCsoyj9OO4AW28Jwl4gSLVPvvajU
- Wn4F1fMboL7d9QFPNYg5RELb1iNJZyB8rjvwTRZE7CLxeKXUj3
- hr4NpZ8QuxrLUn+mxTPsOAC6GrwXDqUzRF7/vMehEUmgzlyvMJ
- YVUhfas9bFMQQ/ORyBI6DD7OoNXurzXieXWJ+8etQFnBFTIdXB
- sP+0yKM3NB7Zgn+wdmV5UOx0z+TEN5erUTgPa+ZHzSecaBOnnq
- WI9Gwfq7PnEE1reIcRd8a9IGMaZtxoDOtaw+62wP3OWwVImuY5
- 3o0zTA9gCOnM5FsE8666ZgI3dgmMnL2C9Ykw3PyRivNUF6hr/H
- xOvE3ZybCa3Gg==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-10 at 15:26 -0600, Stephen Warren wrote:
-> No, definitely not; this patch has significant semantic changes since I 
-> reviewed it.
+On 09/12/2014 06:03 PM, Catalin Marinas wrote:
+> Daniel,
+>
+> On Fri, Sep 12, 2014 at 08:11:37AM +0100, Daniel Borkmann wrote:
+>>   Will, Catalin, Dave, this is more or less a heads-up: when net-next and
+>>   arm64-next tree will get both merged into Linus' tree, we will run into
+>>   a 'silent' merge conflict until someone actually runs eBPF JIT on ARM64
+>>   and might notice (I presume) an oops when JIT is freeing bpf_prog. I'd
+>>   assume nobody actually _runs_ linux-next, but not sure about that though.
+>
+> Some people do.
+>
+>>   How do we handle this? Would I need to resend this patch when the time
+>>   comes or would you ARM64 guys take care of it automagically? ;)
+>
+> I think we could disable BPF for arm64 until -rc1 and re-enable it
+> together with this patch.
 
-OK, sorry. Admittedly this was probably a little bit too quick a shot.
-The solution looked so clean and on first sight worked just fine.
+Ok, yes, that would mitigate it a bit. Sounds fine to me.
 
-> I'm not sure how this can work. Certainly all 3 clocks that are required 
-> for audio are mentioned here. However, the PLL_A clock (which then 
-> trickles down to the other 2) needs to have its rate changed based on 
-> whether the sample rate is 44.1KHz- or 48KHz-based. Semantically, this 
-> can't be something that "simple-audio-card" can imply, since 
-> "simple-audio-card" is something agnostic to any HW, whereas this 
-> clocking requirement is something specific to Tegra HW.
+> One comment below:
+>
+>> --- a/arch/arm64/net/bpf_jit_comp.c
+>> +++ b/arch/arm64/net/bpf_jit_comp.c
+> [...]
+>> +static void jit_fill_hole(void *area, unsigned int size)
+>> +{
+>> +	/* Insert illegal UND instructions. */
+>> +	u32 *ptr, fill_ins = 0xe7ffffff;
+>
+> On arm64 we don't have a guaranteed undefined instruction space (and
+> Will tells me that on Thumb-2 for the 32-bit arm port it actually is a
+> valid instruction, it seems that you used the same value).
 
-Yes, now as you mention it I forgot about the whole
-tegra_asoc_utils_set_rate() stuff!
+Hm, ok, the boards we've tried out and where Zi tested it too, it worked.
 
-> To see the problem, try encoding some audio stream as both 44.1KHz and 
-> 48KHz, then play a few seconds of each and keep switching back and 
-> forth. You'll likely find either the playback pitch is wrong, or you get 
-> drop-outs or stuttering.
+> I think the only guaranteed way is to use the BRK #imm instruction but
+> it requires some changes to the handling code as it is currently used
+> for kgdb (unless you can use two instructions for filling in which could
+> generate a NULL pointer access).
 
-Yeah, right. Clocks seem to be stuck at the 44.1 kHz setting.
+The trade-off would be that if we align on 8, it would certainly increase
+the probability to jump to the right offset. Note, on x86_64 we have no
+alignment requirements, hence 1, and on s390x only alignment of 2.
 
-> I also wonder how "simple-audio-card" can know what rate the EXTERN1 
-> clock to the CODEC should be set to; each CODEC has a different 
-> requirement for the minimum clock input and the Fs multiple usually 
-> varies for different sample rates. See for example 
-> sound/soc/tegra/tegra_wm8903.c:tegra_wm8903_hw_params(). This could be a 
-> solved problem though: Perhaps some API has been added to CODECs to 
-> report this information (or perhaps CODEC drivers now clk_set_rate() on 
-> their input clocks themselves) since I last looked.
-
-If there are no objections I will just revive version 1 again and send
-it around as a new version 3 just to prevent any further confusion.
-
+So, on that few (?) boards where UND would be a valid instruction [ as
+opposed to crash the kernel ], would it translate into a NOP and just
+'walk' from there into the JIT image?
