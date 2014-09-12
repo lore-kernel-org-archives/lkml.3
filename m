@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaILNkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:40:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53398 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753028AbaILNkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:40:19 -0400
-Message-ID: <5412F7AB.5040901@zytor.com>
-Date: Fri, 12 Sep 2014 06:39:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754782AbaILNkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:40:40 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35543 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277AbaILNkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:40:39 -0400
+Message-ID: <1410529233.3569.22.camel@tkhai>
+Subject: [PATCH 0/5] sched: Misc cleanups
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        <tkhai@yandex.ru>
+Date: Fri, 12 Sep 2014 17:40:33 +0400
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409120133330.4178@nanos> <54127A16.4030701@zytor.com> <alpine.DEB.2.10.1409121238290.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409121238290.4178@nanos>
-Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 06:10 AM, Thomas Gleixner wrote:
->>
->> I'm not wedded to that concept, by the way, but using the generic parser had a
->> whole bunch of its own problems, including the fact that you're getting bytes
->> from user space.
-> 
-> Errm. The instruction decoder does not even know about user space.
-> 
->       u8 buf[MAX_INSN_SIZE];
-> 
->       memset(buf, 0, MAX_INSN_SIZE);
->       if (copy_from_user(buf, addr, MAX_INSN_SIZE))
->       	    return 0;
-> 
->       insn_init(insn, buf, is_64bit(current));
-> 
->       /* Process the entire instruction */
->       insn_get_length(insn);
-> 
->       /* Decode the faulting address */
->       return mpx_get_addr(insn, regs);
-> 
-> I really can't see why that should not work. insn_get_length()
-> retrieves exactly the information which is required to call
-> mpx_get_addr().
-> 
-> Sure it might be a bit slower because the generic decoder does a bit
-> more than the mpx private sauce, but this happens in the context of a
-> bounds violation and it really does not matter at all whether SIGSEGV
-> is delivered 5 microseconds later or not.
-> 
-> The only difference is the insn->limit handling in the MPX
-> decoder. The existing decoder has a limit check of:
-> 
-> #define MAX_INSN_SIZE       16
-> 
-> and MPX private one makes that
-> 
-> #define MAX_MPX_INSN_SIZE   15
-> 
-> and limits it runtime further to:
-> 
->     MAX_MPX_INSN_SIZE - bytes_not_copied_from_user_space;
-> 
-> This is beyond silly, really. If we cannot copy 16 bytes from user
-> space, why bother in dealing with a partial copy at all.
-> 
 
-The correct limit is 15 bytes, not anything else, so this is a bug in
-the existing decoder.  A sequence of bytes longer than 15 bytes will
-#UD, regardless of being "otherwise valid".
+This is a series of scheduler-related cleanups which I were collecting
+for some time.
 
-Keep in mind the instruction may not be aligned, and you could fit an
-instruction plus a jump and still overrun a page in 15 bytes.
+Nothing interesting, just boring cleanups...
 
-> Aside of that the existing decoder handles the 32bit app on a 64bit
-> kernel already correctly while the extra magic MPX decoder does
-> not. It just adds some magically optimized and different copy of the
-> existing decoder for exactly ZERO value.
-> 
->> It might be worthwhile to compare the older patchset which did use the generic
->> parser to make sure that it actually made sense.
-> 
-> I can't find such a thing. The first version I found contains an even
-> more convoluted private parser. Intelnal mail perhaps?
+---
 
-Yes, I suspect so.
+Kirill Tkhai (5):
+      cleanup, treewide: Remove set_current_state(TASK_RUNNING) after schedule
+      sched/fair: cleanup: Remove useless assignment in select_task_rq_fair()
+      sched/core: Use put_prev_task() accessor where possible.
+      sched/rt: Remove useless if from cleanup pick_next_task_rt()
+      sched/dl: Simplify pick_dl_task()
 
-	-hpa
+
+ arch/cris/arch-v10/drivers/sync_serial.c           |    1 -
+ arch/cris/arch-v32/drivers/sync_serial.c           |    1 -
+ arch/um/drivers/random.c                           |    1 -
+ drivers/gpu/vga/vgaarb.c                           |    1 -
+ drivers/md/dm-bufio.c                              |    1 -
+ drivers/parisc/power.c                             |    1 -
+ drivers/s390/net/claw.c                            |    2 --
+ drivers/scsi/fcoe/fcoe.c                           |    1 -
+ drivers/scsi/qla2xxx/qla_os.c                      |    1 -
+ .../staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c |    3 ---
+ .../staging/lustre/lnet/klnds/socklnd/socklnd_cb.c |    1 -
+ drivers/staging/lustre/lustre/libcfs/fail.c        |    1 -
+ drivers/tty/bfin_jtag_comm.c                       |    1 -
+ fs/afs/vlocation.c                                 |    1 -
+ fs/jfs/jfs_logmgr.c                                |    2 --
+ fs/jfs/jfs_txnmgr.c                                |    3 ---
+ fs/nfs/blocklayout/blocklayoutdev.c                |    1 -
+ fs/nfs/blocklayout/blocklayoutdm.c                 |    1 -
+ fs/nfsd/nfs4recover.c                              |    1 -
+ kernel/sched/core.c                                |    8 ++++----
+ kernel/sched/deadline.c                            |    4 +---
+ kernel/sched/fair.c                                |    7 ++-----
+ kernel/sched/rt.c                                  |    3 +--
+ kernel/time/hrtimer.c                              |    1 -
+ kernel/trace/ring_buffer_benchmark.c               |    3 ---
+ 25 files changed, 8 insertions(+), 43 deletions(-)
+
+--
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+
 
