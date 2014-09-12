@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209AbaILHlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 03:41:22 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:43695 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaILHlU (ORCPT
+	id S1753343AbaILHl3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 03:41:29 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:53423 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814AbaILHlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 03:41:20 -0400
-Date: Fri, 12 Sep 2014 11:41:04 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: [PATCH RFC 1/2] memcg: use percpu_counter for statistics
-Message-ID: <20140912074104.GG4151@esperanza>
-References: <cover.1410447097.git.vdavydov@parallels.com>
- <395271ceb801fdb6b97160bbdd38fa2214b29983.1410447097.git.vdavydov@parallels.com>
- <5412481C.2020101@jp.fujitsu.com>
+	Fri, 12 Sep 2014 03:41:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5412481C.2020101@jp.fujitsu.com>
+In-Reply-To: <alpine.LFD.2.11.1409111443570.16533@knanqh.ubzr>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-11-git-send-email-vincent.guittot@linaro.org>
+ <20140911123412.GY3190@worktop.ger.corp.intel.com> <CAKfTPtBbjpCFifoyFSh8Hb3nBZFFTjjxdfxnpMk=CHy5aX1qpg@mail.gmail.com>
+ <20140911140444.GH4783@worktop.ger.corp.intel.com> <alpine.LFD.2.11.1409111443570.16533@knanqh.ubzr>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 12 Sep 2014 09:41:01 +0200
+Message-ID: <CAKfTPtAYfjp6cShrXCq2p24L5gvwxkDLZtzxiSaFQCo=iMjxbw@mail.gmail.com>
+Subject: Re: [PATCH v5 10/12] sched: get CPU's utilization statistic
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:10:52AM +0900, Kamezawa Hiroyuki wrote:
-> (2014/09/12 0:41), Vladimir Davydov wrote:
-> > In the next patch I need a quick way to get a value of
-> > MEM_CGROUP_STAT_RSS. The current procedure (mem_cgroup_read_stat) is
-> > slow (iterates over all cpus) and may sleep (uses get/put_online_cpus),
-> > so it's a no-go.
-> > 
-> > This patch converts memory cgroup statistics to use percpu_counter so
-> > that percpu_counter_read will do the trick.
-> > 
-> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> 
-> 
-> I have no strong objections but you need performance comparison to go with this.
-> 
-> I thought percpu counter was messy to be used for "array".
-> I can't understand why you started from fixing future performance problem before
-> merging new feature.
+On 11 September 2014 21:17, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+>>
+>> Any other opinions before Vince goes and applies sed on patches? ;-)
+>
+> I don't mind either way, but for sure someone (possibly me) is going to
+> confuse the two soon enough.
+>
+> Please include in the code some formal definition in the context of the
+> scheduler.  A comment block right before the corresponding get_cpu_*
+> accessors should be good enough.
 
-Because the present implementation of mem_cgroup_read_stat may sleep
-(get/put_online_cpus) while I need to call it from atomic context in the
-next patch.
+ok
 
-I didn't do any performance comparisons, because it's just an RFC. It
-exists only to attract attention to the problem. Using percpu counters
-was the quickest way to implement a draft version, that's why I chose
-them. It may have performance impact though, so it shouldn't be merged
-w/o performance analysis.
-
-Thanks,
-Vladimir
+>
+>
+> Nicolas
