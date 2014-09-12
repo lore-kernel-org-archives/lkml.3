@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787AbaILRsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:48:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49219 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaILRsk (ORCPT
+	id S1751904AbaILRuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:50:09 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:59014 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaILRuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:48:40 -0400
-Date: Fri, 12 Sep 2014 19:48:27 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-In-Reply-To: <5412F7AB.5040901@zytor.com>
-Message-ID: <alpine.DEB.2.10.1409121943430.4178@nanos>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409120133330.4178@nanos>
- <54127A16.4030701@zytor.com> <alpine.DEB.2.10.1409121238290.4178@nanos> <5412F7AB.5040901@zytor.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 12 Sep 2014 13:50:07 -0400
+From: Robert Richter <rric@kernel.org>
+To: Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>
+Subject: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Date: Fri, 12 Sep 2014 19:49:43 +0200
+Message-Id: <1410544187-15876-1-git-send-email-rric@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Sep 2014, H. Peter Anvin wrote:
-> The correct limit is 15 bytes, not anything else, so this is a bug in
-> the existing decoder.  A sequence of bytes longer than 15 bytes will
+From: Robert Richter <rrichter@cavium.com>
 
-Fine. Lets fix it there.
+This initial patches enable Cavium Thunder SoC Family. The patches add
+devicetree and Kconfig support and then add Thunder to the defconfig.
 
-> #UD, regardless of being "otherwise valid".
+The Thunder system needs more enablement patches for subsystems and
+devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+We will send separate patch sets for these. All of them base on this
+initial patches.
 
-> Keep in mind the instruction may not be aligned, and you could fit an
-> instruction plus a jump and still overrun a page in 15 bytes.
+I sent a separate patch set independently that introduces support for
+dts vendor subdirs. After both patch sets have been applied I will
+send a patch in addition that moves the dts file into a subdirectory.
 
-Fair enough. OTOH, I doubt that a text mapping will end exactly at
-that jump after the MPX instruction.
+I sent another separate patch that sets NR_CPUS to 64 per default.
 
-So that's simple to fix.
+The first patch introduces dts files without having a Kconfig option
+for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
+added to defconfig in patch 4 as this is my preferred solution. If
+there is still resistance having an ARCH_THUNDER option, just drop
+them.
 
-Kill the hardcoded limit in lib/insn.c and let the callsites hand in a
-lenght argument. So you can still use it for MPX and avoid 200 lines
-of blindly copied and slightly different decoder code.
+Patches are available here:
 
-Thanks,
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
 
-	tglx
+v3 changes:
+* removed setting NR_CPUS for Thunder, I sent a separate patch that
+  increases this to 64 cpus per default
+* reordered patches, dts files changes are know first using dtb-y
+  instead of ARCH_THUNDER option
+* moved soc nodes to thunder-88xx.dtsi
+
+v2 changes:
+* rebased to 3.17
+* placed commas between 32-bit portions of 64 bit addresses
+* removed #address-cells and size-cells in gic node
+* get rid of the clocks node
+* changed to gpl/x11 dual license
+* removed memreserve
+* moved gic to bus node
+
+Radha Mohan Chintakuntla (3):
+  arm64, thunder: Add initial dts for Cavium Thunder SoC
+  arm64, thunder: Document devicetree bindings for Cavium Thunder SoC
+  arm64, thunder: Add Kconfig option for Cavium Thunder SoC Family
+
+Robert Richter (1):
+  arm64, defconfig: Enable Cavium Thunder SoC in defconfig
+
+ .../devicetree/bindings/arm/cavium-thunder.txt     |  10 +
+ Documentation/devicetree/bindings/arm/cpus.txt     |   1 +
+ arch/arm64/Kconfig                                 |   5 +
+ arch/arm64/boot/dts/Makefile                       |   1 +
+ arch/arm64/boot/dts/thunder-88xx.dts               |  67 ++++
+ arch/arm64/boot/dts/thunder-88xx.dtsi              | 401 +++++++++++++++++++++
+ arch/arm64/configs/defconfig                       |   1 +
+ 7 files changed, 486 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cavium-thunder.txt
+ create mode 100644 arch/arm64/boot/dts/thunder-88xx.dts
+ create mode 100644 arch/arm64/boot/dts/thunder-88xx.dtsi
+
+-- 
+2.1.0
+
