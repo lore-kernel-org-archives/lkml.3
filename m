@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaILAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 20:13:26 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:43154 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaILANY convert rfc822-to-8bit (ORCPT
+	id S1753797AbaILAbJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 20:31:09 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60432 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaILAbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 20:13:24 -0400
+	Thu, 11 Sep 2014 20:31:07 -0400
+Message-ID: <54123EC8.1040906@lwfinger.net>
+Date: Thu, 11 Sep 2014 19:31:04 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <1410248433-24005-2-git-send-email-LW@KARO-electronics.de>
-References: <1410248433-24005-1-git-send-email-LW@KARO-electronics.de> <1410248433-24005-2-git-send-email-LW@KARO-electronics.de>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Thu, 11 Sep 2014 17:13:02 -0700
-Message-ID: <CAK5ve-L-Q29nuifBOXQgyWQ6e-k4wACfb7ccOQSPKp0fHkHmjA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] leds: trigger: gpio: fix warning in gpio trigger for
- gpios whose accessor function may sleep
-To: =?UTF-8?Q?Lothar_Wa=C3=9Fmann?= <LW@karo-electronics.de>
-Cc: Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Kees Cook <keescook@chromium.org>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: repeated bugs in new rtl wifi drivers
+References: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>	<5412327B.6030000@lwfinger.net> <CAGXu5jJmyyWrsS2EFPT59RjK-np3sqmxe69meecmpicv6BNKrA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJmyyWrsS2EFPT59RjK-np3sqmxe69meecmpicv6BNKrA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 12:40 AM, Lothar Waßmann <LW@karo-electronics.de> wrote:
-> When using a GPIO driver whose accessor functions may sleep (e.g. an
-> I2C GPIO extender like PCA9554) the following warning is issued:
-> WARNING: CPU: 0 PID: 665 at drivers/gpio/gpiolib.c:2274 gpiod_get_raw_value+0x3c/0x48()
-> Modules linked in:
-> CPU: 0 PID: 665 Comm: kworker/0:2 Not tainted 3.16.0-karo+ #115
-> Workqueue: events gpio_trig_work
-> [<c00142cc>] (unwind_backtrace) from [<c00118f8>] (show_stack+0x10/0x14)
-> [<c00118f8>] (show_stack) from [<c001bf10>] (warn_slowpath_common+0x64/0x84)
-> [<c001bf10>] (warn_slowpath_common) from [<c001bf4c>] (warn_slowpath_null+0x1c/0x24)
-> [<c001bf4c>] (warn_slowpath_null) from [<c020a1b8>] (gpiod_get_raw_value+0x3c/0x48)
-> [<c020a1b8>] (gpiod_get_raw_value) from [<c02f68a0>] (gpio_trig_work+0x1c/0xb0)
-> [<c02f68a0>] (gpio_trig_work) from [<c0030c1c>] (process_one_work+0x144/0x38c)
-> [<c0030c1c>] (process_one_work) from [<c0030ef8>] (worker_thread+0x60/0x5cc)
-> [<c0030ef8>] (worker_thread) from [<c0036dd4>] (kthread+0xb4/0xd0)
-> [<c0036dd4>] (kthread) from [<c000f0f0>] (ret_from_fork+0x14/0x24)
-> ---[ end trace cd51a1dad8b86c9c ]---
+On 09/11/2014 06:50 PM, Kees Cook wrote:
+> On Thu, Sep 11, 2014 at 4:38 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+>> On 09/11/2014 05:27 PM, Kees Cook wrote:
+>>>
+>>> Hi,
+>>>
+>>> I keep fixing this same bug that keeps showing up in the rtl wifi
+>>> drivers. CL_PRINTF keeps getting redefined (incorrectly) instead of
+>>> using a correctly fixed global. Is there a way to stop this from
+>>> happening again?
+>>>
+>>> Here are the past three (identical) fixes I've landed:
+>>> a3355a62673e2c4bd8617d2f07c8edee92a89b8d
+>>> 037526f1ae7eeff5cf27ad790ebfe30303eeebe8
+>>> 6437f51ec36af8ef1e3e2659439b35c37e5498e2
+>>>
+>>> And the buildbot report below seems to show there are more to be made. :)
+>>
+>>
+>> Sorry that I missed your fix. I should have seen it come through Linville's
+>> list. I will push your fix through again.
 >
-> Fix this by using the _cansleep() variant of gpio_get_value().
->
+> Well, I should clarify: it's not getting unfixed/reverted, but rather,
+> it hasn't been consolidated to avoid needing the code again in the
+> future. All three of the fixes above are on almost identical header
+> files. If we could consolidate them, that would be great, and it would
+> keep things much nicer.
 
-Good catch, I will merge this.
+The two in staging are there because there was need to have those two driver 
+available as quickly as possible. Even though a lot of code is the same as the 
+regular tree, there were enough differences that it has taken a lot of work to 
+merge those two new drivers into the wireless tree. It is part of that effort 
+that ended up effectively reverting your fix for the wireless tree.
 
-Thanks,
--Bryan
+My plan is to ultimately eliminate all the CL_SNPRINTF and CL_PRINTF stuff. In 
+every case I have seen, the two are paired, thus they can be replaced with a 
+simple "pr_info". Now that we are unifying the Realtek and kernel codes, I need 
+to check with the Realtek guys.
 
-> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> ---
->  drivers/leds/trigger/ledtrig-gpio.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/leds/trigger/ledtrig-gpio.c b/drivers/leds/trigger/ledtrig-gpio.c
-> index 35812e3..c86c418 100644
-> --- a/drivers/leds/trigger/ledtrig-gpio.c
-> +++ b/drivers/leds/trigger/ledtrig-gpio.c
-> @@ -48,7 +48,7 @@ static void gpio_trig_work(struct work_struct *work)
->         if (!gpio_data->gpio)
->                 return;
->
-> -       tmp = gpio_get_value(gpio_data->gpio);
-> +       tmp = gpio_get_value_cansleep(gpio_data->gpio);
->         if (gpio_data->inverted)
->                 tmp = !tmp;
->
-> --
-> 1.7.10.4
->
+Larry
+
