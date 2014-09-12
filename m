@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaILSDy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:03:54 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:40697 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378AbaILSDu (ORCPT
+	id S1752485AbaILSED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:04:03 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:56999 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaILSD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:03:50 -0400
-Subject: [PATCH v1 09/13] PCI: Apply _HPP settings to PCIe devices as well
- as PCI and PCI-X
+	Fri, 12 Sep 2014 14:03:58 -0400
+Subject: [PATCH v1 10/13] PCI: Preserve BIOS PCI_COMMAND_SERR and
+ PCI_COMMAND_PARITY settings
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Rajat Jain <rajatxjain@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:03:48 -0600
-Message-ID: <20140912180348.1630.24201.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+Date: Fri, 12 Sep 2014 12:03:54 -0600
+Message-ID: <20140912180354.1630.57838.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -27,40 +27,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACPI _HPP method was defined before PCIe existed, so its documentation
-only mentions PCI.  The _HPX Type 0 setting record is essentially identical
-to _HPP, but the spec (ACPI rev 5.0, sec 6.2.8.1) says it should be applied
-to PCI, PCI-X, and PCIe devices, with settings being ignored if they are
-not applicable.
+Do not clear PCI_COMMAND_SERR or PCI_COMMAND_PARITY based on _HPP.  The
+spec (ACPI rev 5.0, sec 6.2.7) says that when "Enable SERR" is set to 1,
+we should enable SERR in the command register.  It says nothing about
+*disabling* SERR or PERR; in fact, the example in 6.2.7.1 says we should
+leave PERR alone unless "Enable PERR" is 1.
 
-Some platforms with both conventional PCI and PCIe devices provide only
-_HPP (not _HPX), so treat _HPP the same way as an _HPX Type 0 record and
-apply it to PCIe devices as well as PCI and PCI-X.
+For hot-added devices, this probably doesn't matter because they power up
+with these bits cleared.  But in addition to hot-plugged devices, the spec
+allows the platform to use _HPP for "configuration of PCI devices not
+configured by the BIOS at system boot," and it may make a difference for
+devices present at boot.
+
+This change means that if BIOS enables SERR or PERR on a device, and it
+supplies _HPP or _HPX with the SERR or PERR bits *cleared*, we will leave
+SERR or PERR reporting enabled on that device instead of disabling it.
+
+See also 40abb96c51bb ("pciehp: Fix programming hotplug parameters"), where
+this code was first added.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/pci/probe.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/pci/probe.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 4b3b29bc7a82..003d112a783d 100644
+index 003d112a783d..a16b3472b70d 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -1249,15 +1249,8 @@ static void program_hpp_type0(struct pci_dev *dev, struct hpp_type0 *hpp)
- {
- 	u16 pci_cmd, pci_bctl;
+@@ -1264,12 +1264,8 @@ static void program_hpp_type0(struct pci_dev *dev, struct hpp_type0 *hpp)
+ 	pci_read_config_word(dev, PCI_COMMAND, &pci_cmd);
+ 	if (hpp->enable_serr)
+ 		pci_cmd |= PCI_COMMAND_SERR;
+-	else
+-		pci_cmd &= ~PCI_COMMAND_SERR;
+ 	if (hpp->enable_perr)
+ 		pci_cmd |= PCI_COMMAND_PARITY;
+-	else
+-		pci_cmd &= ~PCI_COMMAND_PARITY;
+ 	pci_write_config_word(dev, PCI_COMMAND, pci_cmd);
  
--	if (!hpp) {
--		/*
--		 * Perhaps we *should* use default settings for PCIe, but
--		 * pciehp didn't, so we won't either.
--		 */
--		if (pci_is_pcie(dev))
--			return;
-+	if (!hpp)
- 		hpp = &pci_default_type0;
--	}
- 
- 	if (hpp->revision > 1) {
- 		dev_warn(&dev->dev,
+ 	/* Program bridge control value */
+@@ -1279,12 +1275,8 @@ static void program_hpp_type0(struct pci_dev *dev, struct hpp_type0 *hpp)
+ 		pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &pci_bctl);
+ 		if (hpp->enable_serr)
+ 			pci_bctl |= PCI_BRIDGE_CTL_SERR;
+-		else
+-			pci_bctl &= ~PCI_BRIDGE_CTL_SERR;
+ 		if (hpp->enable_perr)
+ 			pci_bctl |= PCI_BRIDGE_CTL_PARITY;
+-		else
+-			pci_bctl &= ~PCI_BRIDGE_CTL_PARITY;
+ 		pci_write_config_word(dev, PCI_BRIDGE_CONTROL, pci_bctl);
+ 	}
+ }
 
