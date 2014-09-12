@@ -1,178 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445AbaILMDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 08:03:42 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54238 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754374AbaILMDl (ORCPT
+	id S1754540AbaILMEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 08:04:13 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:43546 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395AbaILMEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 08:03:41 -0400
-Date: Fri, 12 Sep 2014 14:03:36 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "sergei.shtylyov@cogentembedded.com" 
-	<sergei.shtylyov@cogentembedded.com>,
-        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
- framework in ChipIdea
-Message-ID: <20140912120336.GD18774@kwain>
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
- <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
- <20140911005446.GD3609@peterchendt>
- <20140911154222.GB11275@kwain>
- <e1957aca004047cd9333ebac74531a65@BN1PR0301MB0772.namprd03.prod.outlook.com>
- <20140912082125.GA18774@kwain>
- <20140912092711.GA2463@peterchendt>
- <20140912093550.GC18774@kwain>
- <20140912102828.GB2463@peterchendt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140912102828.GB2463@peterchendt>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Sep 2014 08:04:11 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-41-5412e13705fc
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Subject: [PATCH] ARM: exynos_defconfig: Enable Maxim 77693 and I2C GPIO drivers
+Date: Fri, 12 Sep 2014 14:03:54 +0200
+Message-id: <1410523434-10645-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t/xy7rmD4VCDBreW1tsnLGe1eL1C0OL
+	3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2Rx+zKvxdojd9ktrlw6xWaxatcfRov2v3vZHHg8
+	Wpp72Dx2zrrL7nHn2h42j81L6j36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoEro3PnM8aCRp6K
+	HVdvsDUwruLqYuTkkBAwkTjeNJsdwhaTuHBvPVsXIxeHkMBSRon37f1MIAkhgT4miX+LXEFs
+	NgFjic3Ll4AViQgsZZZYcbsdrJtZIExi5fa9zCC2sIC/xIGXy1lAbBYBVYnpkyeDxXkF3CWm
+	3G5mgdgmJ3Hy2GTWCYzcCxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBNfXHYxLj1kd
+	YhTgYFTi4f2QKxgixJpYVlyZe4hRgoNZSYR31x2hECHelMTKqtSi/Pii0pzU4kOMTBycUg2M
+	8x7ZTnTdWqG6apLKryUadgdOvDZZsfywuej7a/6bmHZ6zZEu/nsz68hxlYJJWqpN/z62qbuu
+	mCovvddGTEWgbn7CwS0+i41NPS2Zp+kItfo3LLpwtp3vv8GHHsHde/ZOja54+K7o9pq/si9b
+	Xp+96yr6Qcrk/LKzZf1tDMb3Z+3o3u7y0iLorRJLcUaioRZzUXEiAFBEB4wMAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 06:28:29PM +0800, Peter Chen wrote:
-> On Fri, Sep 12, 2014 at 11:35:50AM +0200, Antoine Tenart wrote:
-> > On Fri, Sep 12, 2014 at 05:27:13PM +0800, Peter Chen wrote:
-> > > On Fri, Sep 12, 2014 at 10:21:25AM +0200, Antoine Tenart wrote:
-> > > > Peter,
-> > > > 
-> > > > On Fri, Sep 12, 2014 at 01:10:33AM +0000, Peter Chen wrote:
-> > > > > > On Thu, Sep 11, 2014 at 08:54:47AM +0800, Peter Chen wrote:
-> > > > > > > On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
-> > > > > > > > @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct platform_device
-> > > > > > *pdev)
-> > > > > > > >  		return -ENODEV;
-> > > > > > > >  	}
-> > > > > > > >
-> > > > > > > > -	if (ci->platdata->usb_phy)
-> > > > > > > > +	if (ci->platdata->phy)
-> > > > > > > > +		ci->phy = ci->platdata->phy;
-> > > > > > > > +	else if (ci->platdata->usb_phy)
-> > > > > > > >  		ci->usb_phy = ci->platdata->usb_phy;
-> > > > > > > >  	else
-> > > > > > > > -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > > > > > > > +		ci->phy = devm_phy_get(dev, "usb-phy");
-> > > > > > > >
-> > > > > > > > -	if (IS_ERR(ci->usb_phy)) {
-> > > > > > > > -		ret = PTR_ERR(ci->usb_phy);
-> > > > > > > > +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy == NULL)) {
-> > > > > > > >  		/*
-> > > > > > > >  		 * if -ENXIO is returned, it means PHY layer wasn't
-> > > > > > > >  		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> > > > > > > >  		 * in that case, since no PHY driver will ever probe.
-> > > > > > > >  		 */
-> > > > > > > > -		if (ret == -ENXIO)
-> > > > > > > > -			return ret;
-> > > > > > > > +		if (PTR_ERR(ci->phy) == -ENXIO)
-> > > > > > > > +			return -ENXIO;
-> > > > > > > >
-> > > > > > > > -		dev_err(dev, "no usb2 phy configured\n");
-> > > > > > > > -		return -EPROBE_DEFER;
-> > > > > > > > +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > > > > > > > +		if (IS_ERR(ci->usb_phy)) {
-> > > > > > > > +			dev_err(dev, "no usb2 phy configured\n");
-> > > > > > > > +			return -EPROBE_DEFER;
-> > > > > > > > +		}
-> > > > > > > >  	}
-> > > > > > >
-> > > > > > > Sorry, I can't accept this change, why devm_usb_get_phy(dev,
-> > > > > > > USB_PHY_TYPE_USB2) is put at error path? Since current get PHY
-> > > > > > > operation is a little complicated, we may have a dedicate function to do it,
-> > > > > > dwc3 driver is a good example.
-> > > > > > 
-> > > > > > It's not the error path, it's the case when there is no PHY from the generic PHY
-> > > > > > framework available. Getting an USB PHY is a fallback solution.
-> > > > > > 
-> > > > > > I agree we can move this to a dedicated function. But even if doing so, we'll
-> > > > > > have to test ci->phy first.
-> > > > > > 
-> > > > > > Or do you have something else in mind?
-> > > > > > 
-> > > > >  
-> > > > > I still want devm_usb_get_phy(dev, USB_PHY_TYPE_USB2) to be called at the same place
-> > > > > like generic_phy, not in later error path, in error path, we only handle error.
-> > > > 
-> > > > Would this fit you?
-> > > > 
-> > > > if (ci->platdata->phy)
-> > > >         ci->phy = ci->platdata->phy;
-> > > > else if (ci->platdata->usb_phy)
-> > > >         ci->usb_phy = ci->platdata->usb_phy;
-> > > > 
-> > > > if (ci->phy == NULL && ci->usb_phy == NULL) {
-> > > 
-> > > You should use else if here.
-> > 
-> > Yes, sure.
-> > 
-> > > 
-> > > >         ci->phy = devm_phy_get(dev, "usb-phy");
-> > > >         ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> > > > 
-> > > >         /* if both generic PHY and USB PHY layers aren't enabled */
-> > > >         if (PTR_ERR(ci->phy) == -ENOSYS && PTR_ERR(ci->usb_phy) == -ENXIO)
-> > > >                 return -ENXIO;
-> > > > 
-> > > >         if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
-> > > >                 return -EPROBE_DEFER;
-> > > > 
-> > > >         /* if an usb_phy is available, but no phy is there */
-> > > >         if (PTR_ERR(ci->phy) == -ENODEV)
-> > > >                 ci->phy = NULL;
-> > > 	if (ci->phy)
-> > > 		ci->usb_phy = NULL;
-> > > 	if (ci->usb_phy)
-> > > 		ci->phy = NULL;
-> > > 
-> > > How about above?
-> > 
-> > When no PHY or USB PHY is found, -ENODEV is returned. Doing the above
-> > would always end up having ci->phy and ci->usb_phy being NULL.
-> 
-> When we try to get generic phy, if -ENODEV is returned, the ci->usb_phy
-> should not be NULL, otherwise, your the second condition will return 
-> -EPROBE_DEFER, it means when the code goes here, there must be one PHY
-> is found.
+The Exynos System-on-Chips have ~7 distinctive I2C IO ports (exact
+number depends on chip). However some integrated circuits on board, also
+using I2C protocol for communication, can be connected to the SoC by
+other GPIO. Enabling the I2C GPIO driver allows using such additional
+integrated circuits.
 
-We first call devm_phy_get() and devm_usb_get_phy(), ci->phy and
-ci->usb_phy can't be NULL after this.
+An example of such chip using I2C and connected over GPIO to SoC is
+Maxim 77693 MUIC on Trats2 board. The regulator driver of Maxim
+77693 offers charger and safeout LDO (necessary for USB OTG).
 
-Then the "if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))" ensure at least
-one of them is a valid PHY.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/configs/exynos_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-I don't see the problem here. Am I missing something?
-
-> 
-> > 
-> > We could have:
-> > 
-> > 	if (IS_ERR(ci->phy))
-> > 		ci->phy = NULL;
-> > 	else if (IS_ERR(ci->usb_phy))
-> > 		ci->usb_phy = NULL;
-> > 
-
-Antoine
-
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index fc7d1683bf67..6dd5252f73f4 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -71,6 +71,7 @@ CONFIG_I2C=y
+ CONFIG_I2C_MUX=y
+ CONFIG_I2C_ARB_GPIO_CHALLENGE=y
+ CONFIG_I2C_EXYNOS5=y
++CONFIG_I2C_GPIO=y
+ CONFIG_I2C_CROS_EC_TUNNEL=y
+ CONFIG_SPI=y
+ CONFIG_SPI_S3C64XX=y
+@@ -88,6 +89,7 @@ CONFIG_MFD_CROS_EC=y
+ CONFIG_MFD_CROS_EC_I2C=y
+ CONFIG_MFD_CROS_EC_SPI=y
+ CONFIG_MFD_MAX77686=y
++CONFIG_MFD_MAX77693=y
+ CONFIG_MFD_MAX8997=y
+ CONFIG_MFD_SEC_CORE=y
+ CONFIG_MFD_TPS65090=y
+@@ -96,6 +98,7 @@ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_MAX8997=y
+ CONFIG_REGULATOR_MAX77686=y
++CONFIG_REGULATOR_MAX77693=y
+ CONFIG_REGULATOR_S2MPA01=y
+ CONFIG_REGULATOR_S2MPS11=y
+ CONFIG_REGULATOR_S5M8767=y
 -- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.1
+
