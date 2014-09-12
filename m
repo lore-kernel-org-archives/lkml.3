@@ -1,161 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaILOtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:49:06 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51921 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710AbaILOsG (ORCPT
+	id S1751722AbaILOu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:50:58 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:41337 "EHLO
+	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750944AbaILOu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:48:06 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@lst.de>, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH v2 6/9] block: flush: avoid to figure out flush queue unnecessarily
-Date: Fri, 12 Sep 2014 22:47:30 +0800
-Message-Id: <1410533253-8045-7-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410533253-8045-1-git-send-email-ming.lei@canonical.com>
-References: <1410533253-8045-1-git-send-email-ming.lei@canonical.com>
+	Fri, 12 Sep 2014 10:50:56 -0400
+Message-ID: <1410533379.2166.14.camel@linux-t7sj.site>
+Subject: Re: [PATCH 8/9] locktorture: Support rwsems
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@linux.vnet.ibm.com, mingo@kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Sep 2014 07:49:39 -0700
+In-Reply-To: <20140912073729.GK346@worktop.programming.kicks-ass.net>
+References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
+	 <1410496890.2166.11.camel@linux-t7sj.site>
+	 <20140912073729.GK346@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just figuring out flush queue at the entry of kicking off flush
-machinery and request's completion handler, then pass it through.
+On Fri, 2014-09-12 at 09:37 +0200, Peter Zijlstra wrote:
+> On Thu, Sep 11, 2014 at 09:41:30PM -0700, Davidlohr Bueso wrote:
+> > We can easily do so with our new reader lock support. Just an arbitrary
+> > design default: readers have higher (5x) critical region latencies than
+> > writers: 50 ms and 10 ms, respectively.
+> > 
+> 
+> Nice, could you copy/paste this into a rwlock test as well?
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- block/blk-flush.c |   30 ++++++++++++++++--------------
- 1 file changed, 16 insertions(+), 14 deletions(-)
+Indeed, if folks like what the see in this patchset then adding more
+locks is pretty trivial.
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index f4eb8da..682b46e 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -91,7 +91,8 @@ enum {
- 	FLUSH_PENDING_TIMEOUT	= 5 * HZ,
- };
- 
--static bool blk_kick_flush(struct request_queue *q);
-+static bool blk_kick_flush(struct request_queue *q,
-+			   struct blk_flush_queue *fq);
- 
- static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
- {
-@@ -150,6 +151,7 @@ static bool blk_flush_queue_rq(struct request *rq, bool add_front)
- /**
-  * blk_flush_complete_seq - complete flush sequence
-  * @rq: FLUSH/FUA request being sequenced
-+ * @fq: flush queue
-  * @seq: sequences to complete (mask of %REQ_FSEQ_*, can be zero)
-  * @error: whether an error occurred
-  *
-@@ -162,11 +164,11 @@ static bool blk_flush_queue_rq(struct request *rq, bool add_front)
-  * RETURNS:
-  * %true if requests were added to the dispatch queue, %false otherwise.
-  */
--static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
--				   int error)
-+static bool blk_flush_complete_seq(struct request *rq,
-+				   struct blk_flush_queue *fq,
-+				   unsigned int seq, int error)
- {
- 	struct request_queue *q = rq->q;
--	struct blk_flush_queue *fq = blk_get_flush_queue(q);
- 	struct list_head *pending = &fq->flush_queue[fq->flush_pending_idx];
- 	bool queued = false, kicked;
- 
-@@ -212,7 +214,7 @@ static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
- 		BUG();
- 	}
- 
--	kicked = blk_kick_flush(q);
-+	kicked = blk_kick_flush(q, fq);
- 	return kicked | queued;
- }
- 
-@@ -244,7 +246,7 @@ static void flush_end_io(struct request *flush_rq, int error)
- 		unsigned int seq = blk_flush_cur_seq(rq);
- 
- 		BUG_ON(seq != REQ_FSEQ_PREFLUSH && seq != REQ_FSEQ_POSTFLUSH);
--		queued |= blk_flush_complete_seq(rq, seq, error);
-+		queued |= blk_flush_complete_seq(rq, fq, seq, error);
- 	}
- 
- 	/*
-@@ -270,6 +272,7 @@ static void flush_end_io(struct request *flush_rq, int error)
- /**
-  * blk_kick_flush - consider issuing flush request
-  * @q: request_queue being kicked
-+ * @fq: flush queue
-  *
-  * Flush related states of @q have changed, consider issuing flush request.
-  * Please read the comment at the top of this file for more info.
-@@ -280,9 +283,8 @@ static void flush_end_io(struct request *flush_rq, int error)
-  * RETURNS:
-  * %true if flush was issued, %false otherwise.
-  */
--static bool blk_kick_flush(struct request_queue *q)
-+static bool blk_kick_flush(struct request_queue *q, struct blk_flush_queue *fq)
- {
--	struct blk_flush_queue *fq = blk_get_flush_queue(q);
- 	struct list_head *pending = &fq->flush_queue[fq->flush_pending_idx];
- 	struct request *first_rq =
- 		list_first_entry(pending, struct request, flush.list);
-@@ -319,12 +321,13 @@ static bool blk_kick_flush(struct request_queue *q)
- static void flush_data_end_io(struct request *rq, int error)
- {
- 	struct request_queue *q = rq->q;
-+	struct blk_flush_queue *fq = blk_get_flush_queue(q);
- 
- 	/*
- 	 * After populating an empty queue, kick it to avoid stall.  Read
- 	 * the comment in flush_end_io().
- 	 */
--	if (blk_flush_complete_seq(rq, REQ_FSEQ_DATA, error))
-+	if (blk_flush_complete_seq(rq, fq, REQ_FSEQ_DATA, error))
- 		blk_run_queue_async(q);
- }
- 
-@@ -344,7 +347,7 @@ static void mq_flush_data_end_io(struct request *rq, int error)
- 	 * the comment in flush_end_io().
- 	 */
- 	spin_lock_irqsave(&fq->mq_flush_lock, flags);
--	if (blk_flush_complete_seq(rq, REQ_FSEQ_DATA, error))
-+	if (blk_flush_complete_seq(rq, fq, REQ_FSEQ_DATA, error))
- 		blk_mq_run_hw_queue(hctx, true);
- 	spin_unlock_irqrestore(&fq->mq_flush_lock, flags);
- }
-@@ -366,6 +369,7 @@ void blk_insert_flush(struct request *rq)
- 	struct request_queue *q = rq->q;
- 	unsigned int fflags = q->flush_flags;	/* may change, cache */
- 	unsigned int policy = blk_flush_policy(fflags, rq);
-+	struct blk_flush_queue *fq = blk_get_flush_queue(q);
- 
- 	/*
- 	 * @policy now records what operations need to be done.  Adjust
-@@ -414,18 +418,16 @@ void blk_insert_flush(struct request *rq)
- 	rq->cmd_flags |= REQ_FLUSH_SEQ;
- 	rq->flush.saved_end_io = rq->end_io; /* Usually NULL */
- 	if (q->mq_ops) {
--		struct blk_flush_queue *fq = blk_get_flush_queue(q);
--
- 		rq->end_io = mq_flush_data_end_io;
- 
- 		spin_lock_irq(&fq->mq_flush_lock);
--		blk_flush_complete_seq(rq, REQ_FSEQ_ACTIONS & ~policy, 0);
-+		blk_flush_complete_seq(rq, fq, REQ_FSEQ_ACTIONS & ~policy, 0);
- 		spin_unlock_irq(&fq->mq_flush_lock);
- 		return;
- 	}
- 	rq->end_io = flush_data_end_io;
- 
--	blk_flush_complete_seq(rq, REQ_FSEQ_ACTIONS & ~policy, 0);
-+	blk_flush_complete_seq(rq, fq, REQ_FSEQ_ACTIONS & ~policy, 0);
- }
- 
- /**
--- 
-1.7.9.5
 
