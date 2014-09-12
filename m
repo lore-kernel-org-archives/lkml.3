@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaILTGI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:06:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32337 "EHLO mx1.redhat.com"
+	id S1752652AbaILTHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:07:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11034 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935AbaILTGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:06:01 -0400
+	id S1752394AbaILTF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 15:05:29 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 9/9] PKCS#7: Handle PKCS#7 messages that contain no X.509
- certs
+Subject: [PATCH 3/9] KEYS: Remove key_type::def_lookup_type
 From: David Howells <dhowells@redhat.com>
 To: vgoyal@redhat.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Sep 2014 20:05:57 +0100
-Message-ID: <20140912190557.13239.40936.stgit@warthog.procyon.org.uk>
+Date: Fri, 12 Sep 2014 20:05:25 +0100
+Message-ID: <20140912190525.13239.99852.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
 References: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -27,138 +26,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The X.509 certificate list in a PKCS#7 message is optional.  To save space, we
-can omit the inclusion of any X.509 certificates if we are sure that we can
-look the relevant public key up by the serial number and issuer given in a
-signed info block.
-
-This also supports use of a signed info block for which we don't have a
-matching X.509 cert giving in a populated certificate list.
+Remove key_type::def_lookup_type as it's no longer used.  The information now
+defaults to KEYRING_SEARCH_LOOKUP_DIRECT but may be overridden by
+type->match_preparse().
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/pkcs7_trust.c  |   48 +++++++++++++++++++++++++--------
- crypto/asymmetric_keys/pkcs7_verify.c |   16 ++++++++---
- 2 files changed, 47 insertions(+), 17 deletions(-)
+ crypto/asymmetric_keys/asymmetric_type.c |    1 -
+ crypto/asymmetric_keys/pkcs7_key_type.c  |    1 -
+ include/linux/key-type.h                 |    3 ---
+ security/keys/big_key.c                  |    1 -
+ security/keys/user_defined.c             |    2 --
+ 5 files changed, 8 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index 8b634ae746e6..926df53ebb7c 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -55,13 +55,16 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 		 * keys.
- 		 */
- 		key = x509_request_asymmetric_key(trust_keyring, x509->id);
--		if (!IS_ERR(key))
-+		if (!IS_ERR(key)) {
- 			/* One of the X.509 certificates in the PKCS#7 message
- 			 * is apparently the same as one we already trust.
- 			 * Verify that the trusted variant can also validate
- 			 * the signature on the descendant.
- 			 */
-+			pr_devel("sinfo %u: Cert %u as key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
- 			goto matched;
-+		}
- 		if (key == ERR_PTR(-ENOMEM))
- 			return -ENOMEM;
+diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+index f666b4e8d256..9d78ad7754d9 100644
+--- a/crypto/asymmetric_keys/asymmetric_type.c
++++ b/crypto/asymmetric_keys/asymmetric_type.c
+@@ -228,7 +228,6 @@ struct key_type key_type_asymmetric = {
+ 	.match_free	= asymmetric_key_match_free,
+ 	.destroy	= asymmetric_key_destroy,
+ 	.describe	= asymmetric_key_describe,
+-	.def_lookup_type = KEYRING_SEARCH_LOOKUP_ITERATE,
+ };
+ EXPORT_SYMBOL_GPL(key_type_asymmetric);
  
-@@ -81,15 +84,34 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 	/* No match - see if the root certificate has a signer amongst the
- 	 * trusted keys.
+diff --git a/crypto/asymmetric_keys/pkcs7_key_type.c b/crypto/asymmetric_keys/pkcs7_key_type.c
+index 3de5fb011de0..d1faa1df1dec 100644
+--- a/crypto/asymmetric_keys/pkcs7_key_type.c
++++ b/crypto/asymmetric_keys/pkcs7_key_type.c
+@@ -72,7 +72,6 @@ error:
+  */
+ static struct key_type key_type_pkcs7 = {
+ 	.name			= "pkcs7_test",
+-	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+ 	.preparse		= pkcs7_preparse,
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 8aba688a451a..bf93ea609273 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -81,9 +81,6 @@ struct key_type {
  	 */
--	if (!last || !last->issuer || !last->authority) {
--		kleave(" = -ENOKEY [no backref]");
--		return -ENOKEY;
-+	if (last && last->authority) {
-+		key = x509_request_asymmetric_key(trust_keyring, last->authority);
-+		if (!IS_ERR(key)) {
-+			x509 = last;
-+			pr_devel("sinfo %u: Root cert %u signer is key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
-+			goto matched;
-+		}
-+		if (PTR_ERR(key) != -ENOKEY)
-+			return PTR_ERR(key);
- 	}
+ 	size_t def_datalen;
  
--	key = x509_request_asymmetric_key(trust_keyring, last->authority);
--	if (IS_ERR(key))
--		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
--	x509 = last;
-+	/* As a last resort, see if we have a trusted public key that matches
-+	 * the signed info directly.
-+	 */
-+	key = x509_request_asymmetric_key(trust_keyring,
-+					  sinfo->signing_cert_id);
-+	if (!IS_ERR(key)) {
-+		pr_devel("sinfo %u: Direct signer is key %x\n",
-+			 sinfo->index, key_serial(key));
-+		x509 = NULL;
-+		goto matched;
-+	}
-+	if (PTR_ERR(key) != -ENOKEY)
-+		return PTR_ERR(key);
-+
-+	kleave(" = -ENOKEY [no backref]");
-+	return -ENOKEY;
+-	/* Default key search algorithm. */
+-	unsigned def_lookup_type;
+-
+ 	/* vet a description */
+ 	int (*vet_description)(const char *description);
  
- matched:
- 	ret = verify_signature(key, sig);
-@@ -103,10 +125,12 @@ matched:
- 	}
- 
- verified:
--	x509->verified = true;
--	for (p = sinfo->signer; p != x509; p = p->signer) {
--		p->verified = true;
--		p->trusted = trusted;
-+	if (x509) {
-+		x509->verified = true;
-+		for (p = sinfo->signer; p != x509; p = p->signer) {
-+			p->verified = true;
-+			p->trusted = trusted;
-+		}
- 	}
- 	sinfo->trusted = trusted;
- 	kleave(" = 0");
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index 73a75a5a0b98..b3059f2ad0f7 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -154,10 +154,13 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
- 		return 0;
- 	}
- 
--	pr_warn("Sig %u: Issuing X.509 cert not found (#%*ph)\n",
--		sinfo->index,
--		sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
--	return -ENOKEY;
-+	/* The relevant X.509 cert isn't found here, but it might be found in
-+	 * the trust keyring.
-+	 */
-+	pr_debug("Sig %u: Issuing X.509 cert not found (#%*phN)\n",
-+		 sinfo->index,
-+		 sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
-+	return 0;
- }
- 
- /*
-@@ -277,11 +280,14 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
- 	if (ret < 0)
- 		return ret;
- 
--	/* Find the key for the signature */
-+	/* Find the key for the signature if there is one */
- 	ret = pkcs7_find_key(pkcs7, sinfo);
- 	if (ret < 0)
- 		return ret;
- 
-+	if (!sinfo->signer)
-+		return 0;
-+
- 	pr_devel("Using X.509[%u] for sig %u\n",
- 		 sinfo->signer->index, sinfo->index);
- 
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index c2f91a0cf889..4045c13a761a 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -33,7 +33,6 @@ MODULE_LICENSE("GPL");
+  */
+ struct key_type key_type_big_key = {
+ 	.name			= "big_key",
+-	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+ 	.preparse		= big_key_preparse,
+ 	.free_preparse		= big_key_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
+index ec8a56063b02..cd7e726e8646 100644
+--- a/security/keys/user_defined.c
++++ b/security/keys/user_defined.c
+@@ -26,7 +26,6 @@ static int logon_vet_description(const char *desc);
+  */
+ struct key_type key_type_user = {
+ 	.name			= "user",
+-	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+ 	.preparse		= user_preparse,
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+@@ -48,7 +47,6 @@ EXPORT_SYMBOL_GPL(key_type_user);
+  */
+ struct key_type key_type_logon = {
+ 	.name			= "logon",
+-	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+ 	.preparse		= user_preparse,
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
 
