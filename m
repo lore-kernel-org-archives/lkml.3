@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaILSE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:04:26 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:61562 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569AbaILSES (ORCPT
+	id S1752689AbaILSFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:05:54 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:32822 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752346AbaILSDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:04:18 -0400
-Subject: [PATCH v1 13/13] PCI: Configure *all* devices,
- not just hot-added ones
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Rajat Jain <rajatxjain@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:04:16 -0600
-Message-ID: <20140912180415.1630.57583.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 12 Sep 2014 14:03:45 -0400
+Message-ID: <1410544947.12906.6.camel@linux-t7sj.site>
+Subject: Re: [PATCH 7/9] locktorture: Add infrastructure for torturing read
+ locks
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: paulmck@linux.vnet.ibm.com
+Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Sep 2014 11:02:27 -0700
+In-Reply-To: <20140912160643.GB4775@linux.vnet.ibm.com>
+References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
+	 <1410496841.2166.10.camel@linux-t7sj.site>
+	 <20140912160643.GB4775@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's not really a good way to determine whether firmware has already
-configured a device with _HPP/_HPX settings.  On legacy systems, the BIOS
-has probably configured everything, but on UEFI systems it is not required
-to do so.
+On Fri, 2014-09-12 at 09:06 -0700, Paul E. McKenney wrote:
+> On Thu, Sep 11, 2014 at 09:40:41PM -0700, Davidlohr Bueso wrote:
+> > In addition, introduce a new nreaders_stress module parameter. The
+> > default number of readers will be the same number of writers threads.
+> > Writer threads are interleaved with readers. Documentation is updated,
+> > respectively.
+> 
+> Nice!!!
+> 
+> Conditional fairness checks in the future?  (As in verifying that if
+> the rwlock in question claims some degree of fairness, trying to break
+> that guarantee, and contrariwise, if the lock is unfair, making sure
+> to avoid starvation during the test?)
 
-Per the PCI Firmware Specification, rev 3.1, sec 3.5, if PCI_COMMAND_IO or
-PCI_COMMAND_MEMORY is set, we can assume firmware has set the corresponding
-BARs and maybe we can assume it has configured the rest of the device.  And
-if a bridge has PCI_COMMAND_PARITY or PCI_COMMAND_SERR set, we can assume
-firmware has configured the bridge.  But we can't tell much about devices
-without BARs.
+Yep, there are all sorts of interesting things we can measure in rw
+runs. In this set I'm only trying to establish a minimum infrastructure.
+Future work will be pretty trivial (at least code wise) to implement
+once this sort of thing is in. 
 
-I think it should be safe to apply _HPP and _HPX settings anyway, even if
-firmware has already configured the device, so configure everything we
-find.
+> And one nit below.
+[...]
+> C initialization does this already, no need to add the NULL initializers.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/probe.c |    3 ---
- 1 file changed, 3 deletions(-)
+Sure, I always tend to be explicit when initializing. I guess you won't
+like the context initialization in patch 9/9.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index cb411fbb6435..290c657da0b9 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1358,9 +1358,6 @@ static void pci_configure_device(struct pci_dev *dev)
- 	struct hotplug_params hpp;
- 	int ret;
- 
--	if (system_state == SYSTEM_BOOTING)
--		return;
--
- 	memset(&hpp, 0, sizeof(hpp));
- 	ret = pci_get_hp_params(dev, &hpp);
- 	if (ret)
+Thanks,
+Davidlohr
 
