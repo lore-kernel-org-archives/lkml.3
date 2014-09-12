@@ -1,112 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaILQnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:43:47 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:61621 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbaILQno (ORCPT
+	id S1751367AbaILQpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:45:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:20345 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaILQpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:43:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140912045913.GA2160@bbox>
-References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
- <1410468841-320-2-git-send-email-ddstreet@ieee.org> <20140912045913.GA2160@bbox>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 12 Sep 2014 12:43:22 -0400
-X-Google-Sender-Auth: QUHnTu23jMfRXfdFdZFDWU9z46g
-Message-ID: <CALZtONAuJhgZLJECxwQOyKPj2n02d+521d+eHCkqLjjc=Ba9FQ@mail.gmail.com>
-Subject: Re: [PATCH 01/10] zsmalloc: fix init_zspage free obj linking
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 12:45:04 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-9c-5413230d1fba
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: dinguyen@opensource.altera.com
+Cc: paulz@synopsys.com, gregkh@linuxfoundation.org, balbi@ti.com,
+        dinh.linux@gmail.com, swarren@wwwdotorg.org, matthijs@stdin.nl,
+        r.baldyga@samsung.com, jg1.han@samsung.com, sachin.kamat@linaro.org,
+        ben-linux@fluff.org, dianders@chromium.org, kever.yang@rock-chips.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 00/12] usb: dwc2: Add support for dual role
+Date: Fri, 12 Sep 2014 18:44:59 +0200
+Message-id: <61330867.p68uWknPkl@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
+References: <1409070003-21195-1-git-send-email-dinguyen@opensource.altera.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t9jQV1eZeEQg1U7LC0O3q+3mLTuAJPF
+	2WUH2SxWfVrDbLHypLZF8+L1bBaXF15itdg2/SeQtWsOm8WiZa3MFgtfX2Ox2D5lOpPFg8M7
+	2S1O/ulltHh1sI3Fgd9jdsNFFo+/q14we+ycdZfd4861PWwe++euYffovzaJ3ePvrP0sHn1b
+	VjF6fPnxj8Vjy/7PjB7Hb2xn8vi8Sc5j49zQAN4oLpuU1JzMstQifbsErowTi8+wFvTwVrzd
+	dpa1gXEtVxcjJ4eEgInEklf/mCBsMYkL99azdTFycQgJTGeU2HNxEyuE08IkcW7DREaQKjYB
+	K4mJ7avAbBEBJYneVS9ZQIqYBc4ySazYtZYZJCEs4CjxZO8RsLEsAqoS+zbuZAGxeQW0JJZs
+	vQ3WLCrgKbFj+0qgdRwcnAL+Eu0fDEHCQgJ+Eq13D7BClAtK/Jh8D6yVWUBeYt/+qawQto7E
+	/tZpbBMYBWYhKZuFpGwWkrIFjMyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYIj8JnUDsaV
+	DRaHGAU4GJV4eCtYBEOEWBPLiitzDzFKcDArifAqigqHCPGmJFZWpRblxxeV5qQWH2KU5mBR
+	Euc90GodKCSQnliSmp2aWpBaBJNl4uCUamDc7384OXSrzKM7FguO8UZ9zhFzSux40j61zOpQ
+	76Tfrdy3tv1reyn1pGLC+bgJL2+vl/COOXu6Xcb9jZKjwewG5vLvIacZ9X6aeNR+TeFflHi9
+	Z6tRUnb73gYHDg3FbQ7VkpwPztlunRX1bObD0F3aoqw3mjjam/1t2RX8W34t9lzhPqns63El
+	luKMREMt5qLiRAA1wlfzvAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 12:59 AM, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Sep 11, 2014 at 04:53:52PM -0400, Dan Streetman wrote:
->> When zsmalloc creates a new zspage, it initializes each object it contains
->> with a link to the next object, so that the zspage has a singly-linked list
->> of its free objects.  However, the logic that sets up the links is wrong,
->> and in the case of objects that are precisely aligned with the page boundries
->> (e.g. a zspage with objects that are 1/2 PAGE_SIZE) the first object on the
->> next page is skipped, due to incrementing the offset twice.  The logic can be
->> simplified, as it doesn't need to calculate how many objects can fit on the
->> current page; simply checking the offset for each object is enough.
->
-> If objects are precisely aligned with the page boundary, pages_per_zspage
-> should be 1 so there is no next page.
 
-ah, ok.  I wonder if it should be changed anyway so it doesn't rely on
-that detail, in case that's ever changed in the future.  It's not
-obvious the existing logic relies on that for correct operation.  And
-this simplifies the logic too.
+[ added linux-kernel ML to cc: ]
 
->
->>
->> Change zsmalloc init_zspage() logic to iterate through each object on
->> each of its pages, checking the offset to verify the object is on the
->> current page before linking it into the zspage.
->>
->> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->> Cc: Minchan Kim <minchan@kernel.org>
->> ---
->>  mm/zsmalloc.c | 14 +++++---------
->>  1 file changed, 5 insertions(+), 9 deletions(-)
->>
->> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
->> index c4a9157..03aa72f 100644
->> --- a/mm/zsmalloc.c
->> +++ b/mm/zsmalloc.c
->> @@ -628,7 +628,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->>       while (page) {
->>               struct page *next_page;
->>               struct link_free *link;
->> -             unsigned int i, objs_on_page;
->> +             unsigned int i = 1;
->>
->>               /*
->>                * page->index stores offset of first object starting
->> @@ -641,14 +641,10 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->>
->>               link = (struct link_free *)kmap_atomic(page) +
->>                                               off / sizeof(*link);
->> -             objs_on_page = (PAGE_SIZE - off) / class->size;
->>
->> -             for (i = 1; i <= objs_on_page; i++) {
->> -                     off += class->size;
->> -                     if (off < PAGE_SIZE) {
->> -                             link->next = obj_location_to_handle(page, i);
->> -                             link += class->size / sizeof(*link);
->> -                     }
->> +             while ((off += class->size) < PAGE_SIZE) {
->> +                     link->next = obj_location_to_handle(page, i++);
->> +                     link += class->size / sizeof(*link);
->>               }
->>
->>               /*
->> @@ -660,7 +656,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->>               link->next = obj_location_to_handle(next_page, 0);
->>               kunmap_atomic(link);
->>               page = next_page;
->> -             off = (off + class->size) % PAGE_SIZE;
->> +             off %= PAGE_SIZE;
->>       }
->>  }
->>
->> --
->> 1.8.3.1
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+Hi,
+
+On Tuesday, August 26, 2014 11:19:51 AM dinguyen@opensource.altera.com wrote:
+> From: Dinh Nguyen <dinguyen@opensource.altera.com>
+> 
+> Hello,
+> 
+> This is version 4 of the patch series that combines the dwc2 gadget and host
+> driver into a single dual role driver. Here are the main differences from V2:
+> 
+> - Patch 9/12 : Move spin_lock_init() earlier up in the function to guarantee
+>   no locks can be taken before the initializing the spin_lock.
+> 
+> - Patch 12/12 : Same as patch 9/12.
+> 
+> - Added Acked-by: paulz for all patches except patch 9/12 and 12/12.
+> 
+> For v4, I have rebased the series on top of Greg KH's USB usb-linus tree
+> [9b2667f usb: dwc2: gadget: Set the default EP max packet value as 8 bytes]
+> and on top of the following patches that have not yet been applied:
+> 
+> Doug Anderson: usb: dwc2: Read GNPTXFSIZ when in forced HOST mode
+> Kever Yang : usb: dwc2: add 'mode' which based on Kconfig select or dts setting
+> Robert Baldyga : usb: dwc2/gadget: fix series <- 12 patches
+> 
+> As usual, tested on SOCFPGA(host, gadget, and dual-role) and on Rpi-B
+> (host mode only).
+> 
+> I have pushed this series to a git repo to make it more convenient for people
+> to test/review.
+> 
+> git://git.rocketboards.org/linux-socfpga-next.git dwc2_dual_role_v4
+
+Please also add linux-kernel ML to next revision of the patchset
+(helps to get reviewers).
+
+Also sorry for the late review but people are not yet used to
+the fact that dwc2 now also means "our" good old s3c-hsotg. ;-)
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
