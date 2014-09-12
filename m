@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaILI6p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 04:58:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40867 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaILI6o (ORCPT
+	id S1753363AbaILJAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:00:32 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:58255 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751623AbaILJA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 04:58:44 -0400
-Date: Fri, 12 Sep 2014 10:58:36 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <jdelvare@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org
-Subject: Re: [RFC 0/4] i2c: slave support framework for Linux devices
-Message-ID: <20140912085836.GS3755@pengutronix.de>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 12 Sep 2014 05:00:29 -0400
+Message-ID: <1410512426.31130.11.camel@x220>
+Subject: Re: ARC:  ARC_BOARD_ANGEL4 and ARC_BOARD_ML509
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 12 Sep 2014 11:00:26 +0200
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230751A6B5C42@IN01WEMBXA.internal.synopsys.com>
+References: <1401874435.14072.17.camel@x220>
+	 <C2D7FE5348E1B147BCA15975FBA230751A6B5C42@IN01WEMBXA.internal.synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Sep 2014 09:00:27.0833 (UTC) FILETIME=[FF5DE290:01CFCE67]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wolfram,
+Hi Vineet,
 
-On Tue, Sep 09, 2014 at 04:54:26PM +0200, Wolfram Sang wrote:
-> Finally, here is my take on the often desired feature that Linux can not only
-> be an I2C master, but also an I2C slave. Compared to my draft sent out last
-> week, this RFC has been tested on hardware (Renesas Lager board) and works \o/
+On Mon, 2014-06-09 at 09:05 +0000, Vineet Gupta wrote:
+> On Wednesday 04 June 2014 03:04 PM, Paul Bolle wrote:
+> > Linux-next included commit c00bfd974fb0 ("ARC: [arcfpga] Get rid of
+> > legacy BVCI latency unit support") in next-20140604. It removes the
+> > Kconfig symbol ARC_HAS_BVCI_LAT_UNIT. And that symbol's entry is the
+> > only place were the symbols ARC_BOARD_ANGEL4 and ARC_BOARD_ML509 are
+> > currently used. So it follows that the entries for ARC_BOARD_ANGEL4 and
+> > ARC_BOARD_ML509 could be removed too.
 > 
-> One big part still missing is documentation, so brave ones need to "use the
-> source". However, this approach turned out to be even less intrusive than
-> expected, so that is hopefully a good sign.
-Some thoughts from reading through your patch set:
+> Thx for noticing this.
+> 
+> I'm planning to use these symbols to set up default builtin DT blobs from Kconfig
+> itself (rather than current defconfigs). If that doesn't workout - sure I will
+> remove the symbols.
 
-- If I understand correctly you cannot register an i2c slave without
-  also registering a master, right? I don't think this is troubling in
-  practice, is it?
-  For abstraction I would prefer to make these different concepts
-  though.
+No news here as of v3.17-rc4 and next-20140912. Are you still planning
+to use these symbols or should I submit the trivial patch to drop them?
 
-- The IMHO most (even only?) useful slave is "i2cslvdev", i.e. a
-  userspace device. With that you wouldn't need device tree stuff, the
-  driver would just offer the device if supported. Userspace then could
-  care about the rest (slave address, functionality, ...).
+Thanks,
 
-Best regards
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Paul Bolle
+
