@@ -1,63 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaILSEI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:04:08 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:56409 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbaILSEF (ORCPT
+	id S1752556AbaILSEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:04:15 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58352 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492AbaILSEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:04:05 -0400
-Subject: [PATCH v1 11/13] PCI: Apply _HPP settings to all hot-added PCI
- devices
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Rajat Jain <rajatxjain@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:04:03 -0600
-Message-ID: <20140912180403.1630.49400.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Fri, 12 Sep 2014 14:04:10 -0400
+Date: Fri, 12 Sep 2014 11:04:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dbueso@suse.de>
+Subject: Re: [PATCH 6/9] torture: Address race in module cleanup
+Message-ID: <20140912180407.GF4775@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
+ <1410493224-3312-7-git-send-email-dave@stgolabs.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410493224-3312-7-git-send-email-dave@stgolabs.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091218-6688-0000-0000-000004B7E3C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently apply _HPP settings only to:
+On Thu, Sep 11, 2014 at 08:40:21PM -0700, Davidlohr Bueso wrote:
+> When performing module cleanups by calling torture_cleanup() the
+> 'torture_type' string in nullified However, callers are not necessarily
+> done, and might still need to reference the variable. This impacts
+> both rcutorture and locktorture, causing printing things like:
+> 
+> [   94.226618] (null)-torture: Stopping lock_torture_writer task
+> [   94.226624] (null)-torture: Stopping lock_torture_stats task
+> 
+> Thus delay this operation until the very end of the cleanup process.
+> The consequence (which shouldn't matter for this kid of program) is,
+> of course, that we delay the window between rmmod and modprobing,
+> for instance in module_torture_begin().
+> 
+> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 
-    - non-bridge devices, and
-    - PCI-to-PCI bridges
+Good catch!  I had just been ignoring the (null), and my scripting
+doesn't care, but it is better to have it taken care of.
 
-i.e., we do not apply them to PCI-to-ISA bridges and the like.  It has been
-that way since _HPP support was added by 40abb96c51bb ("pciehp: Fix
-programming hotplug parameters"), but I don't think there's any reason to
-exclude these other bridges.
+							Thanx, Paul
 
-Apply _HPP settings to hot-added PCI devices of any type.
-
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/probe.c |    5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index a16b3472b70d..1ff2105ba401 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1351,11 +1351,6 @@ static void pci_configure_device(struct pci_dev *dev)
- 	if (system_state == SYSTEM_BOOTING)
- 		return;
- 
--	if (!(dev->hdr_type == PCI_HEADER_TYPE_NORMAL ||
--			(dev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
--			(dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
--		return;
--
- 	memset(&hpp, 0, sizeof(hpp));
- 	ret = pci_get_hp_params(dev, &hpp);
- 	if (ret)
+> ---
+>  include/linux/torture.h      |  3 ++-
+>  kernel/locking/locktorture.c |  3 ++-
+>  kernel/rcu/rcutorture.c      |  3 ++-
+>  kernel/torture.c             | 16 +++++++++++++---
+>  4 files changed, 19 insertions(+), 6 deletions(-)
+> 
+> diff --git a/include/linux/torture.h b/include/linux/torture.h
+> index 5ca58fc..301b628 100644
+> --- a/include/linux/torture.h
+> +++ b/include/linux/torture.h
+> @@ -77,7 +77,8 @@ int torture_stutter_init(int s);
+>  /* Initialization and cleanup. */
+>  bool torture_init_begin(char *ttype, bool v, int *runnable);
+>  void torture_init_end(void);
+> -bool torture_cleanup(void);
+> +bool torture_cleanup_begin(void);
+> +void torture_cleanup_end(void);
+>  bool torture_must_stop(void);
+>  bool torture_must_stop_irq(void);
+>  void torture_kthread_stopping(char *title);
+> diff --git a/kernel/locking/locktorture.c b/kernel/locking/locktorture.c
+> index de703a7..988267c 100644
+> --- a/kernel/locking/locktorture.c
+> +++ b/kernel/locking/locktorture.c
+> @@ -361,7 +361,7 @@ static void lock_torture_cleanup(void)
+>  {
+>  	int i;
+> 
+> -	if (torture_cleanup())
+> +	if (torture_cleanup_begin())
+>  		return;
+> 
+>  	if (writer_tasks) {
+> @@ -384,6 +384,7 @@ static void lock_torture_cleanup(void)
+>  	else
+>  		lock_torture_print_module_parms(cur_ops,
+>  						"End of test: SUCCESS");
+> +	torture_cleanup_end();
+>  }
+> 
+>  static int __init lock_torture_init(void)
+> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> index 948a769..57a2792 100644
+> --- a/kernel/rcu/rcutorture.c
+> +++ b/kernel/rcu/rcutorture.c
+> @@ -1418,7 +1418,7 @@ rcu_torture_cleanup(void)
+>  	int i;
+> 
+>  	rcutorture_record_test_transition();
+> -	if (torture_cleanup()) {
+> +	if (torture_cleanup_begin()) {
+>  		if (cur_ops->cb_barrier != NULL)
+>  			cur_ops->cb_barrier();
+>  		return;
+> @@ -1468,6 +1468,7 @@ rcu_torture_cleanup(void)
+>  					       "End of test: RCU_HOTPLUG");
+>  	else
+>  		rcu_torture_print_module_parms(cur_ops, "End of test: SUCCESS");
+> +	torture_cleanup_end();
+>  }
+> 
+>  #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> diff --git a/kernel/torture.c b/kernel/torture.c
+> index d600af2..07a5c3d 100644
+> --- a/kernel/torture.c
+> +++ b/kernel/torture.c
+> @@ -635,8 +635,13 @@ EXPORT_SYMBOL_GPL(torture_init_end);
+>   *
+>   * This must be called before the caller starts shutting down its own
+>   * kthreads.
+> + *
+> + * Both torture_cleanup_begin() and torture_cleanup_end() must be paired,
+> + * in order to correctly perform the cleanup. They are separated because
+> + * threads can still need to reference the torture_type type, thus nullify
+> + * only after completing all other relevant calls.
+>   */
+> -bool torture_cleanup(void)
+> +bool torture_cleanup_begin(void)
+>  {
+>  	mutex_lock(&fullstop_mutex);
+>  	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
+> @@ -651,12 +656,17 @@ bool torture_cleanup(void)
+>  	torture_shuffle_cleanup();
+>  	torture_stutter_cleanup();
+>  	torture_onoff_cleanup();
+> +	return false;
+> +}
+> +EXPORT_SYMBOL_GPL(torture_cleanup_begin);
+> +
+> +void torture_cleanup_end(void)
+> +{
+>  	mutex_lock(&fullstop_mutex);
+>  	torture_type = NULL;
+>  	mutex_unlock(&fullstop_mutex);
+> -	return false;
+>  }
+> -EXPORT_SYMBOL_GPL(torture_cleanup);
+> +EXPORT_SYMBOL_GPL(torture_cleanup_end);
+> 
+>  /*
+>   * Is it time for the current torture test to stop?
+> -- 
+> 1.8.4.5
+> 
 
