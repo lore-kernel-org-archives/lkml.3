@@ -1,142 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754630AbaILMXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 08:23:48 -0400
-Received: from tundra.namei.org ([65.99.196.166]:34437 "EHLO namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339AbaILMXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 08:23:45 -0400
-Date: Fri, 12 Sep 2014 22:23:37 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, stable@vger.kernel.org
-Subject: [GIT] KEYS/lib fix for v3.17
-Message-ID: <alpine.LRH.2.11.1409122221560.30697@namei.org>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754091AbaILM0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 08:26:19 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:36624 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaILM0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 08:26:17 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-8d-5412e6664e31
+From: kgene@kernel.org
+To: "'Javier Martinez Canillas'" <javier.martinez@collabora.co.uk>
+Cc: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Naveen Krishna Chatradhi'" <ch.naveen@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Andreas Faerber'" <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>
+References: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk>
+In-reply-to: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk>
+Subject: RE: [PATCH v3 0/7] Add max77802 support for Peach boards
+Date: Fri, 12 Sep 2014 21:26:13 +0900
+Message-id: <0ae801cfce84$be443620$3acca260$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQDdE+QFarDupi/VKLj8ojkzjiJxFp3i4RRg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t8zA920Z0IhBgcmm1k0byq2mPrwCZvF
+	3eeHGS3OLjvIZtF25SC7xdHfBRabHl9jtbi8aw6bxYzz+5gsTl3/zGYxZdFhVgduj9kNF1k8
+	/j6/zuKxaVUnm8fmJfUeV040sXr0bVnF6LH5dLXH501yARxRXDYpqTmZZalF+nYJXBnr375m
+	K7gkWNFy8BtbA+Mr3i5GTg4JAROJ6ZsOsUHYYhIX7q0Hsrk4hASWMUp8Xb6IHaZo/sllrBCJ
+	RYwS6z6vg3L+MkqsejebqYuRg4MNqH3qE2mQBmEBLYmFW5pYQGwRAQeJ8y9Og01lFpjCLHFr
+	6lmwhJCAn8Sqv0uZQWxOAX+JybemsIPMERZwlHg0pRzEZBFQldi+3AikglfAQmLW6+lMELag
+	xI/J98CmMAOtWr/zOBOELS+xec1bZoibFSR2nH3NCHGCkcSMC6eYIWpEJPa9eMcIco6EwFIO
+	ie1N61lBEiwCAhLfJh9iAdkrISArsekA1BxJiYMrbrBMYJSchWT1LCSrZyFZPQvJigWMLKsY
+	RVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxQlLChB2M9w5YH2IU4GBU4uGtYBEMEWJNLCuuzD3E
+	aAp00URmKdHkfGDiySuJNzQ2M7IwNTE1NjK3NFMS530t9TNYSCA9sSQ1OzW1ILUovqg0J7X4
+	ECMTB6dUA+PSp3uNynJ+3C0V6Lnp/erqHvmj9/tcPs95LvrsoqPAzn3lYl/2CUy83Xpt2s1D
+	gsv7TFjkHac9+FOZzT7h+2KG3qs7z0p3yXvWKZ2eVM+UdVW3WO9GiANP0NpLc3LWFjs36v4w
+	shXJcvIwXtwYdtDw7HxhpR2ft7s6RWgEPNiqfi1jvbir2QolluKMREMt5qLiRABDT3/dBAMA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNKsWRmVeSWpSXmKPExsVy+t9jAd20Z0IhBkcnG1o0byq2mPrwCZvF
+	3eeHGS3OLjvIZtF25SC7xdHfBRabHl9jtbi8aw6bxYzz+5gsTl3/zGYxZdFhVgduj9kNF1k8
+	/j6/zuKxaVUnm8fmJfUeV040sXr0bVnF6LH5dLXH501yARxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBnKimUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJ6xgz1r99zVZwSbCi5eA3tgbGV7xdjJwcEgImEvNPLmOFsMUkLtxb
+	z9bFyMUhJLCIUWLd53WsEM5fRolV72YzdTFycLABVU19Ig3SICygJbFwSxMLiC0i4CBx/sVp
+	sGZmgSnMEremngVLCAn4Saz6u5QZxOYU8JeYfGsKO8gcYQFHiUdTykFMFgFVie3LjUAqeAUs
+	JGa9ns4EYQtK/Jh8D2wKM9Cq9TuPM0HY8hKb17xlhrhZQWLH2deMECcYScy4cIoZokZEYt+L
+	d4wTGIVnIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcMJ5JrWD
+	cWWDxSFGAQ5GJR7eChbBECHWxLLiytxDjBIczEoivLvuCIUI8aYkVlalFuXHF5XmpBYfYjQF
+	enQis5Rocj4wGeaVxBsam5gZWRqZWRiZmJsrifMeaLUOFBJITyxJzU5NLUgtgulj4uCUamBM
+	2hlh+GKSp1/PvtY2B+MlOZv5n7u+ql3O9uyo8v01PMIsM4LWzPD4+fOxpBKP+NEPpw4mnzpd
+	dPiRy8VD204HThLS9zO8qlW8MHtFe8Wfn3umiqtYch9+1nW/4WFvusl5J03LK57rL9U+3/T1
+	YS3bvYhX3/6pnvhvVsc+w+NqdXqDCIOo63N1JZbijERDLeai4kQAME1T2E4DAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull.
+Javier Martinez Canillas wrote:
+> 
+> Hello Kukjin,
+> 
+Hi Javier,
 
-The following changes since commit c73f6fdf2fc534e47b2a1ebfe00e57d585ef5b57:
+> This is a third version of th series that adds max77802 support for
+> the Peach Pit and Pi boards. The series also have all the pending
+> patches that were posted but depended on this support. I've picked
+> all the patches I found and rebased them to be sure that they apply
+> cleanly on top of linux-next. Also I've taken some DT snippets from
+> the downstream Chrome OS 3.8 kernel DTS for devices that use one of
+> these regulators as their input supply.
+> 
+Thanks a lot and looks good to me. I'll take this whole series.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2014-09-11 18:03:21 -0700)
+- Kukjin
 
-are available in the git repository at:
+> Changes since v2 [0]:
+>  - Remove left over supply on ldo35 regulator, suggested by Doug Anderson.
+>  - Add a patch to change the i2c7 clock at 400kHz, suggested by Doug Anderson.
+>  - Add a patch from Vivek Gautam to enable max77802 regulator driver support.
+> 
+> Changes sinve v1 [1]:
+>  - Dropped patch that added vmmc and vqmmc supplies as suggested
+>    by Doug Anderson.
+>  - Use IRQ flags define instead of a magic number as suggested by
+>    Andreas Faerber.
+> 
+> The series is composed of the following patches:
+> 
+> Javier Martinez Canillas (3):
+>   ARM: dts: Add Peach Pit and Pi dts entry for max77802 PMIC
+>   ARM: dts: Add Peach Pit and Pi dts entry for ISL29018 sensor
+>   ARM: dts: Set i2c7 clock at 400kHz for Peach boards
+> 
+> Naveen Krishna Chatradhi (1):
+>   ARM: dts: Add thermistor dts fragment used by exynos based Peach
+>     boards
+> 
+> Rahul Sharma (2):
+>   ARM: dts: add hdmi regulators for exynos5800 based peach-pi board
+>   ARM: dts: add hdmi regulators for exynos5420 based peach-pit board
+> 
+> Vivek Gautam (1):
+>   ARM: exynos_defconfig: Enable MAX77802
+> 
+>  arch/arm/boot/dts/cros-adc-thermistors.dtsi |  44 ++++
+>  arch/arm/boot/dts/exynos5420-peach-pit.dts  | 389 ++++++++++++++++++++++++++++
+>  arch/arm/boot/dts/exynos5800-peach-pi.dts   | 389 ++++++++++++++++++++++++++++
+>  arch/arm/configs/exynos_defconfig           |   3 +
+>  4 files changed, 825 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/cros-adc-thermistors.dtsi
+> 
+> 
+> Best regards,
+> Javier
+> 
+> [0]: https://lkml.org/lkml/2014/8/20/225
+> [1]: https://lkml.org/lkml/2014/8/19/372
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
-
-David Howells (1):
-      KEYS: Fix termination condition in assoc array garbage collection
-
- lib/assoc_array.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
---
-
-commit 95389b08d93d5c06ec63ab49bd732b0069b7c35e
-Author: David Howells <dhowells@redhat.com>
-Date:   Wed Sep 10 22:22:00 2014 +0100
-
-    KEYS: Fix termination condition in assoc array garbage collection
-    
-    This fixes CVE-2014-3631.
-    
-    It is possible for an associative array to end up with a shortcut node at the
-    root of the tree if there are more than fan-out leaves in the tree, but they
-    all crowd into the same slot in the lowest level (ie. they all have the same
-    first nibble of their index keys).
-    
-    When assoc_array_gc() returns back up the tree after scanning some leaves, it
-    can fall off of the root and crash because it assumes that the back pointer
-    from a shortcut (after label ascend_old_tree) must point to a normal node -
-    which isn't true of a shortcut node at the root.
-    
-    Should we find we're ascending rootwards over a shortcut, we should check to
-    see if the backpointer is zero - and if it is, we have completed the scan.
-    
-    This particular bug cannot occur if the root node is not a shortcut - ie. if
-    you have fewer than 17 keys in a keyring or if you have at least two keys that
-    sit into separate slots (eg. a keyring and a non keyring).
-    
-    This can be reproduced by:
-    
-    	ring=`keyctl newring bar @s`
-    	for ((i=1; i<=18; i++)); do last_key=`keyctl newring foo$i $ring`; done
-    	keyctl timeout $last_key 2
-    
-    Doing this:
-    
-    	echo 3 >/proc/sys/kernel/keys/gc_delay
-    
-    first will speed things up.
-    
-    If we do fall off of the top of the tree, we get the following oops:
-    
-    BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-    IP: [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-    PGD dae15067 PUD cfc24067 PMD 0
-    Oops: 0000 [#1] SMP
-    Modules linked in: xt_nat xt_mark nf_conntrack_netbios_ns nf_conntrack_broadcast ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_ni
-    CPU: 0 PID: 26011 Comm: kworker/0:1 Not tainted 3.14.9-200.fc20.x86_64 #1
-    Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-    Workqueue: events key_garbage_collector
-    task: ffff8800918bd580 ti: ffff8800aac14000 task.ti: ffff8800aac14000
-    RIP: 0010:[<ffffffff8136cea7>] [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-    RSP: 0018:ffff8800aac15d40  EFLAGS: 00010206
-    RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff8800aaecacc0
-    RDX: ffff8800daecf440 RSI: 0000000000000001 RDI: ffff8800aadc2bc0
-    RBP: ffff8800aac15da8 R08: 0000000000000001 R09: 0000000000000003
-    R10: ffffffff8136ccc7 R11: 0000000000000000 R12: 0000000000000000
-    R13: 0000000000000000 R14: 0000000000000070 R15: 0000000000000001
-    FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-    CR2: 0000000000000018 CR3: 00000000db10d000 CR4: 00000000000006f0
-    Stack:
-     ffff8800aac15d50 0000000000000011 ffff8800aac15db8 ffffffff812e2a70
-     ffff880091a00600 0000000000000000 ffff8800aadc2bc3 00000000cd42c987
-     ffff88003702df20 ffff88003702dfa0 0000000053b65c09 ffff8800aac15fd8
-    Call Trace:
-     [<ffffffff812e2a70>] ? keyring_detect_cycle_iterator+0x30/0x30
-     [<ffffffff812e3e75>] keyring_gc+0x75/0x80
-     [<ffffffff812e1424>] key_garbage_collector+0x154/0x3c0
-     [<ffffffff810a67b6>] process_one_work+0x176/0x430
-     [<ffffffff810a744b>] worker_thread+0x11b/0x3a0
-     [<ffffffff810a7330>] ? rescuer_thread+0x3b0/0x3b0
-     [<ffffffff810ae1a8>] kthread+0xd8/0xf0
-     [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
-     [<ffffffff816ffb7c>] ret_from_fork+0x7c/0xb0
-     [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
-    Code: 08 4c 8b 22 0f 84 bf 00 00 00 41 83 c7 01 49 83 e4 fc 41 83 ff 0f 4c 89 65 c0 0f 8f 5a fe ff ff 48 8b 45 c0 4d 63 cf 49 83 c1 02 <4e> 8b 34 c8 4d 85 f6 0f 84 be 00 00 00 41 f6 c6 01 0f 84 92
-    RIP  [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-     RSP <ffff8800aac15d40>
-    CR2: 0000000000000018
-    ---[ end trace 1129028a088c0cbd ]---
-    
-    Signed-off-by: David Howells <dhowells@redhat.com>
-    Acked-by: Don Zickus <dzickus@redhat.com>
-    Signed-off-by: James Morris <james.l.morris@oracle.com>
-
-diff --git a/lib/assoc_array.c b/lib/assoc_array.c
-index ae146f0..2404d03 100644
---- a/lib/assoc_array.c
-+++ b/lib/assoc_array.c
-@@ -1723,11 +1723,13 @@ ascend_old_tree:
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
- 		slot = shortcut->parent_slot;
- 		cursor = shortcut->back_pointer;
-+		if (!cursor)
-+			goto gc_complete;
- 	} else {
- 		slot = node->parent_slot;
- 		cursor = ptr;
- 	}
--	BUG_ON(!ptr);
-+	BUG_ON(!cursor);
- 	node = assoc_array_ptr_to_node(cursor);
- 	slot++;
- 	goto continue_node;
