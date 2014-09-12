@@ -1,85 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaILTJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:09:10 -0400
-Received: from mout.gmx.net ([212.227.15.19]:49603 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbaILTJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:09:08 -0400
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] [REGRESSION] i2c-acpi: Fix NULL Pointer dereference
-Date: Fri, 12 Sep 2014 21:09:47 +0200
-Message-Id: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.8.5.5
-X-Provags-ID: V03:K0:S63uDPEdyp39V/DkKbwbjenL6ZxyxUsvhuPHggxysb84eY42TuI
- 2OjxvAH3ViI8sZIevD+ayMl5CwedNVsGj7XbWDFLqbQKdQ0lScVMroOJuNZuGU+2qpm7Ood
- FeI4vDJxhKk15azb8MkPrAveGuEmYf8qjZaZ5j0iGeVZ+5dzjJX5xOS/zGjk+WE2Ch8+eSV
- ADGCrmdH0USgRfsdezIIw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752287AbaILTKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:10:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53917 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472AbaILTKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 15:10:38 -0400
+Date: Fri, 12 Sep 2014 12:10:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Rik van Riel <riel@redhat.com>, jroedel@suse.de,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, John.Bridgman@amd.com,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
+        ben.sander@amd.com, linux-mm@kvack.org,
+        Jerome Glisse <jglisse@redhat.com>, Jay.Cornwall@amd.com,
+        Mel Gorman <mgorman@suse.de>, David Woodhouse <dwmw2@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/3 v3] mmu_notifier: Allow to manage CPU external TLBs
+Message-Id: <20140912121036.1fb998af4147ad9ea35166db@linux-foundation.org>
+In-Reply-To: <20140911000211.GA4989@gmail.com>
+References: <1410277434-3087-1-git-send-email-joro@8bytes.org>
+	<20140910150125.31a7495c7d0fe814b85fd514@linux-foundation.org>
+	<20140911000211.GA4989@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If adapter->dev.parent == NULL there is a NULL pointer dereference in
-acpi_i2c_install_space_handler and acpi_i2c_remove_space_handler.
+On Wed, 10 Sep 2014 20:02:12 -0400 Jerome Glisse <j.glisse@gmail.com> wrote:
 
-This is present since introduction of this code:
-366047515c6e "i2c: rework kernel config I2C_ACPI" or even
-da3c6647ee08 "I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI"
+> On Wed, Sep 10, 2014 at 03:01:25PM -0700, Andrew Morton wrote:
+> > On Tue,  9 Sep 2014 17:43:51 +0200 Joerg Roedel <joro@8bytes.org> wrote:
+> > 
+> > > here is a patch-set to extend the mmu_notifiers in the Linux
+> > > kernel to allow managing CPU external TLBs. Those TLBs may
+> > > be implemented in IOMMUs or any other external device, e.g.
+> > > ATS/PRI capable PCI devices.
+> > > 
+> > > The problem with managing these TLBs are the semantics of
+> > > the invalidate_range_start/end call-backs currently
+> > > available. Currently the subsystem using mmu_notifiers has
+> > > to guarantee that no new TLB entries are established between
+> > > invalidate_range_start/end. Furthermore the
+> > > invalidate_range_start() function is called when all pages
+> > > are still mapped and invalidate_range_end() when the pages
+> > > are unmapped an already freed.
+> > > 
+> > > So both call-backs can't be used to safely flush any non-CPU
+> > > TLB because _start() is called too early and _end() too
+> > > late.
+> > 
+> > There's a lot of missing information here.  Why don't the existing
+> > callbacks suit non-CPU TLBs?  What is different about them?  Please
+> > update the changelog to contain all this context.
+> 
+> So unlike KVM or any current user of the mmu_notifier api, any PCIE
+> ATS/PASID capable hardware IOMMUv2 for AMD and forgot the marketing
+> name for Intel (probably VTd) implementation walk the cpu page table
+> on there own and have there own TLB cache. In fact not only the iommu
+> can have a TLB cache but any single PCIE hardware can implement its
+> own local TLB cache.
+> 
+> So if we flush the IOMMU and device TLB inside the range_start callback
+> there is a chance that the hw will just rewalk the cpu page table and
+> repopulate its TLB before the CPU page table is actually updated.
+> 
+> Now if we shoot down the TLB inside the range_end callback, then we
+> are too late ie the CPU page table is already populated with new entry
+> and all the TLB in the IOMMU an in device might be pointing to the old
+> pages.
+> 
+> So the aim of this callback is to happen right after the CPU page table
+> is updated but before the old page is freed or recycled.
 
-The adapter->dev.parent == NULL case is valid for the i2c_stub,
-so loading i2c_stub with ACPI_I2C_OPREGION enabled results in an oops.
-This is also valid at least for i2c_tiny_usb and i2c_robotfuzz_osif.
+You had me up to here.  What is "the old page"?  pagetable page, I
+assume?  upper, middle, lower, all the above?  Why does the callback
+function need to get at that page?
 
-Fix by checking whether it is null before calling ACPI_HANDLE.
+> > Also too skimpy.  I *think* this is a variant of the problem in the
+> > preceding paragraph.  We get a fault storm (which is problem 2) and
+> > sometimes the faulting device gives up (which is problem 1).
+> > 
+> > Or something.  Please de-fog all of this.
+> > 
+> 
+> Does above explanation help understand the issue ? Given that on each
+> device page fault an IRQ is trigger (well the way the hw works is bit
+> more complex than that).
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/i2c/i2c-acpi.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+It helps.  Please understand that my main aim here is not to ask
+specific questions.  I seek to demonstrate the level of detail which I
+believe should be in the changelog so that others can effectively
+understand and review this patchset, and to understand this code in the
+future.
 
-diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
-index 0dbc18c..c456b17 100644
---- a/drivers/i2c/i2c-acpi.c
-+++ b/drivers/i2c/i2c-acpi.c
-@@ -308,10 +308,15 @@ acpi_i2c_space_handler(u32 function, acpi_physical_address command,
- 
- int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
- {
--	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-+	acpi_handle handle;
- 	struct acpi_i2c_handler_data *data;
- 	acpi_status status;
- 
-+	if (!adapter->dev.parent)
-+		return -ENODEV;
-+
-+	handle = ACPI_HANDLE(adapter->dev.parent);
-+
- 	if (!handle)
- 		return -ENODEV;
- 
-@@ -344,10 +349,15 @@ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
- 
- void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
- {
--	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-+	acpi_handle handle;
- 	struct acpi_i2c_handler_data *data;
- 	acpi_status status;
- 
-+	if (!adapter->dev.parent)
-+		return;
-+
-+	handle = ACPI_HANDLE(adapter->dev.parent);
-+
- 	if (!handle)
- 		return;
- 
--- 
-1.8.5.5
+So it would be good if you were to update the changelog to answer these
+questions.  It would be better if it were also to answer similar
+questions which I didn't think to ask!
+
+> > > Furthermore the _start()/end() notifiers only catch the
+> > > moment when page mappings are released, but not page-table
+> > > pages. But this is necessary for managing external TLBs when
+> > > the page-table is shared with the CPU.
+> > 
+> > How come?
+> 
+> As explained above end() might happens after page that were previously
+> mapped are free or recycled.
+
+Again, some explanation of why the driver wishes to inspect the
+pagetable pages would be useful.
+
+> > 
+> > > To solve this situation I wrote a patch-set to introduce a
+> > > new notifier call-back: mmu_notifer_invalidate_range(). This
+> > > notifier lifts the strict requirements that no new
+> > > references are taken in the range between _start() and
+> > > _end(). When the subsystem can't guarantee that any new
+> > > references are taken is has to provide the
+> > > invalidate_range() call-back to clear any new references in
+> > > there.
+> > > 
+> > > It is called between invalidate_range_start() and _end()
+> > > every time the VMM has to wipe out any references to a
+> > > couple of pages. This are usually the places where the CPU
+> > > TLBs are flushed too and where its important that this
+> > > happens before invalidate_range_end() is called.
+> > > 
+> > > Any comments and review appreciated!
+> > 
+> > The patchset looks decent, although I find it had to review because I
+> > just wasn't provided with enough of the thinking that went into it.  I
+> > have enough info to look at the C code, but not enough info to identify
+> > and evaluate alternative implementation approaches, to identify
+> > possible future extensions, etc.
+> > 
+> > The patchset does appear to add significant additional overhead to hot
+> > code paths when mm_has_notifiers(mm).  Please let's update the
+> > changelog to address this rather important concern.  How significant is
+> > the impact on such mm's, how common are such mm's now and in the
+> > future, should we (for example) look at short-circuiting
+> > __mmu_notifier_invalidate_range() if none of the registered notifiers
+> > implement ->invalidate_range(), etc.
+> 
+> So one might feel like just completely removing the range_start()/end()
+> from the mmu_notifier and stick to this one callback but it will not work
+> with other hardware like the one i am doing HMM patchset for (i send it
+> again a couple weeks ago https://lkml.org/lkml/2014/8/29/423).
+> 
+> Right now there are very few user of the mmu_notifier, SGI, xen, KVM and
+> sadly recently the GPU folks (which i am part of too). So as the GPU are
+> starting to use it we will see a lot more application going through the
+> mmu_notifier callback. Yet you do want to leverage the hw like GPU and
+> you do want to use the same address space on the GPU as on the CPU and
+> thus you do want to share or at least keep synchronize the GPU view of
+> the CPU page table.
+> 
+> Right now, for IOMMUv2 this means adding this callback, for device that
+> do not rely on ATS/PASID PCIE extension this means something like HMM.
+> Also note that HMM is a superset of IOMMUv2 as it could be use at the
+> same time and provide more feature mainly allowing migrating some page
+> to device local memory for performances purposes.
+
+OK, but none of that addressed my question regarding the performance
+cost.
+
+> I think this sumup all motivation behind this patchset and also behind
+> my other patchset. As usual i am happy to discuss alternative way to do
+> things but i think that the path of least disruption from current code
+> is the one implemented by those patchset.
+
+"least disruption" is nice, but "good implementation" is better.  In
+other words I'd prefer the more complex implementation if the end
+result is better.  Depending on the magnitudes of "complex" and
+"better" :) Two years from now (which isn't very long), I don't think
+we'll regret having chosen the better implementation.
+
+Does this patchset make compromises to achieve low disruption?
 
