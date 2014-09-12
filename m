@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769AbaILJYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:24:40 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:18124 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaILJYg (ORCPT
+	id S1753852AbaILJZG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:25:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46356 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625AbaILJZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:24:36 -0400
-X-AuditID: cbfee68e-f79536d000000fd1-77-5412bbcbd96f
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: "'Tomasz Figa'" <tomasz.figa@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: kgene.kim@samsung.com, s.nawrocki@samsung.com, mturquette@linaro.org,
-        "'Chander Kashyap'" <k.chander@samsung.com>,
-        "'Abhilash Kesavan'" <a.kesavan@samsung.com>
-References: <1410328565-25122-1-git-send-email-pankaj.dubey@samsung.com>
- <54122962.5020903@gmail.com>
-In-reply-to: <54122962.5020903@gmail.com>
-Subject: RE: [PATCH] clk: samsung: exynos5260: fix typo in clock name
-Date: Fri, 12 Sep 2014 14:57:04 +0530
-Message-id: <000e01cfce6b$bf538ca0$3dfaa5e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGjcMNdvmvoOe4ebVgYUdsP7pvQZwFqBtAdnEqku5A=
-Content-language: en-us
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsWyRsSkSvf0bqEQgyOrFSwer1nMZLFqwxIW
-	i94FV9ksNj2+xmpxedccNosZ5/cxWTydcJHN4vCbdlaLVbv+MDpweuycdZfd4861PWwem5fU
-	e/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGwycf2Qq6OCtuLb/E2sC4h72LkZNDQsBEYsGS
-	d2wQtpjEhXvrgWwuDiGBpYwSOxsusMIUHZ55jwkiMZ1R4ujM72AdQgJ/GSWutiqB2GwCuhJP
-	3s9lBikSEZjCKLFycyuYwyywmFHi7NOdLBAd6RKX9k8Gsjk4OAU0JXaf1QMJCwu4ShxpucEM
-	YrMIqEpcud0AtoBXwFJiTdcDRghbUOLH5HtgY5gFtCTW7zzOBGHLS2xe85YZ4lIFiR1nX4PV
-	iwhYSaxrWARVIy4x6cFDdpB7JAR+skusXbKFDWKZgMS3yYfA7pEQkJXYdABqjqTEwRU3WCYw
-	SsxCsnoWktWzkKyehWTFAkaWVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBMX3637O+HYw3
-	D1gfYhTgYFTi4a1gEQwRYk0sK67MPcRoCnTRRGYp0eR8YOLIK4k3NDYzsjA1MTU2Mrc0UxLn
-	TZD6GQwMw8SS1OzU1ILUovii0pzU4kOMTBycUg2M3Mu2reqxDNcIlV+zeurMMyYS7en777gc
-	WzVfyV/25ZqiJP63+0vzlEs/OcSldd59zxV20DLZxu3ji8M2bhO7p6caNdysevfaP/0M092u
-	Vb69N76LekkqdVu8+bSqQHvV3+c7LOftWruq5VmM3aeVa8MqtTNnnhf4djOyPdZI7EXl6Y3F
-	8pfPK7EUZyQaajEXFScCAMzT1HbkAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQd3Tu4VCDB7tErN4vGYxk8WqDUtY
-	LHoXXGWz2PT4GqvF5V1z2CxmnN/HZPF0wkU2i8Nv2lktVu36w+jA6bFz1l12jzvX9rB5bF5S
-	79G3ZRWjx+dNcgGsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2
-	Si4+AbpumTlABykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYMx4++chW
-	0MVZcWv5JdYGxj3sXYycHBICJhKHZ95jgrDFJC7cW8/WxcjFISQwnVHi6MzvbCAJIYG/jBJX
-	W5VAbDYBXYkn7+cygxSJCExhlFi5uRXMYRZYzChx9ulOFoiOdIlL+ycD2RwcnAKaErvP6oGE
-	hQVcJY603GAGsVkEVCWu3G4AW8ArYCmxpusBI4QtKPFj8j2wMcwCWhLrdx5ngrDlJTavecsM
-	camCxI6zr8HqRQSsJNY1LIKqEZeY9OAh+wRGoVlIRs1CMmoWklGzkLQsYGRZxSiaWpBcUJyU
-	nmuoV5yYW1yal66XnJ+7iRGcMJ5J7WBc2WBxiFGAg1GJh7eCRTBEiDWxrLgy9xCjBAezkgjv
-	z21CIUK8KYmVValF+fFFpTmpxYcYTYE+ncgsJZqcD0xmeSXxhsYm5qbGppYmFiZmlkrivAda
-	rQOBwZVYkpqdmlqQWgTTx8TBKdXAyF1QcDTNwOMef57ZKf3JNedfHvQrPOVTbh/4+2JHdEvf
-	4WOzYtM71ycfVvvzS/rOzfDVC7k/vm36pL7ulSBzV8X1Xp71LdlmHL1MvWXnHs5IVf9+8Ned
-	aWp1V0qvGp16sNU329z3b1bjyyPnc3PWrjn03pexrNrwucRuq1fRnA8vWwgzt655qcRSnJFo
-	qMVcVJwIAB+z+CMuAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 12 Sep 2014 05:25:03 -0400
+Date: Fri, 12 Sep 2014 11:24:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+In-Reply-To: <alpine.DEB.2.10.1409120950260.4178@nanos>
+Message-ID: <alpine.DEB.2.10.1409121120440.4178@nanos>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120020060.4178@nanos> <541239F1.2000508@intel.com> <alpine.DEB.2.10.1409120950260.4178@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On Fri, 12 Sep 2014, Thomas Gleixner wrote:
+> On Thu, 11 Sep 2014, Dave Hansen wrote:
+> > Well, we use it to figure out whether we _potentially_ need to tear down
+> > an VM_MPX-flagged area.  There's no guarantee that there will be one.
+> 
+> So what you are saying is, that if user space sets the pointer to NULL
+> via the unregister prctl, kernel can safely ignore vmas which have the
+> VM_MPX flag set. I really can't follow that logic.
+>  
+> 	mmap_mpx();
+> 	prctl(enable mpx);
+> 	do lots of crap which uses mpx;
+> 	prctl(disable mpx);
+> 
+> So after that point the previous use of MPX is irrelevant, just
+> because we set a pointer to NULL? Does it just look like crap because
+> I do not get the big picture how all of this is supposed to work?
 
-> -----Original Message-----
-> From: Tomasz Figa [mailto:tomasz.figa@gmail.com]
-> Sent: Friday, September 12, 2014 4:30 AM
-> To: Pankaj Dubey; linux-arm-kernel@lists.infradead.org; linux-samsung-
-> soc@vger.kernel.org; linux-kernel@vger.kernel.org
-> Cc: kgene.kim@samsung.com; s.nawrocki@samsung.com; mturquette@linaro.org;
-> Chander Kashyap; Abhilash Kesavan
-> Subject: Re: [PATCH] clk: samsung: exynos5260: fix typo in clock name
-> 
-> Hi Pankaj,
-> 
-> On 10.09.2014 07:56, Pankaj Dubey wrote:
-> > From: Chander Kashyap <k.chander@samsung.com>
-> >
-> > The parent name added in parent list as
-> > mout_phyclk_mipi_dphy_4l_m_txbyte_clkhs_p, is different than the
-> > defined parent due to typo.
-> >
-> > Signed-off-by: Abhilash Kesavan <a.kesavan@samsung.com>
-> > Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+do_bounds() will happily map new BTs no matter whether the prctl was
+invoked or not. So what's the value of the prctl at all?
 
-Please add my sign-off as 
+The mapping is flagged VM_MPX. Why is this not sufficient?
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Thanks,
 
-> 
-> Missed your sign-off? You can reply with it inline and I will add it when
-applying this
-> weekend.
-> 
-> P.S. Please keep me on CC when sending patches for Samsung clock drivers.
-> 
-> Best regards,
-> Tomasz
+	tglx
 
