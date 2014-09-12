@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994AbaILKsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:48:05 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:40181 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaILKsD (ORCPT
+	id S1754001AbaILKt5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:49:57 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:34969 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277AbaILKt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:48:03 -0400
+	Fri, 12 Sep 2014 06:49:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140912112619.50d3b651@www.etchedpixels.co.uk>
-References: <CAPM=9tyZF2S7PJcLyc=KH_NBFXju8UwvMBOF_MocNK8pPVXDYw@mail.gmail.com>
-	<20140912112619.50d3b651@www.etchedpixels.co.uk>
-Date: Fri, 12 Sep 2014 20:48:01 +1000
-Message-ID: <CAPM=9tzuHQxPYoUZegKzwUoHBvp1UTkmtV3zcBmUxeJUr9qAWA@mail.gmail.com>
-Subject: Re: vga and 64-bit memcpy's
-From: Dave Airlie <airlied@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <54123EC8.1040906@lwfinger.net>
+References: <CAGXu5j+kh3TTR8yiyH35mXUo91g5a-ULS6w2CvKzGmQ4UuL-aA@mail.gmail.com>
+	<5412327B.6030000@lwfinger.net>
+	<CAGXu5jJmyyWrsS2EFPT59RjK-np3sqmxe69meecmpicv6BNKrA@mail.gmail.com>
+	<54123EC8.1040906@lwfinger.net>
+Date: Fri, 12 Sep 2014 19:49:50 +0900
+Message-ID: <CALLJCT2d8r4ZfKEcY0O-EXBD=wzh0P5qO_tORguTaKxC=4mHUg@mail.gmail.com>
+Subject: Re: repeated bugs in new rtl wifi drivers
+From: Masanari Iida <standby24x7@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Kees Cook <keescook@chromium.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2014 20:26, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Fri, 12 Sep 2014 13:57:20 +1000
-> Dave Airlie <airlied@gmail.com> wrote:
->
->> Got an bug report from someone using a silicon motion video card in
->> VGA mode about corruption that they tracked down to 64-bit memory
->> operations not being supported by the video card, it appears that we
->> probably shouldn't be using > 32-bit copies on VGA memory.
->
-> VGA memory is write combining usually so the answer in general would be
-> no. You may also find its a combination of bridge and card and one or the
-> other is somehow out of spec.
+Larry,
+One minor note.
+There are two typos "Tmis" instead of "This" , "Tme" instead of "The"
+in GPLv2 license header within multiple source code of wireless/rtlwifi,
+as well as staging/rtl*.
 
-Well I'm not shocked that an SMI GPU is out of spec, just not sure how
-we can workaround it.
+"Tmis program is free software; you can redistribute it and/or modify it"
+"Tme full GNU General Public License is included in this distribution in the"
 
-Dave.
+I guess the template file have these typos.
+
+Reported-by: Masanari Iida <standby24x7@gmail.com>
+
+Masanari
