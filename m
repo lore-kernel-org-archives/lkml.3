@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaILDQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 23:16:51 -0400
-Received: from relay.variantweb.net ([104.131.199.242]:53523 "EHLO
-	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753685AbaILDQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 23:16:49 -0400
-Date: Thu, 11 Sep 2014 22:16:44 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/10] zsmalloc: fix init_zspage free obj linking
-Message-ID: <20140912031644.GB17818@cerebellum.variantweb.net>
-References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
- <1410468841-320-2-git-send-email-ddstreet@ieee.org>
+	id S1753820AbaILDSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 23:18:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:49799 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753767AbaILDSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 23:18:08 -0400
+Date: Fri, 12 Sep 2014 13:17:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: linux-next: build failure after merge of the slave-dma tree
+Message-ID: <20140912131755.7a181cc6@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410468841-320-2-git-send-email-ddstreet@ieee.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/TqzrKwxGKEKo+95zvA_8e9W"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 04:53:52PM -0400, Dan Streetman wrote:
-> When zsmalloc creates a new zspage, it initializes each object it contains
-> with a link to the next object, so that the zspage has a singly-linked list
-> of its free objects.  However, the logic that sets up the links is wrong,
-> and in the case of objects that are precisely aligned with the page boundries
-> (e.g. a zspage with objects that are 1/2 PAGE_SIZE) the first object on the
-> next page is skipped, due to incrementing the offset twice.  The logic can be
-> simplified, as it doesn't need to calculate how many objects can fit on the
-> current page; simply checking the offset for each object is enough.
-> 
-> Change zsmalloc init_zspage() logic to iterate through each object on
-> each of its pages, checking the offset to verify the object is on the
-> current page before linking it into the zspage.
-> 
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> Cc: Minchan Kim <minchan@kernel.org>
+--Sig_/TqzrKwxGKEKo+95zvA_8e9W
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This one stands on its own as a bugfix.
+Hi Vinod,
 
-Reviewed-by: Seth Jennings <sjennings@variantweb.net>
+After merging the slave-dma tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-> ---
->  mm/zsmalloc.c | 14 +++++---------
->  1 file changed, 5 insertions(+), 9 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index c4a9157..03aa72f 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -628,7 +628,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->  	while (page) {
->  		struct page *next_page;
->  		struct link_free *link;
-> -		unsigned int i, objs_on_page;
-> +		unsigned int i = 1;
->  
->  		/*
->  		 * page->index stores offset of first object starting
-> @@ -641,14 +641,10 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->  
->  		link = (struct link_free *)kmap_atomic(page) +
->  						off / sizeof(*link);
-> -		objs_on_page = (PAGE_SIZE - off) / class->size;
->  
-> -		for (i = 1; i <= objs_on_page; i++) {
-> -			off += class->size;
-> -			if (off < PAGE_SIZE) {
-> -				link->next = obj_location_to_handle(page, i);
-> -				link += class->size / sizeof(*link);
-> -			}
-> +		while ((off += class->size) < PAGE_SIZE) {
-> +			link->next = obj_location_to_handle(page, i++);
-> +			link += class->size / sizeof(*link);
->  		}
->  
->  		/*
-> @@ -660,7 +656,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
->  		link->next = obj_location_to_handle(next_page, 0);
->  		kunmap_atomic(link);
->  		page = next_page;
-> -		off = (off + class->size) % PAGE_SIZE;
-> +		off %= PAGE_SIZE;
->  	}
->  }
->  
-> -- 
-> 1.8.3.1
-> 
+
+drivers/spi/spi-pxa2xx-pci.c:70:3: error: unknown field 'max_clk_rate' spec=
+ified in initializer
+   .max_clk_rate =3D 50000000,
+   ^
+
+Caused by commit bfe607a528ba ("spi/pxa2xx-pci: Add support for Intel
+Braswell").
+
+I have used the slave-dma tree from next-20140911 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/TqzrKwxGKEKo+95zvA_8e9W
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUEmXtAAoJEMDTa8Ir7ZwVuEsP/R8/XQWxiFRp1G1EL4+eVuGw
+GSmr3itsLyzY/sJ4o2HUWfOFpxuSlpL9jcDSLbUTynrnGS4NQv1FghYJsrURB3CB
+/ysLdkqC6ShDrY409OU74t3k6m6oQQfUB7vlG4aMxb6Y7CaDstaQ+pXXbJOle7V3
+ue1asC7HdDPyerXNOamGqBlfD9U7CHZ3da8ibaxo/rKApf0T+P4I3KOLZgGAo/xB
+6Zo9+O/n0xgtl8jyjeMFLX1sgJSTnBIuTj1T0708JsXR0LyqIFgZLa7pSnQOxZzu
+WDCkOdBIGDsKVgaTHe8SYO07+9v9sDE0oUt+Oym/vBUF4Yt6GHTv0mE/o+OVJtM7
+Cf8DPrJ3l3zbiPheS/rK1hUHs9Re5RisI07EIqRiPwhNjfqhVigrFVshqkmSfFRq
+RoMOEkL8NcFb/GoT+uw7zC2JHKEPNv/a2E1thb7VDgAZTJ7IKIVbVDYKPVRruMYY
+6v/0ESHBL6bwToH2YpOOaLjX0VoA71uFfzn7DAkY1O4/MJoX1+XJp+w1+SbZxdYz
+2xBBLYneV31nV9IFu6Eq5+I0HgOTT3Yc8BiPPJ3WGmlt2IyNU715Ls/d8QUU84EJ
+k4IcDecRHFFLQS6v/v888OaHkbApXELz1kd+aSKdTwJ8ld0cnuN+8m1EsrmYBrXJ
+4hq6odPEsF38aTM6xjuc
+=KQsD
+-----END PGP SIGNATURE-----
+
+--Sig_/TqzrKwxGKEKo+95zvA_8e9W--
