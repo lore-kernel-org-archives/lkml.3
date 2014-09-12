@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751640AbaILEHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 00:07:01 -0400
-Received: from ozlabs.org ([103.22.144.67]:38709 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109AbaILEHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 00:07:00 -0400
-Message-ID: <1410494817.17540.4.camel@concordia>
-Subject: Re: [PATCH v3 3/3] sched: BUG when stack end location is over
- written
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Aaron Tomlin <atomlin@redhat.com>
-Cc: peterz@infradead.org, dzickus@redhat.com, jcastillo@redhat.com,
-        riel@redhat.com, x86@kernel.org, akpm@linux-foundation.org,
-        minchan@kernel.org, mingo@kernel.com, bmr@redhat.com,
-        prarit@redhat.com, oleg@redhat.com, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, hannes@cmpxchg.org, mingo@redhat.com,
-        aneesh.kumar@linux.vnet.ibm.com, akpm@google.com, jgh@redhat.com,
-        linuxppc-dev@lists.ozlabs.org, tglx@linutronix.de, pzijlstr@redhat.com
-Date: Fri, 12 Sep 2014 14:06:57 +1000
-In-Reply-To: <1410450088-18236-4-git-send-email-atomlin@redhat.com>
-References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
-	 <1410450088-18236-1-git-send-email-atomlin@redhat.com>
-	 <1410450088-18236-4-git-send-email-atomlin@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751812AbaILEKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 00:10:00 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:52348 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaILEJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 00:09:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410444957.9942.3.camel@joe-AO725>
+References: <20140908181524.GA11839@www.outflux.net>
+	<20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
+	<CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
+	<1410444957.9942.3.camel@joe-AO725>
+Date: Fri, 12 Sep 2014 13:09:57 +0900
+Message-ID: <CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
+Subject: Re: [PATCH v2] checkpatch: look for common misspellings
+From: Masanari Iida <standby24x7@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        linux-doc <linux-doc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 16:41 +0100, Aaron Tomlin wrote:
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index a285900..2a8280a 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -824,6 +824,18 @@ config SCHEDSTATS
->  	  application, you can say N to avoid the very slight overhead
->  	  this adds.
->  
-> +config SCHED_STACK_END_CHECK
-> +	bool "Detect stack corruption on calls to schedule()"
-> +	depends on DEBUG_KERNEL
-> +	default y
+Talking about codespell,  it detected 76 "informations" in 3.17-rc4.
+" grep -R informations * |wc -l"  found 120 typos.
+Test with "occured",  codespell found 46,  grep found 110.
+Test with "reseting" case,  codespell found 21, grep found 26.
 
-Did you really mean default y?
-
-Doing so means it will be turned on more or less everywhere, which defeats the
-purpose of having a config option in the first place.
-
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index ec1a286..0b70b73 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
->   */
->  static inline void schedule_debug(struct task_struct *prev)
->  {
-> +#ifdef CONFIG_SCHED_STACK_END_CHECK
-> +	BUG_ON(unlikely(task_stack_end_corrupted(prev)))
-> +#endif
-
-If this was my code I'd make you put that in a static inline.
-
-cheers
-
-
-
+So I expect about half of the incoming typos will be detected by the tool,
+and be fixed.
+Masanari
