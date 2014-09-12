@@ -1,193 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857AbaILIWF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 04:22:05 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:36835 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860AbaILIR6 (ORCPT
+	id S1753868AbaILIXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 04:23:09 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51519 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaILIXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 04:17:58 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH RESEND v9 2/5] rtc: max77686: Remove dead code for SMPL and WTSR.
-Date: Fri, 12 Sep 2014 10:17:40 +0200
-Message-Id: <1410509864-10019-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410509864-10019-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1410509864-10019-1-git-send-email-javier.martinez@collabora.co.uk>
+	Fri, 12 Sep 2014 04:23:05 -0400
+Subject: [PATCH v4 2/2] arcmsr: simplify of updating doneq_index and
+ postq_index
+From: Ching Huang <ching2048@areca.com.tw>
+To: hch@infradead.org, thenzl@redhat.com, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, agordeev@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Sep 2014 16:22:55 +0800
+Message-ID: <1410510175.5045.304.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX77686 RTC chip has two features called SMPL (Sudden Momentary
-Power Loss) and WTSR (Watchdog Timeout and Software Resets).
-Support for these features seems to be implemented in the driver but
-compilation is disabled using a C pre-processor conditional.
+From: Ching Huang <ching2048@areca.com.tw>
 
-This code has been disabled since the driver was original merged in
-commit fca1dd03 ("rtc: max77686: add Maxim 77686 driver").
+This patch is to modify previous patch 16/17 and it is relative to
+http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
 
-So, since this code has never been built, let's just remove it.
+change in v4:
+1. clean up of duplicate variable declaration in switch.
+2. simplify of updating doneq_index and postq_index
+3. fix spin_lock area in arcmsr_hbaD_polling_ccbdone
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Ching Huang <ching2048@areca.com.tw>
 ---
- drivers/rtc/rtc-max77686.c | 101 ---------------------------------------------
- 1 file changed, 101 deletions(-)
 
-diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-index c1c6055..7bb5433 100644
---- a/drivers/rtc/rtc-max77686.c
-+++ b/drivers/rtc/rtc-max77686.c
-@@ -32,15 +32,6 @@
- #define RTC_UDR_MASK			(1 << RTC_UDR_SHIFT)
- #define RTC_RBUDR_SHIFT			4
- #define RTC_RBUDR_MASK			(1 << RTC_RBUDR_SHIFT)
--/* WTSR and SMPL Register */
--#define WTSRT_SHIFT			0
--#define SMPLT_SHIFT			2
--#define WTSR_EN_SHIFT			6
--#define SMPL_EN_SHIFT			7
--#define WTSRT_MASK			(3 << WTSRT_SHIFT)
--#define SMPLT_MASK			(3 << SMPLT_SHIFT)
--#define WTSR_EN_MASK			(1 << WTSR_EN_SHIFT)
--#define SMPL_EN_MASK			(1 << SMPL_EN_SHIFT)
- /* RTC Hour register */
- #define HOUR_PM_SHIFT			6
- #define HOUR_PM_MASK			(1 << HOUR_PM_SHIFT)
-@@ -49,7 +40,6 @@
- #define ALARM_ENABLE_MASK		(1 << ALARM_ENABLE_SHIFT)
- 
- #define MAX77686_RTC_UPDATE_DELAY	16
--#undef MAX77686_RTC_WTSR_SMPL
- 
- enum {
- 	RTC_SEC = 0,
-@@ -412,64 +402,6 @@ static const struct rtc_class_ops max77686_rtc_ops = {
- 	.alarm_irq_enable = max77686_rtc_alarm_irq_enable,
- };
- 
--#ifdef MAX77686_RTC_WTSR_SMPL
--static void max77686_rtc_enable_wtsr(struct max77686_rtc_info *info, bool enable)
--{
--	int ret;
--	unsigned int val, mask;
--
--	if (enable)
--		val = (1 << WTSR_EN_SHIFT) | (3 << WTSRT_SHIFT);
--	else
--		val = 0;
--
--	mask = WTSR_EN_MASK | WTSRT_MASK;
--
--	dev_info(info->dev, "%s: %s WTSR\n", __func__,
--			enable ? "enable" : "disable");
--
--	ret = regmap_update_bits(info->max77686->rtc_regmap,
--				 MAX77686_WTSR_SMPL_CNTL, mask, val);
--	if (ret < 0) {
--		dev_err(info->dev, "%s: fail to update WTSR reg(%d)\n",
--				__func__, ret);
--		return;
--	}
--
--	max77686_rtc_update(info, MAX77686_RTC_WRITE);
--}
--
--static void max77686_rtc_enable_smpl(struct max77686_rtc_info *info, bool enable)
--{
--	int ret;
--	unsigned int val, mask;
--
--	if (enable)
--		val = (1 << SMPL_EN_SHIFT) | (0 << SMPLT_SHIFT);
--	else
--		val = 0;
--
--	mask = SMPL_EN_MASK | SMPLT_MASK;
--
--	dev_info(info->dev, "%s: %s SMPL\n", __func__,
--			enable ? "enable" : "disable");
--
--	ret = regmap_update_bits(info->max77686->rtc_regmap,
--				 MAX77686_WTSR_SMPL_CNTL, mask, val);
--	if (ret < 0) {
--		dev_err(info->dev, "%s: fail to update SMPL reg(%d)\n",
--				__func__, ret);
--		return;
--	}
--
--	max77686_rtc_update(info, MAX77686_RTC_WRITE);
--
--	val = 0;
--	regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
--	dev_info(info->dev, "%s: WTSR_SMPL(0x%02x)\n", __func__, val);
--}
--#endif /* MAX77686_RTC_WTSR_SMPL */
--
- static int max77686_rtc_init_reg(struct max77686_rtc_info *info)
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-12 12:43:16.956653000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-09-12 15:00:23.516069000 +0800
+@@ -1121,7 +1121,7 @@ static void arcmsr_drain_donequeue(struc
+ static void arcmsr_done4abort_postqueue(struct AdapterControlBlock *acb)
  {
- 	u8 data[2];
-@@ -519,11 +451,6 @@ static int max77686_rtc_probe(struct platform_device *pdev)
- 		goto err_rtc;
- 	}
+ 	int i = 0;
+-	uint32_t flag_ccb;
++	uint32_t flag_ccb, ccb_cdb_phy;
+ 	struct ARCMSR_CDB *pARCMSR_CDB;
+ 	bool error;
+ 	struct CommandControlBlock *pCCB;
+@@ -1165,10 +1165,6 @@ static void arcmsr_done4abort_postqueue(
+ 		break;
+ 	case ACB_ADAPTER_TYPE_C: {
+ 		struct MessageUnit_C __iomem *reg = acb->pmuC;
+-		struct  ARCMSR_CDB *pARCMSR_CDB;
+-		uint32_t flag_ccb, ccb_cdb_phy;
+-		bool error;
+-		struct CommandControlBlock *pCCB;
+ 		while ((readl(&reg->host_int_status) & ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR) && (i++ < ARCMSR_MAX_OUTSTANDING_CMD)) {
+ 			/*need to do*/
+ 			flag_ccb = readl(&reg->outbound_queueport_low);
+@@ -1182,10 +1178,8 @@ static void arcmsr_done4abort_postqueue(
+ 		break;
+ 	case ACB_ADAPTER_TYPE_D: {
+ 		struct MessageUnit_D  *pmu = acb->pmuD;
+-		uint32_t ccb_cdb_phy, outbound_write_pointer;
+-		uint32_t doneq_index, index_stripped, addressLow, residual;
+-		bool error;
+-		struct CommandControlBlock *pCCB;
++		uint32_t outbound_write_pointer;
++		uint32_t doneq_index, index_stripped, addressLow, residual, toggle;
  
--#ifdef MAX77686_RTC_WTSR_SMPL
--	max77686_rtc_enable_wtsr(info, true);
--	max77686_rtc_enable_smpl(info, true);
--#endif
--
- 	device_init_wakeup(&pdev->dev, 1);
+ 		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
+ 		doneq_index = pmu->doneq_index;
+@@ -1193,23 +1187,11 @@ static void arcmsr_done4abort_postqueue(
+ 		for (i = 0; i < residual; i++) {
+ 			while ((doneq_index & 0xFFF) !=
+ 				(outbound_write_pointer & 0xFFF)) {
+-				if (doneq_index & 0x4000) {
+-					index_stripped = doneq_index & 0xFFF;
+-					index_stripped += 1;
+-					index_stripped %=
+-						ARCMSR_MAX_ARC1214_DONEQUEUE;
+-					pmu->doneq_index = index_stripped ?
+-						(index_stripped | 0x4000) :
+-						(index_stripped + 1);
+-				} else {
+-					index_stripped = doneq_index;
+-					index_stripped += 1;
+-					index_stripped %=
+-						ARCMSR_MAX_ARC1214_DONEQUEUE;
+-					pmu->doneq_index = index_stripped ?
+-						index_stripped :
+-						((index_stripped | 0x4000) + 1);
+-				}
++				toggle = doneq_index & 0x4000;
++				index_stripped = (doneq_index & 0xFFF) + 1;
++				index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
++				pmu->doneq_index = index_stripped ? (index_stripped | toggle) :
++					((toggle ^ 0x4000) + 1);
+ 				doneq_index = pmu->doneq_index;
+ 				addressLow = pmu->done_qbuffer[doneq_index &
+ 					0xFFF].addressLow;
+@@ -1461,7 +1443,7 @@ static void arcmsr_post_ccb(struct Adapt
+ 	case ACB_ADAPTER_TYPE_D: {
+ 		struct MessageUnit_D  *pmu = acb->pmuD;
+ 		u16 index_stripped;
+-		u16 postq_index;
++		u16 postq_index, toggle;
+ 		unsigned long flags;
+ 		struct InBound_SRB *pinbound_srb;
  
- 	info->rtc_dev = devm_rtc_device_register(&pdev->dev, "max77686-rtc",
-@@ -556,33 +483,6 @@ err_rtc:
- 	return ret;
- }
- 
--static void max77686_rtc_shutdown(struct platform_device *pdev)
--{
--#ifdef MAX77686_RTC_WTSR_SMPL
--	struct max77686_rtc_info *info = platform_get_drvdata(pdev);
--	int i;
--	u8 val = 0;
--
--	for (i = 0; i < 3; i++) {
--		max77686_rtc_enable_wtsr(info, false);
--		regmap_read(info->max77686->rtc_regmap, MAX77686_WTSR_SMPL_CNTL, &val);
--		dev_info(info->dev, "%s: WTSR_SMPL reg(0x%02x)\n", __func__,
--				val);
--		if (val & WTSR_EN_MASK) {
--			dev_emerg(info->dev, "%s: fail to disable WTSR\n",
--					__func__);
+@@ -1472,19 +1454,11 @@ static void arcmsr_post_ccb(struct Adapt
+ 		pinbound_srb->addressLow = dma_addr_lo32(cdb_phyaddr);
+ 		pinbound_srb->length = ccb->arc_cdb_size >> 2;
+ 		arcmsr_cdb->msgContext = dma_addr_lo32(cdb_phyaddr);
+-		if (postq_index & 0x4000) {
+-			index_stripped = postq_index & 0xFF;
+-			index_stripped += 1;
+-			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
+-			pmu->postq_index = index_stripped ?
+-				(index_stripped | 0x4000) : index_stripped;
 -		} else {
--			dev_info(info->dev, "%s: success to disable WTSR\n",
--					__func__);
--			break;
+-			index_stripped = postq_index;
+-			index_stripped += 1;
+-			index_stripped %= ARCMSR_MAX_ARC1214_POSTQUEUE;
+-			pmu->postq_index = index_stripped ? index_stripped :
+-				(index_stripped | 0x4000);
 -		}
--	}
--
--	/* Disable SMPL when power off */
--	max77686_rtc_enable_smpl(info, false);
--#endif /* MAX77686_RTC_WTSR_SMPL */
--}
--
- #ifdef CONFIG_PM_SLEEP
- static int max77686_rtc_suspend(struct device *dev)
- {
-@@ -622,7 +522,6 @@ static struct platform_driver max77686_rtc_driver = {
- 		.pm	= &max77686_rtc_pm_ops,
- 	},
- 	.probe		= max77686_rtc_probe,
--	.shutdown	= max77686_rtc_shutdown,
- 	.id_table	= rtc_id,
- };
++		toggle = postq_index & 0x4000;
++		index_stripped = postq_index + 1;
++		index_stripped &= (ARCMSR_MAX_ARC1214_POSTQUEUE - 1);
++		pmu->postq_index = index_stripped ? (index_stripped | toggle) :
++			(toggle ^ 0x4000);
+ 		writel(postq_index, pmu->inboundlist_write_pointer);
+ 		spin_unlock_irqrestore(&acb->postq_lock, flags);
+ 		break;
+@@ -1999,7 +1973,7 @@ static void arcmsr_hbaC_postqueue_isr(st
  
--- 
-2.0.0.rc2
+ static void arcmsr_hbaD_postqueue_isr(struct AdapterControlBlock *acb)
+ {
+-	u32 outbound_write_pointer, doneq_index, index_stripped;
++	u32 outbound_write_pointer, doneq_index, index_stripped, toggle;
+ 	uint32_t addressLow, ccb_cdb_phy;
+ 	int error;
+ 	struct MessageUnit_D  *pmu;
+@@ -2013,21 +1987,11 @@ static void arcmsr_hbaD_postqueue_isr(st
+ 	doneq_index = pmu->doneq_index;
+ 	if ((doneq_index & 0xFFF) != (outbound_write_pointer & 0xFFF)) {
+ 		do {
+-			if (doneq_index & 0x4000) {
+-				index_stripped = doneq_index & 0xFFF;
+-				index_stripped += 1;
+-				index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+-				pmu->doneq_index = index_stripped
+-					? (index_stripped | 0x4000) :
+-					(index_stripped + 1);
+-			} else {
+-				index_stripped = doneq_index;
+-				index_stripped += 1;
+-				index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+-				pmu->doneq_index = index_stripped
+-					? index_stripped :
+-					((index_stripped | 0x4000) + 1);
+-			}
++			toggle = doneq_index & 0x4000;
++			index_stripped = (doneq_index & 0xFFF) + 1;
++			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
++			pmu->doneq_index = index_stripped ? (index_stripped | toggle) :
++				((toggle ^ 0x4000) + 1);
+ 			doneq_index = pmu->doneq_index;
+ 			addressLow = pmu->done_qbuffer[doneq_index &
+ 				0xFFF].addressLow;
+@@ -2843,7 +2807,7 @@ static bool arcmsr_hbaD_get_config(struc
+ 	char __iomem *iop_firm_version;
+ 	char __iomem *iop_device_map;
+ 	u32 count;
+-	struct MessageUnit_D *reg ;
++	struct MessageUnit_D *reg;
+ 	void *dma_coherent2;
+ 	dma_addr_t dma_coherent_handle2;
+ 	struct pci_dev *pdev = acb->pdev;
+@@ -3176,7 +3140,7 @@ static int arcmsr_hbaD_polling_ccbdone(s
+ {
+ 	bool error;
+ 	uint32_t poll_ccb_done = 0, poll_count = 0, flag_ccb, ccb_cdb_phy;
+-	int rtn, doneq_index, index_stripped, outbound_write_pointer;
++	int rtn, doneq_index, index_stripped, outbound_write_pointer, toggle;
+ 	unsigned long flags;
+ 	struct ARCMSR_CDB *arcmsr_cdb;
+ 	struct CommandControlBlock *pCCB;
+@@ -3185,9 +3149,11 @@ static int arcmsr_hbaD_polling_ccbdone(s
+ polling_hbaD_ccb_retry:
+ 	poll_count++;
+ 	while (1) {
++		spin_lock_irqsave(&acb->doneq_lock, flags);
+ 		outbound_write_pointer = pmu->done_qbuffer[0].addressLow + 1;
+ 		doneq_index = pmu->doneq_index;
+ 		if ((outbound_write_pointer & 0xFFF) == (doneq_index & 0xFFF)) {
++			spin_unlock_irqrestore(&acb->doneq_lock, flags);
+ 			if (poll_ccb_done) {
+ 				rtn = SUCCESS;
+ 				break;
+@@ -3200,21 +3166,11 @@ polling_hbaD_ccb_retry:
+ 				goto polling_hbaD_ccb_retry;
+ 			}
+ 		}
+-		spin_lock_irqsave(&acb->doneq_lock, flags);
+-		if (doneq_index & 0x4000) {
+-			index_stripped = doneq_index & 0xFFF;
+-			index_stripped += 1;
+-			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+-			pmu->doneq_index = index_stripped ?
+-				(index_stripped | 0x4000) :
+-				(index_stripped + 1);
+-		} else {
+-			index_stripped = doneq_index;
+-			index_stripped += 1;
+-			index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
+-			pmu->doneq_index = index_stripped ? index_stripped :
+-				((index_stripped | 0x4000) + 1);
+-		}
++		toggle = doneq_index & 0x4000;
++		index_stripped = (doneq_index & 0xFFF) + 1;
++		index_stripped %= ARCMSR_MAX_ARC1214_DONEQUEUE;
++		pmu->doneq_index = index_stripped ? (index_stripped | toggle) :
++				((toggle ^ 0x4000) + 1);
+ 		spin_unlock_irqrestore(&acb->doneq_lock, flags);
+ 		doneq_index = pmu->doneq_index;
+ 		flag_ccb = pmu->done_qbuffer[doneq_index & 0xFFF].addressLow;
+
 
