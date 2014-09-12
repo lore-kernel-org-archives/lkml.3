@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaILJlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:41:09 -0400
-Received: from mail.pawisda.de ([213.157.4.156]:49295 "EHLO
-	mailrelay.pawisda.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaILJlH (ORCPT
+	id S1753698AbaILJmx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:42:53 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:43174 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341AbaILJmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:41:07 -0400
-Message-ID: <5412BFAF.7050900@lsexperts.de>
-Date: Fri, 12 Sep 2014 11:41:03 +0200
-From: Eric Sesterhenn <eric.sesterhenn@lsexperts.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Fri, 12 Sep 2014 05:42:49 -0400
+Message-ID: <5412C006.6060207@linaro.org>
+Date: Fri, 12 Sep 2014 17:42:30 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: Conrad Kostecki <ck@conrad-kostecki.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>
-Subject: Re: AW: AW: AW: [PATCH] x86: HPET force enable for Soekris net6501
-References: <4729ad4b8d3342c1b0e29fefe4b04d6a@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5683.6030708@zytor.com> <aedabafbb1f0433c9d67ee998971150c@DB4PR04MB265.eurprd04.prod.outlook.com> <52FE5BB6.9070405@zytor.com> <1051d374173243b2828efcd21f60ac36@DB4PR04MB265.e <0363648bf9644167bf5aa0a954cd145b@DB4PR04MB265.eurprd04.prod.outlook.com> <540F06F1.1040608@lsexperts.de> <alpine.DEB.2.10.1409091649510.11037@nanos> <540F1C43.2080708@zytor.com>
-In-Reply-To: <540F1C43.2080708@zytor.com>
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060604080601000801080503"
+To: Grant Likely <grant.likely@linaro.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v3 11/17] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and
+ register device's gsi
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org> <1409583475-6978-12-git-send-email-hanjun.guo@linaro.org> <20140911110846.D152DC408F0@trevor.secretlab.ca>
+In-Reply-To: <20140911110846.D152DC408F0@trevor.secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
-
---------------ms060604080601000801080503
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
-
-hi,
-
-On 09/09/2014 05:26 PM, H. Peter Anvin wrote:
-> On 09/09/2014 07:54 AM, Thomas Gleixner wrote:
+On 2014年09月11日 19:08, Grant Likely wrote:
+> On Mon,  1 Sep 2014 22:57:49 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>> Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
+>> used, and then register device's gsi with the core IRQ subsystem.
 >>
->> @hpa: You asked whether this might affect any other e6xx devices.
+>> acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
+>> since gsi is unique in the system, so use hwirq number directly
+>> for the mapping.
 >>
->> According to the atom e6xx-series datasheet the HPET is non optional
->> and always memory mapped to 0xfed00000. I don't see how that would
->> harm any machine which has the hpet proper advertised via ACPI.
+>> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  arch/arm64/kernel/acpi.c |   73 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  drivers/acpi/bus.c       |    3 ++
+>>  include/linux/acpi.h     |    1 +
+>>  3 files changed, 77 insertions(+)
 >>
->=20
-> That seems straightforward then.
+>> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+>> index 35dff11..354b912 100644
+>> --- a/arch/arm64/kernel/acpi.c
+>> +++ b/arch/arm64/kernel/acpi.c
+>> @@ -37,6 +37,12 @@ EXPORT_SYMBOL(acpi_pci_disabled);
+>>  static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
+>>  
+>>  /*
+>> + * Since we're on ARM, the default interrupt routing model
+>> + * clearly has to be GIC.
+>> + */
+>> +enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
+>> +
+>> +/*
+>>   * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>>   * or early_memremap() should be called here to for ACPI table mapping.
+>>   */
+>> @@ -194,6 +200,73 @@ void __init acpi_smp_init_cpus(void)
+>>  	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
+>>  }
+>>  
+>> +int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+>> +{
+>> +	*irq = irq_find_mapping(NULL, gsi);
+>> +
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+> Why is this exported? x86 exports it, but ia64 does not. There aren't
+> very many callers, and none of them can be built as a module AFAICS.
 
-this means the original patch written by Conrad is going to be applied?
-Is there anything we can do to help regarding this issue?
+It will be called by Generic Hardware Error Source driver which
+can be built as module, and it provides a way to report platform
+hardware errors (such as that from chipset) which can also used
+by ARM platform, so I think we can keep it as exported.
 
-> I still wish someone would take a cluebat to Soekris.  We keep hearing
-> crap like this about their firmware over and over and over again.  It
-> isn't like you can't get EDK2 or Coreboot and build a BIOS based mostly=
-
-> on Open Source components these days... oh, wait.
-
-I have send them another message regarding this issue, but so far
-they did not respond. In the past their responsiveness also varied a lot
-according to my collegue.
-
-
-Regards, Eric
-
---=20
-LSE Leading Security Experts GmbH, Postfach 100121, 64201 Darmstadt
-Unternehmenssitz: Weiterstadt, Amtsgericht Darmstadt: HRB8649
-Gesch=E4ftsf=FChrer: Oliver Michel, Sven Walther
-
-
---------------ms060604080601000801080503
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIILVDCC
-BRowggQCoAMCAQICEG0Z6qcZT2ozIuYiMnqqcd4wDQYJKoZIhvcNAQEFBQAwga4xCzAJBgNV
-BAYTAlVTMQswCQYDVQQIEwJVVDEXMBUGA1UEBxMOU2FsdCBMYWtlIENpdHkxHjAcBgNVBAoT
-FVRoZSBVU0VSVFJVU1QgTmV0d29yazEhMB8GA1UECxMYaHR0cDovL3d3dy51c2VydHJ1c3Qu
-Y29tMTYwNAYDVQQDEy1VVE4tVVNFUkZpcnN0LUNsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQg
-RW1haWwwHhcNMTEwNDI4MDAwMDAwWhcNMjAwNTMwMTA0ODM4WjCBkzELMAkGA1UEBhMCR0Ix
-GzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgGA1UE
-ChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
-ggEBAJKEhFtLV5jUXi+LpOFAyKNTWF9mZfEyTvefMn1V0HhMVbdClOD5J3EHxcZppLkyxPFA
-GpDMJ1Zifxe1cWmu5SAb5MtjXmDKokH2auGj/7jfH0htZUOMKi4rYzh337EXrMLaggLW1DJq
-1GdvIBOPXDX65VSAr9hxCh03CgJQU2yVHakQFLSZlVkSMf8JotJM3FLb3uJAAVtIaN3FSrTg
-7SQfOq9xXwfjrL8UO7AlcWg99A/WF1hGFYE8aIuLgw9teiFX5jSw2zJ+40rhpVJyZCaRTqWS
-D//gsWD9Gm9oUZljjRqLpcxCm5t9ImPTqaD8zp6Q30QZ9FxbNboW86eb/8ECAwEAAaOCAUsw
-ggFHMB8GA1UdIwQYMBaAFImCZ33EnSZwAEu0UEh83j2uBG59MB0GA1UdDgQWBBR6E04AdFvG
-eGNkJ8Ev4qBbvHnFezAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADARBgNV
-HSAECjAIMAYGBFUdIAAwWAYDVR0fBFEwTzBNoEugSYZHaHR0cDovL2NybC51c2VydHJ1c3Qu
-Y29tL1VUTi1VU0VSRmlyc3QtQ2xpZW50QXV0aGVudGljYXRpb25hbmRFbWFpbC5jcmwwdAYI
-KwYBBQUHAQEEaDBmMD0GCCsGAQUFBzAChjFodHRwOi8vY3J0LnVzZXJ0cnVzdC5jb20vVVRO
-QWRkVHJ1c3RDbGllbnRfQ0EuY3J0MCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1
-c3QuY29tMA0GCSqGSIb3DQEBBQUAA4IBAQCF1r54V1VtM39EUv5C1QaoAQOAivsNsv1Kv/av
-QUn1G1rF0q0bc24+6SZ85kyYwTAo38v7QjyhJT4KddbQPTmGZtGhm7VNm2+vKGwdr+XqdFqo
-2rHA8XV6L566k3nK/uKRHlZ0sviN0+BDchvtj/1gOSBH+4uvOmVIPJg9pSW/ve9g4EnlFsjr
-P0OD8ODuDcHTzTNfm9C9YGqzO/761Mk6PB/tm/+bSTO+Qik5g+4zaS6CnUVNqGnagBsePdIa
-XXxHmaWbCG0SmYbWXVcHG6cwvktJRLiQfsrReTjrtDP6oDpdJlieYVUYtCHVmdXgQ0BCML7q
-peeU0rD+83X5f27nMIIGMjCCBRqgAwIBAgIQGkNFbXur7DgrRwBLStr+YDANBgkqhkiG9w0B
-AQUFADCBkzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4G
-A1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENP
-TU9ETyBDbGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQTAeFw0xMzEx
-MTgwMDAwMDBaFw0xNDExMTgyMzU5NTlaMIIBOjELMAkGA1UEBhMCREUxDjAMBgNVBBETBTY0
-MzMxMQswCQYDVQQIEwJIRTEUMBIGA1UEBxMLV2VpdGVyc3RhZHQxGzAZBgNVBAkTElJvYmVy
-dC1Lb2NoLVN0ci4gOTEqMCgGA1UEChMhTFNFIExlYWRpbmcgU2VjdXJpdHkgRXhwZXJ0cyBH
-bWJIMUcwRQYDVQQLEz5Jc3N1ZWQgdGhyb3VnaCBMU0UgTGVhZGluZyBTZWN1cml0eSBFeHBl
-cnRzIEdtYkggRS1QS0kgTWFuYWdlcjEfMB0GA1UECxMWQ29ycG9yYXRlIFNlY3VyZSBFbWFp
-bDEYMBYGA1UEAxMPRXJpYyBTZXN0ZXJoZW5uMSswKQYJKoZIhvcNAQkBFhxlcmljLnNlc3Rl
-cmhlbm5AbHNleHBlcnRzLmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnRUK
-+zJFuS+lh6Lhbcqy9HVpx+Ch4W8z0O7Fy97FxCG5eEzDLSiD8qDd0V5osgIvvOGrrJjmIMfU
-h8GsKziApG4EMMzpY/0l2ZCm4rQ+RXrXsQivlNa17MuRqrcVgn2PeJyGkWdwyN2X8CK2K/xX
-DRpcxUSygr5N4omoQ3b8d/kqsfyvmd6cdqZa/JgPbLEbJM9VqrKKVYjcRp/HcxWKxfd61upG
-LJuWSiQK95xDeGhTGshVa7xzW5nPYuv5TkFtYE8szaw7cnOYz9jVZTEFd3EZDT+lr9BQd66C
-VaV9MnEne9rdSpyF4OQeLDkryll9+eyaeFv2KO9Gf9orFJg3MwIDAQABo4IB1jCCAdIwHwYD
-VR0jBBgwFoAUehNOAHRbxnhjZCfBL+KgW7x5xXswHQYDVR0OBBYEFN9d8zR95tncPrxEvBPE
-8mBdYjUHMA4GA1UdDwEB/wQEAwIFoDAMBgNVHRMBAf8EAjAAMB0GA1UdJQQWMBQGCCsGAQUF
-BwMEBggrBgEFBQcDAjBGBgNVHSAEPzA9MDsGDCsGAQQBsjEBAgEDBTArMCkGCCsGAQUFBwIB
-Fh1odHRwczovL3NlY3VyZS5jb21vZG8ubmV0L0NQUzBXBgNVHR8EUDBOMEygSqBIhkZodHRw
-Oi8vY3JsLmNvbW9kb2NhLmNvbS9DT01PRE9DbGllbnRBdXRoZW50aWNhdGlvbmFuZFNlY3Vy
-ZUVtYWlsQ0EuY3JsMIGIBggrBgEFBQcBAQR8MHowUgYIKwYBBQUHMAKGRmh0dHA6Ly9jcnQu
-Y29tb2RvY2EuY29tL0NPTU9ET0NsaWVudEF1dGhlbnRpY2F0aW9uYW5kU2VjdXJlRW1haWxD
-QS5jcnQwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmNvbW9kb2NhLmNvbTAnBgNVHREEIDAe
-gRxlcmljLnNlc3Rlcmhlbm5AbHNleHBlcnRzLmRlMA0GCSqGSIb3DQEBBQUAA4IBAQAciB3s
-tus9avAb1TDylaCrwm0U4dwbUsoWDjj9qvycnZ/05E4JjAxL/OEI3tqIB5WUD9tJtM2g/sz8
-p71vv3u4oAemxBSIPkTsSm/i21kczTeDUcPKD3bOk5+DNh3t3dKsTymyQHeXYsOlC4A4dQby
-lNmxOXs1rIzGGnmUit9LwSJo1br5/Wb3zVk8EszhXl0clqRDxLaHhhyLV0dmn/fK+fLEyoEo
-GFzDj0vEGeKeF2ZRyufZ++e7CpUByybjDaub6SSgRm5UIVJDnGUv/H4DoXMh61UFSZY4qpxu
-S+LTlXumXWRqgPwLfJ9ot9XEMkG1KwXgKJPRopafjZ38glHzMYIEGTCCBBUCAQEwgagwgZMx
-CzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
-bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xp
-ZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBpDRW17q+w4K0cAS0ra
-/mAwCQYFKw4DAhoFAKCCAkUwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0B
-CQUxDxcNMTQwOTEyMDk0MTAzWjAjBgkqhkiG9w0BCQQxFgQUql3AIbuT5rPEYkhuOBrrwvSj
-UVkwbAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3
-DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0D
-AgIBKDCBuQYJKwYBBAGCNxAEMYGrMIGoMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3Jl
-YXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0Eg
-TGltaXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2Vj
-dXJlIEVtYWlsIENBAhAaQ0Vte6vsOCtHAEtK2v5gMIG7BgsqhkiG9w0BCRACCzGBq6CBqDCB
-kzELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMH
-U2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBD
-bGllbnQgQXV0aGVudGljYXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQGkNFbXur7DgrRwBL
-Str+YDANBgkqhkiG9w0BAQEFAASCAQBUCgK4YRsF4wDOBLmAX02DoYsZ8C66B7O4aSP6PSF3
-s+h049ERGPLbi+HxzXQ8qC5nBPuBduAhvWW9d2w9hZE4mwGjWQA42CvTUuNEu8sshgBT5/+d
-13nvOPB0+DlIwAvAz2b0kK15k15xFbOeAA8kuW5nGc1HrXp07XGEAKoBs+ORF80qDpMeOQTW
-rgOqtAdgKi0Klk1nY2qV+RqCmdwGW8e41/HpqxilbDSccpBlHJJl3cYbJ/zfnbgjEPS86UNz
-LsXMzuI9fY9I2/ECYaERQEyY6edQvNkKzXwfEnXD0xKErkVDBKmTKzmePnCVOUKVv58Snajh
-kKpptC2GfnMCAAAAAAAA
---------------ms060604080601000801080503--
+Thanks
+Hanjun
