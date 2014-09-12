@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaILUKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:10:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57721 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaILUKl (ORCPT
+	id S1752773AbaILULV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:11:21 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:41038 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488AbaILULU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:10:41 -0400
-Date: Fri, 12 Sep 2014 13:10:16 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-13c42c2f43b19aab3195f2d357db00d1e885eaa8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, dvhart@linux.intel.com, davej@redhat.com,
-        dave@stgolabs.net, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        dvhart@linux.intel.com, a.p.zijlstra@chello.nl, davej@redhat.com,
-        dave@stgolabs.net, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.10.1409112318500.4178@nanos>
-References: <alpine.DEB.2.10.1409112318500.4178@nanos>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] futex: Unlock hb->
- lock in futex_wait_requeue_pi() error path
-Git-Commit-ID: 13c42c2f43b19aab3195f2d357db00d1e885eaa8
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 12 Sep 2014 16:11:20 -0400
+Message-ID: <1410552676.5187.211.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [Keyrings] [PATCH 1/9] Provide a binary to hex conversion
+ function
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: vgoyal@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Sep 2014 16:11:16 -0400
+In-Reply-To: <20140912190515.13239.89507.stgit@warthog.procyon.org.uk>
+References: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
+	 <20140912190515.13239.89507.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091220-9332-0000-0000-000002003EB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13c42c2f43b19aab3195f2d357db00d1e885eaa8
-Gitweb:     http://git.kernel.org/tip/13c42c2f43b19aab3195f2d357db00d1e885eaa8
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 11 Sep 2014 23:44:35 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 12 Sep 2014 22:04:36 +0200
+On Fri, 2014-09-12 at 20:05 +0100, David Howells wrote: 
+> Provide a function to convert a buffer of binary data into an unterminated
+> ascii hex string representation of that data.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  include/linux/kernel.h |    1 +
+>  lib/hexdump.c          |   18 ++++++++++++++++++
+>  2 files changed, 19 insertions(+)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 95624bed87ef..7c0ad8e38510 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -496,6 +496,7 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
+> 
+>  extern int hex_to_bin(char ch);
+>  extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
+> +extern char *bin2hex(char *dst, const void *src, size_t count);
+> 
+>  bool mac_pton(const char *s, u8 *mac);
+> 
+> diff --git a/lib/hexdump.c b/lib/hexdump.c
+> index 8499c810909a..6daf254dddfa 100644
+> --- a/lib/hexdump.c
+> +++ b/lib/hexdump.c
+> @@ -59,6 +59,24 @@ int hex2bin(u8 *dst, const char *src, size_t count)
+>  EXPORT_SYMBOL(hex2bin);
+> 
+>  /**
+> + * bin2hex - convert binary data to an ascii hexadecimal string
+> + * @dst: ascii hexadecimal result
+> + * @src: binary data
+> + * @count: binary data length
+> + */
+> +char *bin2hex(char *dst, const void *src, size_t count)
+> +{
+> +	while (count--) {
+> +		unsigned char ch = *(const unsigned char *)src;
+> +		*dst++ = hex_asc[ch >> 4];
+> +		*dst++ = hex_asc[ch & 0xf];
+> +		src++;
 
-futex: Unlock hb->lock in futex_wait_requeue_pi() error path
+How about using hex_byte_pack()?
 
-futex_wait_requeue_pi() calls futex_wait_setup(). If
-futex_wait_setup() succeeds it returns with hb->lock held and
-preemption disabled. Now the sanity check after this does:
+Mimi
 
-        if (match_futex(&q.key, &key2)) {
-	   	ret = -EINVAL;
-		goto out_put_keys;
-	}
+> +	}
+> +	return dst;
+> +}
+> +EXPORT_SYMBOL(bin2hex);
 
-which releases the keys but does not release hb->lock.
+> +
+> +/**
+>   * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
+>   * @buf: data blob to dump
+>   * @len: number of bytes in the @buf
+> 
+> _______________________________________________
+> Keyrings mailing list
+> Keyrings@linux-nfs.org
+> To change your subscription to this list, please see http://linux-nfs.org/cgi-bin/mailman/listinfo/keyrings
+> 
 
-So we happily return to user space with hb->lock held and therefor
-preemption disabled.
 
-Unlock hb->lock before taking the exit route.
-
-Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index d3a9d94..815d7af 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2592,6 +2592,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * shared futexes. We need to compare the keys:
- 	 */
- 	if (match_futex(&q.key, &key2)) {
-+		queue_unlock(hb);
- 		ret = -EINVAL;
- 		goto out_put_keys;
- 	}
