@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469AbaILFoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 01:44:18 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62688 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbaILFoR (ORCPT
+	id S1751652AbaILFqn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 01:46:43 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:57676 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782AbaILFqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 01:44:17 -0400
-From: guohliu <liuguohui@gmail.com>
-To: pbonzini@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        guohliu <liuguohui@gmail.com>
-Subject: [PATCH] KVM: Refactor making request to makes it meaningful
-Date: Fri, 12 Sep 2014 13:43:19 +0800
-Message-Id: <1410500599-12114-1-git-send-email-liuguohui@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Fri, 12 Sep 2014 01:46:42 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 12 Sep 2014 14:46:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 00/10] implement zsmalloc shrinking
+Message-ID: <20140912054640.GB2160@bbox>
+References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replace the set_bit method by kvm_make_request
-to makes it more readable and consistency.
+On Thu, Sep 11, 2014 at 04:53:51PM -0400, Dan Streetman wrote:
+> Now that zswap can use zsmalloc as a storage pool via zpool, it will
+> try to shrink its zsmalloc zs_pool once it reaches its max_pool_percent
+> limit.  These patches implement zsmalloc shrinking.  The way the pool is
+> shrunk is by finding a zspage and reclaiming it, by evicting each of its
+> objects that is in use.
+> 
+> Without these patches zswap, and any other future user of zpool/zsmalloc
+> that attempts to shrink the zpool/zs_pool, will only get errors and will
+> be unable to shrink its zpool/zs_pool.  With the ability to shrink, zswap
+> can keep the most recent compressed pages in memory.
+> 
+> Note that the design of zsmalloc makes it impossible to actually find the
+> LRU zspage, so each class and fullness group is searched in a round-robin
+> method to find the next zspage to reclaim.  Each fullness group orders its
+> zspages in LRU order, so the oldest zspage is used for each fullness group.
+> 
 
-Signed-off-by: Guo Hui Liu <liuguohui@gmail.com>
----
- arch/x86/kvm/x86.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+1. Pz, Cc Mel who was strong against zswap with zsmalloc.
+2. I don't think LRU stuff should be in allocator layer. Exp, it's really
+   hard to work well in zsmalloc design.
+3. If you want to add another writeback, make zswap writeback sane first.
+   current implemenation(zswap store -> zbud reclaim -> zswap writeback,
+   even) is really ugly.
+4. Don't make zsmalloc complicated without any data(benefit, regression)
+   I will never ack if you don't give any number and real usecase.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 916e895..5fed2de 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1518,7 +1518,7 @@ static void kvm_gen_update_masterclock(struct kvm *kvm)
- 	pvclock_update_vm_gtod_copy(kvm);
- 
- 	kvm_for_each_vcpu(i, vcpu, kvm)
--		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
-+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 
- 	/* guest entries allowed */
- 	kvm_for_each_vcpu(i, vcpu, kvm)
-@@ -1661,7 +1661,7 @@ static void kvmclock_update_fn(struct work_struct *work)
- 	struct kvm_vcpu *vcpu;
- 
- 	kvm_for_each_vcpu(i, vcpu, kvm) {
--		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
-+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 		kvm_vcpu_kick(vcpu);
- 	}
- }
-@@ -1670,7 +1670,7 @@ static void kvm_gen_kvmclock_update(struct kvm_vcpu *v)
- {
- 	struct kvm *kvm = v->kvm;
- 
--	set_bit(KVM_REQ_CLOCK_UPDATE, &v->requests);
-+	kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
- 	schedule_delayed_work(&kvm->arch.kvmclock_update_work,
- 					KVMCLOCK_UPDATE_DELAY);
- }
-@@ -2846,7 +2846,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 	if (unlikely(vcpu->arch.tsc_offset_adjustment)) {
- 		adjust_tsc_offset_host(vcpu, vcpu->arch.tsc_offset_adjustment);
- 		vcpu->arch.tsc_offset_adjustment = 0;
--		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
-+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 	}
- 
- 	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
-@@ -5600,7 +5600,7 @@ static void pvclock_gtod_update_fn(struct work_struct *work)
- 	spin_lock(&kvm_lock);
- 	list_for_each_entry(kvm, &vm_list, vm_list)
- 		kvm_for_each_vcpu(i, vcpu, kvm)
--			set_bit(KVM_REQ_MASTERCLOCK_UPDATE, &vcpu->requests);
-+			kvm_make_request(KVM_REQ_MASTERCLOCK_UPDATE, vcpu);
- 	atomic_set(&kvm_guest_has_master_clock, 0);
- 	spin_unlock(&kvm_lock);
- }
-@@ -6978,7 +6978,7 @@ int kvm_arch_hardware_enable(void)
- 	list_for_each_entry(kvm, &vm_list, vm_list) {
- 		kvm_for_each_vcpu(i, vcpu, kvm) {
- 			if (!stable && vcpu->cpu == smp_processor_id())
--				set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
-+				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 			if (stable && vcpu->arch.last_host_tsc > local_tsc) {
- 				backwards_tsc = true;
- 				if (vcpu->arch.last_host_tsc > max_tsc)
-@@ -7032,8 +7032,7 @@ int kvm_arch_hardware_enable(void)
- 			kvm_for_each_vcpu(i, vcpu, kvm) {
- 				vcpu->arch.tsc_offset_adjustment += delta_cyc;
- 				vcpu->arch.last_host_tsc = local_tsc;
--				set_bit(KVM_REQ_MASTERCLOCK_UPDATE,
--					&vcpu->requests);
-+				kvm_make_request(KVM_REQ_MASTERCLOCK_UPDATE, vcpu);
- 			}
- 
- 			/*
+> ---
+> 
+> This patch set applies to linux-next.
+> 
+> Dan Streetman (10):
+>   zsmalloc: fix init_zspage free obj linking
+>   zsmalloc: add fullness group list for ZS_FULL zspages
+>   zsmalloc: always update lru ordering of each zspage
+>   zsmalloc: move zspage obj freeing to separate function
+>   zsmalloc: add atomic index to find zspage to reclaim
+>   zsmalloc: add zs_ops to zs_pool
+>   zsmalloc: add obj_handle_is_free()
+>   zsmalloc: add reclaim_zspage()
+>   zsmalloc: add zs_shrink()
+>   zsmalloc: implement zs_zpool_shrink() with zs_shrink()
+> 
+>  drivers/block/zram/zram_drv.c |   2 +-
+>  include/linux/zsmalloc.h      |   7 +-
+>  mm/zsmalloc.c                 | 314 +++++++++++++++++++++++++++++++++++++-----
+>  3 files changed, 290 insertions(+), 33 deletions(-)
+> 
+> -- 
+> 1.8.3.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.9.3
-
+Kind regards,
+Minchan Kim
