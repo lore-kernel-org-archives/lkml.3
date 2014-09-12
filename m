@@ -1,115 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaILNsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:48:10 -0400
-Received: from 8bytes.org ([81.169.241.247]:57694 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753972AbaILNsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:48:08 -0400
-Date: Fri, 12 Sep 2014 15:48:04 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        Will Deacon <will.deacon@arm.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: [git pull] IOMMU Fixes for Linux v3.17-rc4
-Message-ID: <20140912134804.GA15033@8bytes.org>
+	id S1755082AbaILNsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:48:23 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:49200 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972AbaILNsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:48:21 -0400
+Message-ID: <5412F99A.30608@redhat.com>
+Date: Fri, 12 Sep 2014 15:48:10 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: guohliu <liuguohui@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: Refactor making request to makes it meaningful
+References: <1410500599-12114-1-git-send-email-liuguohui@gmail.com>
+In-Reply-To: <1410500599-12114-1-git-send-email-liuguohui@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 12/09/2014 07:43, guohliu ha scritto:
+> This patch replace the set_bit method by kvm_make_request
+> to makes it more readable and consistency.
+> 
+> Signed-off-by: Guo Hui Liu <liuguohui@gmail.com>
+> ---
+>  arch/x86/kvm/x86.c | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 916e895..5fed2de 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -1518,7 +1518,7 @@ static void kvm_gen_update_masterclock(struct kvm *kvm)
+>  	pvclock_update_vm_gtod_copy(kvm);
+>  
+>  	kvm_for_each_vcpu(i, vcpu, kvm)
+> -		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>  
+>  	/* guest entries allowed */
+>  	kvm_for_each_vcpu(i, vcpu, kvm)
+> @@ -1661,7 +1661,7 @@ static void kvmclock_update_fn(struct work_struct *work)
+>  	struct kvm_vcpu *vcpu;
+>  
+>  	kvm_for_each_vcpu(i, vcpu, kvm) {
+> -		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>  		kvm_vcpu_kick(vcpu);
+>  	}
+>  }
+> @@ -1670,7 +1670,7 @@ static void kvm_gen_kvmclock_update(struct kvm_vcpu *v)
+>  {
+>  	struct kvm *kvm = v->kvm;
+>  
+> -	set_bit(KVM_REQ_CLOCK_UPDATE, &v->requests);
+> +	kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+>  	schedule_delayed_work(&kvm->arch.kvmclock_update_work,
+>  					KVMCLOCK_UPDATE_DELAY);
+>  }
+> @@ -2846,7 +2846,7 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+>  	if (unlikely(vcpu->arch.tsc_offset_adjustment)) {
+>  		adjust_tsc_offset_host(vcpu, vcpu->arch.tsc_offset_adjustment);
+>  		vcpu->arch.tsc_offset_adjustment = 0;
+> -		set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> +		kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>  	}
+>  
+>  	if (unlikely(vcpu->cpu != cpu) || check_tsc_unstable()) {
+> @@ -5600,7 +5600,7 @@ static void pvclock_gtod_update_fn(struct work_struct *work)
+>  	spin_lock(&kvm_lock);
+>  	list_for_each_entry(kvm, &vm_list, vm_list)
+>  		kvm_for_each_vcpu(i, vcpu, kvm)
+> -			set_bit(KVM_REQ_MASTERCLOCK_UPDATE, &vcpu->requests);
+> +			kvm_make_request(KVM_REQ_MASTERCLOCK_UPDATE, vcpu);
+>  	atomic_set(&kvm_guest_has_master_clock, 0);
+>  	spin_unlock(&kvm_lock);
+>  }
+> @@ -6978,7 +6978,7 @@ int kvm_arch_hardware_enable(void)
+>  	list_for_each_entry(kvm, &vm_list, vm_list) {
+>  		kvm_for_each_vcpu(i, vcpu, kvm) {
+>  			if (!stable && vcpu->cpu == smp_processor_id())
+> -				set_bit(KVM_REQ_CLOCK_UPDATE, &vcpu->requests);
+> +				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
+>  			if (stable && vcpu->arch.last_host_tsc > local_tsc) {
+>  				backwards_tsc = true;
+>  				if (vcpu->arch.last_host_tsc > max_tsc)
+> @@ -7032,8 +7032,7 @@ int kvm_arch_hardware_enable(void)
+>  			kvm_for_each_vcpu(i, vcpu, kvm) {
+>  				vcpu->arch.tsc_offset_adjustment += delta_cyc;
+>  				vcpu->arch.last_host_tsc = local_tsc;
+> -				set_bit(KVM_REQ_MASTERCLOCK_UPDATE,
+> -					&vcpu->requests);
+> +				kvm_make_request(KVM_REQ_MASTERCLOCK_UPDATE, vcpu);
+>  			}
+>  
+>  			/*
+> 
 
---qMm9M+Fa2AknHoGS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks, applied to kvm/queue.
 
-Hi Linus,
-
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
-
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.17-rc4
-
-for you to fetch changes up to 5a9137a66b521d667236e95c307b92af532fe600:
-
-  iommu/fsl: Fix warning resulting from adding PCI device twice (2014-09-05 16:01:46 +0200)
-
-----------------------------------------------------------------
-IOMMU Fixes for Linux v3.17-rc4
-
-Including:
-
-	* Two fixes for issues found by Coverity
-	* Various fixes for the ARM SMMU driver
-	* A warning fix for the FSL PAMU driver
-
-----------------------------------------------------------------
-Hans Wennborg (1):
-      iommu/arm-smmu: fix decimal printf format specifiers prefixed with 0x
-
-Joerg Roedel (3):
-      iommu/core: Make iommu_group_get_for_dev() more robust
-      iommu/vt-d: Check return value of acpi_bus_get_device()
-      Merge branch 'for-joerg/arm-smmu/fixes' of git://git.kernel.org/.../will/linux into iommu/fixes
-
-Mitchel Humpherys (1):
-      iommu/arm-smmu: avoid calling request_irq in atomic context
-
-Olav Haugan (2):
-      iommu/arm-smmu: fix programming of SMMU_CBn_TCR for stage 1
-      iommu/arm-smmu: Do not access non-existing S2CR registers
-
-Varun Sethi (1):
-      iommu/fsl: Fix warning resulting from adding PCI device twice
-
-Vladimir Murzin (1):
-      iommu/arm-smmu: remove pgtable_page_{c,d}tor()
-
-Will Deacon (2):
-      iommu/arm-smmu: fix s2cr and smr teardown on device detach from domain
-      iommu/arm-smmu: fix corner cases in address size calculations
-
- drivers/iommu/arm-smmu.c        | 127 +++++++++++++++++++++++-----------------
- drivers/iommu/dmar.c            |   3 +-
- drivers/iommu/fsl_pamu_domain.c |  10 +++-
- drivers/iommu/iommu.c           |   8 ++-
- 4 files changed, 87 insertions(+), 61 deletions(-)
-
-Please pull.
-
-Thanks,
-
-	Joerg
-
-
---qMm9M+Fa2AknHoGS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEvmTAAoJECvwRC2XARrjIewP/jCwy/VwfwJ2r5mwDBNOtfiY
-86o09Uy80Svs1H6sc/SfQ8Ad2FUa2Js/xAR2HPU/Goj7UAE3uhrIk7WNwUqMhAPP
-i/LSW9JmlMARVk2VL4d1LMvXtHcqvWx5OAL8kOX/SxAvJdZ9p2DB3WlVQ8XEvJQd
-9HcnZO20KNaG3bms3SrgZ0Ha6IAOYybcqP5fPiaAKY1fvdOJxReA88U1RCTE8L8J
-BENmuGkbkukb4XRRaH7C7ASfgDePBR5C/kn4egZV3brQz2qO/otHDhC8c9ng8K6q
-L5faNTGtJmgRitRzuNiYDUmHgsA+n9g9N6YVv6jF3bjWV27WbDzPQL4RFE2MDb66
-YADZB4ppZboHWVFRfpYF9Xxxc86EHzeCdE6hJkrLpgdMpQcRe/uRAAN0PKA1bOPY
-5UTWn5yWQiSElGGtnXj/MUvVwT3xN/ERtPuX8bTOZjBA0uSapkM/onIgBzMBFxRm
-NC57KS1L3LeaggUpfhAKbKRnWXZC2Y/F9hzZWpCEtp7rqIErjO54U4pA/4PzIQTP
-sDv4slQcybzy+Xl4WQaS1aeugarfNxQki7YGXf/1ciPzZg1MoOLfQs/uTvUk/GbR
-B3iFv6//X2G2Q7liol5yYHslgSY7MQWXO/El/Al6KlV2OcPsvMJdasi3eZLwcw73
-ZWfGI1wnKH6qrGygTeUa
-=Hmbl
------END PGP SIGNATURE-----
-
---qMm9M+Fa2AknHoGS--
+Paolo
