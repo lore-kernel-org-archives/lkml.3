@@ -1,134 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455AbaILTVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:21:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49788 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaILTVx (ORCPT
+	id S1752646AbaILTXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:23:48 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37476 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaILTXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:21:53 -0400
-Date: Fri, 12 Sep 2014 21:21:39 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 00/10] Intel MPX support
-In-Reply-To: <54124379.5090502@intel.com>
-Message-ID: <alpine.DEB.2.10.1409121543090.4178@nanos>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <54124379.5090502@intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 12 Sep 2014 15:23:46 -0400
+Date: Fri, 12 Sep 2014 15:23:31 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, david.vrabel@citrix.com
+Cc: xen-devel@lists.xenproject.org, David Vrabel <david.vrabel@citrix.com>,
+        Roger Pau Monne <roger.pau@citrix.com>,
+        Andrew Jones <drjones@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/blkback: unmap all persistent grants when frontend
+ gets disconnected
+Message-ID: <20140912192331.GF15656@laptop.dumpdata.com>
+References: <1410182493-23638-1-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410182493-23638-1-git-send-email-vkuznets@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, Dave Hansen wrote:
-
-> On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
-> > MPX kernel code, namely this patchset, has mainly the 2 responsibilities:
-> > provide handlers for bounds faults (#BR), and manage bounds memory.
+On Mon, Sep 08, 2014 at 03:21:33PM +0200, Vitaly Kuznetsov wrote:
+> blkback does not unmap persistent grants when frontend goes to Closed
+> state (e.g. when blkfront module is being removed). This leads to the
+> following in guest's dmesg:
 > 
-> Qiaowei, We probably need to mention here what "bounds memory" is, and
-> why it has to be managed, and who is responsible for the different pieces.
+> [  343.243825] xen:grant_table: WARNING: g.e. 0x445 still in use!
+> [  343.243825] xen:grant_table: WARNING: g.e. 0x42a still in use!
+> ...
 > 
-> Who allocates the memory?
-> Who fills the memory?
-> When is it freed?
+> When load module -> use device -> unload module sequence is performed multiple times
+> it is possible to hit BUG() condition in blkfront module:
 > 
-> Thomas, do you have any other suggestions for things you'd like to see
-> clarified?
+> [  343.243825] kernel BUG at drivers/block/xen-blkfront.c:954!
+> [  343.243825] invalid opcode: 0000 [#1] SMP
+> [  343.243825] Modules linked in: xen_blkfront(-) ata_generic pata_acpi [last unloaded: xen_blkfront]
+> ...
+> [  343.243825] Call Trace:
+> [  343.243825]  [<ffffffff814111ef>] ? unregister_xenbus_watch+0x16f/0x1e0
+> [  343.243825]  [<ffffffffa0016fbf>] blkfront_remove+0x3f/0x140 [xen_blkfront]
+> ...
+> [  343.243825] RIP  [<ffffffffa0016aae>] blkif_free+0x34e/0x360 [xen_blkfront]
+> [  343.243825]  RSP <ffff88001eb8fdc0>
+> 
+> We don't need to keep these grants if we're disconnecting as frontend might already
+> forgot about them. Solve the issue by moving xen_blkbk_free_caches() call from
+> xen_blkif_free() to xen_blkif_disconnect().
+> 
+> Now we can see the following:
+> [  928.590893] xen:grant_table: WARNING: g.e. 0x587 still in use!
+> [  928.591861] xen:grant_table: WARNING: g.e. 0x372 still in use!
+> ...
+> [  929.592146] xen:grant_table: freeing g.e. 0x587
+> [  929.597174] xen:grant_table: freeing g.e. 0x372
+> ...
+> 
+> Backend does not keep persistent grants any more, reconnect works fine.
 
-Yes, the most important question is WHY must the kernel handle the
-bound table memory allocation in the first place. The "documentation"
-patch completely fails to tell that.
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-> +3. Tips
-> +=======
+David,
+
+I usually combine the 'block' related patches in one branch and send them to Jens
+for the merge window.
+
+Want to do it the same way or do you want to alter the workflow?
+
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
+>  drivers/block/xen-blkback/xenbus.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+> index 3a8b810..54f4089 100644
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -270,6 +270,9 @@ static int xen_blkif_disconnect(struct xen_blkif *blkif)
+>  		blkif->blk_rings.common.sring = NULL;
+>  	}
+>  
+> +	/* Remove all persistent grants and the cache of ballooned pages. */
+> +	xen_blkbk_free_caches(blkif);
 > +
-> +1) Users are not allowed to create bounds tables and point the bounds
-> +directory at them in the userspace. In fact, it is not also necessary
-> +for users to create bounds tables in the userspace.
-
-This misses to explain why. I studied the manual carefully and I have
-no idea why you think this is a requirement.
-
-MPX can be handled completely from user space. See below before you
-answer.
-
-> +When #BR fault is produced due to invalid entry, bounds table will be
-> +created in kernel on demand and kernel will not transfer this fault to
-> +userspace. So usersapce can't receive #BR fault for invalid entry, and
-> +it is not also necessary for users to create bounds tables by themselves.
-> +
-> +Certainly users can allocate bounds tables and forcibly point the bounds
-> +directory at them through XSAVE instruction, and then set valid bit
-> +of bounds entry to have this entry valid. But we have no way to track
-> +the memory usage of these user-created bounds tables. In regard to this,
-> +this behaviour is outlawed here.
-
-So what's the point of declaring it outlawed? Nothing as far as I can
-see simply because you cannot enforce it. This is possible and people
-simply will do it.
-
-> +2) We will not support the case that multiple bounds directory entries
-> +are pointed at the same bounds table.
-> +
-> +Users can be allowed to take multiple bounds directory entries and point
-> +them at the same bounds table. See more information "Intel(R) Architecture
-> +Instruction Set Extensions Programming Reference" (9.3.4).
-> +
-> +If userspace did this, it will be possible for kernel to unmap an in-use
-> +bounds table since it does not recognize sharing. So this behavior is
-> +also outlawed here.
-
-Again, this is nothing you can enforce and just saying its outlawed
-does not prevent user space from doing it and then sending hard to
-decode bug reports where it complains about mappings silently
-vanishing under it.
-
-So all you can do here is to write up a rule set how well behaving
-user space is supposed to use this facility and the kernel side of it. 
-
-Now back to the original question WHY:
-
-The only kind of "argument" you provided in the whole blurb is "if
-user space handles the allocation we have no way to track the memory
-usage of these tables".
-
-So if the only value of this whole allocation endavour is that we have
-a separate "name" entry in proc/$PID/maps then this definitely does
-not justify the mess it creates. You'd be better off with creating a
-syscall which allows putting a name tag on a anonymous
-mapping. Seriously, that would be handy for other purposes than MPX as
-well.
-
-But after staring into the manual and the code trainwreck for a day, I
-certainly know WHY you want to handle it in kernel space.
-
-If user space wants to handle it, it needs to preallocate all the
-Bound Table mappings simply because it cannot do so from the signal
-handler which gets invoked on the #BR 'Invalid BD entry'. mmap is not
-on the list of safe async handler functions and even if mmap would
-work it still requires locking or nasty tricks to keep track of the
-allocation state there.
-
-Preallocation is simply not feasible, because user space does not know
-about the requirements of libraries etc. So letting the kernel help
-out here is the right approach.
-
-All that information is completely missing in the "doc" and all
-over the patch series. 
-
-Thanks,
-
-	tglx
-
-
-
-
-
+>  	return 0;
+>  }
+>  
+> @@ -281,9 +284,6 @@ static void xen_blkif_free(struct xen_blkif *blkif)
+>  	xen_blkif_disconnect(blkif);
+>  	xen_vbd_free(&blkif->vbd);
+>  
+> -	/* Remove all persistent grants and the cache of ballooned pages. */
+> -	xen_blkbk_free_caches(blkif);
+> -
+>  	/* Make sure everything is drained before shutting down */
+>  	BUG_ON(blkif->persistent_gnt_c != 0);
+>  	BUG_ON(atomic_read(&blkif->persistent_gnt_in_use) != 0);
+> -- 
+> 1.9.3
+> 
