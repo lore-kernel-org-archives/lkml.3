@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaILDS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 23:18:57 -0400
-Received: from mail1.g1.pair.com ([66.39.3.162]:54673 "EHLO mail1.g1.pair.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397AbaILDSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 23:18:55 -0400
-From: Sean Cross <xobs@kosagi.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree@vger.kernel.org
-Cc: bunnie@kosagi.com, Sean Cross <xobs@kosagi.com>
-Subject: [PATCH v2 2/2] mfd: stmpe: Document DT binding for irq_over_gpio
-Date: Fri, 12 Sep 2014 11:18:34 +0800
-Message-Id: <1410491914-23378-3-git-send-email-xobs@kosagi.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410491914-23378-1-git-send-email-xobs@kosagi.com>
-References: <1410491914-23378-1-git-send-email-xobs@kosagi.com>
+	id S1753951AbaILDUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 23:20:36 -0400
+Received: from relay.variantweb.net ([104.131.199.242]:53530 "EHLO
+	relay.variantweb.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752075AbaILDUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 23:20:35 -0400
+Date: Thu, 11 Sep 2014 22:20:32 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 03/10] zsmalloc: always update lru ordering of each zspage
+Message-ID: <20140912032032.GC17818@cerebellum.variantweb.net>
+References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+ <1410468841-320-4-git-send-email-ddstreet@ieee.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410468841-320-4-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-STMPE now supports using a GPIO as an IRQ source.  Document the device
-tree binding for this option.
+On Thu, Sep 11, 2014 at 04:53:54PM -0400, Dan Streetman wrote:
+> Update ordering of a changed zspage in its fullness group LRU list,
+> even if it has not moved to a different fullness group.
+> 
+> This is needed by zsmalloc shrinking, which partially relies on each
+> class fullness group list to be kept in LRU order, so the oldest can
+> be reclaimed first.  Currently, LRU ordering is only updated when
+> a zspage changes fullness groups.
 
-Signed-off-by: Sean Cross <xobs@kosagi.com>
----
- Documentation/devicetree/bindings/mfd/stmpe.txt | 1 +
- 1 file changed, 1 insertion(+)
+Just something I saw.
 
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 56edb55..3fb68bf 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -13,6 +13,7 @@ Optional properties:
-  - interrupt-parent             : Specifies which IRQ controller we're connected to
-  - wakeup-source                : Marks the input device as wakable
-  - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
-+ - irq-gpio                     : If present, which GPIO to use for event IRQ
- 
- Example:
- 
--- 
-2.1.0
+fix_fullness_group() is called from zs_free(), which means that removing
+an object from a zspage moves it to the front of the LRU.  Not sure if
+that is what we want.  If anything that makes it a _better_ candidate
+for reclaim as the zspage is now contains fewer objects that we'll have
+to decompress and writeback.
 
+Seth
+
+> 
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> Cc: Minchan Kim <minchan@kernel.org>
+> ---
+>  mm/zsmalloc.c | 10 ++++------
+>  1 file changed, 4 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+> index fedb70f..51db622 100644
+> --- a/mm/zsmalloc.c
+> +++ b/mm/zsmalloc.c
+> @@ -467,16 +467,14 @@ static enum fullness_group fix_fullness_group(struct zs_pool *pool,
+>  	BUG_ON(!is_first_page(page));
+>  
+>  	get_zspage_mapping(page, &class_idx, &currfg);
+> -	newfg = get_fullness_group(page);
+> -	if (newfg == currfg)
+> -		goto out;
+> -
+>  	class = &pool->size_class[class_idx];
+> +	newfg = get_fullness_group(page);
+> +	/* Need to do this even if currfg == newfg, to update lru */
+>  	remove_zspage(page, class, currfg);
+>  	insert_zspage(page, class, newfg);
+> -	set_zspage_mapping(page, class_idx, newfg);
+> +	if (currfg != newfg)
+> +		set_zspage_mapping(page, class_idx, newfg);
+>  
+> -out:
+>  	return newfg;
+>  }
+>  
+> -- 
+> 1.8.3.1
+> 
