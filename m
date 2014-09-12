@@ -1,64 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaILUkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:40:19 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:35169 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502AbaILUkR (ORCPT
+	id S1752164AbaILUnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:43:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29742 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaILUnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:40:17 -0400
+	Fri, 12 Sep 2014 16:43:05 -0400
+Date: Fri, 12 Sep 2014 16:42:58 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V5 PATCH 1/1] x86/xen: Set EFER.NX and EFER.SCE in
+ PVH guests
+Message-ID: <20140912204258.GA24846@laptop.dumpdata.com>
+References: <1410392166-16388-1-git-send-email-mukesh.rathor@oracle.com>
+ <1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20140912190238.GJ4775@linux.vnet.ibm.com>
-References: <20140901084403.GA18808@localhost> <20140912190238.GJ4775@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 12 Sep 2014 16:39:45 -0400
-Message-ID: <CAJhHMCCevxQVctMtM83+_TN1PbcsQ9H_VaPOigv_OvZP32puYw@mail.gmail.com>
-Subject: Re: [rcu] BUG: unable to handle kernel NULL pointer dereference at 000000da
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Shan Wei <davidshan@tencent.com>,
-        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 3:02 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Sep 01, 2014 at 04:44:04PM +0800, Fengguang Wu wrote:
->> Greetings,
->>
->> 0day kernel testing robot got the below dmesg and the first bad commit is
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
->> commit d860d40327dde251d508a234fa00bd0d90fbb656
->> Author:     Shan Wei <davidshan@tencent.com>
->> AuthorDate: Thu Jun 19 14:12:44 2014 -0700
->> Commit:     Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> CommitDate: Wed Jul 9 09:15:21 2014 -0700
->
-> Hearing nothing from Shan or Pranith...
->
-> So, I am not seeing this failure in my testing, but my best guess is
-> that the problem is due to the fact that force_quiescent_state() is
-> sometimes invoked with preemption enabled, which breaks __this_cpu_read()
-> though perhaps with very low probability.  The common-case call (from
-> __call_rcu_core()) -does- have preemption disabled, in fact, it has
-> interrupts disabled.
->> So unless I hear otherwise, I will simply revert this commit.
+On Wed, Sep 10, 2014 at 04:36:06PM -0700, Mukesh Rathor wrote:
+> This fixes two bugs in PVH guests:
+> 
+>   - Not setting EFER.NX means the NX bit in page table entries is
+>     ignored on Intel processors and causes reserved bit page faults on
+>     AMD processors.
+> 
+>   - After the Xen commit 7645640d6ff1 ("x86/PVH: don't set EFER_SCE for
+>     pvh guest") PVH guests are required to set EFER.SCE to enable the
+>     SYSCALL instruction.
+> 
+> Secondary VCPUs are started with pagetables with the NX bit set so
+> EFER.NX must be set before using any stack or data segment.
+> xen_pvh_cpu_early_init() is the new secondary VCPU entry point that
+> sets EFER before jumping to cpu_bringup_and_idle().
+> 
+> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 
-I missed this report as I was not CC'ed and this is the first time I
-am seeing this. As Christoph said later in the thread, it really is
-not clear how this change is triggering the bug.
+Huh? So who wrote it? Or did you mean 'Reviewed-by'?
 
-The tracer testing triggers this bug which is a corrupt stack and we
-see no force_quiescent_state() in the back trace. So may be this is
-exposing a bug somewhere else? Not really sure how to look at this.
+> ---
+>  arch/x86/xen/enlighten.c |  6 ++++++
+>  arch/x86/xen/smp.c       | 29 ++++++++++++++++++-----------
+>  arch/x86/xen/smp.h       |  8 ++++++++
+>  arch/x86/xen/xen-head.S  | 33 +++++++++++++++++++++++++++++++++
+>  4 files changed, 65 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index c0cb11f..424d831 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1463,6 +1463,7 @@ static void __ref xen_setup_gdt(int cpu)
+>  	pv_cpu_ops.load_gdt = xen_load_gdt;
+>  }
+>  
+> +#ifdef CONFIG_XEN_PVH
+>  /*
+>   * A PV guest starts with default flags that are not set for PVH, set them
+>   * here asap.
+> @@ -1508,12 +1509,15 @@ static void __init xen_pvh_early_guest_init(void)
+>  		return;
+>  
+>  	xen_have_vector_callback = 1;
+> +
+> +	xen_pvh_early_cpu_init(0, false);
+>  	xen_pvh_set_cr_flags(0);
+>  
+>  #ifdef CONFIG_X86_32
+>  	BUG(); /* PVH: Implement proper support. */
+>  #endif
+>  }
+> +#endif    /* CONFIG_XEN_PVH */
+>  
+>  /* First C function to be called on Xen boot */
+>  asmlinkage __visible void __init xen_start_kernel(void)
+> @@ -1527,7 +1531,9 @@ asmlinkage __visible void __init xen_start_kernel(void)
+>  	xen_domain_type = XEN_PV_DOMAIN;
+>  
+>  	xen_setup_features();
+> +#ifdef CONFIG_XEN_PVH
+>  	xen_pvh_early_guest_init();
+> +#endif
+>  	xen_setup_machphys_mapping();
+>  
+>  	/* Install Xen paravirt ops */
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 7005974..b25f8942 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -37,6 +37,7 @@
+>  #include <xen/hvc-console.h>
+>  #include "xen-ops.h"
+>  #include "mmu.h"
+> +#include "smp.h"
+>  
+>  cpumask_var_t xen_cpu_initialized_map;
+>  
+> @@ -99,10 +100,14 @@ static void cpu_bringup(void)
+>  	wmb();			/* make sure everything is out */
+>  }
+>  
+> -/* Note: cpu parameter is only relevant for PVH */
+> -static void cpu_bringup_and_idle(int cpu)
+> +/*
+> + * Note: cpu parameter is only relevant for PVH. The reason for passing it
+> + * is we can't do smp_processor_id until the percpu segments are loaded, for
+> + * which we need the cpu number! So we pass it in rdi as first parameter.
+> + */
 
-> [    0.420978] Testing tracer branch:
-> [    0.421701] BUG: unable to handle kernel NULL pointer dereference at 000000da
-> [    0.422857] IP: [<c1061074>] update_curr+0x1a3/0x2c3
-> [    0.423639] *pdpt = 0000000000000000 *pde = f000ff53f000ff53
-> [    0.424000] Thread overran stack, or stack corrupted
+Thank you for expanding on that (I totally forgot why we did that).
+
+> +asmlinkage __visible void cpu_bringup_and_idle(int cpu)
+>  {
+> -#ifdef CONFIG_X86_64
+> +#ifdef CONFIG_XEN_PVH
+>  	if (xen_feature(XENFEAT_auto_translated_physmap) &&
+>  	    xen_feature(XENFEAT_supervisor_mode_kernel))
+>  		xen_pvh_secondary_vcpu_init(cpu);
+> @@ -374,11 +379,10 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+>  	ctxt->user_regs.fs = __KERNEL_PERCPU;
+>  	ctxt->user_regs.gs = __KERNEL_STACK_CANARY;
+>  #endif
+> -	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
+> -
+>  	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
+>  
+>  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
+> +		ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
+>  		ctxt->flags = VGCF_IN_KERNEL;
+>  		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
+>  		ctxt->user_regs.ds = __USER_DS;
+> @@ -413,15 +417,18 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+>  					(unsigned long)xen_failsafe_callback;
+>  		ctxt->user_regs.cs = __KERNEL_CS;
+>  		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
+> -#ifdef CONFIG_X86_32
+>  	}
+> -#else
+> -	} else
+> -		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
+> -		 * %rdi having the cpu number - which means are passing in
+> -		 * as the first parameter the cpu. Subtle!
+> +#ifdef CONFIG_XEN_PVH
+> +	else {
+> +		/*
+> +		 * The vcpu comes on kernel page tables which have the NX pte
+> +		 * bit set. This means before DS/SS is touched, NX in
+> +		 * EFER must be set. Hence the following assembly glue code.
+
+And you ripped out the nice 'N.B' comment I added. Sad :-(
+>  		 */
+> +		ctxt->user_regs.eip = (unsigned long)xen_pvh_early_cpu_init;
+>  		ctxt->user_regs.rdi = cpu;
+> +		ctxt->user_regs.rsi = true;  /* secondary cpu == true */
+
+Oh, that is new. Ah yes we can use that [looking at Xen code].
+I wonder what other registers we can use to pass stuff around.
+
+
+> +	}
+>  #endif
+>  	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
+>  	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
+> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
+> index c7c2d89..04a83a7 100644
+> --- a/arch/x86/xen/smp.h
+> +++ b/arch/x86/xen/smp.h
+> @@ -8,4 +8,12 @@ extern void xen_send_IPI_allbutself(int vector);
+>  extern void xen_send_IPI_all(int vector);
+>  extern void xen_send_IPI_self(int vector);
+>  
+> +#ifdef CONFIG_XEN_PVH
+> +extern void xen_pvh_early_cpu_init(int cpu, bool flag);
+> +#else
+> +static inline void xen_pvh_early_cpu_init(int cpu, bool flag);
+> +{
+> +}
+> +#endif
+> +
+>  #endif
+> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+> index 485b695..718f330 100644
+> --- a/arch/x86/xen/xen-head.S
+> +++ b/arch/x86/xen/xen-head.S
+> @@ -47,6 +47,39 @@ ENTRY(startup_xen)
+>  
+>  	__FINIT
+>  
+> +#ifdef CONFIG_XEN_PVH
+> +/*
+> + * xen_pvh_early_cpu_init() - early PVH VCPU initialization
+> + * @cpu: this cpu number (%rdi)
+> + * @flag: boolean flag true to indicate this is a secondary vcpu coming up
+> + *        on this entry point or the primary cpu coming back online.
+
+Why do we do this? Why not just piggyback on the first parameter - the 'cpu'?
+
+If it is zero it is boot CPU.
+
+> + *
+> + * Note: This is called as a function on the boot CPU, and is the entry point
+> + *       on the secondary CPU.
+> + */
+> +ENTRY(xen_pvh_early_cpu_init)
+> +	mov     %rsi, %r11
+> +
+> +	/* Gather features to see if NX implemented. */
+> +	mov     $0x80000001, %eax
+> +	cpuid
+> +	mov     %edx, %esi
+> +
+> +	mov     $MSR_EFER, %ecx
+> +	rdmsr
+> +	bts     $_EFER_SCE, %eax
+> +
+> +	bt      $20, %esi
+> +	jnc     1f      	/* No NX, skip setting it */
+> +	bts     $_EFER_NX, %eax
+> +1:	wrmsr
+> +
+> +	cmp     $0, %r11b
+> +	jne     cpu_bringup_and_idle
+> +	ret
+> +
+> +#endif /* CONFIG_XEN_PVH */
+> +
+>  .pushsection .text
+>  	.balign PAGE_SIZE
+>  ENTRY(hypercall_page)
+> -- 
+> 1.8.3.1
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
