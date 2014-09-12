@@ -1,113 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816AbaILJHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:07:03 -0400
-Received: from mout.gmx.net ([212.227.17.20]:54091 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336AbaILJG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:06:58 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-Date: Fri, 12 Sep 2014 11:06:49 +0200
-Message-ID: <7627175.tG5quZH0VN@fb07-iapwap2>
-User-Agent: KMail/4.13.3 (Linux/3.17.0-rc4-12.gfc9498b-desktop+; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140912083348.GA1289@katana>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de> <9935938.eKOCvCAtLt@fb07-iapwap2> <20140912083348.GA1289@katana>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1587627.2fD0quCvaU"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:sBYIRjA3ig7XAUH3lUYIJicrAX9JIVlbpCxNizxuw9aQ2CaokPW
- ef6iYLZymSBobONv9qzD7LIgY/lOZxG8GEoUUTQH6piV96KAVFdookQGU5p29yuD/S50tNk
- HFRCaRV70BLpL9H/z0y6TdfQoSr1OrxbKdWibIk41AFxygejCSSu5akTDrZ3+SFM9chpxlB
- qjFBMN/YPpp9psFRtEdGg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753819AbaILJIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:08:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53112 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751091AbaILJIG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:08:06 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3] mtd: nand: atmel_nand: retrieve NFC clock
+Date: Fri, 12 Sep 2014 11:07:46 +0200
+Message-Id: <1410512866-24546-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
---nextPart1587627.2fD0quCvaU
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
 
-Am Freitag, 12. September 2014, 10:33:48 schrieb Wolfram Sang:
-> > > Why do you want DT to be involved at all?
-> > 
-> > Imagine a device which supports both, slave or master mode. The driver
-> > needs to know in which mode it should operate. This cannot be hard coded,
-> > because on different boards, different modes can be used.
-> 
-> Okay, it sounds weird to me that a device is not able to switch between
-> master and slave, but if you say so. Also, solving this issue would also
-> handle potential weird IP blocks which can be slave only, right?
+Changes in v3:
+ - changed the warning message to ask to update the DT
+ - made the clocks property mandatory in the documentation
+ - Stop claiming the NFC is probed if there is an issue when enabling the clock
 
-I didn't said device. I meant the driver (software) needs to know if which 
-mode to operate the device. DT has to provide just enough information to 
-select the right mode depending on the board implementation.
+ .../devicetree/bindings/mtd/atmel-nand.txt         |  2 ++
+ drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-> What if you use two different adapter drivers or compatibles? One for
-> master-mode, one for slave-mode (slave could leave algo->master_xfer
-> empty, so the slave mode driver cannot send packets). I'm brainstorming
-> here, so while it should work IMO I will probably need a second thought.
-> 
-> So, in the DT you would have a block registering the I2C slave core
-> which binds to a simple driver providing reg_slave/unreg_slave and
-> pass on the slave-event. Then you could instantiate slave clients as
-> said before.
-> 
-> Maybe we need a real world example?
-
-ok, take our embedded controller driver (in staging/nvec) as an example. It's 
-basicly an MFD connecting keyboard, mouse, power, gpio, and some other stuff 
-to the soc. The MFD operates in master mode while the SOC is the I2C slave. 
-Theoretically, these roles could also switch (but that's not defined in the 
-nvec protocol).
-
-So the i2c client driver sits in between the adapter (in slave or master mode) 
-and the the MFD children (keyboard, mouse, ...) and provides read/write/cb 
-functions (nvec uses a side channel gpio to be able to initiate writes on its 
-own) to its children. The MFD children don't care about how the i2c 
-communication is done, but the client driver needs to decide in which mode it 
-should talk to the EC. If this is not autodetectable, the mode needs to be 
-provided by the device tree.
-
-In this case you cannot use separate drivers for master and slave mode (or you 
-would need another layer to hide the driver multiplexing).
-
-> > The point is, that if we define a dt binding for master device on slave
-> > adapters it will be there forever. So even if it makes no sense for the
-> > example eeprom simulator (or even our embedded controller), it may make
-> > sense for other or future devices.
-> 
-> I don't know what you mean here. Again, an example might help?
-
-I just wanted to say that the discussion here should find a *generic* way to 
-distinguish slave and master clients on the i2c bus by using a proper DT 
-binding.
-
-Marc
-
---nextPart1587627.2fD0quCvaU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJUEreqAAoJEKyeR39HFBtohnkIAIYKTkRFpQtlFVC5NojsYh/E
-ylFtmRd1cOXF+SRvBNP++OPcMSyfx07tS/6dheEhmtK7ue3vKzWV2cVGMw7ue2mn
-KfC9damQZj1S2DPbFxXFcV11qqJOh72D7LYcFbI/Vhd0Of5YK9cE8oc6izx6arET
-LDbayFvhd/JyWTqTyxBzd4AQZKS1YL4g23gSanSLt8IqdAf9MM2k9L4SaMp0XvV9
-GbxEJ8H4OvsHwgvGLFxlX0tUYYe6wxu9laGyGskdap5zgb4wIas2v8qn5L4vwr8r
-9vK+xqJOivPKHsZY8Aej/LR3I1KXQ2IrgJ7YbJZw/Qu19Pjx7u8QzE/PwYAuz9Q=
-=AsXP
------END PGP SIGNATURE-----
-
---nextPart1587627.2fD0quCvaU--
+diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+index c4728839d0c1..cb6cd4f8ae7a 100644
+--- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+@@ -36,6 +36,7 @@ Optional properties:
+     - reg : should specify the address and size used for NFC command registers,
+             NFC registers and NFC Sram. NFC Sram address and size can be absent
+             if don't want to use it.
++    - clocks: phandle to the peripheral clock
+   - Optional properties:
+     - atmel,write-by-sram: boolean to enable NFC write by sram.
+ 
+@@ -98,6 +99,7 @@ nand0: nand@40000000 {
+ 		compatible = "atmel,sama5d3-nfc";
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
++		clocks = <&&hsmc_clk>
+ 		reg = <
+ 			0x70000000 0x10000000	/* NFC Command Registers */
+ 			0xffffc000 0x00000070	/* NFC HSMC regs */
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 9c5f717bda54..d1e502f8dbd0 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -27,6 +27,7 @@
+  *
+  */
+ 
++#include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -96,6 +97,8 @@ struct atmel_nfc {
+ 	bool			use_nfc_sram;
+ 	bool			write_by_sram;
+ 
++	struct clk		*clk;
++
+ 	bool			is_initialized;
+ 	struct completion	comp_ready;
+ 	struct completion	comp_cmd_done;
+@@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
+ {
+ 	struct atmel_nfc *nfc = &nand_nfc;
+ 	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
++	int ret;
+ 
+ 	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
+@@ -2279,8 +2283,28 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
+ 	nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
+ 	nfc_readl(nfc->hsmc_regs, SR);	/* clear the NFC_SR */
+ 
++	nfc->clk = devm_clk_get(&pdev->dev, NULL);
++	if (!IS_ERR(nfc->clk)) {
++		ret = clk_prepare_enable(nfc->clk);
++		if (ret)
++			return ret;
++	} else {
++		dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
++	}
++
+ 	nfc->is_initialized = true;
+ 	dev_info(&pdev->dev, "NFC is probed.\n");
++
++	return 0;
++}
++
++static int atmel_nand_nfc_remove(struct platform_device *pdev)
++{
++	struct atmel_nfc *nfc = &nand_nfc;
++
++	if (!IS_ERR(nfc->clk))
++		clk_disable_unprepare(nfc->clk);
++
+ 	return 0;
+ }
+ 
+@@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
+ 		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
+ 	},
+ 	.probe = atmel_nand_nfc_probe,
++	.remove = atmel_nand_nfc_remove,
+ };
+ 
+ static struct platform_driver atmel_nand_driver = {
+-- 
+1.9.1
 
