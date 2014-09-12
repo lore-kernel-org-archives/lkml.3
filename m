@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaILNlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:41:45 -0400
-Received: from relay.parallels.com ([195.214.232.42]:35656 "EHLO
+	id S1754916AbaILNmH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:42:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35706 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277AbaILNlo (ORCPT
+	with ESMTP id S1754750AbaILNmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:41:44 -0400
-Message-ID: <1410529300.3569.25.camel@tkhai>
-Subject: [PATCH 3/5] sched/core: Use put_prev_task() accessor where possible.
+	Fri, 12 Sep 2014 09:42:05 -0400
+Message-ID: <1410529321.3569.26.camel@tkhai>
+Subject: [PATCH 4/5] sched/rt: Remove useless if from cleanup
+ pick_next_task_rt()
 From: Kirill Tkhai <ktkhai@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
         <tkhai@yandex.ru>
-Date: Fri, 12 Sep 2014 17:41:40 +0400
+Date: Fri, 12 Sep 2014 17:42:01 +0400
 In-Reply-To: <20140912132709.26840.4893.stgit@tkhai>
 References: <20140912132709.26840.4893.stgit@tkhai>
 Organization: Parallels
@@ -27,51 +28,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+_pick_next_task_rt() never returns NULL.
+
 Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 ---
- kernel/sched/core.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ kernel/sched/rt.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 07d67dd..d4399b4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2998,7 +2998,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 4feac8f..2e6a774 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1468,8 +1468,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	p = _pick_next_task_rt(rq);
  
- 	/*
- 	 * Boosting condition are:
-@@ -3551,7 +3551,7 @@ static int __sched_setscheduler(struct task_struct *p,
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
+ 	/* The running task is never eligible for pushing */
+-	if (p)
+-		dequeue_pushable_task(rq, p);
++	dequeue_pushable_task(rq, p);
  
- 	prev_class = p->sched_class;
- 	__setscheduler(rq, p, attr);
-@@ -4757,7 +4757,7 @@ void sched_setnuma(struct task_struct *p, int nid)
- 	if (queued)
- 		dequeue_task(rq, p, 0);
- 	if (running)
--		p->sched_class->put_prev_task(rq, p);
-+		put_prev_task(rq, p);
+ 	set_post_schedule(rq);
  
- 	p->numa_preferred_nid = nid;
- 
-@@ -7339,7 +7339,7 @@ void sched_move_task(struct task_struct *tsk)
- 	if (queued)
- 		dequeue_task(rq, tsk, 0);
- 	if (unlikely(running))
--		tsk->sched_class->put_prev_task(rq, tsk);
-+		put_prev_task(rq, tsk);
- 
- 	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
- 				lockdep_is_held(&tsk->sighand->siglock)),
 
 
 
