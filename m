@@ -1,247 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164AbaILUnI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:43:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29742 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825AbaILUnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:43:05 -0400
-Date: Fri, 12 Sep 2014 16:42:58 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [V5 PATCH 1/1] x86/xen: Set EFER.NX and EFER.SCE in
- PVH guests
-Message-ID: <20140912204258.GA24846@laptop.dumpdata.com>
-References: <1410392166-16388-1-git-send-email-mukesh.rathor@oracle.com>
- <1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
+	id S1752340AbaILUow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:44:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39971 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998AbaILUov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:44:51 -0400
+Date: Fri, 12 Sep 2014 17:44:44 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Pawel Moll <pawel.moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
+Message-ID: <20140912204444.GA11199@kernel.org>
+References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com>
+ <1410522513-1045-3-git-send-email-pawel.moll@arm.com>
+ <54132F63.1010401@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
+In-Reply-To: <54132F63.1010401@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 04:36:06PM -0700, Mukesh Rathor wrote:
-> This fixes two bugs in PVH guests:
+Em Fri, Sep 12, 2014 at 10:37:39AM -0700, David Ahern escreveu:
+> On 9/12/14, 4:48 AM, Pawel Moll wrote:
+> >This patch adds a PERF_COUNT_SW_MARKER event type, which
+> >can be requested by user and a PERF_EVENT_IOC_MARKER
+> >ioctl command which will inject an event of said type into
+> >the perf buffer. The ioctl can take a zero-terminated
+> >string argument, similar to tracing_marker in ftrace,
+> >which will be kept in the "raw" field of the sample.
+> >
+> >The main use case for this is synchronisation of
+> >performance data generated in user space with the perf
+> >stream coming from the kernel. For example, the marker
+> >can be inserted by a JIT engine after it generated
+> >portion of the code, but before the code is executed
+> >for the first time, allowing the post-processor to
+> >pick the correct debugging information. Other example
+> >is a system profiling tool taking data from other
+> >sources than just perf, which generates a marker
+> >at the beginning at at the end of the session
+> >(also possibly periodically during the session) to
+> >synchronise kernel timestamps with clock values
+> >obtained in userspace (gtod or raw_monotonic).
 > 
->   - Not setting EFER.NX means the NX bit in page table entries is
->     ignored on Intel processors and causes reserved bit page faults on
->     AMD processors.
+> Seems really similar to what I proposed in the past:
 > 
->   - After the Xen commit 7645640d6ff1 ("x86/PVH: don't set EFER_SCE for
->     pvh guest") PVH guests are required to set EFER.SCE to enable the
->     SYSCALL instruction.
+> https://lkml.org/lkml/2011/2/27/159
 > 
-> Secondary VCPUs are started with pagetables with the NX bit set so
-> EFER.NX must be set before using any stack or data segment.
-> xen_pvh_cpu_early_init() is the new secondary VCPU entry point that
-> sets EFER before jumping to cpu_bringup_and_idle().
-> 
-> Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Which was rejected.
 
-Huh? So who wrote it? Or did you mean 'Reviewed-by'?
+I took a look at that thread, but just barely, emphasis on that.
 
-> ---
->  arch/x86/xen/enlighten.c |  6 ++++++
->  arch/x86/xen/smp.c       | 29 ++++++++++++++++++-----------
->  arch/x86/xen/smp.h       |  8 ++++++++
->  arch/x86/xen/xen-head.S  | 33 +++++++++++++++++++++++++++++++++
->  4 files changed, 65 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index c0cb11f..424d831 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1463,6 +1463,7 @@ static void __ref xen_setup_gdt(int cpu)
->  	pv_cpu_ops.load_gdt = xen_load_gdt;
->  }
->  
-> +#ifdef CONFIG_XEN_PVH
->  /*
->   * A PV guest starts with default flags that are not set for PVH, set them
->   * here asap.
-> @@ -1508,12 +1509,15 @@ static void __init xen_pvh_early_guest_init(void)
->  		return;
->  
->  	xen_have_vector_callback = 1;
-> +
-> +	xen_pvh_early_cpu_init(0, false);
->  	xen_pvh_set_cr_flags(0);
->  
->  #ifdef CONFIG_X86_32
->  	BUG(); /* PVH: Implement proper support. */
->  #endif
->  }
-> +#endif    /* CONFIG_XEN_PVH */
->  
->  /* First C function to be called on Xen boot */
->  asmlinkage __visible void __init xen_start_kernel(void)
-> @@ -1527,7 +1531,9 @@ asmlinkage __visible void __init xen_start_kernel(void)
->  	xen_domain_type = XEN_PV_DOMAIN;
->  
->  	xen_setup_features();
-> +#ifdef CONFIG_XEN_PVH
->  	xen_pvh_early_guest_init();
-> +#endif
->  	xen_setup_machphys_mapping();
->  
->  	/* Install Xen paravirt ops */
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 7005974..b25f8942 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -37,6 +37,7 @@
->  #include <xen/hvc-console.h>
->  #include "xen-ops.h"
->  #include "mmu.h"
-> +#include "smp.h"
->  
->  cpumask_var_t xen_cpu_initialized_map;
->  
-> @@ -99,10 +100,14 @@ static void cpu_bringup(void)
->  	wmb();			/* make sure everything is out */
->  }
->  
-> -/* Note: cpu parameter is only relevant for PVH */
-> -static void cpu_bringup_and_idle(int cpu)
-> +/*
-> + * Note: cpu parameter is only relevant for PVH. The reason for passing it
-> + * is we can't do smp_processor_id until the percpu segments are loaded, for
-> + * which we need the cpu number! So we pass it in rdi as first parameter.
-> + */
+Injecting something from userspace, a la ftrace, seems to be something,
+as tglx mentioned, "buried" in that patchset.
 
-Thank you for expanding on that (I totally forgot why we did that).
-
-> +asmlinkage __visible void cpu_bringup_and_idle(int cpu)
->  {
-> -#ifdef CONFIG_X86_64
-> +#ifdef CONFIG_XEN_PVH
->  	if (xen_feature(XENFEAT_auto_translated_physmap) &&
->  	    xen_feature(XENFEAT_supervisor_mode_kernel))
->  		xen_pvh_secondary_vcpu_init(cpu);
-> @@ -374,11 +379,10 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
->  	ctxt->user_regs.fs = __KERNEL_PERCPU;
->  	ctxt->user_regs.gs = __KERNEL_STACK_CANARY;
->  #endif
-> -	ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
-> -
->  	memset(&ctxt->fpu_ctxt, 0, sizeof(ctxt->fpu_ctxt));
->  
->  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> +		ctxt->user_regs.eip = (unsigned long)cpu_bringup_and_idle;
->  		ctxt->flags = VGCF_IN_KERNEL;
->  		ctxt->user_regs.eflags = 0x1000; /* IOPL_RING1 */
->  		ctxt->user_regs.ds = __USER_DS;
-> @@ -413,15 +417,18 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
->  					(unsigned long)xen_failsafe_callback;
->  		ctxt->user_regs.cs = __KERNEL_CS;
->  		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
-> -#ifdef CONFIG_X86_32
->  	}
-> -#else
-> -	} else
-> -		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
-> -		 * %rdi having the cpu number - which means are passing in
-> -		 * as the first parameter the cpu. Subtle!
-> +#ifdef CONFIG_XEN_PVH
-> +	else {
-> +		/*
-> +		 * The vcpu comes on kernel page tables which have the NX pte
-> +		 * bit set. This means before DS/SS is touched, NX in
-> +		 * EFER must be set. Hence the following assembly glue code.
-
-And you ripped out the nice 'N.B' comment I added. Sad :-(
->  		 */
-> +		ctxt->user_regs.eip = (unsigned long)xen_pvh_early_cpu_init;
->  		ctxt->user_regs.rdi = cpu;
-> +		ctxt->user_regs.rsi = true;  /* secondary cpu == true */
-
-Oh, that is new. Ah yes we can use that [looking at Xen code].
-I wonder what other registers we can use to pass stuff around.
-
-
-> +	}
->  #endif
->  	ctxt->user_regs.esp = idle->thread.sp0 - sizeof(struct pt_regs);
->  	ctxt->ctrlreg[3] = xen_pfn_to_cr3(virt_to_mfn(swapper_pg_dir));
-> diff --git a/arch/x86/xen/smp.h b/arch/x86/xen/smp.h
-> index c7c2d89..04a83a7 100644
-> --- a/arch/x86/xen/smp.h
-> +++ b/arch/x86/xen/smp.h
-> @@ -8,4 +8,12 @@ extern void xen_send_IPI_allbutself(int vector);
->  extern void xen_send_IPI_all(int vector);
->  extern void xen_send_IPI_self(int vector);
->  
-> +#ifdef CONFIG_XEN_PVH
-> +extern void xen_pvh_early_cpu_init(int cpu, bool flag);
-> +#else
-> +static inline void xen_pvh_early_cpu_init(int cpu, bool flag);
-> +{
-> +}
-> +#endif
-> +
->  #endif
-> diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-> index 485b695..718f330 100644
-> --- a/arch/x86/xen/xen-head.S
-> +++ b/arch/x86/xen/xen-head.S
-> @@ -47,6 +47,39 @@ ENTRY(startup_xen)
->  
->  	__FINIT
->  
-> +#ifdef CONFIG_XEN_PVH
-> +/*
-> + * xen_pvh_early_cpu_init() - early PVH VCPU initialization
-> + * @cpu: this cpu number (%rdi)
-> + * @flag: boolean flag true to indicate this is a secondary vcpu coming up
-> + *        on this entry point or the primary cpu coming back online.
-
-Why do we do this? Why not just piggyback on the first parameter - the 'cpu'?
-
-If it is zero it is boot CPU.
-
-> + *
-> + * Note: This is called as a function on the boot CPU, and is the entry point
-> + *       on the secondary CPU.
-> + */
-> +ENTRY(xen_pvh_early_cpu_init)
-> +	mov     %rsi, %r11
-> +
-> +	/* Gather features to see if NX implemented. */
-> +	mov     $0x80000001, %eax
-> +	cpuid
-> +	mov     %edx, %esi
-> +
-> +	mov     $MSR_EFER, %ecx
-> +	rdmsr
-> +	bts     $_EFER_SCE, %eax
-> +
-> +	bt      $20, %esi
-> +	jnc     1f      	/* No NX, skip setting it */
-> +	bts     $_EFER_NX, %eax
-> +1:	wrmsr
-> +
-> +	cmp     $0, %r11b
-> +	jne     cpu_bringup_and_idle
-> +	ret
-> +
-> +#endif /* CONFIG_XEN_PVH */
-> +
->  .pushsection .text
->  	.balign PAGE_SIZE
->  ENTRY(hypercall_page)
-> -- 
-> 1.8.3.1
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+- Arnaldo
