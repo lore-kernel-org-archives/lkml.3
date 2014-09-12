@@ -1,71 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaILRzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:55:25 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46730 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaILRzX (ORCPT
+	id S1752148AbaILR43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:56:29 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59110 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaILR41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:55:23 -0400
-Date: Sat, 13 Sep 2014 02:55:16 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
-Message-ID: <20140912175516.GB6298@mtj.dyndns.org>
-References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
- <20140912171809.GA24469@dhcp22.suse.cz>
+	Fri, 12 Sep 2014 13:56:27 -0400
+Date: Fri, 12 Sep 2014 12:50:23 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Andy Gross <agross@codeaurora.org>
+Cc: Felipe Balbi <balbi@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [PATCH v8 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
+Message-ID: <20140912175023.GR3749@joshc.qualcomm.com>
+References: <1410542986-24419-1-git-send-email-agross@codeaurora.org>
+ <1410542986-24419-4-git-send-email-agross@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140912171809.GA24469@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410542986-24419-4-git-send-email-agross@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Hey Andy-
 
-On Fri, Sep 12, 2014 at 07:18:09PM +0200, Michal Hocko wrote:
-> On Fri 12-09-14 19:26:58, Vladimir Davydov wrote:
-> > memory.kmem.tcp.limit_in_bytes works as the system-wide tcp_mem sysctl,
-> > but per memory cgroup. While the existence of the latter is justified
-> > (it prevents the system from becoming unusable due to uncontrolled tcp
-> > buffers growth) the reason why we need such a knob in containers isn't
-> > clear to me.
+Mostly cosmetic things below:
+
+On Fri, Sep 12, 2014 at 12:29:46PM -0500, Andy Gross wrote:
+> This patch adds a new driver for the Qualcomm USB 3.0 PHY that exists on some
+> Qualcomm platforms.  This driver uses the generic PHY framework and will
+> interact with the DWC3 controller.
 > 
-> Parallels was the primary driver for this change. I haven't heard of
-> anybody using the feature other than Parallels. I also remember there
-> was a strong push for this feature before it was merged besides there
-> were some complains at the time. I do not remember details (and I am
-> one half way gone for the weekend now) so I do not have pointers to
-> discussions.
+> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> ---
+>  drivers/phy/Kconfig         |   11 +
+>  drivers/phy/Makefile        |    1 +
+>  drivers/phy/phy-qcom-dwc3.c |  500 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 512 insertions(+)
+>  create mode 100644 drivers/phy/phy-qcom-dwc3.c
 > 
-> I would love to get rid of the code and I am pretty sure that networking
-> people would love this go even more. I didn't plan to provide kmem.tcp.*
-> knobs for the cgroups v2 interface but getting rid of it altogether
-> sounds even better. I am just not sure whether some additional users
-> grown over time.
-> Nevertheless I am really curious. What has changed that Parallels is not
-> interested in kmem.tcp anymore?
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index 0dd7427..5d56161 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -230,4 +230,15 @@ config PHY_XGENE
+>  	help
+>  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
+>  
+> +config PHY_QCOM_DWC3
+> +	tristate "QCOM DWC3 USB PHY support"
+> +	depends on ARCH_QCOM
+> +	depends on HAS_IOMEM
+> +	depends on OF
+> +	select GENERIC_PHY
+> +	help
+> +	  This option enables support for the Synopsis PHYs present inside the
+> +	  Qualcomm USB3.0 DWC3 controller.  This driver supports both HS and SS
+> +	  PHY controllers.
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index 95c69ed..aa16f30 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -28,3 +28,4 @@ obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+>  obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
+>  obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
+>  obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+> +obj-$(CONFIG_PHY_QCOM_DWC3)		+= phy-qcom-dwc3.o
+> diff --git a/drivers/phy/phy-qcom-dwc3.c b/drivers/phy/phy-qcom-dwc3.c
+> new file mode 100644
+> index 0000000..05b8e1d
+> --- /dev/null
+> +++ b/drivers/phy/phy-qcom-dwc3.c
+[..]
+> +/* TX OVRD DRV LO register bits */
+> +#define TX_OVRD_DRV_LO_AMPLITUDE_MASK	0x007F
+> +#define TX_OVRD_DRV_LO_PREEMPH_MASK	0x3F80
+> +#define TX_OVRD_DRV_LO_PREEMPH_SHIFT	7
+> +#define TX_OVRD_DRV_LO_EN		BIT(14)
+> +
+> +struct qcom_dwc3_usb_phy;
 
-So, I'd love to see this happen too but I don't think we can do this.
-People use published interface.  The usages might be utterly one-off
-and mental but let's please not underestimate the sometimes senseless
-creativity found in the wild.  We simply can't remove a bunch of
-control knobs like this.
+Do you need this?
 
-Thanks.
+> +
+> +enum qcom_dwc3_phy_id {
+> +	QCOM_DWC3_PHY_UTMI = 0,
+> +	QCOM_DWC3_PHY_PIPE,
+> +	QCOM_DWC3_PHYS_NUM,
+> +};
+> +
+> +struct qcom_dwc3_usb_phy {
+> +	void __iomem		*base;
+> +	struct device		*dev;
+> +	struct phy *phy;
+> +	enum qcom_dwc3_phy_id	index;
+> +
+> +	struct clk		*xo_clk;
+> +	struct clk		*ref_clk;
+> +};
+> +
+> +/**
+> + * Write register and read back masked value to confirm it is written
+> + *
+> + * @base - QCOM DWC3 PHY base virtual address.
+> + * @offset - register offset.
+> + * @mask - register bitmask specifying what should be updated
+> + * @val - value to write.
+> + */
+> +static inline void qcom_dwc3_phy_write_readback(
+> +	struct qcom_dwc3_usb_phy *phy_dwc3, u32 offset,
+> +	const u32 mask, u32 val)
+> +{
+> +	u32 write_val, tmp = readl(phy_dwc3->base + offset);
+> +
+> +	tmp &= ~mask;		/* retain other bits */
+> +	write_val = tmp | val;
+> +
+> +	writel(write_val, phy_dwc3->base + offset);
+> +
+> +	/* Read back to see if val was written */
+> +	tmp = readl(phy_dwc3->base + offset);
+> +	tmp &= mask;		/* clear other bits */
+> +
+> +	if (tmp != val)
+> +		dev_err(phy_dwc3->dev, "write: %x to QSCRATCH: %x FAILED\n",
+> +			val, offset);
+> +}
+> +
+> +static int wait_for_latch(void __iomem *addr)
+> +{
+> +	u32 retry = 10;
+> +
+> +	while (true) {
+> +		if (!readl(addr))
+> +			break;
+> +
+> +		if (--retry == 0)
+> +			return -ETIMEDOUT;
+> +
+> +		usleep_range(10, 20);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * Write SSPHY register
+> + *
+> + * @base - QCOM DWC3 PHY base virtual address.
+> + * @addr - SSPHY address to write.
+> + * @val - value to write.
+> + */
+> +static int qcom_dwc3_ss_write_phycreg(void __iomem *base, u32 addr, u32 val)
+> +{
+> +	writel(addr, base + CR_PROTOCOL_DATA_IN_REG);
+> +	writel(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
+> +
+> +	if (wait_for_latch(base + CR_PROTOCOL_CAP_ADDR_REG))
+> +		return 1;
+
+I'm not too familiar with the GENERIC_PHY infrastructure, does it
+understand that '1' is an error case?  I'm wondering if you should
+instead propogate the -ETIMEDOUT up.
+
+> +
+> +	writel(val, base + CR_PROTOCOL_DATA_IN_REG);
+> +	writel(0x1, base + CR_PROTOCOL_CAP_DATA_REG);
+> +
+> +	if (wait_for_latch(base + CR_PROTOCOL_CAP_DATA_REG))
+> +		return 1;
+> +
+> +	writel(0x1, base + CR_PROTOCOL_WRITE_REG);
+> +
+> +	if (wait_for_latch(base + CR_PROTOCOL_WRITE_REG))
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+[..]
+> +
+> +static struct phy_ops qcom_dwc3_phy_ops = {
+> +	.init		= qcom_dwc3_phy_init,
+> +	.exit		= qcom_dwc3_phy_exit,
+> +	.power_on	= qcom_dwc3_phy_power_on,
+> +	.power_off	= qcom_dwc3_phy_power_off,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +static const struct of_device_id qcom_dwc3_phy_table[] = {
+> +	{
+> +		.compatible = "qcom,dwc3-hs-usb-phy",
+> +		.data = (void *)QCOM_DWC3_PHY_UTMI,
+> +	},
+> +	{
+> +		.compatible = "qcom,dwc3-ss-usb-phy",
+> +		.data = (void *)QCOM_DWC3_PHY_PIPE,
+> +	},
+> +	{ /* Sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, qcom_dwc3_phy_table);
+
+I'd suggest just creating a separate ops table, and have '.data' point
+to it.  Might cleanup all of the switch() statements above.  You could
+also probably drop the 'index' member of 'struct qcom_dwc3_usb_phy', and
+maybe even 'enum qcom_dwc3_phy_id' altogether.
 
 -- 
-tejun
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
