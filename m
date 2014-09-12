@@ -1,17 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbaILTFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:05:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39267 "EHLO mx1.redhat.com"
+	id S1752376AbaILTFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:05:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25599 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131AbaILTFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:05:16 -0400
-Subject: [PATCH 0/9] KEYS: Improve asymmetric key and PKCS#7 handling
+	id S1752340AbaILTFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 15:05:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 1/9] Provide a binary to hex conversion function
 From: David Howells <dhowells@redhat.com>
 To: vgoyal@redhat.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Sep 2014 20:05:10 +0100
-Message-ID: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
+Date: Fri, 12 Sep 2014 20:05:15 +0100
+Message-ID: <20140912190515.13239.89507.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
+References: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -20,85 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Provide a function to convert a buffer of binary data into an unterminated
+ascii hex string representation of that data.
 
-Here are some patches to improve the matching of asymmetric keys and to
-improve the handling of PKCS#7 certificates:
-
- (1) Provide a method to preparse the data supplied for matching a key.  This
-     permits they key type to extract out the bits it needs for matching once
-     only.
-
-     Further, the type of search (direct lookup or iterative) can be set and
-     the function used to actually check the match can be set by preparse
-     rather than being hard coded for the type.
-
- (2) Improves asymmetric keys identification.
-
-     Keys derived from X.509 certs now get labelled with IDs derived from their
-     issuer and certificate number (required to match PKCS#7) and from their
-     SKID and subject (required to match X.509).
-
-     IDs are now binary and match criterion preparsing is provided so that
-     criteria can be turned into binary blobs to make matching faster.
-
- (3) Improves PKCS#7 message handling to permit PKCS#7 messages without X.509
-     cert lists to be matched to trusted keys, thereby allowing minimally sized
-     PKCS#7 certs to be used.
-
- (4) Improves PKCS#7 message handling to better handle certificate chains that
-     are broken due to unsupported crypto that can otherwise by used to
-     intersect a trust keyring.
-
-They can be found here also:
-
-	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-pkcs7
-
-David
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-David Howells (9):
-      Provide a binary to hex conversion function
-      KEYS: Preparse match data
-      KEYS: Remove key_type::def_lookup_type
-      KEYS: Remove key_type::match in favour of overriding default by match_preparse
-      KEYS: Make the key matching functions return bool
-      KEYS: Implement binary asymmetric key ID handling
-      KEYS: Overhaul key identification when searching for asymmetric keys
-      PKCS#7: Better handling of unsupported crypto
-      PKCS#7: Handle PKCS#7 messages that contain no X.509 certs
 
+ include/linux/kernel.h |    1 +
+ lib/hexdump.c          |   18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
- crypto/asymmetric_keys/asymmetric_keys.h  |    8 +
- crypto/asymmetric_keys/asymmetric_type.c  |  213 +++++++++++++++++++++--------
- crypto/asymmetric_keys/pkcs7_key_type.c   |    2 
- crypto/asymmetric_keys/pkcs7_parser.c     |   38 ++++-
- crypto/asymmetric_keys/pkcs7_parser.h     |    7 -
- crypto/asymmetric_keys/pkcs7_trust.c      |   72 +++++++---
- crypto/asymmetric_keys/pkcs7_verify.c     |  105 ++++++++++----
- crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++---
- crypto/asymmetric_keys/x509_parser.h      |    6 +
- crypto/asymmetric_keys/x509_public_key.c  |  102 ++++++++------
- fs/cifs/cifs_spnego.c                     |    1 
- fs/cifs/cifsacl.c                         |    1 
- fs/nfs/idmap.c                            |    2 
- include/crypto/public_key.h               |    5 -
- include/keys/asymmetric-type.h            |   38 +++++
- include/keys/user-type.h                  |    1 
- include/linux/kernel.h                    |    1 
- include/linux/key-type.h                  |   34 ++++-
- lib/hexdump.c                             |   18 ++
- net/ceph/crypto.c                         |    1 
- net/dns_resolver/dns_key.c                |   18 ++
- net/rxrpc/ar-key.c                        |    2 
- security/keys/big_key.c                   |    2 
- security/keys/encrypted-keys/encrypted.c  |    1 
- security/keys/internal.h                  |   10 +
- security/keys/key.c                       |    2 
- security/keys/keyring.c                   |   59 +++++---
- security/keys/proc.c                      |    8 +
- security/keys/process_keys.c              |   13 +-
- security/keys/request_key.c               |   21 ++-
- security/keys/request_key_auth.c          |    6 -
- security/keys/trusted.c                   |    1 
- security/keys/user_defined.c              |   14 --
- 33 files changed, 584 insertions(+), 283 deletions(-)
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 95624bed87ef..7c0ad8e38510 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -496,6 +496,7 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
+ 
+ extern int hex_to_bin(char ch);
+ extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
++extern char *bin2hex(char *dst, const void *src, size_t count);
+ 
+ bool mac_pton(const char *s, u8 *mac);
+ 
+diff --git a/lib/hexdump.c b/lib/hexdump.c
+index 8499c810909a..6daf254dddfa 100644
+--- a/lib/hexdump.c
++++ b/lib/hexdump.c
+@@ -59,6 +59,24 @@ int hex2bin(u8 *dst, const char *src, size_t count)
+ EXPORT_SYMBOL(hex2bin);
+ 
+ /**
++ * bin2hex - convert binary data to an ascii hexadecimal string
++ * @dst: ascii hexadecimal result
++ * @src: binary data
++ * @count: binary data length
++ */
++char *bin2hex(char *dst, const void *src, size_t count)
++{
++	while (count--) {
++		unsigned char ch = *(const unsigned char *)src;
++		*dst++ = hex_asc[ch >> 4];
++		*dst++ = hex_asc[ch & 0xf];
++		src++;
++	}
++	return dst;
++}
++EXPORT_SYMBOL(bin2hex);
++
++/**
+  * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
+  * @buf: data blob to dump
+  * @len: number of bytes in the @buf
 
