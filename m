@@ -1,101 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756AbaILUYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:24:32 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:53718 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbaILUYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:24:30 -0400
-Date: Sat, 13 Sep 2014 05:24:25 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Tejun Heo <theo@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Gustavo Luiz Duarte <gduarte@redhat.com>,
-        Mike Anderson <mike.anderson@us.ibm.com>,
-        Tomas Henzl <thenzl@redhat.com>,
-        "\"workqueue: implement NUMA affinity for unbound workqueues\"" 
-	<4c16bd327c@mtj.dyndns.org>
-Subject: [PATCH v2 wq/for-3.17-fixes] workqueue: apply __WQ_ORDERED to
- create_singlethread_workqueue()
-Message-ID: <20140912202425.GF6298@mtj.dyndns.org>
-References: <20140912195328.GA23756@mtj.dyndns.org>
+	id S1752411AbaILUZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:25:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40903 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaILUZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:25:35 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
+Subject: [PATCHv6 4/5] hwspinlock/core: add common OF helpers
+Date: Fri, 12 Sep 2014 15:24:58 -0500
+Message-ID: <1410553499-55951-5-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912195328.GA23756@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e09c2c295468476a239d13324ce9042ec4de05eb Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Sat, 13 Sep 2014 04:14:30 +0900
+This patch adds three new OF helper functions to use/request
+locks from a hwspinlock device instantiated through a
+device-tree blob.
 
-create_singlethread_workqueue() is a compat interface for single
-threaded workqueue which maps to ordered workqueue w/ rescuer in the
-current implementation.  create_singlethread_workqueue() currently
-implemented by invoking alloc_workqueue() w/ appropriate parameters.
+1. The of_hwspin_lock_get_num_locks() is a common OF helper
+   function to read the 'hwlock-num-locks' property.
+2. The of_hwspin_lock_get_base_id() is a common OF helper
+   function to read the 'hwlock-base-id' property.
+3. The of_hwspin_lock_get_id() API can be used by hwspinlock
+   clients to get the id for a specific lock using the phandle
+   + args specifier, so that it can be requested using the
+   available hwspin_lock_request_specific() API.
 
-8719dceae2f9 ("workqueue: reject adjusting max_active or applying
-attrs to ordered workqueues") introduced __WQ_ORDERED to protect
-ordered workqueues against dynamic attribute changes which can break
-ordering guarantees but forgot to apply it to
-create_singlethread_workqueue().  This in itself is okay as nobody
-currently uses dynamic attribute change on workqueues created with
-create_singlethread_workqueue().
-
-However, 4c16bd327c ("workqueue: implement NUMA affinity for unbound
-workqueues") broke singlethreaded guarantee for ordered workqueues
-through allocating a separate pool_workqueue on each NUMA node by
-default.  A later change 8a2b75384444 ("workqueue: fix ordered
-workqueues in NUMA setups") fixed it by allocating only one global
-pool_workqueue if __WQ_ORDERED is set.
-
-Combined, the __WQ_ORDERED omission in create_singlethread_workqueue()
-became critical breaking its single threadedness and ordering
-guarantee.
-
-Let's make create_singlethread_workqueue() wrap
-alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
-can implicitly track future ordered_workqueue changes.
-
-v2: I missed that __WQ_ORDERED now protects against pwq splitting
-    across NUMA nodes and incorrectly described the patch as a
-    nice-to-have fix to protect against future dynamic attribute
-    usages.  Oleg pointed out that this is actually a critical
-    breakage due to 8a2b75384444 ("workqueue: fix ordered workqueues
-    in NUMA setups").
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mike Anderson <mike.anderson@us.ibm.com>
-Cc: Oleg Nesterov <onestero@redhat.com>
-Cc: Gustavo Luiz Duarte <gduarte@redhat.com>
-Cc: Tomas Henzl <thenzl@redhat.com>
-Cc: stable@vger.kernel.org
-Fixes: 4c16bd327c ("workqueue: implement NUMA affinity for unbound workqueues")
+Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
-Applied to wq/for-3.17-fixes.
+ Documentation/hwspinlock.txt         |  26 ++++++++
+ drivers/hwspinlock/hwspinlock_core.c | 122 +++++++++++++++++++++++++++++++++++
+ include/linux/hwspinlock.h           |  15 ++++-
+ 3 files changed, 160 insertions(+), 3 deletions(-)
 
-Thanks.
-
- include/linux/workqueue.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index a0cc2e9..b996e6cd 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -419,7 +419,7 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
- 	alloc_workqueue("%s", WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, \
- 			1, (name))
- #define create_singlethread_workqueue(name)				\
--	alloc_workqueue("%s", WQ_UNBOUND | WQ_MEM_RECLAIM, 1, (name))
-+	alloc_ordered_workqueue("%s", WQ_MEM_RECLAIM, name)
+diff --git a/Documentation/hwspinlock.txt b/Documentation/hwspinlock.txt
+index 640ae47..c15dc9f 100644
+--- a/Documentation/hwspinlock.txt
++++ b/Documentation/hwspinlock.txt
+@@ -48,6 +48,16 @@ independent, drivers.
+      ids for predefined purposes.
+      Should be called from a process context (might sleep).
  
- extern void destroy_workqueue(struct workqueue_struct *wq);
++  int of_hwspin_lock_get_id(struct device_node *np, int index);
++   - retrieve the global lock id for an OF phandle-based specific lock.
++     This function provides a means for DT users of a hwspinlock module
++     to get the global lock id of a specific hwspinlock, so that it can
++     be requested using the normal hwspin_lock_request_specific() API.
++     The function returns a valid lock id number on success, -EPROBE_DEFER
++     if the hwspinlock device is not yet registered with the core, or other
++     error values.
++     Should be called from a process context (might sleep).
++
+   int hwspin_lock_free(struct hwspinlock *hwlock);
+    - free a previously-assigned hwspinlock; returns 0 on success, or an
+      appropriate error code on failure (e.g. -EINVAL if the hwspinlock
+@@ -243,6 +253,22 @@ int hwspinlock_example2(void)
+      Returns the address of hwspinlock on success, or NULL on error (e.g.
+      if the hwspinlock is still in use).
  
++  int of_hwspin_lock_get_num_locks(struct device_node *dn);
++   - is a common OF helper function that can be used by some underlying
++     vendor-specific implementations. This can be used by implementations
++     that require and define the number of locks supported within a hwspinlock
++     bank as a device tree node property. This function should be called by
++     needed implementations before registering a hwspinlock device with the
++     core.
++
++  int of_hwspin_lock_get_base_id(struct device_node *dn);
++   - is a common OF helper function that can be used by some underlying
++     vendor-specific implementations. This can be used by implementations
++     that require and define the base index for a block of locks present
++     within a hwspinlock bank as a device tree node property. This function
++     should be called by needed implementations before registering a hwspinlock
++     device with the core.
++
+ 5. Important structs
+ 
+ struct hwspinlock_device is a device which usually contains a bank
+diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+index 48f7866..7d9f749 100644
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -27,6 +27,7 @@
+ #include <linux/hwspinlock.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/mutex.h>
++#include <linux/of.h>
+ 
+ #include "hwspinlock_internal.h"
+ 
+@@ -262,6 +263,127 @@ void __hwspin_unlock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
+ }
+ EXPORT_SYMBOL_GPL(__hwspin_unlock);
+ 
++/**
++ * of_hwspin_lock_simple_xlate - translate hwlock_spec to return a lock id
++ * @bank: the hwspinlock device bank
++ * @hwlock_spec: hwlock specifier as found in the device tree
++ *
++ * This is a simple translation function, suitable for hwspinlock platform
++ * drivers that only has a lock specifier length of 1.
++ *
++ * Returns a negative value on error, and a relative index of the lock within
++ * a specified bank on success.
++ */
++static int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
++				const struct of_phandle_args *hwlock_spec)
++{
++	/* sanity check (these shouldn't happen) */
++	if (WARN_ON(!bank->dev->of_node))
++		return -EINVAL;
++
++	if (WARN_ON(hwlock_spec->args_count != 1))
++		return -EINVAL;
++
++	return hwlock_spec->args[0];
++}
++
++/**
++ * of_hwspin_lock_get_id() - get lock id for an OF phandle-based specific lock
++ * @np: device node from which to request the specific hwlock
++ * @index: index of the hwlock in the list of values
++ *
++ * This function provides a means for DT users of the hwspinlock module to
++ * get the global lock id of a specific hwspinlock using the phandle of the
++ * hwspinlock device, so that it can be requested using the normal
++ * hwspin_lock_request_specific() API.
++ *
++ * Returns the global lock id number on success, -EPROBE_DEFER if the hwspinlock
++ * device is not yet registered, -EINVAL on invalid args specifier value or an
++ * appropriate error as returned from the OF parsing of the DT user node.
++ */
++int of_hwspin_lock_get_id(struct device_node *np, int index)
++{
++	struct hwspinlock_device *bank;
++	struct of_phandle_args args;
++	int id;
++	int ret;
++
++	ret = of_parse_phandle_with_args(np, "hwlocks", "#hwlock-cells", index,
++					 &args);
++	if (ret)
++		return ret;
++
++	mutex_lock(&hwspinlock_tree_lock);
++	list_for_each_entry(bank, &hwspinlock_devices, list)
++		if (bank->dev->of_node == args.np)
++			break;
++	mutex_unlock(&hwspinlock_tree_lock);
++	if (&bank->list == &hwspinlock_devices) {
++		ret = -EPROBE_DEFER;
++		goto out;
++	}
++
++	id = of_hwspin_lock_simple_xlate(bank, &args);
++	if (id < 0 || id >= bank->num_locks) {
++		ret = -EINVAL;
++		goto out;
++	}
++	id += bank->base_id;
++
++out:
++	of_node_put(args.np);
++	return ret ? ret : id;
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_get_id);
++
++/**
++ * of_hwspin_lock_get_base_id() - OF helper to retrieve base id
++ * @dn: device node pointer
++ *
++ * This is an OF helper function that can be called by the underlying
++ * platform-specific implementations, to retrieve the base id for the
++ * set of locks present within a hwspinlock device instance.
++ *
++ * Returns the base id value on success, or an appropriate error code
++ * as returned by the OF layer
++ */
++int of_hwspin_lock_get_base_id(struct device_node *dn)
++{
++	unsigned int val;
++	int ret;
++
++	ret = of_property_read_u32(dn, "hwlock-base-id", &val);
++	return ret ? ret : val;
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_get_base_id);
++
++/**
++ * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
++ * @dn: device node pointer
++ *
++ * This is an OF helper function that can be called by the underlying
++ * platform-specific implementations, to retrieve the number of locks
++ * present within a hwspinlock device instance. The hwlock-num-locks
++ * DT property may be optional for some platforms, while mandatory for
++ * some others, so this function is typically called only by needed
++ * platform-specific implementations.
++ *
++ * Returns a positive number of locks on success, -ENODEV on generic
++ * failure or an appropriate error code as returned by the OF layer
++ */
++int of_hwspin_lock_get_num_locks(struct device_node *dn)
++{
++	unsigned int val;
++	int ret = -ENODEV;
++
++	ret = of_property_read_u32(dn, "hwlock-num-locks", &val);
++	if (!ret)
++		ret = val ? val : -ENODEV;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_locks);
++
+ static int hwspin_lock_register_single(struct hwspinlock *hwlock, int id)
+ {
+ 	struct hwspinlock *tmp;
+diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+index 3343298..a9eeb4f 100644
+--- a/include/linux/hwspinlock.h
++++ b/include/linux/hwspinlock.h
+@@ -26,6 +26,7 @@
+ #define HWLOCK_IRQ	0x02	/* Disable interrupts, don't save state */
+ 
+ struct device;
++struct device_node;
+ struct hwspinlock;
+ struct hwspinlock_device;
+ struct hwspinlock_ops;
+@@ -60,12 +61,15 @@ struct hwspinlock_pdata {
+ 
+ #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
+ 
++int of_hwspin_lock_get_base_id(struct device_node *dn);
++int of_hwspin_lock_get_num_locks(struct device_node *dn);
+ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 		const struct hwspinlock_ops *ops, int base_id, int num_locks);
+ int hwspin_lock_unregister(struct hwspinlock_device *bank);
+ struct hwspinlock *hwspin_lock_request(void);
+ struct hwspinlock *hwspin_lock_request_specific(unsigned int id);
+ int hwspin_lock_free(struct hwspinlock *hwlock);
++int of_hwspin_lock_get_id(struct device_node *np, int index);
+ int hwspin_lock_get_id(struct hwspinlock *hwlock);
+ int __hwspin_lock_timeout(struct hwspinlock *, unsigned int, int,
+ 							unsigned long *);
+@@ -80,9 +84,9 @@ void __hwspin_unlock(struct hwspinlock *, int, unsigned long *);
+  * code path get compiled away. This way, if CONFIG_HWSPINLOCK is not
+  * required on a given setup, users will still work.
+  *
+- * The only exception is hwspin_lock_register/hwspin_lock_unregister, with which
+- * we _do_ want users to fail (no point in registering hwspinlock instances if
+- * the framework is not available).
++ * The only exception is hwspin_lock_register/hwspin_lock_unregister and
++ * associated OF helpers, with which we _do_ want users to fail (no point
++ * in registering hwspinlock instances if the framework is not available).
+  *
+  * Note: ERR_PTR(-ENODEV) will still be considered a success for NULL-checking
+  * users. Others, which care, can still check this with IS_ERR.
+@@ -120,6 +124,11 @@ void __hwspin_unlock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
+ {
+ }
+ 
++static inline int of_hwspin_lock_get_id(struct device_node *np, int index)
++{
++	return 0;
++}
++
+ static inline int hwspin_lock_get_id(struct hwspinlock *hwlock)
+ {
+ 	return 0;
 -- 
-1.9.3
+2.0.4
 
