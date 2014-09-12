@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053AbaILQUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:20:00 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:52044 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaILQT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:19:57 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-9c-54131d2b8b65
-Message-id: <1410538794.8852.35.camel@AMDC723>
-Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
- generic_pm_domain-s
-From: Maciej Matraszek <m.matraszek@samsung.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Date: Fri, 12 Sep 2014 18:19:54 +0200
-In-reply-to: <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
-References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
- <CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
- <1410453908.8852.9.camel@AMDC723>
- <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xy7rassIhBie/K1psnLGe1eLZrb1M
-	Fs2L17NZvH5haDFrCpB3edccNovPvUcYLeb8mcJscffUUTaLM6cvsTpweSze85LJ49DhDkaP
-	/XPXsHtsudrO4tG3ZRWjx4rV39k9Pm+SC2CP4rJJSc3JLEst0rdL4Mp4NWkOS8E6loqn056w
-	NTBuYO5i5OSQEDCRmNb9mAXCFpO4cG89WxcjF4eQwFJGiUenZzFCOJ8ZJRa9Wc4OUsUroCfR
-	0H4XrFtYIEziT/9mVhCbTcBAYvO/fqBJHBwiAroSc34ygfQyC8xjlvi1tZcZJM4ioCqx+rUl
-	iMkpECyxY78vxPifjBKTvzSCjWQWUJeYNG8RWLmEgLJEY78bxFZBiR+T77FAlMhLbF7zlnkC
-	o8AsJB2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZITHzZwbj4mNUhRgEO
-	RiUeXo5zgiFCrIllxZW5hxglOJiVRHgVRYVDhHhTEiurUovy44tKc1KLDzEycXBKNTDOviDG
-	IHzpatT5BzcvBkhanUhzSze5vOlVQtGFaA8j0XlVN04mv/zNLDxNeN9z2fST++ycUt9WXdHp
-	utXcySE3aXbxqufVK5dX8hq/8FrIcmT5dkcz7+oQrp075boWHTx2VuHrnG26676G2r1V6u55
-	VT9PoEh78UqpF86uEyvcouftV2Y4k6KsxFKckWioxVxUnAgAtl3Sq2cCAAA=
+	id S1752115AbaILQUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:20:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35259 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751752AbaILQUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 12:20:10 -0400
+Date: Fri, 12 Sep 2014 18:20:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Sasha Levin <sasha.levin@oracle.com>, john@johnmccutchan.com,
+        rlove@rlove.org, eparis@parisplace.org, linux-kernel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fsnotify: don't put user context if it was never assigned
+Message-ID: <20140912162007.GD5958@quack.suse.cz>
+References: <1406640314-25201-1-git-send-email-sasha.levin@oracle.com>
+ <5411E149.5090305@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5411E149.5090305@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-09-11 at 19:27 +0200, Geert Uytterhoeven wrote:
-> Hi Maciej,
+On Thu 11-09-14 19:52:09, Heinrich Schuchardt wrote:
+> Hello Sasha,
 > 
-> On Thu, Sep 11, 2014 at 6:45 PM, Maciej Matraszek
-> <m.matraszek@samsung.com> wrote:
-> > BTW Can I use your output as example in the commit message for v2?
-> > It's much more informative
+> I have CCed Jan, because he has been the only one working on this
+> file in the last 18 months.
 > 
-> Sure, no problem.
+> A failure path in which group->inotify_data.user is not yet assigned
+> starts here:
 > 
-> > (though 'runtime status' alignment seems odd).
+> static struct fsnotify_group *inotify_new_group(unsigned int max_events)
+> {
+> ...
+> 	oevent = kmalloc(sizeof(struct inotify_event_info), GFP_KERNEL);
+> 	if (unlikely(!oevent)) {
+> 		fsnotify_destroy_group(group);
+> 		return ERR_PTR(-ENOMEM);
+> 	}
 > 
-> What's wrong with it?
+> So your check
+>   if (group->inotify_data.user)
+> is reasonable.
+> 
+> 3.17.0-rc3 compiles with the patch applied.
+> 
+> Reviewed-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> 
+> @Andrew
+> Please, add the patch to the mm-tree.
+  Yeah, the patch looks good. Thanks for CC. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Nothing big, just for such short device names it doesn't look aesthetic to me :).
+								Honza
 
-Regards,
+> On 29.07.2014 15:25, Sasha Levin wrote:
+> >On some failure paths we may attempt to free user context even
+> >if it wasn't assigned yet. This will cause a NULL ptr deref
+> >and a kernel BUG.
+> >
+> >Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> >---
+> >  fs/notify/inotify/inotify_fsnotify.c |    6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> >
+> >diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
+> >index 43ab1e1..9c8187e 100644
+> >--- a/fs/notify/inotify/inotify_fsnotify.c
+> >+++ b/fs/notify/inotify/inotify_fsnotify.c
+> >@@ -165,8 +165,10 @@ static void inotify_free_group_priv(struct fsnotify_group *group)
+> >  	/* ideally the idr is empty and we won't hit the BUG in the callback */
+> >  	idr_for_each(&group->inotify_data.idr, idr_callback, group);
+> >  	idr_destroy(&group->inotify_data.idr);
+> >-	atomic_dec(&group->inotify_data.user->inotify_devs);
+> >-	free_uid(group->inotify_data.user);
+> >+	if (group->inotify_data.user) {
+> >+		atomic_dec(&group->inotify_data.user->inotify_devs);
+> >+		free_uid(group->inotify_data.user);
+> >+	}
+> >  }
+> >
+> >  static void inotify_free_event(struct fsnotify_event *fsn_event)
+> >
+> 
 -- 
-Maciej Matraszek
-Samsung R&D Institute Poland
-Samsung Electronics
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
