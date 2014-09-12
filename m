@@ -1,143 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaILXNU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 19:13:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaILXNT (ORCPT
+	id S1753117AbaILXPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 19:15:35 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53562 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751931AbaILXPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 19:13:19 -0400
-Date: Fri, 12 Sep 2014 16:13:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: dmapool: add/remove sysfs file outside of the pool
- lock
-Message-Id: <20140912161317.f38c0d2c3b589aea94bdb870@linux-foundation.org>
-In-Reply-To: <1410463876-21265-1-git-send-email-bigeasy@linutronix.de>
-References: <1410463876-21265-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Sep 2014 19:15:33 -0400
+Date: Sat, 13 Sep 2014 00:15:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 2/2] pstore-ram: Allow optional mapping with
+	pgprot_noncached
+Message-ID: <20140912231514.GB12379@n2100.arm.linux.org.uk>
+References: <1410546745-919-1-git-send-email-tony@atomide.com> <1410546745-919-2-git-send-email-tony@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410546745-919-2-git-send-email-tony@atomide.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014 21:31:16 +0200 Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-
-> cat /sys/___/pools followed by removal the device leads to:
+On Fri, Sep 12, 2014 at 11:32:25AM -0700, Tony Lindgren wrote:
+> On some ARMs at least the memory can be mapped pgprot_noncached()
+> and still be working for atomic operations. As pointed out by
+> Colin Cross <ccross@android.com>, in some cases you do want to use
+> pgprot_noncached() if the SoC supports it to see a debug printk
+> just before a write hanging the system.
 > 
-> |======================================================
-> |[ INFO: possible circular locking dependency detected ]
-> |3.17.0-rc4+ #1498 Not tainted
-> |-------------------------------------------------------
-> |rmmod/2505 is trying to acquire lock:
-> | (s_active#28){++++.+}, at: [<c017f754>] kernfs_remove_by_name_ns+0x3c/0x88
-> |
-> |but task is already holding lock:
-> | (pools_lock){+.+.+.}, at: [<c011494c>] dma_pool_destroy+0x18/0x17c
-> |
-> |which lock already depends on the new lock.
-> 
-> The problem is the lock order of pools_lock and kernfs_mutex in
-> dma_pool_destroy() vs show_pools().
+> On ARMs, the atomic operations on strongly ordered memory are
+> implementation defined. So let's provide an optional kernel parameter
+> for configuring noncached memory, and use pgprot_writecombine() by
+> default.
 
-Important details were omitted.  What's the call path whereby
-show_pools() is called under kernfs_mutex?
+Can we clean up this terminology please?
 
-> This patch breaks out the creation of the sysfs file outside of the
-> pools_lock mutex.
+Writecombine memory is not cached - write combine memory bypasses the
+caches entirely.  What it doesn't bypass are store buffers, which may
+combine two writes together.  So, calling it "cached" is misleading.
 
-I think the patch adds races.  They're improbable, but they're there.
+Secondly, memory returned by ioremap() is not strongly ordered, it is
+device memory.  There's three main classifications of memory on ARM:
+strongly ordered, device and normal memory.  Normal memory has attributes
+which define whether it is write combining, or cacheable in some way (and
+if so, how it's cacheable.)
 
-> In theory we would have to create the link in the error path of
-> device_create_file() in case the dev->dma_pools list is not empty. In
-> reality I doubt that there will be a single device creating dma-pools in
-> parallel where it would matter.
+Exclusives are always permitted to normal memory.  The other two are
+implementation defined.  While an implementation may offer it on
+strongly ordered, that doesn't mean that it also supports it on device
+memory.
 
-Maybe you're saying the same thing here, but the changelog lacks
-sufficient detail for me to tell because it doesn't explain *why* "we
-would have to create the link".
+Lastly, aliased mappings are something that ARM has always strongly
+discouraged on ARMv6+ (it was plain down-right unpredictable, but it's
+now "strongly discouraged") and remapping memory with different memory
+type should be avoided.
 
-> --- a/mm/dmapool.c
-> +++ b/mm/dmapool.c
-> @@ -132,6 +132,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
->  {
->  	struct dma_pool *retval;
->  	size_t allocation;
-> +	bool empty = false;
->  
->  	if (align == 0) {
->  		align = 1;
-> @@ -173,14 +174,22 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
->  	INIT_LIST_HEAD(&retval->pools);
->  
->  	mutex_lock(&pools_lock);
-> -	if (list_empty(&dev->dma_pools) &&
-> -	    device_create_file(dev, &dev_attr_pools)) {
-> -		kfree(retval);
-> -		return NULL;
-> -	} else
-> -		list_add(&retval->pools, &dev->dma_pools);
-> +	if (list_empty(&dev->dma_pools))
-> +		empty = true;
-> +	list_add(&retval->pools, &dev->dma_pools);
->  	mutex_unlock(&pools_lock);
-> -
-> +	if (empty) {
-> +		int err;
-> +
-> +		err = device_create_file(dev, &dev_attr_pools);
-> +		if (err) {
-> +			mutex_lock(&pools_lock);
-> +			list_del(&retval->pools);
-> +			mutex_unlock(&pools_lock);
-> +			kfree(retval);
-> +			return NULL;
-> +		}
-> +	}
->  	return retval;
->  }
->  EXPORT_SYMBOL(dma_pool_create);
-> @@ -251,11 +260,15 @@ static void pool_free_page(struct dma_pool *pool, struct dma_page *page)
->   */
->  void dma_pool_destroy(struct dma_pool *pool)
->  {
-> +	bool empty = false;
-> +
->  	mutex_lock(&pools_lock);
->  	list_del(&pool->pools);
->  	if (pool->dev && list_empty(&pool->dev->dma_pools))
-> -		device_remove_file(pool->dev, &dev_attr_pools);
-> +		empty = true;
->  	mutex_unlock(&pools_lock);
-
-For example, if another process now runs dma_pool_create(), it will try
-to create the sysfs file and will presumably fail because it's already
-there.  Then when this process runs, the file gets removed again.  So
-we'll get a nasty warning from device_create_file() (I assume) and the
-dma_pool_create() call will fail.
-
-There's probably a similar race in the destroy()-interrupts-create()
-path but I'm lazy.
-
-> +	if (empty)
-> +		device_remove_file(pool->dev, &dev_attr_pools);
->  
-
-
-This problem is pretty ugly.
-
-It's a bit surprising that it hasn't happened elsewhere.  Perhaps this
-is because dmapool went and broke the sysfs rules and has multiple
-values in a single sysfs file.  This causes dmapool to walk a list
-under kernfs_lock and that list walk requires a lock.
-
-And it's too late to fix this by switching to one-value-per-file.  Ugh.
-Maybe there's some wizardly hack we can use in dma_pool_create() and
-dma_pool_destroy() to avoid the races.  Maybe use your patch as-is but
-add yet another mutex to serialise dma_pool_create() against
-dma_pool_destroy() so they can never run concurrently?  There may
-already be higher-level locking which ensures this so perhaps we can
-"fix" the races with suitable code comments.
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
