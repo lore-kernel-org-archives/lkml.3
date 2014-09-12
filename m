@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783AbaILPpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:45:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34556 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752697AbaILPpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:45:18 -0400
-Date: Fri, 12 Sep 2014 17:45:13 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: "Daniel M. Weeks" <dan@danweeks.net>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: piix4: Continue probing for auxiliary SMBus
- without main
-Message-ID: <20140912174513.5010b4ab@endymion.delvare>
-In-Reply-To: <20140728142209.69246fcc@endymion.delvare>
-References: <20140712000607.GA25787@turkey.danweeks.net>
-	<20140728142209.69246fcc@endymion.delvare>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1752815AbaILPpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:45:42 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36377 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747AbaILPpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 11:45:19 -0400
+Message-ID: <5413150B.9010803@kernel.dk>
+Date: Fri, 12 Sep 2014 09:45:15 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ming Lei <ming.lei@canonical.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH v2 2/9] block: introduce blk_init_flush and its pair
+References: <1410533253-8045-1-git-send-email-ming.lei@canonical.com>	<1410533253-8045-3-git-send-email-ming.lei@canonical.com>	<54130ED7.4080106@kernel.dk> <CACVXFVOrWaaga=3NWeWs400AL4CS316jBftngxmjS4L-YGKkYQ@mail.gmail.com>
+In-Reply-To: <CACVXFVOrWaaga=3NWeWs400AL4CS316jBftngxmjS4L-YGKkYQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel, 
+On 2014-09-12 09:41, Ming Lei wrote:
+> On Fri, Sep 12, 2014 at 11:18 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 2014-09-12 08:47, Ming Lei wrote:
+>>>
+>>> These two functions are introduced to initialize and de-initialize
+>>> flush stuff centrally.
+>>
+>>
+>> I know you said these change later to more proper naming, but that only
+>> happens further down. Lets get rid of these wrappers and just call
+>> blk_alloc_flush_queue() directly.
+>
+> It is too early to call blk_alloc_flush_queue() because flush queue doesn't
+> come until patch 5 appears, :-)  And I think it is cleaner to put
+> flush initialization
+> stuff together first, then introduce flush_queue.
 
-Did you find the time to address my concerns? I think it would be the
-right time to submit an updated patch if you want it to make it
-upstream quickly.
+Then do it later. Fact is, final result still looks like this in 
+blk_mq_init_queue():
 
-Jean
+if (blk_init_flush(q))
+     ...
 
-On Mon, 28 Jul 2014 14:22:09 +0200, Jean Delvare wrote:
-> Hi Daniel,
-> 
-> On Fri, 11 Jul 2014 20:06:15 -0400, Daniel M. Weeks wrote:
-> > Some BIOS may only allow access to the AMD auxiliary SMBus - reserving
-> > the main SMBus for system functions only. Probing should continue even
-> > if the main bus is not available so at least the auxiliary can be added.
-> > 
-> > Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
-> > ---
-> > This patch may warrant some discussion. I ran across this problem on an
-> > AMD Hudson board where the main SMBus is hard-wired for debugging but
-> > the auxiliary bus is exposed for expansion. Either purposefully or
-> > because the BIOS is a little broken, loading this module used to result
-> > in an ACPI conflict for the main bus and neither was usable. With the
-> > patch I'm able to use the auxiliary bus regardless of the conflict on
-> > the main bus. I'm not 100% convinced it's the correct fix - someone with
-> > more ACPI experience than me is going to need to review this.
-> 
-> This is fine. The auxiliary bus setup code has its own ACPI resource
-> conflict check, so it is safe to let the driver bind to the auxiliary
-> bus even if the main bus is skipped.
-> 
-> > 
-> > drivers/i2c/busses/i2c-piix4.c | 18 ++++++++++--------
-> >  1 file changed, 10 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
-> > index a6f54ba..d4bac64 100644
-> > --- a/drivers/i2c/busses/i2c-piix4.c
-> > +++ b/drivers/i2c/busses/i2c-piix4.c
-> > @@ -628,14 +628,16 @@ static int piix4_probe(struct pci_dev *dev, const struct pci_device_id *id)
-> >  	else
-> >  		retval = piix4_setup(dev, id);
-> >  
-> > -	/* If no main SMBus found, give up */
-> > -	if (retval < 0)
-> > -		return retval;
-> > -
-> > -	/* Try to register main SMBus adapter, give up if we can't */
-> > -	retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
-> > -	if (retval < 0)
-> > -		return retval;
-> > +	/* If no main SMBus found, do not give up
-> > +	 * some BIOS purposely only expose aux bus */
-> > +	if (retval < 0) {
-> > +		dev_info(&dev->dev, "No main SMBus; checking auxiliary\n");
-> 
-> Not sure if this message is really needed, as both parts already print
-> relevant message in both success and failure cases.
-> 
-> > +	} else {
-> > +		/* Try to register main SMBus adapter, give up if we can't */
-> > +		retval = piix4_add_adapter(dev, retval, &piix4_main_adapter);
-> > +		if (retval < 0)
-> > +			return retval;
-> > +	}
-> >  
-> >  	/* Check for auxiliary SMBus on some AMD chipsets */
-> >  	retval = -ENODEV;
-> 
-> I'm mostly fine with the change above, but it is insufficient in one
-> corner case: if both the main bus and the aux bus probing fails. The
-> code does currently not consider both buses equal, in that it never
-> returns an error if the aux bus probing fails. The return value only
-> stands for the status of the main bus. With your change, if both buses
-> fail to register, the piix4_probe function may still returns 0
-> (success.)
-> 
-> Your proposed change somehow makes the aux bus an equal of the main
-> bus. The probe function should return 0 if either bus was successfully
-> registered. It should still return an error if both fail to register.
-> Unfortunately we can't report both error codes to the caller. For
-> historical reasons I believe we should return the error code for the
-> main bus in that case, which means you have to store it in the middle
-> of the function for it to be available at the end of the function.
+where it would be cleaner as just assigning q->fq. My previous (and 
+existing) point is that you have no idea what this init_flush() function 
+does without jumping in and reading it.
+
+
+-- 
+Jens Axboe
+
