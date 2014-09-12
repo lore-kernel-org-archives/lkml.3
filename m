@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaILOxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:53:07 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:52394 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaILOxE (ORCPT
+	id S1752042AbaILO4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:56:37 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:49192 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaILO4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:53:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-Date: Fri, 12 Sep 2014 10:52:59 -0400
-Message-ID: <CADnq5_NEH52W++SOFJ8NPhKKvESLnt3ZS9RXXGA9Ch9R3aRnjg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] PCI: Ignore hotplug events for dual GPU systems
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux PCI <linux-pci@vger.kernel.org>, SpacemanSpiff <a818958@trbvm.com>,
-        Rajat Jain <rajatxjain@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        "Jose P." <lbdkmjdf@sharklasers.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 10:56:35 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-b1-541309a024f8
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFC PATCH v2 1/2] amba: Allow AMBA drivers to use their own runtime PM
+Date: Fri, 12 Sep 2014 16:56:18 +0200
+Message-id: <1410533779-3310-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410533779-3310-1-git-send-email-k.kozlowski@samsung.com>
+References: <1410533779-3310-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7oLOIVDDG6s07TYOGM9q8X0qRcY
+	LVZP/ctqceDPDkaL1y8MLc42vWG3WDJ5PqvF5V1z2CxuX+a1WHvkLrvFu5cRFsfXhlu87NvP
+	4sDr0dLcw+axeM9LJo871/aweSx5c4jVo2/LKkaPz5vkPPZ+/s0SwB7FZZOSmpNZllqkb5fA
+	lfHo4WGWgjm8FQvPLGNvYDzN1cXIySEhYCLR0HadHcIWk7hwbz1bFyMXh5DAUkaJZY8XsUM4
+	fUwSszfuB6tiEzCW2Lx8CViViMAlJolf916DVTELHGWUmN77lgmkSlggQOLj/DZGEJtFQFVi
+	9vdJYHFeATeJKVP/QO2Tkzh5bDIriM0p4C6xe+9EoHoOoHVuEh+3WU5g5F3AyLCKUTS1NLmg
+	OCk911CvODG3uDQvXS85P3cTIyRAv+xgXHzM6hCjAAejEg8vxznBECHWxLLiytxDjBIczEoi
+	vDdeCYUI8aYkVlalFuXHF5XmpBYfYmTi4JRqYMx/udVthsrR9UwCXp8X+MQKpnpNiGtZ87Vs
+	Zv6iyUHTu0UVTsm8nSjDc1buYdyGD/37dHemvL4pyHmhNYqx5HLdIn6rm+zmAXOV5t6fw3Xc
+	nWXTXN3/novW+RyaUKlX81b4X3tsvz/Hpmm3pb21JnsnH5h3dxtjb77/SX2F9fd/ztfmMrNj
+	K1diKc5INNRiLipOBAAn9Jn3LgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 6:23 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> These are intended to resolve problems on dual GPU systems where the radeon
-> driver becomes unusable because of problems suspending or resuming a GPU.
-> When the GPU is powered off, we may get hotplug remove events, and we
-> would normally unbind the driver and destroy the pci_dev.  But in this
-> case, the radeon and nouveau drivers expect to remain bound to the device
-> because it isn't really removable, and they may power it back on later.
->
-> Links to the bug reports in the patch changelogs.
->
-> I would like to get these into v3.17 if they seem reasonable.
+The AMBA bus driver defines runtime Power Management functions which
+disable and unprepare AMBA bus clock. This is problematic for runtime PM
+because unpreparing a clock might sleep so it is not interrupt safe.
 
-Looks good to me.
+However some drivers may want to implement runtime PM functions in
+interrupt-safe way (see pm_runtime_irq_safe()). If such driver
+implements its own runtime PM functions then assume it will handle the
+runtime PM completely and it will replace our clock handling.
 
-Acked-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/amba/bus.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
->
-> ---
->
-> Bjorn Helgaas (2):
->       PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
->       ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
->
->
->  drivers/acpi/bus.c                           |   10 ----------
->  drivers/gpu/drm/nouveau/nouveau_acpi.c       |   16 ++--------------
->  drivers/gpu/drm/nouveau/nouveau_drm.c        |    1 +
->  drivers/gpu/drm/radeon/radeon_atpx_handler.c |   16 ++--------------
->  drivers/gpu/drm/radeon/radeon_drv.c          |    1 +
->  drivers/pci/hotplug/acpiphp_glue.c           |   16 ++++++----------
->  drivers/pci/hotplug/pciehp_hpc.c             |   12 ++++++++++++
->  include/acpi/acpi_bus.h                      |    4 +---
->  include/linux/pci.h                          |    6 ++++++
->  9 files changed, 31 insertions(+), 51 deletions(-)
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index 3cf61a127ee5..38461430b7cf 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -94,9 +94,18 @@ static int amba_pm_runtime_suspend(struct device *dev)
+ 	struct amba_device *pcdev = to_amba_device(dev);
+ 	int ret = pm_generic_runtime_suspend(dev);
+ 
+-	if (ret == 0 && dev->driver)
++	if (ret == 0 && dev->driver) {
++		/*
++		 * If driver handles runtime suspend don't duplicate
++		 * the work here.
++		 */
++		if (dev->driver->pm && dev->driver->pm->runtime_suspend)
++			goto out;
++
+ 		clk_disable_unprepare(pcdev->pclk);
++	}
+ 
++out:
+ 	return ret;
+ }
+ 
+@@ -106,12 +115,16 @@ static int amba_pm_runtime_resume(struct device *dev)
+ 	int ret;
+ 
+ 	if (dev->driver) {
++		if (dev->driver->pm && dev->driver->pm->runtime_resume)
++			goto out;
++
+ 		ret = clk_prepare_enable(pcdev->pclk);
+ 		/* Failure is probably fatal to the system, but... */
+ 		if (ret)
+ 			return ret;
+ 	}
+ 
++out:
+ 	return pm_generic_runtime_resume(dev);
+ }
+ #endif
+-- 
+1.9.1
+
