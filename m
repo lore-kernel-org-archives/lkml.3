@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaILOKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:10:30 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:57351 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaILOJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:09:49 -0400
-From: Rob Jones <rob.jones@codethink.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, linux-kernel@codethink.co.uk,
-        rob.jones@codethink.co.uk
-Subject: [PATCH 1/2] fs: proc: use __seq_open_private()
-Date: Fri, 12 Sep 2014 15:09:37 +0100
-Message-Id: <1410530978-29627-2-git-send-email-rob.jones@codethink.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1410530978-29627-1-git-send-email-rob.jones@codethink.co.uk>
-References: <1410530978-29627-1-git-send-email-rob.jones@codethink.co.uk>
+	id S932067AbaILOLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:11:23 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48740 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754731AbaILOLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 10:11:22 -0400
+Date: Fri, 12 Sep 2014 11:11:16 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v2] perf tools: Fix build-id matching on vmlinux
+Message-ID: <20140912141116.GH1801@kernel.org>
+References: <1409893157-469-1-git-send-email-namhyung@kernel.org>
+ <540964C0.1050702@intel.com>
+ <20140905141123.GE30520@kernel.org>
+ <1409930200.1662.16.camel@leonhard>
+ <20140905154402.GF30520@kernel.org>
+ <87ppf1mkkk.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ppf1mkkk.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce boilerplate code by using __seq_open_private() instead of seq_open().
-
-Signed-off-by: Rob Jones <rob.jones@codethink.co.uk>
----
- fs/proc/task_nommu.c |   22 ++++++++--------------
- 1 file changed, 8 insertions(+), 14 deletions(-)
-
-diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 678455d..b141050 100644
---- a/fs/proc/task_nommu.c
-+++ b/fs/proc/task_nommu.c
-@@ -269,20 +269,14 @@ static int maps_open(struct inode *inode, struct file *file,
- 		     const struct seq_operations *ops)
- {
- 	struct proc_maps_private *priv;
--	int ret = -ENOMEM;
--
--	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (priv) {
--		priv->pid = proc_pid(inode);
--		ret = seq_open(file, ops);
--		if (!ret) {
--			struct seq_file *m = file->private_data;
--			m->private = priv;
--		} else {
--			kfree(priv);
--		}
--	}
--	return ret;
-+
-+	priv = __seq_open_private(file, ops, sizeof(*priv));
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	priv->pid = proc_pid(inode);
-+
-+	return 0;
- }
+Em Fri, Sep 12, 2014 at 03:14:51PM +0900, Namhyung Kim escreveu:
+> On Fri, 5 Sep 2014 12:44:02 -0300, Arnaldo Carvalho de Melo wrote:
+> > It seems we need a way to state that an entry in the build-id table is
+> > for the kernel, without looking at its file name.
  
- static int pid_maps_open(struct inode *inode, struct file *file)
--- 
-1.7.10.4
+> Maybe we can add a new build_id2_event (like mmap2) that has a new field
+> to record that info.
 
+Humm, take a look at machine__write_buildid_table() -> write_buildid(),
+we already seem to set build_id_event.header.misc suitably, no?
+
+> > That or to put the build-id into the synthesized kernel mmap
+> > event. Which is better, because:
+
+> > That leads to another problem that needs to get solved eventually: We
+> > need to have the build-id into PERF_RECORD_MMAP, because we're now using
+> > just the mmap filename as the key, not the contents, and for long
+> > running sessions, DSOs can get updated, etc.
+ 
+> But it'd require a realtime processing of events at record time.
+
+Been there, done that, backtracked, yes, we can't do that at 'record
+time', else we would be adding way too much noise to the recording
+phase.
+
+The idea is for the _kernel_ to do that, would take sizeof(buildid)
+(about 20 bytes) on the per-DSO structure in the kernel.
+
+When ELF loading it, stashing the contents of an ELF session
+(.note.gnu.build-id) somewhere accessible at PERF_RECORD_MMAP3
+generation time.
+
+Doing that at the time we load the DSO from disk should add negligible
+overhead.
+
+With that we would not need to go over all the perf.data stream to
+generate the build-id table after all record sessions, they would be at
+the struct map already.
+
+We could then have multiple entries in the build-id table for the same
+pathname, with different build ids, that is something we don't support
+now and that provides bogus results when it happens.
+
+- Arnaldo
