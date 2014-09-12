@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269AbaILOM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:12:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60189 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754644AbaILOMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:12:25 -0400
-Message-ID: <5412FF45.30208@suse.cz>
-Date: Fri, 12 Sep 2014 16:12:21 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1754912AbaILOQT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:16:19 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:57475 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753846AbaILOQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 10:16:16 -0400
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>, Michael Neuling <mikey@neuling.org>
-CC: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Gabriel Paubert <paubert@iram.es>, linux-kbuild@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2] deb-pkg: Add support for powerpc little endian
-References: <1409894927.11359.26.camel@ale.ozlabs.ibm.com>	 <20140905071344.GA16024@visitor2.iram.es>	 <1409903718.11359.30.camel@ale.ozlabs.ibm.com>	 <20140905120925.GB3846@oc0268524204.ibm.com> <1410057728.7389.24.camel@decadent.org.uk>
-In-Reply-To: <1410057728.7389.24.camel@decadent.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5411CD05.6050705@codethink.co.uk>
+References: <1409577428-16148-1-git-send-email-rob.jones@codethink.co.uk>
+	<20140901153637.GI7996@ZenIV.linux.org.uk>
+	<5411CD05.6050705@codethink.co.uk>
+Date: Fri, 12 Sep 2014 16:16:15 +0200
+Message-ID: <CAFLxGvwfydw-DFziNAmiEOH_X7+Axqj=zrCY0ZmLZdG9xq0X7w@mail.gmail.com>
+Subject: Re: [PATCH] fs: replace int param with size_t for seq_open_private()
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Rob Jones <rob.jones@codethink.co.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@codethink.co.uk
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-09-07 04:42, Ben Hutchings wrote:
-> On Fri, 2014-09-05 at 09:09 -0300, Thadeu Lima de Souza Cascardo wrote:
->> On Fri, Sep 05, 2014 at 05:55:18PM +1000, Michael Neuling wrote:
->>> On Fri, 2014-09-05 at 09:13 +0200, Gabriel Paubert wrote:
->>>> On Fri, Sep 05, 2014 at 03:28:47PM +1000, Michael Neuling wrote:
->>>>> The Debian powerpc little endian architecture is called ppc64le.  This
->>>>
->>>> Huh? ppc64le or ppc64el?
->>>
->>> ppc64el.  Commit message is wrong.  Fixed below.
->>>
->>> Mikey
->>>
->>>
+On Thu, Sep 11, 2014 at 6:25 PM, Rob Jones <rob.jones@codethink.co.uk> wrote:
+>
+>
+> On 01/09/14 16:36, Al Viro wrote:
 >>
->> What about ppc64?
+>> On Mon, Sep 01, 2014 at 02:17:08PM +0100, Rob Jones wrote:
 >>
->> Also, I sent that already a month ago. Both linuxppc-dev and Michal
->> Marek were on cc.
+>>>   void *__seq_open_private(struct file *f, const struct seq_operations
+>>> *ops,
+>>> -               int psize)
+>>> +               size_t psize)
 >>
->> http://marc.info/?l=linux-kernel&m=140744360328562&w=2
-> 
-> Anyone using powerpc (32-bit) will then need to add ppc64 as a foreign
-> architecture before they can install a 64-bit custom kernel.  This is
-> fine in principle, except that ppc64 is not an official Debian port and
-> its packages are not mirrored on the same servers.
-[...]
-> So I think Michael's version, leaving big-endian kernels as powerpc by
-> default, is preferable for now.
+>>
+>> <sarcasm>
+>> It is a horrible limitation to impose, indeed.  Why, a lousy
+>> 2 gigabytes per line in procfs file - that's intolerable...
+>> </sarcasm>
+>>
+>>
+>
+> OK, I know this is a trivial patch but I've gone away and thought about
+> it and done some reading to see what the rest of the world thinks about
+> using size_t vs unsigned int (signed int is an abomination in this
+> context regardless).
+>
+> I think Al's sarcasm is misplaced.
+>
+> The correct type to use here *is* size_t. It's about consistency and,
+> more importantly, it's about not making assumptions about the hardware
+> architecture. It's included in the language for very good reasons and
+> it seems to me to be risky to ignore those reasons.
 
-I applied v2 of Michael's patch to kbuild.git#misc.
+Please don't forget to patch all for loops to use size_t instead of int too.
 
-Michal
+-- 
+Thanks,
+//richard
