@@ -1,221 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaILR43 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:56:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59110 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaILR41 (ORCPT
+	id S1751282AbaILSC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:02:27 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:46422 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879AbaILSCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:56:27 -0400
-Date: Fri, 12 Sep 2014 12:50:23 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Felipe Balbi <balbi@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: Re: [PATCH v8 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
-Message-ID: <20140912175023.GR3749@joshc.qualcomm.com>
-References: <1410542986-24419-1-git-send-email-agross@codeaurora.org>
- <1410542986-24419-4-git-send-email-agross@codeaurora.org>
+	Fri, 12 Sep 2014 14:02:25 -0400
+Date: Fri, 12 Sep 2014 11:02:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dbueso@suse.de>
+Subject: Re: [PATCH 3/9] locktorture: Support mutexes
+Message-ID: <20140912180220.GE4775@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
+ <1410493224-3312-4-git-send-email-dave@stgolabs.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410542986-24419-4-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1410493224-3312-4-git-send-email-dave@stgolabs.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091218-3532-0000-0000-000004953253
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Andy-
-
-Mostly cosmetic things below:
-
-On Fri, Sep 12, 2014 at 12:29:46PM -0500, Andy Gross wrote:
-> This patch adds a new driver for the Qualcomm USB 3.0 PHY that exists on some
-> Qualcomm platforms.  This driver uses the generic PHY framework and will
-> interact with the DWC3 controller.
+On Thu, Sep 11, 2014 at 08:40:18PM -0700, Davidlohr Bueso wrote:
+> Add a "mutex_lock" torture test. The main difference with the already
+> existing spinlock tests is that the latency of the critical region
+> is much larger. We randomly delay for (arbitrarily) either 500 ms or,
+> otherwise, 25 ms. While this can considerably reduce the amount of
+> writes compared to non blocking locks, if run long enough it can have
+> the same torturous effect. Furthermore it is more representative of
+> mutex hold times and can stress better things like thrashing.
 > 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+
+One question and one follow-up patch below.
+
+								Thanx, Paul
+
 > ---
->  drivers/phy/Kconfig         |   11 +
->  drivers/phy/Makefile        |    1 +
->  drivers/phy/phy-qcom-dwc3.c |  500 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 512 insertions(+)
->  create mode 100644 drivers/phy/phy-qcom-dwc3.c
+>  Documentation/locking/locktorture.txt |  2 ++
+>  kernel/locking/locktorture.c          | 41 +++++++++++++++++++++++++++++++++--
+>  2 files changed, 41 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index 0dd7427..5d56161 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -230,4 +230,15 @@ config PHY_XGENE
->  	help
->  	  This option enables support for APM X-Gene SoC multi-purpose PHY.
->  
-> +config PHY_QCOM_DWC3
-> +	tristate "QCOM DWC3 USB PHY support"
-> +	depends on ARCH_QCOM
-> +	depends on HAS_IOMEM
-> +	depends on OF
-> +	select GENERIC_PHY
-> +	help
-> +	  This option enables support for the Synopsis PHYs present inside the
-> +	  Qualcomm USB3.0 DWC3 controller.  This driver supports both HS and SS
-> +	  PHY controllers.
+> diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
+> index c0ab969..6b1e7ca 100644
+> --- a/Documentation/locking/locktorture.txt
+> +++ b/Documentation/locking/locktorture.txt
+> @@ -40,6 +40,8 @@ torture_type	  Type of lock to torture. By default, only spinlocks will
+>  		     o "spin_lock_irq": spin_lock_irq() and spin_unlock_irq()
+>  					pairs.
+> 
+> +		     o "mutex_lock": mutex_lock() and mutex_unlock() pairs.
 > +
->  endmenu
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index 95c69ed..aa16f30 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -28,3 +28,4 @@ obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
->  obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
->  obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
->  obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
-> +obj-$(CONFIG_PHY_QCOM_DWC3)		+= phy-qcom-dwc3.o
-> diff --git a/drivers/phy/phy-qcom-dwc3.c b/drivers/phy/phy-qcom-dwc3.c
-> new file mode 100644
-> index 0000000..05b8e1d
-> --- /dev/null
-> +++ b/drivers/phy/phy-qcom-dwc3.c
-[..]
-> +/* TX OVRD DRV LO register bits */
-> +#define TX_OVRD_DRV_LO_AMPLITUDE_MASK	0x007F
-> +#define TX_OVRD_DRV_LO_PREEMPH_MASK	0x3F80
-> +#define TX_OVRD_DRV_LO_PREEMPH_SHIFT	7
-> +#define TX_OVRD_DRV_LO_EN		BIT(14)
+>  torture_runnable  Start locktorture at module init. By default it will begin
+>  		  once the module is loaded.
+> 
+> diff --git a/kernel/locking/locktorture.c b/kernel/locking/locktorture.c
+> index 8c770b2..414ba45 100644
+> --- a/kernel/locking/locktorture.c
+> +++ b/kernel/locking/locktorture.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/err.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/mutex.h>
+>  #include <linux/smp.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/sched.h>
+> @@ -66,7 +67,7 @@ torture_param(bool, verbose, true,
+>  static char *torture_type = "spin_lock";
+>  module_param(torture_type, charp, 0444);
+>  MODULE_PARM_DESC(torture_type,
+> -		 "Type of lock to torture (spin_lock, spin_lock_irq, ...)");
+> +		 "Type of lock to torture (spin_lock, spin_lock_irq, mutex_lock, ...)");
+> 
+>  static atomic_t n_lock_torture_errors;
+> 
+> @@ -206,6 +207,42 @@ static struct lock_torture_ops spin_lock_irq_ops = {
+>  	.name		= "spin_lock_irq"
+>  };
+> 
+> +static DEFINE_MUTEX(torture_mutex);
 > +
-> +struct qcom_dwc3_usb_phy;
-
-Do you need this?
-
-> +
-> +enum qcom_dwc3_phy_id {
-> +	QCOM_DWC3_PHY_UTMI = 0,
-> +	QCOM_DWC3_PHY_PIPE,
-> +	QCOM_DWC3_PHYS_NUM,
-> +};
-> +
-> +struct qcom_dwc3_usb_phy {
-> +	void __iomem		*base;
-> +	struct device		*dev;
-> +	struct phy *phy;
-> +	enum qcom_dwc3_phy_id	index;
-> +
-> +	struct clk		*xo_clk;
-> +	struct clk		*ref_clk;
-> +};
-> +
-> +/**
-> + * Write register and read back masked value to confirm it is written
-> + *
-> + * @base - QCOM DWC3 PHY base virtual address.
-> + * @offset - register offset.
-> + * @mask - register bitmask specifying what should be updated
-> + * @val - value to write.
-> + */
-> +static inline void qcom_dwc3_phy_write_readback(
-> +	struct qcom_dwc3_usb_phy *phy_dwc3, u32 offset,
-> +	const u32 mask, u32 val)
+> +static int torture_mutex_lock(void) __acquires(torture_mutex)
 > +{
-> +	u32 write_val, tmp = readl(phy_dwc3->base + offset);
-> +
-> +	tmp &= ~mask;		/* retain other bits */
-> +	write_val = tmp | val;
-> +
-> +	writel(write_val, phy_dwc3->base + offset);
-> +
-> +	/* Read back to see if val was written */
-> +	tmp = readl(phy_dwc3->base + offset);
-> +	tmp &= mask;		/* clear other bits */
-> +
-> +	if (tmp != val)
-> +		dev_err(phy_dwc3->dev, "write: %x to QSCRATCH: %x FAILED\n",
-> +			val, offset);
-> +}
-> +
-> +static int wait_for_latch(void __iomem *addr)
-> +{
-> +	u32 retry = 10;
-> +
-> +	while (true) {
-> +		if (!readl(addr))
-> +			break;
-> +
-> +		if (--retry == 0)
-> +			return -ETIMEDOUT;
-> +
-> +		usleep_range(10, 20);
-> +	}
-> +
+> +	mutex_lock(&torture_mutex);
 > +	return 0;
 > +}
 > +
-> +/**
-> + * Write SSPHY register
-> + *
-> + * @base - QCOM DWC3 PHY base virtual address.
-> + * @addr - SSPHY address to write.
-> + * @val - value to write.
-> + */
-> +static int qcom_dwc3_ss_write_phycreg(void __iomem *base, u32 addr, u32 val)
+> +static void torture_mutex_delay(struct torture_random_state *trsp)
 > +{
-> +	writel(addr, base + CR_PROTOCOL_DATA_IN_REG);
-> +	writel(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
+> +	const unsigned long longdelay_ms = 100;
 > +
-> +	if (wait_for_latch(base + CR_PROTOCOL_CAP_ADDR_REG))
-> +		return 1;
+> +	/* We want a long delay occasionally to force massive contention.  */
+> +	if (!(torture_random(trsp) %
+> +	      (nrealwriters_stress * 2000 * longdelay_ms)))
+> +		mdelay(longdelay_ms * 5);
 
-I'm not too familiar with the GENERIC_PHY infrastructure, does it
-understand that '1' is an error case?  I'm wondering if you should
-instead propogate the -ETIMEDOUT up.
+So let's see...  We wait 500 milliseconds about once per 200,000 operations
+per writer.  So if we have 5 writers, we wait 500 milliseconds per million
+operations.  So each writer will do about 200,000 operations, then there
+will be a half-second gap.  But each short operation holds the lock for
+20 milliseconds, which takes several hours to work through the million
+operations.
 
-> +
-> +	writel(val, base + CR_PROTOCOL_DATA_IN_REG);
-> +	writel(0x1, base + CR_PROTOCOL_CAP_DATA_REG);
-> +
-> +	if (wait_for_latch(base + CR_PROTOCOL_CAP_DATA_REG))
-> +		return 1;
-> +
-> +	writel(0x1, base + CR_PROTOCOL_WRITE_REG);
-> +
-> +	if (wait_for_latch(base + CR_PROTOCOL_WRITE_REG))
-> +		return 1;
-> +
-> +	return 0;
+So it looks to me like you are in massive contention state either way,
+at least until the next stutter interval shows up.
+
+Is that the intent?  Or am I missing something here?
+
+> +	else
+> +		mdelay(longdelay_ms / 5);
+> +#ifdef CONFIG_PREEMPT
+> +	if (!(torture_random(trsp) % (nrealwriters_stress * 20000)))
+> +		preempt_schedule();  /* Allow test to be preempted. */
+> +#endif
 > +}
 > +
-[..]
+> +static void torture_mutex_unlock(void) __releases(torture_mutex)
+> +{
+> +	mutex_unlock(&torture_mutex);
+> +}
 > +
-> +static struct phy_ops qcom_dwc3_phy_ops = {
-> +	.init		= qcom_dwc3_phy_init,
-> +	.exit		= qcom_dwc3_phy_exit,
-> +	.power_on	= qcom_dwc3_phy_power_on,
-> +	.power_off	= qcom_dwc3_phy_power_off,
-> +	.owner		= THIS_MODULE,
+> +static struct lock_torture_ops mutex_lock_ops = {
+> +	.writelock	= torture_mutex_lock,
+> +	.write_delay	= torture_mutex_delay,
+> +	.writeunlock	= torture_mutex_unlock,
+> +	.name		= "mutex_lock"
 > +};
 > +
-> +static const struct of_device_id qcom_dwc3_phy_table[] = {
-> +	{
-> +		.compatible = "qcom,dwc3-hs-usb-phy",
-> +		.data = (void *)QCOM_DWC3_PHY_UTMI,
-> +	},
-> +	{
-> +		.compatible = "qcom,dwc3-ss-usb-phy",
-> +		.data = (void *)QCOM_DWC3_PHY_PIPE,
-> +	},
-> +	{ /* Sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, qcom_dwc3_phy_table);
+>  /*
+>   * Lock torture writer kthread.  Repeatedly acquires and releases
+>   * the lock, checking for duplicate acquisitions.
+> @@ -352,7 +389,7 @@ static int __init lock_torture_init(void)
+>  	int i;
+>  	int firsterr = 0;
+>  	static struct lock_torture_ops *torture_ops[] = {
+> -		&lock_busted_ops, &spin_lock_ops, &spin_lock_irq_ops,
+> +		&lock_busted_ops, &spin_lock_ops, &spin_lock_irq_ops, &mutex_lock_ops,
+>  	};
+> 
+>  	if (!torture_init_begin(torture_type, verbose, &torture_runnable))
+> -- 
 
-I'd suggest just creating a separate ops table, and have '.data' point
-to it.  Might cleanup all of the switch() statements above.  You could
-also probably drop the 'index' member of 'struct qcom_dwc3_usb_phy', and
-maybe even 'enum qcom_dwc3_phy_id' altogether.
+And I queued the following patch to catch up the scripting.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+------------------------------------------------------------------------
+
+locktorture: Add test scenario for mutex_lock
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/CFLIST b/tools/testing/selftests/rcutorture/configs/lock/CFLIST
+index a061b22d1892..901bafde4588 100644
+--- a/tools/testing/selftests/rcutorture/configs/lock/CFLIST
++++ b/tools/testing/selftests/rcutorture/configs/lock/CFLIST
+@@ -1 +1,2 @@
+ LOCK01
++LOCK02
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/LOCK02 b/tools/testing/selftests/rcutorture/configs/lock/LOCK02
+new file mode 100644
+index 000000000000..1d1da1477fc3
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/LOCK02
+@@ -0,0 +1,6 @@
++CONFIG_SMP=y
++CONFIG_NR_CPUS=4
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT_NONE=n
++CONFIG_PREEMPT_VOLUNTARY=n
++CONFIG_PREEMPT=y
+diff --git a/tools/testing/selftests/rcutorture/configs/lock/LOCK02.boot b/tools/testing/selftests/rcutorture/configs/lock/LOCK02.boot
+new file mode 100644
+index 000000000000..5aa44b4f1b51
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/configs/lock/LOCK02.boot
+@@ -0,0 +1 @@
++locktorture.torture_type=mutex_lock
+
