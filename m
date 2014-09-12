@@ -1,85 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaILQbC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:31:02 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:60350 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbaILQbA (ORCPT
+	id S1752411AbaILQdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:33:02 -0400
+Received: from www.xora.org.uk ([80.68.91.202]:46628 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846AbaILQc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:31:00 -0400
-Date: Fri, 12 Sep 2014 09:30:55 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andreea-Cristina Bernat <bernat.ada@gmail.com>, paulus@samba.org,
-        mingo@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org,
-        stephen@networkplumber.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH] kernel: events: core: Replace rcu_assign_pointer() with
- RCU_INIT_POINTER()
-Message-ID: <20140912163055.GC4775@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140822132605.GA20130@ada>
- <20140909094235.GD19379@twins.programming.kicks-ass.net>
- <20140909161648.GE4704@linux.vnet.ibm.com>
- <20140910131251.GZ4783@worktop.ger.corp.intel.com>
+	Fri, 12 Sep 2014 12:32:58 -0400
+Date: Fri, 12 Sep 2014 17:32:54 +0100
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 05/18] ARM64 / ACPI: Introduce sleep-arm.c
+Message-ID: <20140912163254.GC9234@xora-haswell.xora.org.uk>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-6-git-send-email-hanjun.guo@linaro.org>
+ <20140912145102.GB5532@arm.com>
+ <20140912151850.GB9234@xora-haswell.xora.org.uk>
+ <20140912154903.GE5532@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140910131251.GZ4783@worktop.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091216-3532-0000-0000-000004946663
+In-Reply-To: <20140912154903.GE5532@arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 10, 2014 at 03:12:51PM +0200, Peter Zijlstra wrote:
-> On Tue, Sep 09, 2014 at 09:16:48AM -0700, Paul E. McKenney wrote:
-> > On Tue, Sep 09, 2014 at 11:42:35AM +0200, Peter Zijlstra wrote:
-> 
-> > > Paul, why not do something like the below and do away with all this
-> > > nonsense?
+On Fri, Sep 12, 2014 at 04:49:03PM +0100, Catalin Marinas wrote:
+> On Fri, Sep 12, 2014 at 04:18:51PM +0100, Graeme Gregory wrote:
+> > On Fri, Sep 12, 2014 at 03:51:02PM +0100, Catalin Marinas wrote:
+> > > On Fri, Sep 12, 2014 at 03:00:03PM +0100, Hanjun Guo wrote:
+> > > > --- a/drivers/acpi/Makefile
+> > > > +++ b/drivers/acpi/Makefile
+> > > > @@ -23,7 +23,11 @@ acpi-y				+= nvs.o
+> > > >  
+> > > >  # Power management related files
+> > > >  acpi-y				+= wakeup.o
+> > > > +ifeq ($(ARCH), arm64)
+> > > > +acpi-y				+= sleep-arm.o
+> > > > +else # X86, IA64
+> > > >  acpi-y				+= sleep.o
+> > > > +endif
+> > > >  acpi-y				+= device_pm.o
+> > > >  acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+> > > 
+> > > What about:
+> > > 
+> > > -acpi-y				+= sleep.o
+> > > +acpi-$(CONFIG_ACPI_SLEEP)	+= sleep.o
+> > > 
+> > > and make CONFIG_ACPI_SLEEP depend on !ARM64? Does the kernel compile if
+> > > you disable CONFIG_ACPI_SLEEP?
 > > 
-> > We used to do that, but the compilers became uncooperative, despite
-> > Stephen Hemminger's best efforts.
+> > sleep.c is still needed in the case CONFIG_ACPI_SLEEP=n
+> > 
+> > basically the two functions I stubbed are always called by bus.c
 > 
-> Happen to have a link handy to that thread so I can educate myself?
+> So the two functions are:
+> 
+> acpi_target_system_state() - already defined in acpi_bus.h when
+> CONFIG_ACPI_SLEEP is off.
+> 
+> acpi_sleep_init() - this one doesn't have a dummy implementation for
+> !ACPI_SLEEP.
+> 
+> Now, for x86, do we need acpi_sleep_init() when CONFIG_ACPI_SLEEP is
+> off? If not, we could simply add a dummy acpi_sleep_init() function when
+> !ACPI_SLEEP and don't enable the config option for arm64.
+> 
+It looks to me that it still does processing for the S5 state which is
+soft off.
 
-After a bit of software archeology, here you go...
+It sets up the operations to be called when entering this state and also
+sets up a notifier.
 
-Commit d322f45ceed52 (rcu: Make rcu_assign_pointer() unconditionally
-insert a memory barrier) made this change.  According to the commit
-log:
-
-    Recent changes to gcc give warning messages on rcu_assign_pointers()'s
-    checks that allow it to determine when it is OK to omit the memory
-    barrier.  Stephen Hemminger tried a number of gcc tricks to silence
-    this warning, but #pragmas and CPP macros do not work together in the
-    way that would be required to make this work.
-
-This was applied in 2011, and searching LKML during that time gives
-the following:  https://lkml.org/lkml/2011/7/29/305
-
-And in this LKML post, Stephen Hemminger wrote:
-
-	Gcc now generates warnings from rcu_assign_pointer when passed the
-	address of something for example:
-		rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
-	This warning is harmless and should be surpressed but there maybe
-	other cases where we want that Gcc warning.
-
-	I tried various combinations of in rcu_assign_pointer macro
-	  #pragma GCC diagnostic push
-	  #pragma GCC diagnostic ignored "-Wlogical-op"
-	  ...
-	  #pragma GCC diagnostic pop
-	but macro's and pragma's don't nest with the correct scope for
-	this.
-
-	Maybe some one with more Gcc foo and time to waste could take
-	a crack at it.
-
-Adding Stephen on CC in case he remembers more.
-
-							Thanx, Paul
+Graeme
 
