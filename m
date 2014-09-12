@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaILJdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:33:08 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:54189 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750827AbaILJdG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:33:06 -0400
-X-Greylist: delayed 476 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Sep 2014 05:33:06 EDT
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: mturquette@linaro.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <f9f5f59091b5f35ad85420f18807cf80>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark yao <mark.yao@rock-chips.com>
-To: Mike Turquette <mturquette@linaro.org>, heiko@sntech.de
-Cc: linux-kernel@vger.kernel.org, djkurtz@chromium.org, dianders@chromium.org,
-        dkl@rock-chips.com, eddie.cai@rock-chips.com, xjq@rock-chips.com,
-        kfx@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yxj@rock-chips.com, cym@rock-chips.com, zhengsq@rock-chips.com,
-        caesar.wang@rock-chips.com, kever.yang@rock-chips.com,
-        Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH] clk: rockchip: rk3288: fix softreset register count
-Date: Fri, 12 Sep 2014 17:24:46 +0800
-Message-Id: <1410513887-17459-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753801AbaILJfB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:35:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39024 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576AbaILJe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:34:57 -0400
+Message-ID: <5412BE19.2010302@ti.com>
+Date: Fri, 12 Sep 2014 12:34:17 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: Xiubo Li <Li.Xiubo@freescale.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <plagnioj@jcrosoft.com>, <grant.likely@linaro.org>, <arnd@arndb.de>,
+        <peter.griffin@linaro.org>, <jg1.han@samsung.com>,
+        <daniel.vetter@ffwll.ch>, <laurent.pinchart@ideasonboard.com>,
+        <robdclark@gmail.com>, <linux-fbdev@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
+References: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rk3288 actually has 12 softresets, so fix the register count.
+--0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Mark yao <mark.yao@rock-chips.com>
----
- drivers/clk/rockchip/clk-rk3288.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi,
 
-diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-index 0d8c6c5..2e1d790 100644
---- a/drivers/clk/rockchip/clk-rk3288.c
-+++ b/drivers/clk/rockchip/clk-rk3288.c
-@@ -711,7 +711,7 @@ static void __init rk3288_clk_init(struct device_node *np)
- 	rockchip_clk_register_branches(rk3288_clk_branches,
- 				  ARRAY_SIZE(rk3288_clk_branches));
- 
--	rockchip_register_softrst(np, 9, reg_base + RK3288_SOFTRST_CON(0),
-+	rockchip_register_softrst(np, 12, reg_base + RK3288_SOFTRST_CON(0),
- 				  ROCKCHIP_SOFTRST_HIWORD_MASK);
- }
- CLK_OF_DECLARE(rk3288_cru, "rockchip,rk3288-cru", rk3288_clk_init);
--- 
-1.9.1
+On 05/09/14 07:48, Xiubo Li wrote:
+> Some Freescale SoCs, there has an DVI/HDMI controller and a PHY,
+> attached to one of their display controller unit's LCDC interfaces.
+> This patch adds a preliminary static support for such controllers.
+>=20
+> This will support for many modes and a dynamic switching between
+> them.
+>=20
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  .../devicetree/bindings/video/fsl-sii902x.txt      |  17 +
+>  drivers/video/fbdev/Kconfig                        |   7 +
+>  drivers/video/fbdev/Makefile                       |   1 +
+>  drivers/video/fbdev/fsl-sii902x.c                  | 526 +++++++++++++=
+++++++++
+>  4 files changed, 551 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/video/fsl-sii902x=
+=2Etxt
+>  create mode 100644 drivers/video/fbdev/fsl-sii902x.c
 
+I don't know how you picked the names of the people you sent this patch
+to, but looks to me that most of them are probably not interested in
+this patch.
+
+Anyway, a few quick comments on the patch:
+
+- You should probably use regmap instead of direct i2c calls.
+Interestingly, you define regmap variable, but you never use it.
+- Use defines for register offsets, instead of magic numbers.
+- You should not use static variables. They prevent having multiple
+instances of the device.
+
+So the SiI902x chip is on the SoC, not on the board? And it's a plain
+standard SiI902x in other aspects?
+
+ Tomi
+
+
+
+--0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUEr4ZAAoJEPo9qoy8lh71CpAQAKoDh2t5GoUuDQpPouk0PjlM
+u03FFs+tJDnol6nKjrA2aWdhi9tAUhofT2dyrnmlrHMPmhCRUZxuyuLFFVvYDcz9
+OUpt7nk80zAAhHwwsr4gReSzhLP7sTfqVjvuD4fwvA2Iff8XJI1v8ZTpSznz30PV
+77Nog6FoZpukkookxs1U2YEvftgHuox3DwKweyaTensWsbS17NJw7bjVLYehtqlQ
+RTFIz5kwhzbL6NEKY/FVTyEFxrqB3lck/r8bhbkRmEUunA9blJC/GVTiVYFTAW5d
+sJFfAS2Jo1yuKHtfpHjQoaCO/QcLV9I9MG1q7m+atXqy2SYW0nuxk0z79Gal4buu
+IENJXu+uh+lsbWNBeoS+KjPpVtCmX7+yFYXdsHg2LhS7KVY4z/Qjkd+a2hc1tyl1
+iQktbfdRm/0MLsNlI/dPpH19prgPg9Q0rxJJJKLcx9VtCE/3iZZZOzVJSz4o3ESN
+G7wfKLD+U9UQbow0g/UBWCqL58POVxxZtt37oYcQZ81i41H76D7xTK5ZscKQ9XBi
+PguTkAs2LCa2p3NlQPvuGdsA4cZCiWHjo3yNlY4HGzrG9/nXzz1B/JdeuZf3rzxN
+OgJnKs2ak0MfajQudQOgC0UcvQ//CRwXQDcjf6VagzYUIH0f9Qj5cmO4mqMC238I
+9sZSar3jJYIOgo9ICHi6
+=phmy
+-----END PGP SIGNATURE-----
+
+--0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut--
