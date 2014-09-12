@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaILULV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:11:21 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41038 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488AbaILULU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:11:20 -0400
-Message-ID: <1410552676.5187.211.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [Keyrings] [PATCH 1/9] Provide a binary to hex conversion
- function
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: vgoyal@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Sep 2014 16:11:16 -0400
-In-Reply-To: <20140912190515.13239.89507.stgit@warthog.procyon.org.uk>
-References: <20140912190510.13239.90409.stgit@warthog.procyon.org.uk>
-	 <20140912190515.13239.89507.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091220-9332-0000-0000-000002003EB5
+	id S1752803AbaILUMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:12:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125AbaILUMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:12:51 -0400
+Date: Sat, 13 Sep 2014 05:12:41 +0900
+From: Tejun Heo <theo@redhat.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Cc: Gustavo Luiz Duarte <gduarte@redhat.com>,
+        Mike Anderson <mike.anderson@us.ibm.com>,
+        Tomas Henzl <thenzl@redhat.com>
+Subject: Re: [PATCH wq/for-3.18] workqueue: apply __WQ_ORDERED to
+ create_singlethread_workqueue()
+Message-ID: <20140912201241.GB23756@mtj.dyndns.org>
+References: <20140912195328.GA23756@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140912195328.GA23756@mtj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 20:05 +0100, David Howells wrote: 
-> Provide a function to convert a buffer of binary data into an unterminated
-> ascii hex string representation of that data.
+On Sat, Sep 13, 2014 at 04:53:28AM +0900, Tejun Heo wrote:
+> From e141deffe6a30cfe7dd6ad97f21afa85b80ca3ac Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Sat, 13 Sep 2014 04:14:30 +0900
 > 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
+> create_singlethread_workqueue() is a compat interface for singled
+> threaded workqueue which maps to ordered workqueue w/ rescuer in the
+> current implementation.  create_singlethread_workqueue() currently
+> implemented by invoking alloc_workqueue() w/ appropriate parameters.
 > 
->  include/linux/kernel.h |    1 +
->  lib/hexdump.c          |   18 ++++++++++++++++++
->  2 files changed, 19 insertions(+)
+> 8719dceae2f9 ("workqueue: reject adjusting max_active or applying
+> attrs to ordered workqueues") introduced __WQ_ORDERED to protect
+> ordered workqueues against dynamic attribute changes which can break
+> ordering guarantees but forgot to apply it to
+> create_singlethread_workqueue().  While this can be potentially
+> dangerous, this isn't a problem in practice given the existing uses of
+> dynamic attribute changes.
 > 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 95624bed87ef..7c0ad8e38510 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -496,6 +496,7 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
-> 
->  extern int hex_to_bin(char ch);
->  extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
-> +extern char *bin2hex(char *dst, const void *src, size_t count);
-> 
->  bool mac_pton(const char *s, u8 *mac);
-> 
-> diff --git a/lib/hexdump.c b/lib/hexdump.c
-> index 8499c810909a..6daf254dddfa 100644
-> --- a/lib/hexdump.c
-> +++ b/lib/hexdump.c
-> @@ -59,6 +59,24 @@ int hex2bin(u8 *dst, const char *src, size_t count)
->  EXPORT_SYMBOL(hex2bin);
-> 
->  /**
-> + * bin2hex - convert binary data to an ascii hexadecimal string
-> + * @dst: ascii hexadecimal result
-> + * @src: binary data
-> + * @count: binary data length
-> + */
-> +char *bin2hex(char *dst, const void *src, size_t count)
-> +{
-> +	while (count--) {
-> +		unsigned char ch = *(const unsigned char *)src;
-> +		*dst++ = hex_asc[ch >> 4];
-> +		*dst++ = hex_asc[ch & 0xf];
-> +		src++;
+> Let's make create_singlethread_workqueue() wrap
+> alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
+> can implicitly track future ordered_workqueue changes.
 
-How about using hex_byte_pack()?
+Oops, this is the right change but w/ wrong description and branch.
+W/o __WQ_ORDERED, create_singlethread_workqueue() is broken on NUMA
+setups.  Will respin the patch.
 
-Mimi
+Thanks.
 
-> +	}
-> +	return dst;
-> +}
-> +EXPORT_SYMBOL(bin2hex);
-
-> +
-> +/**
->   * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
->   * @buf: data blob to dump
->   * @len: number of bytes in the @buf
-> 
-> _______________________________________________
-> Keyrings mailing list
-> Keyrings@linux-nfs.org
-> To change your subscription to this list, please see http://linux-nfs.org/cgi-bin/mailman/listinfo/keyrings
-> 
-
-
+-- 
+tejun
