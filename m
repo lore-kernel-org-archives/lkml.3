@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaILQTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 12:19:47 -0400
-Received: from mout.gmx.net ([212.227.17.22]:50615 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733AbaILQTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 12:19:44 -0400
-Message-ID: <54131D1D.1030904@gmx.de>
-Date: Fri, 12 Sep 2014 18:19:41 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: cgroups@vger.kernel.org
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: cgroups/netfilter : kernel NULL pointer BUG at 00000038
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:9x0f9UjwlnSqFtQLhA8wprzO/r67pV5E2WoJQz7ZKqu9WQsunaB
- dr5i6pb2ooGdCAA2Zag5h4EO3Nv6Ck7YBRXuXuxj3c9YpYJxN2HARZPnT544SS0emkoMOYI
- LeqxymrcH30QsmQceWK9xKjJGwoVw4oYbnw5Ti+6K+Vsua7y65170JUFd0pWthmgqXd9QAV
- nMq7+utZcBBhhhK3/41oQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752053AbaILQUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 12:20:00 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52044 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaILQT5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 12:19:57 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-9c-54131d2b8b65
+Message-id: <1410538794.8852.35.camel@AMDC723>
+Subject: Re: [PATCH] PM / Domains: add debugfs listing of struct
+ generic_pm_domain-s
+From: Maciej Matraszek <m.matraszek@samsung.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>
+Date: Fri, 12 Sep 2014 18:19:54 +0200
+In-reply-to: <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
+References: <1410348536-15201-1-git-send-email-m.matraszek@samsung.com>
+ <CAMuHMdUi9sZFZa2pcAWvHi1xmZfhEUyCbW0uRt65QwkbTqEjYg@mail.gmail.com>
+ <1410453908.8852.9.camel@AMDC723>
+ <CAMuHMdV74C+iFXXGjKAfvjd8NjKQDwcm1bJja41cscbip_ePZg@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xy7rassIhBie/K1psnLGe1eLZrb1M
+	Fs2L17NZvH5haDFrCpB3edccNovPvUcYLeb8mcJscffUUTaLM6cvsTpweSze85LJ49DhDkaP
+	/XPXsHtsudrO4tG3ZRWjx4rV39k9Pm+SC2CP4rJJSc3JLEst0rdL4Mp4NWkOS8E6loqn056w
+	NTBuYO5i5OSQEDCRmNb9mAXCFpO4cG89WxcjF4eQwFJGiUenZzFCOJ8ZJRa9Wc4OUsUroCfR
+	0H4XrFtYIEziT/9mVhCbTcBAYvO/fqBJHBwiAroSc34ygfQyC8xjlvi1tZcZJM4ioCqx+rUl
+	iMkpECyxY78vxPifjBKTvzSCjWQWUJeYNG8RWLmEgLJEY78bxFZBiR+T77FAlMhLbF7zlnkC
+	o8AsJB2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZITHzZwbj4mNUhRgEO
+	RiUeXo5zgiFCrIllxZW5hxglOJiVRHgVRYVDhHhTEiurUovy44tKc1KLDzEycXBKNTDOviDG
+	IHzpatT5BzcvBkhanUhzSze5vOlVQtGFaA8j0XlVN04mv/zNLDxNeN9z2fST++ycUt9WXdHp
+	utXcySE3aXbxqufVK5dX8hq/8FrIcmT5dkcz7+oQrp075boWHTx2VuHrnG26676G2r1V6u55
+	VT9PoEh78UqpF86uEyvcouftV2Y4k6KsxFKckWioxVxUnAgAtl3Sq2cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today I observed within a 32 bit KVM machine (stable Gentoo x86 Linux) the following :
+On czw, 2014-09-11 at 19:27 +0200, Geert Uytterhoeven wrote:
+> Hi Maciej,
+> 
+> On Thu, Sep 11, 2014 at 6:45 PM, Maciej Matraszek
+> <m.matraszek@samsung.com> wrote:
+> > BTW Can I use your output as example in the commit message for v2?
+> > It's much more informative
+> 
+> Sure, no problem.
+> 
+> > (though 'runtime status' alignment seems odd).
+> 
+> What's wrong with it?
 
-Sep 12 18:14:37 n22kvmclone kernel: [   37.964900] ip_tables: (C) 2000-2006 Netfilter Core Team
-Sep 12 18:14:38 n22kvmclone kernel: [   38.412110] nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
-Sep 12 18:14:38 n22kvmclone kernel: [   39.032978] ------------[ cut here ]------------
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033009] WARNING: CPU: 0 PID: 1632 at kernel/cgroup.c:1034 cgroup_get+0x91/0xb0()
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033013] Modules linked in: xt_NFLOG xt_limit ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_recent xt_conntrack nf_conntrack iptable_filter ip_tables af_packet dm_crypt dm_mod usbhid mousedev uhci_hcd ehci_pci microcode psmouse ehci_hcd evdev usbcore atkbd usb_common virtio_console processor button
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033104] CPU: 0 PID: 1632 Comm: runscript.sh Not tainted 3.17.0-rc4 #18
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033107] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033110]  00000000 00000000 f4b33e54 cc04b292 00000000 f4b33e84 cbc46d64 cc18f11c
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033119]  00000000 00000660 cc19bcc5 0000040a cbcb5841 cbcb5841 f56de400 f4963688
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033128]  f4983cb8 f4b33e94 cbc46da2 00000009 00000000 f4b33eb0 cbcb5841 cbe59246
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033137] Call Trace:
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033163]  [<cc04b292>] dump_stack+0x41/0x52
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033179]  [<cbc46d64>] warn_slowpath_common+0x84/0xa0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033186]  [<cbcb5841>] ? cgroup_get+0x91/0xb0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033191]  [<cbcb5841>] ? cgroup_get+0x91/0xb0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033197]  [<cbc46da2>] warn_slowpath_null+0x22/0x30
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033202]  [<cbcb5841>] cgroup_get+0x91/0xb0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033223]  [<cbe59246>] ? kstrtoll+0x16/0x70
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033230]  [<cbcb5d3d>] cgroup_kn_lock_live+0x2d/0x70
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033235]  [<cbcb8386>] __cgroup_procs_write.isra.26+0x56/0x240
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033240]  [<cbcb8570>] ? __cgroup_procs_write.isra.26+0x240/0x240
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033245]  [<cbcb8587>] cgroup_tasks_write+0x17/0x20
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033250]  [<cbcb5645>] cgroup_file_write+0x45/0x140
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033256]  [<cbcb5600>] ? kill_css+0xd0/0xd0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033275]  [<cbda8d21>] kernfs_fop_write+0xd1/0x160
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033281]  [<cbda8c50>] ? kernfs_vma_page_mkwrite+0x90/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033291]  [<cbd49bbd>] vfs_write+0x9d/0x1e0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033297]  [<cbda8c50>] ? kernfs_vma_page_mkwrite+0x90/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033306]  [<cbd64522>] ? __fdget+0x12/0x20
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033311]  [<cbd4a0b2>] SyS_write+0x52/0xa0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033321]  [<cc0522ab>] sysenter_do_call+0x12/0x12
-Sep 12 18:14:38 n22kvmclone kernel: [   39.033325] ---[ end trace f3513225d53cf0f3 ]---
-Sep 12 18:14:38 n22kvmclone kernel: [   39.036277] BUG: unable to handle kernel NULL pointer dereference at 00000038
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] IP: [<cbcb5c2c>] cgroup_put+0xc/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] *pde = 00000000
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Oops: 0000 [#1] SMP
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Modules linked in: xt_NFLOG xt_limit ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_recent xt_conntrack nf_conntrack iptable_filter ip_tables af_packet dm_crypt dm_mod usbhid mousedev uhci_hcd ehci_pci microcode psmouse ehci_hcd evdev usbcore atkbd usb_common virtio_console processor button
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] CPU: 0 PID: 1632 Comm: runscript.sh Tainted: G        W      3.17.0-rc4 #18
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] task: f6216390 ti: f4b32000 task.ti: f4b32000
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] EIP: 0060:[<cbcb5c2c>] EFLAGS: 00010282 CPU: 0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] EIP is at cgroup_put+0xc/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] EAX: 00000000 EBX: f4963688 ECX: 0042621a EDX: 00000008
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] ESI: 00000000 EDI: f4983cb8 EBP: f4b33ea0 ESP: f4b33e8c
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] CR0: 8005003b CR2: 00000038 CR3: 35610000 CR4: 000006c0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Stack:
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  cbda848d 00000000 00000001 00000000 f4963688 f4b33eb0 cbcb5cee 00000000
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  f4963688 f4b33ec0 cbcb5d79 f6216390 00000000 f4b33efc cbcb8386 00000246
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  00000000 f62168fc f62168f0 00000002 00000000 f611c880 f611c000 f4b33f1c
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Call Trace:
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbda848d>] ? kernfs_unbreak_active_protection+0x4d/0x50
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb5cee>] cgroup_kn_unlock+0x3e/0x60
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb5d79>] cgroup_kn_lock_live+0x69/0x70
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb8386>] __cgroup_procs_write.isra.26+0x56/0x240
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb8570>] ? __cgroup_procs_write.isra.26+0x240/0x240
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb8587>] cgroup_tasks_write+0x17/0x20
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb5645>] cgroup_file_write+0x45/0x140
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbcb5600>] ? kill_css+0xd0/0xd0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbda8d21>] kernfs_fop_write+0xd1/0x160
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbda8c50>] ? kernfs_vma_page_mkwrite+0x90/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbd49bbd>] vfs_write+0x9d/0x1e0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbda8c50>] ? kernfs_vma_page_mkwrite+0x90/0x90
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbd64522>] ? __fdget+0x12/0x20
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cbd4a0b2>] SyS_write+0x52/0xa0
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026]  [<cc0522ab>] sysenter_do_call+0x12/0x12
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] Code: ff c7 04 24 e8 2f 19 cc e8 45 35 39 00 e9 76 ff ff ff 8d b6 00 00 00 00 8d bc 27 00 00 00 00 55 89 e5 53 83 ec 10 3e 8d 74 26 00 <f6> 40 38 01 89 c3 74 0c 83 c4 10 5b 5d c3 8d b6 00 00 00 00 31
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] EIP: [<cbcb5c2c>] cgroup_put+0xc/0x90 SS:ESP 0068:f4b33e8c
-Sep 12 18:14:38 n22kvmclone kernel: [   39.037026] CR2: 0000000000000038
-Sep 12 18:14:38 n22kvmclone kernel: [   39.092883] ---[ end trace f3513225d53cf0f4 ]---
+Nothing big, just for such short device names it doesn't look aesthetic to me :).
 
-
+Regards,
 -- 
-Toralf
-pgp key: 0076 E94E
+Maciej Matraszek
+Samsung R&D Institute Poland
+Samsung Electronics
+
 
