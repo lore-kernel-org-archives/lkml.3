@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488AbaILRFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:05:33 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64492 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaILRFc (ORCPT
+	id S1751575AbaILRGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:06:21 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:43643 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaILRGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:05:32 -0400
+	Fri, 12 Sep 2014 13:06:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140912054640.GB2160@bbox>
-References: <1410468841-320-1-git-send-email-ddstreet@ieee.org> <20140912054640.GB2160@bbox>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 12 Sep 2014 13:05:11 -0400
-X-Google-Sender-Auth: cSPP97Z1oawBJIBd1pNRLJkIeLw
-Message-ID: <CALZtONAzfUaXpxPc83KA6edB21uptWWGZkWZZa5DTFi=CMpgXA@mail.gmail.com>
-Subject: Re: [PATCH 00/10] implement zsmalloc shrinking
-To: Minchan Kim <minchan@kernel.org>
-Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
+X-Originating-IP: [88.96.238.14]
+In-Reply-To: <1410514809-25650-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410514809-25650-1-git-send-email-alexandre.belloni@free-electrons.com>
+Date: Fri, 12 Sep 2014 18:06:19 +0100
+Message-ID: <CAAEAJfBgUkSErSe80_VROKSGY_J9PoUgaCE0R5Rh+1uKRovXJA@mail.gmail.com>
+Subject: Re: [PATCHv4] mtd: nand: atmel_nand: retrieve NFC clock
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 1:46 AM, Minchan Kim <minchan@kernel.org> wrote:
-> On Thu, Sep 11, 2014 at 04:53:51PM -0400, Dan Streetman wrote:
->> Now that zswap can use zsmalloc as a storage pool via zpool, it will
->> try to shrink its zsmalloc zs_pool once it reaches its max_pool_percent
->> limit.  These patches implement zsmalloc shrinking.  The way the pool is
->> shrunk is by finding a zspage and reclaiming it, by evicting each of its
->> objects that is in use.
->>
->> Without these patches zswap, and any other future user of zpool/zsmalloc
->> that attempts to shrink the zpool/zs_pool, will only get errors and will
->> be unable to shrink its zpool/zs_pool.  With the ability to shrink, zswap
->> can keep the most recent compressed pages in memory.
->>
->> Note that the design of zsmalloc makes it impossible to actually find the
->> LRU zspage, so each class and fullness group is searched in a round-robin
->> method to find the next zspage to reclaim.  Each fullness group orders its
->> zspages in LRU order, so the oldest zspage is used for each fullness group.
->>
+On 12 September 2014 10:40, Alexandre Belloni
+<alexandre.belloni@free-electrons.com> wrote:
+> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 >
-> 1. Pz, Cc Mel who was strong against zswap with zsmalloc.
-> 2. I don't think LRU stuff should be in allocator layer. Exp, it's really
->    hard to work well in zsmalloc design.
 
-I didn't add any LRU - the existing fullness group LRU ordering is
-already there.  And yes, the zsmalloc design prevents any real LRU
-ordering, beyond per-fullness-group LRU ordering.
+This patch needs a commit log.
 
-> 3. If you want to add another writeback, make zswap writeback sane first.
->    current implemenation(zswap store -> zbud reclaim -> zswap writeback,
->    even) is really ugly.
-
-why what's wrong with that?  how else can zbud/zsmalloc evict stored objects?
-
-> 4. Don't make zsmalloc complicated without any data(benefit, regression)
->    I will never ack if you don't give any number and real usecase.
-
-ok, i'll run performance tests then, but let me know if you see any
-technical problems with any of the patches before then.
-
-thanks!
-
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
 >
->> ---
->>
->> This patch set applies to linux-next.
->>
->> Dan Streetman (10):
->>   zsmalloc: fix init_zspage free obj linking
->>   zsmalloc: add fullness group list for ZS_FULL zspages
->>   zsmalloc: always update lru ordering of each zspage
->>   zsmalloc: move zspage obj freeing to separate function
->>   zsmalloc: add atomic index to find zspage to reclaim
->>   zsmalloc: add zs_ops to zs_pool
->>   zsmalloc: add obj_handle_is_free()
->>   zsmalloc: add reclaim_zspage()
->>   zsmalloc: add zs_shrink()
->>   zsmalloc: implement zs_zpool_shrink() with zs_shrink()
->>
->>  drivers/block/zram/zram_drv.c |   2 +-
->>  include/linux/zsmalloc.h      |   7 +-
->>  mm/zsmalloc.c                 | 314 +++++++++++++++++++++++++++++++++++++-----
->>  3 files changed, 290 insertions(+), 33 deletions(-)
->>
->> --
->> 1.8.3.1
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+
+-- 
+Ezequiel García, VanguardiaSur
+www.vanguardiasur.com.ar
