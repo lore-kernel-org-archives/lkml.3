@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaILSVe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:21:34 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.99]:18797 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038AbaILSVb (ORCPT
+	id S1752207AbaILSWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:22:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53609 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaILSWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:21:31 -0400
-X-Env-Sender: Benjamin.Romer@unisys.com
-X-Msg-Ref: server-6.tower-201.messagelabs.com!1410546089!16943237!3
-X-Originating-IP: [192.61.61.104]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-Date: Fri, 12 Sep 2014 14:20:41 -0400
-To: <sudipm.mukherjee@gmail.com>, <David.Kershner@unisys.com>,
-        <Benjamin.Romer@unisys.com>
-CC: <sudipm.mukherjee@gmail.com>, <SParMaintainer@unisys.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH] staging: unisys: uislib: uislib.c: sparse warning of
- context imbalance
-References: <1410524846-10732-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1410524846-10732-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Heirloom mailx 12.5 6/20/10
+	Fri, 12 Sep 2014 14:22:07 -0400
+Date: Fri, 12 Sep 2014 11:22:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] char/misc driver fixes for 3.17-rc5
+Message-ID: <20140912182207.GA2207@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <E1XSVSb-0001dp-Ro@ustr-romerbm-3.na.uis.unisys.com>
-From: Ben Romer <benjamin.romer@unisys.com>
-X-OriginalArrivalTime: 12 Sep 2014 18:21:29.0134 (UTC) FILETIME=[5F10CCE0:01CFCEB6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sudip Mukherjee <sudipm.mukherjee@gmail.com> wrote:
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
-> fixed sparse warning : context imbalance in 'destroy_device'
->                         unexpected unlock
-> this patch will generate warning from checkpatch for
-> lines over 80 character , but since those are user-visible strings
-> so it was not modified.
->
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-I tested this patch and it looks good also. Thanks! :)
+are available in the git repository at:
 
--- Ben
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.17-rc5
 
-Tested-by: Benjamin Romer <benjamin.romer@unisys.com>
-Acked-by: Benjamin Romer <benjamin.romer@unisys.com>
+for you to fetch changes up to 3f0d97d97f2b539cf9ac746be4ec097259e6a8d0:
+
+  Lattice ECP3 FPGA: Check firmware pointer (2014-09-08 14:38:14 -0700)
+
+----------------------------------------------------------------
+Char/Misc driver fix for 3.17-rc5
+
+Here is one misc driver fix for 3.17-rc5.  It resolves a kernel oops
+that can happen in the lattice FPGA driver if the firmware isn't
+present on the system.
+
+It's been in the linux-next tree for a while now.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Jean-Michel Hautbois (1):
+      Lattice ECP3 FPGA: Check firmware pointer
+
+ drivers/misc/lattice-ecp3-config.c | 5 +++++
+ 1 file changed, 5 insertions(+)
