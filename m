@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaILE7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 00:59:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29336 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750955AbaILE7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 00:59:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,510,1406617200"; 
-   d="scan'208";a="572123636"
-Message-ID: <54127DC3.40107@intel.com>
-Date: Thu, 11 Sep 2014 21:59:47 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751904AbaILFMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 01:12:03 -0400
+Received: from mail-bl2on0143.outbound.protection.outlook.com ([65.55.169.143]:49615
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751066AbaILFMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 01:12:01 -0400
+Date: Fri, 12 Sep 2014 13:11:42 +0800
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: Timur Tabi <timur@tabi.org>
+CC: <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>,
+        <broonie@kernel.org>, <perex@perex.cz>, <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140912051140.GA3644@audiosh1>
+References: <27584da8e3ab291ab8dbcbb411579613f8384a59.1410413734.git.shengjiu.wang@freescale.com>
+ <54125DEF.4090101@tabi.org>
 MIME-Version: 1.0
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 09/10] x86, mpx: cleanup unused bound tables
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-10-git-send-email-qiaowei.ren@intel.com> <5411B8C3.7080205@intel.com> <9E0BE1322F2F2246BD820DA9FC397ADE017A4015@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE017A4015@shsmsx102.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <54125DEF.4090101@tabi.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(189002)(24454002)(81542001)(6806004)(50986999)(76176999)(74502001)(106466001)(47776003)(4396001)(81342001)(64706001)(81156004)(110136001)(74662001)(83322001)(85306004)(54356999)(90102001)(104016003)(97736003)(20776003)(97756001)(68736004)(69596002)(83506001)(105606002)(84676001)(107046002)(44976005)(46102001)(33716001)(76482001)(92566001)(86362001)(83072002)(85852003)(21056001)(77982001)(23726002)(92726001)(79102001)(99396002)(50466002)(33656002)(26826002)(102836001)(31966008)(95666004)(46406003)(80022001)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0620;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 08:02 PM, Ren, Qiaowei wrote:
-> On 2014-09-11, Hansen, Dave wrote:
->> On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
->>> + * This function will be called by do_munmap(), and the VMAs
->>> + covering
->>> + * the virtual address region start...end have already been split
->>> + if
->>> + * necessary and remvoed from the VMA list.
->>
->> "remvoed" -> "removed"
->>
->>> +void mpx_unmap(struct mm_struct *mm,
->>> +		unsigned long start, unsigned long end) {
->>> +	int ret;
->>> +
->>> +	ret = mpx_try_unmap(mm, start, end);
->>> +	if (ret == -EINVAL)
->>> +		force_sig(SIGSEGV, current);
->>> +}
->> 
->> In the case of a fault during an unmap, this just ignores the 
->> situation and returns silently.  Where is the code to retry the 
->> freeing operation outside of mmap_sem?
+On Thu, Sep 11, 2014 at 09:43:59PM -0500, Timur Tabi wrote:
+> Shengjiu Wang wrote:
+> >+	ret = clk_prepare_enable(ssi_private->clk);
+> >+	if (ret)
+> >+		return ret;
 > 
-> Dave, you mean delayed_work code? According to our discussion, it
-> will be deferred to another mainline post.
+> Will this work on PowerPC, where ssi_private->clk is always NULL?
 
-OK, fine.  Just please call that out in the description.
+When ssi_private->clk is NULL, then ret = 0, so here will not return,
+the code in below will be continuously executed.
+I think it work on PowerPC.
 
+wang shengjiu
