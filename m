@@ -1,85 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540AbaILMEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 08:04:13 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:43546 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395AbaILMEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 08:04:11 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-41-5412e13705fc
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tushar Behera <tushar.behera@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: [PATCH] ARM: exynos_defconfig: Enable Maxim 77693 and I2C GPIO drivers
-Date: Fri, 12 Sep 2014 14:03:54 +0200
-Message-id: <1410523434-10645-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t/xy7rmD4VCDBreW1tsnLGe1eL1C0OL
-	3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2Rx+zKvxdojd9ktrlw6xWaxatcfRov2v3vZHHg8
-	Wpp72Dx2zrrL7nHn2h42j81L6j36tqxi9Pi8SS6ALYrLJiU1J7MstUjfLoEro3PnM8aCRp6K
-	HVdvsDUwruLqYuTkkBAwkTjeNJsdwhaTuHBvPVsXIxeHkMBSRon37f1MIAkhgT4miX+LXEFs
-	NgFjic3Ll4AViQgsZZZYcbsdrJtZIExi5fa9zCC2sIC/xIGXy1lAbBYBVYnpkyeDxXkF3CWm
-	3G5mgdgmJ3Hy2GTWCYzcCxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKEBNfXHYxLj1kd
-	YhTgYFTi4f2QKxgixJpYVlyZe4hRgoNZSYR31x2hECHelMTKqtSi/Pii0pzU4kOMTBycUg2M
-	8x7ZTnTdWqG6apLKryUadgdOvDZZsfywuej7a/6bmHZ6zZEu/nsz68hxlYJJWqpN/z62qbuu
-	mCovvddGTEWgbn7CwS0+i41NPS2Zp+kItfo3LLpwtp3vv8GHHsHde/ZOja54+K7o9pq/si9b
-	Xp+96yr6Qcrk/LKzZf1tDMb3Z+3o3u7y0iLorRJLcUaioRZzUXEiAFBEB4wMAgAA
+	id S1754559AbaILMF0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 08:05:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753610AbaILMFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 08:05:25 -0400
+Date: Fri, 12 Sep 2014 08:04:47 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, hpa@zytor.com, tglx@linutronix.de,
+        mingo@redhat.com, keescook@chromium.org, ak@linux.intel.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp
+Subject: Re: [Patch v2 1/2] kaslr: check if kernel location is changed
+Message-ID: <20140912120447.GB29945@redhat.com>
+References: <1410502832-3573-1-git-send-email-bhe@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410502832-3573-1-git-send-email-bhe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Exynos System-on-Chips have ~7 distinctive I2C IO ports (exact
-number depends on chip). However some integrated circuits on board, also
-using I2C protocol for communication, can be connected to the SoC by
-other GPIO. Enabling the I2C GPIO driver allows using such additional
-integrated circuits.
+On Fri, Sep 12, 2014 at 02:20:31PM +0800, Baoquan He wrote:
+> Function handle_relocations() is used to do the relocations handling
+> for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+> mandotary to perform. For x86_64 only when kaslr is enabled and a
+> random kernel location is chosen successfully the relocation handling
+> shound be done. However previous implementation only compared the
+> kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+> compiled to run at.
 
-An example of such chip using I2C and connected over GPIO to SoC is
-Maxim 77693 MUIC on Trats2 board. The regulator driver of Maxim
-77693 offers charger and safeout LDO (necessary for USB OTG).
+> This would casue system to hang when kernel
+> loading address is not equal to LOAD_PHYSICAL_ADDR.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/configs/exynos_defconfig | 3 +++
- 1 file changed, 3 insertions(+)
+I don't think above is correct. It will not always fails. It will fail
+only in few conditions like when delta between load address and compiled
+address is bigger than what 32bit signed relocations can handle. 
 
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index fc7d1683bf67..6dd5252f73f4 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -71,6 +71,7 @@ CONFIG_I2C=y
- CONFIG_I2C_MUX=y
- CONFIG_I2C_ARB_GPIO_CHALLENGE=y
- CONFIG_I2C_EXYNOS5=y
-+CONFIG_I2C_GPIO=y
- CONFIG_I2C_CROS_EC_TUNNEL=y
- CONFIG_SPI=y
- CONFIG_SPI_S3C64XX=y
-@@ -88,6 +89,7 @@ CONFIG_MFD_CROS_EC=y
- CONFIG_MFD_CROS_EC_I2C=y
- CONFIG_MFD_CROS_EC_SPI=y
- CONFIG_MFD_MAX77686=y
-+CONFIG_MFD_MAX77693=y
- CONFIG_MFD_MAX8997=y
- CONFIG_MFD_SEC_CORE=y
- CONFIG_MFD_TPS65090=y
-@@ -96,6 +98,7 @@ CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_GPIO=y
- CONFIG_REGULATOR_MAX8997=y
- CONFIG_REGULATOR_MAX77686=y
-+CONFIG_REGULATOR_MAX77693=y
- CONFIG_REGULATOR_S2MPA01=y
- CONFIG_REGULATOR_S2MPS11=y
- CONFIG_REGULATOR_S5M8767=y
--- 
-1.9.1
+Also there will be limitations that delta can't be too big otherwise
+kernel text virtual addresses will overflow in module address space.
 
+Thanks
+Vivek
+> 
+> So in this patch check if kernel location is changed after
+> choose_kernel_location() when x86_64. If and only if in x86_64
+> and kernel location is changed, we say a kaslr random kernel
+> location is chosen, then the relocation handling need be done.
+> 
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+>  1 file changed, 22 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 57ab74d..3bb2a17 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -230,8 +230,9 @@ static void error(char *x)
+>  		asm("hlt");
+>  }
+>  
+> -#if CONFIG_X86_NEED_RELOCS
+> -static void handle_relocations(void *output, unsigned long output_len)
+> +#ifdef CONFIG_X86_NEED_RELOCS
+> +static void handle_relocations(void *output_orig, void *output,
+> +			       unsigned long output_len)
+>  {
+>  	int *reloc;
+>  	unsigned long delta, map, ptr;
+> @@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+>  	unsigned long max_addr = min_addr + output_len;
+>  
+>  	/*
+> +	* 32bit always requires relocations to be performed. For x86_64,
+> +	* relocations need to be performed only if kaslr has chosen a
+> +	* different load address then kernel was originally loaded at.
+> +	*
+> +	* If we are here, either kaslr is not configured in or kaslr is disabled
+> +	* or kaslr has chosen not to change the load location of kernel. Don't
+> +	* perform any relocations.
+> +	*/
+> +#if CONFIG_X86_64
+> +	if (output_orig == output)
+> +		return;
+> +#endif
+> +
+> +	/*
+>  	 * Calculate the delta between where vmlinux was linked to load
+>  	 * and where it was actually loaded.
+>  	 */
+> @@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+>  #endif
+>  }
+>  #else
+> -static inline void handle_relocations(void *output, unsigned long output_len)
+> +static inline void handle_relocations(void *output_orig, void *output,
+> +				      unsigned long output_len)
+>  { }
+>  #endif
+>  
+> @@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  				  unsigned char *output,
+>  				  unsigned long output_len)
+>  {
+> +	unsigned char *output_orig = output;
+> +
+>  	real_mode = rmode;
+>  
+>  	sanitize_boot_params(real_mode);
+> @@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  	debug_putstr("\nDecompressing Linux... ");
+>  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>  	parse_elf(output);
+> -	handle_relocations(output, output_len);
+> +	handle_relocations(output_orig, output, output_len);
+>  	debug_putstr("done.\nBooting the kernel.\n");
+>  	return output;
+>  }
+> -- 
+> 1.8.5.3
