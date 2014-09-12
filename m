@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaILCdT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 22:33:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51416 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014AbaILCdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 22:33:17 -0400
-Date: Thu, 11 Sep 2014 22:32:52 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        kkolasa@winsoft.pl, dm-devel@redhat.com
-Subject: Re: [PATCH] slab: implement kmalloc guard
-In-Reply-To: <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
-Message-ID: <alpine.LRH.2.02.1409112211060.30537@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com> <alpine.DEB.2.11.1409080932490.20388@gentwo.org> <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
- <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752652AbaILCl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 22:41:27 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:61917 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaILCl0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 22:41:26 -0400
+Date: Fri, 12 Sep 2014 04:41:22 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Deadlock in vtime_account_user() vs itself across a page fault
+Message-ID: <20140912024120.GA4200@lerouge>
+References: <26020.1410476074@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <26020.1410476074@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 8 Sep 2014, Christoph Lameter wrote:
-
-> On Mon, 8 Sep 2014, Mikulas Patocka wrote:
+On Thu, Sep 11, 2014 at 11:54:34PM +0100, David Howells wrote:
 > 
-> > I don't know what you mean. If someone allocates 10000 objects with sizes
-> > from 1 to 10000, you can't have 10000 slab caches - you can't have a slab
-> > cache for each used size. Also - you can't create a slab cache in
-> > interrupt context.
+> Whilst trying to use docker, I'm occasionally seeing the attached deadlock in
+> user time accounting, with a page fault in the middle.  The relevant lines
+> from the pre-fault bits of stack:
 > 
-> Oh you can create them up front on bootup. And I think only the small
-> sizes matter. Allocations >=8K are pushed to the page allocator anyways.
-
-Only for SLUB. For SLAB, large allocations are still use SLAB caches up to 
-4M. But anyway - having 8K preallocated slab caches is too much.
-
-If you want to integrate this patch into the slab/slub subsystem, a better 
-solution would be to store the exact size requested with kmalloc along the 
-slab/slub object itself (before the preceding redzone). But it would 
-result in duplicating the work - you'd have to repeat the logic in this 
-patch three times - once for slab, once for slub and once for 
-kmalloc_large/kmalloc_large_node.
-
-I don't know if it would be better than this patch.
-
-> > > We already have a redzone structure to check for writes over the end of
-> > > the object. Lets use that.
-> >
-> > So, change all three slab subsystems to use that.
+> 	[<ffffffff8106d954>] ? cpuacct_account_field+0x65/0x9a
+> 	(gdb) i li *0xffffffff8106d954
+> 	Line 272 of "../kernel/sched/cpuacct.c"
 > 
-> SLOB has no debugging features and I think that was intentional. We are
-> trying to unify the debug checks etc. Some work on that would be
-> appreciated. I think the kmalloc creation is already in slab_common.c
+> 		kcpustat->cpustat[index] += val;
+> 
+> 	[<ffffffff81060d41>] account_user_time+0x62/0x95
+> 	(gdb) i li *0xffffffff81060d41
+> 	Line 151 of "../kernel/sched/cputime.c"
+> 
+> 		acct_account_cputime(p);
+> 
+> 	[<ffffffff81061254>] vtime_account_user+0x62/0x8d
+> 	(gdb) i li *0xffffffff81061254
+> 	Line 264 of "../include/linux/seqlock.h"
+> 
+> 		in write_seqcount_end():
+> 		seqcount_release(&s->dep_map, 1, _RET_IP_);
+> 
+> I can't see any particular reason there should be a page fault occurring,
+> except that there's a duff kernel pointer, but I don't get to find out because
+> the page fault handling doesn't get that far:-/
+> 
+> David
+> ---
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.17.0-rc4-fsdevel+ #706 Tainted: G        W     
+> ---------------------------------------------
+> NetworkManager/2305 is trying to acquire lock:
+>  (&(&(&p->vtime_seqlock)->lock)->rlock){-.-.-.}, at: [<ffffffff8106120d>] vtime_account_user+0x1b/0x8d
+> 
+> but task is already holding lock:
+>  (&(&(&p->vtime_seqlock)->lock)->rlock){-.-.-.}, at: [<ffffffff8106120d>] vtime_account_user+0x1b/0x8d
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(&(&(&p->vtime_seqlock)->lock)->rlock);
+>   lock(&(&(&p->vtime_seqlock)->lock)->rlock);
+> 
+>  *** DEADLOCK ***
+> 
+>  May be due to missing lock nesting notation
+> 
+> 3 locks held by NetworkManager/2305:
+>  #0:  (&(&(&p->vtime_seqlock)->lock)->rlock){-.-.-.}, at: [<ffffffff8106120d>] vtime_account_user+0x1b/0x8d
+>  #1:  (&(&p->vtime_seqlock)->seqcount){-----.}, at: [<ffffffff810df2f9>] context_tracking_user_exit+0x54/0xb7
+>  #2:  (rcu_read_lock){......}, at: [<ffffffff8106d8ef>] cpuacct_account_field+0x0/0x9a
+> 
+> stack backtrace:
+> CPU: 0 PID: 2305 Comm: NetworkManager Tainted: G        W      3.17.0-rc4-fsdevel+ #706
+> Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
+>  0000000000000000 ffff8800389bfbe0 ffffffff815063fd ffffffff8235c880
+>  ffff8800389bfcc0 ffffffff810717f5 ffff8800389bfcd0 ffffffff81071a90
+>  0000000000000000 ffffffff8106d85d 0000000000000001 ffffffff81061200
+> Call Trace:
+>  [<ffffffff815063fd>] dump_stack+0x4d/0x66
+>  [<ffffffff810717f5>] __lock_acquire+0x7d7/0x1a2a
+>  [<ffffffff81071a90>] ? __lock_acquire+0xa72/0x1a2a
+>  [<ffffffff8106d85d>] ? cpuacct_css_alloc+0x93/0x93
+>  [<ffffffff81061200>] ? vtime_account_user+0xe/0x8d
+>  [<ffffffff81071a90>] ? __lock_acquire+0xa72/0x1a2a
+>  [<ffffffff810730fc>] lock_acquire+0x8b/0x101
+>  [<ffffffff810730fc>] ? lock_acquire+0x8b/0x101
+>  [<ffffffff8106120d>] ? vtime_account_user+0x1b/0x8d
+>  [<ffffffff8150bc4b>] _raw_spin_lock+0x2b/0x3a
+>  [<ffffffff8106120d>] ? vtime_account_user+0x1b/0x8d
+>  [<ffffffff8106120d>] vtime_account_user+0x1b/0x8d
+>  [<ffffffff810df2f9>] context_tracking_user_exit+0x54/0xb7
+>  [<ffffffff81030682>] do_page_fault+0x3a/0x54
+>  [<ffffffff8150e462>] page_fault+0x22/0x30
+>  [<ffffffff8106d954>] ? cpuacct_account_field+0x65/0x9a
 
-Mikulas
+vmalloc'ed areas can fault due to lazy mapping.
+That would be an excellent candidate here because cpuacct_account_field()
+accesses per cpu stats that are allocated with alloc_percpu() which
+uses...vmalloc().
+
+vmalloc() faults have always been a PITA. Especially with per cpu allocation,
+basically it means that the kernel can fault about anywhere.
+
+So the only solution I see right now is to move task_group_account_field()
+outside the lock. It doesn't need it, but that means I need to split up
+account_user_time() and have less common code between tickless and tick time accounting.
+
+In the hope that the other accounting code (acct, group accounting, ...) doesn't
+access more percpu allocated stuffs.
+
+Ah, I could also have a recursion detection in the vtime_account_*()
+functions. Yeah that would be much safer. The recursive call could simply
+ignore and let the first caller do the accounting. But that means we could
+account exception time into user time.
+
+We could also do both and let the recursive call warn.
+
+BTW I should check if I can turn the seqlock into a seqcount, not that it
+would fix anything here though. It looks like it's only ever updated locally.
