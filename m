@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaILRLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:11:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49039 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750899AbaILRK7 (ORCPT
+	id S1751014AbaILRLM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:11:12 -0400
+Received: from mo6.mail-out.ovh.net ([178.32.228.6]:57179 "EHLO
+	mo6.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaILRLI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:10:59 -0400
-Date: Fri, 12 Sep 2014 18:10:14 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "zlim.lnx@gmail.com" <zlim.lnx@gmail.com>,
-        "ast@plumgrid.com" <ast@plumgrid.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH arm64-next] net: bpf: arm64: address randomize and write
- protect JIT code
-Message-ID: <20140912171014.GG12108@arm.com>
-References: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
- <20140912160345.GF5532@arm.com>
- <54131D87.9060008@redhat.com>
- <20140912164656.GH5532@arm.com>
+	Fri, 12 Sep 2014 13:11:08 -0400
+X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Sep 2014 13:11:08 EDT
+Date: Fri, 12 Sep 2014 18:47:54 +0200
+From: Eric =?ISO-8859-1?B?QuluYXJk?= <eric@eukrea.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 8/8] ARM: at91: document Atmel SMART compatibles
+Message-ID: <20140912184754.546b26cf@e6520eb>
+In-Reply-To: <1410536587-24607-9-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1410536587-24607-9-git-send-email-alexandre.belloni@free-electrons.com>
+Organization: =?ISO-8859-1?B?RXVrculh?= Electromatique
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912164656.GH5532@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Ovh-Tracer-Id: 2662471806198197651
+X-Ovh-Remote: 82.233.81.124 (tal33-3-82-233-81-124.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrfeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrfeegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 05:46:57PM +0100, Catalin Marinas wrote:
-> On Fri, Sep 12, 2014 at 05:21:27PM +0100, Daniel Borkmann wrote:
-> > On 09/12/2014 06:03 PM, Catalin Marinas wrote:
-> > > On Fri, Sep 12, 2014 at 08:11:37AM +0100, Daniel Borkmann wrote:
-> > >>   Will, Catalin, Dave, this is more or less a heads-up: when net-next and
-> > >>   arm64-next tree will get both merged into Linus' tree, we will run into
-> > >>   a 'silent' merge conflict until someone actually runs eBPF JIT on ARM64
-> > >>   and might notice (I presume) an oops when JIT is freeing bpf_prog. I'd
-> > >>   assume nobody actually _runs_ linux-next, but not sure about that though.
-> > >
-> > > Some people do.
-> > >
-> > >>   How do we handle this? Would I need to resend this patch when the time
-> > >>   comes or would you ARM64 guys take care of it automagically? ;)
-> > >
-> > > I think we could disable BPF for arm64 until -rc1 and re-enable it
-> > > together with this patch.
-> > 
-> > Ok, yes, that would mitigate it a bit. Sounds fine to me.
-> > 
-> > > One comment below:
-> > >
-> > >> --- a/arch/arm64/net/bpf_jit_comp.c
-> > >> +++ b/arch/arm64/net/bpf_jit_comp.c
-> > > [...]
-> > >> +static void jit_fill_hole(void *area, unsigned int size)
-> > >> +{
-> > >> +	/* Insert illegal UND instructions. */
-> > >> +	u32 *ptr, fill_ins = 0xe7ffffff;
-> > >
-> > > On arm64 we don't have a guaranteed undefined instruction space (and
-> > > Will tells me that on Thumb-2 for the 32-bit arm port it actually is a
-> > > valid instruction, it seems that you used the same value).
-> > 
-> > Hm, ok, the boards we've tried out and where Zi tested it too, it worked.
+Le Fri, 12 Sep 2014 17:43:07 +0200,
+Alexandre Belloni <alexandre.belloni@free-electrons.com> a écrit :
+
 > 
-> So, if I try this:
+> Document all the available compatibles for Atmel "SMART" SoCs.
 > 
-> $ echo 0xffffffe7 | xxd -r > test.bin
-> $ arm-linux-gnueabihf-objdump -m arm -D -b binary test.bin
-> ...
->    0:   e7ffffff        udf     #65535  ; 0xffff
-
-
-...and for Thumb, it ends up as:
-
-0:	ffff e7ff	vqshl.u64	q15, <illegal reg q15.5>, #63
-
-which does happen to be undefined, but it feels fragile to rely on that
-particular instruction form always having UNDEF behaviour.
-
-> Do you use the same constant on arm32?
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  .../devicetree/bindings/arm/atmel-at91.txt         | 40 ++++++++++++++++++++++
+>  1 file changed, 40 insertions(+)
 > 
-> > > I think the only guaranteed way is to use the BRK #imm instruction but
-> > > it requires some changes to the handling code as it is currently used
-> > > for kgdb (unless you can use two instructions for filling in which could
-> > > generate a NULL pointer access).
-> > 
-> > The trade-off would be that if we align on 8, it would certainly increase
-> > the probability to jump to the right offset. Note, on x86_64 we have no
-> > alignment requirements, hence 1, and on s390x only alignment of 2.
-> > 
-> > So, on that few (?) boards where UND would be a valid instruction [ as
-> > opposed to crash the kernel ], would it translate into a NOP and just
-> > 'walk' from there into the JIT image?
-> 
-> On current ARMv8 CPU implementations, the above constant is unallocated
-> in the A64 instruction space. But you never know, it may be allocated in
-> the future.
-> 
-> I think it's easier if you just use something like BRK #0x100 (opcode
-> 0xd4202000) which would trigger a fault in the kernel (kgdb uses #imm
-> 0x400 and 0x401).
-> 
-> An unallocated BRK would trigger a fault via do_debug_exception ->
-> brk_handler and panic the kernel.
+> diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> index 6e3e3e5c611f..2ef92e04ed10 100644
+> --- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> +++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+> @@ -1,6 +1,46 @@
+>  Atmel AT91 device tree bindings.
+>  ================================
+>  
+> +Boards with a SoC of the Atmel AT91 or SMART family shall have the following
+> +properties:
+> +
+> +Required root node properties:
+> +compatible: must be one of:
+> + * "atmel,rm9200"
+> + * "atmel,at91sam9260"
+> + * "atmel,at91sam9261"
+> + * "atmel,at91sam9263"
+> + * "atmel,at91sam9x5" for the x5 family, shall be extended with the specific SoC
+> +   compatible:
+> +    o "atmel,at91sam9g15"
+> +    o "atmel,at91sam9g25"
+> +    o "atmel,at91sam9g35"
+> +    o "atmel,at91sam9x25"
+> +    o "atmel,at91sam9x35"
+> + * "atmel,at91sam9g20"
+> + * "atmel,at91sam9g45"
+> + * "atmel,at91sam9n12"
+> + * "atmel,at91sam9rl"
+> + * "atmel,sama5" for the cortexA5 family, shall be extended with the specific
+> +   SoC family:
+> +    o "atmel,sama5d3" shal be exteneded with the specific SoC compatible:
+                                 ^ extended
 
-Sounds sensible.
+> +       - "atmel,samad31"
+> +       - "atmel,samad33"
+> +       - "atmel,samad34"
+> +       - "atmel,samad35"
+> +       - "atmel,samad36"
+> +    o "atmel,sama5d4"
+> +
+> +
+> +In addition, the above compatible shall be extended with the specific
+> +SoC and board used. Currently known SoC compatibles are:
+> +    "marvell,berlin2"      for Marvell Armada 1500 (BG2, 88DE3100),
+> +    "marvell,berlin2cd"    for Marvell Armada 1500-mini (BG2CD, 88DE3005)
+> +    "marvell,berlin2ct"    for Marvell Armada ? (BG2CT, 88DE????)
+> +    "marvell,berlin2q"     for Marvell Armada 1500-pro (BG2Q, 88DE3114)
+> +    "marvell,berlin3"      for Marvell Armada ? (BG3, 88DE????)
+> +
+> +
+maybe remove those 10 last lines ;-)
 
-Will
+Eric
