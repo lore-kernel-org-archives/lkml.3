@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaILOm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:42:28 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:35700 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbaILOmT (ORCPT
+	id S1752129AbaILOm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:42:26 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:43278 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaILOmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:42:19 -0400
+	Fri, 12 Sep 2014 10:42:21 -0400
 From: Seth Forshee <seth.forshee@canonical.com>
 To: Miklos Szeredi <miklos@szeredi.hu>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -14,9 +14,9 @@ To: Miklos Szeredi <miklos@szeredi.hu>,
 Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, fuse-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Seth Forshee <seth.forshee@canonical.com>
-Subject: [PATCH v3 1/4] vfs: Check for invalid i_uid in may_follow_link()
-Date: Fri, 12 Sep 2014 09:41:42 -0500
-Message-Id: <1410532905-114262-2-git-send-email-seth.forshee@canonical.com>
+Subject: [PATCH v3 2/4] vfs,userns: Ensure real root is always capable towards inodes
+Date: Fri, 12 Sep 2014 09:41:43 -0500
+Message-Id: <1410532905-114262-3-git-send-email-seth.forshee@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410532905-114262-1-git-send-email-seth.forshee@canonical.com>
 References: <1410532905-114262-1-git-send-email-seth.forshee@canonical.com>
@@ -24,32 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystem uids which don't map into a user namespace may result
-in inode->i_uid being INVALID_UID. A symlink and its parent
-could have different owners in the filesystem can both get
-mapped to INVALID_UID, which may result in following a symlink
-when this would not have otherwise been permitted. Prevent this
-by adding a check that the uid is valid before the comparison.
+Currently root is restricted from performing some modifications
+to inodes whose owner is INVALID_UID or group is INVALID_GID
+because this id doesn't map into any user namespace. Add a
+special case to the relevant checks to make sure root is always
+capable of performing these operations.
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 ---
- fs/namei.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/inode.c          | 3 +++
+ kernel/capability.c | 6 +++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index a996bb48dfab..193da09e903e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -741,7 +741,7 @@ static inline int may_follow_link(struct path *link, struct nameidata *nd)
- 		return 0;
+diff --git a/fs/inode.c b/fs/inode.c
+index 26753ba7b6d6..1029320ff029 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1840,6 +1840,9 @@ bool inode_owner_or_capable(const struct inode *inode)
+ {
+ 	struct user_namespace *ns;
  
- 	/* Allowed if parent directory and link owner match. */
--	if (uid_eq(parent->i_uid, inode->i_uid))
-+	if (uid_valid(inode->i_uid) && uid_eq(parent->i_uid, inode->i_uid))
- 		return 0;
++	if (capable(CAP_SYS_ADMIN))
++		return true;
++
+ 	if (uid_eq(current_fsuid(), inode->i_uid))
+ 		return true;
  
- 	audit_log_link_denied("follow_link", link);
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 989f5bfc57dc..a472eaa52b6a 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -438,8 +438,12 @@ EXPORT_SYMBOL(capable);
+  */
+ bool capable_wrt_inode_uidgid(const struct inode *inode, int cap)
+ {
+-	struct user_namespace *ns = current_user_ns();
++	struct user_namespace *ns;
+ 
++	if (capable(CAP_SYS_ADMIN))
++		return true;
++
++	ns = current_user_ns();
+ 	return ns_capable(ns, cap) && kuid_has_mapping(ns, inode->i_uid) &&
+ 		kgid_has_mapping(ns, inode->i_gid);
+ }
 -- 
 1.9.1
 
