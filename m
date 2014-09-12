@@ -1,135 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097AbaILHxB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 03:53:01 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:52851 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954AbaILHxA (ORCPT
+	id S1753269AbaILIIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 04:08:25 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:60191 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063AbaILIIP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 03:53:00 -0400
-Message-ID: <5412A650.60102@atmel.com>
-Date: Fri, 12 Sep 2014 09:52:48 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 12 Sep 2014 04:08:15 -0400
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "Wu, Josh" <Josh.wu@atmel.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] mtd: nand: atmel_nand: retrieve NFC clock
-References: <1410457937-14575-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1410457937-14575-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <9935938.eKOCvCAtLt@fb07-iapwap2>
+References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
+	<1591383.Xdy91rktuP@fb07-iapwap2>
+	<20140911145421.GE5149@katana>
+	<9935938.eKOCvCAtLt@fb07-iapwap2>
+Date: Fri, 12 Sep 2014 10:08:12 +0200
+X-Google-Sender-Auth: zlkifWpeQmCGFjD4euVg9fy4_1g
+Message-ID: <CAMuHMdWHDks85oFdE1zhRBFxoVdQuU0XCT0vFkdJwTxK-0w9QQ@mail.gmail.com>
+Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Marc Dietrich <marvin24@gmx.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Linux I2C <linux-i2c@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
+        Andrey Danin <danindrey@mail.ru>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2014 19:52, Alexandre Belloni :
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Hi Marc,
 
-You may need to add Josh Wu to the list because he is the "de-facto"
-Maintainer of this driver.
+On Fri, Sep 12, 2014 at 9:51 AM, Marc Dietrich <marvin24@gmx.de> wrote:
+> Am Donnerstag, 11. September 2014, 16:54:22 schrieb Wolfram Sang:
+>> On Thu, Sep 11, 2014 at 04:52:22PM +0200, Marc Dietrich wrote:
+>> > Am Donnerstag, 11. September 2014, 16:40:04 schrieb Wolfram Sang:
+>> > > > b) could be seen as a configuration thing since the functionality
+>> > > > backend could be changed at runtime even.
+>> > >
+>> > > Come to think of it, not only the functionality, also the address can be
+>> > > changed at runtime. This makes me think it should really not be in DT
+>> > > after all.
+>> >
+>> > even worse, there can be multiple masters and slaves changing their role
+>> > on
+>> > the fly AFAIK. So the best dt can do is to provide an initial
+>> > configuration, so all drivers know where they are and where to start.
+>> > Everything else can be changed during runtime.
+>>
+>> Why do you want DT to be involved at all?
+>
+> Imagine a device which supports both, slave or master mode. The driver needs
+> to know in which mode it should operate. This cannot be hard coded, because on
+> different boards, different modes can be used.
+>
+> The point is, that if we define a dt binding for master device on slave
+> adapters it will be there forever. So even if it makes no sense for the
+> example eeprom simulator (or even our embedded controller), it may make sense
+> for other or future devices.
 
-Bye,
+DT describes the hardware. The most you can do is describe an i2c
+adapter, and an i2c bus with (physical) i2c slaves, if any, and (other)
+i2c masters[*], if any.
 
-> ---
-> 
-> Changes in v2:
->  - reworked the error path to really make the clock optional
->  - Documented the new optional property
-> 
->  .../devicetree/bindings/mtd/atmel-nand.txt         |  1 +
->  drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
->  2 files changed, 26 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> index c4728839d0c1..f71e2ebab15b 100644
-> --- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> @@ -38,6 +38,7 @@ Optional properties:
->              if don't want to use it.
->    - Optional properties:
->      - atmel,write-by-sram: boolean to enable NFC write by sram.
-> +    - clocks: phandle to the peripheral clock if it exists
->  
->  Examples:
->  nand0: nand@40000000,0 {
-> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-> index 9c5f717bda54..69e0eb1ace54 100644
-> --- a/drivers/mtd/nand/atmel_nand.c
-> +++ b/drivers/mtd/nand/atmel_nand.c
-> @@ -27,6 +27,7 @@
->   *
->   */
->  
-> +#include <linux/clk.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> @@ -96,6 +97,8 @@ struct atmel_nfc {
->  	bool			use_nfc_sram;
->  	bool			write_by_sram;
->  
-> +	struct clk		*clk;
-> +
->  	bool			is_initialized;
->  	struct completion	comp_ready;
->  	struct completion	comp_cmd_done;
-> @@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->  {
->  	struct atmel_nfc *nfc = &nand_nfc;
->  	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
-> +	int ret;
->  
->  	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
-> @@ -2281,6 +2285,26 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->  
->  	nfc->is_initialized = true;
->  	dev_info(&pdev->dev, "NFC is probed.\n");
-> +
-> +	nfc->clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (!IS_ERR(nfc->clk)) {
-> +		ret = clk_prepare_enable(nfc->clk);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		dev_warn(&pdev->dev, "NFC clock is missing");
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmel_nand_nfc_remove(struct platform_device *pdev)
-> +{
-> +	struct atmel_nfc *nfc = &nand_nfc;
-> +
-> +	if (!IS_ERR(nfc->clk))
-> +		clk_disable_unprepare(nfc->clk);
-> +
->  	return 0;
->  }
->  
-> @@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
->  		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
->  	},
->  	.probe = atmel_nand_nfc_probe,
-> +	.remove = atmel_nand_nfc_remove,
->  };
->  
->  static struct platform_driver atmel_nand_driver = {
-> 
+If the description contains i2c slaves, the i2c adapter can operate in
+(but may be not limited to) master mode.
 
+I2c slaves implemented in Linux are not physical i2c slaves, but just
+a piece of software. They can appear/disappear/change at any time.
+Hence I think this is something to be configured by userspace, like
+"tie the i2c-eeprom-slave driver to address 64 on i2c bus 3".
 
--- 
-Nicolas Ferre
+And then you can have the mixed case, where the i2c adapter is both
+a master, talking to the physical slaves, and a slave, being talked to by
+another master. But that's just a superposition of the two cases above,
+right?
+
+[*] Are there bindings for other masters on an i2c bus?
+
+Just my 0.02€ (as long as those coins still exist).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
