@@ -1,136 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaILUJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:09:26 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:50143 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaILUJY (ORCPT
+	id S1752733AbaILUKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:10:24 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:34907 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaILUKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:09:24 -0400
-Message-ID: <541352ED.7030800@de.ibm.com>
-Date: Fri, 12 Sep 2014 22:09:17 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Fri, 12 Sep 2014 16:10:21 -0400
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        KVM list <kvm@vger.kernel.org>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq crash under KVM in multiqueue block code (with virtio-blk
- and ext4)
-References: <541178D6.6010303@de.ibm.com> <CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>
-In-Reply-To: <CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>
+In-Reply-To: <CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan>
+ <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+ <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com>
+ <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+ <CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com>
+ <CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
+ <CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com> <CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 12 Sep 2014 13:09:57 -0700
+X-Google-Sender-Auth: 0s8rJIsMkJgF2SmBLjMMHdXeye8
+Message-ID: <CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com>
+Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tom Gundersen <teg@jklm.no>, Tejun Heo <tj@kernel.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        hare <hare@suse.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Wu Zhangjin <falcon@meizu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091220-0542-0000-0000-000000B81F30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 01:54 PM, Ming Lei wrote:
-> On Thu, Sep 11, 2014 at 6:26 PM, Christian Borntraeger
-> <borntraeger@de.ibm.com> wrote:
->> Folks,
+On Thu, Sep 11, 2014 at 10:48 PM, Tom Gundersen <teg@jklm.no> wrote:
+> On Fri, Sep 12, 2014 at 12:26 AM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+>> On Thu, Sep 11, 2014 at 2:43 PM, Tom Gundersen <teg@jklm.no> wrote:
+>>> How about simply introducing a new flag to finit_module() to indicate
+>>> that the caller does not care about asynchronicity. We could then pass
+>>> this from udev, but existing scripts calling modprobe/insmod will not
+>>> be affected.
 >>
->> we have seen the following bug with 3.16 as a KVM guest. It suspect the blk-mq rework that happened between 3.15 and 3.16, but it can be something completely different.
+>> Do you mean that you *do want asynchronicity*?
+>
+> Precisely, udev would opt-in, but existing scripts etc would not.
+
+Sure that's the other alternative that Tejun was mentioning.
+
+>>> But isn't finit_module() taking a long time a serious problem given
+>>> that it means no other module can be loaded in parallel?
 >>
-> 
-> Care to share how you reproduce the issue?
+>> Indeed but having a desire to make the init() complete fast is
+>> different than the desire to have the combination of both init and
+>> probe fast synchronously.
+>
+> I guess no one is arguing that probe should somehow be required to be
+> fast, but rather:
+>
+>> If userspace wants init to be fast and let
+>> probe be async then userspace has no option but to deal with the fact
+>> that async probe will be async, and it should then use other methods
+>> to match any dependencies if its doing that itself.
+>
+> Correct. And this therefore likely needs to be opt-in behaviour per
+> finit_module() invocation to avoid breaking old assumptions.
 
-Host with 16GB RAM 32GB swap. 15 guest all with 2 GB RAM (and varying amount of CPUs). All do heavy file I/O.
-It did not happen with 3.15/3.15 in guest/host and does happen with 3.16/3.16. So our next step is to check
-3.15/3.16 and 3.16/3.15 to identify if its host memory mgmt or guest block layer.
+Sure.
 
-Christian
+>> For example
+>> networking should not kick off after a network driver is loaded but
+>> rather one the device creeps up on udev. We should be good with
+>> networking dealing with this correctly today but not sure about other
+>> subsystems. depmod should be able to load the required modules in
+>> order and if bus drivers work right then probe of the remnant devices
+>> should happen asynchronously. The one case I can think of that is a
+>> bit different is modules-load.d things but those *do not rely on the
+>> timeout*, but are loaded prior to a service requirement. Note though
+>> that if those modules had probe and they then run async'd then systemd
+>> service would probably need to consider that the requirements may not
+>> be there until later. If this is not carefully considered that could
+>> introduce regression to users of modules-load.d when async probe is
+>> fully deployed. The same applies to systemd making assumptions of kmod
+>> loading a module and a dependency being complete as probe would have
+>> run it before.
+>
+> Yeah, these all needs to be considered when deciding whether or not to
+> enable async in each specific case.
 
-> 
->> [   65.992022] Unable to handle kernel pointer dereference in virtual kernel address space
->> [   65.992187] failing address: ccccccccccccd000 TEID: ccccccccccccd803
->> [   65.992363] Fault in home space mode while using kernel ASCE.
->> [   65.992365] AS:0000000000a7c007 R3:0000000000000024
->> [   65.993754] Oops: 0038 [#1] SMP
->> [   65.993923] Modules linked in: iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi virtio_balloon vhost_net vhost macvtap macvlan kvm dm_multipath virtio_net virtio_blk sunrpc
->> [   65.994274] CPU: 0 PID: 44 Comm: kworker/u6:2 Not tainted 3.16.0-20140814.0.c66c84c.fc18-s390xfrob #1
->> [   65.996043] Workqueue: writeback bdi_writeback_workfn (flush-251:32)
->> [   65.996222] task: 0000000002250000 ti: 0000000002258000 task.ti: 0000000002258000
->> [   65.996228] Krnl PSW : 0704f00180000000 00000000003ed114 (blk_mq_tag_to_rq+0x20/0x38)
->> [   65.997299]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:3
->>                Krnl GPRS: 0000000000000040 cccccccccccccccc 0000000001619000 000000000000004e
->> [   65.997301]            000000000000004e 0000000000000000 0000000000000001 0000000000a0de18
->> [   65.997302]            0000000077ffbe18 0000000077ffbd50 000000006d72d620 000000000000004f
->> [   65.997304]            0000000001a99400 0000000000000080 00000000003eddee 0000000077ffbc28
->> [   65.997864] Krnl Code: 00000000003ed106: e31020300004        lg      %r1,48(%r2)
->>                           00000000003ed10c: 91082044            tm      68(%r2),8
->>                          #00000000003ed110: a7840009            brc     8,3ed122
->>                          >00000000003ed114: e34016880004        lg      %r4,1672(%r1)
->>                           00000000003ed11a: 59304100            c       %r3,256(%r4)
->>                           00000000003ed11e: a7840003            brc     8,3ed124
->>                           00000000003ed122: 07fe                bcr     15,%r14
->>                           00000000003ed124: b9040024            lgr     %r2,%r4
->> [   65.998221] Call Trace:
->> [   65.998224] ([<0000000000000001>] 0x1)
->> [   65.998227]  [<00000000003f17b6>] blk_mq_tag_busy_iter+0x7a/0xc4
->> [   65.998228]  [<00000000003edcd6>] blk_mq_rq_timer+0x96/0x13c
->> [   65.999226]  [<000000000013ee60>] call_timer_fn+0x40/0x110
->> [   65.999230]  [<000000000013f642>] run_timer_softirq+0x2de/0x3d0
->> [   65.999238]  [<0000000000135b70>] __do_softirq+0x124/0x2ac
->> [   65.999241]  [<0000000000136000>] irq_exit+0xc4/0xe4
->> [   65.999435]  [<000000000010bc08>] do_IRQ+0x64/0x84
->> [   66.437533]  [<000000000067ccd8>] ext_skip+0x42/0x46
->> [   66.437541]  [<00000000003ed7b4>] __blk_mq_alloc_request+0x58/0x1e8
->> [   66.437544] ([<00000000003ed788>] __blk_mq_alloc_request+0x2c/0x1e8)
->> [   66.437547]  [<00000000003eef82>] blk_mq_map_request+0xc2/0x208
->> [   66.437549]  [<00000000003ef860>] blk_sq_make_request+0xac/0x350
->> [   66.437721]  [<00000000003e2d6c>] generic_make_request+0xc4/0xfc
->> [   66.437723]  [<00000000003e2e56>] submit_bio+0xb2/0x1a8
->> [   66.438373]  [<000000000031e8aa>] ext4_io_submit+0x52/0x80
->> [   66.438375]  [<000000000031ccfa>] ext4_writepages+0x7c6/0xd0c
->> [   66.438378]  [<00000000002aea20>] __writeback_single_inode+0x54/0x274
->> [   66.438379]  [<00000000002b0134>] writeback_sb_inodes+0x28c/0x4ec
->> [   66.438380]  [<00000000002b042e>] __writeback_inodes_wb+0x9a/0xe4
->> [   66.438382]  [<00000000002b06a2>] wb_writeback+0x22a/0x358
->> [   66.438383]  [<00000000002b0cd0>] bdi_writeback_workfn+0x354/0x538
->> [   66.438618]  [<000000000014e3aa>] process_one_work+0x1aa/0x418
->> [   66.438621]  [<000000000014ef94>] worker_thread+0x48/0x524
->> [   66.438625]  [<00000000001560ca>] kthread+0xee/0x108
->> [   66.438627]  [<000000000067c76e>] kernel_thread_starter+0x6/0xc
->> [   66.438628]  [<000000000067c768>] kernel_thread_starter+0x0/0xc
->> [   66.438629] Last Breaking-Event-Address:
->> [   66.438631]  [<00000000003edde8>] blk_mq_timeout_check+0x6c/0xb8
->>
->> I looked into the dump, and the full function is  (annotated by me to match the source code)
->> r2= tags
->> r3= tag (4e)
->> Dump of assembler code for function blk_mq_tag_to_rq:
->>    0x00000000003ed0f4 <+0>:     lg      %r1,96(%r2)                     # r1 has now tags->rqs
->>    0x00000000003ed0fa <+6>:     sllg    %r2,%r3,3                       # r2 has tag*8
->>    0x00000000003ed100 <+12>:    lg      %r2,0(%r2,%r1)                  # r2 now has rq (=tags->rqs[tag])
->>    0x00000000003ed106 <+18>:    lg      %r1,48(%r2)                     # r1 now has rq->q
->>    0x00000000003ed10c <+24>:    tm      68(%r2),8                       # test for rq->cmd_flags & REQ_FLUSH_SEQ
->>    0x00000000003ed110 <+28>:    je      0x3ed122 <blk_mq_tag_to_rq+46>  #  if not goto 3ed122
->>    0x00000000003ed114 <+32>:    lg      %r4,1672(%r1)                   # r4 = rq->q->flush_rq  <-------- CRASHES as rq->q points to cccccccccccc
->>    0x00000000003ed11a <+38>:    c       %r3,256(%r4)                    # compare tag with rq->q->flush_rq->tag
->>    0x00000000003ed11e <+42>:    je      0x3ed124 <blk_mq_tag_to_rq+48>  # if equal goto ..124
->>    0x00000000003ed122 <+46>:    br      %r14                            # return (with return value == r2)
->>    0x00000000003ed124 <+48>:    lgr     %r2,%r4                         # return value = r4
->>    0x00000000003ed128 <+52>:    br      %r14                            # return
->>
->> Does anyone have an idea?
->> The request itself is completely filled with cc
-> 
-> That is very weird, the 'rq' is got from hctx->tags,  and rq should be
-> valid, and rq->q shouldn't have been changed even though it was
-> double free or double allocation.
-> 
->> I am currently asking myself if blk_mq_map_request should protect against softirq here but I cant say for sure,as I have never looked into that code before.
-> 
-> No, it needn't the protection.
-> 
-> Thanks,
-> 
+Yes and come to think of it I'd recommend opting out of async
+functionality for modules-load.d given that it does *not* hooked with
+the timeout and there is a good chances its users likely do want to
+wait for probe to run at this point.
 
+Given this I also am inclined now for the per module request to be
+async or not (default) from userspace. The above would be a good
+example starting use case.
+
+>> I believe one concern here lies in on whether or not userspace
+>> is properly equipped to deal with the requirements on module loading
+>> doing async probing and that possibly failing. Perhaps systemd might
+>> think all userspace is ready for that but are we sure that's the case?
+>
+> There almost certainly are custom things out there relying on the
+> synchronous behaviour, but if we make it opt-in we should not have a
+> problem.
+
+Indeed.
+
+BTW as for the cxgb4 device driver it fails to load because it relies
+on get_vpd_params() on probe, that end sup calling
+pci_vpd_pci22_wait() which will fail if if
+fatal_signal_pending(current). This is an example now completely
+unrelated to the OOM series, and any other uses of
+fatal_signal_pending(current) should trigger similar failures on
+device drivers.
+
+  Luis
