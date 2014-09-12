@@ -1,65 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaIMFCN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 01:02:13 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:57380 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaIMFCM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 01:02:12 -0400
-Message-ID: <5413CFD1.4020300@gmail.com>
-Date: Sat, 13 Sep 2014 07:02:09 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751691AbaIMFGp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 01:06:45 -0400
+Received: from ozlabs.org ([103.22.144.67]:47229 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123AbaIMFGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 01:06:43 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kick In <pierre-andre.morey@canonical.com>,
+        Chris J Arges <chris.j.arges@canonical.com>
+Subject: Re: [PATCH] blk-merge: fix blk_recount_segments
+In-Reply-To: <CACVXFVOX=Tcc9fN_C0FuEHsF22dave9vXtoVct5sx1iK1AWRXg@mail.gmail.com>
+References: <1409670180-17352-1-git-send-email-ming.lei@canonical.com> <20140902162146.GA28741@infradead.org> <5405EF38.60007@kernel.dk> <20140903121902.7a9f5a5a@tom-ThinkPad-T410> <87bnquk4fe.fsf@rustcorp.com.au> <878ulyjn23.fsf@rustcorp.com.au> <87y4trhwqr.fsf@rustcorp.com.au> <CACVXFVOX=Tcc9fN_C0FuEHsF22dave9vXtoVct5sx1iK1AWRXg@mail.gmail.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 12 Sep 2014 11:13:26 +0930
+Message-ID: <87oaulhav5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: VGA resume & thaw (wake up from S3 & S4) broken - kernel exclusively
-References: <5413CEA5.3060403@gmail.com>
-In-Reply-To: <5413CEA5.3060403@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.09.2014 06:57, poma wrote:
-> 
-> Actually I have nothing to show cause logs are all OK.
-> Haha, it seems to me that the bugs become intelligent.
-> 
-> 3.15.10-201.fc20.x86_64
-> 3.16.2-200.fc20.x86_64
-> 3.17.0-0.rc4.git3.2.fc22.1.x86_64
->  nouveau  [     DRM] suspending display...
->  nouveau  [     DRM] unpinning framebuffer(s)...
->  nouveau  [     DRM] evicting buffers...
->  nouveau  [     DRM] waiting for kernel channels to go idle...
->  nouveau  [     DRM] suspending client object trees...
->  nouveau  [     DRM] suspending kernel object tree...
-> ...
->  nouveau  [     DRM] re-enabling device...
->  nouveau  [     DRM] resuming kernel object tree...
->  nouveau  [   VBIOS][0000:02:00.0] running init tables
->  nouveau  [  PTHERM][0000:02:00.0] fan management: automatic
->  nouveau  [     CLK][0000:02:00.0] --: core 566 MHz shader 1400 MHz memory 399 MHz
->  nouveau  [     DRM] resuming client object trees...
->  nouveau  [     DRM] resuming display...
->  nouveau 0000:02:00.0: no hotplug settings from platform
->  nouveau 0000:02:00.0: no hotplug settings from platform
-> 
-> Logs(dmesg) are literally identical.
-> 
-> 3.15.10-201.fc20.x86_64 - nouveau(fb) resume & thaw PASSED, and that's all what works.
->         Kernels >= 3.16 - nouveau(fb) resume & thaw BROKEN
->             ALL Kernels - vesa(fb)    resume & thaw BROKEN.
-> 
-> 
+Ming Lei <ming.lei@canonical.com> writes:
+> On Thu, Sep 11, 2014 at 7:38 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> Rusty Russell <rusty@rustcorp.com.au> writes:
+>>> Rusty Russell <rusty@rustcorp.com.au> writes:
+>>> Here's what I have.  It seems to work as expected, but I haven't
+>>> benchmarked it.
+>>
+>> Hi Ming,
+>>
+>>         Any chance you can run your benchmarks against this patch?
+>
+> I can run the previous benchmark against this patch, but I am wondering
+> if it is enough since the change need lots of test cases to verify.
 
-Excusez-moi, 
-BROKEN == The display remains OFF.
+Indeed, I'll particularly need to run network tests as well, but you're
+the one who suggesting the fix for block so I'm relying on you to see
+if this helps :)
 
+> BTW, looks your patch doesn't against upstream kernel, since I can't
+> find alloc_indirect() in drivers/virtio/virtio_ring.c
 
-poma
+Yes, the code in my pending-rebases tree has been reworked.  Here's
+the backport for you:
 
-
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index 4d08f45a9c29..5a911e1f7462 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -78,6 +78,11 @@ struct vring_virtqueue
+ 	/* Number we've added since last sync. */
+ 	unsigned int num_added;
+ 
++	/* How many descriptors have been added. */
++	unsigned int num_in_use;
++	/* Maximum descriptors in use (degrades over time). */
++	unsigned int max_in_use;
++
+ 	/* Last used index we've seen. */
+ 	u16 last_used_idx;
+ 
+@@ -184,6 +189,31 @@ static inline int vring_add_indirect(struct vring_virtqueue *vq,
+ 	return head;
+ }
+ 
++static bool try_indirect(struct vring_virtqueue *vq, unsigned int total_sg)
++{
++	unsigned long num_expected;
++
++	if (!vq->indirect)
++		return false;
++
++	/* Completely full?  Don't even bother with indirect alloc */
++	if (!vq->vq.num_free)
++		return false;
++
++	/* We're not going to fit?  Try indirect. */
++	if (total_sg > vq->vq.num_free)
++		return true;
++
++	/* We should be tracking this. */
++	BUG_ON(vq->max_in_use < vq->num_in_use);
++
++	/* How many more descriptors do we expect at peak usage? */
++	num_expected = vq->max_in_use - vq->num_in_use;
++
++	/* If each were this size, would they overflow? */
++	return (total_sg * num_expected > vq->vq.num_free);
++}
++
+ static inline int virtqueue_add(struct virtqueue *_vq,
+ 				struct scatterlist *sgs[],
+ 				struct scatterlist *(*next)
+@@ -226,7 +256,7 @@ static inline int virtqueue_add(struct virtqueue *_vq,
+ 
+ 	/* If the host supports indirect descriptor tables, and we have multiple
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+-	if (vq->indirect && total_sg > 1 && vq->vq.num_free) {
++	if (try_indirect(vq, total_sg)) {
+ 		head = vring_add_indirect(vq, sgs, next, total_sg, total_out,
+ 					  total_in,
+ 					  out_sgs, in_sgs, gfp);
+@@ -291,6 +321,14 @@ add_head:
+ 	virtio_wmb(vq->weak_barriers);
+ 	vq->vring.avail->idx++;
+ 	vq->num_added++;
++	vq->num_in_use++;
++
++	/* Every vq->vring.num descriptors, decay the maximum value */
++	if (unlikely(avail == 0))
++		vq->max_in_use >>= 1;
++
++	if (vq->num_in_use > vq->max_in_use)
++		vq->max_in_use = vq->num_in_use;
+ 
+ 	/* This is very unlikely, but theoretically possible.  Kick
+ 	 * just in case. */
+@@ -569,6 +607,7 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
+ 		virtio_mb(vq->weak_barriers);
+ 	}
+ 
++	vq->num_in_use--;
+ #ifdef DEBUG
+ 	vq->last_add_time_valid = false;
+ #endif
+@@ -791,6 +830,8 @@ struct virtqueue *vring_new_virtqueue(unsigned int index,
+ 	vq->last_used_idx = 0;
+ 	vq->num_added = 0;
+ 	list_add_tail(&vq->vq.list, &vdev->vqs);
++	vq->num_in_use = 0;
++	vq->max_in_use = 0;
+ #ifdef DEBUG
+ 	vq->in_use = false;
+ 	vq->last_add_time_valid = false;
