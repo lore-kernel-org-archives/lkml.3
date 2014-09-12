@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546AbaILDKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 23:10:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18048 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753507AbaILDKk convert rfc822-to-8bit (ORCPT
+	id S1753575AbaILDNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 23:13:48 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51022 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbaILDNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 23:10:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="385070359"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: "Hansen, Dave" <dave.hansen@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-Thread-Topic: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-Thread-Index: AQHPzZ3/3LbWETWFOEu3f3vsawDskpv7gbqAgAFQ9kA=
-Date: Fri, 12 Sep 2014 03:10:37 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE017A403C@shsmsx102.ccr.corp.intel.com>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
- <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com>
- <5411B9BD.2000900@intel.com>
-In-Reply-To: <5411B9BD.2000900@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Sep 2014 23:13:47 -0400
+Message-ID: <541264DB.8050702@oracle.com>
+Date: Fri, 12 Sep 2014 11:13:31 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: avanzini.arianna@gmail.com
+CC: David Vrabel <david.vrabel@citrix.com>, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, felipe.franciosi@citrix.com,
+        axboe@fb.com
+Subject: Re: [PATCH RFC 4/4] xen, blkback: add support for multiple block
+ rings
+References: <1408706404-6614-1-git-send-email-avanzini.arianna@gmail.com> <1408706404-6614-5-git-send-email-avanzini.arianna@gmail.com> <53F7428E.90806@citrix.com> <20140911234530.GB2052@gmail.com>
+In-Reply-To: <20140911234530.GB2052@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-
-On 2014-09-11, Hansen, Dave wrote:
-> On 09/11/2014 01:46 AM, Qiaowei Ren wrote:
->> +
->> +	return (void __user *)(unsigned long)(xsave_buf->bndcsr.cfg_reg_u &
->> +			MPX_BNDCFG_ADDR_MASK);
->> +}
+On 09/12/2014 07:45 AM, Arianna Avanzini wrote:
+> On Fri, Aug 22, 2014 at 02:15:58PM +0100, David Vrabel wrote:
+>> On 22/08/14 12:20, Arianna Avanzini wrote:
+>>> This commit adds to xen-blkback the support to retrieve the block
+>>> layer API being used and the number of available hardware queues,
+>>> in case the block layer is using the multi-queue API. This commit
+>>> also lets the driver advertise the number of available hardware
+>>> queues to the frontend via XenStore, therefore allowing for actual
+>>> multiple I/O rings to be used.
+>>
+>> Does it make sense for number of queues should be dependent on the
+>> number of queues available in the underlying block device?  
 > 
-> I don't think casting a u64 to a ulong, then to a pointer is useful.
-> Just take the '(unsigned long)' out.
+> Thank you for raising that point. It probably is not the best solution.
+> 
+> Bob Liu suggested to have the number of I/O rings depend on the number
+> of vCPUs in the driver domain. Konrad Wilk suggested to compute the
+> number of I/O rings according to the following formula to preserve the
+> possibility to explicitly define the number of hardware queues to be
+> exposed to the frontend:
+> what_backend_exposes = some_module_parameter ? :
+>                    min(nr_online_cpus(), nr_hardware_queues()).
+> io_rings = min(nr_online_cpus(), what_backend_exposes);
+> 
+> (Please do correct me if I misunderstood your point)
 
-If so, this will spits out a warning on 32-bit:
-
-arch/x86/kernel/mpx.c: In function 'task_get_bounds_dir':
-arch/x86/kernel/mpx.c:21:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+Since xen-netfront/xen-netback driver have already implemented
+multi-queue, I'd like we can use the same way as the net driver
+negotiate of number of queues.
 
 Thanks,
-Qiaowei
-
+-Bob
