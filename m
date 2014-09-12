@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaILGRX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 02:17:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36256 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaILGRV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 02:17:21 -0400
-Date: Fri, 12 Sep 2014 08:17:06 +0200
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: Nicolin Chen <nicoleotsuka@gmail.com>, timur@tabi.org,
-        Li.Xiubo@freescale.com, lgirdwood@gmail.com, broonie@kernel.org,
-        perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] ASoC: fsl_ssi: refine ipg clock usage in this module
-Message-ID: <20140912061706.GA10680@pengutronix.de>
-References: <27584da8e3ab291ab8dbcbb411579613f8384a59.1410413734.git.shengjiu.wang@freescale.com>
- <20140911225737.GA13926@Alpha>
- <20140912020110.GA414@audiosh1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
-Content-Disposition: inline
-In-Reply-To: <20140912020110.GA414@audiosh1>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:03:15 up 1 day, 22:50, 33 users,  load average: 0.17, 0.12, 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752208AbaILGWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 02:22:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605AbaILGWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 02:22:42 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com,
+        keescook@chromium.org, ak@linux.intel.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, Baoquan He <bhe@redhat.com>
+Subject: [Patch v2 1/2] kaslr: check if kernel location is changed
+Date: Fri, 12 Sep 2014 14:20:31 +0800
+Message-Id: <1410502832-3573-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Function handle_relocations() is used to do the relocations handling
+for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+mandotary to perform. For x86_64 only when kaslr is enabled and a
+random kernel location is chosen successfully the relocation handling
+shound be done. However previous implementation only compared the
+kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+compiled to run at. This would casue system to hang when kernel
+loading address is not equal to LOAD_PHYSICAL_ADDR.
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So in this patch check if kernel location is changed after
+choose_kernel_location() when x86_64. If and only if in x86_64
+and kernel location is changed, we say a kaslr random kernel
+location is chosen, then the relocation handling need be done.
 
-Hi,
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
-On Fri, Sep 12, 2014 at 10:01:12AM +0800, Shengjiu Wang wrote:
-> On Thu, Sep 11, 2014 at 03:57:37PM -0700, Nicolin Chen wrote:
-> > On Thu, Sep 11, 2014 at 01:38:29PM +0800, Shengjiu Wang wrote:
-> > > Move the ipg clock enable and disable operation to startup and shutdo=
-wn,
-> > > that is only enable ipg clock when ssi is working. Keep clock is disa=
-bled
-> > > when ssi is in idle.
-> > > otherwise, _fsl_ssi_set_dai_fmt function need to be called in probe,
-> > > so add ipg clock control for it.
-> >=20
-> > It seems to be no objection so far against my last suggestion to
-> > use regmap's mmio_clk() for named ipg clk only. So you may still
-> > consider about that.
-> >
-> I think mmio_clk() can be put to another patch. and this patch only for c=
-lk_enable()
-> and clk_disable() operation.
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74d..3bb2a17 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -230,8 +230,9 @@ static void error(char *x)
+ 		asm("hlt");
+ }
+ 
+-#if CONFIG_X86_NEED_RELOCS
+-static void handle_relocations(void *output, unsigned long output_len)
++#ifdef CONFIG_X86_NEED_RELOCS
++static void handle_relocations(void *output_orig, void *output,
++			       unsigned long output_len)
+ {
+ 	int *reloc;
+ 	unsigned long delta, map, ptr;
+@@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+ 	unsigned long max_addr = min_addr + output_len;
+ 
+ 	/*
++	* 32bit always requires relocations to be performed. For x86_64,
++	* relocations need to be performed only if kaslr has chosen a
++	* different load address then kernel was originally loaded at.
++	*
++	* If we are here, either kaslr is not configured in or kaslr is disabled
++	* or kaslr has chosen not to change the load location of kernel. Don't
++	* perform any relocations.
++	*/
++#if CONFIG_X86_64
++	if (output_orig == output)
++		return;
++#endif
++
++	/*
+ 	 * Calculate the delta between where vmlinux was linked to load
+ 	 * and where it was actually loaded.
+ 	 */
+@@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+ #endif
+ }
+ #else
+-static inline void handle_relocations(void *output, unsigned long output_len)
++static inline void handle_relocations(void *output_orig, void *output,
++				      unsigned long output_len)
+ { }
+ #endif
+ 
+@@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *output,
+ 				  unsigned long output_len)
+ {
++	unsigned char *output_orig = output;
++
+ 	real_mode = rmode;
+ 
+ 	sanitize_boot_params(real_mode);
+@@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	debug_putstr("\nDecompressing Linux... ");
+ 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+ 	parse_elf(output);
+-	handle_relocations(output, output_len);
++	handle_relocations(output_orig, output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+ 	return output;
+ }
+-- 
+1.8.5.3
 
-I would also prefer Nicolin's suggestion using regmap's mmio clk. I
-think it may be better to not add this particular patch at all and just
-go with the mmio_clk patch. It should be easy enough to just add the
-clock names to the devicetrees. That way we can avoid all those clock
-enable/disable function calls.
-
-> =20
-> > Anyway, I'd like to do thing in parallel. So I just simply tested
-> > it on my side and its works fine, it may still need to be tested
-> > by others though.
-> >=20
-> > Nicolina
->=20
-> Hi Markus
->=20
-> could you please review it, and share your comments?
-
-I think the clock enabling for AC97 is missing in your patch.
-
-Best regards,
-
-Markus
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUEo/iAAoJEEpcgKtcEGQQ9EAQAI8QPk+6GrxqGiWq1JkFELy1
-vSKeevANsKNcenndtMpC1uVe4wrQpcNNCE8g8pmDypyFfJ3x1d3kFDutNH9Go3kC
-CkL8jffg75rNJ7izCnLeC4A/hqXm6uotl1KBWS58K8Uybv0+18b0rEWaBH5gVXX+
-wWTg0ZfLQzep1YyGaobf8Hm3WWrmtRQKsIxstDmV/jVU4tk+tkEq6X0nuALNFPIz
-5Cm6nurAVzgzcpvnPjiUvWZZyDN2Qp1ErxR9YBDpQJeDJjIf7waGCsqeLrgaj8Nn
-76JaYMbBW55D96+FuHSpLaJw3wH5fHMOxme6HGYJ0NcIHML883aM1OElplFnn6c3
-Sxht1V0Y1yb9Dmhpm3GuAq6BuwBi+YSdS8+c7sMeo2MJ0BUbj0DhzAIA37h4SS5u
-QQFQQrIutOg60vEXM/onhhcl2e/BMXLUqgfDiyno2Cnfte3uMTeqNksOqE54LPm1
-WNFcXGoObgsAIWfeFx95GncmvX00kpLRHw9uUbrFmTnnaU4QOxQXxL9rgYtMcUT7
-IvYAXSl0RmVzrVo/kZR4SidoUCylPPzkxPnS1c4rwezgosICwJ637WEzU1p77tDS
-C8Z+iGiLQTHyAnsYF9c9JB9yMnTWWJXQM9Z+iZlKpN2vqtomSaMXHpjPFurp8aFO
-UJ3by+WPZZapAU6JpF3W
-=I7o2
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
