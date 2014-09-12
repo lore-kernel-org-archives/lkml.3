@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaILNTI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:19:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3256 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342AbaILNTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:19:05 -0400
-From: Aaron Tomlin <atomlin@redhat.com>
-To: peterz@infradead.org
-Cc: mingo@redhat.com, dzickus@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
-        atomlin@redhat.com, oleg@redhat.com, riel@redhat.com,
-        prarit@redhat.com, jgh@redhat.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, x86@kernel.org, rostedt@goodmis.org,
-        hannes@cmpxchg.org, aneesh.kumar@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, akpm@google.com,
-        linuxppc-dev@lists.ozlabs.org, minchan@kernel.org, mpe@ellerman.id.au
-Subject: [PATCH v4 3/3] sched: BUG when stack end location is over written
-Date: Fri, 12 Sep 2014 14:16:19 +0100
-Message-Id: <1410527779-8133-4-git-send-email-atomlin@redhat.com>
-In-Reply-To: <1410527779-8133-1-git-send-email-atomlin@redhat.com>
-References: <1410527779-8133-1-git-send-email-atomlin@redhat.com>
+	id S1754748AbaILNVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:21:42 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:37041 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661AbaILNVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:21:41 -0400
+Message-ID: <5412F360.3020600@collabora.co.uk>
+Date: Fri, 12 Sep 2014 15:21:36 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: kgene@kernel.org
+CC: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Olof Johansson'" <olof@lixom.net>,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Naveen Krishna Chatradhi'" <ch.naveen@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Andreas Faerber'" <afaerber@suse.de>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>
+Subject: Re: [PATCH v3 0/7] Add max77802 support for Peach boards
+References: <1410344391-5675-1-git-send-email-javier.martinez@collabora.co.uk> <0ae801cfce84$be443620$3acca260$@kernel.org>
+In-Reply-To: <0ae801cfce84$be443620$3acca260$@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently in the event of a stack overrun a call to schedule()
-does not check for this type of corruption. This corruption is
-often silent and can go unnoticed. However once the corrupted
-region is examined at a later stage, the outcome is undefined
-and often results in a sporadic page fault which cannot be
-handled.
+Hello Kukjin,
 
-This patch checks for a stack overrun and takes appropriate
-action since the damage is already done, there is no point
-in continuing.
+On 09/12/2014 02:26 PM, kgene@kernel.org wrote:
+>> This is a third version of th series that adds max77802 support for
+>> the Peach Pit and Pi boards. The series also have all the pending
+>> patches that were posted but depended on this support. I've picked
+>> all the patches I found and rebased them to be sure that they apply
+>> cleanly on top of linux-next. Also I've taken some DT snippets from
+>> the downstream Chrome OS 3.8 kernel DTS for devices that use one of
+>> these regulators as their input supply.
+>> 
+> Thanks a lot and looks good to me. I'll take this whole series.
+> 
 
-Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
----
- kernel/sched/core.c |  3 +++
- lib/Kconfig.debug   | 12 ++++++++++++
- 2 files changed, 15 insertions(+)
+Great, thanks a lot!
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ec1a286..6ed1a24 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2660,6 +2660,9 @@ static noinline void __schedule_bug(struct task_struct *prev)
-  */
- static inline void schedule_debug(struct task_struct *prev)
- {
-+#ifdef CONFIG_SCHED_STACK_END_CHECK
-+	BUG_ON(unlikely(task_stack_end_corrupted(prev)));
-+#endif
- 	/*
- 	 * Test if we are atomic. Since do_exit() needs to call into
- 	 * schedule() atomically, we ignore that path. Otherwise whine
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index a285900..e58163d 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -824,6 +824,18 @@ config SCHEDSTATS
- 	  application, you can say N to avoid the very slight overhead
- 	  this adds.
- 
-+config SCHED_STACK_END_CHECK
-+	bool "Detect stack corruption on calls to schedule()"
-+	depends on DEBUG_KERNEL
-+	default n
-+	help
-+	  This option checks for a stack overrun on calls to schedule().
-+	  If the stack end location is found to be over written always panic as
-+	  the content of the corrupted region can no longer be trusted.
-+	  This is to ensure no erroneous behaviour occurs which could result in
-+	  data corruption or a sporadic crash at a later stage once the region
-+	  is examined. The runtime overhead introduced is minimal.
-+
- config TIMER_STATS
- 	bool "Collect kernel timers statistics"
- 	depends on DEBUG_KERNEL && PROC_FS
--- 
-1.9.3
+> - Kukjin
+> 
 
+Best regards,
+Javier
