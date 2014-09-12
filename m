@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaILUOt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:14:49 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:57459 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaILUOq (ORCPT
+	id S1752588AbaILURe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:17:34 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:46236 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059AbaILURd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:14:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140909230333.GD3154@mtj.dyndns.org>
-References: <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
- <20140909012933.GF11706@mtj.dyndns.org> <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
- <20140909014754.GG11706@mtj.dyndns.org> <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
- <20140909023943.GH11706@mtj.dyndns.org> <CAB=NE6XH64QLfwoE3r7uf3SYKNJMzP-tjUkrxDwVca7G2zOxBQ@mail.gmail.com>
- <20140909030353.GI11706@mtj.dyndns.org> <CAB=NE6UGNC7VHnkuv8huaVHLX3Kuh2kOTK92SCw07ehJ3LdXFg@mail.gmail.com>
- <20140909032529.GJ11706@mtj.dyndns.org> <20140909230333.GD3154@mtj.dyndns.org>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 12 Sep 2014 13:14:22 -0700
-X-Google-Sender-Auth: SsNdcreTWqB3XmdRdHb743ZmPWk
-Message-ID: <CAB=NE6XpYZEZ=uKj+T3BtofCHOToQDottzYXCENSTMyhx83Rvg@mail.gmail.com>
-Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
-To: Tejun Heo <tj@kernel.org>, Tom Gundersen <teg@jklm.no>
-Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 16:17:33 -0400
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+To: kvm@vger.kernel.org, pbonzini@redhat.com, christoffer.dall@linaro.org,
+        linux-mm@kvack.org, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        akpm@linux-foundation.org
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: [PATCH] mm: export symbol dependencies of is_zero_pfn()
+Date: Fri, 12 Sep 2014 22:17:23 +0200
+Message-Id: <1410553043-575-1-git-send-email-ard.biesheuvel@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 9, 2014 at 4:03 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Sep 09, 2014 at 12:25:29PM +0900, Tejun Heo wrote:
->> Hello,
->>
->> On Mon, Sep 08, 2014 at 08:19:12PM -0700, Luis R. Rodriguez wrote:
->> > On the systemd side of things it should enable this sysctl and for
->> > older kernels what should it do?
->>
->> Supposing the change is backported via -stable, it can try to set the
->> sysctl on all kernels.  If the knob doesn't exist, the fix is not
->> there and nothing can be done about it.
->
-> The more I think about it, the more I think this should be a
-> per-insmod instance thing rather than a system-wide switch.
+In order to make the static inline function is_zero_pfn() callable by
+modules, export its symbol dependencies 'zero_pfn' and (for s390 and
+mips) 'zero_page_mask'.
 
-Agreed, a good use case that comes to mind would be systemd's
-modules-load.d lists used by systemd services to require modules, the
-hooks there however likely expect probe to complete as part of the
-service, since the timeout is not applicable to these the synchronous
-probe for them would be good while systemd would use async probe for
-regular modules.
+We need this for KVM, as CONFIG_KVM is a tristate for all supported
+architectures except ARM and arm64, and testing a pfn whether it refers
+to the zero page is required to correctly distinguish the zero page
+from other special RAM ranges that may also have the PG_reserved bit
+set, but need to be treated as MMIO memory.
 
-> Currently
-> the kernel param code doesn't allow a generic param outside the ones
-> specified by the module itself but adding support for something like
-> driver.async_load=1 shouldn't be too difficult, applying that to
-> existing systems shouldn't be much more difficult than a system-wide
-> switch, and it'd be siginificantly cleaner than fiddling with driver
-> blacklist.
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+---
+ arch/mips/mm/init.c | 1 +
+ arch/s390/mm/init.c | 1 +
+ mm/memory.c         | 2 ++
+ 3 files changed, 4 insertions(+)
 
-Agreed.
+diff --git a/arch/mips/mm/init.c b/arch/mips/mm/init.c
+index 571aab064936..f42e35e42790 100644
+--- a/arch/mips/mm/init.c
++++ b/arch/mips/mm/init.c
+@@ -53,6 +53,7 @@
+  */
+ unsigned long empty_zero_page, zero_page_mask;
+ EXPORT_SYMBOL_GPL(empty_zero_page);
++EXPORT_SYMBOL(zero_page_mask);
+ 
+ /*
+  * Not static inline because used by IP27 special magic initialization code
+diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
+index 0c1073ed1e84..c7235e01fd67 100644
+--- a/arch/s390/mm/init.c
++++ b/arch/s390/mm/init.c
+@@ -43,6 +43,7 @@ pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__((__aligned__(PAGE_SIZE)));
+ 
+ unsigned long empty_zero_page, zero_page_mask;
+ EXPORT_SYMBOL(empty_zero_page);
++EXPORT_SYMBOL(zero_page_mask);
+ 
+ static void __init setup_zero_pages(void)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index adeac306610f..d17f1bcd2a91 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -118,6 +118,8 @@ __setup("norandmaps", disable_randmaps);
+ unsigned long zero_pfn __read_mostly;
+ unsigned long highest_memmap_pfn __read_mostly;
+ 
++EXPORT_SYMBOL(zero_pfn);
++
+ /*
+  * CONFIG_MMU architectures set up ZERO_PAGE in their paging_init()
+  */
+-- 
+1.8.3.2
 
-  Luis
