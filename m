@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaILKeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:34:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:55127 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577AbaILKef convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:34:35 -0400
-Date: Fri, 12 Sep 2014 11:34:29 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v10 09/10] PCI: Assign unassigned bus resources in
- pci_scan_root_bus()
-Message-ID: <20140912103429.GA1994@e106497-lin.cambridge.arm.com>
-References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
- <1410184472-17630-10-git-send-email-Liviu.Dudau@arm.com>
- <5412C75F.30207@amd.com>
-MIME-Version: 1.0
-In-Reply-To: <5412C75F.30207@amd.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 12 Sep 2014 10:34:30.0907 (UTC) FILETIME=[22E6A4B0:01CFCE75]
-X-MC-Unique: 114091211343203301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753618AbaILKfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:35:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54840 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751776AbaILKfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 06:35:20 -0400
+From: Juergen Gross <jgross@suse.com>
+To: stefan.bader@canonical.com, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
+        x86@kernel.org, david.vrabel@citrix.com, jbeulich@suse.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH V3 0/3] x86: Full support of PAT
+Date: Fri, 12 Sep 2014 12:35:09 +0200
+Message-Id: <1410518112-2625-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 11:13:51AM +0100, Suravee Suthikulpanit wrote:
-> On 9/8/2014 8:54 AM, Liviu Dudau wrote:
-> > If the firmware has not assigned all the bus resources and
-> > we are not just probing the PCIe busses, it makes sense to
-> > assign the unassigned resources in pci_scan_root_bus().
-> >
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> > Cc: Rob Herring <robh+dt@kernel.org>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > ---
-> >   drivers/pci/probe.c | 3 +++
-> >   1 file changed, 3 insertions(+)
-> >
-> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > index ef891d2..508cf61 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -1953,6 +1953,9 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
-> >   	if (!found)
-> >   		pci_bus_update_busn_res_end(b, max);
-> >
-> > +	if (!pci_has_flag(PCI_PROBE_ONLY))
-> > +		pci_assign_unassigned_bus_resources(b);
-> > +
-> >   	pci_bus_add_devices(b);
-> >   	return b;
-> >   }
-> >
-> 
-> Liviu,
-> 
-> Besides the check for PCI_PROBE_ONLY here, I think we also need to avoid calling
-> "pci_enable_resources()" in the "driver/pci/pci.c: pcibios_enable_device()" for
-> PCI_PROBE_ONLY mode since the resource is not assigned by Linux. Otherwise, the
-> "drivers/pci/setup-res.c: pci_enable_resource()" would fail w/ error:
-> 
->      can't enable device: BAR ..... not assigned
+The x86 architecture offers via the PAT (Page Attribute Table) a way to
+specify different caching modes in page table entries. The PAT MSR contains
+8 entries each specifying one of 6 possible cache modes. A pte references one
+of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
 
-Hmm, are you sure that is not because the host bridge resources have not been
-requested? pci-host-generic.c uses PCI_PROBE_ONLY and yet it works with the series as
-is. But it does request_resource() for the host bridge resources inside the driver.
+The Linux kernel currently supports only 4 different cache modes. The PAT MSR
+is set up in a way that the setting of _PAGE_PAT in a pte doesn't matter: the
+top 4 entries in the PAT MSR are the same as the 4 lower entries.
 
-Best regards,
-Liviu
+This results in the kernel not supporting e.g. write-through mode. Especially
+this cache mode would speed up drivers of video cards which now have to use
+uncached accesses.
 
-> 
-> Actually, in "arch/arm/kernel/bios32.c:", the weak "pcibios_enable_device()" function
-> also has the check for PCI_PROBE_ONLY mode before calling pci_enable_resources().
-> 
-> Thanks,
-> 
-> Suravee
-> 
-> 
+OTOH some old processors (Pentium) don't support PAT correctly and the Xen
+hypervisor has been using a different PAT MSR configuration for some time now
+and can't change that as this setting is part of the ABI.
+
+This patch set abstracts the cache mode from the pte and introduces tables to
+translate between cache mode and pte bits (the default cache mode "write back"
+is hard-wired to PAT entry 0). The tables are statically initialized with
+values being compatible to old processors and current usage. As soon as the
+PAT MSR is changed (or - in case of Xen - is read at boot time) the tables are
+changed accordingly. Requests of mappings with special cache modes are always
+possible now, in case they are not supported there will be a fallback to a
+compatible but slower mode.
+
+Summing it up, this patch set adds the following features:
+- capability to support WT and WP cache modes on processors with full PAT
+  support
+- processors with no or uncorrect PAT support are still working as today, even
+  if WT or WP cache mode are selected by drivers for some pages
+- reduction of Xen special handling regarding cache mode
+
+Changes in V3:
+- corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
+
+Changes in V2:
+- simplified handling of PAT MSR write under Xen as suggested by David Vrabel
+- removed resetting of pat_enabled under Xen
+- two small corrections requested by Toshi Kani (UC_MINUS cache mode in
+  vermilion driver, fix 32 bit kernel build failure)
+- correct build error on non-x86 arch by moving definition of
+  update_cache_mode_entry() to x86 specific header
+
+Changes since RFC:
+- renamed functions and variables as suggested by Toshi Kani
+- corrected cache mode bits for WT and WP
+- modified handling of PAT MSR write under Xen as suggested by Jan Beulich
+
+
+Juergen Gross (3):
+  x86: Make page cache mode a real type
+  x86: Enable PAT to use cache mode translation tables
+  Support Xen pv-domains using PAT
+
+ arch/x86/include/asm/cacheflush.h         |  38 ++++---
+ arch/x86/include/asm/fb.h                 |   6 +-
+ arch/x86/include/asm/io.h                 |   2 +-
+ arch/x86/include/asm/pat.h                |   7 +-
+ arch/x86/include/asm/pgtable.h            |  19 ++--
+ arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+ arch/x86/mm/dump_pagetables.c             |  24 ++--
+ arch/x86/mm/init.c                        |  37 ++++++
+ arch/x86/mm/init_64.c                     |   9 +-
+ arch/x86/mm/iomap_32.c                    |  15 ++-
+ arch/x86/mm/ioremap.c                     |  63 ++++++-----
+ arch/x86/mm/mm_internal.h                 |   2 +
+ arch/x86/mm/pageattr.c                    |  84 ++++++++------
+ arch/x86/mm/pat.c                         | 181 +++++++++++++++++++-----------
+ arch/x86/mm/pat_internal.h                |  22 ++--
+ arch/x86/mm/pat_rbtree.c                  |   8 +-
+ arch/x86/pci/i386.c                       |   4 +-
+ arch/x86/xen/enlighten.c                  |  25 ++---
+ arch/x86/xen/mmu.c                        |  48 +-------
+ arch/x86/xen/xen-ops.h                    |   1 -
+ drivers/video/fbdev/gbefb.c               |   3 +-
+ drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+ 22 files changed, 421 insertions(+), 279 deletions(-)
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.8.4.5
 
