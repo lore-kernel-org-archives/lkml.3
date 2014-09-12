@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaILUsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:48:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40133 "EHLO mail.kernel.org"
+	id S1752596AbaILUvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:51:11 -0400
+Received: from parrot.pmhahn.de ([88.198.50.102]:52177 "EHLO parrot.pmhahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644AbaILUsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:48:33 -0400
-Date: Fri, 12 Sep 2014 17:48:29 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 11/14] tools lib api: Adopt fdarray class from perf's
- evlist
-Message-ID: <20140912204829.GB11199@kernel.org>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-12-git-send-email-acme@kernel.org>
- <20140912125822.GA23205@krava.brq.redhat.com>
- <20140912134429.GF1801@kernel.org>
- <20140912141631.GA22187@krava.brq.redhat.com>
- <20140912142225.GI1801@kernel.org>
- <20140912165406.GA7139@nazgul.tnic>
+	id S1751150AbaILUvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:51:08 -0400
+X-Greylist: delayed 517 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Sep 2014 16:51:07 EDT
+Date: Fri, 12 Sep 2014 22:42:28 +0200
+From: Philipp Matthias Hahn <pmhahn@pmhahn.de>
+To: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RFH: How to correctly request a back-port / cherry-pick for stable
+ 3.10?
+Message-ID: <20140912204228.GA8004@pmhahn.de>
+Mail-Followup-To: Kernel Mailing List <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140912165406.GA7139@nazgul.tnic>
-X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Sep 12, 2014 at 06:54:07PM +0200, Borislav Petkov escreveu:
-> On Fri, Sep 12, 2014 at 11:22:25AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Yeah, to me as well, but then zfree() was such a nice pick and looked ok
-> > at the time :-)
-> > 
-> > I'm leaving this for later, different patchkit that would sweep thru
-> > tools/ and find this pattern, make it use freez() (or some other name),
-> > etc.
-> 
-> freez() sounds like something gets frozen :-P and not freed.
+Hello,
 
-ok, note taken.
+I've found and debugged a problem in 3.10.54, which is fixed by
+commit 8915aa27d5efbb9185357175b0acf884325565f9, which is in 3.11.
 
-I liked it when trying something different from zfree().
+I'd like to request the commit being cherry-picked into 3.11, but
+reading Documentation/stable_kernel_rules.txt confuses me, as all my
+previous attempts seem to not having worked:
 
-I'm not that successfull at landgrabs recently, people at Fedora don't
-want to use the 'trace' alias for 'perf trace', even it not being used
-by anybody so far.
+> - Send the patch, after verifying that it follows the above rules, to
+>   stable@vger.kernel.org.  You must note the upstream commit ID in the
+>   changelog of your submission, as well as the kernel version you wish
+>   it to be applied to.
 
-Ideas of how to name zfree()?
+So do I need to do the cherry-pick myself?
 
-- Arnaldo
+Amending the commit message by adding 
+  commit 8915aa27d5efbb9185357175b0acf884325565f9 upstream.
+between the subject line and the patch description is the easy part.
+
+Where should the "kernel version" go? Looking at
+<https://www.kernel.org/pub/linux/kernel/v3.x/ChangeLog-3.10.54> that
+information is not part of any commit message.
+Should it go after the 1st "---"?
+
+> - To have the patch automatically included in the stable tree, add the tag
+>     Cc: stable@vger.kernel.org
+>   in the sign-off area. Once the patch is merged it will be applied to
+>   the stable tree without anything else needing to be done by the author
+>   or subsystem maintainer.
+
+As the patch is already in 3.11, that doesn't seem to apply for
+requesting a back-port.
+
+> - The sender will receive an ACK when the patch has been accepted into the
+>   queue, or a NAK if the patch is rejected.  This response might take a few
+>   days, according to the developer's schedules.
+
+So far I have receiver nothing, only silence.
+
+> - If accepted, the patch will be added to the -stable queue, for review by
+>   other developers and by the relevant subsystem maintainer.
+
+and I don't find it there.
+
+Can somebody please give me a hint on what I'm missing or doing wrong?
+An example email containing such a back-port request would be very much
+appreciated.
+
+Thanks.
+
+Philipp
+-- 
+  / /  (_)__  __ ____  __ Philipp Hahn
+ / /__/ / _ \/ // /\ \/ /
+/____/_/_//_/\_,_/ /_/\_\ pmhahn@pmhahn.de
