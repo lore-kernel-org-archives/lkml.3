@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaILT2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:28:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36273 "EHLO
+	id S1752801AbaILT2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:28:33 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36280 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaILT2S (ORCPT
+	with ESMTP id S1752647AbaILT2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:28:18 -0400
+	Fri, 12 Sep 2014 15:28:20 -0400
 From: Andy Gross <agross@codeaurora.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,9 +17,9 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         Andy Gross <agross@codeaurora.org>
-Subject: [Patch v9 2/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-Date: Fri, 12 Sep 2014 14:28:07 -0500
-Message-Id: <1410550088-8754-3-git-send-email-agross@codeaurora.org>
+Subject: [Patch v9 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
+Date: Fri, 12 Sep 2014 14:28:08 -0500
+Message-Id: <1410550088-8754-4-git-send-email-agross@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
 References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
@@ -27,56 +27,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+This patch adds a new driver for the Qualcomm USB 3.0 PHY that exists on some
+Qualcomm platforms.  This driver uses the generic PHY framework and will
+interact with the DWC3 controller.
 
-DWC3 glue layer is hardware layer around Synopsys DesignWare
-USB3 core. Its purpose is to supply Synopsys IP with required
-clocks, voltages and interface it with the rest of the SoC.
-
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 Signed-off-by: Andy Gross <agross@codeaurora.org>
 ---
- drivers/usb/dwc3/Kconfig     |    8 +++
- drivers/usb/dwc3/Makefile    |    1 +
- drivers/usb/dwc3/dwc3-qcom.c |  131 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 140 insertions(+)
- create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
+ drivers/phy/Kconfig         |   11 +
+ drivers/phy/Makefile        |    1 +
+ drivers/phy/phy-qcom-dwc3.c |  483 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 495 insertions(+)
+ create mode 100644 drivers/phy/phy-qcom-dwc3.c
 
-diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
-index 785510a..a816fe4 100644
---- a/drivers/usb/dwc3/Kconfig
-+++ b/drivers/usb/dwc3/Kconfig
-@@ -80,6 +80,14 @@ config USB_DWC3_KEYSTONE
- 	  Support of USB2/3 functionality in TI Keystone2 platforms.
- 	  Say 'Y' or 'M' here if you have one such device
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 0dd7427..5d56161 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -230,4 +230,15 @@ config PHY_XGENE
+ 	help
+ 	  This option enables support for APM X-Gene SoC multi-purpose PHY.
  
-+config USB_DWC3_QCOM
-+	tristate "Qualcomm Platforms"
-+	depends on ARCH_QCOM || COMPILE_TEST
-+	default USB_DWC3
++config PHY_QCOM_DWC3
++	tristate "QCOM DWC3 USB PHY support"
++	depends on ARCH_QCOM
++	depends on HAS_IOMEM
++	depends on OF
++	select GENERIC_PHY
 +	help
-+	  Recent Qualcomm SoCs ship with one DesignWare Core USB3 IP inside,
-+	  say 'Y' or 'M' if you have one such device.
++	  This option enables support for the Synopsis PHYs present inside the
++	  Qualcomm USB3.0 DWC3 controller.  This driver supports both HS and SS
++	  PHY controllers.
 +
- comment "Debugging features"
- 
- config USB_DWC3_DEBUG
-diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
-index 10ac3e7..0da8e75 100644
---- a/drivers/usb/dwc3/Makefile
-+++ b/drivers/usb/dwc3/Makefile
-@@ -33,3 +33,4 @@ obj-$(CONFIG_USB_DWC3_OMAP)		+= dwc3-omap.o
- obj-$(CONFIG_USB_DWC3_EXYNOS)		+= dwc3-exynos.o
- obj-$(CONFIG_USB_DWC3_PCI)		+= dwc3-pci.o
- obj-$(CONFIG_USB_DWC3_KEYSTONE)		+= dwc3-keystone.o
-+obj-$(CONFIG_USB_DWC3_QCOM)		+= dwc3-qcom.o
-diff --git a/drivers/usb/dwc3/dwc3-qcom.c b/drivers/usb/dwc3/dwc3-qcom.c
+ endmenu
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 95c69ed..aa16f30 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -28,3 +28,4 @@ obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+ obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
+ obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
+ obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
++obj-$(CONFIG_PHY_QCOM_DWC3)		+= phy-qcom-dwc3.o
+diff --git a/drivers/phy/phy-qcom-dwc3.c b/drivers/phy/phy-qcom-dwc3.c
 new file mode 100644
-index 0000000..f255335
+index 0000000..2c7b316
 --- /dev/null
-+++ b/drivers/usb/dwc3/dwc3-qcom.c
-@@ -0,0 +1,131 @@
-+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
++++ b/drivers/phy/phy-qcom-dwc3.c
+@@ -0,0 +1,483 @@
++/* Copyright (c) 2013-2014, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -93,120 +91,472 @@ index 0000000..f255335
 +#include <linux/io.h>
 +#include <linux/module.h>
 +#include <linux/of.h>
-+#include <linux/of_platform.h>
++#include <linux/phy/phy.h>
 +#include <linux/platform_device.h>
++#include <linux/delay.h>
 +
-+struct dwc3_qcom {
++/**
++ *  USB QSCRATCH Hardware registers
++ */
++#define QSCRATCH_GENERAL_CFG		(0x08)
++#define HSUSB_PHY_CTRL_REG		(0x10)
++
++/* PHY_CTRL_REG */
++#define HSUSB_CTRL_DMSEHV_CLAMP			BIT(24)
++#define HSUSB_CTRL_USB2_SUSPEND			BIT(23)
++#define HSUSB_CTRL_UTMI_CLK_EN			BIT(21)
++#define	HSUSB_CTRL_UTMI_OTG_VBUS_VALID		BIT(20)
++#define HSUSB_CTRL_USE_CLKCORE			BIT(18)
++#define HSUSB_CTRL_DPSEHV_CLAMP			BIT(17)
++#define HSUSB_CTRL_COMMONONN			BIT(11)
++#define HSUSB_CTRL_ID_HV_CLAMP			BIT(9)
++#define HSUSB_CTRL_OTGSESSVLD_CLAMP		BIT(8)
++#define HSUSB_CTRL_CLAMP_EN			BIT(7)
++#define HSUSB_CTRL_RETENABLEN			BIT(1)
++#define HSUSB_CTRL_POR				BIT(0)
++
++/* QSCRATCH_GENERAL_CFG */
++#define HSUSB_GCFG_XHCI_REV		BIT(2)
++
++/**
++ *  USB QSCRATCH Hardware registers
++ */
++#define SSUSB_PHY_CTRL_REG		(0x00)
++#define SSUSB_PHY_PARAM_CTRL_1		(0x04)
++#define SSUSB_PHY_PARAM_CTRL_2		(0x08)
++#define CR_PROTOCOL_DATA_IN_REG		(0x0c)
++#define CR_PROTOCOL_DATA_OUT_REG	(0x10)
++#define CR_PROTOCOL_CAP_ADDR_REG	(0x14)
++#define CR_PROTOCOL_CAP_DATA_REG	(0x18)
++#define CR_PROTOCOL_READ_REG		(0x1c)
++#define CR_PROTOCOL_WRITE_REG		(0x20)
++
++/* PHY_CTRL_REG */
++#define SSUSB_CTRL_REF_USE_PAD		BIT(28)
++#define SSUSB_CTRL_TEST_POWERDOWN	BIT(27)
++#define SSUSB_CTRL_LANE0_PWR_PRESENT	BIT(24)
++#define SSUSB_CTRL_SS_PHY_EN		BIT(8)
++#define SSUSB_CTRL_SS_PHY_RESET		BIT(7)
++
++/* SSPHY control registers */
++#define SSPHY_CTRL_RX_OVRD_IN_HI(lane)	(0x1006 + 0x100 * lane)
++#define SSPHY_CTRL_TX_OVRD_DRV_LO(lane)	(0x1002 + 0x100 * lane)
++
++/* RX OVRD IN HI bits */
++#define RX_OVRD_IN_HI_RX_RESET_OVRD		BIT(13)
++#define RX_OVRD_IN_HI_RX_RX_RESET		BIT(12)
++#define RX_OVRD_IN_HI_RX_EQ_OVRD		BIT(11)
++#define RX_OVRD_IN_HI_RX_EQ_MASK		0x0700
++#define RX_OVRD_IN_HI_RX_EQ_SHIFT		8
++#define RX_OVRD_IN_HI_RX_EQ_EN_OVRD		BIT(7)
++#define RX_OVRD_IN_HI_RX_EQ_EN			BIT(6)
++#define RX_OVRD_IN_HI_RX_LOS_FILTER_OVRD	BIT(5)
++#define RX_OVRD_IN_HI_RX_LOS_FILTER_MASK	0x0018
++#define RX_OVRD_IN_HI_RX_RATE_OVRD		BIT(2)
++#define RX_OVRD_IN_HI_RX_RATE_MASK		0x0003
++
++/* TX OVRD DRV LO register bits */
++#define TX_OVRD_DRV_LO_AMPLITUDE_MASK	0x007F
++#define TX_OVRD_DRV_LO_PREEMPH_MASK	0x3F80
++#define TX_OVRD_DRV_LO_PREEMPH_SHIFT	7
++#define TX_OVRD_DRV_LO_EN		BIT(14)
++
++struct qcom_dwc3_usb_phy {
++	void __iomem		*base;
 +	struct device		*dev;
++	struct phy *phy;
 +
-+	struct clk		*core_clk;
-+	struct clk		*iface_clk;
-+	struct clk		*sleep_clk;
++	int (*phy_init)(struct qcom_dwc3_usb_phy *phy_dwc3);
++	int (*phy_exit)(struct qcom_dwc3_usb_phy *phy_dwc3);
++
++	struct clk		*xo_clk;
++	struct clk		*ref_clk;
 +};
 +
-+static int dwc3_qcom_probe(struct platform_device *pdev)
++/**
++ * Write register and read back masked value to confirm it is written
++ *
++ * @base - QCOM DWC3 PHY base virtual address.
++ * @offset - register offset.
++ * @mask - register bitmask specifying what should be updated
++ * @val - value to write.
++ */
++static inline void qcom_dwc3_phy_write_readback(
++	struct qcom_dwc3_usb_phy *phy_dwc3, u32 offset,
++	const u32 mask, u32 val)
 +{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct dwc3_qcom *qdwc;
-+	int ret = 0;
++	u32 write_val, tmp = readl(phy_dwc3->base + offset);
 +
-+	qdwc = devm_kzalloc(&pdev->dev, sizeof(*qdwc), GFP_KERNEL);
-+	if (!qdwc)
-+		return -ENOMEM;
++	tmp &= ~mask;		/* retain other bits */
++	write_val = tmp | val;
 +
-+	platform_set_drvdata(pdev, qdwc);
++	writel(write_val, phy_dwc3->base + offset);
 +
-+	qdwc->dev = &pdev->dev;
++	/* Read back to see if val was written */
++	tmp = readl(phy_dwc3->base + offset);
++	tmp &= mask;		/* clear other bits */
 +
-+	qdwc->core_clk = devm_clk_get(qdwc->dev, "core");
-+	if (IS_ERR(qdwc->core_clk)) {
-+		dev_err(qdwc->dev, "failed to get core clock\n");
-+		return PTR_ERR(qdwc->core_clk);
-+	}
++	if (tmp != val)
++		dev_err(phy_dwc3->dev, "write: %x to QSCRATCH: %x FAILED\n",
++			val, offset);
++}
 +
-+	qdwc->iface_clk = devm_clk_get(qdwc->dev, "iface");
-+	if (IS_ERR(qdwc->iface_clk)) {
-+		dev_dbg(qdwc->dev, "failed to get optional iface clock\n");
-+		qdwc->iface_clk = NULL;
-+	}
++static int wait_for_latch(void __iomem *addr)
++{
++	u32 retry = 10;
 +
-+	qdwc->sleep_clk = devm_clk_get(qdwc->dev, "sleep");
-+	if (IS_ERR(qdwc->sleep_clk)) {
-+		dev_dbg(qdwc->dev, "failed to get optional sleep clock\n");
-+		qdwc->sleep_clk = NULL;
-+	}
++	while (true) {
++		if (!readl(addr))
++			break;
 +
-+	ret = clk_prepare_enable(qdwc->core_clk);
-+	if (ret) {
-+		dev_err(qdwc->dev, "failed to enable core clock\n");
-+		goto err_core;
-+	}
++		if (--retry == 0)
++			return -ETIMEDOUT;
 +
-+	ret = clk_prepare_enable(qdwc->iface_clk);
-+	if (ret) {
-+		dev_err(qdwc->dev, "failed to enable optional iface clock\n");
-+		goto err_iface;
-+	}
-+
-+	ret = clk_prepare_enable(qdwc->sleep_clk);
-+	if (ret) {
-+		dev_err(qdwc->dev, "failed to enable optional sleep clock\n");
-+		goto err_sleep;
-+	}
-+
-+	ret = of_platform_populate(node, NULL, NULL, qdwc->dev);
-+	if (ret) {
-+		dev_err(qdwc->dev, "failed to register core - %d\n", ret);
-+		goto err_clks;
++		usleep_range(10, 20);
 +	}
 +
 +	return 0;
++}
 +
-+err_clks:
-+	clk_disable_unprepare(qdwc->sleep_clk);
-+err_sleep:
-+	clk_disable_unprepare(qdwc->iface_clk);
-+err_iface:
-+	clk_disable_unprepare(qdwc->core_clk);
-+err_core:
++/**
++ * Write SSPHY register
++ *
++ * @base - QCOM DWC3 PHY base virtual address.
++ * @addr - SSPHY address to write.
++ * @val - value to write.
++ */
++static int qcom_dwc3_ss_write_phycreg(void __iomem *base, u32 addr, u32 val)
++{
++	int ret;
++
++	writel(addr, base + CR_PROTOCOL_DATA_IN_REG);
++	writel(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
++
++	ret = wait_for_latch(base + CR_PROTOCOL_CAP_ADDR_REG);
++	if (ret)
++		goto err_wait;
++
++	writel(val, base + CR_PROTOCOL_DATA_IN_REG);
++	writel(0x1, base + CR_PROTOCOL_CAP_DATA_REG);
++
++	ret = wait_for_latch(base + CR_PROTOCOL_CAP_DATA_REG);
++	if (ret)
++		goto err_wait;
++
++	writel(0x1, base + CR_PROTOCOL_WRITE_REG);
++
++	ret = wait_for_latch(base + CR_PROTOCOL_WRITE_REG);
++
++err_wait:
 +	return ret;
 +}
 +
-+static int dwc3_qcom_remove(struct platform_device *pdev)
++/**
++ * Read SSPHY register.
++ *
++ * @base - QCOM DWC3 PHY base virtual address.
++ * @addr - SSPHY address to read.
++ */
++static int qcom_dwc3_ss_read_phycreg(void __iomem *base, u32 addr, u32 *val)
 +{
-+	struct dwc3_qcom *qdwc = platform_get_drvdata(pdev);
++	int ret;
++	bool first_read = true;
 +
-+	of_platform_depopulate(&pdev->dev);
++	writel(addr, base + CR_PROTOCOL_DATA_IN_REG);
++	writel(0x1, base + CR_PROTOCOL_CAP_ADDR_REG);
 +
-+	clk_disable_unprepare(qdwc->sleep_clk);
-+	clk_disable_unprepare(qdwc->iface_clk);
-+	clk_disable_unprepare(qdwc->core_clk);
++	ret = wait_for_latch(base + CR_PROTOCOL_CAP_ADDR_REG);
++	if (ret)
++		goto err_wait;
++
++	/*
++	 * Due to hardware bug, first read of SSPHY register might be
++	 * incorrect. Hence as workaround, SW should perform SSPHY register
++	 * read twice, but use only second read and ignore first read.
++	 */
++retry:
++	writel(0x1, base + CR_PROTOCOL_READ_REG);
++
++	ret = wait_for_latch(base + CR_PROTOCOL_READ_REG);
++	if (ret)
++		goto err_wait;
++
++	if (first_read) {
++		readl(base + CR_PROTOCOL_DATA_OUT_REG);
++		first_read = false;
++		goto retry;
++	}
++
++	*val = readl(base + CR_PROTOCOL_DATA_OUT_REG);
++
++err_wait:
++	return ret;
++}
++
++static int qcom_dwc3_phy_power_on(struct phy *phy)
++{
++	int ret;
++	struct qcom_dwc3_usb_phy *phy_dwc3 = phy_get_drvdata(phy);
++
++	ret = clk_prepare_enable(phy_dwc3->xo_clk);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(phy_dwc3->ref_clk);
++	if (ret)
++		clk_disable_unprepare(phy_dwc3->xo_clk);
++
++	return ret;
++}
++
++static int qcom_dwc3_phy_power_off(struct phy *phy)
++{
++	struct qcom_dwc3_usb_phy *phy_dwc3 = phy_get_drvdata(phy);
++
++	clk_disable_unprepare(phy_dwc3->ref_clk);
++	clk_disable_unprepare(phy_dwc3->xo_clk);
 +
 +	return 0;
 +}
 +
-+static const struct of_device_id of_dwc3_match[] = {
-+	{ .compatible = "qcom,dwc3" },
++static int qcom_dwc3_hs_phy_init(struct qcom_dwc3_usb_phy *phy_dwc3)
++{
++	u32 val;
++
++	/*
++	 * HSPHY Initialization: Enable UTMI clock, select 19.2MHz fsel
++	 * enable clamping, and disable RETENTION (power-on default is ENABLED)
++	 */
++	val = HSUSB_CTRL_DPSEHV_CLAMP | HSUSB_CTRL_DMSEHV_CLAMP |
++		HSUSB_CTRL_RETENABLEN  | HSUSB_CTRL_COMMONONN |
++		HSUSB_CTRL_OTGSESSVLD_CLAMP | HSUSB_CTRL_ID_HV_CLAMP |
++		HSUSB_CTRL_DPSEHV_CLAMP | HSUSB_CTRL_UTMI_OTG_VBUS_VALID |
++		HSUSB_CTRL_UTMI_CLK_EN | HSUSB_CTRL_CLAMP_EN | 0x70;
++
++	/* use core clock if external reference is not present */
++	if (!phy_dwc3->xo_clk)
++		val |= HSUSB_CTRL_USE_CLKCORE;
++
++	writel(val, phy_dwc3->base + HSUSB_PHY_CTRL_REG);
++	usleep_range(2000, 2200);
++
++	/* Disable (bypass) VBUS and ID filters */
++	writel(HSUSB_GCFG_XHCI_REV, phy_dwc3->base + QSCRATCH_GENERAL_CFG);
++
++	return 0;
++}
++
++static int qcom_dwc3_ss_phy_init(struct qcom_dwc3_usb_phy *phy_dwc3)
++{
++	int ret;
++	u32 data = 0;
++
++	/* reset phy */
++	data = readl_relaxed(phy_dwc3->base + SSUSB_PHY_CTRL_REG);
++	writel_relaxed(data | SSUSB_CTRL_SS_PHY_RESET,
++		phy_dwc3->base + SSUSB_PHY_CTRL_REG);
++	usleep_range(2000, 2200);
++	writel_relaxed(data, phy_dwc3->base + SSUSB_PHY_CTRL_REG);
++
++	/* clear REF_PAD if we don't have XO clk */
++	if (!phy_dwc3->xo_clk)
++		data &= ~SSUSB_CTRL_REF_USE_PAD;
++	else
++		data |= SSUSB_CTRL_REF_USE_PAD;
++
++	writel_relaxed(data, phy_dwc3->base + SSUSB_PHY_CTRL_REG);
++	msleep(30);
++
++	data |= SSUSB_CTRL_SS_PHY_EN | SSUSB_CTRL_LANE0_PWR_PRESENT;
++	writel_relaxed(data, phy_dwc3->base + SSUSB_PHY_CTRL_REG);
++
++	/*
++	 * Fix RX Equalization setting as follows
++	 * LANE0.RX_OVRD_IN_HI. RX_EQ_EN set to 0
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ_EN_OVRD set to 1
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ set to 3
++	 * LANE0.RX_OVRD_IN_HI.RX_EQ_OVRD set to 1
++	 */
++	ret = qcom_dwc3_ss_read_phycreg(phy_dwc3->base,
++			SSPHY_CTRL_RX_OVRD_IN_HI(0), &data);
++	if (ret)
++		goto err_phy_trans;
++
++	data &= ~RX_OVRD_IN_HI_RX_EQ_EN;
++	data |= RX_OVRD_IN_HI_RX_EQ_EN_OVRD;
++	data &= ~RX_OVRD_IN_HI_RX_EQ_MASK;
++	data |= 0x3 << RX_OVRD_IN_HI_RX_EQ_SHIFT;
++	data |= RX_OVRD_IN_HI_RX_EQ_OVRD;
++	ret = qcom_dwc3_ss_write_phycreg(phy_dwc3->base,
++		SSPHY_CTRL_RX_OVRD_IN_HI(0), data);
++	if (ret)
++		goto err_phy_trans;
++
++	/*
++	 * Set EQ and TX launch amplitudes as follows
++	 * LANE0.TX_OVRD_DRV_LO.PREEMPH set to 22
++	 * LANE0.TX_OVRD_DRV_LO.AMPLITUDE set to 127
++	 * LANE0.TX_OVRD_DRV_LO.EN set to 1.
++	 */
++	ret = qcom_dwc3_ss_read_phycreg(phy_dwc3->base,
++		SSPHY_CTRL_TX_OVRD_DRV_LO(0), &data);
++	if (ret)
++		goto err_phy_trans;
++
++	data &= ~TX_OVRD_DRV_LO_PREEMPH_MASK;
++	data |= 0x16 << TX_OVRD_DRV_LO_PREEMPH_SHIFT;
++	data &= ~TX_OVRD_DRV_LO_AMPLITUDE_MASK;
++	data |= 0x7f;
++	data |= TX_OVRD_DRV_LO_EN;
++	ret = qcom_dwc3_ss_write_phycreg(phy_dwc3->base,
++		SSPHY_CTRL_TX_OVRD_DRV_LO(0), data);
++	if (ret)
++		goto err_phy_trans;
++
++	/*
++	 * Set the QSCRATCH PHY_PARAM_CTRL1 parameters as follows
++	 * TX_FULL_SWING [26:20] amplitude to 127
++	 * TX_DEEMPH_3_5DB [13:8] to 22
++	 * LOS_BIAS [2:0] to 0x5
++	 */
++	qcom_dwc3_phy_write_readback(phy_dwc3, SSUSB_PHY_PARAM_CTRL_1,
++				   0x07f03f07, 0x07f01605);
++
++err_phy_trans:
++	return ret;
++}
++
++static int qcom_dwc3_ss_phy_exit(struct qcom_dwc3_usb_phy *phy_dwc3)
++{
++	/* Sequence to put SSPHY in low power state:
++	 * 1. Clear REF_PHY_EN in PHY_CTRL_REG
++	 * 2. Clear REF_USE_PAD in PHY_CTRL_REG
++	 * 3. Set TEST_POWERED_DOWN in PHY_CTRL_REG to enable PHY retention
++	 * 4. Disable SSPHY ref clk
++	 */
++	qcom_dwc3_phy_write_readback(phy_dwc3, SSUSB_PHY_CTRL_REG,
++		SSUSB_CTRL_SS_PHY_EN, 0x0);
++	qcom_dwc3_phy_write_readback(phy_dwc3, SSUSB_PHY_CTRL_REG,
++		SSUSB_CTRL_REF_USE_PAD, 0x0);
++	qcom_dwc3_phy_write_readback(phy_dwc3, SSUSB_PHY_CTRL_REG,
++		0x0, SSUSB_CTRL_TEST_POWERDOWN);
++
++	return 0;
++}
++
++static int qcom_dwc3_phy_init(struct phy *phy)
++{
++	struct qcom_dwc3_usb_phy *phy_dwc3 = phy_get_drvdata(phy);
++
++	if (phy_dwc3->phy_init)
++		return phy_dwc3->phy_init(phy_dwc3);
++
++	return 0;
++}
++
++static int qcom_dwc3_phy_exit(struct phy *phy)
++{
++	struct qcom_dwc3_usb_phy *phy_dwc3 = phy_get_drvdata(phy);
++
++	if (phy_dwc3->phy_exit)
++		return qcom_dwc3_ss_phy_exit(phy_dwc3);
++
++	return 0;
++}
++
++static struct phy_ops qcom_dwc3_phy_ops = {
++	.init		= qcom_dwc3_phy_init,
++	.exit		= qcom_dwc3_phy_exit,
++	.power_on	= qcom_dwc3_phy_power_on,
++	.power_off	= qcom_dwc3_phy_power_off,
++	.owner		= THIS_MODULE,
++};
++
++static const struct of_device_id qcom_dwc3_phy_table[] = {
++	{ .compatible = "qcom,dwc3-hs-usb-phy", },
++	{ .compatible = "qcom,dwc3-ss-usb-phy", },
 +	{ /* Sentinel */ }
 +};
-+MODULE_DEVICE_TABLE(of, of_dwc3_match);
++MODULE_DEVICE_TABLE(of, qcom_dwc3_phy_table);
 +
-+static struct platform_driver dwc3_qcom_driver = {
-+	.probe		= dwc3_qcom_probe,
-+	.remove		= dwc3_qcom_remove,
++static int qcom_dwc3_phy_probe(struct platform_device *pdev)
++{
++	struct qcom_dwc3_usb_phy	*phy_dwc3;
++	struct phy_provider		*phy_provider;
++	struct resource			*res;
++
++	phy_dwc3 = devm_kzalloc(&pdev->dev, sizeof(*phy_dwc3), GFP_KERNEL);
++	if (!phy_dwc3)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, phy_dwc3);
++
++	phy_dwc3->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	phy_dwc3->base = devm_ioremap_resource(phy_dwc3->dev, res);
++	if (IS_ERR(phy_dwc3->base))
++		return PTR_ERR(phy_dwc3->base);
++
++	phy_dwc3->ref_clk = devm_clk_get(phy_dwc3->dev, "ref");
++	if (IS_ERR(phy_dwc3->ref_clk)) {
++		dev_dbg(phy_dwc3->dev, "cannot get reference clock\n");
++		return PTR_ERR(phy_dwc3->ref_clk);
++	}
++
++	if (of_device_is_compatible(pdev->dev.of_node,
++			"qcom,dwc3-hs-usb-phy")) {
++		clk_set_rate(phy_dwc3->ref_clk, 60000000);
++		phy_dwc3->phy_init = qcom_dwc3_hs_phy_init;
++	} else if (of_device_is_compatible(pdev->dev.of_node,
++			"qcom,dwc3-ss-usb-phy")) {
++		phy_dwc3->phy_init = qcom_dwc3_ss_phy_init;
++		phy_dwc3->phy_exit = qcom_dwc3_ss_phy_exit;
++		clk_set_rate(phy_dwc3->ref_clk, 125000000);
++	} else {
++		dev_err(phy_dwc3->dev, "Unknown phy\n");
++		return -EINVAL;
++	}
++
++	phy_dwc3->xo_clk = devm_clk_get(phy_dwc3->dev, "xo");
++	if (IS_ERR(phy_dwc3->xo_clk)) {
++		dev_dbg(phy_dwc3->dev, "cannot get TCXO clock\n");
++		phy_dwc3->xo_clk = NULL;
++	}
++
++	phy_dwc3->phy = devm_phy_create(phy_dwc3->dev, NULL, &qcom_dwc3_phy_ops,
++		NULL);
++
++	if (IS_ERR(phy_dwc3->phy))
++		return PTR_ERR(phy_dwc3->phy);
++
++	phy_set_drvdata(phy_dwc3->phy, phy_dwc3);
++
++	phy_provider = devm_of_phy_provider_register(phy_dwc3->dev,
++			of_phy_simple_xlate);
++
++	if (IS_ERR(phy_provider))
++		return PTR_ERR(phy_provider);
++
++	return 0;
++}
++
++static struct platform_driver qcom_dwc3_phy_driver = {
++	.probe		= qcom_dwc3_phy_probe,
 +	.driver		= {
-+		.name	= "qcom-dwc3",
++		.name	= "qcom-dwc3-usb-phy",
 +		.owner	= THIS_MODULE,
-+		.of_match_table	= of_dwc3_match,
++		.of_match_table = qcom_dwc3_phy_table,
 +	},
 +};
 +
-+module_platform_driver(dwc3_qcom_driver);
++module_platform_driver(qcom_dwc3_phy_driver);
 +
-+MODULE_ALIAS("platform:qcom-dwc3");
++MODULE_ALIAS("platform:phy-qcom-dwc3");
 +MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("DesignWare USB3 QCOM Glue Layer");
++MODULE_AUTHOR("Andy Gross <agross@codeaurora.org>");
 +MODULE_AUTHOR("Ivan T. Ivanov <iivanov@mm-sol.com>");
++MODULE_DESCRIPTION("DesignWare USB3 QCOM PHY driver");
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
