@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaILXPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 19:15:35 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53562 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751931AbaILXPd (ORCPT
+	id S1752127AbaILXZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 19:25:25 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58071 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751399AbaILXZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 19:15:33 -0400
-Date: Sat, 13 Sep 2014 00:15:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [PATCH 2/2] pstore-ram: Allow optional mapping with
-	pgprot_noncached
-Message-ID: <20140912231514.GB12379@n2100.arm.linux.org.uk>
-References: <1410546745-919-1-git-send-email-tony@atomide.com> <1410546745-919-2-git-send-email-tony@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410546745-919-2-git-send-email-tony@atomide.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 12 Sep 2014 19:25:24 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-mtd@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv5] mtd: nand: atmel_nand: retrieve NFC clock
+Date: Sat, 13 Sep 2014 01:23:59 +0200
+Message-Id: <1410564239-8411-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 11:32:25AM -0700, Tony Lindgren wrote:
-> On some ARMs at least the memory can be mapped pgprot_noncached()
-> and still be working for atomic operations. As pointed out by
-> Colin Cross <ccross@android.com>, in some cases you do want to use
-> pgprot_noncached() if the SoC supports it to see a debug printk
-> just before a write hanging the system.
-> 
-> On ARMs, the atomic operations on strongly ordered memory are
-> implementation defined. So let's provide an optional kernel parameter
-> for configuring noncached memory, and use pgprot_writecombine() by
-> default.
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-Can we clean up this terminology please?
+Retrieve the NFC clock to make sure it is enabled. Make that optional to ensure
+compatibility with previous device trees but document it as mandatory so newer
+device trees will include it.
 
-Writecombine memory is not cached - write combine memory bypasses the
-caches entirely.  What it doesn't bypass are store buffers, which may
-combine two writes together.  So, calling it "cached" is misleading.
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Josh Wu <josh.wu@atmel.com>
+---
+Changes in v5:
+ - Added a proper commit log
 
-Secondly, memory returned by ioremap() is not strongly ordered, it is
-device memory.  There's three main classifications of memory on ARM:
-strongly ordered, device and normal memory.  Normal memory has attributes
-which define whether it is write combining, or cacheable in some way (and
-if so, how it's cacheable.)
+ .../devicetree/bindings/mtd/atmel-nand.txt         |  2 ++
+ drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-Exclusives are always permitted to normal memory.  The other two are
-implementation defined.  While an implementation may offer it on
-strongly ordered, that doesn't mean that it also supports it on device
-memory.
-
-Lastly, aliased mappings are something that ARM has always strongly
-discouraged on ARMv6+ (it was plain down-right unpredictable, but it's
-now "strongly discouraged") and remapping memory with different memory
-type should be avoided.
-
+diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+index c4728839d0c1..6edc3b616e98 100644
+--- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
++++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
+@@ -36,6 +36,7 @@ Optional properties:
+     - reg : should specify the address and size used for NFC command registers,
+             NFC registers and NFC Sram. NFC Sram address and size can be absent
+             if don't want to use it.
++    - clocks: phandle to the peripheral clock
+   - Optional properties:
+     - atmel,write-by-sram: boolean to enable NFC write by sram.
+ 
+@@ -98,6 +99,7 @@ nand0: nand@40000000 {
+ 		compatible = "atmel,sama5d3-nfc";
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
++		clocks = <&hsmc_clk>
+ 		reg = <
+ 			0x70000000 0x10000000	/* NFC Command Registers */
+ 			0xffffc000 0x00000070	/* NFC HSMC regs */
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 9c5f717bda54..d1e502f8dbd0 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -27,6 +27,7 @@
+  *
+  */
+ 
++#include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+@@ -96,6 +97,8 @@ struct atmel_nfc {
+ 	bool			use_nfc_sram;
+ 	bool			write_by_sram;
+ 
++	struct clk		*clk;
++
+ 	bool			is_initialized;
+ 	struct completion	comp_ready;
+ 	struct completion	comp_cmd_done;
+@@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
+ {
+ 	struct atmel_nfc *nfc = &nand_nfc;
+ 	struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
++	int ret;
+ 
+ 	nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
+@@ -2279,8 +2283,28 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
+ 	nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
+ 	nfc_readl(nfc->hsmc_regs, SR);	/* clear the NFC_SR */
+ 
++	nfc->clk = devm_clk_get(&pdev->dev, NULL);
++	if (!IS_ERR(nfc->clk)) {
++		ret = clk_prepare_enable(nfc->clk);
++		if (ret)
++			return ret;
++	} else {
++		dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
++	}
++
+ 	nfc->is_initialized = true;
+ 	dev_info(&pdev->dev, "NFC is probed.\n");
++
++	return 0;
++}
++
++static int atmel_nand_nfc_remove(struct platform_device *pdev)
++{
++	struct atmel_nfc *nfc = &nand_nfc;
++
++	if (!IS_ERR(nfc->clk))
++		clk_disable_unprepare(nfc->clk);
++
+ 	return 0;
+ }
+ 
+@@ -2297,6 +2321,7 @@ static struct platform_driver atmel_nand_nfc_driver = {
+ 		.of_match_table = of_match_ptr(atmel_nand_nfc_match),
+ 	},
+ 	.probe = atmel_nand_nfc_probe,
++	.remove = atmel_nand_nfc_remove,
+ };
+ 
+ static struct platform_driver atmel_nand_driver = {
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
