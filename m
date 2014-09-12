@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666AbaILNLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:11:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47484 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaILNLJ (ORCPT
+	id S1754721AbaILNP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:15:29 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:35295 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565AbaILNPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:11:09 -0400
-Date: Fri, 12 Sep 2014 15:10:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-In-Reply-To: <54127A16.4030701@zytor.com>
-Message-ID: <alpine.DEB.2.10.1409121238290.4178@nanos>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409120133330.4178@nanos>
- <54127A16.4030701@zytor.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 12 Sep 2014 09:15:24 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 0/4] ARM: shmobile: r8a7740: Handle implicitly enabled clocks
+Date: Fri, 12 Sep 2014 15:15:16 +0200
+Message-Id: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, H. Peter Anvin wrote:
+	Hi all,
 
-> On 09/11/2014 04:37 PM, Thomas Gleixner wrote:
-> > > 
-> > > Specifically because marshaling the data in and out of the generic
-> > > decoder was more complex than a special-purpose decoder.
-> > 
-> > I did not look at that detail and I trust your judgement here, but
-> > that is in no way explained in the changelog.
-> > 
-> > This whole patchset is a pain to review due to half baken changelogs
-> > and complete lack of a proper design description.
-> > 
-> 
-> I'm not wedded to that concept, by the way, but using the generic parser had a
-> whole bunch of its own problems, including the fact that you're getting bytes
-> from user space.
+This patch series fixes an issue with the INTCA module clock, which we
+currently assume enabled by the bootloader or reset state.
+If this clock was not enabled before booting Linux, the intc-irqpin driver
+and all devices connected to it (buttons, RTC on i2c-gpio) don't work.
 
-Errm. The instruction decoder does not even know about user space.
+To fix this, the clock is added to the system, and is managed in the driver
+through runtime PM, taking into account wake-up sources (gpio-keys, RTC alarm).
 
-      u8 buf[MAX_INSN_SIZE];
+There's one remaining issue for armadillo-legacy, which has support for the LCD
+controller. Although the shmobile_lcd_fb driver doesn't use MERAM on r8a7740
+(unlike on sh7372), the MERAM (Media RAM) and ICB (MERAM Interconnect Buffer)
+clocks must be enabled to show a picture on the display. However, the MERAM
+doesn't have any device associated with it, so it's non-trivial to hook it up.
 
-      memset(buf, 0, MAX_INSN_SIZE);
-      if (copy_from_user(buf, addr, MAX_INSN_SIZE))
-      	    return 0;
+This patch series is based on renesas-devel-20140911-v3.17-rc4 and
+irqchip/for-next.
 
-      insn_init(insn, buf, is_64bit(current));
+Geert Uytterhoeven (4):
+  irqchip: renesas-intc-irqpin: Add helper variable dev = &pdev->dev
+  irqchip: renesas-intc-irqpin: Add minimal runtime PM support
+  ARM: shmobile: r8a7740 legacy: Add missing INTCA clock for irqpin
+    module
+  ARM: shmobile: r8a7740 dtsi: Add missing INTCA clock for irqpin module
 
-      /* Process the entire instruction */
-      insn_get_length(insn);
+ arch/arm/boot/dts/r8a7740.dtsi            | 14 ++++--
+ arch/arm/mach-shmobile/clock-r8a7740.c    |  7 ++-
+ drivers/irqchip/irq-renesas-intc-irqpin.c | 83 +++++++++++++++++++++----------
+ include/dt-bindings/clock/r8a7740-clock.h |  1 +
+ 4 files changed, 73 insertions(+), 32 deletions(-)
 
-      /* Decode the faulting address */
-      return mpx_get_addr(insn, regs);
+-- 
+1.9.1
 
-I really can't see why that should not work. insn_get_length()
-retrieves exactly the information which is required to call
-mpx_get_addr().
+Thanks!
 
-Sure it might be a bit slower because the generic decoder does a bit
-more than the mpx private sauce, but this happens in the context of a
-bounds violation and it really does not matter at all whether SIGSEGV
-is delivered 5 microseconds later or not.
+Gr{oetje,eeting}s,
 
-The only difference is the insn->limit handling in the MPX
-decoder. The existing decoder has a limit check of:
+						Geert
 
-#define MAX_INSN_SIZE       16
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-and MPX private one makes that
-
-#define MAX_MPX_INSN_SIZE   15
-
-and limits it runtime further to:
-
-    MAX_MPX_INSN_SIZE - bytes_not_copied_from_user_space;
-
-This is beyond silly, really. If we cannot copy 16 bytes from user
-space, why bother in dealing with a partial copy at all.
-
-Aside of that the existing decoder handles the 32bit app on a 64bit
-kernel already correctly while the extra magic MPX decoder does
-not. It just adds some magically optimized and different copy of the
-existing decoder for exactly ZERO value.
-
-> It might be worthwhile to compare the older patchset which did use the generic
-> parser to make sure that it actually made sense.
-
-I can't find such a thing. The first version I found contains an even
-more convoluted private parser. Intelnal mail perhaps?
-
-Thanks,
-
-	tglx
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
