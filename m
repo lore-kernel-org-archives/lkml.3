@@ -1,138 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaILU0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:26:07 -0400
-Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:33299 "EHLO
-	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752656AbaILU0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:26:03 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-Message-ID: <541356CE.1020902@smartplayin.com>
-Date: Sat, 13 Sep 2014 01:55:50 +0530
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1752972AbaILU0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:26:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40906 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751295AbaILUZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:25:39 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCHv6 1/5] Documentation: dt: add common bindings for hwspinlock
+Date: Fri, 12 Sep 2014 15:24:55 -0500
+Message-ID: <1410553499-55951-2-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410553499-55951-1-git-send-email-s-anna@ti.com>
+References: <1410553499-55951-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
-To: balbi@ti.com, Pramod Gurav <pramod.gurav.etc@gmail.com>
-CC: Andy Gross <agross@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-usb@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Subject: Re: [Patch v9 2/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
-References: <1410550088-8754-1-git-send-email-agross@codeaurora.org> <1410550088-8754-3-git-send-email-agross@codeaurora.org> <CAMf-jSm2fPPstFD2h4-gG=MCDty34f-O0ooizDEKyQUd3+CxGQ@mail.gmail.com> <20140912202008.GB25500@saruman.home>
-In-Reply-To: <20140912202008.GB25500@saruman.home>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+This patch adds the generic common bindings used to represent
+a hwlock device and use/request locks in a device-tree build.
 
-On 13-09-2014 01:50 AM, Felipe Balbi wrote:
-> On Sat, Sep 13, 2014 at 01:44:25AM +0530, Pramod Gurav wrote:
->> Andy,
->> Couple of minor comments.
->>
->> On Sat, Sep 13, 2014 at 12:58 AM, Andy Gross <agross@codeaurora.org> wrote:
->>
->>> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->>>
->>> DWC3 glue layer is hardware layer around Synopsys DesignWare
->>> USB3 core. Its purpose is to supply Synopsys IP with required
->>> clocks, voltages and interface it with the rest of the SoC.
->>>
->>> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->>> Signed-off-by: Andy Gross <agross@codeaurora.org>
->>> ---
->>>  drivers/usb/dwc3/Kconfig     |    8 +++
->>>  drivers/usb/dwc3/Makefile    |    1 +
->>>  drivers/usb/dwc3/dwc3-qcom.c |  131
->>> ++++++++++++++++++++++++++++++++++++++++++
->>>  3 files changed, 140 insertions(+)
->>>  create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
->>>
->>>
->> <..>
->>
->>
->>> +#include <linux/platform_device.h>
->>> +
->>> +struct dwc3_qcom {
->>> +       struct device           *dev;
->>> +
->>>
->> Extra new line here.
-> 
-> that's not an issue however.
-> 
->>> +       struct clk              *core_clk;
->>> +       struct clk              *iface_clk;
->>> +       struct clk              *sleep_clk;
->>> +};
->>> +
->>> +static int dwc3_qcom_probe(struct platform_device *pdev)
->>> +{
->>> +       struct device_node *node = pdev->dev.of_node;
->>> +       struct dwc3_qcom *qdwc;
->>> +       int ret = 0;
->>>
->> Initialization not required.
-> 
-> I'll fix this one as I'm already applying this patch.
-> 
->>> +
->>> +       qdwc = devm_kzalloc(&pdev->dev, sizeof(*qdwc), GFP_KERNEL);
->>> +       if (!qdwc)
->>> +               return -ENOMEM;
->>> +
->>> +       platform_set_drvdata(pdev, qdwc);
->>> +
->>> +       qdwc->dev = &pdev->dev;
->>> +
->>> +       qdwc->core_clk = devm_clk_get(qdwc->dev, "core");
->>> +       if (IS_ERR(qdwc->core_clk)) {
->>> +               dev_err(qdwc->dev, "failed to get core clock\n");
->>> +               return PTR_ERR(qdwc->core_clk);
->>> +       }
->>> +
->>> +       qdwc->iface_clk = devm_clk_get(qdwc->dev, "iface");
->>> +       if (IS_ERR(qdwc->iface_clk)) {
->>> +               dev_dbg(qdwc->dev, "failed to get optional iface clock\n");
->>> +               qdwc->iface_clk = NULL;
->>> +       }
->>> +
->>> +       qdwc->sleep_clk = devm_clk_get(qdwc->dev, "sleep");
->>> +       if (IS_ERR(qdwc->sleep_clk)) {
->>> +               dev_dbg(qdwc->dev, "failed to get optional sleep clock\n");
->>> +               qdwc->sleep_clk = NULL;
->>> +       }
->>> +
->>> +       ret = clk_prepare_enable(qdwc->core_clk);
->>> +       if (ret) {
->>> +               dev_err(qdwc->dev, "failed to enable core clock\n");
->>> +               goto err_core;
->>> +       }
->>> +
->>> +       ret = clk_prepare_enable(qdwc->iface_clk);
->>>
->> Should not we check if  qdwc->iface_clk is valid?
-> 
-> read the sources luke.
-Now I read that its initialized to NULL in fail case but should we call
-prepare_enable at all if its NULL?
-> 
->>> +err_clks:
->>> +       clk_disable_unprepare(qdwc->sleep_clk);
->>>
->> IS_ERR check before above statement not needed as we have continued with
->> probe even after failure og devm_clk_get?
-> 
-> read more carefully, there's a detail which you're missing.
-> 
+All the platform-specific hwlock driver implementations need the
+number of locks and associated base id for registering the locks
+present within the device with the driver core. This base id
+needs to be unique across multiple IP instances of a hwspinlock
+device, so that each hwlock can be represented uniquely in a
+system.
+
+The number of locks is represented by 'hwlock-num-locks' property,
+and the base id is represented by the 'hwlock-base-id' property.
+The args specifier length is dependent on each vendor-specific
+implementation and is represented through the '#hwlock-cells'
+property. Client users need to use the property 'hwlocks' for
+requesting specific lock(s).
+
+Note that the document is named hwlock.txt deliberately to keep
+it a bit more generic.
+
+Cc: Rob Herring <robh+dt@kernel.org>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+
+diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+new file mode 100644
+index 0000000..24993dd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+@@ -0,0 +1,55 @@
++Generic hwlock bindings
++=======================
++
++Generic bindings that are common to all the hwlock platform specific driver
++implementations.
++
++The validity and need of these common properties may vary from one platform
++implementation to another. The platform specific bindings should explicitly
++state if an optional property is used. Please also look through the individual
++platform specific hwlock binding documentations for identifying the applicable
++properties.
++
++Common properties:
++- #hwlock-cells:	Specifies the number of cells needed to represent a
++			specific lock. This property is mandatory for all
++			platform implementations.
++- hwlock-num-locks:	Number of locks present in a hwlock device. This
++			property is needed on hwlock devices, where the number
++			of supported locks within a hwlock device cannot be
++			read from a register.
++- hwlock-base-id:	An unique base Id for the locks for a particular hwlock
++			device. This property is mandatory if a SoC has several
++			hwlock devices.
++
++Hwlock Users:
++=============
++
++Nodes that require specific hwlock(s) should specify them using the property
++"hwlocks", each containing a phandle to the hwlock node and an args specifier
++value as indicated by #hwlock-cells. Multiple hwlocks can be requested using
++an array of the phandle and hwlock number specifier tuple.
++
++1. Example of a node using a single specific hwlock:
++
++The following example has a node requesting a hwlock in the bank defined by
++the node hwlock1. hwlock1 is a hwlock provider with an argument specifier
++of length 1.
++
++	node {
++		...
++		hwlocks = <&hwlock1 2>;
++		...
++	};
++
++2. Example of a node using multiple specific hwlocks:
++
++The following example has a node requesting two hwlocks, a hwlock within
++the hwlock device node 'hwlock1' with #hwlock-cells value of 1, and another
++hwlock within the hwlock device node 'hwlock2' with #hwlock-cells value of 2.
++
++	node {
++		...
++		hwlocks = <&hwlock1 2>, <&hwlock2 0 3>;
++		...
++	};
+-- 
+2.0.4
+
