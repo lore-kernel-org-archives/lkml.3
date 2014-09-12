@@ -1,127 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaILJ6I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:58:08 -0400
-Received: from sauhun.de ([89.238.76.85]:60480 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751653AbaILJ6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:58:06 -0400
-Date: Fri, 12 Sep 2014 11:58:21 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Marc Dietrich <marvin24@gmx.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Jean Delvare <jdelvare@suse.de>, Magnus Damm <magnus.damm@gmail.com>,
-        Andrey Danin <danindrey@mail.ru>, devicetree@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC 4/4] ARM: shmobile: r8a7790: adapt DTS for I2C slave support
-Message-ID: <20140912095821.GB1930@katana>
-References: <1410274470-12712-1-git-send-email-wsa@the-dreams.de>
- <9935938.eKOCvCAtLt@fb07-iapwap2>
- <20140912083348.GA1289@katana>
- <7627175.tG5quZH0VN@fb07-iapwap2>
+	id S1752514AbaILKB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:01:29 -0400
+Received: from mail-bl2on0120.outbound.protection.outlook.com ([65.55.169.120]:39008
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751469AbaILKB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 06:01:26 -0400
+X-WSS-ID: 0NBS95T-08-DSE-02
+X-M-MSG: 
+Message-ID: <5412C451.609@amd.com>
+Date: Fri, 12 Sep 2014 05:00:49 -0500
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
-Content-Disposition: inline
-In-Reply-To: <7627175.tG5quZH0VN@fb07-iapwap2>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Rob Herring" <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Will Deacon" <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Device Tree ML" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v10 00/10] Support for creating generic PCI host bridges
+ from DT
+References: <1410184472-17630-1-git-send-email-Liviu.Dudau@arm.com>
+ <5412ADE9.2050708@amd.com>
+ <20140912093018.GX27864@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140912093018.GX27864@e106497-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(24454002)(51704005)(189002)(377454003)(479174003)(83072002)(77982001)(47776003)(85852003)(65956001)(79102001)(65806001)(80022001)(87936001)(4396001)(20776003)(102836001)(15395725005)(64706001)(64126003)(81542001)(92566001)(50466002)(110136001)(92726001)(46102001)(81342001)(86362001)(68736004)(107046002)(44976005)(31966008)(50986999)(85306004)(90102001)(99396002)(21056001)(76482001)(15202345003)(83322001)(19580395003)(106466001)(23676002)(97736003)(33656002)(36756003)(74662001)(74502001)(54356999)(65816999)(76176999)(83506001)(101416001)(15975445006)(105586002)(95666004)(84676001)(41533002)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR02MB276;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9/12/2014 4:30 AM, Liviu Dudau wrote:
+> On Fri, Sep 12, 2014 at 09:25:13AM +0100, Suravee Suthikulpanit wrote:
+>> On 9/8/2014 8:54 AM, Liviu Dudau wrote:
+>>> This is my version 10 of the attempt at adding support for generic PCI host
+>>> bridge controllers that make use of device tree information to
+>>> configure themselves. This version reverses v9's attempt to create one function
+>>> to drive the whole process of extracting the host bridge ranges, setup the
+>>> host bridge driver and then scan the root bus behind the host bridge. While it
+>>> would've been quite user friendly, I agree that it would've caused a lot of pain
+>>> in the future.
+>>>
+>>> I would like to get ACKs for the remaining patches as I would like to integrate
+>>> this into -next in the following week.
+>>>
+>>> This version marks an implementation break with the previous versions as
+>>> of_create_pci_host_bridge() is now gone. It gets replaced by
+>>> of_pci_get_host_bridge_resources() that only parses the DT and extracts the
+>>> relevant ranges and converts them to resources. The updated host bridge drivers
+>>> will have to follow the guidelines in this example code:
+>>>
+>>> static int foohb_probe(struct platform_device *pdev)
+>>> {
+>>> 	struct device_node *dn = pdev->dev.of_node;
+>>> 	struct foohb_drv *drv;
+>>> 	resource_size_t io_base = 0;  /* phys address for start of IO */
+>>> 	struct pci_bus *bus;
+>>> 	int err = 0;
+>>> 	LIST_HEAD(res);
+>>>
+>>> 	.....
+>>> 	err = of_pci_get_host_bridge_resources(dn, 0, 255, &res, &io_base);
+>>> 	if (err)
+>>> 		goto err_handling;
+>>> 	err = foohb_setup(drv, ...., &res, &io_base);
+>>> 	if (err)
+>>> 		goto err_handling;
+>
+> Hi Suravee,
+>
+>>
+>> My understanding is that the "foohb_setup" above is supposed to be equivalent
+>> to the "int (*setup)(struct pci_host_bridge *, resource_size_t)" in V9 that was
+>> passed in as an argument of "of_create_pci_hot_bridge()".
+>
+> Correct. Parameters are probably different, but it is internal to your driver so
+> you can do whatever you want there.
+>
+>>
+>> The problem I have is I need an intermediate step between "pci_create_root_bus()"
+>> and "pci_scan_child_bus()" in order to update the information such as the "pci_bus->msi"
+>> before this is propagate down to the child bus during the "pci_scan_child_bus"
+>> which is also called in the pci_scan_root_bus() function.
+>
+> How did that work with my v9 patchset? How does it work for other MSI-aware platforms?
+> Are they not using pci_scan_child_bus()?
 
---qlTNgmc+xy1dBmNv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In the of_create_pci_host_bridge of V9, you call the setup function between "pci_create_root_bus()"
+and "pci_scan_child_bus()". At that point, I can update the "root_bus->msi" to point to my
+"struct msi_chip" which was created during GICv2m initialization
+(Please see http://marc.info/?l=linux-kernel&m=141034053331632&w=2).
+Then, when a child bus is created, it propagate this msi_chip pointer from the parent bus.
 
-
-> ok, take our embedded controller driver (in staging/nvec) as an example. =
-It's=20
-> basicly an MFD connecting keyboard, mouse, power, gpio, and some other st=
-uff=20
-> to the soc. The MFD operates in master mode while the SOC is the I2C slav=
-e.=20
-> Theoretically, these roles could also switch (but that's not defined in t=
-he=20
-> nvec protocol).
-
-I see these cases currently:
-
-1) my current case
-
-The I2C slave is not needed for board bringup, mainly for development or
-playing around. It can have this or that functionality on this or that
-address. -> does not belong into DT, should be done in userspace
-
-2) Slave mode is needed for board bringup
-
-Some other components need a specific I2C slave to be present before
-userspace is available, otherwise the system is unusable. This is IMO
-then a hardware description and justifies DT entries:
-
-DT pseudocode:
-
-	i2c {
-		compatible =3D "nvidia, tegra-i2c";
-
-		ec-slave@42 {
-			compatible =3D "nvidia, ax100-ec-slave";
-			reg =3D <0x42>;
-		};
-	};
-
-Of course, an MFD driver providing "nvidia, ax100-ec-slave" is needed
-which uses the I2C slave mode of the tegra controller.
-
-3) Master + slave mode is needed for board bringup:
-
-Again, IMO a hardware description, so we could use:
-
-	i2c {
-		compatible =3D "nvidia, tegra-i2c";
-
-		ec@64 {
-			compatible =3D "nvidia, ax100-ec";
-			reg =3D <0x64>;
-		};
-	};
-
-This is a standard I2C device driver (using the MFD framework) where
-i2c-tegra would act as a master on the client for 0x64. However, its
-probe function can fill an i2c_board_device (the driver should know the
-slave device address because of the protocol), get a new client using
-i2c_new_device, and register that as a I2C slave client. It then has an
-address where it listens and an address where it can send to. When to do
-what is protocol implementation.
+Suravee
 
 
-Am I missing something? Board properties can be encoded within the
-compatible entries ("ax100-ec", "ax200-ec"...). I'd think this means
-mostly different protocols, though.
-
-
---qlTNgmc+xy1dBmNv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUEsO9AAoJEBQN5MwUoCm2CX8P/26YJnJi+R06TSHAzWpDOdH4
-A21ApjwG4hruJDHfiXsI9cGoUku4uwnIErkIaWh5rHNFfmNRWmKqAxyVh7Lccv9Z
-rPII8I17sSHEDPIdbg4nHdijrVpD9TPVIZiGiGSeMmFV+iYbaFCMJuajDxxfbMe7
-JpXztCFp6buPAjYUAEbnlYEZpegvI1n3etsyvSkY/SgM5aTE9Ut6WSfa1S0Y9ERj
-I5y7YGv9o30hYe5p+KfPqajFicasiybAfpzRgDpaXtGVORsicr+2NNA7PkLmTpS3
-mOCtDaFNP7+QROgm6M5iK3Ki8gzHGDpC3J6r1eZknmIDLDJNaarXQPJ6dhHX2EEy
-CiO7MsxgBHd0HMilgeApjbzCLt43QcztNurWNTicYtNx7X+t97jHBxXlWwEqXr1W
-vAY9cDDBKIQ/NIrsg0MLoeRXebxkcJYBqx0WAVPLXj691p1+ZzfePfxTBEE8PjTq
-60waT2owTSbE+yPuwjS4o/FmfIQM9DipBcfsn/uK5K4p4YARhcJ3LqHsuWWA66s8
-BYeJdoJVcQoev1mxe/cJXIwD0KcNTWDAV7ufzV2qLTnRu21V7qpHdir0bWakzeSF
-jnyNUijBMdzxwXoTEGnvjtfVQJxQkwWexZQgCrLn4Omd6iU/v3AWtI69V3lXPNdL
-YYKHDXmo/WkzHMC1jnQ2
-=O3vC
------END PGP SIGNATURE-----
-
---qlTNgmc+xy1dBmNv--
