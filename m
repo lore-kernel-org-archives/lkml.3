@@ -1,181 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaILJ10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:27:26 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:59561 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbaILJ03 (ORCPT
+	id S1754127AbaILJ1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:27:51 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:29439 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088AbaILJ1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:26:29 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Julia Lawall <Julia.Lawall@lip6.fr>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH 6/6] trace: Replace single-character seq_puts with seq_putc
-Date: Fri, 12 Sep 2014 11:25:54 +0200
-Message-Id: <1410513954-28909-7-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
+	Fri, 12 Sep 2014 05:27:47 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f156d0000063c7-87-5412bc90be6c
+Content-transfer-encoding: 8BIT
+Message-id: <5412BC8D.2030007@samsung.com>
+Date: Fri, 12 Sep 2014 11:27:41 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.0
+To: Inki Dae <inki.dae@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 5/9] drm/exynos/crtc: fix framebuffer reference sequence
+References: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+ <1410268573-2297-6-git-send-email-a.hajda@samsung.com>
+ <5412B02A.6040609@samsung.com> <20140912085710.GD4740@phenom.ffwll.local>
+In-reply-to: <20140912085710.GD4740@phenom.ffwll.local>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCLMWRmVeSWpSXmKPExsVy+t/xa7oT9giFGJw8om1x5et7NotJ9yew
+	WJxtesNucXnXHDaLGef3MVmsPXKX3WLG5JdsDuwe97uPM3n0bVnF6PF5k1wAcxSXTUpqTmZZ
+	apG+XQJXxq8v1xgL+tQqpn8MbmCcqNDFyMkhIWAiMbF7DROELSZx4d56ti5GLg4hgaWMEut3
+	NLKCJHgFBCV+TL7H0sXIwcEsIC9x5FI2hKkuMWVKLkT5J0aJuV0TWCDKtSQWnj7CCGKzCKhK
+	fP67B8xmE9CU+Lv5JhuILSoQJvHs10EmkGYRgcNMErevHWIHSQgL+EgcuLqTHWLqcUaJ5vut
+	rCDbOAXMJW6tj5nAyD8LyUmzEE6ahXDSAkbmVYyiqaXJBcVJ6bmGesWJucWleel6yfm5mxgh
+	IftlB+PiY1aHGAU4GJV4eDnOCYYIsSaWFVfmHmKU4GBWEuH9uU0oRIg3JbGyKrUoP76oNCe1
+	+BAjEwenVAOjsHTHPdcT57ljDhyKXRmZICs5Teft7+/8d6eXyfFzaV7Wnmi7W+v4XCdhE0ZX
+	H72v7ZcUHeqymje5rn7VVDRfZUXAw2Nyt1R5Mk40yp6W4Uu+Mvnb2skajnPq1Q5pienv+eRx
+	9gBjjXSRwc6+5vTtytnH2sRcrmgvefFSRNPh38Mms5M8wneVWIozEg21mIuKEwEcKKLsNwIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Printing a single character to a seqfile might as well be done with
-seq_putc instead of seq_puts; this avoids a strlen() call and a memory
-access. It also shaves another few bytes off the generated code.
+On 09/12/2014 10:57 AM, Daniel Vetter wrote:
+> On Fri, Sep 12, 2014 at 05:34:50PM +0900, Inki Dae wrote:
+>> Hi Andrzej,
+>>
+>> On 2014년 09월 09일 22:16, Andrzej Hajda wrote:
+>>> Adding reference to framebuffer should be accompanied with removing
+>>> reference to old framebuffer assigned to the plane.
+>>> This patch removes following warning:
+>>>
+>>> [   95.038017] WARNING: CPU: 1 PID: 3067 at drivers/gpu/drm/drm_crtc.c:5115 drm_mode_config_cleanup+0x258/0x268()
+>>> [   95.048086] Modules linked in:
+>>> [   95.051430] CPU: 1 PID: 3067 Comm: bash Tainted: G        W      3.16.0-11355-g7a6eca5-dirty #3015
+>>> [   95.060058] [<c0013e90>] (unwind_backtrace) from [<c0011128>] (show_stack+0x10/0x14)
+>>> [   95.067766] [<c0011128>] (show_stack) from [<c04a5dc4>] (dump_stack+0x70/0xbc)
+>>> [   95.074953] [<c04a5dc4>] (dump_stack) from [<c0021784>] (warn_slowpath_common+0x64/0x88)
+>>> [   95.083005] [<c0021784>] (warn_slowpath_common) from [<c00217c4>] (warn_slowpath_null+0x1c/0x24)
+>>> [   95.091780] [<c00217c4>] (warn_slowpath_null) from [<c0275fa0>] (drm_mode_config_cleanup+0x258/0x268)
+>>> [   95.100983] [<c0275fa0>] (drm_mode_config_cleanup) from [<c0281724>] (exynos_drm_unload+0x38/0x50)
+>>> [   95.109915] [<c0281724>] (exynos_drm_unload) from [<c026e248>] (drm_dev_unregister+0x24/0x98)
+>>> [   95.118414] [<c026e248>] (drm_dev_unregister) from [<c026ecb0>] (drm_put_dev+0x28/0x64)
+>>> [   95.126412] [<c026ecb0>] (drm_put_dev) from [<c02947c4>] (take_down_master+0x24/0x44)
+>>> [   95.134218] [<c02947c4>] (take_down_master) from [<c0294870>] (component_del+0x8c/0xc8)
+>>> [   95.142201] [<c0294870>] (component_del) from [<c0286c10>] (exynos_dsi_remove+0x18/0x2c)
+>>> [   95.150294] [<c0286c10>] (exynos_dsi_remove) from [<c0299e04>] (platform_drv_remove+0x18/0x1c)
+>>> [   95.158872] [<c0299e04>] (platform_drv_remove) from [<c02987a4>] (__device_release_driver+0x70/0xc4)
+>>> [   95.167981] [<c02987a4>] (__device_release_driver) from [<c0298818>] (device_release_driver+0x20/0x2c)
+>>> [   95.177268] [<c0298818>] (device_release_driver) from [<c02979d0>] (unbind_store+0x5c/0x94)
+>>> [   95.185597] [<c02979d0>] (unbind_store) from [<c0297278>] (drv_attr_store+0x20/0x2c)
+>>> [   95.193323] [<c0297278>] (drv_attr_store) from [<c012aa90>] (sysfs_kf_write+0x4c/0x50)
+>>> [   95.201224] [<c012aa90>] (sysfs_kf_write) from [<c0129e94>] (kernfs_fop_write+0xc4/0x184)
+>>> [   95.209393] [<c0129e94>] (kernfs_fop_write) from [<c00d03ec>] (vfs_write+0xa0/0x1a8)
+>>> [   95.217111] [<c00d03ec>] (vfs_write) from [<c00d07f8>] (SyS_write+0x40/0x8c)
+>>> [   95.224146] [<c00d07f8>] (SyS_write) from [<c000e660>] (ret_fast_syscall+0x0/0x48)
+>>>
+>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>> ---
+>>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c | 6 ++++++
+>>>  1 file changed, 6 insertions(+)
+>>>
+>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> index b68e58f..bde19f4 100644
+>>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>> @@ -145,10 +145,16 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>  	if (ret)
+>>>  		return ret;
+>>>  
+>>> +	/* we need to unreference current fb after replacing it with new one */
+>>> +	old_fb = plane->fb;
+>>> +
+>>>  	plane->crtc = crtc;
+>>>  	plane->fb = crtc->primary->fb;
+>>>  	drm_framebuffer_reference(plane->fb);
+>>>  
+>>> +	if (old_fb)
+>>> +		drm_framebuffer_unreference(old_fb);
+>> This time would be a good chance that we can consider drm flip queue to
+>> make sure that whole memory region to old_fb is scanned out completely
+>> before dropping a reference of old_fb. the reference of old_fb should be
+>> dropped at irq handler of each crtc devices, fimd and mixer.
+> Generally it's not a good idea to drop fb references from irq context,
+> since if you actually drop the last reference it'll blow up: fb cleanup
+> needs a bunch of mutexes.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- kernel/trace/ftrace.c                |  2 +-
- kernel/trace/trace_events_trigger.c  |  4 ++--
- kernel/trace/trace_functions_graph.c |  4 ++--
- kernel/trace/trace_kprobe.c          | 10 +++++-----
- kernel/trace/trace_printk.c          |  2 +-
- kernel/trace/trace_uprobe.c          |  4 ++--
- 6 files changed, 13 insertions(+), 13 deletions(-)
+I agree with that.
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 7b9ce28..e931730 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2969,7 +2969,7 @@ static int t_show(struct seq_file *m, void *v)
- 		}
- 	}	
- 
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 3d89ffc..8712df9 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -383,7 +383,7 @@ event_trigger_print(const char *name, struct seq_file *m,
- 	if (filter_str)
- 		seq_printf(m, " if %s\n", filter_str);
- 	else
--		seq_puts(m, "\n");
-+		seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -1105,7 +1105,7 @@ event_enable_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
- 	if (data->filter_str)
- 		seq_printf(m, " if %s\n", data->filter_str);
- 	else
--		seq_puts(m, "\n");
-+		seq_putc(m, '\n');
- 
- 	return 0;
- }
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 29ba611..a82d1d3 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -1407,7 +1407,7 @@ static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
- 		print_lat_header(s, flags);
- 
- 	/* 1st line */
--	seq_puts(s, "#");
-+	seq_putc(s, '#');
- 	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
- 		seq_puts(s, "     TIME       ");
- 	if (flags & TRACE_GRAPH_PRINT_CPU)
-@@ -1421,7 +1421,7 @@ static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
- 	seq_puts(s, "               FUNCTION CALLS\n");
- 
- 	/* 2nd line */
--	seq_puts(s, "#");
-+	seq_putc(s, '#');
- 	if (flags & TRACE_GRAPH_PRINT_ABS_TIME)
- 		seq_puts(s, "      |         ");
- 	if (flags & TRACE_GRAPH_PRINT_CPU)
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index ce2ea71..ef7e7f1 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -840,7 +840,7 @@ static int probes_seq_show(struct seq_file *m, void *v)
- 
- 	for (i = 0; i < tk->tp.nr_args; i++)
- 		seq_printf(m, " %s=%s", tk->tp.args[i].name, tk->tp.args[i].comm);
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 
- 	return 0;
- }
-@@ -1030,7 +1030,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
- 	if (!seq_print_ip_sym(s, field->ip, flags | TRACE_ITER_SYM_OFFSET))
- 		goto partial;
- 
--	if (!trace_seq_puts(s, ")"))
-+	if (!trace_seq_putc(s, ')'))
- 		goto partial;
- 
- 	data = (u8 *)&field[1];
-@@ -1039,7 +1039,7 @@ print_kprobe_event(struct trace_iterator *iter, int flags,
- 					     data + tp->args[i].offset, field))
- 			goto partial;
- 
--	if (!trace_seq_puts(s, "\n"))
-+	if (!trace_seq_putc(s, '\n'))
- 		goto partial;
- 
- 	return TRACE_TYPE_HANDLED;
-@@ -1072,7 +1072,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
- 	if (!seq_print_ip_sym(s, field->func, flags & ~TRACE_ITER_SYM_OFFSET))
- 		goto partial;
- 
--	if (!trace_seq_puts(s, ")"))
-+	if (!trace_seq_putc(s, ')'))
- 		goto partial;
- 
- 	data = (u8 *)&field[1];
-@@ -1081,7 +1081,7 @@ print_kretprobe_event(struct trace_iterator *iter, int flags,
- 					     data + tp->args[i].offset, field))
- 			goto partial;
- 
--	if (!trace_seq_puts(s, "\n"))
-+	if (!trace_seq_putc(s, '\n'))
- 		goto partial;
- 
- 	return TRACE_TYPE_HANDLED;
-diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
-index 2900817..c4e70b6 100644
---- a/kernel/trace/trace_printk.c
-+++ b/kernel/trace/trace_printk.c
-@@ -305,7 +305,7 @@ static int t_show(struct seq_file *m, void *v)
- 			seq_puts(m, "\\t");
- 			break;
- 		case '\\':
--			seq_puts(m, "\\");
-+			seq_putc(m, '\\');
- 			break;
- 		case '"':
- 			seq_puts(m, "\\\"");
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 184aec1..e35327c 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -606,7 +606,7 @@ static int probes_seq_show(struct seq_file *m, void *v)
- 	for (i = 0; i < tu->tp.nr_args; i++)
- 		seq_printf(m, " %s=%s", tu->tp.args[i].name, tu->tp.args[i].comm);
- 
--	seq_puts(m, "\n");
-+	seq_putc(m, '\n');
- 	return 0;
- }
- 
-@@ -872,7 +872,7 @@ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *e
- 			goto partial;
- 	}
- 
--	if (trace_seq_puts(s, "\n"))
-+	if (trace_seq_putc(s, '\n'))
- 		return TRACE_TYPE_HANDLED;
- 
- partial:
--- 
-2.0.4
+>
+> Also the drm core really should be taking care of this for you, you only
+> need to grab references yourself for async flips if you want the buffer to
+> survive a bit. crtc_mode_set has not need for this. I expect that the
+> refcounting bug is somewhere else, at least from my experience chasing
+> such issues in i915 ;-)
+
+Hmm, maybe I miss something but I do not see the core grabbing fb reference
+on plane->fb update. On the other side drm_framebuffer_remove calls
+drm_plane_force_disable which drops plane->fb reference.
+I am not yet familiar with this code so maybe there is better solution.
+
+If not I guess it would be better to move this code to
+exynos_plane_mode_set.
+At least it is done this way in omap and msm, in fact it seems better place
+for such things. What do you think?
+
+Regards
+Andrzej
+
+> -Daniel
 
