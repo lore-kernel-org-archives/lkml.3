@@ -1,100 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaILJfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:35:01 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39024 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaILJe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:34:57 -0400
-Message-ID: <5412BE19.2010302@ti.com>
-Date: Fri, 12 Sep 2014 12:34:17 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753984AbaILJf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:35:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53298 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753187AbaILJfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:35:54 -0400
+Date: Fri, 12 Sep 2014 11:35:50 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>,
+        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Message-ID: <20140912093550.GC18774@kwain>
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
+ <20140911005446.GD3609@peterchendt>
+ <20140911154222.GB11275@kwain>
+ <e1957aca004047cd9333ebac74531a65@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20140912082125.GA18774@kwain>
+ <20140912092711.GA2463@peterchendt>
 MIME-Version: 1.0
-To: Xiubo Li <Li.Xiubo@freescale.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <plagnioj@jcrosoft.com>, <grant.likely@linaro.org>, <arnd@arndb.de>,
-        <peter.griffin@linaro.org>, <jg1.han@samsung.com>,
-        <daniel.vetter@ffwll.ch>, <laurent.pinchart@ideasonboard.com>,
-        <robdclark@gmail.com>, <linux-fbdev@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
-References: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140912092711.GA2463@peterchendt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 12, 2014 at 05:27:13PM +0800, Peter Chen wrote:
+> On Fri, Sep 12, 2014 at 10:21:25AM +0200, Antoine Tenart wrote:
+> > Peter,
+> > 
+> > On Fri, Sep 12, 2014 at 01:10:33AM +0000, Peter Chen wrote:
+> > > > On Thu, Sep 11, 2014 at 08:54:47AM +0800, Peter Chen wrote:
+> > > > > On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
+> > > > > > @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct platform_device
+> > > > *pdev)
+> > > > > >  		return -ENODEV;
+> > > > > >  	}
+> > > > > >
+> > > > > > -	if (ci->platdata->usb_phy)
+> > > > > > +	if (ci->platdata->phy)
+> > > > > > +		ci->phy = ci->platdata->phy;
+> > > > > > +	else if (ci->platdata->usb_phy)
+> > > > > >  		ci->usb_phy = ci->platdata->usb_phy;
+> > > > > >  	else
+> > > > > > -		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > > > > > +		ci->phy = devm_phy_get(dev, "usb-phy");
+> > > > > >
+> > > > > > -	if (IS_ERR(ci->usb_phy)) {
+> > > > > > -		ret = PTR_ERR(ci->usb_phy);
+> > > > > > +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy == NULL)) {
+> > > > > >  		/*
+> > > > > >  		 * if -ENXIO is returned, it means PHY layer wasn't
+> > > > > >  		 * enabled, so it makes no sense to return -EPROBE_DEFER
+> > > > > >  		 * in that case, since no PHY driver will ever probe.
+> > > > > >  		 */
+> > > > > > -		if (ret == -ENXIO)
+> > > > > > -			return ret;
+> > > > > > +		if (PTR_ERR(ci->phy) == -ENXIO)
+> > > > > > +			return -ENXIO;
+> > > > > >
+> > > > > > -		dev_err(dev, "no usb2 phy configured\n");
+> > > > > > -		return -EPROBE_DEFER;
+> > > > > > +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > > > > > +		if (IS_ERR(ci->usb_phy)) {
+> > > > > > +			dev_err(dev, "no usb2 phy configured\n");
+> > > > > > +			return -EPROBE_DEFER;
+> > > > > > +		}
+> > > > > >  	}
+> > > > >
+> > > > > Sorry, I can't accept this change, why devm_usb_get_phy(dev,
+> > > > > USB_PHY_TYPE_USB2) is put at error path? Since current get PHY
+> > > > > operation is a little complicated, we may have a dedicate function to do it,
+> > > > dwc3 driver is a good example.
+> > > > 
+> > > > It's not the error path, it's the case when there is no PHY from the generic PHY
+> > > > framework available. Getting an USB PHY is a fallback solution.
+> > > > 
+> > > > I agree we can move this to a dedicated function. But even if doing so, we'll
+> > > > have to test ci->phy first.
+> > > > 
+> > > > Or do you have something else in mind?
+> > > > 
+> > >  
+> > > I still want devm_usb_get_phy(dev, USB_PHY_TYPE_USB2) to be called at the same place
+> > > like generic_phy, not in later error path, in error path, we only handle error.
+> > 
+> > Would this fit you?
+> > 
+> > if (ci->platdata->phy)
+> >         ci->phy = ci->platdata->phy;
+> > else if (ci->platdata->usb_phy)
+> >         ci->usb_phy = ci->platdata->usb_phy;
+> > 
+> > if (ci->phy == NULL && ci->usb_phy == NULL) {
+> 
+> You should use else if here.
 
-Hi,
+Yes, sure.
 
-On 05/09/14 07:48, Xiubo Li wrote:
-> Some Freescale SoCs, there has an DVI/HDMI controller and a PHY,
-> attached to one of their display controller unit's LCDC interfaces.
-> This patch adds a preliminary static support for such controllers.
->=20
-> This will support for many modes and a dynamic switching between
-> them.
->=20
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  .../devicetree/bindings/video/fsl-sii902x.txt      |  17 +
->  drivers/video/fbdev/Kconfig                        |   7 +
->  drivers/video/fbdev/Makefile                       |   1 +
->  drivers/video/fbdev/fsl-sii902x.c                  | 526 +++++++++++++=
-++++++++
->  4 files changed, 551 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/video/fsl-sii902x=
-=2Etxt
->  create mode 100644 drivers/video/fbdev/fsl-sii902x.c
+> 
+> >         ci->phy = devm_phy_get(dev, "usb-phy");
+> >         ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > 
+> >         /* if both generic PHY and USB PHY layers aren't enabled */
+> >         if (PTR_ERR(ci->phy) == -ENOSYS && PTR_ERR(ci->usb_phy) == -ENXIO)
+> >                 return -ENXIO;
+> > 
+> >         if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
+> >                 return -EPROBE_DEFER;
+> > 
+> >         /* if an usb_phy is available, but no phy is there */
+> >         if (PTR_ERR(ci->phy) == -ENODEV)
+> >                 ci->phy = NULL;
+> 	if (ci->phy)
+> 		ci->usb_phy = NULL;
+> 	if (ci->usb_phy)
+> 		ci->phy = NULL;
+> 
+> How about above?
 
-I don't know how you picked the names of the people you sent this patch
-to, but looks to me that most of them are probably not interested in
-this patch.
+When no PHY or USB PHY is found, -ENODEV is returned. Doing the above
+would always end up having ci->phy and ci->usb_phy being NULL.
 
-Anyway, a few quick comments on the patch:
+We could have:
 
-- You should probably use regmap instead of direct i2c calls.
-Interestingly, you define regmap variable, but you never use it.
-- Use defines for register offsets, instead of magic numbers.
-- You should not use static variables. They prevent having multiple
-instances of the device.
-
-So the SiI902x chip is on the SoC, not on the board? And it's a plain
-standard SiI902x in other aspects?
-
- Tomi
+	if (IS_ERR(ci->phy))
+		ci->phy = NULL;
+	else if (IS_ERR(ci->usb_phy))
+		ci->usb_phy = NULL;
 
 
+Antoine
 
---0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUEr4ZAAoJEPo9qoy8lh71CpAQAKoDh2t5GoUuDQpPouk0PjlM
-u03FFs+tJDnol6nKjrA2aWdhi9tAUhofT2dyrnmlrHMPmhCRUZxuyuLFFVvYDcz9
-OUpt7nk80zAAhHwwsr4gReSzhLP7sTfqVjvuD4fwvA2Iff8XJI1v8ZTpSznz30PV
-77Nog6FoZpukkookxs1U2YEvftgHuox3DwKweyaTensWsbS17NJw7bjVLYehtqlQ
-RTFIz5kwhzbL6NEKY/FVTyEFxrqB3lck/r8bhbkRmEUunA9blJC/GVTiVYFTAW5d
-sJFfAS2Jo1yuKHtfpHjQoaCO/QcLV9I9MG1q7m+atXqy2SYW0nuxk0z79Gal4buu
-IENJXu+uh+lsbWNBeoS+KjPpVtCmX7+yFYXdsHg2LhS7KVY4z/Qjkd+a2hc1tyl1
-iQktbfdRm/0MLsNlI/dPpH19prgPg9Q0rxJJJKLcx9VtCE/3iZZZOzVJSz4o3ESN
-G7wfKLD+U9UQbow0g/UBWCqL58POVxxZtt37oYcQZ81i41H76D7xTK5ZscKQ9XBi
-PguTkAs2LCa2p3NlQPvuGdsA4cZCiWHjo3yNlY4HGzrG9/nXzz1B/JdeuZf3rzxN
-OgJnKs2ak0MfajQudQOgC0UcvQ//CRwXQDcjf6VagzYUIH0f9Qj5cmO4mqMC238I
-9sZSar3jJYIOgo9ICHi6
-=phmy
------END PGP SIGNATURE-----
-
---0ff6aQeaPd3M3s1MAo9HX6mg2ScwMT9ut--
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
