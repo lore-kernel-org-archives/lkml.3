@@ -1,177 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167AbaILF30 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 01:29:26 -0400
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:41616 "EHLO
-	homiemail-a99.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131AbaILF3Z (ORCPT
+	id S1752231AbaILFdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 01:33:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:51962 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752126AbaILFdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 01:29:25 -0400
-Message-ID: <1410499688.2166.13.camel@linux-t7sj.site>
-Subject: Re: [PATCH 2/9] locktorture: Add documentation
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>
-Date: Thu, 11 Sep 2014 22:28:08 -0700
-In-Reply-To: <1410493224-3312-3-git-send-email-dave@stgolabs.net>
-References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
-	 <1410493224-3312-3-git-send-email-dave@stgolabs.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
+	Fri, 12 Sep 2014 01:33:11 -0400
+Date: Fri, 12 Sep 2014 07:33:06 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Johan Hovold <jhovold@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/9] rtc: at91sam9: make use of syscon/regmap to
+ access GPBR registers
+Message-ID: <20140912073306.5ac2c295@bbrezillon>
+In-Reply-To: <20140911174209.GE3131@piout.net>
+References: <1410441525-25258-6-git-send-email-boris.brezillon@free-electrons.com>
+	<1410443588-9092-1-git-send-email-boris.brezillon@free-electrons.com>
+	<20140911174209.GE3131@piout.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'ing Randy.
+On Thu, 11 Sep 2014 19:42:09 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-On Thu, 2014-09-11 at 20:40 -0700, Davidlohr Bueso wrote:
-> Just like Documentation/RCU/torture.txt, begin a document for the
-> locktorture module. This module is still pretty green, so I have
-> just added some specific sections to the doc (general desc, params,
-> usage, etc.). Further development should update the file.
+> On 11/09/2014 at 15:53:08 +0200, Boris Brezillon wrote :
+> > The GPBR registers are not part of the RTT block and thus should not be
+> > defined in the reg property of the rtt node.
+> > 
+> > Use syscon to provide a proper DT representation and reference the GPBR
+> > syscon device in a new "atmel,time-reg" property which store both the
+> > syscon device phandle and the register offset within the GPBR block.
+> > 
+> > When using non DT boards, we won't be able to retrieve the syscon regmap,
+> > hence we need to create our own regmap using the memory region defined
+> > in the 2nd memory resource assigned to the RTT platform device.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > ---
+> >  drivers/rtc/Kconfig        |  1 +
+> >  drivers/rtc/rtc-at91sam9.c | 59 +++++++++++++++++++++++++++++++++++++++-------
+> >  2 files changed, 51 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> > index a168e96..7d76da8 100644
+> > --- a/drivers/rtc/Kconfig
+> > +++ b/drivers/rtc/Kconfig
+> > @@ -1081,6 +1081,7 @@ config RTC_DRV_AT91RM9200
+> >  config RTC_DRV_AT91SAM9
+> >  	tristate "AT91SAM9x/AT91CAP9 RTT as RTC"
+> >  	depends on ARCH_AT91 && !(ARCH_AT91RM9200 || ARCH_AT91X40)
+> > +	select MFD_SYSCON
+> >  	help
+> >  	  RTC driver for the Atmel AT91SAM9x and AT91CAP9 internal RTT
+> >  	  (Real Time Timer). These timers are powered by the backup power
+> > diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+> > index d72c34d..944e317 100644
+> > --- a/drivers/rtc/rtc-at91sam9.c
+> > +++ b/drivers/rtc/rtc-at91sam9.c
+> > @@ -21,6 +21,8 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/platform_data/atmel.h>
+> >  #include <linux/io.h>
+> > +#include <linux/mfd/syscon.h>
+> > +#include <linux/regmap.h>
+> >  
+> >  /*
+> >   * This driver uses two configurable hardware resources that live in the
+> > @@ -72,7 +74,8 @@ struct sam9_rtc {
+> >  	void __iomem		*rtt;
+> >  	struct rtc_device	*rtcdev;
+> >  	u32			imr;
+> > -	void __iomem		*gpbr;
+> > +	struct regmap		*gpbr;
+> > +	unsigned int		gpbr_offset;
+> >  	int 			irq;
+> >  };
+> >  
+> > @@ -81,10 +84,19 @@ struct sam9_rtc {
+> >  #define rtt_writel(rtc, field, val) \
+> >  	writel((val), (rtc)->rtt + AT91_RTT_ ## field)
+> >  
+> > -#define gpbr_readl(rtc) \
+> > -	readl((rtc)->gpbr)
+> > -#define gpbr_writel(rtc, val) \
+> > -	writel((val), (rtc)->gpbr)
+> > +static inline unsigned int gpbr_readl(struct sam9_rtc *rtc)
+> > +{
+> > +	unsigned int val;
+> > +
+> > +	regmap_read(rtc->gpbr, rtc->gpbr_offset, &val);
+> > +
+> > +	return val;
+> > +}
+> > +
+> > +static inline void gpbr_writel(struct sam9_rtc *rtc, unsigned int val)
+> > +{
+> > +	regmap_write(rtc->gpbr, rtc->gpbr_offset, val);
+> > +}
+> >  
+> >  /*
+> >   * Read current time and date in RTC
+> > @@ -301,6 +313,12 @@ static const struct rtc_class_ops at91_rtc_ops = {
+> >  	.alarm_irq_enable = at91_rtc_alarm_irq_enable,
+> >  };
+> >  
+> > +static struct regmap_config gpbr_regmap_config = {
+> > +	.reg_bits = 32,
+> > +	.val_bits = 32,
+> > +	.reg_stride = 4,
+> > +};
+> > +
+> >  /*
+> >   * Initialize and install RTC driver
+> >   */
+> > @@ -334,10 +352,33 @@ static int at91_rtc_probe(struct platform_device *pdev)
+> >  	if (IS_ERR(rtc->rtt))
+> >  		return PTR_ERR(rtc->rtt);
+> >  
+> > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> > -	rtc->gpbr = devm_ioremap_resource(&pdev->dev, r);
+> > -	if (IS_ERR(rtc->gpbr))
+> > -		return PTR_ERR(rtc->rtt);
+> > +	if (!pdev->dev.of_node) {
+> > +		void __iomem *gpbr;
+> > +
+> > +		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> > +		gpbr = devm_ioremap_resource(&pdev->dev, r);
+> > +		if (IS_ERR(gpbr))
+> > +			return PTR_ERR(gpbr);
+> > +
 > 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> ---
->  Documentation/locking/locktorture.txt | 128 ++++++++++++++++++++++++++++++++++
->  1 file changed, 128 insertions(+)
->  create mode 100644 Documentation/locking/locktorture.txt
-> 
-> diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
-> new file mode 100644
-> index 0000000..c0ab969
-> --- /dev/null
-> +++ b/Documentation/locking/locktorture.txt
-> @@ -0,0 +1,128 @@
-> +Kernel Lock Torture Test Operation
-> +
-> +CONFIG_LOCK_TORTURE_TEST
-> +
-> +The CONFIG LOCK_TORTURE_TEST config option provides a kernel module
-> +that runs torture tests on core kernel locking primitives. The kernel
-> +module, 'locktorture', may be built after the fact on the running
-> +kernel to be tested, if desired. The tests periodically outputs status
-> +messages via printk(), which can be examined via the dmesg (perhaps
-> +grepping for "torture").  The test is started when the module is loaded,
-> +and stops when the module is unloaded. This program is based on how RCU
-> +is tortured, via rcutorture.
-> +
-> +This torture test consists of creating a number of kernel threads which
-> +acquires the lock and holds it for specific amount of time, thus simulating
-> +different critical region behaviors. The amount of contention on the lock
-> +can be simulated by either enlarging this critical region hold time and/or
-> +creating more kthreads.
-> +
-> +
-> +MODULE PARAMETERS
-> +
-> +This module has the following parameters:
-> +
-> +
-> +	    ** Locktorture-specific **
-> +
-> +nwriters_stress   Number of kernel threads that will stress exclusive lock
-> +		  ownership (writers). The default value is twice the amount
-> +		  of online CPUs.
-> +
-> +torture_type	  Type of lock to torture. By default, only spinlocks will
-> +		  be tortured. This module can torture the following locks,
-> +		  with string values as follows:
-> +
-> +		     o "lock_busted": Simulates a buggy lock implementation.
-> +
-> +		     o "spin_lock": spin_lock() and spin_unlock() pairs.
-> +
-> +		     o "spin_lock_irq": spin_lock_irq() and spin_unlock_irq()
-> +					pairs.
-> +
-> +torture_runnable  Start locktorture at module init. By default it will begin
-> +		  once the module is loaded.
-> +
-> +
-> +	    ** Torture-framework (RCU + locking) **
-> +
-> +shutdown_secs	  The number of seconds to run the test before terminating
-> +		  the test and powering off the system.  The default is
-> +		  zero, which disables test termination and system shutdown.
-> +		  This capability is useful for automated testing.
-> +
-> +onoff_holdoff	  The number of seconds between each attempt to execute a
-> +		  randomly selected CPU-hotplug operation.  Defaults to
-> +		  zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
-> +		  kernels, locktorture will silently refuse to do any
-> +		  CPU-hotplug operations regardless of what value is
-> +		  specified for onoff_interval.
-> +
-> +onoff_holdoff	  The number of seconds to wait until starting CPU-hotplug
-> +		  operations.  This would normally only be used when
-> +		  locktorture was built into the kernel and started
-> +		  automatically at boot time, in which case it is useful
-> +		  in order to avoid confusing boot-time code with CPUs
-> +		  coming and going. This parameter is only useful if
-> +		  CONFIG_HOTPLUG_CPU is enabled.
-> +
-> +stat_interval	  Number of seconds between statistics-related printk()s.
-> +		  By default, locktorture will report stats every 60 seconds.
-> +		  Setting the interval to zero causes the statistics to
-> +		  be printed -only- when the module is unloaded, and this
-> +		  is the default.
-> +
-> +stutter		  The length of time to run the test before pausing for this
-> +		  same period of time.  Defaults to "stutter=5", so as
-> +		  to run and pause for (roughly) five-second intervals.
-> +		  Specifying "stutter=0" causes the test to run continuously
-> +		  without pausing, which is the old default behavior.
-> +
-> +shuffle_interval  The number of seconds to keep the test threads affinitied
-> +		  to a particular subset of the CPUs, defaults to 3 seconds.
-> +		  Used in conjunction with test_no_idle_hz.
-> +
-> +verbose		  Enable verbose debugging printking, via printk(). Enabled
-> +		  by default. This extra information is mostly related to
-> +		  high-level errors and reports from the main 'torture'
-> +		  framework.
-> +
-> +
-> +STATISTICS
-> +
-> +Statistics are printed in the following format:
-> +
-> +spin_lock-torture: Writes:  Total: 93746064  Max/Min: 0/0   Fail: 0
-> +   (A)				   (B)		  (C)	       (D)
-> +
-> +(A): Lock type that is being tortured -- torture_type parameter.
-> +
-> +(B): Number of times the lock was acquired.
-> +
-> +(C): Min and max number of times threads failed to acquire the lock.
-> +
-> +(D): true/false values if there were errors acquiring the lock. This should
-> +     -only- be positive if there is a bug in the locking primitive's
-> +     implementation. Otherwise a lock should never fail (ie: spin_lock()).
-> +     Of course, the same applies for (C), above. A dummy example of this is
-> +     the "lock_busted" type.
-> +
-> +USAGE
-> +
-> +The following script may be used to torture locks:
-> +
-> +	#!/bin/sh
-> +
-> +	modprobe locktorture
-> +	sleep 3600
-> +	rmmod locktorture
-> +	dmesg | grep torture:
-> +
-> +The output can be manually inspected for the error flag of "!!!".
-> +One could of course create a more elaborate script that automatically
-> +checked for such errors.  The "rmmod" command forces a "SUCCESS",
-> +"FAILURE", or "RCU_HOTPLUG" indication to be printk()ed.  The first
-> +two are self-explanatory, while the last indicates that while there
-> +were no locking failures, CPU-hotplug problems were detected.
-> +
-> +Also see: Documentation/RCU/torture.txt
+> Maybe you could add a comment here as this is soon to be dead code.
 
+Sure. I'll add a TODO comment.
 
+Thanks.
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
