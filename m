@@ -1,190 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaILCKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 22:10:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49474 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132AbaILCIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 22:08:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,509,1406617200"; 
-   d="scan'208";a="590198370"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: [Patch Part3 V5 2/8] iommu/vt-d: Dynamically allocate and free seq_id for DMAR units
-Date: Fri, 12 Sep 2014 10:10:42 +0800
-Message-Id: <1410487848-6027-3-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752881AbaILCK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 22:10:28 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24192 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaILCKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Sep 2014 22:10:23 -0400
+X-AuditID: cbfee68e-f79536d000000fd1-ad-5412560ccf56
+From: Chanho Park <chanho61.park@samsung.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org
+Cc: linux-kernel@vger.kernel.org, Chanho Park <chanho61.park@samsung.com>
+Subject: [PATCH] perf tools: define _DEFAULT_SOURCE for glibc_2.20
+Date: Fri, 12 Sep 2014 11:10:17 +0900
+Message-id: <1410487817-13403-1-git-send-email-chanho61.park@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsWyRsSkWJc3TCjEYOJXZouLbRfZLLru7WCz
+	uLxf2+LyrjlsFpcOLGCyWHNkMbsDm8eVpxwem1Z1snm833eVzWPurj5Gj74tqxg9Pm+SC2CL
+	4rJJSc3JLEst0rdL4Mp4232dueAya8WJ2TtZGhjvsHQxcnJICJhIHFhygxHCFpO4cG89Wxcj
+	F4eQwFJGibt7NrLDFM2cc5YRIjGdUWLqjQVgCSGBNiaJk1MtQWw2AV2JLc9fgU0SEfCX2Ns4
+	kRnEZhbwlPjb+hesXljASeLljNVAcQ4OFgFViStT40DCvEAlr/5cYIPYJSdx8thkVpBdEgL/
+	2SRmLV8K1ssiICDxbfIhFpBeCQFZiU0HmCHqJSUOrrjBMoFRcAEjwypG0dSC5ILipPQiI73i
+	xNzi0rx0veT83E2MwIA9/e9Z3w7GmwesDzEKcDAq8fBWsAiGCLEmlhVX5h5iNAXaMJFZSjQ5
+	HxgXeSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MM5w
+	vSHcftXuM9uv12qGv2tjklUq5+8+pvuK88gW+wyh/T952pySWZsnV5/fN+/zAiWDb22JEY//
+	zd7lvbEssFRPZMWvWyHnVP5tYjtvHr3/suVjjWNM+q8VZ7GG5Rz8aRD8rFBIcKHg1XdLW38s
+	W7pj8cvbx6/7bfmk+J9B59uG3XcymjMW1XAqsRRnJBpqMRcVJwIAOYKMAVMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e+xoC5PmFCIQdNNS4uLbRfZLLru7WCz
+	uLxf2+LyrjlsFpcOLGCyWHNkMbsDm8eVpxwem1Z1snm833eVzWPurj5Gj74tqxg9Pm+SC2CL
+	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6Qkmh
+	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMOY8bb7OnPBZdaKE7N3sjQw3mHp
+	YuTkkBAwkZg55ywjhC0mceHeerYuRi4OIYHpjBJTbyxgB0kICbQxSZycagliswnoSmx5/gqs
+	QUTAX2Jv40RmEJtZwFPib+tfsHphASeJlzNWA8U5OFgEVCWuTI0DCfMClbz6c4ENYpecxMlj
+	k1knMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcD8+kdzCuarA4xCjAwajEw1vJ
+	IhgixJpYVlyZe4hRgoNZSYS3yV8oRIg3JbGyKrUoP76oNCe1+BCjKdDyicxSosn5wFjNK4k3
+	NDYxM7I0Mje0MDI2VxLnPdhqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAuEpdUf3rkXlfP7AyTV43
+	TWBjdYr5HvNF06avTb1TKfLrmeDBW7tfc3+7eK/yg989g/7TAm+KiyyWB5+odL8Q4n7vqoHX
+	1W/Z/vbzTN9mB3J8iS2c1v03+VJnxa+nhrrVr/reLLH3sE93382wLvzUJ40jyQ+/id7gqrkX
+	Ju/xsGOPWWLJq0UXVyqxFGckGmoxFxUnAgBKODIinQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce functions to support dynamic IOMMU seq_id allocating and
-releasing, which will be used to support DMAR hotplug.
+_BSD_SOURCE was deprecated in favour of _DEFAULT_SOURCE since glibc
+2.20[1]. To avoid build warning on glibc2.20, _DEFAULT_SOURCE should
+also be defined.
 
-Also rename IOMMU_UNITS_SUPPORTED as DMAR_UNITS_SUPPORTED.
+[1]: https://sourceware.org/glibc/wiki/Release/2.20
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Chanho Park <chanho61.park@samsung.com>
 ---
- drivers/iommu/dmar.c        |   40 ++++++++++++++++++++++++++++++++++------
- drivers/iommu/intel-iommu.c |   13 +++----------
- include/linux/dmar.h        |    6 ++++++
- 3 files changed, 43 insertions(+), 16 deletions(-)
+ tools/perf/util/util.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-index afd46eb9a5de..b3405c50627f 100644
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -70,6 +70,7 @@ LIST_HEAD(dmar_drhd_units);
- struct acpi_table_header * __initdata dmar_tbl;
- static acpi_size dmar_tbl_size;
- static int dmar_dev_scope_status = 1;
-+static unsigned long dmar_seq_ids[BITS_TO_LONGS(DMAR_UNITS_SUPPORTED)];
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 6686436..333d9d1 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -39,6 +39,8 @@
  
- static int alloc_iommu(struct dmar_drhd_unit *drhd);
- static void free_iommu(struct intel_iommu *iommu);
-@@ -928,11 +929,32 @@ out:
- 	return err;
- }
+ #define _ALL_SOURCE 1
+ #define _BSD_SOURCE 1
++/* glibc 2.20 deprecates _BSD_SOURCE in favour of _DEFAULT_SOURCE */
++#define _DEFAULT_SOURCE 1
+ #define HAS_BOOL
  
-+static int dmar_alloc_seq_id(struct intel_iommu *iommu)
-+{
-+	iommu->seq_id = find_first_zero_bit(dmar_seq_ids,
-+					    DMAR_UNITS_SUPPORTED);
-+	if (iommu->seq_id >= DMAR_UNITS_SUPPORTED) {
-+		iommu->seq_id = -1;
-+	} else {
-+		set_bit(iommu->seq_id, dmar_seq_ids);
-+		sprintf(iommu->name, "dmar%d", iommu->seq_id);
-+	}
-+
-+	return iommu->seq_id;
-+}
-+
-+static void dmar_free_seq_id(struct intel_iommu *iommu)
-+{
-+	if (iommu->seq_id >= 0) {
-+		clear_bit(iommu->seq_id, dmar_seq_ids);
-+		iommu->seq_id = -1;
-+	}
-+}
-+
- static int alloc_iommu(struct dmar_drhd_unit *drhd)
- {
- 	struct intel_iommu *iommu;
- 	u32 ver, sts;
--	static int iommu_allocated = 0;
- 	int agaw = 0;
- 	int msagaw = 0;
- 	int err;
-@@ -946,13 +968,16 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 	if (!iommu)
- 		return -ENOMEM;
- 
--	iommu->seq_id = iommu_allocated++;
--	sprintf (iommu->name, "dmar%d", iommu->seq_id);
-+	if (dmar_alloc_seq_id(iommu) < 0) {
-+		pr_err("IOMMU: failed to allocate seq_id\n");
-+		err = -ENOSPC;
-+		goto error;
-+	}
- 
- 	err = map_iommu(iommu, drhd->reg_base_addr);
- 	if (err) {
- 		pr_err("IOMMU: failed to map %s\n", iommu->name);
--		goto error;
-+		goto error_free_seq_id;
- 	}
- 
- 	err = -EINVAL;
-@@ -1002,9 +1027,11 @@ static int alloc_iommu(struct dmar_drhd_unit *drhd)
- 
- 	return 0;
- 
-- err_unmap:
-+err_unmap:
- 	unmap_iommu(iommu);
-- error:
-+error_free_seq_id:
-+	dmar_free_seq_id(iommu);
-+error:
- 	kfree(iommu);
- 	return err;
- }
-@@ -1028,6 +1055,7 @@ static void free_iommu(struct intel_iommu *iommu)
- 	if (iommu->reg)
- 		unmap_iommu(iommu);
- 
-+	dmar_free_seq_id(iommu);
- 	kfree(iommu);
- }
- 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 4af2206e41bc..7daa74ed46d0 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -328,17 +328,10 @@ static int hw_pass_through = 1;
- /* si_domain contains mulitple devices */
- #define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 1)
- 
--/* define the limit of IOMMUs supported in each domain */
--#ifdef	CONFIG_X86
--# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
--#else
--# define	IOMMU_UNITS_SUPPORTED	64
--#endif
--
- struct dmar_domain {
- 	int	id;			/* domain id */
- 	int	nid;			/* node id */
--	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
-+	DECLARE_BITMAP(iommu_bmp, DMAR_UNITS_SUPPORTED);
- 					/* bitmap of iommus this domain uses*/
- 
- 	struct list_head devices; 	/* all devices' list */
-@@ -2728,12 +2721,12 @@ static int __init init_dmars(void)
- 		 * threaded kernel __init code path all other access are read
- 		 * only
- 		 */
--		if (g_num_of_iommus < IOMMU_UNITS_SUPPORTED) {
-+		if (g_num_of_iommus < DMAR_UNITS_SUPPORTED) {
- 			g_num_of_iommus++;
- 			continue;
- 		}
- 		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
--			  IOMMU_UNITS_SUPPORTED);
-+			  DMAR_UNITS_SUPPORTED);
- 	}
- 
- 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
-diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-index fac8ca34f9a8..c8a576bc3a98 100644
---- a/include/linux/dmar.h
-+++ b/include/linux/dmar.h
-@@ -30,6 +30,12 @@
- 
- struct acpi_dmar_header;
- 
-+#ifdef	CONFIG_X86
-+# define	DMAR_UNITS_SUPPORTED	MAX_IO_APICS
-+#else
-+# define	DMAR_UNITS_SUPPORTED	64
-+#endif
-+
- /* DMAR Flags */
- #define DMAR_INTR_REMAP		0x1
- #define DMAR_X2APIC_OPT_OUT	0x2
+ #include <unistd.h>
 -- 
-1.7.10.4
+1.9.1
 
