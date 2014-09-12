@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060AbaILOBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:01:18 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34018 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754995AbaILOBP (ORCPT
+	id S1755095AbaILOBZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:01:25 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:49584 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065AbaILOBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:01:15 -0400
+	Fri, 12 Sep 2014 10:01:21 -0400
 From: Hanjun Guo <hanjun.guo@linaro.org>
 To: Catalin Marinas <catalin.marinas@arm.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -27,11 +27,10 @@ Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
         Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [PATCH v4 05/18] ARM64 / ACPI: Introduce sleep-arm.c
-Date: Fri, 12 Sep 2014 22:00:03 +0800
-Message-Id: <1410530416-30200-6-git-send-email-hanjun.guo@linaro.org>
+Subject: [PATCH v4 07/18] ARM64 / ACPI: If we chose to boot from acpi then disable FDT
+Date: Fri, 12 Sep 2014 22:00:05 +0800
+Message-Id: <1410530416-30200-8-git-send-email-hanjun.guo@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
 References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
@@ -41,70 +40,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Graeme Gregory <graeme.gregory@linaro.org>
 
-ACPI 5.1 does not currently support S states for ARM64 hardware but
-ACPI code will call acpi_target_system_state() for device power
-managment, so introduce sleep-arm.c to allow other drivers to function
-until S states are defined.
+If the early boot methods of acpi are happy that we have valid ACPI
+tables and acpi=off has not been passed. Then do not unflat
+devicetree effectively disabling further hardware probing from DT.
 
 Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 ---
- drivers/acpi/Makefile    |    4 ++++
- drivers/acpi/sleep-arm.c |   28 ++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
- create mode 100644 drivers/acpi/sleep-arm.c
+ arch/arm64/kernel/setup.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 505d4d7..89837f8 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -23,7 +23,11 @@ acpi-y				+= nvs.o
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 5b05227..5796734 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -398,7 +398,8 @@ void __init setup_arch(char **cmdline_p)
+ 	efi_idmap_init();
  
- # Power management related files
- acpi-y				+= wakeup.o
-+ifeq ($(ARCH), arm64)
-+acpi-y				+= sleep-arm.o
-+else # X86, IA64
- acpi-y				+= sleep.o
-+endif
- acpi-y				+= device_pm.o
- acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+ 	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+-	unflatten_device_tree();
++	if (acpi_disabled)
++		unflatten_device_tree();
  
-diff --git a/drivers/acpi/sleep-arm.c b/drivers/acpi/sleep-arm.c
-new file mode 100644
-index 0000000..54578ef
---- /dev/null
-+++ b/drivers/acpi/sleep-arm.c
-@@ -0,0 +1,28 @@
-+/*
-+ *  ARM64 Specific Sleep Functionality
-+ *
-+ *  Copyright (C) 2013-2014, Linaro Ltd.
-+ *      Author: Graeme Gregory <graeme.gregory@linaro.org>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ */
-+
-+#include <linux/acpi.h>
-+
-+/*
-+ * Currently the ACPI 5.1 standard does not define S states in a
-+ * manner which is usable for ARM64. These two stubs are sufficient
-+ * that system initialises and device PM works.
-+ */
-+u32 acpi_target_system_state(void)
-+{
-+	return ACPI_STATE_S0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_target_system_state);
-+
-+int __init acpi_sleep_init(void)
-+{
-+	return -ENOSYS;
-+}
+ 	psci_init();
+ 
 -- 
 1.7.9.5
 
