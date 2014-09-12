@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896AbaILVWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 17:22:42 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:48652 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583AbaILVWi (ORCPT
+	id S1752947AbaILVWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 17:22:46 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47840 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518AbaILVWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 17:22:38 -0400
+	Fri, 12 Sep 2014 17:22:42 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: Andrew Hunter <ahh@google.com>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Paul Turner <pjt@google.com>,
+Cc: Richard Larocque <rlarocque@google.com>, stable@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 1/4] jiffies: Fix timeval conversion to jiffies
-Date: Fri, 12 Sep 2014 14:22:21 -0700
-Message-Id: <1410556944-14944-2-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 4/4] alarmtimer: Lock k_itimer during timer callback
+Date: Fri, 12 Sep 2014 14:22:24 -0700
+Message-Id: <1410556944-14944-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410556944-14944-1-git-send-email-john.stultz@linaro.org>
 References: <1410556944-14944-1-git-send-email-john.stultz@linaro.org>
@@ -25,209 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Hunter <ahh@google.com>
+From: Richard Larocque <rlarocque@google.com>
 
-timeval_to_jiffies tried to round a timeval up to an integral number
-of jiffies, but the logic for doing so was incorrect: intervals
-corresponding to exactly N jiffies would become N+1. This manifested
-itself particularly repeatedly stopping/starting an itimer:
+Locks the k_itimer's it_lock member when handling the alarm timer's
+expiry callback.
 
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
-
-would add a full tick to val, _even if it was exactly representable in
-terms of jiffies_ (say, the result of a previous rounding.)  Doing
-this repeatedly would cause unbounded growth in val.  So fix the math.
-
-Here's what was wrong with the conversion: we essentially computed
-(eliding seconds)
-
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
-
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
-
-jiffies = (usec * x) >> USEC_JIFFIE_SC
-
-and rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value; that is, instead of dividing by (1 usec/ 1 jiffie), we
-effectively divided by (1 usec/1 jiffie)-epsilon (rounding
-down). This would normally be fine, but we want to round timeouts up,
-and we did so by adding 2^USEC_JIFFIE_SC - 1 before the shift; this
-would be fine if our division was exact, but dividing this by the
-slightly smaller factor was equivalent to adding just _over_ 1 to the
-final result (instead of just _under_ 1, as desired.)
-
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC.
-
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
-
-Tested: the following program:
-
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
-  }
-    return 0;
-}
+The regular posix timers defined in posix-timers.c have this lock held
+during timout processing because their callbacks are routed through
+posix_timer_fn().  The alarm timers follow a different path, so they
+ought to grab the lock somewhere else.
 
 Cc: stable@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Turner <pjt@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Richard Cochran <richardcochran@gmail.com>
 Cc: Prarit Bhargava <prarit@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Signed-off-by: Andrew Hunter <ahh@google.com>
-[jstultz: Tweaked to apply to 3.17-rc]
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- include/linux/jiffies.h | 12 -----------
- kernel/time/time.c      | 56 +++++++++++++++++++++++++++----------------------
- 2 files changed, 31 insertions(+), 37 deletions(-)
+ kernel/time/alarmtimer.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 1f44466..c367cbd 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
- 
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
-diff --git a/kernel/time/time.c b/kernel/time/time.c
-index f0294ba..a9ae20f 100644
---- a/kernel/time/time.c
-+++ b/kernel/time/time.c
-@@ -559,17 +559,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index 41a9253..a7077d3 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -464,8 +464,12 @@ static enum alarmtimer_type clock2alarm(clockid_t clockid)
+ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 							ktime_t now)
  {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
- 
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -580,6 +583,13 @@ timespec_to_jiffies(const struct timespec *value)
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
- 
- }
++	unsigned long flags;
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
++	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
 +
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
++	spin_lock_irqsave(&ptr->it_lock, flags);
+ 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
+ 		if (posix_timer_event(ptr, 0) != 0)
+ 			ptr->it_overrun++;
+@@ -475,9 +479,11 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 	if (ptr->it.alarm.interval.tv64) {
+ 		ptr->it_overrun += alarm_forward(alarm, now,
+ 						ptr->it.alarm.interval);
+-		return ALARMTIMER_RESTART;
++		result = ALARMTIMER_RESTART;
+ 	}
+-	return ALARMTIMER_NORESTART;
++	spin_unlock_irqrestore(&ptr->it_lock, flags);
 +
- EXPORT_SYMBOL(timespec_to_jiffies);
- 
- void
-@@ -596,31 +606,27 @@ jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
++	return result;
  }
- EXPORT_SYMBOL(jiffies_to_timespec);
  
--/* Same for "timeval"
-- *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-+ *
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-+ *
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
- 
+ /**
 -- 
 1.9.1
 
