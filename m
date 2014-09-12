@@ -1,110 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaILKVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:21:07 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:54292 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaILKVD convert rfc822-to-8bit (ORCPT
+	id S1752889AbaILKU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:20:57 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:49492 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003AbaILKUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:21:03 -0400
-Message-ID: <5412C909.50004@arm.com>
-Date: Fri, 12 Sep 2014 11:20:57 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 12 Sep 2014 06:20:53 -0400
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <Will.Deacon@arm.com>,
-        "olof@lixom.net" <olof@lixom.net>, Sonny Rao <sonnyrao@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
+In-Reply-To: <1410511111.31130.4.camel@x220>
+References: <1406551632.5397.17.camel@x220>
+	<1410511111.31130.4.camel@x220>
+Date: Fri, 12 Sep 2014 05:20:52 -0500
+X-Google-Sender-Auth: acXBLEaBqzQ4-llzrAeBdvYtfXU
+Message-ID: <CAGo_u6r3jXX2FS-PO5_-+zhHM3i3pVzGYumSYLh7YPNXGV98eg@mail.gmail.com>
+Subject: Re: [PATCH] PM / OPP: Remove ARCH_HAS_OPP completely
+From: Nishanth Menon <nm@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mark Brown <broonie@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Herring <robh@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com>	<5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com> <5411DF5D.8060906@arm.com>	<54123697.4070804@codeaurora.org> <CAD=FV=XZVs-Xr72Rah1YwnTqB6Zj=ZwkvsEytctO9sp5dL=eCA@mail.gmail.com>
-In-Reply-To: <CAD=FV=XZVs-Xr72Rah1YwnTqB6Zj=ZwkvsEytctO9sp5dL=eCA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 12 Sep 2014 10:20:59.0262 (UTC) FILETIME=[3F1F71E0:01CFCE73]
-X-MC-Unique: 114091211210018401
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/14 01:01, Doug Anderson wrote:
-> Stephen,
-> 
-> On Thu, Sep 11, 2014 at 4:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 09/11/14 10:43, Marc Zyngier wrote:
->>>>> If I was suicidal, I'd suggest you could pass a parameter to the command
->>>>> line, interpreted by the timer code... But I since I'm not, let's
->>>>> pretend I haven't said anything... ;-)
->>>> I did this in the past (again, see Sonny's thread), but didn't
->>>> consider myself knowledgeable to know if that was truly a good test:
->>>>
->>>>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>>>        pr_info("DOUG: val is %#010x", val);
->>>>        val |= (1 << 2);
->>>>        asm volatile("mcr p15, 0, %0, c1, c1, 0" : : "r" (val));
->>>>        val = 0xffffffff;
->>>>        asm volatile("mrc p15, 0, %0, c1, c1, 0" : "=r" (val));
->>>>        pr_info("DOUG: val is %#010x", val);
->>>>
->>>> The idea being that if you can make modifications to the SCR register
->>>> (and see your changes take effect) then you must be in secure mode.
->>>> In my case the first printout was 0x0 and the second was 0x4.
->>> The main issue is when you're *not* in secure mode. It is likely that
->>> this will explode badly. This is why I suggested something that is set
->>> by the bootloader (after all. it knows which mode it is booted in), and
->>> that the timer driver can use when the CPU comes up.
->>
->> Where does this platform jump to when a CPU comes up? Is it
->> rockchip_secondary_startup()? I wonder if that path could have this
->> little bit of assembly to poke the cntvoff in monitor mode and then jump
->> to secondary_startup()? Before we boot any secondary CPUs we could also
->> read the cntvoff for CPU0 in the platform specific layer (where we know
->> we're running in secure mode) and then use that value as the "reset"
->> value for the secondaries. Or does this platform boot up in secure mode
->> some times and non-secure mode other times?
-> 
-> I guess it would depend a whole lot on the bootloader, wouldn't it?
+On Fri, Sep 12, 2014 at 3:38 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
+> 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
+> removed the only dependency that used it. Setting it had no effect
+> anymore.
+>
+> So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
+> some reason that commit did not remove all select statements for that
+> symbol. These statements are useless. Remove them too.
+>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Done on top of next-20140912. Tested with git grep only!
+>
+>  arch/arm/mach-omap2/Kconfig    | 5 -----
 
-Yes, hence my suggestion of hooking such a thing from the timer code,
-where we could have a clue what to do (and what not to).
+there can be conflict here:
+https://patchwork.kernel.org/patch/4857231/
 
-> With our current "get out of the way" bootloader, Linux always sees
-> "Secure SVC".  ...but if someone decided to put a new bootloader on
-> the system that wanted to do something different (implement security
-> and boot the kernel in nonsecure HYP or implement a hypervisor and
-> boot the kernel in nonsecure SVC) then everything would be different.
-> 
-> If someone were to write a bootloader like that (or perhaps if we're
-> running in a VM?) then I'd imagine that the whole world would be
-> different.  Somehow this secure bootloader and/or hypervisor would
-> _have_ to be involved in processor bringup and suspend/resume.  Since
-> I've never looked at code implementing either of these I'm just making
-> assumptions, though.
+http://marc.info/?l=linux-omap&m=141047815520894&w=2
 
-Exactly. That's why we're so hell bent on PSCI, because it solves all
-these issues (and that's why I've added some rudimentary support for it
-in u-boot).
 
-Thanks,
+>  arch/arm/mach-shmobile/Kconfig | 1 -
+>  drivers/devfreq/Kconfig        | 1 -
+>  3 files changed, 7 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index 5b103099626d..f138bd33a463 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -22,7 +22,6 @@ config ARCH_OMAP4
+>         bool "TI OMAP4"
+>         depends on ARCH_MULTI_V7
+>         select ARCH_OMAP2PLUS
+> -       select ARCH_HAS_OPP
+>         select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
+>         select ARM_CPU_SUSPEND if PM
+>         select ARM_ERRATA_720789
+> @@ -41,7 +40,6 @@ config SOC_OMAP5
+>         bool "TI OMAP5"
+>         depends on ARCH_MULTI_V7
+>         select ARCH_OMAP2PLUS
+> -       select ARCH_HAS_OPP
+>         select ARM_CPU_SUSPEND if PM
+>         select ARM_GIC
+>         select HAVE_ARM_SCU if SMP
+> @@ -53,14 +51,12 @@ config SOC_AM33XX
+>         bool "TI AM33XX"
+>         depends on ARCH_MULTI_V7
+>         select ARCH_OMAP2PLUS
+> -       select ARCH_HAS_OPP
+>         select ARM_CPU_SUSPEND if PM
+>
+>  config SOC_AM43XX
+>         bool "TI AM43x"
+>         depends on ARCH_MULTI_V7
+>         select ARCH_OMAP2PLUS
+> -       select ARCH_HAS_OPP
+>         select ARM_GIC
+>         select MACH_OMAP_GENERIC
+>         select MIGHT_HAVE_CACHE_L2X0
+> @@ -69,7 +65,6 @@ config SOC_DRA7XX
+>         bool "TI DRA7XX"
+>         depends on ARCH_MULTI_V7
+>         select ARCH_OMAP2PLUS
+> -       select ARCH_HAS_OPP
+>         select ARM_CPU_SUSPEND if PM
+>         select ARM_GIC
+>         select HAVE_ARM_ARCH_TIMER
+> diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> index 21f457b56c01..f59019dd986e 100644
+> --- a/arch/arm/mach-shmobile/Kconfig
+> +++ b/arch/arm/mach-shmobile/Kconfig
+> @@ -36,7 +36,6 @@ menuconfig ARCH_SHMOBILE_MULTI
+>         select NO_IOPORT_MAP
+>         select PINCTRL
+>         select ARCH_REQUIRE_GPIOLIB
+> -       select ARCH_HAS_OPP
+>
+>  if ARCH_SHMOBILE_MULTI
+>
+> diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+> index 3dced0a9eae3..2227e9bf3884 100644
+> --- a/drivers/devfreq/Kconfig
+> +++ b/drivers/devfreq/Kconfig
+> @@ -80,7 +80,6 @@ config ARM_EXYNOS4_BUS_DEVFREQ
+>  config ARM_EXYNOS5_BUS_DEVFREQ
+>         bool "ARM Exynos5250 Bus DEVFREQ Driver"
+>         depends on SOC_EXYNOS5250
+> -       select ARCH_HAS_OPP
+>         select DEVFREQ_GOV_SIMPLE_ONDEMAND
+>         select PM_OPP
+>         help
+> --
+> 1.9.3
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-	M.
+
+
 -- 
-Jazz is not dead. It just smells funny...
-
+---
+Regards,
+Nishanth Menon
