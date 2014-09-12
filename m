@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaILTHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:07:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56974 "EHLO mail.zytor.com"
+	id S1752695AbaILTJK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:09:10 -0400
+Received: from mout.gmx.net ([212.227.15.19]:49603 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaILTHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:07:41 -0400
-Message-ID: <54134464.1010809@zytor.com>
-Date: Fri, 12 Sep 2014 12:07:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com> <alpine.DEB.2.10.1409121949460.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409121949460.4178@nanos>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751017AbaILTJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 15:09:08 -0400
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] [REGRESSION] i2c-acpi: Fix NULL Pointer dereference
+Date: Fri, 12 Sep 2014 21:09:47 +0200
+Message-Id: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.8.5.5
+X-Provags-ID: V03:K0:S63uDPEdyp39V/DkKbwbjenL6ZxyxUsvhuPHggxysb84eY42TuI
+ 2OjxvAH3ViI8sZIevD+ayMl5CwedNVsGj7XbWDFLqbQKdQ0lScVMroOJuNZuGU+2qpm7Ood
+ FeI4vDJxhKk15azb8MkPrAveGuEmYf8qjZaZ5j0iGeVZ+5dzjJX5xOS/zGjk+WE2Ch8+eSV
+ ADGCrmdH0USgRfsdezIIw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 10:52 AM, Thomas Gleixner wrote:
-> 
-> Well, I did not see the trainwreck which tried to use the generic
-> decoder, but as I explained in the other mail, there is no reason not
-> to use it and I can't see any complexity in retrieving the data beyond
-> calling insn_get_length(insn);
-> 
+If adapter->dev.parent == NULL there is a NULL pointer dereference in
+acpi_i2c_install_space_handler and acpi_i2c_remove_space_handler.
 
-Looking at how complex the state machine ended up being, it probably was
-the wrong direction.  It is safe to copy_from_user() 15 bytes, decode
-what we get (which may be less than 15 bytes) and then verify with
-insn_get_length() that what we decoded is actually what we copied if the
-copy_from_user() length is < 15.
+This is present since introduction of this code:
+366047515c6e "i2c: rework kernel config I2C_ACPI" or even
+da3c6647ee08 "I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI"
 
-My intent was to explore a state machine limited to the restricted "mib"
-encodings that are valid for BNDSTX and BNDLDX only, but in the end it
-really doesn't make enough difference that it is worth messing with, I
-don't think.
+The adapter->dev.parent == NULL case is valid for the i2c_stub,
+so loading i2c_stub with ACPI_I2C_OPREGION enabled results in an oops.
+This is also valid at least for i2c_tiny_usb and i2c_robotfuzz_osif.
 
-	-hpa
+Fix by checking whether it is null before calling ACPI_HANDLE.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/i2c/i2c-acpi.c | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
+index 0dbc18c..c456b17 100644
+--- a/drivers/i2c/i2c-acpi.c
++++ b/drivers/i2c/i2c-acpi.c
+@@ -308,10 +308,15 @@ acpi_i2c_space_handler(u32 function, acpi_physical_address command,
+ 
+ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
+ {
+-	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
++	acpi_handle handle;
+ 	struct acpi_i2c_handler_data *data;
+ 	acpi_status status;
+ 
++	if (!adapter->dev.parent)
++		return -ENODEV;
++
++	handle = ACPI_HANDLE(adapter->dev.parent);
++
+ 	if (!handle)
+ 		return -ENODEV;
+ 
+@@ -344,10 +349,15 @@ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
+ 
+ void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
+ {
+-	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
++	acpi_handle handle;
+ 	struct acpi_i2c_handler_data *data;
+ 	acpi_status status;
+ 
++	if (!adapter->dev.parent)
++		return;
++
++	handle = ACPI_HANDLE(adapter->dev.parent);
++
+ 	if (!handle)
+ 		return;
+ 
+-- 
+1.8.5.5
 
