@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaILSDN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:03:13 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:39394 "EHLO
+	id S1752160AbaILSDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:03:21 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:46172 "EHLO
 	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbaILSDK (ORCPT
+	with ESMTP id S1752100AbaILSDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:03:10 -0400
-Subject: [PATCH v1 03/13] PCI: Add pci_configure_device() during enumeration
+	Fri, 12 Sep 2014 14:03:16 -0400
+Subject: [PATCH v1 04/13] PCI: pciehp: Configure hot-added display devices
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Rajat Jain <rajatxjain@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:03:07 -0600
-Message-ID: <20140912180307.1630.63799.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+Date: Fri, 12 Sep 2014 12:03:14 -0600
+Message-ID: <20140912180314.1630.94483.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -26,79 +26,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms can tell the OS how to configure PCI devices, e.g., how to
-set cache line size, error reporting enables, etc.  ACPI defines _HPP and
-_HPX methods for this purpose.
+We configure cache line size and other settings of hot-added devices, e.g.,
+based on ACPI _HPP or _HPX methods.  Previously we skipped this
+configuration for display devices, but there is no spec requirement for
+that.
 
-This configuration was previously done by some of the hotplug drivers using
-pci_configure_slot().  But not all hotplug drivers did this, and per the
-spec (ACPI rev 5.0, sec 6.2.7), we can also do it for "devices not
-configured by the BIOS at system boot."
+Remove the check so we configure display devices the same way we configure
+other devices.
 
-Move this configuration into the PCI core by adding pci_configure_device()
-and calling it from pci_device_add(), so we do this for all devices as we
-enumerate them.
-
-This is based on pci_configure_slot(), which is used by hotplug drivers.
-I omitted:
-
-  - pcie_bus_configure_settings() because it configures MPS and MRRS, which
-    requires global knowledge of the fabric and must be done later, and
-
-  - configuration of subordinate devices; that will happen when we call
-    pci_device_add() for those devices.
-
-Because pci_configure_slot() was only done by hotplug drivers, this initial
-version of pci_configure_device() only configures hot-added devices,
-ignoring anything added during boot.
+See also ac81860ea073 ("PCI: hotplug: pciehp: Removed check for hotplug of
+display devices").
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/pci/probe.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ drivers/pci/hotplug/pciehp_pci.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 5d0cc646817a..93d2b41163fa 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1384,6 +1384,30 @@ void pci_configure_slot(struct pci_dev *dev)
- 	}
- }
- EXPORT_SYMBOL_GPL(pci_configure_slot);
-+
-+static void pci_configure_device(struct pci_dev *dev)
-+{
-+	struct hotplug_params hpp;
-+	int ret;
-+
-+	if (system_state == SYSTEM_BOOTING)
-+		return;
-+
-+	if (!(dev->hdr_type == PCI_HEADER_TYPE_NORMAL ||
-+			(dev->hdr_type == PCI_HEADER_TYPE_BRIDGE &&
-+			(dev->class >> 8) == PCI_CLASS_BRIDGE_PCI)))
-+		return;
-+
-+	memset(&hpp, 0, sizeof(hpp));
-+	ret = pci_get_hp_params(dev, &hpp);
-+	if (ret)
-+		return;
-+
-+	program_hpp_type2(dev, hpp.t2);
-+	program_hpp_type1(dev, hpp.t1);
-+	program_hpp_type0(dev, hpp.t0);
-+}
-+
- static void pci_release_capabilities(struct pci_dev *dev)
- {
- 	pci_vpd_release(dev);
-@@ -1521,6 +1545,8 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- {
- 	int ret;
+diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+index 5f871f4c4af1..b66812703415 100644
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -66,12 +66,8 @@ int pciehp_configure_device(struct slot *p_slot)
  
-+	pci_configure_device(dev);
-+
- 	device_initialize(&dev->dev);
- 	dev->dev.release = pci_release_dev;
+ 	pci_assign_unassigned_bridge_resources(bridge);
+ 
+-	list_for_each_entry(dev, &parent->devices, bus_list) {
+-		if ((dev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+-			continue;
+-
++	list_for_each_entry(dev, &parent->devices, bus_list)
+ 		pci_configure_slot(dev);
+-	}
+ 
+ 	pci_bus_add_devices(parent);
  
 
