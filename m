@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaILT2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:28:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36254 "EHLO
+	id S1752838AbaILT3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:29:20 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:36265 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaILT2Q (ORCPT
+	with ESMTP id S1752729AbaILT2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:28:16 -0400
+	Fri, 12 Sep 2014 15:28:17 -0400
 From: Andy Gross <agross@codeaurora.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -17,90 +17,150 @@ Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Bjorn Andersson <bjorn.andersson@sonymobile.com>,
         Andy Gross <agross@codeaurora.org>
-Subject: [Patch v9 0/3] DWC3 USB support for Qualcomm platform
-Date: Fri, 12 Sep 2014 14:28:05 -0500
-Message-Id: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+Subject: [Patch v9 1/3] usb: dwc3: qcom: Add device tree binding
+Date: Fri, 12 Sep 2014 14:28:06 -0500
+Message-Id: <1410550088-8754-2-git-send-email-agross@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add basic support for USB3.0 controllers found
-on MSM platforms. USB3.0 core is based on Synopsys DesignWare
-SuperSpeed IP.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-This work was started by Ivan Ivanov and went through a number of iterations.  I
-picked these patches up and did a little rework to get them working.
+QCOM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
+(SNPS) and HS, SS PHY's control and configuration registers.
 
-Changes since v8:
-* Fixed minor comments from reviewers.
+It could operate in device mode (SS, HS, FS) and host
+mode (SS, HS, FS, LS).
 
-Changes since v7:
-* Reworked phy driver to conform to the generic phy framework.
-* Collapsed HS and SS phy drivers into same source file.
-* Dropped regulators from the drivers.  The only platform where we can utilize
-  this driver has regulators on all the time.  Will add regulators back in when
-  they are required.
-* Added timeouts to the phy register accesses
-* Put in definitions for the phy specific registers and bitfields
-* Removed unnecessary workarounds.
-
-Changes since v6:
-* Renamed all MSM references to qcom, including file names
-* Removed direct TCSR manipulation.  This done from new TCSR driver.
-* Added defines for register bits
-* XO clk is optional on some platforms.  Corrected logic to handle this.
-* Ignore set_voltage failures.  This allows us to support dummy regulators on
-  platforms where there is no voltage control.
-* Reworked devicetree binding to remove TCSR reg resources
-
-Changes since v5:
-* devicetree bindings descriptions fixes
-* Fixed NULL pointer dereferences in dev_prink's
-* Removed extra space in "sleep " clock name
-
-Changes since v4:
-* Substitute references to "wc3" with just "dw" in USB PHY drivers and
-  file names. This is to indicate that the PHY's are DesignWare, but
-  not necessarily related to DWC3 IP core.
-
-Changes since v3:
-* Remove "_clk" suffix from clock names
-* Clarify required child node for qcom,dwc3
-* Fix comments in functions headers
-* Use dbg instead err in drivers probe functions.
-
-Changes since v2:
-* Several improvements in devicetree bindings description
-* Disable regulators in glue layer if there is error during
-  ioremap.
-
-Changes since first version:
-* Split devicetree bindings description file to separate patch
-* Address comments for device bindings description
-* Fix typo in 'gdsc' requlator name.
-
-Andy Gross (1):
-  phy: Add Qualcomm DWC3 HS/SS PHY driver
-
-Ivan T. Ivanov (2):
-  usb: dwc3: qcom: Add device tree binding
-  usb: dwc3: Add Qualcomm DWC3 glue layer driver
-
- .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 ++
- .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 +++
- drivers/phy/Kconfig                                |   11 +
- drivers/phy/Makefile                               |    1 +
- drivers/phy/phy-qcom-dwc3.c                        |  483 ++++++++++++++++++++
- drivers/usb/dwc3/Kconfig                           |    8 +
- drivers/usb/dwc3/Makefile                          |    1 +
- drivers/usb/dwc3/dwc3-qcom.c                       |  131 ++++++
- 8 files changed, 740 insertions(+)
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+---
+ .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 ++++++++++++
+ .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 ++++++++++++++++++++
+ 2 files changed, 105 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
  create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
- create mode 100644 drivers/phy/phy-qcom-dwc3.c
- create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
 
+diff --git a/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt b/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
+new file mode 100644
+index 0000000..86f2dbe
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
+@@ -0,0 +1,39 @@
++Qualcomm DWC3 HS AND SS PHY CONTROLLER
++--------------------------------------
++
++DWC3 PHY nodes are defined to describe on-chip Synopsis Physical layer
++controllers.  Each DWC3 PHY controller should have its own node.
++
++Required properties:
++- compatible: should contain one of the following:
++	- "qcom,dwc3-hs-usb-phy" for High Speed Synopsis PHY controller
++	- "qcom,dwc3-ss-usb-phy" for Super Speed Synopsis PHY controller
++- reg: offset and length of the DWC3 PHY controller register set
++- #phy-cells: must be zero
++- clocks: a list of phandles and clock-specifier pairs, one for each entry in
++  clock-names.
++- clock-names: Should contain "ref" for the PHY reference clock
++
++Optional clocks:
++  "xo"		External reference clock
++
++Example:
++		phy@100f8800 {
++			compatible = "qcom,dwc3-hs-usb-phy";
++			reg = <0x100f8800 0x30>;
++			clocks = <&gcc USB30_0_UTMI_CLK>;
++			clock-names = "ref";
++			#phy-cells = <0>;
++
++			status = "ok";
++		};
++
++		phy@100f8830 {
++			compatible = "qcom,dwc3-ss-usb-phy";
++			reg = <0x100f8830 0x30>;
++			clocks = <&gcc USB30_0_MASTER_CLK>;
++			clock-names = "ref";
++			#phy-cells = <0>;
++
++			status = "ok";
++		};
+diff --git a/Documentation/devicetree/bindings/usb/qcom,dwc3.txt b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
+new file mode 100644
+index 0000000..ca164e7
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
+@@ -0,0 +1,66 @@
++Qualcomm SuperSpeed DWC3 USB SoC controller
++
++Required properties:
++- compatible:	should contain "qcom,dwc3"
++- clocks:		A list of phandle + clock-specifier pairs for the
++				clocks listed in clock-names
++- clock-names:	Should contain the following:
++  "core"		Master/Core clock, have to be >= 125 MHz for SS
++				operation and >= 60MHz for HS operation
++
++Optional clocks:
++  "iface"		System bus AXI clock.  Not present on all platforms
++  "sleep"		Sleep clock, used when USB3 core goes into low
++				power mode (U3).
++
++Required child node:
++A child node must exist to represent the core DWC3 IP block. The name of
++the node is not important. The content of the node is defined in dwc3.txt.
++
++Phy documentation is provided in the following places:
++Documentation/devicetree/bindings/phy/qcom,dwc3-usb-phy.txt
++
++Example device nodes:
++
++		hs_phy: phy@100f8800 {
++			compatible = "qcom,dwc3-hs-usb-phy";
++			reg = <0x100f8800 0x30>;
++			clocks = <&gcc USB30_0_UTMI_CLK>;
++			clock-names = "ref";
++			#phy-cells = <0>;
++
++			status = "ok";
++		};
++
++		ss_phy: phy@100f8830 {
++			compatible = "qcom,dwc3-ss-usb-phy";
++			reg = <0x100f8830 0x30>;
++			clocks = <&gcc USB30_0_MASTER_CLK>;
++			clock-names = "ref";
++			#phy-cells = <0>;
++
++			status = "ok";
++		};
++
++		usb3_0: usb30@0 {
++			compatible = "qcom,dwc3";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			clocks = <&gcc USB30_0_MASTER_CLK>;
++			clock-names = "core";
++
++			ranges;
++
++			status = "ok";
++
++			dwc3@10000000 {
++				compatible = "snps,dwc3";
++				reg = <0x10000000 0xcd00>;
++				interrupts = <0 205 0x4>;
++				phys = <&hs_phy>, <&ss_phy>;
++				phy-names = "usb2-phy", "usb3-phy";
++				tx-fifo-resize;
++				dr_mode = "host";
++			};
++		};
++
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
