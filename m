@@ -1,316 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaILDWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 23:22:32 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:53746 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaILDWb (ORCPT
+	id S1754015AbaILDZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 23:25:50 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:35353 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987AbaILDZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 23:22:31 -0400
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Azael Avalos <coproscefalo@gmail.com>
-Subject: [PATCH v3] toshiba_acpi: Support new keyboard backlight type
-Date: Thu, 11 Sep 2014 21:22:25 -0600
-Message-Id: <1410492145-9049-1-git-send-email-coproscefalo@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Thu, 11 Sep 2014 23:25:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <541249B8.301@codeaurora.org>
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
+ <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com>
+ <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
+ <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+ <5411DF5D.8060906@arm.com> <54123697.4070804@codeaurora.org>
+ <CAPz6YkUTXU9_b2BU5QghKTHVTJ3ngVX9EOzsMWnjigtV9TioHw@mail.gmail.com> <541249B8.301@codeaurora.org>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Thu, 11 Sep 2014 20:25:27 -0700
+X-Google-Sender-Auth: Xm_cmrEXpG9Rgq4EmCSkR7K_ujc
+Message-ID: <CAPz6YkUOR-+CEx__FGZkR42RRcn7hjdR_B95MBBe2zfR-70fqQ@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Doug Anderson <dianders@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Toshiba models now come with a new (and different) keyboard
-backlight implementation with three modes of operation: TIMER,
-ON and OFF, and the LED is controlled internally by the firmware.
+On Thu, Sep 11, 2014 at 6:17 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 09/11/14 17:14, Sonny Rao wrote:
+>
+> On Thu, Sep 11, 2014 at 4:56 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>
+>>
+>> Where does this platform jump to when a CPU comes up? Is it
+>> rockchip_secondary_startup()? I wonder if that path could have this
+>> little bit of assembly to poke the cntvoff in monitor mode and then jump
+>> to secondary_startup()? Before we boot any secondary CPUs we could also
+>> read the cntvoff for CPU0 in the platform specific layer (where we know
+>> we're running in secure mode) and then use that value as the "reset"
+>> value for the secondaries. Or does this platform boot up in secure mode
+>> some times and non-secure mode other times?
+>
+>
+> Yes, In our case, with our firmware, we will go through some internal Rom
+> code and then jump to rockchip_secondary_startup, but I don't think it's
+> correct to force all users of this SoC to do it that way.
+>
+>
+> What's being forced? The way internal rom jumps to sram? Is there any other
+> way that secondary CPUs come out of reset on this SoC? From looking at the
+> code it seems like the only path is internal rom jumps to sram (where
+> rockchip_secondary_trampoline lives) which jumps to
+> rockchip_secondary_startup() which then does an invalidate and jump to
+> secondary_startup(). Linux controls everything besides the internal rom. Is
+> something different in your case?
 
-This patch adds support for that type of backlight, changing the
-existing code to accomodate the new implementation.
 
-The timeout value range is now 1-60 seconds, and the accepted
-modes are now: 1 (FN-Z), 2 (AUTO or TIMER), 8(ON) and 10 (OFF),
-this adds two new entries keyboard_type and available_kbd_modes,
-the first shows the keyboard type and the latter shows the
-supported modes depending on the type.
+There are other ways it can be done, and I don't know all of the
+possibilities, but there seems to be some protocol with the iROM that
+tells it where to go, which the current SMP patches are using by
+putting a magic number and an address in SRAM.  I think it's true that
+in our case, it really is pretty simple and we have secure SVC mode
+and not much else runs (besides the iROM).
 
-Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
----
- drivers/platform/x86/toshiba_acpi.c | 193 +++++++++++++++++++++++++++++-------
- 1 file changed, 158 insertions(+), 35 deletions(-)
+Since I don't know all of the possibilities, I didn't want to preclude
+the possibility that someone else handled things differently and
+entered the kernel in non-secure mode, and have some code there that
+broke in that instance, that's all I meant by "forced".
 
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 4c8fa7b..a5d7d83 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -138,8 +138,12 @@ MODULE_LICENSE("GPL");
- #define HCI_WIRELESS_BT_PRESENT		0x0f
- #define HCI_WIRELESS_BT_ATTACH		0x40
- #define HCI_WIRELESS_BT_POWER		0x80
-+#define SCI_KBD_MODE_MASK		0x1f
- #define SCI_KBD_MODE_FNZ		0x1
- #define SCI_KBD_MODE_AUTO		0x2
-+#define SCI_KBD_MODE_ON			0x8
-+#define SCI_KBD_MODE_OFF		0x10
-+#define SCI_KBD_TIME_MAX		0x3c001a
- 
- struct toshiba_acpi_dev {
- 	struct acpi_device *acpi_dev;
-@@ -155,6 +159,7 @@ struct toshiba_acpi_dev {
- 	int force_fan;
- 	int last_key_event;
- 	int key_event_valid;
-+	int kbd_type;
- 	int kbd_mode;
- 	int kbd_time;
- 
-@@ -495,6 +500,42 @@ static enum led_brightness toshiba_illumination_get(struct led_classdev *cdev)
- }
- 
- /* KBD Illumination */
-+static int toshiba_kbd_illum_available(struct toshiba_acpi_dev *dev)
-+{
-+	u32 in[HCI_WORDS] = { SCI_GET, SCI_KBD_ILLUM_STATUS, 0, 0, 0, 0 };
-+	u32 out[HCI_WORDS];
-+	acpi_status status;
-+
-+	if (!sci_open(dev))
-+		return 0;
-+
-+	status = hci_raw(dev, in, out);
-+	sci_close(dev);
-+	if (ACPI_FAILURE(status) || out[0] == SCI_INPUT_DATA_ERROR) {
-+		pr_err("ACPI call to query kbd illumination support failed\n");
-+		return 0;
-+	} else if (out[0] == HCI_NOT_SUPPORTED) {
-+		pr_info("Keyboard illumination not available\n");
-+		return 0;
-+	}
-+
-+	/* Check for keyboard backlight timeout max value,
-+	 * previous kbd backlight implementation set this to
-+	 * 0x3c0003, and now the new implementation set this
-+	 * to 0x3c001a, use this to distinguish between them
-+	 */
-+	if (out[3] == SCI_KBD_TIME_MAX)
-+		dev->kbd_type = 2;
-+	else
-+		dev->kbd_type = 1;
-+	/* Get the current keyboard backlight mode */
-+	dev->kbd_mode = out[2] & SCI_KBD_MODE_MASK;
-+	/* Get the current time (1-60 seconds) */
-+	dev->kbd_time = out[2] >> HCI_MISC_SHIFT;
-+
-+	return 1;
-+}
-+
- static int toshiba_kbd_illum_status_set(struct toshiba_acpi_dev *dev, u32 time)
- {
- 	u32 result;
-@@ -1254,6 +1295,62 @@ static const struct backlight_ops toshiba_backlight_data = {
- /*
-  * Sysfs files
-  */
-+static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t toshiba_kbd_bl_mode_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+static ssize_t toshiba_kbd_type_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+static ssize_t toshiba_available_kbd_modes_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+static ssize_t toshiba_kbd_bl_timeout_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t count);
-+static ssize_t toshiba_kbd_bl_timeout_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf);
-+static ssize_t toshiba_touchpad_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count);
-+static ssize_t toshiba_touchpad_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+static ssize_t toshiba_position_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+
-+static DEVICE_ATTR(kbd_backlight_mode, S_IRUGO | S_IWUSR,
-+		   toshiba_kbd_bl_mode_show, toshiba_kbd_bl_mode_store);
-+static DEVICE_ATTR(kbd_type, S_IRUGO, toshiba_kbd_type_show, NULL);
-+static DEVICE_ATTR(available_kbd_modes, S_IRUGO,
-+		   toshiba_available_kbd_modes_show, NULL);
-+static DEVICE_ATTR(kbd_backlight_timeout, S_IRUGO | S_IWUSR,
-+		   toshiba_kbd_bl_timeout_show, toshiba_kbd_bl_timeout_store);
-+static DEVICE_ATTR(touchpad, S_IRUGO | S_IWUSR,
-+		   toshiba_touchpad_show, toshiba_touchpad_store);
-+static DEVICE_ATTR(position, S_IRUGO, toshiba_position_show, NULL);
-+
-+static struct attribute *toshiba_attributes[] = {
-+	&dev_attr_kbd_backlight_mode.attr,
-+	&dev_attr_kbd_type.attr,
-+	&dev_attr_available_kbd_modes.attr,
-+	&dev_attr_kbd_backlight_timeout.attr,
-+	&dev_attr_touchpad.attr,
-+	&dev_attr_position.attr,
-+	NULL,
-+};
-+
-+static umode_t toshiba_sysfs_is_visible(struct kobject *,
-+					struct attribute *, int);
-+
-+static struct attribute_group toshiba_attr_group = {
-+	.is_visible = toshiba_sysfs_is_visible,
-+	.attrs = toshiba_attributes,
-+};
- 
- static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
- 					 struct device_attribute *attr,
-@@ -1268,20 +1365,50 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
- 	ret = kstrtoint(buf, 0, &mode);
- 	if (ret)
- 		return ret;
--	if (mode != SCI_KBD_MODE_FNZ && mode != SCI_KBD_MODE_AUTO)
--		return -EINVAL;
-+
-+	/* Check for supported modes depending on keyboard backlight type */
-+	if (toshiba->kbd_type == 1) {
-+		/* Type 1 supports SCI_KBD_MODE_FNZ and SCI_KBD_MODE_AUTO */
-+		if (mode != SCI_KBD_MODE_FNZ && mode != SCI_KBD_MODE_AUTO)
-+			return -EINVAL;
-+	} else if (toshiba->kbd_type == 2) {
-+		/* Type 2 doesn't support SCI_KBD_MODE_FNZ */
-+		if (mode != SCI_KBD_MODE_AUTO && mode != SCI_KBD_MODE_ON &&
-+		    mode != SCI_KBD_MODE_OFF)
-+			return -EINVAL;
-+	}
- 
- 	/* Set the Keyboard Backlight Mode where:
--	 * Mode - Auto (2) | FN-Z (1)
- 	 *	Auto - KBD backlight turns off automatically in given time
- 	 *	FN-Z - KBD backlight "toggles" when hotkey pressed
-+	 *	ON   - KBD backlight is always on
-+	 *	OFF  - KBD backlight is always off
- 	 */
-+
-+	/* Only make a change if the actual mode has changed */
- 	if (toshiba->kbd_mode != mode) {
-+		/* Shift the time to "base time" (0x3c0000 == 60 seconds) */
- 		time = toshiba->kbd_time << HCI_MISC_SHIFT;
--		time = time + toshiba->kbd_mode;
-+
-+		/* OR the "base time" to the actual method format */
-+		if (toshiba->kbd_type == 1) {
-+			/* Type 1 requires the current mode */
-+			time |= toshiba->kbd_mode;
-+		} else if (toshiba->kbd_type == 2) {
-+			/* Type 2 requires the desired mode */
-+			time |= mode;
-+		}
-+
- 		ret = toshiba_kbd_illum_status_set(toshiba, time);
- 		if (ret)
- 			return ret;
-+
-+		/* Update sysfs entries on successful mode change*/
-+		ret = sysfs_update_group(&toshiba->acpi_dev->dev.kobj,
-+					 &toshiba_attr_group);
-+		if (ret)
-+			return ret;
-+
- 		toshiba->kbd_mode = mode;
- 	}
- 
-@@ -1293,12 +1420,34 @@ static ssize_t toshiba_kbd_bl_mode_show(struct device *dev,
- 					char *buf)
- {
- 	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
--	u32 time;
- 
--	if (toshiba_kbd_illum_status_get(toshiba, &time) < 0)
--		return -EIO;
-+	if (toshiba == NULL)
-+		return -ENXIO;
-+
-+	return sprintf(buf, "%x\n", toshiba->kbd_mode);
-+}
-+
-+static ssize_t toshiba_kbd_type_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", toshiba->kbd_type);
-+}
-+
-+static ssize_t toshiba_available_kbd_modes_show(struct device *dev,
-+						struct device_attribute *attr,
-+						char *buf)
-+{
-+	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
- 
--	return sprintf(buf, "%i\n", time & 0x07);
-+	if (toshiba->kbd_type == 1)
-+		return sprintf(buf, "%x %x\n",
-+			       SCI_KBD_MODE_FNZ, SCI_KBD_MODE_AUTO);
-+
-+	return sprintf(buf, "%x %x %x\n",
-+		       SCI_KBD_MODE_AUTO, SCI_KBD_MODE_ON, SCI_KBD_MODE_OFF);
- }
- 
- static ssize_t toshiba_kbd_bl_timeout_store(struct device *dev,
-@@ -1388,22 +1537,6 @@ static ssize_t toshiba_position_show(struct device *dev,
- 	return sprintf(buf, "%d %d %d\n", x, y, z);
- }
- 
--static DEVICE_ATTR(kbd_backlight_mode, S_IRUGO | S_IWUSR,
--		   toshiba_kbd_bl_mode_show, toshiba_kbd_bl_mode_store);
--static DEVICE_ATTR(kbd_backlight_timeout, S_IRUGO | S_IWUSR,
--		   toshiba_kbd_bl_timeout_show, toshiba_kbd_bl_timeout_store);
--static DEVICE_ATTR(touchpad, S_IRUGO | S_IWUSR,
--		   toshiba_touchpad_show, toshiba_touchpad_store);
--static DEVICE_ATTR(position, S_IRUGO, toshiba_position_show, NULL);
--
--static struct attribute *toshiba_attributes[] = {
--	&dev_attr_kbd_backlight_mode.attr,
--	&dev_attr_kbd_backlight_timeout.attr,
--	&dev_attr_touchpad.attr,
--	&dev_attr_position.attr,
--	NULL,
--};
--
- static umode_t toshiba_sysfs_is_visible(struct kobject *kobj,
- 					struct attribute *attr, int idx)
- {
-@@ -1423,11 +1556,6 @@ static umode_t toshiba_sysfs_is_visible(struct kobject *kobj,
- 	return exists ? attr->mode : 0;
- }
- 
--static struct attribute_group toshiba_attr_group = {
--	.is_visible = toshiba_sysfs_is_visible,
--	.attrs = toshiba_attributes,
--};
--
- static bool toshiba_acpi_i8042_filter(unsigned char data, unsigned char str,
- 				      struct serio *port)
- {
-@@ -1759,12 +1887,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
- 			dev->eco_supported = 1;
- 	}
- 
--	ret = toshiba_kbd_illum_status_get(dev, &dummy);
--	if (!ret) {
--		dev->kbd_time = dummy >> HCI_MISC_SHIFT;
--		dev->kbd_mode = dummy & 0x07;
--	}
--	dev->kbd_illum_supported = !ret;
-+	dev->kbd_illum_supported = toshiba_kbd_illum_available(dev);
- 	/*
- 	 * Only register the LED if KBD illumination is supported
- 	 * and the keyboard backlight operation mode is set to FN-Z
--- 
-2.0.0
+>
+>  If there were a reasonable way to determine for sure that we are in secure
+> mode, then yes we could do what you're suggesting, and I'd be happy to code
+> that up.
+>
+>
+> I think the problem is that there isn't a great way to determine whether
+> we're in secure mode or not, and this is maybe by design?  I don't
+> particularly understand that design choice.  It would be nice to hear some
+> rationale from ARM folks.
+>
+>
+> I'm thinking we would have a different boot-method for secure vs. non-secure
+> and then we would know to configure cntvoff or not based on the boot method.
+> Isn't that a reasonable way of knowing what should be done? It seems like we
+> can at least modify the DT for this SoC.
 
+Putting something into the device-tree is in fact the point of this
+patch, so it is sort of doing what you're suggesting, although this
+patch is about being able use to physical counters and doesn't
+indicate anything about secure vs non-secure.  What else do you think
+could be used to differentiate between the two cases, besides putting
+it into the DT?
+
+>
+> I still wonder if there is such a bootloader/hypervisor/rom that's putting
+> this SoC into non-secure mode and not configuring cntvoff. Doug's comments
+> seem to suggest that the whole world would be different if this were true.
+> Maybe Heiko knows?
+
+As far as I'm aware, there's no bootloader/firmware that's ever
+putting the CPU into non-secure mode for our case.
+
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
