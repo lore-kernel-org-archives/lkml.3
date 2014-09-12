@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803AbaILUMw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:12:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752125AbaILUMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:12:51 -0400
-Date: Sat, 13 Sep 2014 05:12:41 +0900
-From: Tejun Heo <theo@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Cc: Gustavo Luiz Duarte <gduarte@redhat.com>,
-        Mike Anderson <mike.anderson@us.ibm.com>,
-        Tomas Henzl <thenzl@redhat.com>
-Subject: Re: [PATCH wq/for-3.18] workqueue: apply __WQ_ORDERED to
- create_singlethread_workqueue()
-Message-ID: <20140912201241.GB23756@mtj.dyndns.org>
-References: <20140912195328.GA23756@mtj.dyndns.org>
+	id S1752840AbaILUOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:14:49 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:57459 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbaILUOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:14:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912195328.GA23756@mtj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140909230333.GD3154@mtj.dyndns.org>
+References: <CAB=NE6Vn3hA_VKJyi4kgMi6iMtTtA104-_UfFm6vgX14RoDOTw@mail.gmail.com>
+ <20140909012933.GF11706@mtj.dyndns.org> <CAB=NE6V+of_RLQtjFpkLN49nKgfONx0T4cbu8kkNU69tUyNozw@mail.gmail.com>
+ <20140909014754.GG11706@mtj.dyndns.org> <CAB=NE6VAe_96dezJmdXkOjy8mSz8EABX6i8C46GzUJRC-HLAZQ@mail.gmail.com>
+ <20140909023943.GH11706@mtj.dyndns.org> <CAB=NE6XH64QLfwoE3r7uf3SYKNJMzP-tjUkrxDwVca7G2zOxBQ@mail.gmail.com>
+ <20140909030353.GI11706@mtj.dyndns.org> <CAB=NE6UGNC7VHnkuv8huaVHLX3Kuh2kOTK92SCw07ehJ3LdXFg@mail.gmail.com>
+ <20140909032529.GJ11706@mtj.dyndns.org> <20140909230333.GD3154@mtj.dyndns.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 12 Sep 2014 13:14:22 -0700
+X-Google-Sender-Auth: SsNdcreTWqB3XmdRdHb743ZmPWk
+Message-ID: <CAB=NE6XpYZEZ=uKj+T3BtofCHOToQDottzYXCENSTMyhx83Rvg@mail.gmail.com>
+Subject: Re: [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Tejun Heo <tj@kernel.org>, Tom Gundersen <teg@jklm.no>
+Cc: Lennart Poettering <lennart@poettering.net>, Kay Sievers <kay@vrfy.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wu Zhangjin <falcon@meizu.com>, Takashi Iwai <tiwai@suse.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 04:53:28AM +0900, Tejun Heo wrote:
-> From e141deffe6a30cfe7dd6ad97f21afa85b80ca3ac Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Sat, 13 Sep 2014 04:14:30 +0900
-> 
-> create_singlethread_workqueue() is a compat interface for singled
-> threaded workqueue which maps to ordered workqueue w/ rescuer in the
-> current implementation.  create_singlethread_workqueue() currently
-> implemented by invoking alloc_workqueue() w/ appropriate parameters.
-> 
-> 8719dceae2f9 ("workqueue: reject adjusting max_active or applying
-> attrs to ordered workqueues") introduced __WQ_ORDERED to protect
-> ordered workqueues against dynamic attribute changes which can break
-> ordering guarantees but forgot to apply it to
-> create_singlethread_workqueue().  While this can be potentially
-> dangerous, this isn't a problem in practice given the existing uses of
-> dynamic attribute changes.
-> 
-> Let's make create_singlethread_workqueue() wrap
-> alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
-> can implicitly track future ordered_workqueue changes.
+On Tue, Sep 9, 2014 at 4:03 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Sep 09, 2014 at 12:25:29PM +0900, Tejun Heo wrote:
+>> Hello,
+>>
+>> On Mon, Sep 08, 2014 at 08:19:12PM -0700, Luis R. Rodriguez wrote:
+>> > On the systemd side of things it should enable this sysctl and for
+>> > older kernels what should it do?
+>>
+>> Supposing the change is backported via -stable, it can try to set the
+>> sysctl on all kernels.  If the knob doesn't exist, the fix is not
+>> there and nothing can be done about it.
+>
+> The more I think about it, the more I think this should be a
+> per-insmod instance thing rather than a system-wide switch.
 
-Oops, this is the right change but w/ wrong description and branch.
-W/o __WQ_ORDERED, create_singlethread_workqueue() is broken on NUMA
-setups.  Will respin the patch.
+Agreed, a good use case that comes to mind would be systemd's
+modules-load.d lists used by systemd services to require modules, the
+hooks there however likely expect probe to complete as part of the
+service, since the timeout is not applicable to these the synchronous
+probe for them would be good while systemd would use async probe for
+regular modules.
 
-Thanks.
+> Currently
+> the kernel param code doesn't allow a generic param outside the ones
+> specified by the module itself but adding support for something like
+> driver.async_load=1 shouldn't be too difficult, applying that to
+> existing systems shouldn't be much more difficult than a system-wide
+> switch, and it'd be siginificantly cleaner than fiddling with driver
+> blacklist.
 
--- 
-tejun
+Agreed.
+
+  Luis
