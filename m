@@ -1,191 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880AbaILXfe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 19:35:34 -0400
-Received: from mout.gmx.net ([212.227.17.20]:56292 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaILXfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 19:35:32 -0400
-Message-ID: <5413832F.6040503@gmx.de>
-Date: Sat, 13 Sep 2014 01:35:11 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+	id S1752263AbaILXhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 19:37:48 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:57840 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaILXhq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 19:37:46 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mark Rustad <mark.d.rustad@intel.com>,
+        "Kirsher\, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hagen Paul Pfeifer <hagen@jauu.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/2] kernel.h: use __COUNTER__ in min and max macros to avoid -Wshadow warnings
+In-Reply-To: <20140912154013.47dad90e7519146c6da115e5@linux-foundation.org>
+Organization: http://mina86.com/
+References: <1410471576-12053-1-git-send-email-mina86@mina86.com> <1410471576-12053-2-git-send-email-mina86@mina86.com> <20140912154013.47dad90e7519146c6da115e5@linux-foundation.org>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:140912:jeffrey.t.kirsher@intel.com::c2wZrh4nxI2VCW71:00000000000000000000000000000000001Gp3
+X-Hashcash: 1:20:140912:mark.d.rustad@intel.com::9sr6xfe9TLhSWe7A:000000000000000000000000000000000000002Bm9
+X-Hashcash: 1:20:140912:linux-kernel@vger.kernel.org::4Cv5s6b6o/dH6CWz:0000000000000000000000000000000002SdT
+X-Hashcash: 1:20:140912:rostedt@goodmis.org::wDbyJTO2YIhGN/eL:0000000000000000000000000000000000000000002oZb
+X-Hashcash: 1:20:140912:hagen@jauu.net::QH7kt2BKO9bn2Alu:0004ouw
+X-Hashcash: 1:20:140912:akpm@linux-foundation.org::db2wX8ph4wMVNMcx:0000000000000000000000000000000000004GJu
+Date: Sat, 13 Sep 2014 01:37:40 +0200
+Message-ID: <xa1tppf0xvej.fsf@mina86.com>
 MIME-Version: 1.0
-To: Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonathan Cameron <jic23@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Fugang Duan <B38611@freescale.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v2 2/2] DT: iio: vadc: document dt binding
-References: <1410448403-19402-1-git-send-email-svarbanov@mm-sol.com> <1410448403-19402-3-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1410448403-19402-3-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:H/JRU23MsKCrVp2kxevfJp29PWN/+X7JwoBIWPyh2wFb80MnORC
- mBS7WvKzc2cDxT/5ZvFqy4dO95Kg+h3SpkKqDx9Edfz2MINjHqs+YJrT/J8k8ZJdb+1S6Ee
- /BUVljBNnYMOSyw1UnXMHf7EWkuMXut30VRY2TcI9OWWZ+81SzmCH/QG5xcvwlYBCvwbHTI
- ZiwLZirb1k3h+6XkwjprQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanimir Varbanov schrieb, Am 11.09.2014 17:13:
-> Document DT binding for Qualcomm SPMI PMIC voltage ADC
-> driver.
-> 
-Still one typo left.
-> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> ---
->  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt |  123 ++++++++++++++++++++
->  1 files changed, 123 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-> new file mode 100644
-> index 0000000..5abb491
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
-> @@ -0,0 +1,123 @@
-> +Qualcomm's SPMI PMIC voltage ADC
-> +
-> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
-> +voltage. A 15 bit ADC is used for voltage measurements. There are multiple
-> +peripherals to the VADC and the scope of the driver is to provide interface
-> +for the USR peripheral of the VADC.
-> +
-> +VADC node:
-> +
-> +- compatible:
-> +    Usage: required
-> +    Value type: <string>
-> +    Definition: Should contain "qcom,spmi-vadc".
-> +
-> +- reg:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Base address in the SPMI PMIC register map.
-> +
-> +- address-cells:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Must be one.
-> +
-> +- size-cells:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: Must be zero.
-> +
-> +- interrupts:
-> +    Usage: required
-> +    Value type: <prop-encoded-array>
-> +    Definition: End of convertion interrupt number.
-Typo: conversion
-> +
-> +- qcom,poll-eoc:
-> +    Usage: optional
-> +    Value type: <empty>
-> +    Definition: Use polling instead of interrupt for end of conversion
-> +            completion.
-> +
-> +Channel node properties:
-> +
-> +- reg:
-> +    Usage: required
-> +    Value type: <u32>
-> +    Definition: AMUX channel number.
-> +            See include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
-> +
-> +- qcom,decimation:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: Sampling rate to use for the individual channel measurement.
-> +            Quicker measurements can be made by reducing decimation ratio.
-> +            Valid values are 512, 1024, 2048, 4096.
-> +            If property is not found, default value of 512 will be used.
-> +
-> +- qcom,pre-scaling:
-> +    Usage: optional
-> +    Value type: <u32 array>
-> +    Definition: Used for scaling the channel input signal before the signal is
-> +            fed to VADC. The configuration for this node is to know the
-> +            pre-determined ratio and use it for post scaling. Select one from
-> +            the following options.
-> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
-> +            If property is not found default value depending of chip will be used.
-> +
-> +- qcom,ratiometric:
-> +    Usage: optional
-> +    Value type: <empty>
-> +    Definition: Channel calibration type. If this property is specified
-> +            VADC will use the VDD reference(1.8V) and GND for channel
-> +            calibration. If property is not found, channel will be
-> +            calibrated with 625mV and 1.25V reference channels.
-> +
-> +- qcom,hw-settle-time:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: Time between AMUX getting configured and the ADC starting
-> +            conversion. Delay = 100us * (value) for value < 11, and
-> +            2ms * (value - 10) otherwise.
-> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
-> +            900 us and 1, 2, 4, 6, 8, 10 ms
-> +            If property is not found, channel will use 0us.
-> +
-> +- qcom,avg-samples:
-> +    Usage: optional
-> +    Value type: <u32>
-> +    Definition: Number of samples to be used for measurement.
-> +            Fast averaging provides the option to obtain a single measurement
-> +            from the ADC that is an average of multiple samples. The value
-> +            selected is 2^(value).
-> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
-> +            If property is not found, 1 sample will be used.
-> +
-> +NOTE: At least one channel node is required.
-> +
-> +Example:
-> +	/* VADC node */
-> +	pmic_vadc: vadc@3100 {
-> +		compatible = "qcom,spmi-vadc";
-> +		reg = <0x3100 0x100>;
-> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		#io-channel-cells = <1>;
-> +		io-channel-ranges;
-> +
-> +		/* Channel node */
-> +		usb_id_nopull {
-> +			reg = <VADC_LR_MUX10_USB_ID>;
-> +			qcom,decimation = <512>;
-> +			qcom,ratiometric;
-> +			qcom,hw-settle-time = <200>;
-> +			qcom,avg-samples = <1>;
-> +			qcom,pre-scaling = <1 3>;
-> +		};
-> +	};
-> +
-> +	/* IIO client node */
-> +	usb {
-> +		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
-> +		io-channel-names = "vadc";
-> +	};
-> 
+On Fri, Sep 12 2014, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 11 Sep 2014 23:39:36 +0200 Michal Nazarewicz <mina86@mina86.com> wrote:
+>
+>> Because min and max macros use the same variable names no matter
+>> how many times they are called (or how deep the nesting of their
+>> calls), each time min or max calls are nested, the same variables
+>> are declared.  This is especially noisy after min3 and max3 have
+>> been changed to nest min/max calls.
+>> 
+>> Using __COUNTER__ solves the problem since each variable will get
+>> a unique number aadded to it.  The code will still work even if
+>> the compiler does not support __COUNTER__, but then the protection
+>> from shadow warning won't work.
+>> 
+>> The same applies to min_t and max_t macros.
+>> 
+>> ...
+>>
+>> --- a/include/linux/kernel.h
+>> +++ b/include/linux/kernel.h
+>> @@ -695,15 +695,27 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+>>  #endif /* CONFIG_TRACING */
+>>  
+>>  /*
+>> + * Preprocessor magic generating unique identifiers to avoid -Wshadow warnings
+>> + * used by min, max, min_t and max_t macros.  cnt is __COUNTER__, op is the
+>> + * comparison operator; tx (ty) is type of the first (second) argument,
+>> + * xx (yy) is name of a temporary variable to hold the first (second) argument,
+>> + * and x (y) is the first (second) argument.
+>> + */
+>> +#define _min_max_var(cnt, base) _mm_ ## cnt ## base
+>> +#define _min_max__(op, tx, xx, x, ty, yy, y) ({		\
+>> +	tx xx = (x);					\
+>> +	ty yy = (y);					\
+>> +	(void) (&xx == &yy);				\
+>> +	xx op yy ? xx : yy; })
+>> +#define _min_max_(cnt, op, tx, x, ty, y)		\
+>> +	_min_max__(op, tx, _min_max_var(cnt, a), x, ty, _min_max_var(cnt, b), y)
+>> +#define _min_max(...) _min_max_(__COUNTER__, __VA_ARGS__)
+>
+> The fact that __COUNTER__ is used in compiler-gcc4.h but not in
+> compiler-gcc3.h makes me suspicious about its availability?
 
+http://gcc.gnu.org/ml/gcc-patches/2007-05/msg01579.html so looks like it
+has 7 years.  But as the commit message says, the code will still work,
+even w/o working __COUNTER__.
+
+> I do think that [1/2] made the code significantly worse-looking
+
+Oh?  I actually thought [1/2] makes it nicer by having a single place
+where the min/max logic is implemented.
+
+> and this one is getting crazy.  How useful is W=2 anyway?
+
+I actually do agree with that.  I didn't have high hopes about getting
+this patch accepted, but wanted to send it out to show that it can be
+done, if it's really deemed useful.
+
+> Has anyone found a bug using it?  The number of warnings in default
+> builds is already way too high :(
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
