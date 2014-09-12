@@ -1,63 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976AbaILVvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 17:51:45 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:34229 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894AbaILVvn (ORCPT
+	id S1753109AbaILVyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 17:54:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51682 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337AbaILVyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 17:51:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6dF468YjBdYL3A2=cgsB3bAaqNdOL-Fs-EVnz=cJ0MUA@mail.gmail.com>
-References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <20140912180300.1630.62966.stgit@bhelgaas-glaptop2.roam.corp.google.com>
- <CAE9FiQX3_BiOy5ZaQwDA+XN7Bn-XOtrdGrqAVWuAsuguHa+YYg@mail.gmail.com> <CAErSpo6dF468YjBdYL3A2=cgsB3bAaqNdOL-Fs-EVnz=cJ0MUA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 12 Sep 2014 15:51:21 -0600
-Message-ID: <CAErSpo40npxipMjmQ9x8G0oGqjLxqkWLnAZfih-H-QTHcCvkPA@mail.gmail.com>
-Subject: Re: [PATCH v1 02/13] PCI: Move pci_configure_slot() to drivers/pci/probe.c
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatxjain@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 17:54:44 -0400
+Date: Fri, 12 Sep 2014 17:54:40 -0400 (EDT)
+Message-Id: <20140912.175440.1013837932148725302.davem@davemloft.net>
+To: rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, mst@redhat.com
+Subject: Re: [PATCH 1/3] virtio_net: pass well-formed sgs to
+ virtqueue_add_*()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1410396458-1165-2-git-send-email-rusty@rustcorp.com.au>
+References: <1410396458-1165-1-git-send-email-rusty@rustcorp.com.au>
+	<1410396458-1165-2-git-send-email-rusty@rustcorp.com.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Sep 2014 14:54:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 3:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Sep 12, 2014 at 3:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Fri, Sep 12, 2014 at 11:03 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> Move pci_configure_slot() and related functions from
->>> drivers/pci/hotplug/pcihp_slot to drivers/pci/probe.c.
->>>
->>> This is to prepare for doing device configuration during the normal
->>> enumeration process instead of just after hot-add.
->>>
->>> ...
->
->> Would be better if those acpi related code could be moved to
->> drivers/pci/pci-acpi.c. and should put pci_configure_device() from
->> next patch to pci-acpi.c.
->
-> Good point.  I just moved a bunch of the stuff from
-> drivers/pci/hotplug/acpi_pcihp.c to pci-acpi.h, because acpi_pcihp.c
-> is not compiled unless CONFIG_PCI_HOTPLUG is set.  And this stuff
-> probably should go there, too.
 
-On second thought, none of the stuff from pcihp_slot.c
-(pci_configure_slot(), program_hpp_type0(), program_hpp_type1(),
-program_hpp2()) actually mentions ACPI or uses any ACPI interfaces,
-and it is all compiled into pcihp_slot.o today even without
-CONFIG_ACPI.  So my patch really doesn't change any of that, except to
-make it available when CONFIG_PCI_HOTPLUG is not set.  I'll have to
-think about this some more.  It certainly is all implicitly driven by
-the ACPI spec and the "hpp", "type0", "type1", etc. names are from
-ACPI, so maybe it could be abstracted better somehow.
-
->> Other that,  for the whole patchset,
->>
->> Acked-by: Yinghai Lu <yinghai@kernel.org>
+Do you guys want me to take this series directly into net-next?
