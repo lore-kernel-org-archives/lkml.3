@@ -1,139 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaILU6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:58:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35556 "EHLO arroyo.ext.ti.com"
+	id S1753078AbaILU6T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:58:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38853 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaILU5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:57:16 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>
-CC: Josh Cartwright <joshc@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Suman Anna <s-anna@ti.com>
-Subject: [RFC PATCHv2 3/3] hwspinlock/core: add support for reserved locks
-Date: Fri, 12 Sep 2014 15:56:48 -0500
-Message-ID: <1410555408-56954-4-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410555408-56954-1-git-send-email-s-anna@ti.com>
-References: <1410555408-56954-1-git-send-email-s-anna@ti.com>
+	id S1753054AbaILU6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:58:17 -0400
+Date: Fri, 12 Sep 2014 22:58:12 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andrew Duggan <aduggan@synaptics.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH v2] HID: rmi: check sanity of the incoming report
+In-Reply-To: <1410397358-15308-1-git-send-email-aduggan@synaptics.com>
+Message-ID: <alpine.LNX.2.00.1409122257500.5523@pobox.suse.cz>
+References: <1410397358-15308-1-git-send-email-aduggan@synaptics.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HwSpinlock core allows requesting either a specific lock or an
-available normal lock. The specific locks are usually reserved during
-board init time, while the normal available locks are intended to be
-assigned at runtime for clients that do not care about a specific
-lock.
+On Wed, 10 Sep 2014, Andrew Duggan wrote:
 
-The HwSpinlock core has been enhanced to:
-  1. mark certain locks as 'reserved' by parsing the DT blob for any
-     locks used by client nodes.
-  2. restrict the anonymous hwspin_lock_request() API to allocate only
-     from non-reserved locks for DT boots.
-  3. limit these reserved locks to be allocated only using the
-     hwspin_lock_request_specific() API for DT boots.
+> From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> 
+> In the Dell XPS 13 9333, it appears that sometimes the bus get confused
+> and corrupts the incoming data. It fills the input report with the
+> sentinel value "ff". Synaptics told us that such behavior does not comes
+> from the touchpad itself, so we filter out such reports here.
+> 
+> Unfortunately, we can not simply discard the incoming data because they
+> may contain useful information. Most of the time, the misbehavior is
+> quite near the end of the report, so we can still use the valid part of
+> it.
+> 
+> Fixes:
+> https://bugzilla.redhat.com/show_bug.cgi?id=1123584
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
 
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
- drivers/hwspinlock/hwspinlock_core.c | 61 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 59 insertions(+), 2 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
-index f0d8475..d49a077 100644
---- a/drivers/hwspinlock/hwspinlock_core.c
-+++ b/drivers/hwspinlock/hwspinlock_core.c
-@@ -474,6 +474,53 @@ static int hwspinlock_device_add(struct hwspinlock_device *bank)
- }
- 
- /**
-+ * hwspin_mark_reserved_locks() - mark reserved locks
-+ *
-+ * This is an internal function that mark all the reserved locks within
-+ * a hwspinlock device during the registration phase, and is applicable
-+ * only for device-tree boots. The locks are marked by browsing through
-+ * all the user nodes with the property "hwlocks", so that a separate
-+ * property is not needed in the hwspinlock device itself. Note that it
-+ * also marks locks used on disabled user nodes.
-+ */
-+static void hwspin_mark_reserved_locks(struct hwspinlock_device *bank)
-+{
-+	struct device_node *np = bank->dev->of_node;
-+	const char *prop_name = "hwlocks";
-+	const char *cells_name = "#hwlock-cells";
-+	struct device_node *node = NULL;
-+	struct of_phandle_args args;
-+	struct hwspinlock *hwlock;
-+	int i, id, count, ret;
-+
-+	for_each_node_with_property(node, prop_name) {
-+		count = of_count_phandle_with_args(node, prop_name, cells_name);
-+		if (count <= 0)
-+			continue;
-+
-+		for (i = 0; i < count; i++, of_node_put(args.np)) {
-+			args.np = NULL;
-+			ret = of_parse_phandle_with_args(node, prop_name,
-+							 cells_name, i, &args);
-+			if (ret || np != args.np)
-+				continue;
-+
-+			id = of_hwspin_lock_simple_xlate(bank, &args);
-+			if (id < 0 || id >= bank->num_locks)
-+				continue;
-+
-+			hwlock = &bank->lock[id];
-+			if (hwlock->type == HWSPINLOCK_RESERVED) {
-+				dev_err(bank->dev, "potential reuse of hwspinlock %d between multiple clients on %s\n",
-+					id, np->full_name);
-+				continue;
-+			}
-+			hwlock->type = HWSPINLOCK_RESERVED;
-+		}
-+	}
-+}
-+
-+/**
-  * hwspin_lock_register() - register a new hw spinlock device
-  * @bank: the hwspinlock device, which usually provides numerous hw locks
-  * @dev: the backing device
-@@ -511,12 +558,16 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- 	if (ret)
- 		return ret;
- 
-+	if (dev->of_node)
-+		hwspin_mark_reserved_locks(bank);
-+
- 	for (i = 0; i < num_locks; i++) {
- 		hwlock = &bank->lock[i];
- 
- 		spin_lock_init(&hwlock->lock);
- 		hwlock->bank = bank;
--		hwlock->type = HWSPINLOCK_UNUSED;
-+		if (hwlock->type != HWSPINLOCK_RESERVED)
-+			hwlock->type = HWSPINLOCK_UNUSED;
- 
- 		ret = hwspin_lock_register_single(hwlock, base_id + i);
- 		if (ret)
-@@ -699,7 +750,13 @@ struct hwspinlock *hwspin_lock_request_specific(unsigned int id)
- 	/* sanity check (this shouldn't happen) */
- 	WARN_ON(hwlock_to_id(hwlock) != id);
- 
--	/* make sure this hwspinlock is unused */
-+	if (hwlock->bank->dev->of_node && hwlock->type != HWSPINLOCK_RESERVED) {
-+		pr_warn("hwspinlock %u is not a reserved lock\n", id);
-+		hwlock = NULL;
-+		goto out;
-+	}
-+
-+	/* make sure this hwspinlock is an unused reserved lock */
- 	ret = radix_tree_tag_get(&hwspinlock_tree, id, hwlock->type);
- 	if (ret == 0) {
- 		pr_warn("hwspinlock %u is already in use\n", id);
 -- 
-2.0.4
-
+Jiri Kosina
+SUSE Labs
