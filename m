@@ -1,114 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaILJDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:03:17 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:49978 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaILJDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:03:12 -0400
-Date: Fri, 12 Sep 2014 13:02:58 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>, <linux-mm@kvack.org>,
-        <cgroups@vger.kernel.org>
-Subject: Re: [PATCH RFC 2/2] memcg: add threshold for anon rss
-Message-ID: <20140912090258.GI4151@esperanza>
-References: <cover.1410447097.git.vdavydov@parallels.com>
- <b7e7abb6cadc1301a775177ef3d4f4944192c579.1410447097.git.vdavydov@parallels.com>
- <54124AFC.6020700@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <54124AFC.6020700@jp.fujitsu.com>
+	id S1753593AbaILJFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:05:01 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:52225 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668AbaILJE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:04:58 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] staging: comedi: adl_pci9118: use dma_alloc_coherent()
+Date: Fri, 12 Sep 2014 10:04:44 +0100
+Message-Id: <1410512684-17403-4-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
+References: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:23:08AM +0900, Kamezawa Hiroyuki wrote:
-> (2014/09/12 0:41), Vladimir Davydov wrote:
-> > Though hard memory limits suit perfectly for sand-boxing, they are not
-> > that efficient when it comes to partitioning a server's resources among
-> > multiple containers. The point is a container consuming a particular
-> > amount of memory most of time may have infrequent spikes in the load.
-> > Setting the hard limit to the maximal possible usage (spike) will lower
-> > server utilization while setting it to the "normal" usage will result in
-> > heavy lags during the spikes.
-> > 
-> > To handle such scenarios soft limits were introduced. The idea is to
-> > allow a container to breach the limit freely when there's enough free
-> > memory, but shrink it back to the limit aggressively on global memory
-> > pressure. However, the concept of soft limits is intrinsically unsafe
-> > by itself: if a container eats too much anonymous memory, it will be
-> > very slow or even impossible (if there's no swap) to reclaim its
-> > resources back to the limit. As a result the whole system will be
-> > feeling bad until it finally realizes the culprit must die.
-> > 
-> > Currently we have no way to react to anonymous memory + swap usage
-> > growth inside a container: the memsw counter accounts both anonymous
-> > memory and file caches and swap, so we have neither a limit for
-> > anon+swap nor a threshold notification. Actually, memsw is totally
-> > useless if one wants to make full use of soft limits: it should be set
-> > to a very large value or infinity then, otherwise it just makes no
-> > sense.
-> > 
-> > That's one of the reasons why I think we should replace memsw with a
-> > kind of anonsw so that it'd account only anon+swap. This way we'd still
-> > be able to sand-box apps, but it'd also allow us to avoid nasty
-> > surprises like the one I described above. For more arguments for and
-> > against this idea, please see the following thread:
-> > 
-> > http://www.spinics.net/lists/linux-mm/msg78180.html
-> > 
-> > There's an alternative to this approach backed by Kamezawa. He thinks
-> > that OOM on anon+swap limit hit is a no-go and proposes to use memory
-> > thresholds for it. I still strongly disagree with the proposal, because
-> > it's unsafe (what if the userspace handler won't react in time?).
-> > Nevertheless, I implement his idea in this RFC. I hope this will fuel
-> > the debate, because sadly enough nobody seems to care about this
-> > problem.
-> > 
-> > So this patch adds the "memory.rss" file that shows the amount of
-> > anonymous memory consumed by a cgroup and the event to handle threshold
-> > notifications coming from it. The notification works exactly in the same
-> > fashion as the existing memory/memsw usage notifications.
-> > 
-> >
-> 
-> So, now, you know you can handle "threshould".
-> 
-> If you want to implement "automatic-oom-killall-in-a-contanier-threshold-in-kernel",
-> I don't have any objections.
-> 
-> What you want is not limit, you want a trigger for killing process.
-> Threshold + Kill is enough, using res_counter for that is overspec.
+Use `dma_alloc_coherent()` to allocate the DMA buffers instead of
+using `__get_free_pages()` to allocate and `virt_to_bus()` to get the
+hardware address.  The coherent buffers are fairly small - at most 4
+pages (although there are two of them).  Use of `virt_to_bus()` is
+discouraged.
 
-I'm still unsure if it's always enough. Handing this job out to the
-userspace may work in 90% percent of situations, but fail under some
-circumstances (a bunch of containers go mad so that the userspace daemon
-doesn't react in time). Can the admin take a risk like that?
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+---
+ drivers/staging/comedi/Kconfig               |  2 +-
+ drivers/staging/comedi/drivers/adl_pci9118.c | 20 ++++++++++----------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
-> You don't need res_counter and don't need to break other guy's use case.
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index fd5f939..9eaffd4 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -740,7 +740,7 @@ config COMEDI_ADL_PCI9111
+ config COMEDI_ADL_PCI9118
+ 	tristate "ADLink PCI-9118DG, PCI-9118HG, PCI-9118HR support"
+ 	select COMEDI_FC
+-	depends on VIRT_TO_BUS
++	depends on HAS_DMA
+ 	---help---
+ 	  Enable support for ADlink PCI-9118DG, PCI-9118HG, PCI-9118HR cards
+ 
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 6ab9e0a..e18fd95 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -204,11 +204,10 @@ static const struct pci9118_boardinfo pci9118_boards[] = {
+ };
+ 
+ struct pci9118_dmabuf {
+-	unsigned long virt;	/* virtual address of buffer */
+-	unsigned long hw;	/* hardware (bus) address of buffer */
++	unsigned short *virt;	/* virtual address of buffer */
++	dma_addr_t hw;		/* hardware (bus) address of buffer */
+ 	unsigned int size;	/* size of dma buffer in bytes */
+ 	unsigned int use_size;	/* which size we may now use for transfer */
+-	int order;		/* log2 number of pages in buffer */
+ };
+ 
+ struct pci9118_private {
+@@ -475,12 +474,11 @@ static unsigned int defragment_dma_buffer(struct comedi_device *dev,
+ 
+ static int move_block_from_dma(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s,
+-			       unsigned long virt_addr,
++			       unsigned short *dma_buffer,
+ 			       unsigned int num_samples)
+ {
+ 	struct pci9118_private *devpriv = dev->private;
+ 	struct comedi_cmd *cmd = &s->async->cmd;
+-	unsigned short *dma_buffer = (unsigned short *)virt_addr;
+ 	unsigned int num_bytes;
+ 
+ 	num_samples = defragment_dma_buffer(dev, s, dma_buffer, num_samples);
+@@ -1485,15 +1483,15 @@ static void pci9118_alloc_dma(struct comedi_device *dev)
+ 	for (i = 0; i < 2; i++) {
+ 		dmabuf = &devpriv->dmabuf[i];
+ 		for (order = 2; order >= 0; order--) {
+-			dmabuf->virt = __get_free_pages(GFP_KERNEL, order);
++			dmabuf->virt =
++			    dma_alloc_coherent(dev->hw_dev, PAGE_SIZE << order,
++					       &dmabuf->hw, GFP_KERNEL);
+ 			if (dmabuf->virt)
+ 				break;
+ 		}
+ 		if (!dmabuf->virt)
+ 			break;
+-		dmabuf->order = order;
+ 		dmabuf->size = PAGE_SIZE << order;
+-		dmabuf->hw = virt_to_bus((void *)dmabuf->virt);
+ 
+ 		if (i == 0)
+ 			devpriv->master = 1;
+@@ -1513,8 +1511,10 @@ static void pci9118_free_dma(struct comedi_device *dev)
+ 
+ 	for (i = 0; i < 2; i++) {
+ 		dmabuf = &devpriv->dmabuf[i];
+-		if (dmabuf->virt)
+-			free_pages(dmabuf->virt, dmabuf->order);
++		if (dmabuf->virt) {
++			dma_free_coherent(dev->hw_dev, dmabuf->size,
++					  dmabuf->virt, dmabuf->hw);
++		}
+ 	}
+ }
+ 
+-- 
+2.1.0
 
-This is the time when we have a great chance to rework the user
-interface. That's why I started this thread.
-
->From what I read from the comment to the memsw patch and slides,
-anon+swap wasn't even considered as an alternative to anon+cache+swap.
-The only question raised was "Why not a separate swap limit, why
-mem+swap?". It was clearly answered "no need to recharge on swap
-in/out", but anon+swap isn't a bit worse in this respect - caches can't
-migrate from swap to mem anyway. I guess nobody considered the anon+swap
-alternative, simply because there was no notion of soft limits at that
-time, so mem+swap had no problems. But today the things have changed, so
-let's face it now. Why not anon+swap?
-
-Thanks,
-Vladimir
