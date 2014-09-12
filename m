@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaILPXF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:23:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51674 "EHLO mx1.redhat.com"
+	id S1751922AbaILPYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:24:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62430 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaILPXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:23:03 -0400
-Date: Fri, 12 Sep 2014 17:22:23 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Avi Kivity <avi@cloudius-systems.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Jan Stancek <jstancek@redhat.com>
-Subject: Re: [BUG] perf tools: Demangle kernel and kernel module symbols too
-Message-ID: <20140912152223.GB3894@krava.brq.redhat.com>
-References: <20140906184631.GA6059@krava.brq.redhat.com>
+	id S1751186AbaILPYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 11:24:48 -0400
+Date: Fri, 12 Sep 2014 23:22:44 +0800
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kexec@lists.infradead.org, ebiederm@xmission.com, hpa@zytor.com,
+        tglx@linutronix.de, mingo@redhat.com, vgoyal@redhat.com,
+        keescook@chromium.org, ak@linux.intel.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp
+Subject: [Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20140912152244.GA2781@dhcp-16-105.nay.redhat.com>
+References: <1410502832-3573-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140906184631.GA6059@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1410502832-3573-1-git-send-email-bhe@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+Function handle_relocations() is used to do the relocations handling
+for i686 and kaslr of x86_64. For 32 bit the relocation handling is
+mandotary to perform. For x86_64 only when kaslr is enabled and a
+random kernel location is chosen successfully the relocation handling
+shound be done. However previous implementation only compared the
+kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
+compiled to run at. This would casue system to be exceptional in
+few conditions like when delta between load address and compiled
+address is bigger than what 32bit signed relocations can handle.
+Also there will be limitations that delta can't be too big otherwise
+kernel text virtual addresses will overflow in module address space.
 
-On Sat, Sep 06, 2014 at 08:46:31PM +0200, Jiri Olsa wrote:
-> hi,
-> Jan Stancek found test 1 breakage, probably caused by following patch:
->   950b8354716e perf tools: Demangle kernel and kernel module symbols too
-> 
-> it seems to break test 1:
-> ---
-> [jolsa@krava perf]$ ./perf test -v 1
->  1: vmlinux symtab matches kallsyms                        :
-> --- start ---
-> test child forked, pid 6288
-> Looking at the vmlinux_path (6 entries long)
-> 
-> SNIP
-> 
-> 0xffffffff8142dba0: diff name v: event_queue virtual table k: __vt_event_queue
-> 0xffffffff8142dc00: diff name v: event_dequeue virtual table k: __vt_event_dequeue
-> 0xffffffff8142dd90: diff name v: event_wait::isra::::part:: virtual table k: __vt_event_wait.isra.0.part.1
-> ---
-> 
-> Avi,
-> could you please update the tests/vmlinux-kallsyms.c to reflect
-> the demangle change?
-> 
-> thanks,
-> jirka
+So in this patch check if kernel location is changed after
+choose_kernel_location() when x86_64. If and only if in x86_64
+and kernel location is changed, we say a kaslr random kernel
+location is chosen, then the relocation handling is needed.
+
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 57ab74d..3bb2a17 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -230,8 +230,9 @@ static void error(char *x)
+ 		asm("hlt");
+ }
+ 
+-#if CONFIG_X86_NEED_RELOCS
+-static void handle_relocations(void *output, unsigned long output_len)
++#ifdef CONFIG_X86_NEED_RELOCS
++static void handle_relocations(void *output_orig, void *output,
++			       unsigned long output_len)
+ {
+ 	int *reloc;
+ 	unsigned long delta, map, ptr;
+@@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
+ 	unsigned long max_addr = min_addr + output_len;
+ 
+ 	/*
++	* 32bit always requires relocations to be performed. For x86_64,
++	* relocations need to be performed only if kaslr has chosen a
++	* different load address then kernel was originally loaded at.
++	*
++	* If we are here, either kaslr is not configured in or kaslr is disabled
++	* or kaslr has chosen not to change the load location of kernel. Don't
++	* perform any relocations.
++	*/
++#if CONFIG_X86_64
++	if (output_orig == output)
++		return;
++#endif
++
++	/*
+ 	 * Calculate the delta between where vmlinux was linked to load
+ 	 * and where it was actually loaded.
+ 	 */
+@@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
+ #endif
+ }
+ #else
+-static inline void handle_relocations(void *output, unsigned long output_len)
++static inline void handle_relocations(void *output_orig, void *output,
++				      unsigned long output_len)
+ { }
+ #endif
+ 
+@@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 				  unsigned char *output,
+ 				  unsigned long output_len)
+ {
++	unsigned char *output_orig = output;
++
+ 	real_mode = rmode;
+ 
+ 	sanitize_boot_params(real_mode);
+@@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+ 	debug_putstr("\nDecompressing Linux... ");
+ 	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+ 	parse_elf(output);
+-	handle_relocations(output, output_len);
++	handle_relocations(output_orig, output, output_len);
+ 	debug_putstr("done.\nBooting the kernel.\n");
+ 	return output;
+ }
+-- 
+1.8.5.3
+
+
