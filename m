@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535AbaILPoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:44:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55605 "EHLO
+	id S1752695AbaILPpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:45:01 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55598 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752198AbaILPna (ORCPT
+	with ESMTP id S1752106AbaILPn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:43:30 -0400
+	Fri, 12 Sep 2014 11:43:29 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Josh Wu <josh.wu@atmel.com>
-Subject: [PATCHv2 6/8] ARM: at91: dt: add device tree file for SAMA5D4ek board
-Date: Fri, 12 Sep 2014 17:43:05 +0200
-Message-Id: <1410536587-24607-7-git-send-email-alexandre.belloni@free-electrons.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 4/8] ARM: at91: SAMA5D4 SoC detection code and low level routines
+Date: Fri, 12 Sep 2014 17:43:03 +0200
+Message-Id: <1410536587-24607-5-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -26,344 +25,440 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Add reference SAMA5D4-EK platform DT file.
+SoC identification code, kernel uncompress and low level
+debugging routines update.
+On SAMA5D4, DBGU is at another address AT91_BASE_DBGU2 so another
+round of detection is needed. We also had to differentiate with
+SAMA5D3 SoC family and rename some variables.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/Makefile           |   2 +
- arch/arm/boot/dts/at91-sama5d4ek.dts | 308 +++++++++++++++++++++++++++++++++++
- 2 files changed, 310 insertions(+)
- create mode 100644 arch/arm/boot/dts/at91-sama5d4ek.dts
+ arch/arm/mach-at91/board-dt-sama5.c           | 17 ++++-
+ arch/arm/mach-at91/generic.h                  |  1 +
+ arch/arm/mach-at91/include/mach/cpu.h         | 13 +++-
+ arch/arm/mach-at91/include/mach/debug-macro.S |  5 +-
+ arch/arm/mach-at91/include/mach/hardware.h    | 19 +++++-
+ arch/arm/mach-at91/include/mach/uncompress.h  | 21 ++++--
+ arch/arm/mach-at91/sama5d4.c                  | 28 ++++++++
+ arch/arm/mach-at91/setup.c                    | 97 +++++++++++++++++++++++++--
+ 8 files changed, 189 insertions(+), 12 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 75c7b7425c79..a7df6aeb5a1a 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -48,6 +48,8 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d33ek.dtb
- dtb-$(CONFIG_ARCH_AT91)	+= sama5d34ek.dtb
- dtb-$(CONFIG_ARCH_AT91)	+= sama5d35ek.dtb
- dtb-$(CONFIG_ARCH_AT91)	+= sama5d36ek.dtb
-+# sama5d4
-+dtb-$(CONFIG_ARCH_AT91)	+= at91-sama5d4ek.dtb
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
+index 8c5814fa5325..548de4ad6937 100644
+--- a/arch/arm/mach-at91/board-dt-sama5.c
++++ b/arch/arm/mach-at91/board-dt-sama5.c
+@@ -40,7 +40,7 @@ static void __init sama5_dt_device_init(void)
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+ }
  
- dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
- dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
-diff --git a/arch/arm/boot/dts/at91-sama5d4ek.dts b/arch/arm/boot/dts/at91-sama5d4ek.dts
-new file mode 100644
-index 000000000000..aa01c2610c6d
---- /dev/null
-+++ b/arch/arm/boot/dts/at91-sama5d4ek.dts
-@@ -0,0 +1,308 @@
-+/*
-+ * sama5d4ek.dts - Device Tree file for SAMA5D4 Evaluation Kit
-+ *
-+ *  Copyright (C) 2014 Atmel,
-+ *                2014 Nicolas Ferre <nicolas.ferre@atmel.com>
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+/dts-v1/;
-+#include "sama5d4.dtsi"
+-static const char *sama5_dt_board_compat[] __initdata = {
++static const char *sama5_dt_board_compat[] __initconst = {
+ 	"atmel,sama5",
+ 	NULL
+ };
+@@ -53,3 +53,18 @@ DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+ 	.init_machine	= sama5_dt_device_init,
+ 	.dt_compat	= sama5_dt_board_compat,
+ MACHINE_END
 +
-+/ {
-+	model = "Atmel SAMA5D4-EK";
-+	compatible = "atmel,sama5d4ek", "atmel,sama5d4", "atmel,sama5";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 ignore_loglevel earlyprintk";
-+	};
-+
-+	memory {
-+		reg = <0x20000000 0x20000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		main_clock: clock@0 {
-+			compatible = "atmel,osc", "fixed-clock";
-+			clock-frequency = <12000000>;
-+		};
-+
-+		slow_xtal {
-+			clock-frequency = <32768>;
-+		};
-+
-+		main_xtal {
-+			clock-frequency = <12000000>;
-+		};
-+	};
-+
-+	ahb {
-+		apb {
-+			lcd_bus@f0000000 {
-+				status = "okay";
-+
-+				lcd@f0000000 {
-+					status = "okay";
-+				};
-+
-+				lcdovl1@f0000140 {
-+					status = "okay";
-+				};
-+
-+				lcdovl2@f0000240 {
-+					status = "okay";
-+				};
-+
-+				lcdheo1@f0000340 {
-+					status = "okay";
-+				};
-+			};
-+
-+			adc0: adc@fc034000 {
-+				/* The vref depends on JP22 of EK. If connect 1-2 then use 3.3V. connect 2-3 use 3.0V */
-+				atmel,adc-vref = <3300>;
-+				/*atmel,adc-ts-wires = <4>;*/	/* Set up ADC touch screen */
-+				status = "okay";		/* Enable ADC IIO support */
-+			};
-+
-+			mmc0: mmc@f8000000 {
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
-+				slot@1 {
-+					reg = <1>;
-+					bus-width = <4>;
-+					cd-gpios = <&pioE 5 0>;
-+				};
-+			};
-+
-+			spi0: spi@f8010000 {
-+				cs-gpios = <&pioC 3 0>, <0>, <0>, <0>;
-+				status = "okay";
-+				m25p80@0 {
-+					compatible = "atmel,at25df321a";
-+					spi-max-frequency = <50000000>;
-+					reg = <0>;
-+				};
-+			};
-+
-+			i2c0: i2c@f8014000 {
-+				status = "okay";
-+				pmic: act8865@5b {
-+					compatible = "active-semi,act8865";
-+					reg = <0x5b>;
-+					status = "okay";
-+
-+					regulators {
-+						vcc_1v8_reg: DCDC_REG1 {
-+							regulator-name = "VCC_1V8";
-+							regulator-min-microvolt = <1800000>;
-+							regulator-max-microvolt = <1800000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_1v2_reg: DCDC_REG2 {
-+							regulator-name = "1V2_HDMI";
-+							regulator-min-microvolt = <1200000>;
-+							regulator-max-microvolt = <1200000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_3v3_reg: DCDC_REG3 {
-+							regulator-name = "VCC_3V3";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+
-+						vdd_2v5_reg: LDO_REG1 {
-+							regulator-name = "FUSE_2V5";
-+							regulator-min-microvolt = <2500000>;
-+							regulator-max-microvolt = <2500000>;
-+						};
-+
-+						vdd_3v3_reg: LDO_REG2 {
-+							regulator-name = "VDDANA";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+
-+						vdd_1v8_reg: LDO_REG3 {
-+							regulator-name = "1V8_AUDIO";
-+							regulator-min-microvolt = <1800000>;
-+							regulator-max-microvolt = <1800000>;
-+							regulator-always-on;
-+						};
-+					};
-+				};
-+			};
-+
-+			macb0: ethernet@f8020000 {
-+				phy-mode = "rmii";
-+				status = "okay";
-+			};
-+
-+			mmc1: mmc@fc000000 {
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_mmc1_clk_cmd_dat0 &pinctrl_mmc1_dat1_3 &pinctrl_mmc1_cd>;
-+				status = "okay";
-+				slot@0 {
-+					reg = <0>;
-+					bus-width = <4>;
-+					cd-gpios = <&pioE 6 0>;
-+				};
-+			};
-+
-+			usart2: serial@fc008000 {
-+				status = "okay";
-+			};
-+
-+			usart3: serial@fc00c000 {
-+				status = "okay";
-+			};
-+
-+			usart4: serial@fc010000 {
-+				status = "okay";
-+			};
-+
-+			watchdog@fc068640 {
-+				status = "okay";
-+			};
-+
-+			pinctrl@fc06a000 {
-+				board {
-+					pinctrl_mmc0_cd: mmc0_cd {
-+						atmel,pins =
-+							<AT91_PIOE 5 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
-+					};
-+					pinctrl_mmc1_cd: mmc1_cd {
-+						atmel,pins =
-+							<AT91_PIOE 6 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>;
-+					};
-+					pinctrl_usba_vbus: usba_vbus {
-+						atmel,pins =
-+							<AT91_PIOE 31 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
-+					};
-+					pinctrl_key_gpio: key_gpio_0 {
-+						atmel,pins =
-+							<AT91_PIOE 13 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PE13 gpio */
-+					};
-+				};
-+			};
-+		};
-+
-+		usb0: gadget@00400000 {
-+			atmel,vbus-gpio = <&pioE 31 GPIO_ACTIVE_HIGH>;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_usba_vbus>;
-+			status = "okay";
-+		};
-+
-+		usb1: ohci@00500000 {
-+			num-ports = <3>;
-+			atmel,vbus-gpio = <0 /* &pioE 10 GPIO_ACTIVE_LOW */
-+					   &pioE 11 GPIO_ACTIVE_LOW
-+					   &pioE 12 GPIO_ACTIVE_LOW
-+					  >;
-+			status = "okay";
-+		};
-+
-+		usb2: ehci@00600000 {
-+			status = "okay";
-+		};
-+
-+		nand0: nand@80000000 {
-+			nand-bus-width = <8>;
-+			nand-ecc-mode = "hw";
-+			nand-on-flash-bbt;
-+			atmel,has-pmecc;
-+			status = "okay";
-+
-+			at91bootstrap@0 {
-+				label = "at91bootstrap";
-+				reg = <0x0 0x40000>;
-+			};
-+
-+			bootloader@40000 {
-+				label = "bootloader";
-+				reg = <0x40000 0x80000>;
-+			};
-+
-+			bootloaderenv@c0000 {
-+				label = "bootloader env";
-+				reg = <0xc0000 0xc0000>;
-+			};
-+
-+			dtb@180000 {
-+				label = "device tree";
-+				reg = <0x180000 0x80000>;
-+			};
-+
-+			kernel@200000 {
-+				label = "kernel";
-+				reg = <0x200000 0x600000>;
-+			};
-+
-+			rootfs@800000 {
-+				label = "rootfs";
-+				reg = <0x800000 0x0f800000>;
-+			};
-+		};
-+	};
-+
-+	gpio_keys {
-+		compatible = "gpio-keys";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_key_gpio>;
-+
-+		pb_user1 {
-+			label = "pb_user1";
-+			gpios = <&pioE 13 GPIO_ACTIVE_HIGH>;
-+			linux,code = <0x100>;
-+			gpio-key,wakeup;
-+		};
-+	};
++static const char *sama5_alt_dt_board_compat[] __initconst = {
++	"atmel,sama5d4",
++	NULL
 +};
++
++DT_MACHINE_START(sama5_alt_dt, "Atmel SAMA5 (Device Tree)")
++	/* Maintainer: Atmel */
++	.init_time	= sama5_dt_timer_init,
++	.map_io		= at91_alt_map_io,
++	.init_early	= at91_dt_initialize,
++	.init_machine	= sama5_dt_device_init,
++	.dt_compat	= sama5_alt_dt_board_compat,
++	.l2c_aux_mask	= ~0UL,
++MACHINE_END
+diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+index f42b0490ad98..4e0a965cf7c0 100644
+--- a/arch/arm/mach-at91/generic.h
++++ b/arch/arm/mach-at91/generic.h
+@@ -14,6 +14,7 @@
+ 
+  /* Map io */
+ extern void __init at91_map_io(void);
++extern void __init at91_alt_map_io(void);
+ extern void __init at91_init_sram(int bank, unsigned long base,
+ 				  unsigned int length);
+ 
+diff --git a/arch/arm/mach-at91/include/mach/cpu.h b/arch/arm/mach-at91/include/mach/cpu.h
+index d77572e8cb15..b27e9ca65653 100644
+--- a/arch/arm/mach-at91/include/mach/cpu.h
++++ b/arch/arm/mach-at91/include/mach/cpu.h
+@@ -36,7 +36,7 @@
+ #define ARCH_ID_AT91M40807	0x14080745
+ #define ARCH_ID_AT91R40008	0x44000840
+ 
+-#define ARCH_ID_SAMA5D3		0x8A5C07C0
++#define ARCH_ID_SAMA5		0x8A5C07C0
+ 
+ #define ARCH_EXID_AT91SAM9M11	0x00000001
+ #define ARCH_EXID_AT91SAM9M10	0x00000002
+@@ -49,12 +49,19 @@
+ #define ARCH_EXID_AT91SAM9G25	0x00000003
+ #define ARCH_EXID_AT91SAM9X25	0x00000004
+ 
++#define ARCH_EXID_SAMA5D3	0x00004300
+ #define ARCH_EXID_SAMA5D31	0x00444300
+ #define ARCH_EXID_SAMA5D33	0x00414300
+ #define ARCH_EXID_SAMA5D34	0x00414301
+ #define ARCH_EXID_SAMA5D35	0x00584300
+ #define ARCH_EXID_SAMA5D36	0x00004301
+ 
++#define ARCH_EXID_SAMA5D4	0x00000007
++#define ARCH_EXID_SAMA5D41	0x00000001
++#define ARCH_EXID_SAMA5D42	0x00000002
++#define ARCH_EXID_SAMA5D43	0x00000003
++#define ARCH_EXID_SAMA5D44	0x00000004
++
+ #define ARCH_FAMILY_AT91X92	0x09200000
+ #define ARCH_FAMILY_AT91SAM9	0x01900000
+ #define ARCH_FAMILY_AT91SAM9XE	0x02900000
+@@ -111,6 +118,10 @@ enum at91_soc_subtype {
+ 	AT91_SOC_SAMA5D31, AT91_SOC_SAMA5D33, AT91_SOC_SAMA5D34,
+ 	AT91_SOC_SAMA5D35, AT91_SOC_SAMA5D36,
+ 
++	/* SAMA5D4 */
++	AT91_SOC_SAMA5D41, AT91_SOC_SAMA5D42, AT91_SOC_SAMA5D43,
++	AT91_SOC_SAMA5D44,
++
+ 	/* No subtype for this SoC */
+ 	AT91_SOC_SUBTYPE_NONE,
+ 
+diff --git a/arch/arm/mach-at91/include/mach/debug-macro.S b/arch/arm/mach-at91/include/mach/debug-macro.S
+index c6bb9e2d9baa..2103a90f2261 100644
+--- a/arch/arm/mach-at91/include/mach/debug-macro.S
++++ b/arch/arm/mach-at91/include/mach/debug-macro.S
+@@ -16,8 +16,11 @@
+ 
+ #if defined(CONFIG_AT91_DEBUG_LL_DBGU0)
+ #define AT91_DBGU AT91_BASE_DBGU0
+-#else
++#elif defined(CONFIG_AT91_DEBUG_LL_DBGU1)
+ #define AT91_DBGU AT91_BASE_DBGU1
++#else
++/* On sama5d4, use USART3 as low level serial console */
++#define AT91_DBGU SAMA5D4_BASE_USART3
+ #endif
+ 
+ 	.macro	addruart, rp, rv, tmp
+diff --git a/arch/arm/mach-at91/include/mach/hardware.h b/arch/arm/mach-at91/include/mach/hardware.h
+index 56338245653a..d84776f6b8ac 100644
+--- a/arch/arm/mach-at91/include/mach/hardware.h
++++ b/arch/arm/mach-at91/include/mach/hardware.h
+@@ -19,8 +19,10 @@
+ /* DBGU base */
+ /* rm9200, 9260/9g20, 9261/9g10, 9rl */
+ #define AT91_BASE_DBGU0	0xfffff200
+-/* 9263, 9g45 */
++/* 9263, 9g45, sama5d3 */
+ #define AT91_BASE_DBGU1	0xffffee00
++/* sama5d4 */
++#define AT91_BASE_DBGU2	0xfc069000
+ 
+ #if defined(CONFIG_ARCH_AT91X40)
+ #include <mach/at91x40.h>
+@@ -34,6 +36,7 @@
+ #include <mach/at91sam9x5.h>
+ #include <mach/at91sam9n12.h>
+ #include <mach/sama5d3.h>
++#include <mach/sama5d4.h>
+ 
+ /*
+  * On all at91 except rm9200 and x40 have the System Controller starts
+@@ -47,6 +50,11 @@
+  * and map the same memory space
+  */
+ #define AT91_BASE_SYS	0xffffc000
++
++/*
++ * On sama5d4 there is no system controller, we map some needed peripherals
++ */
++#define AT91_ALT_BASE_SYS	0xfc069000
+ #endif
+ 
+ /*
+@@ -69,6 +77,13 @@
+  */
+ #define AT91_IO_PHYS_BASE	0xFFF78000
+ #define AT91_IO_VIRT_BASE	IOMEM(0xFF000000 - AT91_IO_SIZE)
++
++/*
++ * On sama5d4, remap the peripherals from address 0xFC069000 .. 0xFC06F000
++ * to 0xFB069000 .. 0xFB06F000.  (24Kb)
++ */
++#define AT91_ALT_IO_PHYS_BASE	AT91_ALT_BASE_SYS
++#define AT91_ALT_IO_VIRT_BASE	IOMEM(0xFB069000)
+ #else
+ /*
+  * Identity mapping for the non MMU case.
+@@ -81,11 +96,13 @@
+ 
+  /* Convert a physical IO address to virtual IO address */
+ #define AT91_IO_P2V(x)		((x) - AT91_IO_PHYS_BASE + AT91_IO_VIRT_BASE)
++#define AT91_ALT_IO_P2V(x)	((x) - AT91_ALT_IO_PHYS_BASE + AT91_ALT_IO_VIRT_BASE)
+ 
+ /*
+  * Virtual to Physical Address mapping for IO devices.
+  */
+ #define AT91_VA_BASE_SYS	AT91_IO_P2V(AT91_BASE_SYS)
++#define AT91_ALT_VA_BASE_SYS	AT91_ALT_IO_P2V(AT91_ALT_BASE_SYS)
+ 
+  /* Internal SRAM is mapped below the IO devices */
+ #define AT91_SRAM_MAX		SZ_1M
+diff --git a/arch/arm/mach-at91/include/mach/uncompress.h b/arch/arm/mach-at91/include/mach/uncompress.h
+index 4bb644f8e87c..acb2d890ad7e 100644
+--- a/arch/arm/mach-at91/include/mach/uncompress.h
++++ b/arch/arm/mach-at91/include/mach/uncompress.h
+@@ -94,7 +94,7 @@ static const u32 uarts_sam9x5[] = {
+ 	0,
+ };
+ 
+-static const u32 uarts_sama5[] = {
++static const u32 uarts_sama5d3[] = {
+ 	AT91_BASE_DBGU1,
+ 	SAMA5D3_BASE_USART0,
+ 	SAMA5D3_BASE_USART1,
+@@ -103,6 +103,12 @@ static const u32 uarts_sama5[] = {
+ 	0,
+ };
+ 
++static const u32 uarts_sama5d4[] = {
++	AT91_BASE_DBGU2,
++	SAMA5D4_BASE_USART3,
++	0,
++};
++
+ static inline const u32* decomp_soc_detect(void __iomem *dbgu_base)
+ {
+ 	u32 cidr, socid;
+@@ -134,8 +140,14 @@ static inline const u32* decomp_soc_detect(void __iomem *dbgu_base)
+ 	case ARCH_ID_AT91SAM9X5:
+ 		return uarts_sam9x5;
+ 
+-	case ARCH_ID_SAMA5D3:
+-		return uarts_sama5;
++	case ARCH_ID_SAMA5:
++		cidr = __raw_readl(dbgu_base + AT91_DBGU_EXID);
++		if (cidr & ARCH_EXID_SAMA5D3)
++			return uarts_sama5d3;
++		else if (cidr & ARCH_EXID_SAMA5D4)
++			return uarts_sama5d4;
++
++		break;
+ 	}
+ 
+ 	/* at91sam9g10 */
+@@ -156,9 +168,10 @@ static inline void arch_decomp_setup(void)
+ 	const u32* usarts;
+ 
+ 	usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU0);
+-
+ 	if (!usarts)
+ 		usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU1);
++	if (!usarts)
++		usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU2);
+ 	if (!usarts) {
+ 		at91_uart = NULL;
+ 		return;
+diff --git a/arch/arm/mach-at91/sama5d4.c b/arch/arm/mach-at91/sama5d4.c
+index f81f11ed8deb..7638509639f4 100644
+--- a/arch/arm/mach-at91/sama5d4.c
++++ b/arch/arm/mach-at91/sama5d4.c
+@@ -25,9 +25,37 @@
+ /* --------------------------------------------------------------------
+  *  Processor initialization
+  * -------------------------------------------------------------------- */
++static struct map_desc at91_io_desc[] __initdata = {
++	{
++	.virtual        = (unsigned long)AT91_ALT_IO_P2V(SAMA5D4_BASE_MPDDRC),
++	.pfn            = __phys_to_pfn(SAMA5D4_BASE_MPDDRC),
++	.length         = SZ_512,
++	.type           = MT_DEVICE,
++	},
++	{
++	.virtual        = (unsigned long)AT91_ALT_IO_P2V(SAMA5D4_BASE_PMC),
++	.pfn            = __phys_to_pfn(SAMA5D4_BASE_PMC),
++	.length         = SZ_512,
++	.type           = MT_DEVICE,
++	},
++	{ /* On sama5d4, we use USART3 as serial console */
++	.virtual        = (unsigned long)AT91_ALT_IO_P2V(SAMA5D4_BASE_USART3),
++	.pfn            = __phys_to_pfn(SAMA5D4_BASE_USART3),
++	.length         = SZ_256,
++	.type           = MT_DEVICE,
++	},
++	{ /* A bunch of peripheral with fine grained IO space */
++	.virtual        = (unsigned long)AT91_ALT_IO_P2V(SAMA5D4_BASE_SYS2),
++	.pfn            = __phys_to_pfn(SAMA5D4_BASE_SYS2),
++	.length         = SZ_2K,
++	.type           = MT_DEVICE,
++	},
++};
++
+ 
+ static void __init sama5d4_map_io(void)
+ {
++	iotable_init(at91_io_desc, ARRAY_SIZE(at91_io_desc));
+ 	at91_init_sram(0, SAMA5D4_NS_SRAM_BASE, SAMA5D4_NS_SRAM_SIZE);
+ }
+ 
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index d2cade21ebd7..25e583b513bf 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -98,6 +98,13 @@ static struct map_desc at91_io_desc __initdata __maybe_unused = {
+ 	.type		= MT_DEVICE,
+ };
+ 
++static struct map_desc at91_alt_io_desc __initdata __maybe_unused = {
++	.virtual	= (unsigned long)AT91_ALT_VA_BASE_SYS,
++	.pfn		= __phys_to_pfn(AT91_ALT_BASE_SYS),
++	.length		= 24 * SZ_1K,
++	.type		= MT_DEVICE,
++};
++
+ static void __init soc_detect(u32 dbgu_base)
+ {
+ 	u32 cidr, socid;
+@@ -160,9 +167,12 @@ static void __init soc_detect(u32 dbgu_base)
+ 		at91_boot_soc = at91sam9n12_soc;
+ 		break;
+ 
+-	case ARCH_ID_SAMA5D3:
+-		at91_soc_initdata.type = AT91_SOC_SAMA5D3;
+-		at91_boot_soc = sama5d3_soc;
++	case ARCH_ID_SAMA5:
++		at91_soc_initdata.exid = __raw_readl(AT91_IO_P2V(dbgu_base) + AT91_DBGU_EXID);
++		if (at91_soc_initdata.exid & ARCH_EXID_SAMA5D3) {
++			at91_soc_initdata.type = AT91_SOC_SAMA5D3;
++			at91_boot_soc = sama5d3_soc;
++		}
+ 		break;
+ 	}
+ 
+@@ -185,7 +195,8 @@ static void __init soc_detect(u32 dbgu_base)
+ 	at91_soc_initdata.cidr = cidr;
+ 
+ 	/* sub version of soc */
+-	at91_soc_initdata.exid = __raw_readl(AT91_IO_P2V(dbgu_base) + AT91_DBGU_EXID);
++	if (!at91_soc_initdata.exid)
++		at91_soc_initdata.exid = __raw_readl(AT91_IO_P2V(dbgu_base) + AT91_DBGU_EXID);
+ 
+ 	if (at91_soc_initdata.type == AT91_SOC_SAM9G45) {
+ 		switch (at91_soc_initdata.exid) {
+@@ -242,6 +253,54 @@ static void __init soc_detect(u32 dbgu_base)
+ 	}
+ }
+ 
++static void __init alt_soc_detect(u32 dbgu_base)
++{
++	u32 cidr, socid;
++
++	/* SoC ID */
++	cidr = __raw_readl(AT91_ALT_IO_P2V(dbgu_base) + AT91_DBGU_CIDR);
++	socid = cidr & ~AT91_CIDR_VERSION;
++
++	switch (socid) {
++	case ARCH_ID_SAMA5:
++		at91_soc_initdata.exid = __raw_readl(AT91_ALT_IO_P2V(dbgu_base) + AT91_DBGU_EXID);
++		if (at91_soc_initdata.exid & ARCH_EXID_SAMA5D3) {
++			at91_soc_initdata.type = AT91_SOC_SAMA5D3;
++			at91_boot_soc = sama5d3_soc;
++		} else if (at91_soc_initdata.exid & ARCH_EXID_SAMA5D4) {
++			at91_soc_initdata.type = AT91_SOC_SAMA5D4;
++			at91_boot_soc = sama5d4_soc;
++		}
++		break;
++	}
++
++	if (!at91_soc_is_detected())
++		return;
++
++	at91_soc_initdata.cidr = cidr;
++
++	/* sub version of soc */
++	if (!at91_soc_initdata.exid)
++		at91_soc_initdata.exid = __raw_readl(AT91_ALT_IO_P2V(dbgu_base) + AT91_DBGU_EXID);
++
++	if (at91_soc_initdata.type == AT91_SOC_SAMA5D4) {
++		switch (at91_soc_initdata.exid) {
++		case ARCH_EXID_SAMA5D41:
++			at91_soc_initdata.subtype = AT91_SOC_SAMA5D41;
++			break;
++		case ARCH_EXID_SAMA5D42:
++			at91_soc_initdata.subtype = AT91_SOC_SAMA5D42;
++			break;
++		case ARCH_EXID_SAMA5D43:
++			at91_soc_initdata.subtype = AT91_SOC_SAMA5D43;
++			break;
++		case ARCH_EXID_SAMA5D44:
++			at91_soc_initdata.subtype = AT91_SOC_SAMA5D44;
++			break;
++		}
++	}
++}
++
+ static const char *soc_name[] = {
+ 	[AT91_SOC_RM9200]	= "at91rm9200",
+ 	[AT91_SOC_SAM9260]	= "at91sam9260",
+@@ -254,6 +313,7 @@ static const char *soc_name[] = {
+ 	[AT91_SOC_SAM9X5]	= "at91sam9x5",
+ 	[AT91_SOC_SAM9N12]	= "at91sam9n12",
+ 	[AT91_SOC_SAMA5D3]	= "sama5d3",
++	[AT91_SOC_SAMA5D4]	= "sama5d4",
+ 	[AT91_SOC_UNKNOWN]	= "Unknown",
+ };
+ 
+@@ -281,6 +341,10 @@ static const char *soc_subtype_name[] = {
+ 	[AT91_SOC_SAMA5D34]	= "sama5d34",
+ 	[AT91_SOC_SAMA5D35]	= "sama5d35",
+ 	[AT91_SOC_SAMA5D36]	= "sama5d36",
++	[AT91_SOC_SAMA5D41]	= "sama5d41",
++	[AT91_SOC_SAMA5D42]	= "sama5d42",
++	[AT91_SOC_SAMA5D43]	= "sama5d43",
++	[AT91_SOC_SAMA5D44]	= "sama5d44",
+ 	[AT91_SOC_SUBTYPE_NONE]	= "None",
+ 	[AT91_SOC_SUBTYPE_UNKNOWN] = "Unknown",
+ };
+@@ -319,6 +383,31 @@ void __init at91_map_io(void)
+ 		at91_boot_soc.map_io();
+ }
+ 
++void __init at91_alt_map_io(void)
++{
++	/* Map peripherals */
++	iotable_init(&at91_alt_io_desc, 1);
++
++	at91_soc_initdata.type = AT91_SOC_UNKNOWN;
++	at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_UNKNOWN;
++
++	alt_soc_detect(AT91_BASE_DBGU2);
++	if (!at91_soc_is_detected())
++		panic("AT91: Impossible to detect the SOC type");
++
++	pr_info("AT91: Detected soc type: %s\n",
++		at91_get_soc_type(&at91_soc_initdata));
++	if (at91_soc_initdata.subtype != AT91_SOC_SUBTYPE_NONE)
++		pr_info("AT91: Detected soc subtype: %s\n",
++			at91_get_soc_subtype(&at91_soc_initdata));
++
++	if (!at91_soc_is_enabled())
++		panic("AT91: Soc not enabled");
++
++	if (at91_boot_soc.map_io)
++		at91_boot_soc.map_io();
++}
++
+ void __iomem *at91_matrix_base;
+ EXPORT_SYMBOL_GPL(at91_matrix_base);
+ 
 -- 
 1.9.1
 
