@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaILOQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 10:16:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45586 "EHLO mx1.redhat.com"
+	id S1754462AbaILOWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 10:22:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60308 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754498AbaILOQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 10:16:52 -0400
-Date: Fri, 12 Sep 2014 16:16:32 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 11/14] tools lib api: Adopt fdarray class from perf's
- evlist
-Message-ID: <20140912141631.GA22187@krava.brq.redhat.com>
-References: <1410358129-9965-1-git-send-email-acme@kernel.org>
- <1410358129-9965-12-git-send-email-acme@kernel.org>
- <20140912125822.GA23205@krava.brq.redhat.com>
- <20140912134429.GF1801@kernel.org>
+	id S1753991AbaILOWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 10:22:02 -0400
+Date: Fri, 12 Sep 2014 16:21:59 +0200
+From: Petr Mladek <pmladek@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: hub: wrong order of putting interfaces when
+ processing hub events
+Message-ID: <20140912142159.GA13354@pathway.suse.cz>
+References: <1410524421-15191-1-git-send-email-pmladek@suse.cz>
+ <Pine.LNX.4.44L0.1409121000590.1180-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140912134429.GF1801@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <Pine.LNX.4.44L0.1409121000590.1180-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:44:29AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Sep 12, 2014 at 02:58:22PM +0200, Jiri Olsa escreveu:
-> > On Wed, Sep 10, 2014 at 11:08:46AM -0300, Arnaldo Carvalho de Melo wrote:
->  
-> > SNIP
->  
-> > > +struct fdarray *fdarray__new(int nr_alloc, int nr_autogrow)
-> > > +{
-> > > +	struct fdarray *fda = calloc(1, sizeof(*fda));
+On Fri 2014-09-12 10:06:03, Alan Stern wrote:
+> On Fri, 12 Sep 2014, Petr Mladek wrote:
 > 
-> > > +	if (fda != NULL) {
-> > > +		if (fdarray__grow(fda, nr_alloc)) {
-> > > +			free(fda);
-> > > +			fda = NULL;
+> > usb_autopm_put_interface() must be called only when usb_autopm_get_interface()
+> > succeeded before. There was wrong ordering of the goto targets.
+> 
+> No, you are wrong.  The code is correct as it stands.
+> 
+> > The funny thing is that the names of the goto targets and the related comments
+> > were correct.
+> 
+> That's because the whole thing is correct.  Go back and read the 
+> comments more carefully -- especially the comment following the "loop:" 
+> label.
+> 
+> > Signed-off-by: Petr Mladek <pmladek@suse.cz>
+> > ---
+> >  drivers/usb/core/hub.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
 > > 
-> > you could use zfree
+> > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> > index d481c99a20d7..6afd79ee3340 100644
+> > --- a/drivers/usb/core/hub.c
+> > +++ b/drivers/usb/core/hub.c
+> > @@ -5132,12 +5132,12 @@ static void hub_events(void)
+> >  
+> >   loop_autopm:
+> >  		/* Balance the usb_autopm_get_interface() above */
+> > -		usb_autopm_put_interface_no_suspend(intf);
+> > +		usb_autopm_put_interface(intf);
 > 
-> Yeah, we could, if zfree had moved from tools/perf/util/ to tools/lib/,
-> which is has not yet.
+> There's no point to this change.  Now this call will decrement the
+> usage counter and try to suspend -- but the suspend is bound to fail
+> because the usage counter is still > 0.
 > 
-> I thought about doing it now, but when doing some grepping in the kernel
-> sources I realized that zfree is already taken by... zlib, so I'll leave
-> this for later, when we figure out how to properly export this, perhaps
-> renaming it to freez()?
+> >   loop:
+> >  		/* Balance the usb_autopm_get_interface_no_resume() in
+> >  		 * kick_khubd() and allow autosuspend.
+> >  		 */
+> > -		usb_autopm_put_interface(intf);
+> > +		usb_autopm_put_interface_no_suspend(intf);
+> 
+> And now this call will decrement the usage counter down to 0, but won't 
+> try to suspend -- so the hub won't autosuspend at all!
 
-aargh.. haven't realized it's not in libs ;-) freez sounds ok
+Ah, shame on me. It makes perfect sense. I was more focused on the
+kthread/workqueue conversion and function of the locks. I should have
+thought more about this as well :-(
 
-jirka
+It means that the patchset "usb: hub: convert khubd into workqueue"
+needs refreshing. But I will wait for some feedback first.
+
+
+Best Regards,
+Petr
