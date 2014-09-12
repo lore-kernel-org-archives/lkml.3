@@ -1,114 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334AbaILKlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:41:17 -0400
-Received: from mail-by2on0122.outbound.protection.outlook.com ([207.46.100.122]:9814
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752277AbaILKlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:41:13 -0400
-Date: Fri, 12 Sep 2014 18:40:55 +0800
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: Markus Pargmann <mpa@pengutronix.de>
-CC: Nicolin Chen <nicoleotsuka@gmail.com>, <timur@tabi.org>,
-        <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
-        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] ASoC: fsl_ssi: refine ipg clock usage in this module
-Message-ID: <20140912104054.GA6420@audiosh1>
-References: <27584da8e3ab291ab8dbcbb411579613f8384a59.1410413734.git.shengjiu.wang@freescale.com>
- <20140911225737.GA13926@Alpha> <20140912020110.GA414@audiosh1>
- <20140912061706.GA10680@pengutronix.de> <20140912071426.GA30261@audiosh1>
- <20140912085446.GA8844@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140912085446.GA8844@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(199003)(52314003)(35774003)(24454002)(15202345003)(85306004)(19580395003)(21056001)(97756001)(92726001)(54356999)(95666004)(44976005)(31966008)(83322001)(64706001)(23726002)(6806004)(92566001)(102836001)(20776003)(110136001)(50466002)(74502001)(104016003)(106466001)(50986999)(15975445006)(76482001)(26826002)(107046002)(74662001)(81342001)(33656002)(93886004)(86362001)(87936001)(97736003)(83072002)(46406003)(46102001)(80022001)(85852003)(90102001)(81542001)(47776003)(33716001)(68736004)(83506001)(77982001)(84676001)(99396002)(76176999)(79102001)(4396001)(105606002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0611;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0332AACBC3
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S1753291AbaILKp4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:45:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47402 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaILKpx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 06:45:53 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68f-f797f6d000001173-89-5412cedf16d5
+Content-transfer-encoding: 8BIT
+Message-id: <5412CEDF.7030806@samsung.com>
+Date: Fri, 12 Sep 2014 19:45:51 +0900
+From: Inki Dae <inki.dae@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130803
+ Thunderbird/17.0.8
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 5/9] drm/exynos/crtc: fix framebuffer reference sequence
+References: <1410268573-2297-1-git-send-email-a.hajda@samsung.com>
+ <1410268573-2297-6-git-send-email-a.hajda@samsung.com>
+ <5412B02A.6040609@samsung.com> <20140912085710.GD4740@phenom.ffwll.local>
+ <5412BC8D.2030007@samsung.com>
+In-reply-to: <5412BC8D.2030007@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsWyRsSkWPf+OaEQg9VbFC1urTvHanHl63s2
+	i7NNb9gtLu+aw2Yx4/w+Jou1R+6yW8yY/JLNgd3jfvdxJo++LasYPT5vkgtgjuKySUnNySxL
+	LdK3S+DKmPRrBVtBr1bF9PlnGRsYNyl3MXJySAiYSMw5tYQdwhaTuHBvPRuILSSwlFFixvSg
+	LkYOsJpvT3m7GLmAwtMZJdo73jGD1PAKCEr8mHyPBaSGWUBe4silbJAws4C6xKR5i5gh6l8x
+	Sqw53cIIUa8lceNmDzNIPYuAqsS13iSQMBuQOXHFfbC1ogJhEi9e7QIbLwI0Z/bJO2BzmAUW
+	MEkcebAXrEhYwEfiwNWd7BB3vmCUeLNEEmQmp4C2RH8vB0i9hMAxdokJXx4xgdSwCAhIfJt8
+	iAXiF1mJTQeYId6VlDi44gbLBEaxWUi+mYXwzSwk3yxgZF7FKJpakFxQnJReZKxXnJhbXJqX
+	rpecn7uJERhbp/8969/BePeA9SFGAQ5GJR7eChbBECHWxLLiytxDjKZAR0xklhJNzgdGcF5J
+	vKGxmZGFqYmpsZG5pZmSOO9CqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhtPeoq7K85
+	53+dnWekVnC/ZreS0wLx6Ktzc38alt5acvGew7onm9sU7+QzZ2w8ZzAp4Zu3SuyR3rxWNXHV
+	pRxbtjy0mrBHxaBBTuP39CB3Ka3z6p3qd77mT5348JB4a0+1Xv1jDfEgt3dBT+WKypk/qcpU
+	zXggdTfpkq2S13kJfT7WYvVTh5RYijMSDbWYi4oTAaA5ad6oAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQd3754RCDJ48krC4te4cq8WVr+/Z
+	LM42vWG3uLxrDpvFjPP7mCzWHrnLbjFj8ks2B3aP+93HmTz6tqxi9Pi8SS6AOaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWPSrxVsBb1aFdPnn2VsYNyk3MXIwSEhYCLx
+	7SlvFyMnkCkmceHeerYuRi4OIYHpjBLtHe+YQRK8AoISPybfYwGpZxaQlzhyKRskzCygLjFp
+	3iJmiPpXjBJrTrcwQtRrSdy42cMMUs8ioCpxrTcJJMwGZE5ccZ8NxBYVCJN48WoX2HgRoDmz
+	T94Bm8MssIBJ4siDvWBFwgI+Egeu7mQHsYUEXjBKvFkiCTKTU0Bbor+XYwKjwCwk181CuG4W
+	kusWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiO3WfSOxhXNVgcYhTgYFTi4a1kEQwR
+	Yk0sK67MPcQowcGsJMJrflQoRIg3JbGyKrUoP76oNCe1+BCjKdBvE5mlRJPzgWklryTe0NjE
+	zMjSyNzQwsjYXEmc92CrdaCQQHpiSWp2ampBahFMHxMHp1QDo0/Kptnt93Zv72nMX6OtUVrw
+	J/nIaSt2/3OcketqJ4ns9np3sT5lw+bTKY1P62Xfni9c8DaCd8baBDvjjR+9TW3fL/TykPhh
+	/2yd/AmuQ5c2VGtz6X3fr7Urt++ix84bx31a7nAcOrOsIvRo4km1xMurtjz7a1TI765x23DW
+	zaQbc/puuLYsvKfEUpyRaKjFXFScCABKnf/18wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:54:46AM +0200, Markus Pargmann wrote:
-> On Fri, Sep 12, 2014 at 03:14:28PM +0800, Shengjiu Wang wrote:
-> > On Fri, Sep 12, 2014 at 08:17:06AM +0200, Markus Pargmann wrote:
-> > > Hi,
-> > > 
-> > > On Fri, Sep 12, 2014 at 10:01:12AM +0800, Shengjiu Wang wrote:
-> > > > On Thu, Sep 11, 2014 at 03:57:37PM -0700, Nicolin Chen wrote:
-> > > > > On Thu, Sep 11, 2014 at 01:38:29PM +0800, Shengjiu Wang wrote:
-> > > > > > Move the ipg clock enable and disable operation to startup and shutdown,
-> > > > > > that is only enable ipg clock when ssi is working. Keep clock is disabled
-> > > > > > when ssi is in idle.
-> > > > > > otherwise, _fsl_ssi_set_dai_fmt function need to be called in probe,
-> > > > > > so add ipg clock control for it.
-> > > > > 
-> > > > > It seems to be no objection so far against my last suggestion to
-> > > > > use regmap's mmio_clk() for named ipg clk only. So you may still
-> > > > > consider about that.
-> > > > >
-> > > > I think mmio_clk() can be put to another patch. and this patch only for clk_enable()
-> > > > and clk_disable() operation.
-> > > 
-> > > I would also prefer Nicolin's suggestion using regmap's mmio clk. I
-> > > think it may be better to not add this particular patch at all and just
-> > > go with the mmio_clk patch. It should be easy enough to just add the
-> > > clock names to the devicetrees. That way we can avoid all those clock
-> > > enable/disable function calls.
-> > >
-> > I considered if use Nicolin's suggestion, I still need ot add those
-> > enable/disable function calls, because I want to remove the enable/disable
-> > function call in fsl_ssi_imx_probe, then I need to add enable/disable 
-> > function call in _fsl_ssi_set_dai_fmt(), which is called in fsl_ssi_probe().
-> > _fsl_ssi_set_dai_fmt() need to access the registers.
+On 2014년 09월 12일 18:27, Andrzej Hajda wrote:
+> On 09/12/2014 10:57 AM, Daniel Vetter wrote:
+>> On Fri, Sep 12, 2014 at 05:34:50PM +0900, Inki Dae wrote:
+>>> Hi Andrzej,
+>>>
+>>> On 2014년 09월 09일 22:16, Andrzej Hajda wrote:
+>>>> Adding reference to framebuffer should be accompanied with removing
+>>>> reference to old framebuffer assigned to the plane.
+>>>> This patch removes following warning:
+>>>>
+>>>> [   95.038017] WARNING: CPU: 1 PID: 3067 at drivers/gpu/drm/drm_crtc.c:5115 drm_mode_config_cleanup+0x258/0x268()
+>>>> [   95.048086] Modules linked in:
+>>>> [   95.051430] CPU: 1 PID: 3067 Comm: bash Tainted: G        W      3.16.0-11355-g7a6eca5-dirty #3015
+>>>> [   95.060058] [<c0013e90>] (unwind_backtrace) from [<c0011128>] (show_stack+0x10/0x14)
+>>>> [   95.067766] [<c0011128>] (show_stack) from [<c04a5dc4>] (dump_stack+0x70/0xbc)
+>>>> [   95.074953] [<c04a5dc4>] (dump_stack) from [<c0021784>] (warn_slowpath_common+0x64/0x88)
+>>>> [   95.083005] [<c0021784>] (warn_slowpath_common) from [<c00217c4>] (warn_slowpath_null+0x1c/0x24)
+>>>> [   95.091780] [<c00217c4>] (warn_slowpath_null) from [<c0275fa0>] (drm_mode_config_cleanup+0x258/0x268)
+>>>> [   95.100983] [<c0275fa0>] (drm_mode_config_cleanup) from [<c0281724>] (exynos_drm_unload+0x38/0x50)
+>>>> [   95.109915] [<c0281724>] (exynos_drm_unload) from [<c026e248>] (drm_dev_unregister+0x24/0x98)
+>>>> [   95.118414] [<c026e248>] (drm_dev_unregister) from [<c026ecb0>] (drm_put_dev+0x28/0x64)
+>>>> [   95.126412] [<c026ecb0>] (drm_put_dev) from [<c02947c4>] (take_down_master+0x24/0x44)
+>>>> [   95.134218] [<c02947c4>] (take_down_master) from [<c0294870>] (component_del+0x8c/0xc8)
+>>>> [   95.142201] [<c0294870>] (component_del) from [<c0286c10>] (exynos_dsi_remove+0x18/0x2c)
+>>>> [   95.150294] [<c0286c10>] (exynos_dsi_remove) from [<c0299e04>] (platform_drv_remove+0x18/0x1c)
+>>>> [   95.158872] [<c0299e04>] (platform_drv_remove) from [<c02987a4>] (__device_release_driver+0x70/0xc4)
+>>>> [   95.167981] [<c02987a4>] (__device_release_driver) from [<c0298818>] (device_release_driver+0x20/0x2c)
+>>>> [   95.177268] [<c0298818>] (device_release_driver) from [<c02979d0>] (unbind_store+0x5c/0x94)
+>>>> [   95.185597] [<c02979d0>] (unbind_store) from [<c0297278>] (drv_attr_store+0x20/0x2c)
+>>>> [   95.193323] [<c0297278>] (drv_attr_store) from [<c012aa90>] (sysfs_kf_write+0x4c/0x50)
+>>>> [   95.201224] [<c012aa90>] (sysfs_kf_write) from [<c0129e94>] (kernfs_fop_write+0xc4/0x184)
+>>>> [   95.209393] [<c0129e94>] (kernfs_fop_write) from [<c00d03ec>] (vfs_write+0xa0/0x1a8)
+>>>> [   95.217111] [<c00d03ec>] (vfs_write) from [<c00d07f8>] (SyS_write+0x40/0x8c)
+>>>> [   95.224146] [<c00d07f8>] (SyS_write) from [<c000e660>] (ret_fast_syscall+0x0/0x48)
+>>>>
+>>>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>>>> ---
+>>>>  drivers/gpu/drm/exynos/exynos_drm_crtc.c | 6 ++++++
+>>>>  1 file changed, 6 insertions(+)
+>>>>
+>>>> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> index b68e58f..bde19f4 100644
+>>>> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+>>>> @@ -145,10 +145,16 @@ exynos_drm_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
+>>>>  	if (ret)
+>>>>  		return ret;
+>>>>  
+>>>> +	/* we need to unreference current fb after replacing it with new one */
+>>>> +	old_fb = plane->fb;
+>>>> +
+>>>>  	plane->crtc = crtc;
+>>>>  	plane->fb = crtc->primary->fb;
+>>>>  	drm_framebuffer_reference(plane->fb);
+>>>>  
+>>>> +	if (old_fb)
+>>>> +		drm_framebuffer_unreference(old_fb);
+>>> This time would be a good chance that we can consider drm flip queue to
+>>> make sure that whole memory region to old_fb is scanned out completely
+>>> before dropping a reference of old_fb. the reference of old_fb should be
+>>> dropped at irq handler of each crtc devices, fimd and mixer.
+>> Generally it's not a good idea to drop fb references from irq context,
+>> since if you actually drop the last reference it'll blow up: fb cleanup
+>> needs a bunch of mutexes.
 > 
-> I think Nicolin's suggestion was to check for a clock named "ipg". If it
-> exists, you can simply use devm_regmap_init_mmio_clk(). Otherwise you
-> could fallback to the old behaviour and get the first clock and enable
-> it without disabling it after the probe function.
+> I agree with that.
 > 
-> After that, you could add the clock-names property to the devicetrees
-> and have the same result.
->
-Ok, I have sent V3 for review. please check.
+>>
+>> Also the drm core really should be taking care of this for you, you only
+>> need to grab references yourself for async flips if you want the buffer to
+>> survive a bit. crtc_mode_set has not need for this. I expect that the
+>> refcounting bug is somewhere else, at least from my experience chasing
+>> such issues in i915 ;-)
+> 
+> Hmm, maybe I miss something but I do not see the core grabbing fb reference
+> on plane->fb update. On the other side drm_framebuffer_remove calls
+> drm_plane_force_disable which drops plane->fb reference.
+> I am not yet familiar with this code so maybe there is better solution.
+> 
+> If not I guess it would be better to move this code to
+> exynos_plane_mode_set.
+> At least it is done this way in omap and msm, in fact it seems better place
 
-wang shengjiu 
-> > 
-> > > >  
-> > > > > Anyway, I'd like to do thing in parallel. So I just simply tested
-> > > > > it on my side and its works fine, it may still need to be tested
-> > > > > by others though.
-> > > > > 
-> > > > > Nicolina
-> > > > 
-> > > > Hi Markus
-> > > > 
-> > > > could you please review it, and share your comments?
-> > > 
-> > > I think the clock enabling for AC97 is missing in your patch.
-> > > 
-> > I add clock enable in fsl_ssi_startup(), I think it is enough for AC97, does it?
-> 
-> No. We export ac97 read/write ops for the whole AC97 stuff. These may be
-> used outside of the usual startup/shutdown which is done for substreams.
-> It may work to have the ipg clock enabled in
-> fsl_ssi_ac97_read/fsl_ssi_ac97_write.
-> 
-> Best regards,
-> 
-> Markus
-> 
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I cannot see it in msm. In case of msm, drm flip queue is used in
+mdp4/5_crtc_mode_set function. See update_fb function there.
 
+> for such things. What do you think?
+> 
+> Regards
+> Andrzej
+> 
+>> -Daniel
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
