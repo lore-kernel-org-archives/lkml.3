@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaILI2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 04:28:14 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38777 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaILI2L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 04:28:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140911205354.GA2959@www.outflux.net>
-References: <20140911205354.GA2959@www.outflux.net>
-Date: Fri, 12 Sep 2014 10:28:11 +0200
-Message-ID: <CANq1E4Q7mSFyj0chxjH1=wE+ZOL4_WKDwzkvm0GPGunYAfTmBQ@mail.gmail.com>
-Subject: Re: [PATCH] drm/ttm: make sure format string cannot leak in
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753173AbaILIbe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 04:31:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54874 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752122AbaILIbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 04:31:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,511,1406617200"; 
+   d="scan'208";a="477075097"
+Message-ID: <1410510664.7023.35.camel@linux.intel.com>
+Subject: Re: [RFC Part2 v1 0/2] Refine the way to initialize IRQ for apb
+ timer
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        David Cohen <david.a.cohen@linux.intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 12 Sep 2014 11:31:04 +0300
+In-Reply-To: <1410510039-12759-1-git-send-email-jiang.liu@linux.intel.com>
+References: <y>
+	 <1410510039-12759-1-git-send-email-jiang.liu@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, 2014-09-12 at 16:20 +0800, Jiang Liu wrote:
+> Hi David and Andy,
+> 	Could you please help to test these two patches on Intel MID
+> platforms? It's based on Thomas patch to refine the way to initialize
+> IRQ for apb timers. It should apply to the mainstream kernel.
+> 
 
-On Thu, Sep 11, 2014 at 10:53 PM, Kees Cook <keescook@chromium.org> wrote:
-> While zone->name is currently hard coded, the call to kobject_init_and_add()
-> should follow the more defensive argument list usage (as already done in
-> other places in ttm_memory.c) where "%s" is used instead of directly passing
-> in a variable as a format string.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+1) clean command line — OK
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+2) x86_intel_mid_timer=apbt_only — HANGS in the same place as w/o
+Thomas' patch (see my last mail), but no warnings are printed
 
-Thanks
-David
+3) x86_intel_mid_timer=lapic_and_apbt — HANGS: same as above which is
+differs to the same conditions w/o any patches (yours and Thomas')
 
-> ---
->  drivers/gpu/drm/ttm/ttm_memory.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_memory.c b/drivers/gpu/drm/ttm/ttm_memory.c
-> index fa53df487875..1e688b603e46 100644
-> --- a/drivers/gpu/drm/ttm/ttm_memory.c
-> +++ b/drivers/gpu/drm/ttm/ttm_memory.c
-> @@ -300,7 +300,8 @@ static int ttm_mem_init_highmem_zone(struct ttm_mem_global *glob,
->         zone->glob = glob;
->         glob->zone_highmem = zone;
->         ret = kobject_init_and_add(
-> -               &zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, zone->name);
-> +               &zone->kobj, &ttm_mem_zone_kobj_type, &glob->kobj, "%s",
-> +               zone->name);
->         if (unlikely(ret != 0)) {
->                 kobject_put(&zone->kobj);
->                 return ret;
-> --
-> 1.9.1
->
->
-> --
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+> Jiang Liu (2):
+>   intel_mid: Kill unused function apbt_quick_calibrate()
+>   intel_mid: Refine the way to initialize IRQ for apb timer
+> 
+>  arch/x86/include/asm/apb_timer.h        |    2 -
+>  arch/x86/kernel/apb_timer.c             |   79 +++++--------------------------
+>  arch/x86/platform/intel-mid/intel-mid.c |   18 +++----
+>  arch/x86/platform/intel-mid/sfi.c       |   20 ++++----
+>  4 files changed, 30 insertions(+), 89 deletions(-)
+> 
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+
