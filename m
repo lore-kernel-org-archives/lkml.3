@@ -1,110 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaILTPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:15:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:56963 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751927AbaILTPI (ORCPT
+	id S1752108AbaILTRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:17:17 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:46659 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186AbaILTRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:15:08 -0400
-Date: Fri, 12 Sep 2014 17:18:24 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [PATCH v3 0/5] Initial support for XPowers AXP288 PMIC
-Message-ID: <20140912151824.GU31276@lukather>
-References: <1410477357-6407-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	Fri, 12 Sep 2014 15:17:16 -0400
+Date: Fri, 12 Sep 2014 13:17:11 -0600
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Block updates for 3.17-rc
+Message-ID: <20140912191711.GA21045@kernel.dk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K6Vt3zCKtaqyTnPU"
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1410477357-6407-1-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-09-12_07:2014-09-12,2014-09-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=8.20892909203508e-10 kscore.compositescore=0
+ circleOfTrustscore=37.7501936418875 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=3
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1409120172
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---K6Vt3zCKtaqyTnPU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+A small collection of fixes for the current rc series. It contains:
 
-On Thu, Sep 11, 2014 at 04:15:52PM -0700, Jacob Pan wrote:
-> XPowers AXP288 is a customized PMIC found on some Intel Baytrail-CR platf=
-orms.
-> It comes with sub-functions such as USB charging, fuel gauge, ADC, and ma=
-ny LDO
-> and BUCK channels.
->=20
-> By extending the existing AXP20x driver, this patchset adds basic support
-> for AXP288 PMIC with GPADC as one MFD cell device driver. It also adds ho=
-oks
-> for ACPI opregion handler driver which can be used to handle ACPI request=
-s.
->=20
-> Currently, the PMIC driver in this patchset does not support platform data
-> enumeration. But when ACPI _DSD and unified device properties become avai=
-lable,
-> cell devices with platform data will be added.
->=20
-> This patch does not use intel_soc_pmic core for i2c and regmap handling i=
-n that
-> axp288 shares similar programming interface with other Xpower PMICs suppo=
-rted in
-> axp20x.c. Therefore, extending axp20x.c to include axp288 makes more sens=
-e.
->=20
-> Changes
->  v3:	- put all file rename changes in 1/5
+- Two small blk-mq patches from Rob Elliott, cleaning up error case at
+  init time.
 
-The variables renaming are still not in 1/5....
+- A fix from Ming Lei, fixing SG merging for blk-mq where
+  QUEUE_FLAG_SG_NO_MERGE is the default.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+- A dev_t minor lifetime fix from Keith, fixing an issue where a minor
+  might be reused before all references to it were gone.
 
---K6Vt3zCKtaqyTnPU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+- Fix from Alan Stern where an unbalanced queue bypass caused SCSI some
+  headaches when it does a series of add/del on devices without fully
+  registrering the queue.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+- A fix from me for improving the scaling of tag depth in blk-mq if we
+  are short on memory.
 
-iQIcBAEBAgAGBQJUEw7AAAoJEBx+YmzsjxAgYi4P/3ns+5+YnbGJGUxtQECppx2c
-UV+PkBjF5Z/5EXr2WbsAv2pnqr0KoT0YYY41HyNeq3qvlFcvpteaTVvT08uj2z2m
-F91dSWuTKkjkLCYorhlldhA7YakBKNCzgGHHNkyRP/sFimcxkexOvr9s1PMha7mC
-bV655aqhnD6kvgyNlUwJabeNPt9af3QSrTTTpuKcwqu/qFsKJs2JhxuvncJLWQYc
-jt0thJbaEq8C98PgXDOOHztGo7PqMq3sPRkp6D8jaqpRiY+ixAN8z5+2ZQnceh34
-z2xaoMAlMRvp51Leb0QLnfDDd6l9QHB19FVchqMb2RnJ9ykrMKmRavxtojKKiCj7
-jo/DdraQFHv89IzcWGGzIBFl76rl6KSNsMHZryqrnb0ocEO+2qjLkL/rMSt0wuad
-lugZZfP9oLJDlT+KbQ3A0oLpr3qyxdnvWQLZgqdkSUCzD5kNuKL9/8hj+w4AdkwD
-M4DgOyPsMIQVuh77TaIPEuQ5PhWtDfYpfB1PH1MeCkb3nL/ZgpIiVdo4gRD0UbRa
-EauVIhBzZQKfip9FmTzEG/W8HsSD7cpDH3xFXrkn9OTIINp6E9cW7hQfrjqsPFct
-n/ruVIevK8LZRtH1sgiamPl1bzejg649J5QVaIvfhHZIqgtmZOZ7jWCROoqtM6j0
-stKgyUJUrKy/xqsuSHZd
-=HkLt
------END PGP SIGNATURE-----
+Please pull!
 
---K6Vt3zCKtaqyTnPU--
+  git://git.kernel.dk/linux-block.git for-linus
+
+for you to fetch changes up to a516440542afcb9647f88d12c35640baf02d07ea:
+
+  blk-mq: scale depth and rq map appropriate if low on memory (2014-09-10 09:02:03 -0600)
+
+----------------------------------------------------------------
+Alan Stern (1):
+      Block: fix unbalanced bypass-disable in blk_register_queue
+
+Jens Axboe (1):
+      blk-mq: scale depth and rq map appropriate if low on memory
+
+Keith Busch (1):
+      block: Fix dev_t minor allocation lifetime
+
+Ming Lei (1):
+      blk-merge: fix blk_recount_segments
+
+Robert Elliott (2):
+      blk-mq: pass along blk_mq_alloc_tag_set return values
+      blk-mq: cleanup after blk_mq_init_rq_map failures
+
+ block/blk-merge.c                 | 17 +++++---
+ block/blk-mq.c                    | 91 +++++++++++++++++++++++++++++++--------
+ block/blk-sysfs.c                 |  6 ++-
+ block/genhd.c                     | 24 ++++++-----
+ block/partition-generic.c         |  2 +-
+ drivers/block/mtip32xx/mtip32xx.c |  1 -
+ drivers/block/null_blk.c          | 29 +++++++++----
+ 7 files changed, 123 insertions(+), 47 deletions(-)
+
+-- 
+Jens Axboe
+
