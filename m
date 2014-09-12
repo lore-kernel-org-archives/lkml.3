@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaILJZz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:25:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11586 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453AbaILJZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:25:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,511,1406617200"; 
-   d="scan'208";a="477084701"
-Message-ID: <1410513950.7023.41.camel@linux.intel.com>
-Subject: Re: Ask help about pre_init_apic_IRQ0()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Date: Fri, 12 Sep 2014 12:25:50 +0300
-In-Reply-To: <alpine.DEB.2.10.1409121020290.4178@nanos>
-References: <54116106.5090904@linux.intel.com>
-	 <alpine.DEB.2.10.1409111225380.4178@nanos>
-	 <1410444181.7023.25.camel@linux.intel.com>
-	 <alpine.DEB.2.10.1409111610430.4178@nanos>
-	 <1410448503.7023.27.camel@linux.intel.com>
-	 <alpine.DEB.2.10.1409112354501.4178@nanos>
-	 <1410509968.7023.33.camel@linux.intel.com>
-	 <alpine.DEB.2.10.1409121020290.4178@nanos>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753923AbaILJ0T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:26:19 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:42366 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628AbaILJ0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 05:26:15 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Julia Lawall <Julia.Lawall@lip6.fr>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH 0/6] Small seqfile-use improvements
+Date: Fri, 12 Sep 2014 11:25:48 +0200
+Message-Id: <1410513954-28909-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 10:26 +0200, Thomas Gleixner wrote:
-> Thanks for providing the data! I'll queue a removal of this mess.
+Patches 1-3 are semantic patches for replacing certain seq_* calls
+with simpler equivalents, e.g. seq_printf(m, "literal") -> seq_puts(m,
+"literal"). 1 and 3 are guaranteed to preserve the semantics of the
+code. 2 may change it slightly, since if the seq_file overflows midway
+through a series of seq_puts calls, some of the strings have been
+printed; after applying 2, it is all-or-nothing. However, consecutive
+seq_puts calls with literal strings is mostly used to print long
+headers, so overflow is very unlikely.
 
-You are welcome!
+As an example, I applied these coccinelle scripts to kernel/trace/.
+The net result is a nice round, but admittedly tiny, 256 byte .text
+reduction.
 
-Just in case:
-http://www.spinics.net/lists/platform-driver-x86/msg02948.html
+Rasmus Villemoes (6):
+  Coccinelle: Semantic patch for replacing puts with putc
+  Coccinelle: Semantic patch for joining seq_puts calls
+  Coccinelle: Semantic patch for replacing seq_printf calls with
+    equivalent but simpler functions
+  trace: Replace seq_printf by simpler equivalents
+  trace: Merge consecutive seq_puts calls
+  trace: Replace single-character seq_puts with seq_putc
 
-
+ kernel/trace/ftrace.c                        |  30 +++---
+ kernel/trace/trace.c                         |  86 ++++++++-------
+ kernel/trace/trace_branch.c                  |  31 +++---
+ kernel/trace/trace_events.c                  |   4 +-
+ kernel/trace/trace_events_trigger.c          |   6 +-
+ kernel/trace/trace_functions.c               |   2 +-
+ kernel/trace/trace_functions_graph.c         |  28 ++---
+ kernel/trace/trace_kprobe.c                  |  12 +--
+ kernel/trace/trace_printk.c                  |   2 +-
+ kernel/trace/trace_uprobe.c                  |   4 +-
+ scripts/coccinelle/api/seq_printf.cocci      | 156 +++++++++++++++++++++++++++
+ scripts/coccinelle/api/seq_puts_concat.cocci |  71 ++++++++++++
+ scripts/coccinelle/api/seq_putsc.cocci       |  61 +++++++++++
+ 13 files changed, 393 insertions(+), 100 deletions(-)
+ create mode 100644 scripts/coccinelle/api/seq_printf.cocci
+ create mode 100644 scripts/coccinelle/api/seq_puts_concat.cocci
+ create mode 100644 scripts/coccinelle/api/seq_putsc.cocci
 
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+2.0.4
 
