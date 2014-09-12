@@ -1,186 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaILHMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 03:12:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55213 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035AbaILHML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 03:12:11 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: will.deacon@arm.com
-Cc: catalin.marinas@arm.com, davem@davemloft.net, zlim.lnx@gmail.com,
-        ast@plumgrid.com, dborkman@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH arm64-next] net: bpf: arm64: address randomize and write protect JIT code
-Date: Fri, 12 Sep 2014 09:11:37 +0200
-Message-Id: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
+	id S1752668AbaILHOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 03:14:54 -0400
+Received: from mail-bl2on0132.outbound.protection.outlook.com ([65.55.169.132]:55026
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752477AbaILHOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 03:14:53 -0400
+Date: Fri, 12 Sep 2014 15:14:28 +0800
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: Markus Pargmann <mpa@pengutronix.de>
+CC: Nicolin Chen <nicoleotsuka@gmail.com>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        <perex@perex.cz>, <tiwai@suse.de>, <alsa-devel@alsa-project.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] ASoC: fsl_ssi: refine ipg clock usage in this module
+Message-ID: <20140912071426.GA30261@audiosh1>
+References: <27584da8e3ab291ab8dbcbb411579613f8384a59.1410413734.git.shengjiu.wang@freescale.com>
+ <20140911225737.GA13926@Alpha> <20140912020110.GA414@audiosh1>
+ <20140912061706.GA10680@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140912061706.GA10680@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(199003)(52314003)(24454002)(35774003)(92566001)(76176999)(84676001)(83072002)(46406003)(86362001)(95666004)(110136001)(106466001)(74502001)(31966008)(97756001)(90102001)(87936001)(26826002)(107046002)(23726002)(68736004)(85852003)(79102001)(20776003)(19580395003)(50986999)(50466002)(15975445006)(64706001)(93886004)(83506001)(54356999)(104016003)(102836001)(21056001)(33716001)(80022001)(105606002)(6806004)(77982001)(15202345003)(97736003)(85306004)(99396002)(74662001)(76482001)(44976005)(33656002)(81542001)(47776003)(4396001)(83322001)(81342001)(92726001)(46102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0612;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
-jit against spraying attacks").
+On Fri, Sep 12, 2014 at 08:17:06AM +0200, Markus Pargmann wrote:
+> Hi,
+> 
+> On Fri, Sep 12, 2014 at 10:01:12AM +0800, Shengjiu Wang wrote:
+> > On Thu, Sep 11, 2014 at 03:57:37PM -0700, Nicolin Chen wrote:
+> > > On Thu, Sep 11, 2014 at 01:38:29PM +0800, Shengjiu Wang wrote:
+> > > > Move the ipg clock enable and disable operation to startup and shutdown,
+> > > > that is only enable ipg clock when ssi is working. Keep clock is disabled
+> > > > when ssi is in idle.
+> > > > otherwise, _fsl_ssi_set_dai_fmt function need to be called in probe,
+> > > > so add ipg clock control for it.
+> > > 
+> > > It seems to be no objection so far against my last suggestion to
+> > > use regmap's mmio_clk() for named ipg clk only. So you may still
+> > > consider about that.
+> > >
+> > I think mmio_clk() can be put to another patch. and this patch only for clk_enable()
+> > and clk_disable() operation.
+> 
+> I would also prefer Nicolin's suggestion using regmap's mmio clk. I
+> think it may be better to not add this particular patch at all and just
+> go with the mmio_clk patch. It should be easy enough to just add the
+> clock names to the devicetrees. That way we can avoid all those clock
+> enable/disable function calls.
+>
+I considered if use Nicolin's suggestion, I still need ot add those
+enable/disable function calls, because I want to remove the enable/disable
+function call in fsl_ssi_imx_probe, then I need to add enable/disable 
+function call in _fsl_ssi_set_dai_fmt(), which is called in fsl_ssi_probe().
+_fsl_ssi_set_dai_fmt() need to access the registers.
 
-Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
-support") which added necessary infrastructure, we can now implement
-RO marking of eBPF generated JIT image pages and randomize start offset
-for the JIT code, so that it does not reside directly on a page boundary
-anymore. Likewise, the holes are filled with illegal instructions.
+> >  
+> > > Anyway, I'd like to do thing in parallel. So I just simply tested
+> > > it on my side and its works fine, it may still need to be tested
+> > > by others though.
+> > > 
+> > > Nicolina
+> > 
+> > Hi Markus
+> > 
+> > could you please review it, and share your comments?
+> 
+> I think the clock enabling for AC97 is missing in your patch.
+> 
+I add clock enable in fsl_ssi_startup(), I think it is enough for AC97, does it?
 
-This is basically the ARM64 variant of what we already have in ARM via
-commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
-JIT code"). Moreover, this commit also presents a merge resolution due to
-conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
-read-only") as we don't use kfree() in bpf_jit_free() anymore to release
-the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
-a different allocator.
+wang shengjiu
 
-JIT tested on aarch64 with BPF test suite.
+> Best regards,
+> 
+> Markus
+> 
+> -- 
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
-Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Reviewed-by: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>
----
- README:
-
- Will, Catalin, Dave, this is more or less a heads-up: when net-next and
- arm64-next tree will get both merged into Linus' tree, we will run into
- a 'silent' merge conflict until someone actually runs eBPF JIT on ARM64
- and might notice (I presume) an oops when JIT is freeing bpf_prog. I'd
- assume nobody actually _runs_ linux-next, but not sure about that though.
-
- The reason is that in net-next tree we did some BPF-wide (incl. JIT)
- changes regarding the allocator which are currently _not_ present here
- while eBPF JIT currently is _only_ available here.
-
- Zi offered to alternatively only have this one-liner replacement and
- would rebase this one on top of it. Both is fine by me, I think this one
- would be important to have as well since we have already migrated all
- other archs that support DEBUG_SET_MODULE_RONX to this (ARM32 with
- Mircea's consent pending in net-next).
-
- This patch here is on top of the module memory leak patch from yesterday
- but requires some of the dependencies from net-next below.
-
- If you want to look it up, on the top of my head, revelant commits from
- Dave's net-next tree are:
-
-  60a3b2253c413cf601783b070507d7dd6620c954
-  738cbe72adc5c8f2016c4c68aa5162631d4f27e1
-  55309dd3d4cd7420376a3de0526d6ed24ff8fa76
-  b954d83421d51d822c42e5ab7b65069b25ad3005
-
- How do we handle this? Would I need to resend this patch when the time
- comes or would you ARM64 guys take care of it automagically? ;)
-
- Thanks a lot!
-
- arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
-index 7ae3354..4b71779 100644
---- a/arch/arm64/net/bpf_jit_comp.c
-+++ b/arch/arm64/net/bpf_jit_comp.c
-@@ -19,7 +19,6 @@
- #define pr_fmt(fmt) "bpf_jit: " fmt
- 
- #include <linux/filter.h>
--#include <linux/moduleloader.h>
- #include <linux/printk.h>
- #include <linux/skbuff.h>
- #include <linux/slab.h>
-@@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
- 	return to - from;
- }
- 
-+static void jit_fill_hole(void *area, unsigned int size)
-+{
-+	/* Insert illegal UND instructions. */
-+	u32 *ptr, fill_ins = 0xe7ffffff;
-+	/* We are guaranteed to have aligned memory. */
-+	for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
-+		*ptr++ = fill_ins;
-+}
-+
- static inline int epilogue_offset(const struct jit_ctx *ctx)
- {
- 	int to = ctx->offset[ctx->prog->len - 1];
-@@ -613,8 +621,10 @@ void bpf_jit_compile(struct bpf_prog *prog)
- 
- void bpf_int_jit_compile(struct bpf_prog *prog)
- {
-+	struct bpf_binary_header *header;
- 	struct jit_ctx ctx;
- 	int image_size;
-+	u8 *image_ptr;
- 
- 	if (!bpf_jit_enable)
- 		return;
-@@ -636,23 +646,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
- 		goto out;
- 
- 	build_prologue(&ctx);
--
- 	build_epilogue(&ctx);
- 
- 	/* Now we know the actual image size. */
- 	image_size = sizeof(u32) * ctx.idx;
--	ctx.image = module_alloc(image_size);
--	if (unlikely(ctx.image == NULL))
-+	header = bpf_jit_binary_alloc(image_size, &image_ptr,
-+				      sizeof(u32), jit_fill_hole);
-+	if (header == NULL)
- 		goto out;
- 
- 	/* 2. Now, the actual pass. */
- 
-+	ctx.image = (u32 *)image_ptr;
- 	ctx.idx = 0;
-+
- 	build_prologue(&ctx);
- 
- 	ctx.body_offset = ctx.idx;
- 	if (build_body(&ctx)) {
--		module_free(NULL, ctx.image);
-+		bpf_jit_binary_free(header);
- 		goto out;
- 	}
- 
-@@ -663,17 +675,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
- 		bpf_jit_dump(prog->len, image_size, 2, ctx.image);
- 
- 	bpf_flush_icache(ctx.image, ctx.image + ctx.idx);
-+
-+	set_memory_ro((unsigned long)header, header->pages);
- 	prog->bpf_func = (void *)ctx.image;
- 	prog->jited = 1;
--
- out:
- 	kfree(ctx.offset);
- }
- 
- void bpf_jit_free(struct bpf_prog *prog)
- {
--	if (prog->jited)
--		module_free(NULL, prog->bpf_func);
-+	unsigned long addr = (unsigned long)prog->bpf_func & PAGE_MASK;
-+	struct bpf_binary_header *header = (void *)addr;
-+
-+	if (!prog->jited)
-+		goto free_filter;
-+
-+	set_memory_rw(addr, header->pages);
-+	bpf_jit_binary_free(header);
- 
--	kfree(prog);
-+free_filter:
-+	bpf_prog_unlock_free(prog);
- }
--- 
-1.9.3
 
