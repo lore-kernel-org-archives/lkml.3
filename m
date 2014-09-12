@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaILRwt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:52:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49297 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaILRws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:52:48 -0400
-Date: Fri, 12 Sep 2014 19:52:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Dave Hansen <dave.hansen@intel.com>, Qiaowei Ren <qiaowei.ren@intel.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 07/10] x86, mpx: decode MPX instruction to get bound
- violation information
-In-Reply-To: <541223B1.5040705@zytor.com>
-Message-ID: <alpine.DEB.2.10.1409121949460.4178@nanos>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-8-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120015030.4178@nanos> <5412230A.6090805@intel.com> <541223B1.5040705@zytor.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751809AbaILRym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:54:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7462 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750883AbaILRyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 13:54:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,514,1406617200"; 
+   d="scan'208";a="572412274"
+Message-ID: <54133333.1020406@linux.intel.com>
+Date: Sat, 13 Sep 2014 01:53:55 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI / platform / LPSS: disable async suspend/resume
+ of LPSS devices
+References: <540E91F0.2060306@linux.intel.com> <20140910075026.GB13406@lahna.fi.intel.com>
+In-Reply-To: <20140910075026.GB13406@lahna.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Sep 2014, H. Peter Anvin wrote:
 
-> On 09/11/2014 03:32 PM, Dave Hansen wrote:
-> > On 09/11/2014 03:18 PM, Thomas Gleixner wrote:
-> >> On Thu, 11 Sep 2014, Qiaowei Ren wrote:
-> >>> This patch sets bound violation fields of siginfo struct in #BR
-> >>> exception handler by decoding the user instruction and constructing
-> >>> the faulting pointer.
-> >>>
-> >>> This patch does't use the generic decoder, and implements a limited
-> >>> special-purpose decoder to decode MPX instructions, simply because the
-> >>> generic decoder is very heavyweight not just in terms of performance
-> >>> but in terms of interface -- because it has to.
-> >>
-> >> And why is that an argument to add another special purpose decoder?
-> > 
-> > Peter asked for it to be done this way specifically:
-> > 
-> > 	https://lkml.org/lkml/2014/6/19/411
-> > 
-> 
-> Specifically because marshaling the data in and out of the generic
-> decoder was more complex than a special-purpose decoder.
+On 2014/9/10 15:50, Mika Westerberg wrote:
+> On Tue, Sep 09, 2014 at 01:36:48PM +0800, Fu, Zhonghui wrote:
+>> >From 6deb00230f5df68da3ca7490402a0c537bf386bb Mon Sep 17 00:00:00 2001
+>> From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+>> Date: Tue, 9 Sep 2014 13:02:25 +0800
+>> Subject: [PATCH] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
+>>
+>> LPSS devices must suspend/resume in fixed order. Or some LPSS devices
+>> will hang during the transition to ACPI_STATE_D0 state.
+> In addition to the comment from Rafael, I would like to have more
+> details here why we must suspend/resume the LPSS devices in certain
+> order.
+Sorry for late response.
 
-Well, I did not see the trainwreck which tried to use the generic
-decoder, but as I explained in the other mail, there is no reason not
-to use it and I can't see any complexity in retrieving the data beyond
-calling insn_get_length(insn);
+After the patch "ACPI / platform / LPSS: Enable async suspend/resume of LPSS devices(commit ID: 8ce62f85a81f57e86bc120ab690facc612223188)" was merged into upstream kernel, some LPSS devices(UART, I2C) frequently hang during resume. So, my patch is actually reverting that patch.
 
-Thanks,
 
-	tglx
+>
+>> Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
+>> Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+>> ---
+>>  drivers/acpi/acpi_lpss.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+>> index fddc1e8..54e5c97 100644
+>> --- a/drivers/acpi/acpi_lpss.c
+>> +++ b/drivers/acpi/acpi_lpss.c
+>> @@ -419,7 +419,7 @@ static int acpi_lpss_create_device(struct acpi_device *adev,
+>>  	adev->driver_data = pdata;
+>>  	pdev = acpi_create_platform_device(adev);
+>>  	if (!IS_ERR_OR_NULL(pdev)) {
+>> -		device_enable_async_suspend(&pdev->dev);
+>> +		device_disable_async_suspend(&pdev->dev);
+>>  		return 1;
+>>  	}
+>>  
+>> -- 1.7.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
