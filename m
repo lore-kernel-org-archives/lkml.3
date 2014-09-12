@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558AbaJAVbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 1 Oct 2014 17:31:37 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55356 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaJAVbf (ORCPT
+	id S1753741AbaJAVbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 1 Oct 2014 17:31:53 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36987 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684AbaJAVbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 1 Oct 2014 17:31:35 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 4/6] of: add vendor prefix for Tronsmart
-Date: Wed,  1 Oct 2014 23:29:44 +0200
-Message-Id: <1412198986-26534-5-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
-References: <1412198986-26534-1-git-send-email-b.galvani@gmail.com>
+	Wed, 1 Oct 2014 17:31:51 -0400
+Date: Fri, 12 Sep 2014 16:40:31 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: sre@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HSI: remove deprecated IRQF_DISABLED
+Message-ID: <20140912143722.GA22420@xo-6d-61-c0.localdomain>
+References: <1412195335-9437-1-git-send-email-michael.opdenacker@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412195335-9437-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds Tronsmart to the list of device tree vendor prefixes.
+On Wed 2014-10-01 22:28:55, Michael Opdenacker wrote:
+> Remove the use of the IRQF_DISABLED flag
+> from drivers/hsi/clients/nokia-modem.c
+> 
+> It's a NOOP since 2.6.35 and it will be removed soon.
+> 
+> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
- 1 file changed, 1 insertion(+)
+Acked-by: Pavel Machek <pavel@ucw.cz>
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index c681434..92a1798 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -141,6 +141,7 @@ tlm	Trusted Logic Mobility
- toradex	Toradex AG
- toshiba	Toshiba Corporation
- toumaz	Toumaz
-+tronsmart	Tronsmart
- usi	Universal Scientifc Industrial Co., Ltd.
- v3	V3 Semiconductor
- variscite	Variscite Ltd.
+
+
+> --- a/drivers/hsi/clients/nokia-modem.c
+> +++ b/drivers/hsi/clients/nokia-modem.c
+> @@ -174,7 +174,7 @@ static int nokia_modem_probe(struct device *dev)
+>  	tasklet_init(&modem->nokia_modem_rst_ind_tasklet,
+>  			do_nokia_modem_rst_ind_tasklet, (unsigned long)modem);
+>  	err = devm_request_irq(dev, irq, nokia_modem_rst_ind_isr,
+> -				IRQF_DISABLED | pflags, "modem_rst_ind", modem);
+> +				pflags, "modem_rst_ind", modem);
+>  	if (err < 0) {
+>  		dev_err(dev, "Request rst_ind irq(%d) failed (flags %d)\n",
+>  								irq, pflags);
+
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
