@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaILSD2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:03:28 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:41606 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168AbaILSDX (ORCPT
+	id S1752287AbaILSDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:03:33 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:50298 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235AbaILSDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:03:23 -0400
-Subject: [PATCH v1 05/13] PCI: pciehp: Remove pci_configure_slot() usage
+	Fri, 12 Sep 2014 14:03:30 -0400
+Subject: [PATCH v1 06/13] PCI: shpchp: Remove pci_configure_slot() usage
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Rajat Jain <rajatxjain@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:03:21 -0600
-Message-ID: <20140912180321.1630.88175.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+Date: Fri, 12 Sep 2014 12:03:28 -0600
+Message-ID: <20140912180328.1630.45550.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -27,7 +27,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 We now configure each PCI device as it is enumerated, in pci_device_add(),
-so remove the configuration done in pciehp.
+so remove the configuration done in shpchp.
 
 That configuration, in pci_configure_device(), does not include the
 MPS/MRRS configuration done by pcie_bus_configure_settings(), so keep
@@ -35,20 +35,23 @@ that here.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/pci/hotplug/pciehp_pci.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/pci/hotplug/shpchp_pci.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index b66812703415..9e69403be632 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -65,10 +65,7 @@ int pciehp_configure_device(struct slot *p_slot)
- 			pci_hp_add_bridge(dev);
+diff --git a/drivers/pci/hotplug/shpchp_pci.c b/drivers/pci/hotplug/shpchp_pci.c
+index 469454e0cc48..f8cd3a27e351 100644
+--- a/drivers/pci/hotplug/shpchp_pci.c
++++ b/drivers/pci/hotplug/shpchp_pci.c
+@@ -69,13 +69,7 @@ int shpchp_configure_device(struct slot *p_slot)
+ 	}
  
  	pci_assign_unassigned_bridge_resources(bridge);
 -
--	list_for_each_entry(dev, &parent->devices, bus_list)
+-	list_for_each_entry(dev, &parent->devices, bus_list) {
+-		if (PCI_SLOT(dev->devfn) != p_slot->device)
+-			continue;
 -		pci_configure_slot(dev);
+-	}
 -
 +	pcie_bus_configure_settings(parent);
  	pci_bus_add_devices(parent);
