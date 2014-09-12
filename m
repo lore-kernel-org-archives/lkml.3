@@ -1,82 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383AbaILTZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:25:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38297 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaILTZi (ORCPT
+	id S1752673AbaILT0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:26:08 -0400
+Received: from qmta11.westchester.pa.mail.comcast.net ([76.96.59.211]:46932
+	"EHLO QMTA11.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751845AbaILT0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:25:38 -0400
-Date: Fri, 12 Sep 2014 15:25:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, Toshi Kani <toshi.kani@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        akpm@linuxfoundation.org, Arnd Bergmann <arnd@arndb.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Juergen Gross <jgross@suse.com>,
-        Stefan Bader <stefan.bader@canonical.com>
-Subject: Re: [PATCH 1/5] x86, mm, pat: Set WT to PA4 slot of PAT MSR
-Message-ID: <20140912192501.GG15656@laptop.dumpdata.com>
-References: <1409855739-8985-1-git-send-email-toshi.kani@hp.com>
- <1409855739-8985-2-git-send-email-toshi.kani@hp.com>
- <20140904201123.GA9116@khazad-dum.debian.net>
- <5408C9C4.1010705@zytor.com>
- <20140904231923.GA15320@khazad-dum.debian.net>
- <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWxKFtM8FhnHQz--uaHYbiqShE1XLJxMCKN7Rs4SO14eQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 12 Sep 2014 15:26:06 -0400
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Sep 2014 15:26:06 EDT
+Date: Fri, 12 Sep 2014 14:19:57 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Fengguang Wu <fengguang.wu@intel.com>, Shan Wei <davidshan@tencent.com>,
+        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, bobby.prani@gmail.com,
+        Tejun Heo <htejun@gmail.com>
+Subject: Re: [rcu] BUG: unable to handle kernel NULL pointer dereference at
+ 000000da
+In-Reply-To: <20140912190238.GJ4775@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.11.1409121413540.21514@gentwo.org>
+References: <20140901084403.GA18808@localhost> <20140912190238.GJ4775@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 04, 2014 at 04:34:43PM -0700, Andy Lutomirski wrote:
-> On Thu, Sep 4, 2014 at 4:19 PM, Henrique de Moraes Holschuh
-> <hmh@hmh.eng.br> wrote:
-> > On Thu, 04 Sep 2014, H. Peter Anvin wrote:
-> >> On 09/04/2014 01:11 PM, Henrique de Moraes Holschuh wrote:
-> >> > I am worried of uncharted territory, here.  I'd actually advocate for not
-> >> > enabling the upper four PAT entries on IA-32 at all, unless Windows 9X / XP
-> >> > is using them as well.  Is this a real concern, or am I being overly
-> >> > cautious?
-> >>
-> >> It is extremely unlikely that we'd have PAT issues in 32-bit mode and
-> >> not in 64-bit mode on the same CPU.
-> >
-> > Sure, but is it really a good idea to enable this on the *old* non-64-bit
-> > capable processors (note: I don't mean x86-64 processors operating in 32-bit
-> > mode) ?
-> >
-> >> As far as I know, the current blacklist rule is very conservative due to
-> >> lack of testing more than anything else.
-> >
-> > I was told that much in 2009 when I asked why cpuid 0x6d8 was blacklisted
-> > from using PAT :-)
-> 
-> At the very least, anyone who plugs an NV-DIMM into a 32-bit machine
-> is nuts, and not just because I'd be somewhat amazed if it even
-> physically fits into the slot. :)
+On Fri, 12 Sep 2014, Paul E. McKenney wrote:
 
-They do have PCIe to PCI adapters, so you _could_ do it :-)
+> So, I am not seeing this failure in my testing, but my best guess is
+> that the problem is due to the fact that force_quiescent_state() is
+> sometimes invoked with preemption enabled, which breaks __this_cpu_read()
+> though perhaps with very low probability.  The common-case call (from
+> __call_rcu_core()) -does- have preemption disabled, in fact, it has
+> interrupts disabled.
 
-> 
-> --Andy
-> 
-> >
-> > --
-> >   "One disk to rule them all, One disk to find them. One disk to bring
-> >   them all and in the darkness grind them. In the Land of Redmond
-> >   where the shadows lie." -- The Silicon Valley Tarot
-> >   Henrique Holschuh
-> 
-> 
-> 
-> -- 
-> Andy Lutomirski
-> AMA Capital Management, LLC
+How could __this_cpu_read() break in a way that would make a difference to
+the code? There was no disabling/enabling of preemption before the patch
+and there is nothing like that after the patch. If there was a race then
+it still exists. The modification certainly cannot create a race.
+
+
