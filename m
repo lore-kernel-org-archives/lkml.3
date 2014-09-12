@@ -1,387 +1,759 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818AbaILJRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 05:17:31 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:28212 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaILJR1 (ORCPT
+	id S1753474AbaILJS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 05:18:28 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42871 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430AbaILJSW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 05:17:27 -0400
-Message-ID: <5412B9EE.3070708@huawei.com>
-Date: Fri, 12 Sep 2014 17:16:30 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 12 Sep 2014 05:18:22 -0400
+Date: Fri, 12 Sep 2014 10:18:16 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
+Subject: Re: [PATCH v8 1/4] pci:host: APM X-Gene PCIe host controller driver
+Message-ID: <20140912091816.GU27864@e106497-lin.cambridge.arm.com>
+References: <1410476266-29426-1-git-send-email-tinamdar@apm.com>
+ <1410476266-29426-2-git-send-email-tinamdar@apm.com>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "Vinod Koul" <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
-        <linux-hotplug@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [Patch Part3 V5 1/8] iommu/vt-d: Introduce helper function dmar_walk_resources()
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-2-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1410487848-6027-2-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.5412BA1F.00A3,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: dd0de5907e2d952bc56c1514f971fd2a
+In-Reply-To: <1410476266-29426-2-git-send-email-tinamdar@apm.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 12 Sep 2014 09:18:17.0893 (UTC) FILETIME=[7D2C1550:01CFCE6A]
+X-MC-Unique: 114091210181907101
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/12 10:10, Jiang Liu wrote:
-> Introduce helper function dmar_walk_resources to walk resource entries
-> in DMAR table and ACPI buffer object returned by ACPI _DSM method
-> for IOMMU hot-plug.
+On Thu, Sep 11, 2014 at 11:57:43PM +0100, Tanmay Inamdar wrote:
+> This patch adds the AppliedMicro X-Gene SOC PCIe host controller driver.
+> X-Gene PCIe controller supports maximum up to 8 lanes and GEN3 speed.
+> X-Gene SOC supports maximum 5 PCIe ports.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
 
-Hi Gerry. some comments below.
+Hi Tanmay,
 
+It looks good to me now. You can add if you care:
+
+Reviewed-by: Liviu Dudau <Liviu.Dudau@arm.com>
+
+Best regards,
+Liviu
 
 > ---
->  drivers/iommu/dmar.c        |  209 +++++++++++++++++++++++--------------------
->  drivers/iommu/intel-iommu.c |    4 +-
->  include/linux/dmar.h        |   19 ++--
->  3 files changed, 122 insertions(+), 110 deletions(-)
+>  drivers/pci/host/Kconfig     |  10 +
+>  drivers/pci/host/Makefile    |   1 +
+>  drivers/pci/host/pci-xgene.c | 646 +++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 657 insertions(+)
+>  create mode 100644 drivers/pci/host/pci-xgene.c
 > 
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index 60ab474bfff3..afd46eb9a5de 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -44,6 +44,14 @@
->  
->  #include "irq_remapping.h"
->  
-> +typedef int (*dmar_res_handler_t)(struct acpi_dmar_header *, void *);
-> +struct dmar_res_callback {
-> +	dmar_res_handler_t	cb[ACPI_DMAR_TYPE_RESERVED];
-> +	void			*arg[ACPI_DMAR_TYPE_RESERVED];
-> +	bool			ignore_unhandled;
-> +	bool			print_entry;
-
-Why do we need a switch to control print ?
-
+> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+> index 90f5cca..382fd3d 100644
+> --- a/drivers/pci/host/Kconfig
+> +++ b/drivers/pci/host/Kconfig
+> @@ -63,4 +63,14 @@ config PCIE_SPEAR13XX
+>         help
+>           Say Y here if you want PCIe support on SPEAr13XX SoCs.
+> 
+> +config PCI_XGENE
+> +       bool "X-Gene PCIe controller"
+> +       depends on ARCH_XGENE
+> +       depends on OF
+> +       select PCIEPORTBUS
+> +       help
+> +         Say Y here if you want internal PCI support on APM X-Gene SoC.
+> +         There are 5 internal PCIe ports available. Each port is GEN3 capable
+> +         and have varied lanes from x1 to x8.
+> +
+>  endmenu
+> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
+> index d0e88f1..845611f 100644
+> --- a/drivers/pci/host/Makefile
+> +++ b/drivers/pci/host/Makefile
+> @@ -8,3 +8,4 @@ obj-$(CONFIG_PCI_RCAR_GEN2) += pci-rcar-gen2.o
+>  obj-$(CONFIG_PCI_RCAR_GEN2_PCIE) += pcie-rcar.o
+>  obj-$(CONFIG_PCI_HOST_GENERIC) += pci-host-generic.o
+>  obj-$(CONFIG_PCIE_SPEAR13XX) += pcie-spear13xx.o
+> +obj-$(CONFIG_PCI_XGENE) += pci-xgene.o
+> diff --git a/drivers/pci/host/pci-xgene.c b/drivers/pci/host/pci-xgene.c
+> new file mode 100644
+> index 0000000..dae61a6
+> --- /dev/null
+> +++ b/drivers/pci/host/pci-xgene.c
+> @@ -0,0 +1,646 @@
+> +/**
+> + * APM X-Gene PCIe Driver
+> + *
+> + * Copyright (c) 2014 Applied Micro Circuits Corporation.
+> + *
+> + * Author: Tanmay Inamdar <tinamdar@apm.com>.
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +#include <linux/clk-private.h>
+> +#include <linux/delay.h>
+> +#include <linux/io.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/memblock.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/of_pci.h>
+> +#include <linux/pci.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +
+> +#define PCIECORE_CTLANDSTATUS          0x50
+> +#define PIM1_1L                                0x80
+> +#define IBAR2                          0x98
+> +#define IR2MSK                         0x9c
+> +#define PIM2_1L                                0xa0
+> +#define IBAR3L                         0xb4
+> +#define IR3MSKL                                0xbc
+> +#define PIM3_1L                                0xc4
+> +#define OMR1BARL                       0x100
+> +#define OMR2BARL                       0x118
+> +#define OMR3BARL                       0x130
+> +#define CFGBARL                                0x154
+> +#define CFGBARH                                0x158
+> +#define CFGCTL                         0x15c
+> +#define RTDID                          0x160
+> +#define BRIDGE_CFG_4                   0x2010
+> +#define BRIDGE_STATUS_0                        0x2600
+> +
+> +#define LINK_UP_MASK                   0x00000100
+> +#define AXI_EP_CFG_ACCESS              0x10000
+> +#define EN_COHERENCY                   0xF0000000
+> +#define EN_REG                         0x00000001
+> +#define OB_LO_IO                       0x00000002
+> +#define XGENE_PCIE_VENDORID            0x10E8
+> +#define XGENE_PCIE_DEVICEID            0xE004
+> +#define SZ_1T                          (SZ_1G*1024ULL)
+> +#define PIPE_PHY_RATE_RD(src)          ((0xc000 & (u32)(src)) >> 0xe)
+> +
+> +struct xgene_pcie_port {
+> +       struct device_node      *node;
+> +       struct device           *dev;
+> +       struct clk              *clk;
+> +       void __iomem            *csr_base;
+> +       void __iomem            *cfg_base;
+> +       unsigned long           cfg_addr;
+> +       bool                    link_up;
 > +};
 > +
->  
-> +static int dmar_walk_resources(struct acpi_dmar_header *start, size_t len,
-> +			       struct dmar_res_callback *cb)
-
-The name dmar_walk_resources easily make people think this is related with I/O or memory resources.
-Do you have a better idea of this ?  What about dmar_walk_remapping_entry() or dmar_walk_remapping_structure() ?
-
+> +static inline u32 pcie_bar_low_val(u32 addr, u32 flags)
 > +{
-> +	int ret = 0;
-> +	struct acpi_dmar_header *iter, *next;
-> +	struct acpi_dmar_header *end = ((void *)start) + len;
-> +
-> +	for (iter = start; iter < end && ret == 0; iter = next) {
-> +		next = (void *)iter + iter->length;
-> +		if (iter->length == 0) {
-> +			/* Avoid looping forever on bad ACPI tables */
-> +			pr_debug(FW_BUG "Invalid 0-length structure\n");
-
-What about use pr_warn() instead of pr_debug(), pr_debug() default is off.
-
-> +			break;
-> +		} else if (next > end) {
-> +			/* Avoid passing table end */
-> +			pr_warn(FW_BUG "record passes table end\n");
-> +			ret = -EINVAL;
-> +			break;
-> +		}
-> +
-> +		if (cb->print_entry)
-> +			dmar_table_print_dmar_entry(iter);
-> +
-> +		if (iter->type >= ACPI_DMAR_TYPE_RESERVED) {
-> +			/* continue for forward compatibility */
-> +			pr_debug("Unknown DMAR structure type %d\n",
-> +				 iter->type);
-
-Same as above.
-
-> +		} else if (cb->cb[iter->type]) {
-> +			ret = cb->cb[iter->type](iter, cb->arg[iter->type]);
-> +		} else if (!cb->ignore_unhandled) {
-> +			pr_warn("No handler for DMAR structure type %d\n",
-> +				iter->type);
-> +			ret = -EINVAL;
-> +		}
-> +	}
-> +
-> +	return ret;
+> +       return (addr & PCI_BASE_ADDRESS_MEM_MASK) | flags;
 > +}
 > +
-> +static inline int dmar_walk_dmar_table(struct acpi_table_dmar *dmar,
-> +				       struct dmar_res_callback *cb)
+> +/* PCIE Configuration Out/In */
+> +static inline void xgene_pcie_cfg_out32(void __iomem *addr, int offset, u32 val)
 > +{
-> +	return dmar_walk_resources((struct acpi_dmar_header *)(dmar + 1),
-> +				   dmar->header.length - sizeof(*dmar), cb);
+> +       writel(val, addr + offset);
 > +}
 > +
->  /**
->   * parse_dmar_table - parses the DMA reporting table
->   */
-> @@ -493,9 +554,18 @@ static int __init
->  parse_dmar_table(void)
->  {
->  	struct acpi_table_dmar *dmar;
-> -	struct acpi_dmar_header *entry_header;
->  	int ret = 0;
->  	int drhd_count = 0;
-> +	struct dmar_res_callback cb = {
-> +		.print_entry = true,
-> +		.ignore_unhandled = true,
-> +		.arg[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &drhd_count,
-> +		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_parse_one_drhd,
-> +		.cb[ACPI_DMAR_TYPE_RESERVED_MEMORY] = &dmar_parse_one_rmrr,
-> +		.cb[ACPI_DMAR_TYPE_ROOT_ATS] = &dmar_parse_one_atsr,
-> +		.cb[ACPI_DMAR_TYPE_HARDWARE_AFFINITY] = &dmar_parse_one_rhsa,
-> +		.cb[ACPI_DMAR_TYPE_NAMESPACE] = &dmar_parse_one_andd,
-> +	};
->  
->  	/*
->  	 * Do it again, earlier dmar_tbl mapping could be mapped with
-> @@ -519,51 +589,10 @@ parse_dmar_table(void)
->  	}
->  
->  	pr_info("Host address width %d\n", dmar->width + 1);
-> -
-> -	entry_header = (struct acpi_dmar_header *)(dmar + 1);
-> -	while (((unsigned long)entry_header) <
-> -			(((unsigned long)dmar) + dmar_tbl->length)) {
-> -		/* Avoid looping forever on bad ACPI tables */
-> -		if (entry_header->length == 0) {
-> -			pr_warn("Invalid 0-length structure\n");
-> -			ret = -EINVAL;
-> -			break;
-> -		}
-> -
-> -		dmar_table_print_dmar_entry(entry_header);
-> -
-> -		switch (entry_header->type) {
-> -		case ACPI_DMAR_TYPE_HARDWARE_UNIT:
-> -			drhd_count++;
-> -			ret = dmar_parse_one_drhd(entry_header);
-> -			break;
-> -		case ACPI_DMAR_TYPE_RESERVED_MEMORY:
-> -			ret = dmar_parse_one_rmrr(entry_header);
-> -			break;
-> -		case ACPI_DMAR_TYPE_ROOT_ATS:
-> -			ret = dmar_parse_one_atsr(entry_header);
-> -			break;
-> -		case ACPI_DMAR_TYPE_HARDWARE_AFFINITY:
-> -#ifdef CONFIG_ACPI_NUMA
-> -			ret = dmar_parse_one_rhsa(entry_header);
-> -#endif
-> -			break;
-> -		case ACPI_DMAR_TYPE_NAMESPACE:
-> -			ret = dmar_parse_one_andd(entry_header);
-> -			break;
-> -		default:
-> -			pr_warn("Unknown DMAR structure type %d\n",
-> -				entry_header->type);
-> -			ret = 0; /* for forward compatibility */
-> -			break;
-> -		}
-> -		if (ret)
-> -			break;
-> -
-> -		entry_header = ((void *)entry_header + entry_header->length);
-> -	}
-> -	if (drhd_count == 0)
-> +	ret = dmar_walk_dmar_table(dmar, &cb);
-> +	if (ret == 0 && drhd_count == 0)
->  		pr_warn(FW_BUG "No DRHD structure found in DMAR table\n");
-> +
->  	return ret;
->  }
->  
-> @@ -762,76 +791,60 @@ static void warn_invalid_dmar(u64 addr, const char *message)
->  		dmi_get_system_info(DMI_PRODUCT_VERSION));
->  }
->  
-> -static int __init check_zero_address(void)
-> +static int __ref
-> +dmar_validate_one_drhd(struct acpi_dmar_header *entry, void *arg)
->  {
-> -	struct acpi_table_dmar *dmar;
-> -	struct acpi_dmar_header *entry_header;
->  	struct acpi_dmar_hardware_unit *drhd;
-> +	void __iomem *addr;
-> +	u64 cap, ecap;
->  
-> -	dmar = (struct acpi_table_dmar *)dmar_tbl;
-> -	entry_header = (struct acpi_dmar_header *)(dmar + 1);
-> -
-> -	while (((unsigned long)entry_header) <
-> -			(((unsigned long)dmar) + dmar_tbl->length)) {
-> -		/* Avoid looping forever on bad ACPI tables */
-> -		if (entry_header->length == 0) {
-> -			pr_warn("Invalid 0-length structure\n");
-> -			return 0;
-> -		}
-> -
-> -		if (entry_header->type == ACPI_DMAR_TYPE_HARDWARE_UNIT) {
-> -			void __iomem *addr;
-> -			u64 cap, ecap;
-> -
-> -			drhd = (void *)entry_header;
-> -			if (!drhd->address) {
-> -				warn_invalid_dmar(0, "");
-> -				goto failed;
-> -			}
-> +	drhd = (void *)entry;
-> +	if (!drhd->address) {
-> +		warn_invalid_dmar(0, "");
-> +		return -EINVAL;
-> +	}
->  
-> -			addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
-> -			if (!addr ) {
-> -				printk("IOMMU: can't validate: %llx\n", drhd->address);
-> -				goto failed;
-> -			}
-> -			cap = dmar_readq(addr + DMAR_CAP_REG);
-> -			ecap = dmar_readq(addr + DMAR_ECAP_REG);
-> -			early_iounmap(addr, VTD_PAGE_SIZE);
-> -			if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
-> -				warn_invalid_dmar(drhd->address,
-> -						  " returns all ones");
-> -				goto failed;
-> -			}
-> -		}
-> +	addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
-> +	if (!addr) {
-> +		pr_warn("IOMMU: can't validate: %llx\n", drhd->address);
-> +		return -EINVAL;
-> +	}
-> +	cap = dmar_readq(addr + DMAR_CAP_REG);
-> +	ecap = dmar_readq(addr + DMAR_ECAP_REG);
-> +	early_iounmap(addr, VTD_PAGE_SIZE);
->  
-> -		entry_header = ((void *)entry_header + entry_header->length);
-> +	if (cap == (uint64_t)-1 && ecap == (uint64_t)-1) {
-> +		warn_invalid_dmar(drhd->address, " returns all ones");
-> +		return -EINVAL;
->  	}
-> -	return 1;
->  
-> -failed:
->  	return 0;
->  }
->  
->  int __init detect_intel_iommu(void)
->  {
->  	int ret;
-> +	struct dmar_res_callback validate_drhd_cb = {
-> +		.cb[ACPI_DMAR_TYPE_HARDWARE_UNIT] = &dmar_validate_one_drhd,
-> +		.ignore_unhandled = true,
-> +	};
->  
->  	down_write(&dmar_global_lock);
->  	ret = dmar_table_detect();
->  	if (ret)
-> -		ret = check_zero_address();
-> -	{
-> -		if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
-> -			iommu_detected = 1;
-> -			/* Make sure ACS will be enabled */
-> -			pci_request_acs();
-> -		}
-> +		ret = !dmar_walk_dmar_table((struct acpi_table_dmar *)dmar_tbl,
-> +					    &validate_drhd_cb);
-> +	if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {
-> +		iommu_detected = 1;
-> +		/* Make sure ACS will be enabled */
-> +		pci_request_acs();
-> +	}
->  
->  #ifdef CONFIG_X86
-> -		if (ret)
-> -			x86_init.iommu.iommu_init = intel_iommu_init;
-> +	if (ret)
-> +		x86_init.iommu.iommu_init = intel_iommu_init;
->  #endif
-> -	}
-> +
->  	early_acpi_os_unmap_memory((void __iomem *)dmar_tbl, dmar_tbl_size);
->  	dmar_tbl = NULL;
->  	up_write(&dmar_global_lock);
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 5619f264862d..4af2206e41bc 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -3682,7 +3682,7 @@ static inline void init_iommu_pm_ops(void) {}
->  #endif	/* CONFIG_PM */
->  
->  
-> -int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
-> +int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg)
->  {
->  	struct acpi_dmar_reserved_memory *rmrr;
->  	struct dmar_rmrr_unit *rmrru;
-> @@ -3708,7 +3708,7 @@ int __init dmar_parse_one_rmrr(struct acpi_dmar_header *header)
->  	return 0;
->  }
->  
-> -int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr)
-> +int __init dmar_parse_one_atsr(struct acpi_dmar_header *hdr, void *arg)
->  {
->  	struct acpi_dmar_atsr *atsr;
->  	struct dmar_atsr_unit *atsru;
-> diff --git a/include/linux/dmar.h b/include/linux/dmar.h
-> index 1deece46a0ca..fac8ca34f9a8 100644
-> --- a/include/linux/dmar.h
-> +++ b/include/linux/dmar.h
-> @@ -115,22 +115,21 @@ extern int dmar_remove_dev_scope(struct dmar_pci_notify_info *info,
->  extern int detect_intel_iommu(void);
->  extern int enable_drhd_fault_handling(void);
->  
-> +static inline int dmar_res_noop(struct acpi_dmar_header *hdr, void *arg)
+> +static inline void xgene_pcie_cfg_out16(void __iomem *addr, int offset, u16 val)
 > +{
-> +	return 0;
+> +       u32 val32 = readl(addr + (offset & ~0x3));
+> +
+> +       switch (offset & 0x3) {
+> +       case 2:
+> +               val32 &= ~0xFFFF0000;
+> +               val32 |= (u32)val << 16;
+> +               break;
+> +       case 0:
+> +       default:
+> +               val32 &= ~0xFFFF;
+> +               val32 |= val;
+> +               break;
+> +       }
+> +       writel(val32, addr + (offset & ~0x3));
 > +}
 > +
->  #ifdef CONFIG_INTEL_IOMMU
->  extern int iommu_detected, no_iommu;
->  extern int intel_iommu_init(void);
-> -extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header);
-> -extern int dmar_parse_one_atsr(struct acpi_dmar_header *header);
-> +extern int dmar_parse_one_rmrr(struct acpi_dmar_header *header, void *arg);
-> +extern int dmar_parse_one_atsr(struct acpi_dmar_header *header, void *arg);
->  extern int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info);
->  #else /* !CONFIG_INTEL_IOMMU: */
->  static inline int intel_iommu_init(void) { return -ENODEV; }
-> -static inline int dmar_parse_one_rmrr(struct acpi_dmar_header *header)
-> -{
-> -	return 0;
-> -}
-> -static inline int dmar_parse_one_atsr(struct acpi_dmar_header *header)
-> -{
-> -	return 0;
-> -}
-> +#define	dmar_parse_one_rmrr		dmar_res_noop
-> +#define	dmar_parse_one_atsr		dmar_res_noop
->  static inline int dmar_iommu_notify_scope_dev(struct dmar_pci_notify_info *info)
->  {
->  	return 0;
+> +static inline void xgene_pcie_cfg_out8(void __iomem *addr, int offset, u8 val)
+> +{
+> +       u32 val32 = readl(addr + (offset & ~0x3));
+> +
+> +       switch (offset & 0x3) {
+> +       case 0:
+> +               val32 &= ~0xFF;
+> +               val32 |= val;
+> +               break;
+> +       case 1:
+> +               val32 &= ~0xFF00;
+> +               val32 |= (u32)val << 8;
+> +               break;
+> +       case 2:
+> +               val32 &= ~0xFF0000;
+> +               val32 |= (u32)val << 16;
+> +               break;
+> +       case 3:
+> +       default:
+> +               val32 &= ~0xFF000000;
+> +               val32 |= (u32)val << 24;
+> +               break;
+> +       }
+> +       writel(val32, addr + (offset & ~0x3));
+> +}
+> +
+> +static inline void xgene_pcie_cfg_in32(void __iomem *addr, int offset, u32 *val)
+> +{
+> +       *val = readl(addr + offset);
+> +}
+> +
+> +static inline void
+> +xgene_pcie_cfg_in16(void __iomem *addr, int offset, u32 *val)
+> +{
+> +       *val = readl(addr + (offset & ~0x3));
+> +
+> +       switch (offset & 0x3) {
+> +       case 2:
+> +               *val >>= 16;
+> +               break;
+> +       }
+> +
+> +       *val &= 0xFFFF;
+> +}
+> +
+> +static inline void
+> +xgene_pcie_cfg_in8(void __iomem *addr, int offset, u32 *val)
+> +{
+> +       *val = readl(addr + (offset & ~0x3));
+> +
+> +       switch (offset & 0x3) {
+> +       case 3:
+> +               *val = *val >> 24;
+> +               break;
+> +       case 2:
+> +               *val = *val >> 16;
+> +               break;
+> +       case 1:
+> +               *val = *val >> 8;
+> +               break;
+> +       }
+> +       *val &= 0xFF;
+> +}
+> +
+> +/* When the address bit [17:16] is 2'b01, the Configuration access will be
+> + * treated as Type 1 and it will be forwarded to external PCIe device.
+> + */
+> +static void __iomem *xgene_pcie_get_cfg_base(struct pci_bus *bus)
+> +{
+> +       struct xgene_pcie_port *port = bus->sysdata;
+> +
+> +       if (bus->number >= (bus->primary + 1))
+> +               return port->cfg_base + AXI_EP_CFG_ACCESS;
+> +
+> +       return port->cfg_base;
+> +}
+> +
+> +/* For Configuration request, RTDID register is used as Bus Number,
+> + * Device Number and Function number of the header fields.
+> + */
+> +static void xgene_pcie_set_rtdid_reg(struct pci_bus *bus, uint devfn)
+> +{
+> +       struct xgene_pcie_port *port = bus->sysdata;
+> +       unsigned int b, d, f;
+> +       u32 rtdid_val = 0;
+> +
+> +       b = bus->number;
+> +       d = PCI_SLOT(devfn);
+> +       f = PCI_FUNC(devfn);
+> +
+> +       if (!pci_is_root_bus(bus))
+> +               rtdid_val = (b << 8) | (d << 3) | f;
+> +
+> +       writel(rtdid_val, port->csr_base + RTDID);
+> +       /* read the register back to ensure flush */
+> +       readl(port->csr_base + RTDID);
+> +}
+> +
+> +static int xgene_pcie_read_config(struct pci_bus *bus, unsigned int devfn,
+> +                                 int offset, int len, u32 *val)
+> +{
+> +       struct xgene_pcie_port *port = bus->sysdata;
+> +       void __iomem *addr;
+> +
+> +       if ((pci_is_root_bus(bus) && devfn != 0) || !port->link_up)
+> +               return PCIBIOS_DEVICE_NOT_FOUND;
+> +
+> +       xgene_pcie_set_rtdid_reg(bus, devfn);
+> +       addr = xgene_pcie_get_cfg_base(bus);
+> +       switch (len) {
+> +       case 1:
+> +               xgene_pcie_cfg_in8(addr, offset, val);
+> +               break;
+> +       case 2:
+> +               xgene_pcie_cfg_in16(addr, offset, val);
+> +               break;
+> +       default:
+> +               xgene_pcie_cfg_in32(addr, offset, val);
+> +               break;
+> +       }
+> +       return PCIBIOS_SUCCESSFUL;
+> +}
+> +
+> +static int xgene_pcie_write_config(struct pci_bus *bus, unsigned int devfn,
+> +                                  int offset, int len, u32 val)
+> +{
+> +       struct xgene_pcie_port *port = bus->sysdata;
+> +       void __iomem *addr;
+> +
+> +       if ((pci_is_root_bus(bus) && devfn != 0) || !port->link_up)
+> +               return PCIBIOS_DEVICE_NOT_FOUND;
+> +
+> +       xgene_pcie_set_rtdid_reg(bus, devfn);
+> +       addr = xgene_pcie_get_cfg_base(bus);
+> +       switch (len) {
+> +       case 1:
+> +               xgene_pcie_cfg_out8(addr, offset, (u8)val);
+> +               break;
+> +       case 2:
+> +               xgene_pcie_cfg_out16(addr, offset, (u16)val);
+> +               break;
+> +       default:
+> +               xgene_pcie_cfg_out32(addr, offset, val);
+> +               break;
+> +       }
+> +
+> +       return PCIBIOS_SUCCESSFUL;
+> +}
+> +
+> +static struct pci_ops xgene_pcie_ops = {
+> +       .read = xgene_pcie_read_config,
+> +       .write = xgene_pcie_write_config
+> +};
+> +
+> +static u64 xgene_pcie_set_ib_mask(void __iomem *csr_base, u32 addr,
+> +                                 u32 flags, u64 size)
+> +{
+> +       u64 mask = (~(size - 1) & PCI_BASE_ADDRESS_MEM_MASK) | flags;
+> +       u32 val32 = 0;
+> +       u32 val;
+> +
+> +       val32 = readl(csr_base + addr);
+> +       val = (val32 & 0x0000ffff) | (lower_32_bits(mask) << 16);
+> +       writel(val, csr_base + addr);
+> +
+> +       val32 = readl(csr_base + addr + 0x04);
+> +       val = (val32 & 0xffff0000) | (lower_32_bits(mask) >> 16);
+> +       writel(val, csr_base + addr + 0x04);
+> +
+> +       val32 = readl(csr_base + addr + 0x04);
+> +       val = (val32 & 0x0000ffff) | (upper_32_bits(mask) << 16);
+> +       writel(val, csr_base + addr + 0x04);
+> +
+> +       val32 = readl(csr_base + addr + 0x08);
+> +       val = (val32 & 0xffff0000) | (upper_32_bits(mask) >> 16);
+> +       writel(val, csr_base + addr + 0x08);
+> +
+> +       return mask;
+> +}
+> +
+> +static void xgene_pcie_linkup(struct xgene_pcie_port *port,
+> +                                  u32 *lanes, u32 *speed)
+> +{
+> +       void __iomem *csr_base = port->csr_base;
+> +       u32 val32;
+> +
+> +       port->link_up = false;
+> +       val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
+> +       if (val32 & LINK_UP_MASK) {
+> +               port->link_up = true;
+> +               *speed = PIPE_PHY_RATE_RD(val32);
+> +               val32 = readl(csr_base + BRIDGE_STATUS_0);
+> +               *lanes = val32 >> 26;
+> +       }
+> +}
+> +
+> +static int xgene_pcie_init_port(struct xgene_pcie_port *port)
+> +{
+> +       int rc;
+> +
+> +       port->clk = clk_get(port->dev, NULL);
+> +       if (IS_ERR(port->clk)) {
+> +               dev_err(port->dev, "clock not available\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       rc = clk_prepare_enable(port->clk);
+> +       if (rc) {
+> +               dev_err(port->dev, "clock enable failed\n");
+> +               return rc;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void xgene_pcie_fixup_bridge(struct pci_dev *dev)
+> +{
+> +       int i;
+> +
+> +       /* Hide the PCI host BARs from the kernel as their content doesn't
+> +        * fit well in the resource management
+> +        */
+> +       for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+> +               dev->resource[i].start = dev->resource[i].end = 0;
+> +               dev->resource[i].flags = 0;
+> +       }
+> +       dev_info(&dev->dev, "Hiding X-Gene pci host bridge resources %s\n",
+> +                pci_name(dev));
+> +}
+> +DECLARE_PCI_FIXUP_HEADER(XGENE_PCIE_VENDORID, XGENE_PCIE_DEVICEID,
+> +                        xgene_pcie_fixup_bridge);
+> +
+> +static int xgene_pcie_map_reg(struct xgene_pcie_port *port,
+> +                             struct platform_device *pdev)
+> +{
+> +       struct resource *res;
+> +
+> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "csr");
+> +       port->csr_base = devm_ioremap_resource(port->dev, res);
+> +       if (IS_ERR(port->csr_base))
+> +               return PTR_ERR(port->csr_base);
+> +
+> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cfg");
+> +       port->cfg_base = devm_ioremap_resource(port->dev, res);
+> +       if (IS_ERR(port->cfg_base))
+> +               return PTR_ERR(port->cfg_base);
+> +       port->cfg_addr = res->start;
+> +
+> +       return 0;
+> +}
+> +
+> +static void xgene_pcie_setup_ob_reg(struct xgene_pcie_port *port,
+> +                                   struct resource *res, u32 offset,
+> +                                   u64 cpu_addr, u64 pci_addr)
+> +{
+> +       void __iomem *base = port->csr_base + offset;
+> +       resource_size_t size = resource_size(res);
+> +       u64 restype = resource_type(res);
+> +       u64 mask = 0;
+> +       u32 min_size;
+> +       u32 flag = EN_REG;
+> +
+> +       if (restype == IORESOURCE_MEM) {
+> +               min_size = SZ_128M;
+> +       } else {
+> +               min_size = 128;
+> +               flag |= OB_LO_IO;
+> +       }
+> +
+> +       if (size >= min_size)
+> +               mask = ~(size - 1) | flag;
+> +       else
+> +               dev_warn(port->dev, "res size 0x%llx less than minimum 0x%x\n",
+> +                        (u64)size, min_size);
+> +
+> +       writel(lower_32_bits(cpu_addr), base);
+> +       writel(upper_32_bits(cpu_addr), base + 0x04);
+> +       writel(lower_32_bits(mask), base + 0x08);
+> +       writel(upper_32_bits(mask), base + 0x0c);
+> +       writel(lower_32_bits(pci_addr), base + 0x10);
+> +       writel(upper_32_bits(pci_addr), base + 0x14);
+> +}
+> +
+> +static void xgene_pcie_setup_cfg_reg(void __iomem *csr_base, u64 addr)
+> +{
+> +       writel(lower_32_bits(addr), csr_base + CFGBARL);
+> +       writel(upper_32_bits(addr), csr_base + CFGBARH);
+> +       writel(EN_REG, csr_base + CFGCTL);
+> +}
+> +
+> +static int xgene_pcie_map_ranges(struct xgene_pcie_port *port,
+> +                                struct list_head *res,
+> +                                resource_size_t io_base)
+> +{
+> +       struct pci_host_bridge_window *window;
+> +       struct device *dev = port->dev;
+> +       int ret;
+> +
+> +       list_for_each_entry(window, res, list) {
+> +               struct resource *res = window->res;
+> +               u64 restype = resource_type(res);
+> +
+> +               dev_dbg(port->dev, "0x%08lx 0x%016llx...0x%016llx\n",
+> +                       res->flags, res->start, res->end);
+> +
+> +               switch (restype) {
+> +               case IORESOURCE_IO:
+> +                       xgene_pcie_setup_ob_reg(port, res, OMR3BARL, io_base,
+> +                                               res->start - window->offset);
+> +                       ret = pci_remap_iospace(res, io_base);
+> +                       if (ret < 0)
+> +                               return ret;
+> +                       break;
+> +               case IORESOURCE_MEM:
+> +                       xgene_pcie_setup_ob_reg(port, res, OMR1BARL, res->start,
+> +                                               res->start - window->offset);
+> +                       break;
+> +               case IORESOURCE_BUS:
+> +                       break;
+> +               default:
+> +                       dev_err(dev, "invalid io resource!");
+> +                       return -EINVAL;
+> +               }
+> +       }
+> +       xgene_pcie_setup_cfg_reg(port->csr_base, port->cfg_addr);
+> +
+> +       return 0;
+> +}
+> +
+> +static void xgene_pcie_setup_pims(void *addr, u64 pim, u64 size)
+> +{
+> +       writel(lower_32_bits(pim), addr);
+> +       writel(upper_32_bits(pim) | EN_COHERENCY, addr + 0x04);
+> +       writel(lower_32_bits(size), addr + 0x10);
+> +       writel(upper_32_bits(size), addr + 0x14);
+> +}
+> +
+> +/*
+> + * X-Gene PCIe support maximum 3 inbound memory regions
+> + * This function helps to select a region based on size of region
+> + */
+> +static int xgene_pcie_select_ib_reg(u8 *ib_reg_mask, u64 size)
+> +{
+> +       if ((size > 4) && (size < SZ_16M) && !(*ib_reg_mask & (1 << 1))) {
+> +               *ib_reg_mask |= (1 << 1);
+> +               return 1;
+> +       }
+> +
+> +       if ((size > SZ_1K) && (size < SZ_1T) && !(*ib_reg_mask & (1 << 0))) {
+> +               *ib_reg_mask |= (1 << 0);
+> +               return 0;
+> +       }
+> +
+> +       if ((size > SZ_1M) && (size < SZ_1T) && !(*ib_reg_mask & (1 << 2))) {
+> +               *ib_reg_mask |= (1 << 2);
+> +               return 2;
+> +       }
+> +
+> +       return -EINVAL;
+> +}
+> +
+> +static void xgene_pcie_setup_ib_reg(struct xgene_pcie_port *port,
+> +                                   struct of_pci_range *range, u8 *ib_reg_mask)
+> +{
+> +       void __iomem *csr_base = port->csr_base;
+> +       void __iomem *cfg_base = port->cfg_base;
+> +       void *bar_addr;
+> +       void *pim_addr;
+> +       u64 cpu_addr = range->cpu_addr;
+> +       u64 pci_addr = range->pci_addr;
+> +       u64 size = range->size;
+> +       u64 mask = ~(size - 1) | EN_REG;
+> +       u32 flags = PCI_BASE_ADDRESS_MEM_TYPE_64;
+> +       u32 bar_low;
+> +       int region;
+> +
+> +       region = xgene_pcie_select_ib_reg(ib_reg_mask, range->size);
+> +       if (region < 0) {
+> +               dev_warn(port->dev, "invalid pcie dma-range config\n");
+> +               return;
+> +       }
+> +
+> +       if (range->flags & IORESOURCE_PREFETCH)
+> +               flags |= PCI_BASE_ADDRESS_MEM_PREFETCH;
+> +
+> +       bar_low = pcie_bar_low_val((u32)cpu_addr, flags);
+> +       switch (region) {
+> +       case 0:
+> +               xgene_pcie_set_ib_mask(csr_base, BRIDGE_CFG_4, flags, size);
+> +               bar_addr = cfg_base + PCI_BASE_ADDRESS_0;
+> +               writel(bar_low, bar_addr);
+> +               writel(upper_32_bits(cpu_addr), bar_addr + 0x4);
+> +               pim_addr = csr_base + PIM1_1L;
+> +               break;
+> +       case 1:
+> +               bar_addr = csr_base + IBAR2;
+> +               writel(bar_low, bar_addr);
+> +               writel(lower_32_bits(mask), csr_base + IR2MSK);
+> +               pim_addr = csr_base + PIM2_1L;
+> +               break;
+> +       case 2:
+> +               bar_addr = csr_base + IBAR3L;
+> +               writel(bar_low, bar_addr);
+> +               writel(upper_32_bits(cpu_addr), bar_addr + 0x4);
+> +               writel(lower_32_bits(mask), csr_base + IR3MSKL);
+> +               writel(upper_32_bits(mask), csr_base + IR3MSKL + 0x4);
+> +               pim_addr = csr_base + PIM3_1L;
+> +               break;
+> +       }
+> +
+> +       xgene_pcie_setup_pims(pim_addr, pci_addr, ~(size - 1));
+> +}
+> +
+> +static int pci_dma_range_parser_init(struct of_pci_range_parser *parser,
+> +                                    struct device_node *node)
+> +{
+> +       const int na = 3, ns = 2;
+> +       int rlen;
+> +
+> +       parser->node = node;
+> +       parser->pna = of_n_addr_cells(node);
+> +       parser->np = parser->pna + na + ns;
+> +
+> +       parser->range = of_get_property(node, "dma-ranges", &rlen);
+> +       if (!parser->range)
+> +               return -ENOENT;
+> +       parser->end = parser->range + rlen / sizeof(__be32);
+> +
+> +       return 0;
+> +}
+> +
+> +static int xgene_pcie_parse_map_dma_ranges(struct xgene_pcie_port *port)
+> +{
+> +       struct device_node *np = port->node;
+> +       struct of_pci_range range;
+> +       struct of_pci_range_parser parser;
+> +       struct device *dev = port->dev;
+> +       u8 ib_reg_mask = 0;
+> +
+> +       if (pci_dma_range_parser_init(&parser, np)) {
+> +               dev_err(dev, "missing dma-ranges property\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       /* Get the dma-ranges from DT */
+> +       for_each_of_pci_range(&parser, &range) {
+> +               u64 end = range.cpu_addr + range.size - 1;
+> +
+> +               dev_dbg(port->dev, "0x%08x 0x%016llx..0x%016llx -> 0x%016llx\n",
+> +                       range.flags, range.cpu_addr, end, range.pci_addr);
+> +               xgene_pcie_setup_ib_reg(port, &range, &ib_reg_mask);
+> +       }
+> +       return 0;
+> +}
+> +
+> +/* clear bar configuration which was done by firmware */
+> +static void xgene_pcie_clear_config(struct xgene_pcie_port *port)
+> +{
+> +       int i;
+> +
+> +       for (i = PIM1_1L; i <= CFGCTL; i += 4)
+> +               writel(0x0, port->csr_base + i);
+> +}
+> +
+> +static int xgene_pcie_setup(struct xgene_pcie_port *port,
+> +                           struct list_head *res,
+> +                           resource_size_t io_base)
+> +{
+> +       u32 lanes = 0, speed = 0;
+> +       int ret;
+> +
+> +       xgene_pcie_clear_config(port);
+> +
+> +       ret = xgene_pcie_map_ranges(port, res, io_base);
+> +       if (ret)
+> +               return ret;
+> +
+> +       ret = xgene_pcie_parse_map_dma_ranges(port);
+> +       if (ret)
+> +               return ret;
+> +
+> +       xgene_pcie_linkup(port, &lanes, &speed);
+> +       if (!port->link_up)
+> +               dev_info(port->dev, "(rc) link down\n");
+> +       else
+> +               dev_info(port->dev, "(rc) x%d gen-%d link up\n",
+> +                               lanes, speed + 1);
+> +       return 0;
+> +}
+> +
+> +static int xgene_pcie_probe_bridge(struct platform_device *pdev)
+> +{
+> +       struct device_node *dn = pdev->dev.of_node;
+> +       struct xgene_pcie_port *port;
+> +       resource_size_t iobase = 0;
+> +       struct pci_bus *bus;
+> +       int ret;
+> +       LIST_HEAD(res);
+> +
+> +       port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
+> +       if (!port)
+> +               return -ENOMEM;
+> +       port->node = of_node_get(pdev->dev.of_node);
+> +       port->dev = &pdev->dev;
+> +
+> +       ret = xgene_pcie_map_reg(port, pdev);
+> +       if (ret)
+> +               return ret;
+> +
+> +       ret = xgene_pcie_init_port(port);
+> +       if (ret)
+> +               return ret;
+> +
+> +       ret = of_pci_get_host_bridge_resources(dn, 0, 0xff, &res, &iobase);
+> +       if (ret)
+> +               return ret;
+> +
+> +       ret = xgene_pcie_setup(port, &res, iobase);
+> +       if (ret)
+> +               return ret;
+> +
+> +       bus = pci_scan_root_bus(&pdev->dev, 0, &xgene_pcie_ops, port, &res);
+> +       if (!bus)
+> +               return -ENOMEM;
+> +
+> +       platform_set_drvdata(pdev, port);
+> +       return 0;
+> +}
+> +
+> +static const struct of_device_id xgene_pcie_match_table[] = {
+> +       {.compatible = "apm,xgene-pcie",},
+> +       {},
+> +};
+> +
+> +static struct platform_driver xgene_pcie_driver = {
+> +       .driver = {
+> +                  .name = "xgene-pcie",
+> +                  .owner = THIS_MODULE,
+> +                  .of_match_table = of_match_ptr(xgene_pcie_match_table),
+> +       },
+> +       .probe = xgene_pcie_probe_bridge,
+> +};
+> +module_platform_driver(xgene_pcie_driver);
+> +
+> +MODULE_AUTHOR("Tanmay Inamdar <tinamdar@apm.com>");
+> +MODULE_DESCRIPTION("APM X-Gene PCIe driver");
+> +MODULE_LICENSE("GPL v2");
+> --
+> 1.9.1
+> 
 > 
 
-
 -- 
-Thanks!
-Yijing
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
