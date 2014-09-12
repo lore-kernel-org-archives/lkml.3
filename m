@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaILPq1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 11:46:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55582 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751825AbaILPnZ (ORCPT
+	id S1752248AbaILPtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 11:49:13 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34060 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaILPtK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 11:43:25 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCHv2 1/8] irqchip: atmel-aic5: Add sama5d4 support
-Date: Fri, 12 Sep 2014 17:43:00 +0200
-Message-Id: <1410536587-24607-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 12 Sep 2014 11:49:10 -0400
+Date: Fri, 12 Sep 2014 16:49:03 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 05/18] ARM64 / ACPI: Introduce sleep-arm.c
+Message-ID: <20140912154903.GE5532@arm.com>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-6-git-send-email-hanjun.guo@linaro.org>
+ <20140912145102.GB5532@arm.com>
+ <20140912151850.GB9234@xora-haswell.xora.org.uk>
+MIME-Version: 1.0
+In-Reply-To: <20140912151850.GB9234@xora-haswell.xora.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Sep 2014 15:49:06.0063 (UTC) FILETIME=[155EE1F0:01CFCEA1]
+X-MC-Unique: 114091216490803801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sama5d4 support to irq-atmel-aic5.
+On Fri, Sep 12, 2014 at 04:18:51PM +0100, Graeme Gregory wrote:
+> On Fri, Sep 12, 2014 at 03:51:02PM +0100, Catalin Marinas wrote:
+> > On Fri, Sep 12, 2014 at 03:00:03PM +0100, Hanjun Guo wrote:
+> > > --- a/drivers/acpi/Makefile
+> > > +++ b/drivers/acpi/Makefile
+> > > @@ -23,7 +23,11 @@ acpi-y				+= nvs.o
+> > >  
+> > >  # Power management related files
+> > >  acpi-y				+= wakeup.o
+> > > +ifeq ($(ARCH), arm64)
+> > > +acpi-y				+= sleep-arm.o
+> > > +else # X86, IA64
+> > >  acpi-y				+= sleep.o
+> > > +endif
+> > >  acpi-y				+= device_pm.o
+> > >  acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
+> > 
+> > What about:
+> > 
+> > -acpi-y				+= sleep.o
+> > +acpi-$(CONFIG_ACPI_SLEEP)	+= sleep.o
+> > 
+> > and make CONFIG_ACPI_SLEEP depend on !ARM64? Does the kernel compile if
+> > you disable CONFIG_ACPI_SLEEP?
+> 
+> sleep.c is still needed in the case CONFIG_ACPI_SLEEP=n
+> 
+> basically the two functions I stubbed are always called by bus.c
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
-Cc: Jason Cooper <jason@lakedaemon.net>
- .../devicetree/bindings/interrupt-controller/atmel,aic.txt     |  2 +-
- drivers/irqchip/irq-atmel-aic5.c                               | 10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+So the two functions are:
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/atmel,aic.txt b/Documentation/devicetree/bindings/interrupt-controller/atmel,aic.txt
-index 2742e9cfd6b1..f292917fa00d 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/atmel,aic.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/atmel,aic.txt
-@@ -2,7 +2,7 @@
- 
- Required properties:
- - compatible: Should be "atmel,<chip>-aic"
--  <chip> can be "at91rm9200" or "sama5d3"
-+  <chip> can be "at91rm9200", "sama5d3" or "sama5d4"
- - interrupt-controller: Identifies the node as an interrupt controller.
- - interrupt-parent: For single AIC system, it is an empty property.
- - #interrupt-cells: The number of cells to define the interrupts. It should be 3.
-diff --git a/drivers/irqchip/irq-atmel-aic5.c b/drivers/irqchip/irq-atmel-aic5.c
-index dc7d98607a89..a11aae8fb006 100644
---- a/drivers/irqchip/irq-atmel-aic5.c
-+++ b/drivers/irqchip/irq-atmel-aic5.c
-@@ -295,6 +295,7 @@ static void __init sama5d3_aic_irq_fixup(struct device_node *root)
- 
- static const struct of_device_id __initdata aic5_irq_fixups[] = {
- 	{ .compatible = "atmel,sama5d3", .data = sama5d3_aic_irq_fixup },
-+	{ .compatible = "atmel,sama5d4", .data = sama5d3_aic_irq_fixup },
- 	{ /* sentinel */ },
- };
- 
-@@ -349,3 +350,12 @@ static int __init sama5d3_aic5_of_init(struct device_node *node,
- 	return aic5_of_init(node, parent, NR_SAMA5D3_IRQS);
- }
- IRQCHIP_DECLARE(sama5d3_aic5, "atmel,sama5d3-aic", sama5d3_aic5_of_init);
-+
-+#define NR_SAMA5D4_IRQS		68
-+
-+static int __init sama5d4_aic5_of_init(struct device_node *node,
-+				       struct device_node *parent)
-+{
-+	return aic5_of_init(node, parent, NR_SAMA5D4_IRQS);
-+}
-+IRQCHIP_DECLARE(sama5d4_aic5, "atmel,sama5d4-aic", sama5d4_aic5_of_init);
+acpi_target_system_state() - already defined in acpi_bus.h when
+CONFIG_ACPI_SLEEP is off.
+
+acpi_sleep_init() - this one doesn't have a dummy implementation for
+!ACPI_SLEEP.
+
+Now, for x86, do we need acpi_sleep_init() when CONFIG_ACPI_SLEEP is
+off? If not, we could simply add a dummy acpi_sleep_init() function when
+!ACPI_SLEEP and don't enable the config option for arm64.
+
 -- 
-1.9.1
+Catalin
 
