@@ -1,131 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751166AbaILRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 13:21:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45156 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879AbaILRV4 convert rfc822-to-8bit (ORCPT
+	id S1751399AbaILRXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 13:23:47 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53358 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750833AbaILRXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 13:21:56 -0400
-Date: Fri, 12 Sep 2014 18:21:51 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "zlim.lnx@gmail.com" <zlim.lnx@gmail.com>,
-        "ast@plumgrid.com" <ast@plumgrid.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH arm64-next] net: bpf: arm64: address randomize and write
- protect JIT code
-Message-ID: <20140912172151.GI5532@arm.com>
-References: <1410505897-20122-1-git-send-email-dborkman@redhat.com>
- <20140912160345.GF5532@arm.com>
- <54131D87.9060008@redhat.com>
- <20140912164656.GH5532@arm.com>
- <54132A76.4070501@redhat.com>
+	Fri, 12 Sep 2014 13:23:45 -0400
+Date: Fri, 12 Sep 2014 18:23:37 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.17-rc4 v5 2/6] arm: fiq: Replace default FIQ handler
+Message-ID: <20140912172337.GQ12361@n2100.arm.linux.org.uk>
+References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-3-git-send-email-daniel.thompson@linaro.org> <20140912171404.GO12361@n2100.arm.linux.org.uk> <20140912171908.GP12361@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <54132A76.4070501@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Sep 2014 17:21:52.0753 (UTC) FILETIME=[0B605E10:01CFCEAE]
-X-MC-Unique: 114091218215400501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140912171908.GP12361@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 06:16:38PM +0100, Daniel Borkmann wrote:
-> On 09/12/2014 06:46 PM, Catalin Marinas wrote:
-> > On Fri, Sep 12, 2014 at 05:21:27PM +0100, Daniel Borkmann wrote:
-> >> On 09/12/2014 06:03 PM, Catalin Marinas wrote:
-> >>> On Fri, Sep 12, 2014 at 08:11:37AM +0100, Daniel Borkmann wrote:
-> >>>> --- a/arch/arm64/net/bpf_jit_comp.c
-> >>>> +++ b/arch/arm64/net/bpf_jit_comp.c
-> >>> [...]
-> >>>> +static void jit_fill_hole(void *area, unsigned int size)
-> >>>> +{
-> >>>> +	/* Insert illegal UND instructions. */
-> >>>> +	u32 *ptr, fill_ins = 0xe7ffffff;
-> >>>
-> >>> On arm64 we don't have a guaranteed undefined instruction space (and
-> >>> Will tells me that on Thumb-2 for the 32-bit arm port it actually is a
-> >>> valid instruction, it seems that you used the same value).
-> >>
-> >> Hm, ok, the boards we've tried out and where Zi tested it too, it worked.
-> >
-> > So, if I try this:
-> >
-> > $ echo 0xffffffe7 | xxd -r > test.bin
-> > $ arm-linux-gnueabihf-objdump -m arm -D -b binary test.bin
-> > ...
-> >     0:   e7ffffff        udf     #65535  ; 0xffff
-> >
-> > Do you use the same constant on arm32?
+On Fri, Sep 12, 2014 at 06:19:08PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Sep 12, 2014 at 06:14:04PM +0100, Russell King - ARM Linux wrote:
+> > On Thu, Sep 11, 2014 at 12:31:14PM +0100, Daniel Thompson wrote:
+> > > This patch introduces a new default FIQ handler that is structured in a
+> > > similar way to the existing ARM exception handler and result in the FIQ
+> > > being handled by C code running on the SVC stack (despite this code run
+> > > in the FIQ handler is subject to severe limitations with respect to
+> > > locking making normal interaction with the kernel impossible).
+> > > 
+> > > This default handler allows concepts that on x86 would be handled using
+> > > NMIs to be realized on ARM.
+> > 
+> > Okay, lastly... I sent you my version of this change, which contained
+> > the changes I've detailed in the previous three emails, which are absent
+> > from your version.
+> > 
+> > However, you've taken on board the "trace" thing to svc_entry, and
+> > renamed it to "call_trace".
+> > 
+> > Now if I add this to usr_entry, "call_trace" doesn't make any sense,
+> > nor does the .if/.endif placement because it's not just trace_hardirqs_off
+> > which needs to be disabled there, but also ct_user_exit as well.
+> > 
+> > I'm beginning to wonder why I tried to be nice here... it would've been
+> > a lot faster for me to take your patch, make my own changes and commit
+> > that instead.
+> > 
+> > Frustrated.
 > 
-> I was using something along that lines, but I guess I missed
-> something:
-> 
-> # cat foo.S
-> .globl foobar
-> foobar:
-> .word 0xe7ffffff
+> And another thing you're missing are the updates to arch/arm/kernel/fiq.c
+> to ensure that the FIQ registers are preserved when we restore this new
+> default FIQ handler.
 
-That's missing a mov pc, lr.
+Right, here's my remaining delta from your patch addressing all the points
+from the last five emails.  If you have any disagreements with any of these
+changes, then please discuss rather than choosing to ignore them.
 
-> # cat bar.c
-> #include <stdio.h>
-> extern void foobar(void);
-> int main(void)
-> {
->      foobar();
+107e32b0b4ef5fa4191c9fc8415ca172b886e958
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 0c70fee9a7c9..3f6293ce0f2d 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -146,7 +146,7 @@ ENDPROC(__und_invalid)
+ #define SPFIX(code...)
+ #endif
+ 
+-	.macro	svc_entry, stack_hole=0, call_trace=1
++	.macro	svc_entry, stack_hole=0, trace=1
+  UNWIND(.fnstart		)
+  UNWIND(.save {r0 - pc}		)
+ 	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+@@ -182,11 +182,11 @@ ENDPROC(__und_invalid)
+ 	@
+ 	stmia	r7, {r2 - r6}
+ 
++	.if \trace
+ #ifdef CONFIG_TRACE_IRQFLAGS
+-	.if \call_trace
+ 	bl	trace_hardirqs_off
+-	.endif
+ #endif
++	.endif
+ 	.endm
+ 
+ 	.align	5
+@@ -298,7 +298,7 @@ ENDPROC(__pabt_svc)
+ 
+ 	.align	5
+ __fiq_svc:
+-	svc_entry 0, 0
++	svc_entry trace=0
+ 	mov	r0, sp				@ struct pt_regs *regs
+ 	bl	handle_fiq_as_nmi
+ 	svc_exit_via_fiq
+@@ -326,7 +326,7 @@ ENDPROC(__fiq_svc)
+ @
+ 	.align 5
+ __fiq_abt:
+-	svc_entry 0, 0
++	svc_entry trace=0
+ 
+  ARM(	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+  THUMB( mov	r0, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+@@ -353,7 +353,7 @@ __fiq_abt:
+ 
+ 	svc_exit_via_fiq
+  UNWIND(.fnend		)
+-ENDPROC(__fiq_svc)
++ENDPROC(__fiq_abt)
+ 
+ /*
+  * User mode handlers
+@@ -365,7 +365,7 @@ ENDPROC(__fiq_svc)
+ #error "sizeof(struct pt_regs) must be a multiple of 8"
+ #endif
+ 
+-	.macro	usr_entry
++	.macro	usr_entry, trace=1
+  UNWIND(.fnstart	)
+  UNWIND(.cantunwind	)	@ don't unwind the user space
+ 	sub	sp, sp, #S_FRAME_SIZE
+@@ -402,10 +402,12 @@ ENDPROC(__fiq_svc)
+ 	@
+ 	zero_fp
+ 
++	.if	\trace
+ #ifdef CONFIG_IRQSOFF_TRACER
+ 	bl	trace_hardirqs_off
+ #endif
+ 	ct_user_exit save = 0
++	.endif
+ 	.endm
+ 
+ 	.macro	kuser_cmpxchg_check
+@@ -736,13 +738,13 @@ ENDPROC(ret_from_exception)
+ 
+ 	.align	5
+ __fiq_usr:
+-	usr_entry
++	usr_entry trace=0
+ 	kuser_cmpxchg_check
+ 	mov	r0, sp				@ struct pt_regs *regs
+ 	bl	handle_fiq_as_nmi
+ 	get_thread_info tsk
+-	mov	why, #0
+-	b	ret_to_user_from_irq
++	restore_user_regs fast = 0, offset = 0
++ UNWIND(.cantunwind	)
+  UNWIND(.fnend		)
+ ENDPROC(__fiq_usr)
+ 
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 918875d96d5d..1743049c433b 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -53,6 +53,7 @@
+ 	})
+ 
+ static unsigned long no_fiq_insn;
++static struct pt_regs def_fiq_regs;
+ 
+ /* Default reacquire function
+  * - we always relinquish FIQ control
+@@ -60,8 +61,15 @@ static unsigned long no_fiq_insn;
+  */
+ static int fiq_def_op(void *ref, int relinquish)
+ {
+-	if (!relinquish)
++	if (!relinquish) {
++		/* Restore default handler and registers */
++		local_fiq_disable();
++		set_fiq_regs(&dfl_fiq_regs);
+ 		set_fiq_handler(&no_fiq_insn, sizeof(no_fiq_insn));
++		local_fiq_enable();
++
++		/* FIXME: notify irq controller to standard enable FIQs */
++	}
+ 
+ 	return 0;
+ }
+@@ -151,5 +159,6 @@ void __init init_FIQ(int start)
+ {
+ 	unsigned offset = FIQ_OFFSET;
+ 	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
++	get_fiq_regs(&dfl_fiq_regs);
+ 	fiq_start = start;
+ }
 
-So you call it here and ends up in some data section, possibly hitting
-some undefined instruction. For ARM it is undefined, for Thumb-2 it is
-not as Will pointed out.
-
-> >>> I think the only guaranteed way is to use the BRK #imm instruction but
-> >>> it requires some changes to the handling code as it is currently used
-> >>> for kgdb (unless you can use two instructions for filling in which could
-> >>> generate a NULL pointer access).
-> >>
-> >> The trade-off would be that if we align on 8, it would certainly increase
-> >> the probability to jump to the right offset. Note, on x86_64 we have no
-> >> alignment requirements, hence 1, and on s390x only alignment of 2.
-> >>
-> >> So, on that few (?) boards where UND would be a valid instruction [ as
-> >> opposed to crash the kernel ], would it translate into a NOP and just
-> >> 'walk' from there into the JIT image?
-> >
-> > On current ARMv8 CPU implementations, the above constant is unallocated
-> > in the A64 instruction space. But you never know, it may be allocated in
-> > the future.
-> >
-> > I think it's easier if you just use something like BRK #0x100 (opcode
-> > 0xd4202000) which would trigger a fault in the kernel (kgdb uses #imm
-> > 0x400 and 0x401).
-> >
-> > An unallocated BRK would trigger a fault via do_debug_exception ->
-> > brk_handler and panic the kernel.
-> 
-> Okay, that's fine by me, I'll just update s/0xe7ffffff/0xd4202000/.
-> 
-> Do you want me to use the same suggestion for arm32 as well as it
-> would be less fragile?
-
-We don't have a brk instruction for arm32 but we have guaranteed
-undefined space. Have a look at the kgdb support for example (or grep
-for register_undef_hook under arch/arm) to get an idea.
-
-> Last but not least ;), if I would resend it today, would you queue
-> it for later on, or do you want to handle it differently?
-
-You can send it now, it will be pushed upstream at the right time.
-
-Thanks.
 
 -- 
-Catalin
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
