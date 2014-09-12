@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaILSDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 14:03:33 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:50298 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235AbaILSDa (ORCPT
+	id S1752330AbaILSDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 14:03:39 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:51326 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaILSDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 14:03:30 -0400
-Subject: [PATCH v1 06/13] PCI: shpchp: Remove pci_configure_slot() usage
+	Fri, 12 Sep 2014 14:03:36 -0400
+Subject: [PATCH v1 07/13] ACPI / hotplug / PCI: Remove pci_configure_slot()
+ usage
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Rajat Jain <rajatxjain@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Date: Fri, 12 Sep 2014 12:03:28 -0600
-Message-ID: <20140912180328.1630.45550.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+Date: Fri, 12 Sep 2014 12:03:34 -0600
+Message-ID: <20140912180334.1630.56528.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 In-Reply-To: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 References: <20140912180141.1630.17120.stgit@bhelgaas-glaptop2.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -27,7 +28,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 We now configure each PCI device as it is enumerated, in pci_device_add(),
-so remove the configuration done in shpchp.
+so remove the configuration done in acpiphp.
 
 That configuration, in pci_configure_device(), does not include the
 MPS/MRRS configuration done by pcie_bus_configure_settings(), so keep
@@ -35,26 +36,43 @@ that here.
 
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- drivers/pci/hotplug/shpchp_pci.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/drivers/pci/hotplug/shpchp_pci.c b/drivers/pci/hotplug/shpchp_pci.c
-index 469454e0cc48..f8cd3a27e351 100644
---- a/drivers/pci/hotplug/shpchp_pci.c
-+++ b/drivers/pci/hotplug/shpchp_pci.c
-@@ -69,13 +69,7 @@ int shpchp_configure_device(struct slot *p_slot)
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 70741c8c46a0..a6f8e0ba0bfe 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -61,7 +61,6 @@ static DEFINE_MUTEX(bridge_mutex);
+ static int acpiphp_hotplug_notify(struct acpi_device *adev, u32 type);
+ static void acpiphp_post_dock_fixup(struct acpi_device *adev);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+-static void acpiphp_set_hpp_values(struct pci_bus *bus);
+ static void hotplug_event(u32 type, struct acpiphp_context *context);
+ static void free_bridge(struct kref *kref);
+ 
+@@ -510,7 +509,7 @@ static void enable_slot(struct acpiphp_slot *slot)
+ 	__pci_bus_assign_resources(bus, &add_list, NULL);
+ 
+ 	acpiphp_sanitize_bus(bus);
+-	acpiphp_set_hpp_values(bus);
++	pcie_bus_configure_settings(bus);
+ 	acpiphp_set_acpi_region(slot);
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+@@ -702,14 +701,6 @@ static void acpiphp_check_bridge(struct acpiphp_bridge *bridge)
  	}
+ }
  
- 	pci_assign_unassigned_bridge_resources(bridge);
+-static void acpiphp_set_hpp_values(struct pci_bus *bus)
+-{
+-	struct pci_dev *dev;
 -
--	list_for_each_entry(dev, &parent->devices, bus_list) {
--		if (PCI_SLOT(dev->devfn) != p_slot->device)
--			continue;
+-	list_for_each_entry(dev, &bus->devices, bus_list)
 -		pci_configure_slot(dev);
--	}
+-}
 -
-+	pcie_bus_configure_settings(parent);
- 	pci_bus_add_devices(parent);
- 
-  out:
+ /*
+  * Remove devices for which we could not assign resources, call
+  * arch specific code to fix-up the bus
 
