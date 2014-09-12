@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaIMPkU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 11:40:20 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39154 "EHLO
+	id S1752306AbaIMPkx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 11:40:53 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39101 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaIMPkS (ORCPT
+	with ESMTP id S1752100AbaIMPj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 11:40:18 -0400
-Date: Fri, 12 Sep 2014 14:42:34 +0100
+	Sat, 13 Sep 2014 11:39:27 -0400
+Date: Fri, 12 Sep 2014 14:57:38 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Jianqun <jay.xu@rock-chips.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, heiko@sntech.de,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        huangtao@rock-chips.com, cf@rock-chips.com
-Message-ID: <20140912134234.GS7960@sirena.org.uk>
-References: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'linux-driver@qlogic.com'" <linux-driver@qlogic.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>
+Message-ID: <20140912135738.GX7960@sirena.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103CDBFBFB01A@CNBJMBX05.corpusers.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CRjAHycgiaTQGSqU"
+	protocol="application/pgp-signature"; boundary="Ca23f2aBZR6YDKM9"
 Content-Disposition: inline
-In-Reply-To: <1410506806-15327-1-git-send-email-jay.xu@rock-chips.com>
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103CDBFBFB01A@CNBJMBX05.corpusers.net>
 X-Cookie: Many pages make a thick book.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 209.49.225.226
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 0/2] rockchip-max98090: add driver for rockchip board
- with max98090
+Subject: Re: [PATCH] regmap:change struct regmap's internal locks as union
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,33 +34,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---CRjAHycgiaTQGSqU
+--Ca23f2aBZR6YDKM9
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Sep 12, 2014 at 03:26:46PM +0800, Jianqun wrote:
-> This patch to add driver for rockchip board using a max98090.
->=20
-> Tested on RK3288 using a max98090.
+On Thu, Sep 11, 2014 at 04:19:49PM +0800, Wang, Yalin wrote:
+> this patch change struct regmap->mutex and struct regmap->spinlock
+> as an union, because these 2 members are only used one of them,
+> we change it to shrink the struct size.
 
-This appears to have two slightly different copies of the patches
-threaded to it...  that's a bit confusing.
+Applied, thanks.
 
---CRjAHycgiaTQGSqU
+--Ca23f2aBZR6YDKM9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUEvhFAAoJECTWi3JdVIfQJOoH/2G9+GShmgP08ravDGbJl1QF
-tdhg96begUO07R12cQJVQThw5Rcisx7NzA0686gEzTPcgnsWhDURkzMMwRoeLO0K
-oonyK/8IhJ9dpEMrjEVSvykoepcSjnebjw4/4puP2RcRAVLLw77e2ZdbWUIM7I5/
-OzlPIkRta09tw9x+oEEcXDasH6+Dubg0Jcnb8NSEd756HfKAu4gDtHdS64xO9YlG
-ODazFLcEC+7ANetFOH0Rff/NY/FpN51DORXayX1FrRNpe5GRsgcqMxZs+yzHVtp7
-XfqmzPXtC3zGRQElIKfjbJQO0rV9Q2XIEyg38rqO9/LaqRULaqtdR+/9dUj41o0=
-=k5YQ
+iQEcBAEBAgAGBQJUEvvRAAoJECTWi3JdVIfQIBoH/RgND4g/oRll+35TNJ7SrHvS
+4AAA17am9RLZISkGF2+EHb2CGGWW2h6ZpPV8UpFlW09N5tmh/gT80qpMqpFixF3T
+d7bq6F/reMP41eyKIEDarfKJR7fRvYc9adTA1okPicJQ0ddBm2lFrvkjVOaNH2AX
+/Qw9Gib0aOs5OEvDia32W575I3KtLKEpUDqHimpmvpgqpNXcrbL4ySSBxme5It6b
+KBYCN1fF8UGJWFZRb5hDFHv0RJ/JoHbXOmHDfsp3Z1IrHRPDlOU0v5CnOvvfFG4t
+S+wqgZ4ul+WZstUbodTAgSZjD5pgo3Xq9eJaZtI0oVh+F1PSq3t5js0rsPpdgr8=
+=zdIP
 -----END PGP SIGNATURE-----
 
---CRjAHycgiaTQGSqU--
+--Ca23f2aBZR6YDKM9--
