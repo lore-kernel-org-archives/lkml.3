@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaILNm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 09:42:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28954 "EHLO mx1.redhat.com"
+	id S1755033AbaILNol (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 09:44:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46221 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754937AbaILNmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 09:42:25 -0400
-Date: Fri, 12 Sep 2014 21:41:40 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, hpa@zytor.com, tglx@linutronix.de,
-        mingo@redhat.com, keescook@chromium.org, ak@linux.intel.com,
-        kumagai-atsushi@mxc.nes.nec.co.jp
-Subject: Re: [Patch v2 1/2] kaslr: check if kernel location is changed
-Message-ID: <20140912134140.GA1694@dhcp-17-102.nay.redhat.com>
-References: <1410502832-3573-1-git-send-email-bhe@redhat.com>
- <20140912120447.GB29945@redhat.com>
+	id S1754473AbaILNok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 09:44:40 -0400
+Date: Fri, 12 Sep 2014 10:44:29 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 11/14] tools lib api: Adopt fdarray class from perf's
+ evlist
+Message-ID: <20140912134429.GF1801@kernel.org>
+References: <1410358129-9965-1-git-send-email-acme@kernel.org>
+ <1410358129-9965-12-git-send-email-acme@kernel.org>
+ <20140912125822.GA23205@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140912120447.GB29945@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140912125822.GA23205@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/14 at 08:04am, Vivek Goyal wrote:
-> On Fri, Sep 12, 2014 at 02:20:31PM +0800, Baoquan He wrote:
-> > Function handle_relocations() is used to do the relocations handling
-> > for i686 and kaslr of x86_64. For 32 bit the relocation handling is
-> > mandotary to perform. For x86_64 only when kaslr is enabled and a
-> > random kernel location is chosen successfully the relocation handling
-> > shound be done. However previous implementation only compared the
-> > kernel loading address and LOAD_PHYSICAL_ADDR where kernel were
-> > compiled to run at.
-> 
-> > This would casue system to hang when kernel
-> > loading address is not equal to LOAD_PHYSICAL_ADDR.
-> 
-> I don't think above is correct. It will not always fails. It will fail
-> only in few conditions like when delta between load address and compiled
-> address is bigger than what 32bit signed relocations can handle. 
-> 
-> Also there will be limitations that delta can't be too big otherwise
-> kernel text virtual addresses will overflow in module address space.
+Em Fri, Sep 12, 2014 at 02:58:22PM +0200, Jiri Olsa escreveu:
+> On Wed, Sep 10, 2014 at 11:08:46AM -0300, Arnaldo Carvalho de Melo wrote:
+ 
+> SNIP
+ 
+> > +struct fdarray *fdarray__new(int nr_alloc, int nr_autogrow)
+> > +{
+> > +	struct fdarray *fda = calloc(1, sizeof(*fda));
 
-Yes, will repost with changed description.
-
+> > +	if (fda != NULL) {
+> > +		if (fdarray__grow(fda, nr_alloc)) {
+> > +			free(fda);
+> > +			fda = NULL;
 > 
-> Thanks
-> Vivek
-> > 
-> > So in this patch check if kernel location is changed after
-> > choose_kernel_location() when x86_64. If and only if in x86_64
-> > and kernel location is changed, we say a kaslr random kernel
-> > location is chosen, then the relocation handling need be done.
-> > 
-> > Signed-off-by: Baoquan He <bhe@redhat.com>
-> > ---
-> >  arch/x86/boot/compressed/misc.c | 26 ++++++++++++++++++++++----
-> >  1 file changed, 22 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> > index 57ab74d..3bb2a17 100644
-> > --- a/arch/x86/boot/compressed/misc.c
-> > +++ b/arch/x86/boot/compressed/misc.c
-> > @@ -230,8 +230,9 @@ static void error(char *x)
-> >  		asm("hlt");
-> >  }
-> >  
-> > -#if CONFIG_X86_NEED_RELOCS
-> > -static void handle_relocations(void *output, unsigned long output_len)
-> > +#ifdef CONFIG_X86_NEED_RELOCS
-> > +static void handle_relocations(void *output_orig, void *output,
-> > +			       unsigned long output_len)
-> >  {
-> >  	int *reloc;
-> >  	unsigned long delta, map, ptr;
-> > @@ -239,6 +240,20 @@ static void handle_relocations(void *output, unsigned long output_len)
-> >  	unsigned long max_addr = min_addr + output_len;
-> >  
-> >  	/*
-> > +	* 32bit always requires relocations to be performed. For x86_64,
-> > +	* relocations need to be performed only if kaslr has chosen a
-> > +	* different load address then kernel was originally loaded at.
-> > +	*
-> > +	* If we are here, either kaslr is not configured in or kaslr is disabled
-> > +	* or kaslr has chosen not to change the load location of kernel. Don't
-> > +	* perform any relocations.
-> > +	*/
-> > +#if CONFIG_X86_64
-> > +	if (output_orig == output)
-> > +		return;
-> > +#endif
-> > +
-> > +	/*
-> >  	 * Calculate the delta between where vmlinux was linked to load
-> >  	 * and where it was actually loaded.
-> >  	 */
-> > @@ -299,7 +314,8 @@ static void handle_relocations(void *output, unsigned long output_len)
-> >  #endif
-> >  }
-> >  #else
-> > -static inline void handle_relocations(void *output, unsigned long output_len)
-> > +static inline void handle_relocations(void *output_orig, void *output,
-> > +				      unsigned long output_len)
-> >  { }
-> >  #endif
-> >  
-> > @@ -360,6 +376,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
-> >  				  unsigned char *output,
-> >  				  unsigned long output_len)
-> >  {
-> > +	unsigned char *output_orig = output;
-> > +
-> >  	real_mode = rmode;
-> >  
-> >  	sanitize_boot_params(real_mode);
-> > @@ -402,7 +420,7 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
-> >  	debug_putstr("\nDecompressing Linux... ");
-> >  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
-> >  	parse_elf(output);
-> > -	handle_relocations(output, output_len);
-> > +	handle_relocations(output_orig, output, output_len);
-> >  	debug_putstr("done.\nBooting the kernel.\n");
-> >  	return output;
-> >  }
-> > -- 
-> > 1.8.5.3
+> you could use zfree
+
+Yeah, we could, if zfree had moved from tools/perf/util/ to tools/lib/,
+which is has not yet.
+
+I thought about doing it now, but when doing some grepping in the kernel
+sources I realized that zfree is already taken by... zlib, so I'll leave
+this for later, when we figure out how to properly export this, perhaps
+renaming it to freez()?
+
+- Arnaldo
