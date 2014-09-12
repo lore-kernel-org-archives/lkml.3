@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaILKaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 06:30:19 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:35338 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaILKaQ (ORCPT
+	id S1753226AbaILKdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:33:42 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:42761 "EHLO
+	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751950AbaILKdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:30:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410497111.9942.26.camel@joe-AO725>
-References: <20140908181524.GA11839@www.outflux.net>
-	<20140910155219.3d21aef2df8b1754a736cc1a@linux-foundation.org>
-	<CAMuHMdUvBdEKCYezARJ8PvuQPQbi+Wq-fwO+Z2cxYXOtVzp5GQ@mail.gmail.com>
-	<1410444957.9942.3.camel@joe-AO725>
-	<CALLJCT1_pB8pEHCCEnNzfQrRR16dGD3rdfjAt40sHXzTBbdEXQ@mail.gmail.com>
-	<1410497111.9942.26.camel@joe-AO725>
-Date: Fri, 12 Sep 2014 19:30:13 +0900
-Message-ID: <CALLJCT36JzRDkkTSqddSDJJPWrMGRhTUhOSd=pcJCAAX4sCBRQ@mail.gmail.com>
-Subject: Re: [PATCH v2] checkpatch: look for common misspellings
-From: Masanari Iida <standby24x7@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        linux-doc <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Sep 2014 06:33:41 -0400
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: mturquette@linaro.org
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <8f8728f8664ef36a4c71fe5e16d5c9ae>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark yao <mark.yao@rock-chips.com>
+To: Mike Turquette <mturquette@linaro.org>, heiko@sntech.de,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        djkurtz@chromium.org, dianders@chromium.org, dkl@rock-chips.com,
+        eddie.cai@rock-chips.com, xjq@rock-chips.com, kfx@rock-chips.com,
+        huangtao@rock-chips.com, zyw@rock-chips.com, yxj@rock-chips.com,
+        cym@rock-chips.com, zhengsq@rock-chips.com, caesar.wang@rock-chips.com,
+        kever.yang@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
+Subject: [PATCH] clk: rockchip: rk3288: add VOP1 softresets and rename VOP0 softresets
+Date: Fri, 12 Sep 2014 18:33:23 +0800
+Message-Id: <1410518004-19040-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 1:45 PM, Joe Perches <joe@perches.com> wrote:
-> On Fri, 2014-09-12 at 13:09 +0900, Masanari Iida wrote:
->> Test with "reseting" case,  codespell found 21, grep found 26.
->
-> Hello Masanari.
->
-> How did codespell find any uses of reseting?
-> What version of codespell are you using?
-> (I tested with 1.7)
->
-> Looking at the git tree for codespell,
-> https://github.com/lucasdemarchi/codespell.git
-> the dictionary there doesn't have reseting.
->
-Joe,
+The rk3288 have two vop, and each vop has three softresets were axi_reset,
+ahb_reset and dclk_reset.
 
-First of all, I use codespell 1.4 scripts with my original dictionary
-based on 1.4.
-So I believe the "reseting" was added by me some times ago.
+Signed-off-by: Mark yao <mark.yao@rock-chips.com>
+---
+ include/dt-bindings/clock/rk3288-cru.h | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-> If I add reseting->resetting to the dictionary,
-> then codespell finds the same 31 uses that
-> git grep -i does.
->
-My codespell 1.4 works as case sensitive.
-That's why we saw a little bit different result.
+diff --git a/include/dt-bindings/clock/rk3288-cru.h b/include/dt-bindings/clock/rk3288-cru.h
+index ebcb460..4d65959 100644
+--- a/include/dt-bindings/clock/rk3288-cru.h
++++ b/include/dt-bindings/clock/rk3288-cru.h
+@@ -235,9 +235,9 @@
+ #define SRST_RGA_NIU		97
+ #define SRST_VIO0_NIU_AXI	98
+ #define SRST_VIO_NIU_AHB	99
+-#define SRST_LCDC0_AXI		100
+-#define SRST_LCDC0_AHB		101
+-#define SRST_LCDC0_DCLK		102
++#define SRST_VOP0_AXI		100
++#define SRST_VOP0_AHB		101
++#define SRST_VOP0_DCLK		102
+ #define SRST_VIO1_NIU_AXI	103
+ #define SRST_VIP		104
+ #define SRST_RGA_CORE		105
+@@ -276,3 +276,7 @@
+ #define SRST_USBHOST1_CON	140
+ #define SRST_USB_ADP		141
+ #define SRST_ACC_EFUSE		142
++
++#define SRST_VOP1_AXI		176
++#define SRST_VOP1_AHB		177
++#define SRST_VOP1_DCLK		178
+-- 
+1.9.1
 
-Masanari
