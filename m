@@ -1,179 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaILKfn (ORCPT <rfc822;w@1wt.eu>);
+	id S1753967AbaILKfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 06:35:45 -0400
+Received: from mail-bn1on0117.outbound.protection.outlook.com ([157.56.110.117]:48864
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753893AbaILKfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Sep 2014 06:35:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54859 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776AbaILKfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 06:35:22 -0400
-From: Juergen Gross <jgross@suse.com>
-To: stefan.bader@canonical.com, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        konrad.wilk@oracle.com, ville.syrjala@linux.intel.com, hpa@zytor.com,
-        x86@kernel.org, david.vrabel@citrix.com, jbeulich@suse.com
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [PATCH V3 2/3] x86: Enable PAT to use cache mode translation tables
-Date: Fri, 12 Sep 2014 12:35:11 +0200
-Message-Id: <1410518112-2625-3-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1410518112-2625-1-git-send-email-jgross@suse.com>
-References: <1410518112-2625-1-git-send-email-jgross@suse.com>
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: <timur@tabi.org>, <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>,
+        <lgirdwood@gmail.com>, <broonie@kernel.org>, <perex@perex.cz>,
+        <tiwai@suse.de>, <mpa@pengutronix.de>
+CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH V3] ASoC: fsl_ssi: refine ipg clock usage in this module
+Date: Fri, 12 Sep 2014 18:35:15 +0800
+Message-ID: <894383e00876763f22988fc5f3f9f232f939f923.1410517971.git.shengjiu.wang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(54534003)(199003)(76482001)(64706001)(88136002)(79102001)(62966002)(104166001)(84676001)(81342001)(107046002)(2201001)(80022001)(92566001)(77982001)(6806004)(19580405001)(99396002)(44976005)(68736004)(19580395003)(83322001)(118296001)(229853001)(36756003)(83072002)(85852003)(89996001)(95666004)(104016003)(48376002)(47776003)(33646002)(90102001)(50466002)(102836001)(21056001)(46102001)(97736003)(106466001)(31966008)(50226001)(105606002)(4396001)(86362001)(50986999)(81542001)(93916002)(92726001)(77156001)(87286001)(74502001)(87936001)(26826002)(74662001)(85306004)(20776003)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0619;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 0332AACBC3
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the translation tables from cache mode to pgprot values
-according to the PAT settings. This enables changing the cache
-attributes of a PAT index in just one place without having to change
-at the users side.
+Check if ipg clock is in clock-names property, then we can move the
+ipg clock enable and disable operation to startup and shutdown, that
+is only enable ipg clock when ssi is working and keep clock is disabled
+when ssi is in idle.
+But when the checking is failed, remain the clock control as before.
 
-With this change it is possible to use the same kernel with different
-PAT configurations, e.g. supporting Xen.
-
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
 ---
- arch/x86/include/asm/pat.h           |  1 +
- arch/x86/include/asm/pgtable_types.h |  4 +++
- arch/x86/mm/init.c                   |  8 ++++++
- arch/x86/mm/mm_internal.h            |  2 ++
- arch/x86/mm/pat.c                    | 55 ++++++++++++++++++++++++++++++++++--
- 5 files changed, 68 insertions(+), 2 deletions(-)
+V3 change log:
+update patch according Nicolin and markus's comments
 
-diff --git a/arch/x86/include/asm/pat.h b/arch/x86/include/asm/pat.h
-index 150407a..91bc4ba 100644
---- a/arch/x86/include/asm/pat.h
-+++ b/arch/x86/include/asm/pat.h
-@@ -11,6 +11,7 @@ static const int pat_enabled;
- #endif
+
+ sound/soc/fsl/fsl_ssi.c |   53 ++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 45 insertions(+), 8 deletions(-)
+
+diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
+index 2fc3e66..6d1dfd5 100644
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -169,6 +169,7 @@ struct fsl_ssi_private {
+ 	u8 i2s_mode;
+ 	bool use_dma;
+ 	bool use_dual_fifo;
++	bool has_ipg_clk_name;
+ 	unsigned int fifo_depth;
+ 	struct fsl_ssi_rxtx_reg_val rxtx_reg_val;
  
- extern void pat_init(void);
-+void pat_init_cache_modes(void);
+@@ -530,6 +531,11 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+ 	struct fsl_ssi_private *ssi_private =
+ 		snd_soc_dai_get_drvdata(rtd->cpu_dai);
++	int ret;
++
++	ret = clk_prepare_enable(ssi_private->clk);
++	if (ret)
++		return ret;
  
- extern int reserve_memtype(u64 start, u64 end,
- 		enum page_cache_mode req_pcm, enum page_cache_mode *ret_pcm);
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index 0d38511..bd2f50f 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -338,6 +338,10 @@ extern uint8_t __pte2cachemode_tbl[8];
- 	((((cb) >> (_PAGE_BIT_PAT - 2)) & 4) |		\
- 	 (((cb) >> (_PAGE_BIT_PCD - 1)) & 2) |		\
- 	 (((cb) >> _PAGE_BIT_PWT) & 1))
-+#define __cm_idx2pte(i)					\
-+	((((i) & 4) << (_PAGE_BIT_PAT - 2)) |		\
-+	 (((i) & 2) << (_PAGE_BIT_PCD - 1)) |		\
-+	 (((i) & 1) << _PAGE_BIT_PWT))
- 
- static inline unsigned long cachemode2protval(enum page_cache_mode pcm)
- {
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index a9776ba..82b41d5 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -716,3 +716,11 @@ void __init zone_sizes_init(void)
- 	free_area_init_nodes(max_zone_pfns);
+ 	/* When using dual fifo mode, it is safer to ensure an even period
+ 	 * size. If appearing to an odd number while DMA always starts its
+@@ -544,6 +550,21 @@ static int fsl_ssi_startup(struct snd_pcm_substream *substream,
  }
  
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache)
-+{
-+	/* entry 0 MUST be WB (hardwired to speed up translations) */
-+	BUG_ON(!entry && cache != _PAGE_CACHE_MODE_WB);
-+
-+	__cachemode2pte_tbl[cache] = __cm_idx2pte(entry);
-+	__pte2cachemode_tbl[entry] = cache;
-+}
-diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-index 6b563a1..62474ba 100644
---- a/arch/x86/mm/mm_internal.h
-+++ b/arch/x86/mm/mm_internal.h
-@@ -16,4 +16,6 @@ void zone_sizes_init(void);
- 
- extern int after_bootmem;
- 
-+void update_cache_mode_entry(unsigned entry, enum page_cache_mode cache);
-+
- #endif	/* __X86_MM_INTERNAL_H */
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index ef75f3f..ff31851 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -31,6 +31,7 @@
- #include <asm/io.h>
- 
- #include "pat_internal.h"
-+#include "mm_internal.h"
- 
- #ifdef CONFIG_X86_PAT
- int __read_mostly pat_enabled = 1;
-@@ -75,6 +76,57 @@ enum {
- 	PAT_UC_MINUS = 7,	/* UC, but can be overriden by MTRR */
- };
- 
-+/*
-+ * Update the cache mode to pgprot translation tables according to PAT
-+ * configuration.
-+ * Using lower indices is preferred, so we start with highest index.
+ /**
++ * fsl_ssi_shutdown: shutdown the SSI
++ *
 + */
-+void pat_init_cache_modes(void)
++static void fsl_ssi_shutdown(struct snd_pcm_substream *substream,
++                             struct snd_soc_dai *dai)
 +{
-+	int i;
-+	enum page_cache_mode cache;
-+	char pat_msg[33];
-+	char *cache_mode;
-+	u64 pat;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct fsl_ssi_private *ssi_private =
++		snd_soc_dai_get_drvdata(rtd->cpu_dai);
 +
-+	rdmsrl(MSR_IA32_CR_PAT, pat);
-+	pat_msg[32] = 0;
-+	for (i = 7; i >= 0; i--) {
-+		switch ((pat >> (i * 8)) & 7) {
-+		case PAT_UC:
-+			cache = _PAGE_CACHE_MODE_UC;
-+			cache_mode = "UC  ";
-+			break;
-+		case PAT_WC:
-+			cache = _PAGE_CACHE_MODE_WC;
-+			cache_mode = "WC  ";
-+			break;
-+		case PAT_WT:
-+			cache = _PAGE_CACHE_MODE_WT;
-+			cache_mode = "WT  ";
-+			break;
-+		case PAT_WP:
-+			cache = _PAGE_CACHE_MODE_WP;
-+			cache_mode = "WP  ";
-+			break;
-+		case PAT_WB:
-+			cache = _PAGE_CACHE_MODE_WB;
-+			cache_mode = "WB  ";
-+			break;
-+		case PAT_UC_MINUS:
-+			cache = _PAGE_CACHE_MODE_UC_MINUS;
-+			cache_mode = "UC- ";
-+			break;
-+		default:
-+			cache = _PAGE_CACHE_MODE_WB;
-+			cache_mode = "WB  ";
-+		}
-+		update_cache_mode_entry(i, cache);
-+		memcpy(pat_msg + 4 * i, cache_mode, 4);
-+	}
-+	pr_info("PAT configuration [0-7]: %s\n", pat_msg);
++	clk_disable_unprepare(ssi_private->clk);
++
 +}
 +
- #define PAT(x, y)	((u64)PAT_ ## y << ((x)*8))
++/**
+  * fsl_ssi_set_bclk - configure Digital Audio Interface bit clock
+  *
+  * Note: This function can be only called when using SSI as DAI master
+@@ -1043,6 +1064,7 @@ static int fsl_ssi_dai_probe(struct snd_soc_dai *dai)
  
- void pat_init(void)
-@@ -124,8 +176,7 @@ void pat_init(void)
- 	wrmsrl(MSR_IA32_CR_PAT, pat);
+ static const struct snd_soc_dai_ops fsl_ssi_dai_ops = {
+ 	.startup	= fsl_ssi_startup,
++	.shutdown       = fsl_ssi_shutdown,
+ 	.hw_params	= fsl_ssi_hw_params,
+ 	.hw_free	= fsl_ssi_hw_free,
+ 	.set_fmt	= fsl_ssi_set_dai_fmt,
+@@ -1168,17 +1190,22 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
+ 	u32 dmas[4];
+ 	int ret;
  
- 	if (boot_cpu)
--		printk(KERN_INFO "x86 PAT enabled: cpu %d, old 0x%Lx, new 0x%Lx\n",
--		       smp_processor_id(), boot_pat_state, pat);
-+		pat_init_cache_modes();
+-	ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
++	if (ssi_private->has_ipg_clk_name)
++		ssi_private->clk = devm_clk_get(&pdev->dev, "ipg");
++	else
++		ssi_private->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(ssi_private->clk)) {
+ 		ret = PTR_ERR(ssi_private->clk);
+ 		dev_err(&pdev->dev, "could not get clock: %d\n", ret);
+ 		return ret;
+ 	}
+ 
+-	ret = clk_prepare_enable(ssi_private->clk);
+-	if (ret) {
+-		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
+-		return ret;
++	if (!ssi_private->has_ipg_clk_name) {
++		ret = clk_prepare_enable(ssi_private->clk);
++		if (ret) {
++			dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
++			return ret;
++		}
+ 	}
+ 
+ 	/* For those SLAVE implementations, we ingore non-baudclk cases
+@@ -1236,8 +1263,9 @@ static int fsl_ssi_imx_probe(struct platform_device *pdev,
+ 	return 0;
+ 
+ error_pcm:
+-	clk_disable_unprepare(ssi_private->clk);
+ 
++	if (!ssi_private->has_ipg_clk_name)
++		clk_disable_unprepare(ssi_private->clk);
+ 	return ret;
  }
  
- #undef PAT
+@@ -1246,7 +1274,8 @@ static void fsl_ssi_imx_clean(struct platform_device *pdev,
+ {
+ 	if (!ssi_private->use_dma)
+ 		imx_pcm_fiq_exit(pdev);
+-	clk_disable_unprepare(ssi_private->clk);
++	if (!ssi_private->has_ipg_clk_name)
++		clk_disable_unprepare(ssi_private->clk);
+ }
+ 
+ static int fsl_ssi_probe(struct platform_device *pdev)
+@@ -1321,8 +1350,16 @@ static int fsl_ssi_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
++	ret = of_property_match_string(np, "clock-names", "ipg");
++	if (ret < 0) {
++		ssi_private->has_ipg_clk_name = false;
++		ssi_private->regs = devm_regmap_init_mmio(&pdev->dev, iomem,
+ 			&fsl_ssi_regconfig);
++	} else {
++		ssi_private->has_ipg_clk_name = true;
++		ssi_private->regs = devm_regmap_init_mmio_clk(&pdev->dev,
++			"ipg", iomem, &fsl_ssi_regconfig);
++	}
+ 	if (IS_ERR(ssi_private->regs)) {
+ 		dev_err(&pdev->dev, "Failed to init register map\n");
+ 		return PTR_ERR(ssi_private->regs);
 -- 
-1.8.4.5
+1.7.9.5
 
