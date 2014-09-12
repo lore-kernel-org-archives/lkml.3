@@ -1,167 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaILT3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 15:29:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36265 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729AbaILT2R (ORCPT
+	id S1752171AbaILTeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 15:34:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42591 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaILTeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 15:28:17 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-usb@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Andy Gross <agross@codeaurora.org>
-Subject: [Patch v9 1/3] usb: dwc3: qcom: Add device tree binding
-Date: Fri, 12 Sep 2014 14:28:06 -0500
-Message-Id: <1410550088-8754-2-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
-References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+	Fri, 12 Sep 2014 15:34:14 -0400
+Date: Fri, 12 Sep 2014 15:33:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        akpm@linux-foundation.org, arnd@arndb.de, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, jgross@suse.com,
+        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
+        yigal@plexistor.com
+Subject: Re: [PATCH v2 1/6] x86, mm, pat: Set WT to PA4 slot of PAT MSR
+Message-ID: <20140912193345.GH15656@laptop.dumpdata.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+ <1410367910-6026-2-git-send-email-toshi.kani@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410367910-6026-2-git-send-email-toshi.kani@hp.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> -	/* Set PWT to Write-Combining. All other bits stay the same */
+> -	/*
+> -	 * PTE encoding used in Linux:
+> -	 *      PAT
+> -	 *      |PCD
+> -	 *      ||PWT
+> -	 *      |||
+> -	 *      000 WB		_PAGE_CACHE_WB
+> -	 *      001 WC		_PAGE_CACHE_WC
+> -	 *      010 UC-		_PAGE_CACHE_UC_MINUS
+> -	 *      011 UC		_PAGE_CACHE_UC
 
-QCOM USB3.0 core wrapper consist of USB3.0 IP from Synopsys
-(SNPS) and HS, SS PHY's control and configuration registers.
 
-It could operate in device mode (SS, HS, FS) and host
-mode (SS, HS, FS, LS).
+I think having this nice picture would be beneficial to folks
+who want to understand it. And now you can of course expand it with
+the slot 7 usage.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 ++++++++++++
- .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 ++++++++++++++++++++
- 2 files changed, 105 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
- create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
+> -	 * PAT bit unused
+> -	 */
+> -	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+> -	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+> +	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
+> +	    (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
+> +	     ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
+> +		/*
+> +		 * Intel Pentium 2, 3, M, and 4 are affected by PAT errata,
+> +		 * which makes the upper four entries unusable.  We do not
+> +		 * use the upper four entries for all the affected processor
+> +		 * families for safe.
+> +		 *
+> +		 * PAT 0:WB, 1:WC, 2:UC-, 3:UC, 4-7:unusable
+> +		 *
+> +		 * NOTE: When WT or WP is used, it is redirected to UC- per
+> +		 * the default setup in  __cachemode2pte_tbl[].
+> +		 */
+> +		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+> +		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+> +	} else {
+> +		/*
+> +		 * WT is set to slot 7, which minimizes the risk of using
 
-diff --git a/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt b/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
-new file mode 100644
-index 0000000..86f2dbe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
-@@ -0,0 +1,39 @@
-+Qualcomm DWC3 HS AND SS PHY CONTROLLER
-+--------------------------------------
-+
-+DWC3 PHY nodes are defined to describe on-chip Synopsis Physical layer
-+controllers.  Each DWC3 PHY controller should have its own node.
-+
-+Required properties:
-+- compatible: should contain one of the following:
-+	- "qcom,dwc3-hs-usb-phy" for High Speed Synopsis PHY controller
-+	- "qcom,dwc3-ss-usb-phy" for Super Speed Synopsis PHY controller
-+- reg: offset and length of the DWC3 PHY controller register set
-+- #phy-cells: must be zero
-+- clocks: a list of phandles and clock-specifier pairs, one for each entry in
-+  clock-names.
-+- clock-names: Should contain "ref" for the PHY reference clock
-+
-+Optional clocks:
-+  "xo"		External reference clock
-+
-+Example:
-+		phy@100f8800 {
-+			compatible = "qcom,dwc3-hs-usb-phy";
-+			reg = <0x100f8800 0x30>;
-+			clocks = <&gcc USB30_0_UTMI_CLK>;
-+			clock-names = "ref";
-+			#phy-cells = <0>;
-+
-+			status = "ok";
-+		};
-+
-+		phy@100f8830 {
-+			compatible = "qcom,dwc3-ss-usb-phy";
-+			reg = <0x100f8830 0x30>;
-+			clocks = <&gcc USB30_0_MASTER_CLK>;
-+			clock-names = "ref";
-+			#phy-cells = <0>;
-+
-+			status = "ok";
-+		};
-diff --git a/Documentation/devicetree/bindings/usb/qcom,dwc3.txt b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
-new file mode 100644
-index 0000000..ca164e7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/qcom,dwc3.txt
-@@ -0,0 +1,66 @@
-+Qualcomm SuperSpeed DWC3 USB SoC controller
-+
-+Required properties:
-+- compatible:	should contain "qcom,dwc3"
-+- clocks:		A list of phandle + clock-specifier pairs for the
-+				clocks listed in clock-names
-+- clock-names:	Should contain the following:
-+  "core"		Master/Core clock, have to be >= 125 MHz for SS
-+				operation and >= 60MHz for HS operation
-+
-+Optional clocks:
-+  "iface"		System bus AXI clock.  Not present on all platforms
-+  "sleep"		Sleep clock, used when USB3 core goes into low
-+				power mode (U3).
-+
-+Required child node:
-+A child node must exist to represent the core DWC3 IP block. The name of
-+the node is not important. The content of the node is defined in dwc3.txt.
-+
-+Phy documentation is provided in the following places:
-+Documentation/devicetree/bindings/phy/qcom,dwc3-usb-phy.txt
-+
-+Example device nodes:
-+
-+		hs_phy: phy@100f8800 {
-+			compatible = "qcom,dwc3-hs-usb-phy";
-+			reg = <0x100f8800 0x30>;
-+			clocks = <&gcc USB30_0_UTMI_CLK>;
-+			clock-names = "ref";
-+			#phy-cells = <0>;
-+
-+			status = "ok";
-+		};
-+
-+		ss_phy: phy@100f8830 {
-+			compatible = "qcom,dwc3-ss-usb-phy";
-+			reg = <0x100f8830 0x30>;
-+			clocks = <&gcc USB30_0_MASTER_CLK>;
-+			clock-names = "ref";
-+			#phy-cells = <0>;
-+
-+			status = "ok";
-+		};
-+
-+		usb3_0: usb30@0 {
-+			compatible = "qcom,dwc3";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			clocks = <&gcc USB30_0_MASTER_CLK>;
-+			clock-names = "core";
-+
-+			ranges;
-+
-+			status = "ok";
-+
-+			dwc3@10000000 {
-+				compatible = "snps,dwc3";
-+				reg = <0x10000000 0xcd00>;
-+				interrupts = <0 205 0x4>;
-+				phys = <&hs_phy>, <&ss_phy>;
-+				phy-names = "usb2-phy", "usb3-phy";
-+				tx-fifo-resize;
-+				dr_mode = "host";
-+			};
-+		};
-+
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+You say slot 7 here, but the title of the patch says slot 4?
 
+> +		 * the PAT bit as slot 3 is UC and is currently unused.
+> +		 * Slot 4 should remain as reserved.
+> +		 *
+> +		 * PAT 0:WB, 1:WC, 2:UC-, 3:UC, 4-6:reserved, 7:WT
+> +		 */
+> +		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
+> +		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
+> +	}
+>  
+>  	/* Boot CPU check */
+>  	if (!boot_pat_state)
