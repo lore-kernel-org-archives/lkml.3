@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179AbaILW25 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 18:28:57 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:48694 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647AbaILW24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 18:28:56 -0400
+	id S1753177AbaILWcP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 18:32:15 -0400
+Received: from mout.web.de ([212.227.17.12]:65396 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaILWcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 18:32:14 -0400
+From: Martin Walch <walch.martin@web.de>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: kconfig: NEW: syntax highlighting for Kconfig files in KDE
+Date: Sat, 13 Sep 2014 00:32:09 +0200
+Message-ID: <27129446.btpinNW7pO@tacticalops>
+User-Agent: KMail/4.14 (Linux/3.15.10-gentoo-gnu; KDE/4.14.0; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1410430968.32479.2.camel@phoenix>
-References: <1410430870.32479.0.camel@phoenix>
-	<1410430968.32479.2.camel@phoenix>
-Date: Fri, 12 Sep 2014 15:28:55 -0700
-X-Google-Sender-Auth: foZP5wWchGI1Y0m2RD1HpKsNTAk
-Message-ID: <CAD=FV=WOUPcsQ76MG1poDAK=UQeg3uxN_Ci_akH=4JVqNvUx9w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] regulator: rk808: Fix missing of_node_put
-From: Doug Anderson <dianders@chromium.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@kernel.org>, Chris Zhong <zyw@rock-chips.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:wS7IZ4swHH/uP3FL9Xp/SE/rScDFMM03UpUnAOfSvntL6fvQomr
+ GM118GiJE9J1b05ecL7sgUWpbguL0bWVShOj5cQ6fIEGFqZiB4wMI3gzab8276DTg2wu1UP
+ JfIsKvyWyJ0twwmANGcK0KckReDVUQ2NDEi8L17Dxo09jF22xEvK131KBUz+mE2iCic0QbS
+ EhXIvT5Wz/g2DVxR4s9+A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel,
+The text editors in KDE (Kate, KWrite, KDevelop, etc.) now support
+highlighting Kconfig files. This will ship with KDE SC 4.14.1, older versions
+back to KDE 4.4.0 can easily get it by running Kate and using the download
+dialog at >Settings >Configure Kate... >Editor Component: Open/Save
+>Modes & Filetypes >Download Highlighting Files...
 
-On Thu, Sep 11, 2014 at 3:22 AM, Axel Lin <axel.lin@ingics.com> wrote:
-> 1. Pass &pdev->dev rather than &client->dev to of_regulator_match, the *dev
->    argument is used for devres to ensure devm_of_regulator_put_matches() will
->    be called when unload the module.
->
-> 2. of_get_child_by_name() returns a node pointer with refcount incremented.
->    Thus add missing of_node_put(reg_np).
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/rk808-regulator.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+Kate automatically applies this highlighting style to all files with names
+that start with "Kconfig" unless some other pattern applies (e.g. *.c).
 
-I've tested that things still work fine after applying this patch and
-confirmed both of your statements are true to the best of my
-knowledge.  I haven't tested module removal (which is where some of
-this matters) but what's here looks good.
+The highlighting should be pretty accurate with the usual formatting
+scheme that most syntax highlighters of KDE apply and it comes with code
+folding support and spell checking. However, it still lacks an indenter.
+It also has no other fancy stuff like accurate auto-completion or jumping
+to a declaration.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+While the infrastructure of Kate Part primarily targets highlighting
+syntactically valid files (not caring about invalid syntax), this highlighter
+also underlines anything that will lead to a syntax error when running *conf.
+Bad characters that do not lead up to a syntax error, but which will be
+silently ignored, are red with a light red background.
 
--Doug
+This all comes at the cost of rather high cpu usage. You may notice when
+loading large files, depending on your hardware. Also, automatic spell
+checking on large files may slow things down. If you intend to open hundreds
+of Kconfig files at once, expect it to take a long time.
+
+Please report bugs either to me via email (subject start [kconfig.xml]) or
+in the bug tracker of KDE at https://bugs.kde.org/
+
+Regards
+Martin Walch
+-- 
+
