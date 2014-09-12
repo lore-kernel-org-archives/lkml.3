@@ -1,146 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaILUS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 16:18:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30399 "EHLO mga09.intel.com"
+	id S1752764AbaILUVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 16:21:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40708 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752502AbaILUS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 16:18:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,515,1406617200"; 
-   d="scan'208";a="572471885"
-Message-ID: <5413552A.1020907@intel.com>
-Date: Fri, 12 Sep 2014 13:18:50 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751365AbaILUU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 16:20:57 -0400
+Date: Fri, 12 Sep 2014 15:20:08 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Pramod Gurav <pramod.gurav.etc@gmail.com>
+CC: Andy Gross <agross@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Jack Pham <jackp@codeaurora.org>, Kumar Gala <galak@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [Patch v9 2/3] usb: dwc3: Add Qualcomm DWC3 glue layer driver
+Message-ID: <20140912202008.GB25500@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+ <1410550088-8754-3-git-send-email-agross@codeaurora.org>
+ <CAMf-jSm2fPPstFD2h4-gG=MCDty34f-O0ooizDEKyQUd3+CxGQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120020060.4178@nanos> <541239F1.2000508@intel.com> <alpine.DEB.2.10.1409120950260.4178@nanos> <alpine.DEB.2.10.1409121120440.4178@nanos> <5413050A.1090307@intel.com> <alpine.DEB.2.10.1409121812550.4178@nanos>
-In-Reply-To: <alpine.DEB.2.10.1409121812550.4178@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
+Content-Disposition: inline
+In-Reply-To: <CAMf-jSm2fPPstFD2h4-gG=MCDty34f-O0ooizDEKyQUd3+CxGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/12/2014 10:34 AM, Thomas Gleixner wrote:
-> On Fri, 12 Sep 2014, Dave Hansen wrote:
->> There are two mappings in play:
->> 1. The mapping with the actual data, which userspace is munmap()ing or
->>    brk()ing away, etc... (never tagged VM_MPX)
-> 
-> It's not tagged that way because it is mapped by user space.
+--FkmkrVfFsRoUs1wW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Correct.  It is not tagged because it is mapped by user space.
+On Sat, Sep 13, 2014 at 01:44:25AM +0530, Pramod Gurav wrote:
+> Andy,
+> Couple of minor comments.
+>=20
+> On Sat, Sep 13, 2014 at 12:58 AM, Andy Gross <agross@codeaurora.org> wrot=
+e:
+>=20
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >
+> > DWC3 glue layer is hardware layer around Synopsys DesignWare
+> > USB3 core. Its purpose is to supply Synopsys IP with required
+> > clocks, voltages and interface it with the rest of the SoC.
+> >
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > Signed-off-by: Andy Gross <agross@codeaurora.org>
+> > ---
+> >  drivers/usb/dwc3/Kconfig     |    8 +++
+> >  drivers/usb/dwc3/Makefile    |    1 +
+> >  drivers/usb/dwc3/dwc3-qcom.c |  131
+> > ++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 140 insertions(+)
+> >  create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
+> >
+> >
+> <..>
+>=20
+>=20
+> > +#include <linux/platform_device.h>
+> > +
+> > +struct dwc3_qcom {
+> > +       struct device           *dev;
+> > +
+> >
+> Extra new line here.
 
-> This is the directory, right?
+that's not an issue however.
 
-No.  The untagged mapping in question here is for normal user data, like
-an mmap() or brk(), unrelated to MPX.
+> > +       struct clk              *core_clk;
+> > +       struct clk              *iface_clk;
+> > +       struct clk              *sleep_clk;
+> > +};
+> > +
+> > +static int dwc3_qcom_probe(struct platform_device *pdev)
+> > +{
+> > +       struct device_node *node =3D pdev->dev.of_node;
+> > +       struct dwc3_qcom *qdwc;
+> > +       int ret =3D 0;
+> >
+> Initialization not required.
 
-The directory is a separate matter.  It is also (currently) untagged
-with VM_MPX since it is also allocated by userspace.
+I'll fix this one as I'm already applying this patch.
 
->> 2. The mapping for the bounds table *backing* the data (is tagged with
->>    VM_MPX)
-> 
-> That's the stuff, which gets magically allocated from do_bounds(). And
-> the reason you do that from the #BR is that user space would have to
-> allocate a gazillion of bound tables to make sure that every corner
-> case is covered.
+> > +
+> > +       qdwc =3D devm_kzalloc(&pdev->dev, sizeof(*qdwc), GFP_KERNEL);
+> > +       if (!qdwc)
+> > +               return -ENOMEM;
+> > +
+> > +       platform_set_drvdata(pdev, qdwc);
+> > +
+> > +       qdwc->dev =3D &pdev->dev;
+> > +
+> > +       qdwc->core_clk =3D devm_clk_get(qdwc->dev, "core");
+> > +       if (IS_ERR(qdwc->core_clk)) {
+> > +               dev_err(qdwc->dev, "failed to get core clock\n");
+> > +               return PTR_ERR(qdwc->core_clk);
+> > +       }
+> > +
+> > +       qdwc->iface_clk =3D devm_clk_get(qdwc->dev, "iface");
+> > +       if (IS_ERR(qdwc->iface_clk)) {
+> > +               dev_dbg(qdwc->dev, "failed to get optional iface clock\=
+n");
+> > +               qdwc->iface_clk =3D NULL;
+> > +       }
+> > +
+> > +       qdwc->sleep_clk =3D devm_clk_get(qdwc->dev, "sleep");
+> > +       if (IS_ERR(qdwc->sleep_clk)) {
+> > +               dev_dbg(qdwc->dev, "failed to get optional sleep clock\=
+n");
+> > +               qdwc->sleep_clk =3D NULL;
+> > +       }
+> > +
+> > +       ret =3D clk_prepare_enable(qdwc->core_clk);
+> > +       if (ret) {
+> > +               dev_err(qdwc->dev, "failed to enable core clock\n");
+> > +               goto err_core;
+> > +       }
+> > +
+> > +       ret =3D clk_prepare_enable(qdwc->iface_clk);
+> >
+> Should not we check if  qdwc->iface_clk is valid?
 
-Yes.
+read the sources luke.
 
-> With the allocation from #BR you make that behaviour
-> dynamic and you just provide an empty "no bounds" table to make the
-> bound checker happy.
+> > +err_clks:
+> > +       clk_disable_unprepare(qdwc->sleep_clk);
+> >
+> IS_ERR check before above statement not needed as we have continued with
+> probe even after failure og devm_clk_get?
 
-Kinda.  We do provide an empty table, but the first access will always
-be a write, so it doesn't stay empty for long.
+read more carefully, there's a detail which you're missing.
 
-...
-> Now, I have a hard time to see how that is supposed to work.
-> 
-> do_unmap()
->  detach_vmas_to_be_unmapped()
->  unmap_region()
->    free_pgtables()
->  arch_unmap()
->    mpx_unmap()
-> 
-> So at the point where you try to access the directory to gather the
-> information about the entries which might be affected, that stuff is
-> unmapped already and the page tables are gone.
-> 
-> Brilliant idea, really. And if you run into the fault in mpx_unmap()
-> you plan to delegate the fixup to a work queue. How is that thing
-> going to find what belonged to the unmapped directory?
+--=20
+balbi
 
-The bounds directory is not being unmapped here.  I _think_ I covered
-that above, but don't be shy if I'm not being clear. ;)
+--FkmkrVfFsRoUs1wW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Even if the stuff would be accessible at that point, it is a damned
-> stupid idea to rely on anything userspace is providing to you. I
-> learned that the hard way in futex.c
-> 
-> The proper solution to this problem is:
-> 
->     do_bounds()
-> 	bd_addr = get_bd_addr_from_xsave();
-> 	bd_entry = bndstatus & ADDR_MASK:
-> 
-> 	bt = mpx_mmap(bd_addr, bd_entry, len);
-> 
-> 	set_bt_entry_in_bd(bd_entry, bt);
-> 
-> And in mpx_mmap()
-> 
->        .....
->        vma = find_vma();
-> 
->        vma->bd_addr = bd_addr;
->        vma->bd_entry = bd_entry;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-If the bounds directory moved around, this would make sense.  Otherwise,
-it's a waste of space because all vmas in a given mm would have the
-exact same bd_addr, and we might as well just store it in mm->bd_something.
+iQIcBAEBAgAGBQJUE1V4AAoJEIaOsuA1yqREZgcP/RATVo+/gbfR2YHIk4KRXgKm
+TtKHXP5NWvlIyo8Io+PTEikWt599P74N6j8TNSLMJcSXnvdim31rauKEhWiBP5JA
+ivybNgNYBtRaLMttpGwd2k1YGk5V3Egp7/n/ra7XeaU/2T8XqjPl1H0yPyKVgK1j
+YdxTfZBtkPgoJebgskYI0U2LjNmQwjy2mtNQjm7wie3ZOHNaJWKPreNHEGTyGzj0
+ynZtKLhko//iDB+vAoymxzaKe06MhZ8qlGM94dp0hGBXHra4YMBj7hH8AHc6GU6C
+aTEr+RekFf5rqyvZQfjDdYh5iL+BSX21lrtNca92kjD8aTcTD9RqpQQzTPDb1qju
+Zm0v/RoRUuOGSBdbl/f1EzdSpi+wZHXrRGemfmYkgU65WykMJ697uKODW8IM8r7I
+r00TJlvOpN6uwwTs560XpP2bLtDYZ2Zu+KouGSf8Pagye7OVToTnaIJm7e4cle6i
+TQJNE4jbcVque/y8exxFv/trEsU+TADo6sDgKsjzd6/1MJtWsRpXVrcLsu/r8TBT
+eqGNC9s8QUva4o+lwZP5eeJ9h3IpiqmgoO4Oi+yopNjsGTqsTfsJDRufbgFIezgs
+uihzE4BD3ThTLrXxo8oN4MYW2LZLkFivV2Cu6TX/z/LYfp3BVsZQjqrzudgnXmuO
+flL7M04cc5xSNEEwGrMq
+=cXdE
+-----END PGP SIGNATURE-----
 
-Are you suggesting that we support moving the bounds directory around?
-
-Also, the bd_entry can be _calculated_ from vma->vm_start and the
-bd_addr.  It seems a bit redundant to store it like this.
-
-Also this would add 16 bytes to the currently 184-byte VMA.  That seems
-suboptimal to me.  It would eat over a megabyte of memory on my *laptop*
-alone.
-
-> Now on mpx_unmap()
-> 
->     for_each_vma()
-> 	if (is_affected(vma->bd_addr, vma->bd_entry))
->  	   unmap(vma);
-> 
-> That does not require a prctl, no fault handling in the unmap path, it
-> just works and is robust by design because it does not rely on any
-> user space crappola. You store the directory context at allocation
-> time and free it when that context goes away. It's that simple, really.
-
-If you are talking about the VM_MPX VMA that was allocated to hold the
-bounds table, this won't work.
-
-Once we unmap the bounds table, we would have a bounds directory entry
-pointing at empty address space.  That address space could now be
-allocated for some other (random) use, and the MPX hardware is now going
-to go trying to walk it as if it were a bounds table.  That would be bad.
-
-Any unmapping of a bounds table has to be accompanied by a corresponding
-write to the bounds directory entry.  That write to the bounds directory
-can fault.
-
-
-
+--FkmkrVfFsRoUs1wW--
