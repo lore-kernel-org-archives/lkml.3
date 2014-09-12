@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaILCPS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Sep 2014 22:15:18 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41468 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaILCPP (ORCPT
+	id S1753248AbaILC23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Sep 2014 22:28:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54682 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616AbaILC21 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Sep 2014 22:15:15 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8C1Uctl013769, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
-        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH v2 2/2] mfd: rtsx: fix PM suspend for 5249
-Date: Fri, 12 Sep 2014 09:30:28 +0800
-Message-ID: <ed5657e8faa32586910fc0b3694eaf725a60b3f0.1410484754.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1410484754.git.micky_ching@realsil.com.cn>
-References: <cover.1410484754.git.micky_ching@realsil.com.cn>
+	Thu, 11 Sep 2014 22:28:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,509,1406617200"; 
+   d="scan'208";a="590203721"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: atull <atull@opensource.altera.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH 4/4 v3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Topic: [PATCH 4/4 v3] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Index: AQHPzjEb/eqFgepPqECCtRJAIRWRtA==
+Date: Fri, 12 Sep 2014 02:27:33 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E990CFF@SHSMSX101.ccr.corp.intel.com>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+ <1410286081-16653-5-git-send-email-alvin.chen@intel.com>
+ <alpine.DEB.2.02.1409111138080.4869@atx-linux-37>
+In-Reply-To: <alpine.DEB.2.02.1409111138080.4869@atx-linux-37>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+> On Tue, 9 Sep 2014, Weike Chen wrote:
+> 
+> >
+> >  struct dwapb_gpio;
+> > +struct dwapb_context;
+> >
+> >  struct dwapb_gpio_port {
+> >  	struct bgpio_chip	bgc;
+> >  	bool			is_registered;
+> >  	struct dwapb_gpio	*gpio;
+> > +	struct dwapb_context	*ctx;
+> 
+> Alvin,
+> 
+> Will this build if CONFIG_PM_SLEEP is not defined?
+Actually, PM_SLEEP is always set as 'y' in 'kerne/power/Kconfig'. But I manually change it to 'n', this module can be compiled correctly.
+You may be concern with 'ctx', and you can see 'ctx' accessing is always in CONFIG_PM_SLEEP.
 
-Fix rts5249 failed send buffer cmd after suspend,
-PM_CTRL3 should reset before send any buffer cmd after suspend.
-Otherwise, buffer cmd will failed, this will lead resume fail.
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mfd/rts5249.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-index 573de7b..5dd7dc0 100644
---- a/drivers/mfd/rts5249.c
-+++ b/drivers/mfd/rts5249.c
-@@ -126,10 +126,27 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
- 
-+static int rts5249_pm_reset(struct rtsx_pcr *pcr)
-+{
-+	int err;
-+
-+	/* init aspm */
-+	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
-+	if (err < 0)
-+		return err;
-+
-+	/* reset PM_CTRL3 before send buffer cmd */
-+	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-+}
-+
- static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
- {
- 	int err;
- 
-+	err = rts5249_pm_reset(pcr);
-+	if (err < 0)
-+		return err;
-+
- 	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
- 			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
- 			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
--- 
-1.7.9.5
-
+> Alan
