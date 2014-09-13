@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaIMFlw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 01:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60177 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaIMFlv (ORCPT
+	id S1751673AbaIMFn5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 01:43:57 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:46122 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaIMFnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 01:41:51 -0400
-Date: Fri, 12 Sep 2014 22:42:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konstantin Khlebnikov <koct9i@gmail.com>
+	Sat, 13 Sep 2014 01:43:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140912170616.cb4c832a09cc2b221453ad32@linux-foundation.org>
+References: <20140830163834.29066.98205.stgit@zurg>
+	<20140830164127.29066.99498.stgit@zurg>
+	<20140912170404.f14663cc823691cab36bf793@linux-foundation.org>
+	<20140912170616.cb4c832a09cc2b221453ad32@linux-foundation.org>
+Date: Sat, 13 Sep 2014 09:43:54 +0400
+Message-ID: <CALYGNiM-ArE2+M+xjSbDjLyNc_Rr0C=6TKBKPi4bEwxFfeU_tA@mail.gmail.com>
+Subject: Re: [PATCH v2 6/6] mm/balloon_compaction: general cleanup
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
         Rafael Aquini <aquini@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         Andrey Ryabinin <ryabinin.a.a@gmail.com>,
         Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned
- memory
-Message-Id: <20140912224221.9ee5888a.akpm@linux-foundation.org>
-In-Reply-To: <CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
-References: <20140830163834.29066.98205.stgit@zurg>
-	<20140830164120.29066.8857.stgit@zurg>
-	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
-	<CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Sep 2014 09:26:49 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+On Sat, Sep 13, 2014 at 4:06 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 12 Sep 2014 17:04:04 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+>> On Sat, 30 Aug 2014 20:41:27 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>>
+>> > * move special branch for balloon migraion into migrate_pages
+>> > * remove special mapping for balloon and its flag AS_BALLOON_MAP
+>> > * embed struct balloon_dev_info into struct virtio_balloon
+>> > * cleanup balloon_page_dequeue, kill balloon_page_free
+>>
+>> Not sure what's going on here - your include/linux/balloon_compaction.h
+>> seems significantly different from mine.
+>
+> OK, I worked it out.
+>
+>> I think I'll just drop this patch - it's quite inconvenient to have a
+>> large "general cleanup" coming after a stack of significant functional
+>> changes.  It makes review, debug, fix, merge and reversion harder.
+>> Let's worry about it later.
+>
+> But I'm still thinking we should defer this one?
 
-> >
-> > Did we really need to put the BalloonPages count into per-zone vmstat,
-> > global vmstat and /proc/meminfo?  Seems a bit overkillish - why so
-> > important?
-> 
-> Balloon grabs random pages, their distribution among numa nodes might
-> be important.
-> But I know nobody who uses numa-aware vm together with ballooning.
-> 
-> Probably it's better to drop per-zone vmstat and line from meminfo,
-> global vmstat counter should be enough.
+It seems in this case massive cleanup before fixies leads to much bigger mess.
+I've separated fixes specially for merging into stable kernels.
 
-Yes, the less we add the better - we can always add stuff later if
-there is a demonstrated need.
-
-> >
-> > Consuming another page flag is a big deal.  We keep on nearly running
-> > out and one day we'll run out for real.  page-flags-layout.h is
-> > incomprehensible.  How many flags do we have left (worst-case) with this
-> > change?  Is there no other way?  Needs extraordinary justification,
-> > please.
-> 
-> PageBalloon is not a page flags, it's like PageBuddy -- special state
-> of _mapcount (-256 in this case).
-> The same was in v1 and is written in the comment above.
-
-oop sorry, I got confused about KPF_BALLOON.
+The rest patches mostly rewrites this code using new approatch.
+I don't know how to make it more reviewable, it's easier to write a
+new version from the scratch.
+Probably rework should be untied form fixes and sent as separate patchset.
