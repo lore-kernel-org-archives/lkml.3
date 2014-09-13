@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaIMNw4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 09:52:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36204 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaIMNwz (ORCPT
+	id S1751841AbaIMODj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 10:03:39 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36010 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaIMODi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 09:52:55 -0400
+	Sat, 13 Sep 2014 10:03:38 -0400
+Message-ID: <54144EAC.8030101@oracle.com>
+Date: Sat, 13 Sep 2014 10:03:24 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1410577674-17019-1-git-send-email-ming.lei@canonical.com>
-References: <1410577674-17019-1-git-send-email-ming.lei@canonical.com>
-Date: Sat, 13 Sep 2014 21:52:52 +0800
-Message-ID: <CACVXFVMyYWHHOhQQObkaUSnf+CUB5NhD-RTFJCgqciotj85D9w@mail.gmail.com>
-Subject: Re: [PATCH v3 0/10] block: per-distpatch_queue flush machinery
-From: Ming Lei <ming.lei@canonical.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=UTF-8
+To: Konstantin Khlebnikov <koct9i@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned
+ memory
+References: <20140830163834.29066.98205.stgit@zurg>	<20140830164120.29066.8857.stgit@zurg>	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org> <CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
+In-Reply-To: <CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 11:07 AM, Ming Lei <ming.lei@canonical.com> wrote:
-> Hi,
->
-> As recent discussion, especially suggested by Christoph, this patchset
-> implements per-distpatch_queue flush machinery, so that:
->
->         - current init_request and exit_request callbacks can
->         cover flush request too, then the buggy copying way of
->         initializing flush request's pdu can be fixed
->
->         - flushing performance gets improved in case of multi hw-queue
->
-> About 70% throughput improvement is observed in sync write
-> over multi dispatch-queue virtio-blk, see details in commit log
-> of patch 10/10.
->
-> This patchset can be pulled from below tree too:
->
->         git://kernel.ubuntu.com/ming/linux.git v3.17-block-dev_v3
->
-> V3:
->         - don't return failure code from blk_alloc_flush_queue() to
->         avoid freeing invalid buffer in case of allocation failure
->         - remove blk_init_flush() and blk_exit_flush()
->         - remove unnecessary WARN_ON() from blk_alloc_flush_queue()
+On 09/13/2014 01:26 AM, Konstantin Khlebnikov wrote:
+>> Did we really need to put the BalloonPages count into per-zone vmstat,
+>> > global vmstat and /proc/meminfo?  Seems a bit overkillish - why so
+>> > important?
+> Balloon grabs random pages, their distribution among numa nodes might
+> be important.
+> But I know nobody who uses numa-aware vm together with ballooning.
 
-Looks there are still two problems in V3:
+*cough*. me?
 
-- blk_free_flush_queue() should be called only for legacy queue after
-the patch 10's conversion
+Obviously there's no need to keep that per-zone vmstat just for me, but
+right now NUMA on KVM works just fine and does a good job of catching
+NUMA issues without having to run on actual metal.
 
-- pdu copy should be removed from blk_mq_clone_flush_request()
-
-I will post V4 once these two problems are fixed.
 
 Thanks,
->
-> V2:
->         - refactor blk_mq_init_hw_queues() and its pair, also it is a fix
->         on failure path, so that conversion to per-queue flush becomes simple.
->         - allocate/initialize flush queue in blk_mq_init_hw_queues()
->         - add sync write tests on virtio-blk which is backed by SSD image
->
-> V1:
->         - commit log typo fix
->         - introduce blk_alloc_flush_queue() and its pair earlier, so
->         that patch 5 and 8 become easier for review
->
->  block/blk-core.c       |   12 ++--
->  block/blk-flush.c      |  129 +++++++++++++++++++++++++-------------
->  block/blk-mq.c         |  160 ++++++++++++++++++++++++++++++------------------
->  block/blk-mq.h         |    1 -
->  block/blk-sysfs.c      |    4 +-
->  block/blk.h            |   35 ++++++++++-
->  include/linux/blk-mq.h |    2 +
->  include/linux/blkdev.h |   10 +--
->  8 files changed, 230 insertions(+), 123 deletions(-)
->
->
->
-> Thanks,
-> --
-> Ming Lei
->
->
+Sasha
