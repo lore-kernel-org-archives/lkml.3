@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413AbaIMV3q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 17:29:46 -0400
-Received: from xemno.com ([178.62.132.54]:55682 "EHLO ns1.google.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752269AbaIMV3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 17:29:45 -0400
-X-Greylist: delayed 47117 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Sep 2014 17:29:44 EDT
-Message-ID: <3f378e01fd05a86908c6328fa7a1ddb8.squirrel@178.62.132.54>
-Date: Sat, 13 Sep 2014 04:20:50 -0400
-Subject: Jeg skal bruge dine HASTER RESPOND 
-From: "Mr chin sang" <chinsang8@gmail.com>
-Reply-To: chinsang411@gmail.com
-User-Agent: SquirrelMail/1.5.2 [SVN]
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - ns1.google.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - gmail.com
-X-Get-Message-Sender-Via: ns1.google.com: authenticated_id: admin@katagroup.org
-To: unlisted-recipients:; (no To-header on input)
+	id S1752331AbaIMVfB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 17:35:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38353 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237AbaIMVe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 17:34:59 -0400
+Date: Sat, 13 Sep 2014 17:34:57 -0400 (EDT)
+Message-Id: <20140913.173457.1906099694506405149.davem@davemloft.net>
+To: alexandre.belloni@free-electrons.com
+Cc: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        voice.shen@atmel.com
+Subject: Re: [PATCHv2] net/macb: Add hardware revision information during
+ probe
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1410566269-16445-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1410566269-16445-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 13 Sep 2014 14:34:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Date: Sat, 13 Sep 2014 01:57:49 +0200
 
-Jeg skal bruge dine HASTER RESPOND
+> From: Bo Shen <voice.shen@atmel.com>
+> 
+> Print the IP revision when probing.
+> 
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Changes in v2:
+>  - condense information on one line
 
- 
-
-          Jeg bruger dette medie til at informere dig om transaktionen for
-overførsel på $ 21500000 (Twenty-en million fem hundrede tusinde dollars)
-i min bank i Kina
-
-til dig som modtager. Det vil være 100% sikker, er den finansielle officer
-af den afdøde kunden.
-
- 
-
-          Kontakt venligst på min private e-mail nedenfor for eventuelle
-spørgsmål og yderligere information.
-
- 
-
-          Med venlig hilsen
-
- 
-
-          sang Chin
-
-          e-post: chinsang411@gmail.com
-
-
-
+Applied, thanks.
