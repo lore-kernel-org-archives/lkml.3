@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaIMQSD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 12:18:03 -0400
-Received: from mout.gmx.net ([212.227.15.19]:52393 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752020AbaIMQSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 12:18:00 -0400
-Message-ID: <54146D8D.9090708@gmx.de>
-Date: Sat, 13 Sep 2014 18:15:09 +0200
-From: Heinrich Schuchardt <xypron.debian@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1752101AbaIMQf3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 12:35:29 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39307 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752042AbaIMQf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 12:35:28 -0400
+Date: Sat, 13 Sep 2014 09:35:01 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Jianqun <jay.xu@rock-chips.com>
+Cc: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
+        cf@rock-chips.com
+Message-ID: <20140913163501.GH7960@sirena.org.uk>
+References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com>
+ <1410568863-21723-1-git-send-email-jay.xu@rock-chips.com>
 MIME-Version: 1.0
-To: Andrew Vagin <avagin@parallels.com>, Jan Kara <jack@suse.cz>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
-References: <1410177716-3965-1-git-send-email-avagin@openvz.org> <20140909012712.GV7996@ZenIV.linux.org.uk> <20140909085439.GB25034@quack.suse.cz> <20140910094318.GA19472@paralelels.com>
-In-Reply-To: <20140910094318.GA19472@paralelels.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:o6gl1GMJnGNnWbA1teBreot8a1sia/eHZ7vmrqtTlw/oDyv90ak
- UxLa1oji2eGb2G8seN9Ki1achLnQ4w1wR8kK4SCUiWbPiggVLPzKMJJKziM4DYOTCJ+K8Sh
- FmYsVcdNYACqPxBKdV6t2alNsAbtHlUR+E67C2NaW83ZFsxZmlHTbAKr1m9Z/HZ+rjoNMmR
- EacA9087kEZjtPBl3CqwQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YWfczjhUm04al3kG"
+Content-Disposition: inline
+In-Reply-To: <1410568863-21723-1-git-send-email-jay.xu@rock-chips.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 209.49.225.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] ASoC: rockchip-i2s: fix master mode set bit error
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-09-14 02:27:12, Al Viro wrote:
-http://lkml.org/lkml/2014/9/8/762
- > I agree that it changes user-visible ABI and I agree the behavior
- > isn't really specified in the manpage.
 
-Shouldn't we start with putting the expected behavior into the manpage 
-before patching the code? I am missing a patch for man7/inotify.7.
+--YWfczjhUm04al3kG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Mon, Sep 08, 2014 at 04:01:56PM +0400, Andrey Vagin wrote:
-http://lkml.org/lkml/2014/9/8/219
- >
- > 	fd = inotify_init1(IN_NONBLOCK);
- > 	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
- > 	link(path, path_link);
- >
- > 	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
- >
- > 	unlink(path);
- > 	unlink(path_link);
- >
- > 	printf(" --- unlink\n");
- > 	read_evetns(fd);
- >
- > 	close(deleted);
- > 	printf(" --- close\n");
- > 	read_evetns(fd);
- >
- > Without this patch:
- >   --- unlink
- > 4	(IN_ATTRIB)
- > 400	(IN_DELETE_SELF)
- > 8000	(IN_IGNORED)
- >   --- close
- > FAIL
- >
- > With this patch:
- >   --- unlink
- > 4	(IN_ATTRIB)
- > 400	(IN_DELETE_SELF)
- >   --- close
- > 8	(IN_CLOSE_WRITE)
- > 400	(IN_DELETE_SELF)
- > 8000	(IN_IGNORED)
- > PASS
+On Sat, Sep 13, 2014 at 08:41:03AM +0800, Jianqun wrote:
+> Fix error format set to I2S master or slave mode.
+> Test on RK3288 board with max98090.
 
-Shouldn't the second IN_DELETE_SELF occur before
---- close ?
-Why is IN_CLOSE_WRITE created?
+Applied.  Since this is a bug fix it should be one of the first patches
+in the series so that it can be sent to Linus as a fix, bug fixes should
+go before any other patches.
 
-Best regards
+--YWfczjhUm04al3kG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Heinrich Schuchardt
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUFHI0AAoJECTWi3JdVIfQ4/EH/RDS9OC2Y7QhShmNh8uAqSKB
+v6LWC0PYNnyRTxNtp5k1Ck5ZsXqO6lv6O0320nPMF6YpkWSjzb9vDfTUULt8mkMm
+qI/HrghJgGhkfBwDtILp0qUKwI/mUZxr+v2uXEOCJdp9xySTmAgaVkfSfLTpOsIH
+zJX32HHicVHsfkvBeb4OGlGAXqMNUgoPcGAdfGT2BGj9I4qsGOe+MBTnSAkexA2H
+9YMqwMPOicJnTZ+EjKlEptEu0PMbGbl2drkaSIID6E003tzCcr+EY7hR80++EJoP
+oMJIqOCM1rTvQNFlfMagC4YwgjzzlXku0fVbQXH32CQ7c7vNfuLNkJhLTx4Ygbg=
+=yeZ6
+-----END PGP SIGNATURE-----
+
+--YWfczjhUm04al3kG--
