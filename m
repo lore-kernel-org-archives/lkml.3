@@ -1,122 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaIMJ0V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 05:26:21 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:48681 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763AbaIMJ0T convert rfc822-to-8bit (ORCPT
+	id S1752045AbaIMJcU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 05:32:20 -0400
+Received: from services.gouders.net ([141.101.32.176]:54103 "EHLO
+	services.gouders.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763AbaIMJcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 05:26:19 -0400
+	Sat, 13 Sep 2014 05:32:18 -0400
+From: Dirk Gouders <dirk@gouders.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+In-Reply-To: <20140913040716.GA28080@google.com> (Bjorn Helgaas's message of
+	"Fri, 12 Sep 2014 22:07:16 -0600")
+References: <ghvbotd8es.fsf@quad.gouders.net>
+	<ghzje5f5zt.fsf@lena.gouders.net> <ghbnqkeh9k.fsf@quad.gouders.net>
+	<CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
+	<gh4mwcef0r.fsf@quad.gouders.net>
+	<CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
+	<ghoaukcx6b.fsf@quad.gouders.net>
+	<CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
+	<ghk358crbe.fsf@quad.gouders.net>
+	<CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
+	<20140913040716.GA28080@google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+Date: Sat, 13 Sep 2014 11:30:55 +0200
+Message-ID: <gh8ulnn9yo.fsf@quad.gouders.net>
 MIME-Version: 1.0
-X-Originating-IP: [88.96.238.14]
-In-Reply-To: <1410564239-8411-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410564239-8411-1-git-send-email-alexandre.belloni@free-electrons.com>
-Date: Sat, 13 Sep 2014 10:26:18 +0100
-Message-ID: <CAAEAJfD_Kujcf7m9RAbRrjA82A08N81rVwy6sXY_PORdrH0VkA@mail.gmail.com>
-Subject: Re: [PATCHv5] mtd: nand: atmel_nand: retrieve NFC clock
-From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 September 2014 00:23, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
->
-> Retrieve the NFC clock to make sure it is enabled. Make that optional to ensure
-> compatibility with previous device trees but document it as mandatory so newer
-> device trees will include it.
->
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Acked-by: Josh Wu <josh.wu@atmel.com>
-> ---
-> Changes in v5:
->  - Added a proper commit log
->
->  .../devicetree/bindings/mtd/atmel-nand.txt         |  2 ++
->  drivers/mtd/nand/atmel_nand.c                      | 25 ++++++++++++++++++++++
->  2 files changed, 27 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/mtd/atmel-nand.txt b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> index c4728839d0c1..6edc3b616e98 100644
-> --- a/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/atmel-nand.txt
-> @@ -36,6 +36,7 @@ Optional properties:
->      - reg : should specify the address and size used for NFC command registers,
->              NFC registers and NFC Sram. NFC Sram address and size can be absent
->              if don't want to use it.
-> +    - clocks: phandle to the peripheral clock
->    - Optional properties:
->      - atmel,write-by-sram: boolean to enable NFC write by sram.
->
-> @@ -98,6 +99,7 @@ nand0: nand@40000000 {
->                 compatible = "atmel,sama5d3-nfc";
->                 #address-cells = <1>;
->                 #size-cells = <1>;
-> +               clocks = <&hsmc_clk>
->                 reg = <
->                         0x70000000 0x10000000   /* NFC Command Registers */
->                         0xffffc000 0x00000070   /* NFC HSMC regs */
-> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-> index 9c5f717bda54..d1e502f8dbd0 100644
-> --- a/drivers/mtd/nand/atmel_nand.c
-> +++ b/drivers/mtd/nand/atmel_nand.c
-> @@ -27,6 +27,7 @@
->   *
->   */
->
-> +#include <linux/clk.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> @@ -96,6 +97,8 @@ struct atmel_nfc {
->         bool                    use_nfc_sram;
->         bool                    write_by_sram;
->
-> +       struct clk              *clk;
-> +
->         bool                    is_initialized;
->         struct completion       comp_ready;
->         struct completion       comp_cmd_done;
-> @@ -2248,6 +2251,7 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->  {
->         struct atmel_nfc *nfc = &nand_nfc;
->         struct resource *nfc_cmd_regs, *nfc_hsmc_regs, *nfc_sram;
-> +       int ret;
->
->         nfc_cmd_regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->         nfc->base_cmd_regs = devm_ioremap_resource(&pdev->dev, nfc_cmd_regs);
-> @@ -2279,8 +2283,28 @@ static int atmel_nand_nfc_probe(struct platform_device *pdev)
->         nfc_writel(nfc->hsmc_regs, IDR, 0xffffffff);
->         nfc_readl(nfc->hsmc_regs, SR);  /* clear the NFC_SR */
->
-> +       nfc->clk = devm_clk_get(&pdev->dev, NULL);
-> +       if (!IS_ERR(nfc->clk)) {
-> +               ret = clk_prepare_enable(nfc->clk);
-> +               if (ret)
-> +                       return ret;
-> +       } else {
-> +               dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
+Bjorn Helgaas <bhelgaas@google.com> writes:
 
-Looks much better now thanks. If the clock is not really optional, you
-can consider this a firmware bug. We've used FW_BUG messages for these
-cases
-(see vim drivers/watchdog/orion_wdt.c), so you could write something like:
+> I want to fix this regression before v3.17.  Dirk, can you test the
+> following patch on top of v3.17-rc2?  I'm hoping you can try this on your
+> test machine in conjunction with your acpi_pci_root_add() and
+> pci_scan_device() patches.  If I understand correctly,  you were able to
+> reproduce the FC adapter not showing up, and if you can verify that it does
+> show with those patches + this revert, I think that's good enough for now.
 
-dev_warn(..., FW_BUG "devicetree clock missing");
+I tried this patch on the test machine but after rebooting I lost remote
+access -- details will have to wait until tonight.
 
-Just a suggestion.
--- 
-Ezequiel García, VanguardiaSur
-www.vanguardiasur.com.ar
+Independent of the result of this test I planned to go to the office,
+this evening to also do this test on the VX50 and to also try Yinghai's
+suggestion to reset the PCIe link on it.  I'd like to see if the
+behavior of the VX50 differs from that of the test machine.
+
+Probably obvious but did I undestand correctly that Yinghai's patches + 
+
+echo 1 > /sys/bus/.../pcie_link_disable
+echo 0 > /sys/bus/.../pcie_link_disable
+
+is exactly identical to this?
+
+setpci -s ... 0xc0.b=0x18
+setpci -s ... 0xc0.b=0x08
+
+Please let me know if there is anything else you want me to test on the
+VX50.
+
+Dirk
+
+> I'm not committed to applying this yet, but I'd like to have a working fix
+> in my back pocket in case we don't come up with a better solution soon.
+>
+> Bjorn
+>
+>
+> commit 5945a8d28c416fc390a94c8e7fb8fd0a76f5d710
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date:   Fri Sep 12 21:58:19 2014 -0600
+>
+>     Revert "PCI: Make sure bus number resources stay within their parents bounds"
+>     
+>     This reverts commit 1820ffdccb9b ("PCI: Make sure bus number resources stay
+>     within their parents bounds") because it breaks some systems with LSI Logic
+>     FC949ES Fibre Channel Adapters, apparently by exposing a defect in those
+>     adapters.
+>     
+>     Dirk tested a Tyan VX50 (B4985) with this device that worked like this
+>     prior to 1820ffdccb9b:
+>     
+>         bus: [bus 00-7f] on node 0 link 1
+>         ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-07])
+>         pci 0000:00:0e.0: PCI bridge to [bus 0a]
+>         pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07] (conflicts with (null) [bus 00-07])
+>         pci 0000:0a:00.0: [1000:0646] type 00 class 0x0c0400 (FC adapter)
+>     
+>     Note that the root bridge [bus 00-07] aperture is wrong; this is a BIOS
+>     defect in the PCI0 _CRS method.  But prior to 1820ffdccb9b, we didn't
+>     enforce that aperture, and the FC adapter worked fine at 0a:00.0.
+>     
+>     After 1820ffdccb9b, we notice that 00:0e.0's aperture is not contained in
+>     the root bridge's aperture, so we reconfigure it so it *is* contained:
+>     
+>         pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
+>         pci 0000:00:0e.0: PCI bridge to [bus 06-07]
+>     
+>     This effectively moves the FC device from 0a:00.0 to 07:00.0, which should
+>     be legal.  But when we enumerate bus 06, the FC device doesn't respond, so
+>     we don't find anything.  This is probably a defect in the FC device.
+>     
+>     Possible fixes (due to Yinghai):
+>     
+>         1) Add a quirk to fix the _CRS information based on what amd_bus.c read
+>            from the hardware
+>     
+>         2) Reset the FC device after we change its bus number
+>     
+>         3) Revert 1820ffdccb9b
+>     
+>     Fix 1 would be relatively easy, but it does sweep the LSI FC issue under
+>     the rug.  We might want to reconfigure bus numbers in the future for some
+>     other reason, e.g., hotplug, and then we could trip over this again.
+>     
+>     For that reason, I like fix 2, but we don't know whether it actually works,
+>     and we don't have a patch for it yet.
+>     
+>     This revert is fix 3, which also sweeps the LSI FC issue under the rug.
+>     
+>     Link: https://bugzilla.kernel.org/show_bug.cgi?id=84281
+>     Reported-by: Dirk Gouders <dirk@gouders.net>
+>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>     CC: stable@vger.kernel.org	# v3.15+
+>     CC: Yinghai Lu <yinghai@kernel.org>
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index e3cf8a2e6292..f0badff77cff 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -775,7 +775,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+>  	/* Check if setup is sensible at all */
+>  	if (!pass &&
+>  	    (primary != bus->number || secondary <= bus->number ||
+> -	     secondary > subordinate || subordinate > bus->busn_res.end)) {
+> +	     secondary > subordinate)) {
+>  		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
+>  			 secondary, subordinate);
+>  		broken = 1;
+> @@ -853,8 +853,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+>  			child = pci_add_new_bus(bus, dev, max+1);
+>  			if (!child)
+>  				goto out;
+> -			pci_bus_insert_busn_res(child, max+1,
+> -						bus->busn_res.end);
+> +			pci_bus_insert_busn_res(child, max+1, 0xff);
+>  		}
+>  		max++;
+>  		buses = (buses & 0xff000000)
+> @@ -913,11 +912,6 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+>  		/*
+>  		 * Set the subordinate bus number to its real value.
+>  		 */
+> -		if (max > bus->busn_res.end) {
+> -			dev_warn(&dev->dev, "max busn %02x is outside %pR\n",
+> -				 max, &bus->busn_res);
+> -			max = bus->busn_res.end;
+> -		}
+>  		pci_bus_update_busn_res_end(child, max);
+>  		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
+>  	}
