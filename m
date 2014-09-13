@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaINCHA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 22:07:00 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:34735 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752258AbaINCG7 (ORCPT
+	id S1752350AbaINCJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 22:09:28 -0400
+Received: from 220-128-97-35.HINET-IP.hinet.net ([220.128.97.35]:33700 "EHLO
+	mail.upga.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319AbaINCJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 22:06:59 -0400
-X-RL-SENDER: xjq@rock-chips.com
-X-FST-TO: cf@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: xjq@rock-chips.com
-X-UNIQUE-TAG: <f696155a88a7b319c4159f16f5e77e20>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <5414F82E.9090004@rock-chips.com>
-Date: Sun, 14 Sep 2014 10:06:38 +0800
-From: Jianqun <xjq@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 13 Sep 2014 22:09:27 -0400
+X-Greylist: delayed 50911 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Sep 2014 22:09:27 EDT
+From: "Karim Wattara" <karimwatara@voila.fr>
+Reply-To: karimwatara@voila.fr
+Subject: Are You interested?
+Date: Sat, 13 Sep 2014 19:57:59 +0800
+Message-Id: <20140913115645.M31197@voila.fr>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 41.138.98.111 (ivy)
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
-CC: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
-        cf@rock-chips.com
-Subject: Re: [PATCH 2/5] ASoC: rockchip-i2s: fix master mode set bit error
-References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com> <1410568863-21723-1-git-send-email-jay.xu@rock-chips.com> <20140913163501.GH7960@sirena.org.uk>
-In-Reply-To: <20140913163501.GH7960@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Greetings,
 
+I am Mr.Karim Wattara. a banker, i know that this mail will come to you as a surprise as 
+we have never met before, but need not to worry as I am contacting you independently of my 
+investigation and no one is informed of this communication. I need your urgent Cooperation 
+in transferring the sum of $11.3 Million dollars immediately to your private account.The 
+money has been here in our Bank lying dormant for years now without anybody coming for the 
+claim of it.
 
-在 09/14/2014 12:35 AM, Mark Brown 写道:
-> On Sat, Sep 13, 2014 at 08:41:03AM +0800, Jianqun wrote:
->> Fix error format set to I2S master or slave mode.
->> Test on RK3288 board with max98090.
-> 
-> Applied.  Since this is a bug fix it should be one of the first patches
-> in the series so that it can be sent to Linus as a fix, bug fixes should
-> go before any other patches.
-> 
+The fund belong to our deceased Customer Mrs.Joy Lake who perished along with her family 
+since January 31 2000. The Banking laws here does not allow such money to stay more than 
+15 years,that is the reason why i need your Cooperation in transferring the money to your 
+bank account so that we can use it to secure the future of our both families because i 
+don''t want the money to be recalled to the bank treasury as unclaimed fund.
 
-got it, I'll do it at new version patch, thanks 
+By indicating your interest I will send you the full details on how the business will be 
+executed. Please keep this proposal as a top secret and delete if you are not interested,
+
+Best Regards,
+Karim Wattara.
