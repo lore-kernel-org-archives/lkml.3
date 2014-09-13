@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaIMPkx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 11:40:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39101 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100AbaIMPj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 11:39:27 -0400
-Date: Fri, 12 Sep 2014 14:57:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'linux-driver@qlogic.com'" <linux-driver@qlogic.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux@arm.linux.org.uk'" <linux@arm.linux.org.uk>
-Message-ID: <20140912135738.GX7960@sirena.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103CDBFBFB01A@CNBJMBX05.corpusers.net>
+	id S1752079AbaIMQSD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 12:18:03 -0400
+Received: from mout.gmx.net ([212.227.15.19]:52393 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020AbaIMQSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 12:18:00 -0400
+Message-ID: <54146D8D.9090708@gmx.de>
+Date: Sat, 13 Sep 2014 18:15:09 +0200
+From: Heinrich Schuchardt <xypron.debian@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ca23f2aBZR6YDKM9"
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103CDBFBFB01A@CNBJMBX05.corpusers.net>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap:change struct regmap's internal locks as union
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andrew Vagin <avagin@parallels.com>, Jan Kara <jack@suse.cz>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Eric Paris <eparis@parisplace.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
+References: <1410177716-3965-1-git-send-email-avagin@openvz.org> <20140909012712.GV7996@ZenIV.linux.org.uk> <20140909085439.GB25034@quack.suse.cz> <20140910094318.GA19472@paralelels.com>
+In-Reply-To: <20140910094318.GA19472@paralelels.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:o6gl1GMJnGNnWbA1teBreot8a1sia/eHZ7vmrqtTlw/oDyv90ak
+ UxLa1oji2eGb2G8seN9Ki1achLnQ4w1wR8kK4SCUiWbPiggVLPzKMJJKziM4DYOTCJ+K8Sh
+ FmYsVcdNYACqPxBKdV6t2alNsAbtHlUR+E67C2NaW83ZFsxZmlHTbAKr1m9Z/HZ+rjoNMmR
+ EacA9087kEZjtPBl3CqwQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 09-09-14 02:27:12, Al Viro wrote:
+http://lkml.org/lkml/2014/9/8/762
+ > I agree that it changes user-visible ABI and I agree the behavior
+ > isn't really specified in the manpage.
 
---Ca23f2aBZR6YDKM9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Shouldn't we start with putting the expected behavior into the manpage 
+before patching the code? I am missing a patch for man7/inotify.7.
 
-On Thu, Sep 11, 2014 at 04:19:49PM +0800, Wang, Yalin wrote:
-> this patch change struct regmap->mutex and struct regmap->spinlock
-> as an union, because these 2 members are only used one of them,
-> we change it to shrink the struct size.
+On Mon, Sep 08, 2014 at 04:01:56PM +0400, Andrey Vagin wrote:
+http://lkml.org/lkml/2014/9/8/219
+ >
+ > 	fd = inotify_init1(IN_NONBLOCK);
+ > 	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+ > 	link(path, path_link);
+ >
+ > 	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
+ >
+ > 	unlink(path);
+ > 	unlink(path_link);
+ >
+ > 	printf(" --- unlink\n");
+ > 	read_evetns(fd);
+ >
+ > 	close(deleted);
+ > 	printf(" --- close\n");
+ > 	read_evetns(fd);
+ >
+ > Without this patch:
+ >   --- unlink
+ > 4	(IN_ATTRIB)
+ > 400	(IN_DELETE_SELF)
+ > 8000	(IN_IGNORED)
+ >   --- close
+ > FAIL
+ >
+ > With this patch:
+ >   --- unlink
+ > 4	(IN_ATTRIB)
+ > 400	(IN_DELETE_SELF)
+ >   --- close
+ > 8	(IN_CLOSE_WRITE)
+ > 400	(IN_DELETE_SELF)
+ > 8000	(IN_IGNORED)
+ > PASS
 
-Applied, thanks.
+Shouldn't the second IN_DELETE_SELF occur before
+--- close ?
+Why is IN_CLOSE_WRITE created?
 
---Ca23f2aBZR6YDKM9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Heinrich Schuchardt
 
-iQEcBAEBAgAGBQJUEvvRAAoJECTWi3JdVIfQIBoH/RgND4g/oRll+35TNJ7SrHvS
-4AAA17am9RLZISkGF2+EHb2CGGWW2h6ZpPV8UpFlW09N5tmh/gT80qpMqpFixF3T
-d7bq6F/reMP41eyKIEDarfKJR7fRvYc9adTA1okPicJQ0ddBm2lFrvkjVOaNH2AX
-/Qw9Gib0aOs5OEvDia32W575I3KtLKEpUDqHimpmvpgqpNXcrbL4ySSBxme5It6b
-KBYCN1fF8UGJWFZRb5hDFHv0RJ/JoHbXOmHDfsp3Z1IrHRPDlOU0v5CnOvvfFG4t
-S+wqgZ4ul+WZstUbodTAgSZjD5pgo3Xq9eJaZtI0oVh+F1PSq3t5js0rsPpdgr8=
-=zdIP
------END PGP SIGNATURE-----
-
---Ca23f2aBZR6YDKM9--
