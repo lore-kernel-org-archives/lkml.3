@@ -1,170 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaIMJB5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 05:01:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52284 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaIMJBy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 05:01:54 -0400
-Date: Sat, 13 Sep 2014 11:01:21 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-In-Reply-To: <5413552A.1020907@intel.com>
-Message-ID: <alpine.DEB.2.10.1409122222130.4178@nanos>
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com> <1410425210-24789-9-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.10.1409120020060.4178@nanos> <541239F1.2000508@intel.com> <alpine.DEB.2.10.1409120950260.4178@nanos>
- <alpine.DEB.2.10.1409121120440.4178@nanos> <5413050A.1090307@intel.com> <alpine.DEB.2.10.1409121812550.4178@nanos> <5413552A.1020907@intel.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752053AbaIMJDl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 05:03:41 -0400
+Received: from numascale.com ([213.162.240.84]:57501 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751793AbaIMJDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 05:03:39 -0400
+Message-ID: <54140852.8090803@numascale.com>
+Date: Sat, 13 Sep 2014 17:03:14 +0800
+From: Daniel J Blueman <daniel@numascale.com>
+Organization: Numascale AS
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Thomas Gleixner <tglx@linutronix.de>, Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Hillf Danton <dhillf@gmail.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@redhat.com>, Igor Mammedov <imammedo@redhat.com>,
+        Steffen Persvold <sp@numascale.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [3.14] core onlining/hotplug regression
+References: <53D20C2E.3070902@numascale.com> <alpine.DEB.2.10.1407251059130.23352@nanos>
+In-Reply-To: <alpine.DEB.2.10.1407251059130.23352@nanos>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Sep 2014, Dave Hansen wrote:
-> On 09/12/2014 10:34 AM, Thomas Gleixner wrote:
-> > On Fri, 12 Sep 2014, Dave Hansen wrote:
-> >> There are two mappings in play:
-> >> 1. The mapping with the actual data, which userspace is munmap()ing or
-> >>    brk()ing away, etc... (never tagged VM_MPX)
-> > 
-> > It's not tagged that way because it is mapped by user space.
-> 
-> Correct.  It is not tagged because it is mapped by user space.
-> 
-> > This is the directory, right?
-> 
-> No.  The untagged mapping in question here is for normal user data, like
-> an mmap() or brk(), unrelated to MPX.
+On 07/25/2014 05:05 PM, Thomas Gleixner wrote:
+> On Fri, 25 Jul 2014, Daniel J Blueman wrote:
+>> On a larger x86 system with 1728 cores, 3.15(.6) asserts on
+>> smpboot_thread_fn's td->cpu != smp_processor_id() consistently after ~1500
+>> cores are online.
+>>
+>> Reverting the only directly related changes I could find [1,2] doesn't help.
+>> Debugging indicates there is a race where the created thread is quickly
+>> migrated to core 0 when this occurs, since smp_processor_id returns 0 in these
+>> cases. Thomas introduced a thread parked state to fix related issues a year
+>> back. Linux 3.14(.13) boots just nice.
+>
+> Weird. Commits [1,2] are definitely not the culprits.
+>
+>> Full boot output is at:
+>> https://resources.numascale.com/linux-315-thread-mig.txt
+>
+> Not really helpful, as we don't see what causes it. We just see the
+> wreckage.
+>
+>> Any theories so far? I'll start bisecting when I have full access to the
+>> system again in a week and I'll do some more debugging with intermittent
+>> access before then.
+>
+> One thing you could try is enabling tracing.
+>
+>      "ftrace=function ftrace_dump_on_oops"
+>
+> It'll take a looooong time to spill out the traces, but that should
+> give us the root cause precisely.
 
-Ok. That makes sense.
- 
-> The directory is a separate matter.  It is also (currently) untagged
-> with VM_MPX since it is also allocated by userspace.
+It turns out that bisecting led to Lai's patch "Fix hotplug vs. 
+set_cpus_allowed_ptr()" [1]. Reverting it prevents the smpboot.c 
+BUG_ON(td->cpu != smp_processor_id()) in smpboot_thread_fn from tripping.
 
-So if that gets unmapped my observation holds. You still try to access
-the directory, take the fault, queue work and in the work you dont
-know how to handle it either.
+-- [1]
 
-So if the unmapped region affects bd_addr then we should just release
-the affected BT mappings, i.e. all vmas flagged with VMA_MPX.
+commit 6acbfb96976fc3350e30d964acb1dbbdf876d55e
+Author: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date:   Fri May 16 11:50:42 2014 +0800
 
-> > With the allocation from #BR you make that behaviour
-> > dynamic and you just provide an empty "no bounds" table to make the
-> > bound checker happy.
-> 
-> Kinda.  We do provide an empty table, but the first access will always
-> be a write, so it doesn't stay empty for long.
+     sched: Fix hotplug vs. set_cpus_allowed_ptr()
 
-So this comes from adding an entry to a not yet mapped table not from
-an actual bound check? I still need to digest the details in the
-manual.
+     Lai found that:
 
-> The bounds directory is not being unmapped here.  I _think_ I covered
-> that above, but don't be shy if I'm not being clear. ;)
+       WARNING: CPU: 1 PID: 13 at arch/x86/kernel/smp.c:124 
+native_smp_send_reschedule+0x2d/0x4b()
+       ...
+       migration_cpu_stop+0x1d/0x22
 
-Fair enough. My confusion.
- 
-> If the bounds directory moved around, this would make sense.  Otherwise,
-> it's a waste of space because all vmas in a given mm would have the
-> exact same bd_addr, and we might as well just store it in mm->bd_something.
+     was caused by set_cpus_allowed_ptr() assuming that cpu_active_mask is
+     always a sub-set of cpu_online_mask.
 
-Ok. But we really want to do some sanity checking on all of this.
- 
-> Are you suggesting that we support moving the bounds directory around?
+     This isn't true since 5fbd036b552f ("sched: Cleanup cpu_active 
+madness").
 
-No, but the stupid thing CAN move around and we want to think about it
-now instead of figuring out what to do about it later.
+     So set active and online at the same time to avoid this particular
+     problem.
 
-So if we go and store bd_addr with the prctl then you can do in the
-#BR "Invalid BD entry":
-
-    bd_addr = xsave->xsave_buf->bndcsr.cfg_reg_u;
-    
-    /*
-     * Catch the case that this is not enabled, i.e. mm->bd_addr == 0,
-     * and the case that stupid user space moved the directory
-     * around.
-     */
-    if (mm->bd_addr != bd_addr) {
-       Yell and whack stupid app over the head;
-    }
-
-> Also, the bd_entry can be _calculated_ from vma->vm_start and the
-> bd_addr.  It seems a bit redundant to store it like this.
-
-Fair enough.
-
-> If you are talking about the VM_MPX VMA that was allocated to hold the
-> bounds table, this won't work.
-
-Sorry yes, that only works for unmapping the bound directory itself.
-
-> Once we unmap the bounds table, we would have a bounds directory entry
-> pointing at empty address space.  That address space could now be
-> allocated for some other (random) use, and the MPX hardware is now going
-> to go trying to walk it as if it were a bounds table.  That would be bad.
-> 
-> Any unmapping of a bounds table has to be accompanied by a corresponding
-> write to the bounds directory entry.  That write to the bounds directory
-> can fault.
-
-So if it fails you need to keep the bound table around until you can
-handle that somewhere else, i.e. outside of the mmap sem held
-region. That's what you are planning to do with the work queue thing.
-
-Now I'm asking myself, whether we are forced to do that from the end
-of do_unmap() rather than doing it from the call site outside of the
-mmap_sem held region. I can see that adding arch_unmap() to do_unmap()
-is a very simple solution, but it comes with the price of dealing with
-faults inside of the mmap_sem held region.
-
-It might be worthwhile to think about the following:
-
-   down_write(mmap_sem);
-   
-   do_stuff()
-     do_munmap(mm, start, len)
-        ...
-        arch_munmap(mm, start, len) {
-	  if (!mm->bd_addr)
-	     return;
-	  bt_work = kmalloc(sizeof(struct bt_work));
-	  bt_work->start = start;
-	  bt_work->len = len;
-	  hlist_add(&bt_work->list, &mm->bt_work_head);
-        } 
-
-And then instead of up_write(mmap_sem);
-
-    arch_up_write(mmap_sem);
-
-Which by default is mapped to up_write(mmap_sem);
-
-Now for the MPX case you can do:
-{
-	HLIST_HEAD(bt_work_head);
-
-	hlist_move_list(&mm->bt_work_head, &bt_work_head);
-	up_write(mmap_sem);
-
-	hlist_for_each_entry_safe()
-		handle_bt_work();
-}
-          
-So that needs a few more changes vs. the up_write(mmap_sem) at the
-callsites of do_munmap(), but we might even make that a generic thing,
-i.e. replace up_write(mmap_sem) with release_write(mmap_sem). I can
-imagine that we have other use cases for this.
-
-Thoughts?
-
-	tglx
+     Fixes: 5fbd036b552f ("sched: Cleanup cpu_active madness")
+     Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+     Cc: Andrew Morton <akpm@linux-foundation.org>
+     Cc: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+     Cc: Linus Torvalds <torvalds@linux-foundation.org>
+     Cc: Michael wang <wangyun@linux.vnet.ibm.com>
+     Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+     Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+     Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+     Cc: Toshi Kani <toshi.kani@hp.com>
+     Link: http://lkml.kernel.org/r/53758B12.8060609@cn.fujitsu.com
+     Signed-off-by: Ingo Molnar <mingo@kernel.org>
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale
