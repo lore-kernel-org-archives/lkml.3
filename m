@@ -1,312 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaIMAuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 20:50:44 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:55302 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaIMAum (ORCPT
+	id S1752141AbaIMA7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 20:59:40 -0400
+Received: from mail-by2on0121.outbound.protection.outlook.com ([207.46.100.121]:25968
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751665AbaIMA7i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 20:50:42 -0400
-From: Azael Avalos <coproscefalo@gmail.com>
-To: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Azael Avalos <coproscefalo@gmail.com>
-Subject: [PATCH v4 4/5] toshiba_acpi: Support new keyboard backlight type
-Date: Fri, 12 Sep 2014 18:50:36 -0600
-Message-Id: <1410569437-3066-1-git-send-email-coproscefalo@gmail.com>
-X-Mailer: git-send-email 2.0.0
+	Fri, 12 Sep 2014 20:59:38 -0400
+From: Peter Chen <Peter.Chen@freescale.com>
+To: Antoine Tenart <antoine.tenart@free-electrons.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>,
+        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Thread-Topic: [PATCH v4 9/9] usb: chipidea: add support to the generic PHY
+ framework in ChipIdea
+Thread-Index: AQHPx0pmMqv14jG3F0CrBo/N1sV+N5v7rX0AgABx4gCAAI0mMIAAifyAgACYfID//3xOAIAAlNEA//+UeACAANiZ0A==
+Date: Sat, 13 Sep 2014 00:59:34 +0000
+Message-ID: <b1fd1dba9cee4db2a5d95954da88526e@BN1PR0301MB0772.namprd03.prod.outlook.com>
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730040-14200-10-git-send-email-antoine.tenart@free-electrons.com>
+ <20140911005446.GD3609@peterchendt> <20140911154222.GB11275@kwain>
+ <e1957aca004047cd9333ebac74531a65@BN1PR0301MB0772.namprd03.prod.outlook.com>
+ <20140912082125.GA18774@kwain> <20140912092711.GA2463@peterchendt>
+ <20140912093550.GC18774@kwain> <20140912102828.GB2463@peterchendt>
+ <20140912120336.GD18774@kwain>
+In-Reply-To: <20140912120336.GD18774@kwain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [180.157.53.214]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 03333C607F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51704005)(199003)(189002)(95666004)(81542001)(99286002)(106356001)(99396002)(74316001)(83072002)(74502001)(106116001)(31966008)(105586002)(87936001)(54356999)(90102001)(101416001)(108616004)(92566001)(4396001)(20776003)(76176999)(93886004)(33646002)(110136001)(50986999)(86362001)(85306004)(85852003)(97736003)(83322001)(21056001)(76482001)(2656002)(76576001)(64706001)(81342001)(79102001)(107046002)(80022001)(77096002)(74662001)(66066001)(77982001)(46102001)(41533002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0770;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newer Toshiba models now come with a new (and different) keyboard
-backlight implementation with three modes of operation: TIMER,
-ON and OFF, and the LED is now controlled internally by the firmware.
+ 
+> On Fri, Sep 12, 2014 at 06:28:29PM +0800, Peter Chen wrote:
+> > On Fri, Sep 12, 2014 at 11:35:50AM +0200, Antoine Tenart wrote:
+> > > On Fri, Sep 12, 2014 at 05:27:13PM +0800, Peter Chen wrote:
+> > > > On Fri, Sep 12, 2014 at 10:21:25AM +0200, Antoine Tenart wrote:
+> > > > > Peter,
+> > > > >
+> > > > > On Fri, Sep 12, 2014 at 01:10:33AM +0000, Peter Chen wrote:
+> > > > > > > On Thu, Sep 11, 2014 at 08:54:47AM +0800, Peter Chen wrote:
+> > > > > > > > On Wed, Sep 03, 2014 at 09:40:40AM +0200, Antoine Tenart wrote:
+> > > > > > > > > @@ -595,23 +639,27 @@ static int ci_hdrc_probe(struct
+> > > > > > > > > platform_device
+> > > > > > > *pdev)
+> > > > > > > > >  		return -ENODEV;
+> > > > > > > > >  	}
+> > > > > > > > >
+> > > > > > > > > -	if (ci->platdata->usb_phy)
+> > > > > > > > > +	if (ci->platdata->phy)
+> > > > > > > > > +		ci->phy = ci->platdata->phy;
+> > > > > > > > > +	else if (ci->platdata->usb_phy)
+> > > > > > > > >  		ci->usb_phy = ci->platdata->usb_phy;
+> > > > > > > > >  	else
+> > > > > > > > > -		ci->usb_phy = devm_usb_get_phy(dev,
+> USB_PHY_TYPE_USB2);
+> > > > > > > > > +		ci->phy = devm_phy_get(dev, "usb-phy");
+> > > > > > > > >
+> > > > > > > > > -	if (IS_ERR(ci->usb_phy)) {
+> > > > > > > > > -		ret = PTR_ERR(ci->usb_phy);
+> > > > > > > > > +	if (IS_ERR(ci->phy) || (ci->phy == NULL && ci->usb_phy
+> > > > > > > > > +== NULL)) {
+> > > > > > > > >  		/*
+> > > > > > > > >  		 * if -ENXIO is returned, it means PHY layer wasn't
+> > > > > > > > >  		 * enabled, so it makes no sense to return -
+> EPROBE_DEFER
+> > > > > > > > >  		 * in that case, since no PHY driver will ever probe.
+> > > > > > > > >  		 */
+> > > > > > > > > -		if (ret == -ENXIO)
+> > > > > > > > > -			return ret;
+> > > > > > > > > +		if (PTR_ERR(ci->phy) == -ENXIO)
+> > > > > > > > > +			return -ENXIO;
+> > > > > > > > >
+> > > > > > > > > -		dev_err(dev, "no usb2 phy configured\n");
+> > > > > > > > > -		return -EPROBE_DEFER;
+> > > > > > > > > +		ci->usb_phy = devm_usb_get_phy(dev,
+> USB_PHY_TYPE_USB2);
+> > > > > > > > > +		if (IS_ERR(ci->usb_phy)) {
+> > > > > > > > > +			dev_err(dev, "no usb2 phy
+> configured\n");
+> > > > > > > > > +			return -EPROBE_DEFER;
+> > > > > > > > > +		}
+> > > > > > > > >  	}
+> > > > > > > >
+> > > > > > > > Sorry, I can't accept this change, why
+> > > > > > > > devm_usb_get_phy(dev,
+> > > > > > > > USB_PHY_TYPE_USB2) is put at error path? Since current get
+> > > > > > > > PHY operation is a little complicated, we may have a
+> > > > > > > > dedicate function to do it,
+> > > > > > > dwc3 driver is a good example.
+> > > > > > >
+> > > > > > > It's not the error path, it's the case when there is no PHY
+> > > > > > > from the generic PHY framework available. Getting an USB PHY is a
+> fallback solution.
+> > > > > > >
+> > > > > > > I agree we can move this to a dedicated function. But even
+> > > > > > > if doing so, we'll have to test ci->phy first.
+> > > > > > >
+> > > > > > > Or do you have something else in mind?
+> > > > > > >
+> > > > > >
+> > > > > > I still want devm_usb_get_phy(dev, USB_PHY_TYPE_USB2) to be
+> > > > > > called at the same place like generic_phy, not in later error path, in
+> error path, we only handle error.
+> > > > >
+> > > > > Would this fit you?
+> > > > >
+> > > > > if (ci->platdata->phy)
+> > > > >         ci->phy = ci->platdata->phy; else if
+> > > > > (ci->platdata->usb_phy)
+> > > > >         ci->usb_phy = ci->platdata->usb_phy;
+> > > > >
+> > > > > if (ci->phy == NULL && ci->usb_phy == NULL) {
+> > > >
+> > > > You should use else if here.
+> > >
+> > > Yes, sure.
+> > >
+> > > >
+> > > > >         ci->phy = devm_phy_get(dev, "usb-phy");
+> > > > >         ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+> > > > >
+> > > > >         /* if both generic PHY and USB PHY layers aren't enabled */
+> > > > >         if (PTR_ERR(ci->phy) == -ENOSYS && PTR_ERR(ci->usb_phy) == -
+> ENXIO)
+> > > > >                 return -ENXIO;
+> > > > >
+> > > > >         if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
+> > > > >                 return -EPROBE_DEFER;
+> > > > >
+> > > > >         /* if an usb_phy is available, but no phy is there */
+> > > > >         if (PTR_ERR(ci->phy) == -ENODEV)
+> > > > >                 ci->phy = NULL;
+> > > > 	if (ci->phy)
+> > > > 		ci->usb_phy = NULL;
+> > > > 	if (ci->usb_phy)
+> > > > 		ci->phy = NULL;
+> > > >
+> > > > How about above?
+> > >
+> > > When no PHY or USB PHY is found, -ENODEV is returned. Doing the
+> > > above would always end up having ci->phy and ci->usb_phy being NULL.
+> >
+> > When we try to get generic phy, if -ENODEV is returned, the
+> > ci->usb_phy should not be NULL, otherwise, your the second condition
+> > will return -EPROBE_DEFER, it means when the code goes here, there
+> > must be one PHY is found.
+> 
+> We first call devm_phy_get() and devm_usb_get_phy(), ci->phy and
+> ci->usb_phy can't be NULL after this.
+> 
+> Then the "if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))" ensure at least one of
+> them is a valid PHY.
+> 
+> I don't see the problem here. Am I missing something?
+> 
+> >
+> > >
+> > > We could have:
+> > >
+> > > 	if (IS_ERR(ci->phy))
+> > > 		ci->phy = NULL;
+> > > 	else if (IS_ERR(ci->usb_phy))
+> > > 		ci->usb_phy = NULL;
+> > >
+> 
 
-This patch adds support for that type of backlight, changing the
-existing code to accomodate the new implementation.
+Both of our implementation work, ok, use yours.
 
-The timeout value range is now 1-60 seconds, and the accepted
-modes are now: 1 (FN-Z), 2 (AUTO or TIMER), 8 (ON) and 10 (OFF),
-this adds two new entries kbd_type and available_kbd_modes,
-the first shows the keyboard type and the latter shows the
-supported modes depending on the keyboard type.
-
-Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
----
-Changes since v3:
-Fixed typos on patch description
-Dropped changes to toshiba_kbd_bl_mode_show and simply added the new mode mask
- drivers/platform/x86/toshiba_acpi.c | 188 ++++++++++++++++++++++++++++++------
- 1 file changed, 156 insertions(+), 32 deletions(-)
-
-diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
-index 2a84652..edd8f3d 100644
---- a/drivers/platform/x86/toshiba_acpi.c
-+++ b/drivers/platform/x86/toshiba_acpi.c
-@@ -138,8 +138,12 @@ MODULE_LICENSE("GPL");
- #define HCI_WIRELESS_BT_PRESENT		0x0f
- #define HCI_WIRELESS_BT_ATTACH		0x40
- #define HCI_WIRELESS_BT_POWER		0x80
-+#define SCI_KBD_MODE_MASK		0x1f
- #define SCI_KBD_MODE_FNZ		0x1
- #define SCI_KBD_MODE_AUTO		0x2
-+#define SCI_KBD_MODE_ON			0x8
-+#define SCI_KBD_MODE_OFF		0x10
-+#define SCI_KBD_TIME_MAX		0x3c001a
- 
- struct toshiba_acpi_dev {
- 	struct acpi_device *acpi_dev;
-@@ -155,6 +159,7 @@ struct toshiba_acpi_dev {
- 	int force_fan;
- 	int last_key_event;
- 	int key_event_valid;
-+	int kbd_type;
- 	int kbd_mode;
- 	int kbd_time;
- 
-@@ -495,6 +500,42 @@ static enum led_brightness toshiba_illumination_get(struct led_classdev *cdev)
- }
- 
- /* KBD Illumination */
-+static int toshiba_kbd_illum_available(struct toshiba_acpi_dev *dev)
-+{
-+	u32 in[HCI_WORDS] = { SCI_GET, SCI_KBD_ILLUM_STATUS, 0, 0, 0, 0 };
-+	u32 out[HCI_WORDS];
-+	acpi_status status;
-+
-+	if (!sci_open(dev))
-+		return 0;
-+
-+	status = hci_raw(dev, in, out);
-+	sci_close(dev);
-+	if (ACPI_FAILURE(status) || out[0] == SCI_INPUT_DATA_ERROR) {
-+		pr_err("ACPI call to query kbd illumination support failed\n");
-+		return 0;
-+	} else if (out[0] == HCI_NOT_SUPPORTED) {
-+		pr_info("Keyboard illumination not available\n");
-+		return 0;
-+	}
-+
-+	/* Check for keyboard backlight timeout max value,
-+	 * previous kbd backlight implementation set this to
-+	 * 0x3c0003, and now the new implementation set this
-+	 * to 0x3c001a, use this to distinguish between them
-+	 */
-+	if (out[3] == SCI_KBD_TIME_MAX)
-+		dev->kbd_type = 2;
-+	else
-+		dev->kbd_type = 1;
-+	/* Get the current keyboard backlight mode */
-+	dev->kbd_mode = out[2] & SCI_KBD_MODE_MASK;
-+	/* Get the current time (1-60 seconds) */
-+	dev->kbd_time = out[2] >> HCI_MISC_SHIFT;
-+
-+	return 1;
-+}
-+
- static int toshiba_kbd_illum_status_set(struct toshiba_acpi_dev *dev, u32 time)
- {
- 	u32 result;
-@@ -1254,6 +1295,62 @@ static const struct backlight_ops toshiba_backlight_data = {
- /*
-  * Sysfs files
-  */
-+static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t count);
-+static ssize_t toshiba_kbd_bl_mode_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+static ssize_t toshiba_kbd_type_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+static ssize_t toshiba_available_kbd_modes_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+static ssize_t toshiba_kbd_bl_timeout_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t count);
-+static ssize_t toshiba_kbd_bl_timeout_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf);
-+static ssize_t toshiba_touchpad_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count);
-+static ssize_t toshiba_touchpad_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+static ssize_t toshiba_position_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf);
-+
-+static DEVICE_ATTR(kbd_backlight_mode, S_IRUGO | S_IWUSR,
-+		   toshiba_kbd_bl_mode_show, toshiba_kbd_bl_mode_store);
-+static DEVICE_ATTR(kbd_type, S_IRUGO, toshiba_kbd_type_show, NULL);
-+static DEVICE_ATTR(available_kbd_modes, S_IRUGO,
-+		   toshiba_available_kbd_modes_show, NULL);
-+static DEVICE_ATTR(kbd_backlight_timeout, S_IRUGO | S_IWUSR,
-+		   toshiba_kbd_bl_timeout_show, toshiba_kbd_bl_timeout_store);
-+static DEVICE_ATTR(touchpad, S_IRUGO | S_IWUSR,
-+		   toshiba_touchpad_show, toshiba_touchpad_store);
-+static DEVICE_ATTR(position, S_IRUGO, toshiba_position_show, NULL);
-+
-+static struct attribute *toshiba_attributes[] = {
-+	&dev_attr_kbd_backlight_mode.attr,
-+	&dev_attr_kbd_type.attr,
-+	&dev_attr_available_kbd_modes.attr,
-+	&dev_attr_kbd_backlight_timeout.attr,
-+	&dev_attr_touchpad.attr,
-+	&dev_attr_position.attr,
-+	NULL,
-+};
-+
-+static umode_t toshiba_sysfs_is_visible(struct kobject *,
-+					struct attribute *, int);
-+
-+static struct attribute_group toshiba_attr_group = {
-+	.is_visible = toshiba_sysfs_is_visible,
-+	.attrs = toshiba_attributes,
-+};
- 
- static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
- 					 struct device_attribute *attr,
-@@ -1268,20 +1365,50 @@ static ssize_t toshiba_kbd_bl_mode_store(struct device *dev,
- 	ret = kstrtoint(buf, 0, &mode);
- 	if (ret)
- 		return ret;
--	if (mode != SCI_KBD_MODE_FNZ && mode != SCI_KBD_MODE_AUTO)
--		return -EINVAL;
-+
-+	/* Check for supported modes depending on keyboard backlight type */
-+	if (toshiba->kbd_type == 1) {
-+		/* Type 1 supports SCI_KBD_MODE_FNZ and SCI_KBD_MODE_AUTO */
-+		if (mode != SCI_KBD_MODE_FNZ && mode != SCI_KBD_MODE_AUTO)
-+			return -EINVAL;
-+	} else if (toshiba->kbd_type == 2) {
-+		/* Type 2 doesn't support SCI_KBD_MODE_FNZ */
-+		if (mode != SCI_KBD_MODE_AUTO && mode != SCI_KBD_MODE_ON &&
-+		    mode != SCI_KBD_MODE_OFF)
-+			return -EINVAL;
-+	}
- 
- 	/* Set the Keyboard Backlight Mode where:
--	 * Mode - Auto (2) | FN-Z (1)
- 	 *	Auto - KBD backlight turns off automatically in given time
- 	 *	FN-Z - KBD backlight "toggles" when hotkey pressed
-+	 *	ON   - KBD backlight is always on
-+	 *	OFF  - KBD backlight is always off
- 	 */
-+
-+	/* Only make a change if the actual mode has changed */
- 	if (toshiba->kbd_mode != mode) {
-+		/* Shift the time to "base time" (0x3c0000 == 60 seconds) */
- 		time = toshiba->kbd_time << HCI_MISC_SHIFT;
--		time = time + toshiba->kbd_mode;
-+
-+		/* OR the "base time" to the actual method format */
-+		if (toshiba->kbd_type == 1) {
-+			/* Type 1 requires the current mode */
-+			time |= toshiba->kbd_mode;
-+		} else if (toshiba->kbd_type == 2) {
-+			/* Type 2 requires the desired mode */
-+			time |= mode;
-+		}
-+
- 		ret = toshiba_kbd_illum_status_set(toshiba, time);
- 		if (ret)
- 			return ret;
-+
-+		/* Update sysfs entries on successful mode change*/
-+		ret = sysfs_update_group(&toshiba->acpi_dev->dev.kobj,
-+					 &toshiba_attr_group);
-+		if (ret)
-+			return ret;
-+
- 		toshiba->kbd_mode = mode;
- 	}
- 
-@@ -1298,7 +1425,30 @@ static ssize_t toshiba_kbd_bl_mode_show(struct device *dev,
- 	if (toshiba_kbd_illum_status_get(toshiba, &time) < 0)
- 		return -EIO;
- 
--	return sprintf(buf, "%i\n", time & 0x07);
-+	return sprintf(buf, "%i\n", time & SCI_KBD_MODE_MASK);
-+}
-+
-+static ssize_t toshiba_kbd_type_show(struct device *dev,
-+				     struct device_attribute *attr,
-+				     char *buf)
-+{
-+	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%d\n", toshiba->kbd_type);
-+}
-+
-+static ssize_t toshiba_available_kbd_modes_show(struct device *dev,
-+						struct device_attribute *attr,
-+						char *buf)
-+{
-+	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
-+
-+	if (toshiba->kbd_type == 1)
-+		return sprintf(buf, "%x %x\n",
-+			       SCI_KBD_MODE_FNZ, SCI_KBD_MODE_AUTO);
-+
-+	return sprintf(buf, "%x %x %x\n",
-+		       SCI_KBD_MODE_AUTO, SCI_KBD_MODE_ON, SCI_KBD_MODE_OFF);
- }
- 
- static ssize_t toshiba_kbd_bl_timeout_store(struct device *dev,
-@@ -1394,22 +1544,6 @@ static ssize_t toshiba_position_show(struct device *dev,
- 	return sprintf(buf, "%d %d %d\n", x, y, z);
- }
- 
--static DEVICE_ATTR(kbd_backlight_mode, S_IRUGO | S_IWUSR,
--		   toshiba_kbd_bl_mode_show, toshiba_kbd_bl_mode_store);
--static DEVICE_ATTR(kbd_backlight_timeout, S_IRUGO | S_IWUSR,
--		   toshiba_kbd_bl_timeout_show, toshiba_kbd_bl_timeout_store);
--static DEVICE_ATTR(touchpad, S_IRUGO | S_IWUSR,
--		   toshiba_touchpad_show, toshiba_touchpad_store);
--static DEVICE_ATTR(position, S_IRUGO, toshiba_position_show, NULL);
--
--static struct attribute *toshiba_attributes[] = {
--	&dev_attr_kbd_backlight_mode.attr,
--	&dev_attr_kbd_backlight_timeout.attr,
--	&dev_attr_touchpad.attr,
--	&dev_attr_position.attr,
--	NULL,
--};
--
- static umode_t toshiba_sysfs_is_visible(struct kobject *kobj,
- 					struct attribute *attr, int idx)
- {
-@@ -1429,11 +1563,6 @@ static umode_t toshiba_sysfs_is_visible(struct kobject *kobj,
- 	return exists ? attr->mode : 0;
- }
- 
--static struct attribute_group toshiba_attr_group = {
--	.is_visible = toshiba_sysfs_is_visible,
--	.attrs = toshiba_attributes,
--};
--
- static bool toshiba_acpi_i8042_filter(unsigned char data, unsigned char str,
- 				      struct serio *port)
- {
-@@ -1765,12 +1894,7 @@ static int toshiba_acpi_add(struct acpi_device *acpi_dev)
- 			dev->eco_supported = 1;
- 	}
- 
--	ret = toshiba_kbd_illum_status_get(dev, &dummy);
--	if (!ret) {
--		dev->kbd_time = dummy >> HCI_MISC_SHIFT;
--		dev->kbd_mode = dummy & 0x07;
--	}
--	dev->kbd_illum_supported = !ret;
-+	dev->kbd_illum_supported = toshiba_kbd_illum_available(dev);
- 	/*
- 	 * Only register the LED if KBD illumination is supported
- 	 * and the keyboard backlight operation mode is set to FN-Z
--- 
-2.0.0
-
+Peter
