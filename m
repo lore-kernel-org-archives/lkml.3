@@ -1,222 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaIMWyK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 18:54:10 -0400
-Received: from mout.gmx.net ([212.227.17.20]:49514 "EHLO mout.gmx.net"
+	id S1752188AbaIMXBU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 19:01:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38601 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724AbaIMWyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 18:54:08 -0400
-Message-ID: <5414CB03.1000104@gmx.de>
-Date: Sun, 14 Sep 2014 00:53:55 +0200
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+	id S1751724AbaIMXBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 19:01:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,519,1406617200"; 
+   d="scan'208";a="572790341"
+Date: Sun, 14 Sep 2014 01:21:49 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: tpmdd-devel@lists.sourceforge.net, Marcel Selhorst <tpmdd@selhorst.net>,
+        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com
+Subject: Re: [PATCH] tpm: merge duplicate transmit_cmd() functions
+Message-ID: <20140913222149.GA18787@intel.com>
+References: <1410629733-10105-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <201409132313.53402.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Jonathan Cameron <jic23@kernel.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2] iio: adc: rockchip_saradc: add support for rk3066-tsadc
- variant
-References: <1629907.fyghANjlk9@diego>
-In-Reply-To: <1629907.fyghANjlk9@diego>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:VNPoPDURW3489ag2GiVI6yJc7zXQ6jUZcQzSB7v5HvGAe0lZzB6
- xgKbMHn945XIQywaTkW41Llae3ifDYxUm+B+QAPgjdrigfaoiFdK0YJbgD6uLgUv2jLLep3
- vF3RAg4BnYElMeWVRvDe65Hgu2ya3M4hWsQfmyjQhTvD39npkmSKeTknfyFoeJWA2TP/W9/
- tr9xBB4Rny/YkgJWZVwNQ==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <201409132313.53402.PeterHuewe@gmx.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heiko Stübner schrieb, Am 11.09.2014 00:22:
-> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
-> for temperature measurements. This so called tsadc does not contain any
-> active parts like temperature interrupts and only supports polling the
-> current temperature. The returned voltage can then be converted by a
-> suitable thermal driver to and actual temperature and used for thermal
-> handling.
-> 
-Looking over it again, I have a two more comments inline.
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
-> changes since v1:
-> - use GENMASK instead of creating the mask manually
->   as suggested by Hartmut Knaack
-> 
-> I've also opted for simply keeping the indent mismatch in
-> struct rockchip_saradc, as I don't think it's worth the churn
-> it produces
-> 
->  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
->  drivers/iio/adc/rockchip_saradc.c                  | 62 +++++++++++++++++-----
->  2 files changed, 50 insertions(+), 14 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> index 5d3ec1d..a9a5fe1 100644
-> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
-> @@ -1,7 +1,7 @@
->  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
->  
->  Required properties:
-> -- compatible: Should be "rockchip,saradc"
-> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
->  - reg: physical base address of the controller and length of memory mapped
->         region.
->  - interrupts: The interrupt number to the cpu. The interrupt specifier format
-> diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
-> index e074a0b..99200b7 100644
-> --- a/drivers/iio/adc/rockchip_saradc.c
-> +++ b/drivers/iio/adc/rockchip_saradc.c
-> @@ -18,13 +18,13 @@
->  #include <linux/interrupt.h>
->  #include <linux/io.h>
->  #include <linux/of.h>
-> +#include <linux/of_device.h>
->  #include <linux/clk.h>
->  #include <linux/completion.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/iio/iio.h>
->  
->  #define SARADC_DATA			0x00
-> -#define SARADC_DATA_MASK		0x3ff
->  
->  #define SARADC_STAS			0x04
->  #define SARADC_STAS_BUSY		BIT(0)
-> @@ -38,15 +38,22 @@
->  #define SARADC_DLY_PU_SOC		0x0c
->  #define SARADC_DLY_PU_SOC_MASK		0x3f
->  
-> -#define SARADC_BITS			10
->  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
->  
-> +struct rockchip_saradc_data {
-> +	int				num_bits;
-> +	const struct iio_chan_spec	*channels;
-> +	int				num_channels;
-> +	unsigned long			clk_rate;
-> +};
-> +
->  struct rockchip_saradc {
->  	void __iomem		*regs;
->  	struct clk		*pclk;
->  	struct clk		*clk;
->  	struct completion	completion;
->  	struct regulator	*vref;
-> +	const struct rockchip_saradc_data *data;
->  	u16			last_val;
->  };
->  
-> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
->  		}
->  
->  		*val = ret / 1000;
-> -		*val2 = SARADC_BITS;
-> +		*val2 = info->data->num_bits;
->  		return IIO_VAL_FRACTIONAL_LOG2;
->  	default:
->  		return -EINVAL;
-> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
->  
->  	/* Read value */
->  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
-> -	info->last_val &= SARADC_DATA_MASK;
-> +	info->last_val &= GENMASK(info->data->num_bits - 1, 0);
->  
->  	/* Clear irq & power down adc */
->  	writel_relaxed(0, info->regs + SARADC_CTRL);
-> @@ -133,12 +140,44 @@ static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
->  	ADC_CHANNEL(2, "adc2"),
->  };
->  
-> +static const struct rockchip_saradc_data saradc_data = {
-> +	.num_bits = 10,
-> +	.channels = rockchip_saradc_iio_channels,
-> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
-> +	.clk_rate = 1000000,
-> +};
-> +
-> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] = {
-> +	ADC_CHANNEL(0, "adc0"),
-> +	ADC_CHANNEL(1, "adc1"),
-> +};
-> +
-> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
-> +	.num_bits = 12,
-> +	.channels = rockchip_rk3066_tsadc_iio_channels,
-> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
-> +	.clk_rate = 50000,
-> +};
-> +
-> +static const struct of_device_id rockchip_saradc_match[] = {
-> +	{
-> +		.compatible = "rockchip,saradc",
-> +		.data = &saradc_data,
-> +	}, {
-> +		.compatible = "rockchip,rk3066-tsadc",
-> +		.data = &rk3066_tsadc_data,
-> +	},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-> +
->  static int rockchip_saradc_probe(struct platform_device *pdev)
->  {
->  	struct rockchip_saradc *info = NULL;
->  	struct device_node *np = pdev->dev.of_node;
->  	struct iio_dev *indio_dev = NULL;
->  	struct resource	*mem;
-> +	const struct of_device_id *match;
->  	int ret;
->  	int irq;
->  
-> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->  	}
->  	info = iio_priv(indio_dev);
->  
-> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
-Is it 100% safe to go on without checking match for validity?
-> +	info->data = match->data;
-> +
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
->  	if (IS_ERR(info->regs))
-> @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->  	 * Use a default of 1MHz for the converter clock.
->  	 * This may become user-configurable in the future.
->  	 */
-This comment becomes invalid and should be adjusted or droped.
-> -	ret = clk_set_rate(info->clk, 1000000);
-> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
->  	if (ret < 0) {
->  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
->  		return ret;
-> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
->  	indio_dev->info = &rockchip_saradc_iio_info;
->  	indio_dev->modes = INDIO_DIRECT_MODE;
->  
-> -	indio_dev->channels = rockchip_saradc_iio_channels;
-> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
-> +	indio_dev->channels = info->data->channels;
-> +	indio_dev->num_channels = info->data->num_channels;
->  
->  	ret = iio_device_register(indio_dev);
->  	if (ret)
-> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
->  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
->  			 rockchip_saradc_suspend, rockchip_saradc_resume);
->  
-> -static const struct of_device_id rockchip_saradc_match[] = {
-> -	{ .compatible = "rockchip,saradc" },
-> -	{},
-> -};
-> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
-> -
->  static struct platform_driver rockchip_saradc_driver = {
->  	.probe		= rockchip_saradc_probe,
->  	.remove		= rockchip_saradc_remove,
-> 
+Hi
 
+On Sat, Sep 13, 2014 at 11:13:53PM +0200, Peter Hüwe wrote:
+> Hi
+> 
+> 
+> Am Samstag, 13. September 2014, 19:35:33 schrieb Jarkko Sakkinen:
+> > Replaced transmit_cmd() functions in tpm-interface.c and tpm-sysfs.c
+> > with a single tpm_transmit_cmd() that can be used in both files.
+> > 
+> > This patch is preliminary clean up work for the TPM2 support. This
+> > function is needed for implementing TPM2 versions of the in-kernel
+> > TPM utility functions.
+> > 
+> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+> 
+> why the renaming?
+
+Because all the other non-static functions have tpm_ prefix.
+
+> > 
+> >  ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+> >  		     size_t bufsiz);
+> Can this be removed then?
+
+Yes, it could be declared as a static function in tpm-interface.c and
+removed from tpm.h. I'll make this change and send a revised patch.
+
+> > +ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+> > +			 int len, const char *desc);
+> >  extern int tpm_get_timeouts(struct tpm_chip *);
+> >  extern void tpm_gen_interrupt(struct tpm_chip *);
+> >  extern int tpm_do_selftest(struct tpm_chip *);
+> 
+> 
+> 
+> Peter
+
+/Jarkko
