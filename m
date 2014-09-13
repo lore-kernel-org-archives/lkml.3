@@ -1,144 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaIMEHX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 00:07:23 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:39513 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaIMEHU (ORCPT
+	id S1751673AbaIMELV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 00:11:21 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:43761 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaIMELT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 00:07:20 -0400
-Date: Fri, 12 Sep 2014 22:07:16 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Dirk Gouders <dirk@gouders.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-Message-ID: <20140913040716.GA28080@google.com>
-References: <ghvbotd8es.fsf@quad.gouders.net>
- <ghzje5f5zt.fsf@lena.gouders.net>
- <ghbnqkeh9k.fsf@quad.gouders.net>
- <CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
- <gh4mwcef0r.fsf@quad.gouders.net>
- <CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
- <ghoaukcx6b.fsf@quad.gouders.net>
- <CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
- <ghk358crbe.fsf@quad.gouders.net>
- <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 13 Sep 2014 00:11:19 -0400
+From: Avi Kivity <avi@cloudius-systems.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: disable kernel symbol demangling by default
+Date: Sat, 13 Sep 2014 07:11:15 +0300
+Message-Id: <1410581475-26808-1-git-send-email-avi@cloudius-systems.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to fix this regression before v3.17.  Dirk, can you test the
-following patch on top of v3.17-rc2?  I'm hoping you can try this on your
-test machine in conjunction with your acpi_pci_root_add() and
-pci_scan_device() patches.  If I understand correctly,  you were able to
-reproduce the FC adapter not showing up, and if you can verify that it does
-show with those patches + this revert, I think that's good enough for now.
+Some Linux symbols (for example __vt_event_wait) are interpreted by
+the demangler as C++ mangled names, which of course they aren't.
 
-I'm not committed to applying this yet, but I'd like to have a working fix
-in my back pocket in case we don't come up with a better solution soon.
+Disable kernel symbol demangling by default to avoid this, and
+allow enabling it with a new option --demangle-kernel for those who
+wish it.
 
-Bjorn
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Signed-off-by: Avi Kivity <avi@cloudius-systems.com>
+---
+ tools/perf/Documentation/perf-probe.txt  | 3 +++
+ tools/perf/Documentation/perf-report.txt | 3 +++
+ tools/perf/Documentation/perf-top.txt    | 3 +++
+ tools/perf/builtin-probe.c               | 2 ++
+ tools/perf/builtin-report.c              | 2 ++
+ tools/perf/builtin-top.c                 | 2 ++
+ tools/perf/util/symbol-elf.c             | 9 ++++++++-
+ tools/perf/util/symbol.c                 | 1 +
+ tools/perf/util/symbol.h                 | 1 +
+ 9 files changed, 25 insertions(+), 1 deletion(-)
 
-
-commit 5945a8d28c416fc390a94c8e7fb8fd0a76f5d710
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Fri Sep 12 21:58:19 2014 -0600
-
-    Revert "PCI: Make sure bus number resources stay within their parents bounds"
-    
-    This reverts commit 1820ffdccb9b ("PCI: Make sure bus number resources stay
-    within their parents bounds") because it breaks some systems with LSI Logic
-    FC949ES Fibre Channel Adapters, apparently by exposing a defect in those
-    adapters.
-    
-    Dirk tested a Tyan VX50 (B4985) with this device that worked like this
-    prior to 1820ffdccb9b:
-    
-        bus: [bus 00-7f] on node 0 link 1
-        ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-07])
-        pci 0000:00:0e.0: PCI bridge to [bus 0a]
-        pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07] (conflicts with (null) [bus 00-07])
-        pci 0000:0a:00.0: [1000:0646] type 00 class 0x0c0400 (FC adapter)
-    
-    Note that the root bridge [bus 00-07] aperture is wrong; this is a BIOS
-    defect in the PCI0 _CRS method.  But prior to 1820ffdccb9b, we didn't
-    enforce that aperture, and the FC adapter worked fine at 0a:00.0.
-    
-    After 1820ffdccb9b, we notice that 00:0e.0's aperture is not contained in
-    the root bridge's aperture, so we reconfigure it so it *is* contained:
-    
-        pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
-        pci 0000:00:0e.0: PCI bridge to [bus 06-07]
-    
-    This effectively moves the FC device from 0a:00.0 to 07:00.0, which should
-    be legal.  But when we enumerate bus 06, the FC device doesn't respond, so
-    we don't find anything.  This is probably a defect in the FC device.
-    
-    Possible fixes (due to Yinghai):
-    
-        1) Add a quirk to fix the _CRS information based on what amd_bus.c read
-           from the hardware
-    
-        2) Reset the FC device after we change its bus number
-    
-        3) Revert 1820ffdccb9b
-    
-    Fix 1 would be relatively easy, but it does sweep the LSI FC issue under
-    the rug.  We might want to reconfigure bus numbers in the future for some
-    other reason, e.g., hotplug, and then we could trip over this again.
-    
-    For that reason, I like fix 2, but we don't know whether it actually works,
-    and we don't have a patch for it yet.
-    
-    This revert is fix 3, which also sweeps the LSI FC issue under the rug.
-    
-    Link: https://bugzilla.kernel.org/show_bug.cgi?id=84281
-    Reported-by: Dirk Gouders <dirk@gouders.net>
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-    CC: stable@vger.kernel.org	# v3.15+
-    CC: Yinghai Lu <yinghai@kernel.org>
-
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index e3cf8a2e6292..f0badff77cff 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -775,7 +775,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
- 	    (primary != bus->number || secondary <= bus->number ||
--	     secondary > subordinate || subordinate > bus->busn_res.end)) {
-+	     secondary > subordinate)) {
- 		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
- 			 secondary, subordinate);
- 		broken = 1;
-@@ -853,8 +853,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
- 			child = pci_add_new_bus(bus, dev, max+1);
- 			if (!child)
- 				goto out;
--			pci_bus_insert_busn_res(child, max+1,
--						bus->busn_res.end);
-+			pci_bus_insert_busn_res(child, max+1, 0xff);
- 		}
- 		max++;
- 		buses = (buses & 0xff000000)
-@@ -913,11 +912,6 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
- 		/*
- 		 * Set the subordinate bus number to its real value.
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 1513935..aaa869b 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -104,6 +104,9 @@ OPTIONS
+ 	Specify path to the executable or shared library file for user
+ 	space tracing. Can also be used with --funcs option.
+ 
++--demangle-kernel::
++	Demangle kernel symbols.
++
+ In absence of -m/-x options, perf probe checks if the first argument after
+ the options is an absolute path name. If its an absolute path, perf probe
+ uses it as a target module/target user space binary to probe.
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index d2b59af..cccb160 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -276,6 +276,9 @@ OPTIONS
+ 	Demangle symbol names to human readable form. It's enabled by default,
+ 	disable with --no-demangle.
+ 
++--demangle-kernel::
++	Demangle kernel symbol names to human readable form (for C++ kernels).
++
+ --mem-mode::
+ 	Use the data addresses of samples in addition to instruction addresses
+ 	to build the histograms.  To generate meaningful output, the perf.data
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 180ae02..f1f728a 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -98,6 +98,9 @@ Default is to monitor all CPUS.
+ --hide_user_symbols::
+         Hide user symbols.
+ 
++--demangle-kernel::
++        Demangle kernel symbols.
++
+ -D::
+ --dump-symtab::
+         Dump the symbol table used for profiling.
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index c63fa29..41ee517 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -373,6 +373,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			"target executable name or path", opt_set_target),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_END()
+ 	};
+ 	int ret;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 21d830b..9b39822 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -674,6 +674,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 377971d..470bf24 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1122,6 +1122,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Interleave source code with assembly code (default)"),
+ 	OPT_BOOLEAN(0, "asm-raw", &symbol_conf.annotate_asm_raw,
+ 		    "Display raw encoding of assembly instructions (default)"),
++	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
++		    "Enable kernel symbol demangling"),
+ 	OPT_STRING(0, "objdump", &objdump_path, "path",
+ 		    "objdump binary to use for disassembly and annotations"),
+ 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index d753499..a9af919 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -680,6 +680,13 @@ static u64 ref_reloc(struct kmap *kmap)
+ 	return 0;
+ }
+ 
++static bool want_demangle(bool is_kernel_sym)
++{
++	return is_kernel_sym
++		    ? symbol_conf.demangle_kernel
++		    : symbol_conf.demangle;
++}
++
+ int dso__load_sym(struct dso *dso, struct map *map,
+ 		  struct symsrc *syms_ss, struct symsrc *runtime_ss,
+ 		  symbol_filter_t filter, int kmodule)
+@@ -938,7 +945,7 @@ new_symbol:
+ 		 * DWARF DW_compile_unit has this, but we don't always have access
+ 		 * to it...
  		 */
--		if (max > bus->busn_res.end) {
--			dev_warn(&dev->dev, "max busn %02x is outside %pR\n",
--				 max, &bus->busn_res);
--			max = bus->busn_res.end;
--		}
- 		pci_bus_update_busn_res_end(child, max);
- 		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
- 	}
+-		if (symbol_conf.demangle) {
++		if (want_demangle(dso->kernel || kmodule)) {
+ 			demangled = bfd_demangle(NULL, elf_name,
+ 						 DMGL_PARAMS | DMGL_ANSI);
+ 			if (demangled != NULL)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index eb06746..e2ab1da 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -33,6 +33,7 @@ struct symbol_conf symbol_conf = {
+ 	.try_vmlinux_path	= true,
+ 	.annotate_src		= true,
+ 	.demangle		= true,
++	.demangle_kernel	= false,
+ 	.cumulate_callchain	= true,
+ 	.show_hist_headers	= true,
+ 	.symfs			= "",
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index e7295e9..4616705 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -118,6 +118,7 @@ struct symbol_conf {
+ 			annotate_src,
+ 			event_group,
+ 			demangle,
++			demangle_kernel,
+ 			filter_relative,
+ 			show_hist_headers;
+ 	const char	*vmlinux_name,
+-- 
+1.9.3
+
