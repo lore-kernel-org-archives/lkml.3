@@ -1,129 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365AbaIMWkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 18:40:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35497 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752340AbaIMWkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 18:40:08 -0400
-Message-ID: <1410647999.3040.22.camel@decadent.org.uk>
-Subject: Re: [PATCH 3.2 000/131] 3.2.63-rc1 review
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Date: Sat, 13 Sep 2014 23:39:59 +0100
-In-Reply-To: <87fvfxyrqa.wl%satoru.takeuchi@gmail.com>
-References: <lsq.1410438733.176537304@decadent.org.uk>
-	 <5411A3DE.4050509@roeck-us.net> <87fvfxyrqa.wl%satoru.takeuchi@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-A25u/MJwZce5m72guhtc"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9881:80b9:b90a:1609
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752166AbaIMWyK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 18:54:10 -0400
+Received: from mout.gmx.net ([212.227.17.20]:49514 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724AbaIMWyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 18:54:08 -0400
+Message-ID: <5414CB03.1000104@gmx.de>
+Date: Sun, 14 Sep 2014 00:53:55 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26.1
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Jonathan Cameron <jic23@kernel.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2] iio: adc: rockchip_saradc: add support for rk3066-tsadc
+ variant
+References: <1629907.fyghANjlk9@diego>
+In-Reply-To: <1629907.fyghANjlk9@diego>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:VNPoPDURW3489ag2GiVI6yJc7zXQ6jUZcQzSB7v5HvGAe0lZzB6
+ xgKbMHn945XIQywaTkW41Llae3ifDYxUm+B+QAPgjdrigfaoiFdK0YJbgD6uLgUv2jLLep3
+ vF3RAg4BnYElMeWVRvDe65Hgu2ya3M4hWsQfmyjQhTvD39npkmSKeTknfyFoeJWA2TP/W9/
+ tr9xBB4Rny/YkgJWZVwNQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Heiko Stübner schrieb, Am 11.09.2014 00:22:
+> Older Rockchip SoCs, at least the rk3066, used a slightly modified saradc
+> for temperature measurements. This so called tsadc does not contain any
+> active parts like temperature interrupts and only supports polling the
+> current temperature. The returned voltage can then be converted by a
+> suitable thermal driver to and actual temperature and used for thermal
+> handling.
+> 
+Looking over it again, I have a two more comments inline.
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+> changes since v1:
+> - use GENMASK instead of creating the mask manually
+>   as suggested by Hartmut Knaack
+> 
+> I've also opted for simply keeping the indent mismatch in
+> struct rockchip_saradc, as I don't think it's worth the churn
+> it produces
+> 
+>  .../bindings/iio/adc/rockchip-saradc.txt           |  2 +-
+>  drivers/iio/adc/rockchip_saradc.c                  | 62 +++++++++++++++++-----
+>  2 files changed, 50 insertions(+), 14 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> index 5d3ec1d..a9a5fe1 100644
+> --- a/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> +++ b/Documentation/devicetree/bindings/iio/adc/rockchip-saradc.txt
+> @@ -1,7 +1,7 @@
+>  Rockchip Successive Approximation Register (SAR) A/D Converter bindings
+>  
+>  Required properties:
+> -- compatible: Should be "rockchip,saradc"
+> +- compatible: Should be "rockchip,saradc" or "rockchip,rk3066-tsadc"
+>  - reg: physical base address of the controller and length of memory mapped
+>         region.
+>  - interrupts: The interrupt number to the cpu. The interrupt specifier format
+> diff --git a/drivers/iio/adc/rockchip_saradc.c b/drivers/iio/adc/rockchip_saradc.c
+> index e074a0b..99200b7 100644
+> --- a/drivers/iio/adc/rockchip_saradc.c
+> +++ b/drivers/iio/adc/rockchip_saradc.c
+> @@ -18,13 +18,13 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/clk.h>
+>  #include <linux/completion.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/iio/iio.h>
+>  
+>  #define SARADC_DATA			0x00
+> -#define SARADC_DATA_MASK		0x3ff
+>  
+>  #define SARADC_STAS			0x04
+>  #define SARADC_STAS_BUSY		BIT(0)
+> @@ -38,15 +38,22 @@
+>  #define SARADC_DLY_PU_SOC		0x0c
+>  #define SARADC_DLY_PU_SOC_MASK		0x3f
+>  
+> -#define SARADC_BITS			10
+>  #define SARADC_TIMEOUT			msecs_to_jiffies(100)
+>  
+> +struct rockchip_saradc_data {
+> +	int				num_bits;
+> +	const struct iio_chan_spec	*channels;
+> +	int				num_channels;
+> +	unsigned long			clk_rate;
+> +};
+> +
+>  struct rockchip_saradc {
+>  	void __iomem		*regs;
+>  	struct clk		*pclk;
+>  	struct clk		*clk;
+>  	struct completion	completion;
+>  	struct regulator	*vref;
+> +	const struct rockchip_saradc_data *data;
+>  	u16			last_val;
+>  };
+>  
+> @@ -90,7 +97,7 @@ static int rockchip_saradc_read_raw(struct iio_dev *indio_dev,
+>  		}
+>  
+>  		*val = ret / 1000;
+> -		*val2 = SARADC_BITS;
+> +		*val2 = info->data->num_bits;
+>  		return IIO_VAL_FRACTIONAL_LOG2;
+>  	default:
+>  		return -EINVAL;
+> @@ -103,7 +110,7 @@ static irqreturn_t rockchip_saradc_isr(int irq, void *dev_id)
+>  
+>  	/* Read value */
+>  	info->last_val = readl_relaxed(info->regs + SARADC_DATA);
+> -	info->last_val &= SARADC_DATA_MASK;
+> +	info->last_val &= GENMASK(info->data->num_bits - 1, 0);
+>  
+>  	/* Clear irq & power down adc */
+>  	writel_relaxed(0, info->regs + SARADC_CTRL);
+> @@ -133,12 +140,44 @@ static const struct iio_chan_spec rockchip_saradc_iio_channels[] = {
+>  	ADC_CHANNEL(2, "adc2"),
+>  };
+>  
+> +static const struct rockchip_saradc_data saradc_data = {
+> +	.num_bits = 10,
+> +	.channels = rockchip_saradc_iio_channels,
+> +	.num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels),
+> +	.clk_rate = 1000000,
+> +};
+> +
+> +static const struct iio_chan_spec rockchip_rk3066_tsadc_iio_channels[] = {
+> +	ADC_CHANNEL(0, "adc0"),
+> +	ADC_CHANNEL(1, "adc1"),
+> +};
+> +
+> +static const struct rockchip_saradc_data rk3066_tsadc_data = {
+> +	.num_bits = 12,
+> +	.channels = rockchip_rk3066_tsadc_iio_channels,
+> +	.num_channels = ARRAY_SIZE(rockchip_rk3066_tsadc_iio_channels),
+> +	.clk_rate = 50000,
+> +};
+> +
+> +static const struct of_device_id rockchip_saradc_match[] = {
+> +	{
+> +		.compatible = "rockchip,saradc",
+> +		.data = &saradc_data,
+> +	}, {
+> +		.compatible = "rockchip,rk3066-tsadc",
+> +		.data = &rk3066_tsadc_data,
+> +	},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+> +
+>  static int rockchip_saradc_probe(struct platform_device *pdev)
+>  {
+>  	struct rockchip_saradc *info = NULL;
+>  	struct device_node *np = pdev->dev.of_node;
+>  	struct iio_dev *indio_dev = NULL;
+>  	struct resource	*mem;
+> +	const struct of_device_id *match;
+>  	int ret;
+>  	int irq;
+>  
+> @@ -152,6 +191,9 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	}
+>  	info = iio_priv(indio_dev);
+>  
+> +	match = of_match_device(rockchip_saradc_match, &pdev->dev);
+Is it 100% safe to go on without checking match for validity?
+> +	info->data = match->data;
+> +
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	info->regs = devm_ioremap_resource(&pdev->dev, mem);
+>  	if (IS_ERR(info->regs))
+> @@ -195,7 +237,7 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	 * Use a default of 1MHz for the converter clock.
+>  	 * This may become user-configurable in the future.
+>  	 */
+This comment becomes invalid and should be adjusted or droped.
+> -	ret = clk_set_rate(info->clk, 1000000);
+> +	ret = clk_set_rate(info->clk, info->data->clk_rate);
+>  	if (ret < 0) {
+>  		dev_err(&pdev->dev, "failed to set adc clk rate, %d\n", ret);
+>  		return ret;
+> @@ -227,8 +269,8 @@ static int rockchip_saradc_probe(struct platform_device *pdev)
+>  	indio_dev->info = &rockchip_saradc_iio_info;
+>  	indio_dev->modes = INDIO_DIRECT_MODE;
+>  
+> -	indio_dev->channels = rockchip_saradc_iio_channels;
+> -	indio_dev->num_channels = ARRAY_SIZE(rockchip_saradc_iio_channels);
+> +	indio_dev->channels = info->data->channels;
+> +	indio_dev->num_channels = info->data->num_channels;
+>  
+>  	ret = iio_device_register(indio_dev);
+>  	if (ret)
+> @@ -296,12 +338,6 @@ static int rockchip_saradc_resume(struct device *dev)
+>  static SIMPLE_DEV_PM_OPS(rockchip_saradc_pm_ops,
+>  			 rockchip_saradc_suspend, rockchip_saradc_resume);
+>  
+> -static const struct of_device_id rockchip_saradc_match[] = {
+> -	{ .compatible = "rockchip,saradc" },
+> -	{},
+> -};
+> -MODULE_DEVICE_TABLE(of, rockchip_saradc_match);
+> -
+>  static struct platform_driver rockchip_saradc_driver = {
+>  	.probe		= rockchip_saradc_probe,
+>  	.remove		= rockchip_saradc_remove,
+> 
 
---=-A25u/MJwZce5m72guhtc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, 2014-09-12 at 20:59 +0900, Satoru Takeuchi wrote:
-> At Thu, 11 Sep 2014 06:30:06 -0700,
-> Guenter Roeck wrote:
-> >=20
-> > On 09/11/2014 05:32 AM, Ben Hutchings wrote:
-> > > This is the start of the stable review cycle for the 3.2.63 release.
-> > > There are 131 patches in this series, which will be posted as respons=
-es
-> > > to this one.  If anyone has any issues with these being applied, plea=
-se
-> > > let me know.
-> > >=20
-> > > Responses should be made by Sat Sep 13 12:32:13 UTC 2014.
-> > > Anything received after that time might be too late.
-> > >=20
-> >=20
-> > Build results:
-> > 	total: 111 pass: 106 fail: 5
-> > Failed builds:
-> > 	microblaze:mmu_defconfig
-> > 	microblaze:nommu_defconfig
-> > 	mips:allmodconfig
-> > 	xtensa:defconfig
-> > 	xtensa:allmodconfig
-> >=20
-> > Qemu test results:
-> > 	total: 18 pass: 17 fail: 1
-> > Failed tests:
-> > 	microblaze:microblaze_defconfig
-> >=20
-> > Results are as expected and an improvement over previous releases,
-> > where sparc64:allmodconfig used to fail as well. The failing qemu
-> > test was added to the list of tests only recently and is a known
-> > problem.
-> >=20
-> > Guenter
->=20
-> Plus, this kernel passed my test.
->=20
->  - Test Cases:
->    - Build this kernel.
->    - Boot this kernel.
->    - Build the latest mainline kernel with this kernel.
->=20
->  - Test Tool:
->    https://github.com/satoru-takeuchi/test-linux-stable
->=20
->  - Test Result (kernel .config, ktest config and test log):
->    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test d=
-atetime>.tar.xz
->=20
->  - Build Environment:
->    - OS: Debian Jessy x86_64
->    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    - memory: 8GB
->=20
->  - Test Target Environment:
->    - Debian Jessy x86_64 (KVM guest on the Build Environment)
->    - # of vCPU: 2
->    - memory: 2GB
-
-Thanks for testing!
-
-Ben.
-
---=20
-Ben Hutchings
-I'm always amazed by the number of people who take up solipsism because
-they heard someone else explain it. - E*Borg on alt.fan.pratchett
-
---=-A25u/MJwZce5m72guhtc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUAVBTHwOe/yOyVhhEJAQrFMA//XD6JGo89B/mScG3QLHiq9qBjS7NQ1Ya8
-KFooLcpM/FgzFLdMcL4pA009gQLG3bg5mRw2Y+hHRZcNUvopg8U+lccSebx9Gsx1
-Cl5m9x5Hv8UIk//safAUFG6xJfgqHzj0wpP/Nsa0Hl1U54mgWM9mSnMs273deMIp
-E+byhffr8VT+W0iCf1B4ZgWpXmDvroZWD/3NBS3A1pNAmwtjVYVY+uibHphhLFQu
-+Q6fRool98HwTFQ9v+w+8DdXsIA/hGZC/DtWedLbjJ3V6bCejfS7Jg/FsQk2Sqb+
-/n2FM0cOosmrlJ1OURUQL9yb3oU9Jrlbiua06f7uuibHsc8Mpz4/wp9XkbANAif8
-T5RdrHg5+3PNcYaiVZIdO4duetB45Ka8jjjK4TsIQYPTEl5Yx8JUiDSt1WUYniyJ
-JuhirXyY9HHnvqZe0+9UCrJ/DtjSvtdDyePOoO0q0M11PpuHI8cZrlGp3jYim3yE
-eEOYhymtoMduobVKTR5ZeRdD8KyNQP8zfFhpmSB2LrYfk8YTF2EO/zwvXdEtCKKw
-oYdjQIbfYNwqma6WIFGUsOWm9AaTsaccLHKedtLKeoYHPglohdaiLKLIIACueHdW
-XNBzX6W5Brj6Njg5KgLAuqazk8J1GbYoU62zWETKYt3Yp8RvMygybH4rQ7m2KzzO
-CKfObJhjSdU=
-=sbbM
------END PGP SIGNATURE-----
-
---=-A25u/MJwZce5m72guhtc--
