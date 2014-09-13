@@ -1,225 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaIMTCM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 15:02:12 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:55912 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078AbaIMTCJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 15:02:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1409794786-10951-3-git-send-email-minchan@kernel.org>
-References: <1409794786-10951-1-git-send-email-minchan@kernel.org> <1409794786-10951-3-git-send-email-minchan@kernel.org>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Sat, 13 Sep 2014 15:01:47 -0400
-X-Google-Sender-Auth: U2ci8UUn-qFCGTgDv2quuqUN81s
-Message-ID: <CALZtONCortZodFfVU5-oXUdGShhjFOg+FesxMFCdsyhsnnkmZw@mail.gmail.com>
-Subject: Re: [RFC 2/3] mm: add swap_get_free hint for zram
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752172AbaIMTGL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 15:06:11 -0400
+Received: from mout.gmx.net ([212.227.15.19]:59612 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037AbaIMTGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 15:06:09 -0400
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: David Daney <david.daney@cavium.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Luka Perkov <luka@openwrt.org>,
+        Willem de Bruijn <willemb@google.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH] netdev: octeon_mgmt: ISO C90 forbids mixed declarations and code
+Date: Sat, 13 Sep 2014 21:05:08 +0200
+Message-Id: <1410635108-3589-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.1.0
+X-Provags-ID: V03:K0:xZWoMTFvSt0qayh8GwRsoygr1TUknsExR/ypdXBFVlAI2iYev6x
+ eR4y5XYbtcWhc+XQJO+rFzKGZ1FmWdoJEVZfpV8KX5gajCtfv9oPi2n8eN0ZWHrgRWMjut4
+ RoZTO4LcqXQYPES/G4GcJVwyVnbjwomxzqEg2YYuSzq3PawLHUIDHbN0U4BT9HzhtRo50vZ
+ ciGrRVoFKhFJiJFcaOYnQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 3, 2014 at 9:39 PM, Minchan Kim <minchan@kernel.org> wrote:
-> VM uses nr_swap_pages as one of information when it does
-> anonymous reclaim so that VM is able to throttle amount of swap.
->
-> Normally, the nr_swap_pages is equal to freeable space of swap disk
-> but for zram, it doesn't match because zram can limit memory usage
-> by knob(ie, mem_limit) so although VM can see lots of free space
-> from zram disk, zram can make fail intentionally once the allocated
-> space is over to limit. If it happens, VM should notice it and
-> stop reclaimaing until zram can obtain more free space but there
-> is a good way to do at the moment.
->
-> This patch adds new hint SWAP_GET_FREE which zram can return how
-> many of freeable space it has. With using that, this patch adds
-> __swap_full which returns true if the zram is full and substract
-> remained freeable space of the zram-swap from nr_swap_pages.
-> IOW, VM sees there is no more swap space of zram so that it stops
-> anonymous reclaiming until swap_entry_free free a page and increase
-> nr_swap_pages again.
->
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  include/linux/blkdev.h |  1 +
->  mm/swapfile.c          | 45 +++++++++++++++++++++++++++++++++++++++++++--
->  2 files changed, 44 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 17437b2c18e4..c1199806e0f1 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
->
->  enum swap_blk_hint {
->         SWAP_SLOT_FREE,
-> +       SWAP_GET_FREE,
->  };
->
->  struct block_device_operations {
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 4bff521e649a..72737e6dd5e5 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -484,6 +484,22 @@ new_cluster:
->         *scan_base = tmp;
->  }
->
-> +static bool __swap_full(struct swap_info_struct *si)
-> +{
-> +       if (si->flags & SWP_BLKDEV) {
-> +               long free;
-> +               struct gendisk *disk = si->bdev->bd_disk;
-> +
-> +               if (disk->fops->swap_hint)
-> +                       if (!disk->fops->swap_hint(si->bdev,
-> +                                               SWAP_GET_FREE,
-> +                                               &free))
-> +                               return free <= 0;
-> +       }
-> +
-> +       return si->inuse_pages == si->pages;
-> +}
-> +
->  static unsigned long scan_swap_map(struct swap_info_struct *si,
->                                    unsigned char usage)
->  {
-> @@ -583,11 +599,21 @@ checks:
->         if (offset == si->highest_bit)
->                 si->highest_bit--;
->         si->inuse_pages++;
-> -       if (si->inuse_pages == si->pages) {
-> +       if (__swap_full(si)) {
+Compiling with OCTEON_MGMT_ETHERNET gives a warning
+drivers/net/ethernet/octeon/octeon_mgmt.c:295:4:
+warning: ISO C90 forbids mixed declarations and code
+[-Wdeclaration-after-statement]
 
-This check is done after an available offset has already been
-selected.  So if the variable-size blkdev is full at this point, then
-this is incorrect, as swap will try to store a page at the current
-selected offset.
+The patch cleans up the code.
 
-> +               struct gendisk *disk = si->bdev->bd_disk;
-> +
->                 si->lowest_bit = si->max;
->                 si->highest_bit = 0;
->                 spin_lock(&swap_avail_lock);
->                 plist_del(&si->avail_list, &swap_avail_head);
-> +               /*
-> +                * If zram is full, it decreases nr_swap_pages
-> +                * for stopping anonymous page reclaim until
-> +                * zram has free space. Look at swap_entry_free
-> +                */
-> +               if (disk->fops->swap_hint)
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ drivers/net/ethernet/octeon/octeon_mgmt.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Simply checking for the existence of swap_hint isn't enough to know
-we're using zram...
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index 979c698..8af453a 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -254,6 +254,7 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
+ 	struct sk_buff *skb;
+ 	int cleaned = 0;
+ 	unsigned long flags;
++	u64 ns;
+ 
+ 	mix_orcnt.u64 = cvmx_read_csr(p->mix + MIX_ORCNT);
+ 	while (mix_orcnt.s.orcnt) {
+@@ -292,7 +293,7 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
+ 			struct skb_shared_hwtstamps ts;
+ 			memset(&ts, 0, sizeof(ts));
+ 			/* Read the timestamp */
+-			u64 ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
++			ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
+ 			/* Remove the timestamp from the FIFO */
+ 			cvmx_write_csr(CVMX_MIXX_TSCTL(p->port), 0);
+ 			/* Tell the kernel about the timestamp */
+-- 
+2.1.0
 
-> +                       atomic_long_sub(si->pages - si->inuse_pages,
-> +                               &nr_swap_pages);
->                 spin_unlock(&swap_avail_lock);
->         }
->         si->swap_map[offset] = usage;
-> @@ -796,6 +822,7 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
->
->         /* free if no reference */
->         if (!usage) {
-> +               struct gendisk *disk = p->bdev->bd_disk;
->                 dec_cluster_info_page(p, p->cluster_info, offset);
->                 if (offset < p->lowest_bit)
->                         p->lowest_bit = offset;
-> @@ -808,6 +835,21 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
->                                 if (plist_node_empty(&p->avail_list))
->                                         plist_add(&p->avail_list,
->                                                   &swap_avail_head);
-> +                               if ((p->flags & SWP_BLKDEV) &&
-> +                                       disk->fops->swap_hint) {
-
-freeing an entry from a full variable-size blkdev doesn't mean it's
-not still full.  In this case with zsmalloc, freeing one handle
-doesn't actually free any memory unless it was the only handle left in
-its containing zspage, and therefore it's possible that it is still
-full at this point.
-
-> +                                       atomic_long_add(p->pages -
-> +                                                       p->inuse_pages,
-> +                                                       &nr_swap_pages);
-> +                                       /*
-> +                                        * reset [highest|lowest]_bit to avoid
-> +                                        * scan_swap_map infinite looping if
-> +                                        * cached free cluster's index by
-> +                                        * scan_swap_map_try_ssd_cluster is
-> +                                        * above p->highest_bit.
-> +                                        */
-> +                                       p->highest_bit = p->max - 1;
-> +                                       p->lowest_bit = 1;
-
-lowest_bit and highest_bit are likely to remain at those extremes for
-a long time, until 1 or max-1 is freed and re-allocated.
-
-
-By adding variable-size blkdev support to swap, I don't think
-highest_bit can be re-used as a "full" flag anymore.
-
-Instead, I suggest that you add a "full" flag to struct
-swap_info_struct.  Then put a swap_hint GET_FREE check at the top of
-scan_swap_map(), and if full simply turn "full" on, remove the
-swap_info_struct from the avail list, reduce nr_swap_pages
-appropriately, and return failure.  Don't mess with lowest_bit or
-highest_bit at all.
-
-Then in swap_entry_free(), do something like:
-
-    dec_cluster_info_page(p, p->cluster_info, offset);
-    if (offset < p->lowest_bit)
-      p->lowest_bit = offset;
--   if (offset > p->highest_bit) {
--     bool was_full = !p->highest_bit;
-+   if (offset > p->highest_bit)
-      p->highest_bit = offset;
--     if (was_full && (p->flags & SWP_WRITEOK)) {
-+   if (p->full && p->flags & SWP_WRITEOK) {
-+     bool is_var_size_blkdev = is_variable_size_blkdev(p);
-+     bool blkdev_full = is_variable_size_blkdev_full(p);
-+
-+     if (!is_var_size_blkdev || !blkdev_full) {
-+       if (is_var_size_blkdev)
-+         atomic_long_add(p->pages - p->inuse_pages, &nr_swap_pages);
-+       p->full = false;
-        spin_lock(&swap_avail_lock);
-        WARN_ON(!plist_node_empty(&p->avail_list));
-        if (plist_node_empty(&p->avail_list))
-          plist_add(&p->avail_list,
-             &swap_avail_head);
-        spin_unlock(&swap_avail_lock);
-+     } else if (blkdev_full) {
-+       /* still full, so this page isn't actually
-+        * available yet to use; once non-full,
-+        * pages-inuse_pages will be the correct
-+        * number to add (above) since below will
-+        * inuse_pages--
-+        */
-+       atomic_long_dec(&nr_swap_pages);
-      }
-    }
-    atomic_long_inc(&nr_swap_pages);
-
-
-
-> @@ -815,7 +857,6 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
->                 p->inuse_pages--;
->                 frontswap_invalidate_page(p->type, offset);
->                 if (p->flags & SWP_BLKDEV) {
-> -                       struct gendisk *disk = p->bdev->bd_disk;
->                         if (disk->fops->swap_hint)
->                                 disk->fops->swap_hint(p->bdev,
->                                                 SWAP_SLOT_FREE,
-> --
-> 2.0.0
->
