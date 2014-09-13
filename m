@@ -1,219 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaIMUjw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 16:39:52 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:46062 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368AbaIMUjt (ORCPT
+	id S1752172AbaIMUse (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 16:48:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54487 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034AbaIMUsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 16:39:49 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtYNAF6qFFRXQCtB/2dsb2JhbABfgw2BKrISBQFvnX0BgQcXeIQEAQUnLyMQUTkeGYhCAbwtGIV8iVEHhEsFhh+JGIkKhEeMMIkPghuBRTsvgkoBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net, Fabian Frederick <fabf@skynet.be>,
-        Brett Rudley <brudley@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org
-Subject: [PATCH 4/4 linux-next] brcm80211: use container_of to resolve dma_info from dma_pub
-Date: Sat, 13 Sep 2014 22:38:29 +0200
-Message-Id: <1410640709-18295-5-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1410640709-18295-1-git-send-email-fabf@skynet.be>
-References: <1410640709-18295-1-git-send-email-fabf@skynet.be>
+	Sat, 13 Sep 2014 16:48:32 -0400
+Date: Sat, 13 Sep 2014 22:48:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] futex fix for 3.17
+Message-ID: <alpine.DEB.2.10.1409132243220.23397@nanos>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use container_of instead of casting first structure member.
+Linus,
 
-Compiled but untested.
+please pull the latest locking-urgent-for-linus git tree from:
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/net/wireless/brcm80211/brcmsmac/dma.c | 38 +++++++++++++--------------
- 1 file changed, 19 insertions(+), 19 deletions(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git locking-urgent-for-linus
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-index 4fb9635..796f5f9 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-@@ -746,7 +746,7 @@ dma64_dd_upd(struct dma_info *di, struct dma64desc *ddring,
- /* !! may be called with core in reset */
- void dma_detach(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
- 
-@@ -842,7 +842,7 @@ static void _dma_rxenable(struct dma_info *di)
- 
- void dma_rxinit(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
- 
-@@ -924,7 +924,7 @@ static struct sk_buff *_dma_getnextrxp(struct dma_info *di, bool forceall)
-  */
- int dma_rx(struct dma_pub *pub, struct sk_buff_head *skb_list)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct sk_buff_head dma_frames;
- 	struct sk_buff *p, *next;
- 	uint len;
-@@ -1022,7 +1022,7 @@ static bool dma64_txidle(struct dma_info *di)
-  */
- bool dma_rxfill(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct sk_buff *p;
- 	u16 rxin, rxout;
- 	u32 flags = 0;
-@@ -1106,7 +1106,7 @@ bool dma_rxfill(struct dma_pub *pub)
- 
- void dma_rxreclaim(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct sk_buff *p;
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
-@@ -1126,7 +1126,7 @@ void dma_counterreset(struct dma_pub *pub)
- /* get the address of the var in order to change later */
- unsigned long dma_getvar(struct dma_pub *pub, const char *name)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	if (!strcmp(name, "&txavail"))
- 		return (unsigned long)&(di->dma.txavail);
-@@ -1137,7 +1137,7 @@ unsigned long dma_getvar(struct dma_pub *pub, const char *name)
- 
- void dma_txinit(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	u32 control = D64_XC_XE;
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
-@@ -1170,7 +1170,7 @@ void dma_txinit(struct dma_pub *pub)
- 
- void dma_txsuspend(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
- 
-@@ -1182,7 +1182,7 @@ void dma_txsuspend(struct dma_pub *pub)
- 
- void dma_txresume(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	brcms_dbg_dma(di->core, "%s:\n", di->name);
- 
-@@ -1194,7 +1194,7 @@ void dma_txresume(struct dma_pub *pub)
- 
- bool dma_txsuspended(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 
- 	return (di->ntxd == 0) ||
- 	       ((bcma_read32(di->core,
-@@ -1204,7 +1204,7 @@ bool dma_txsuspended(struct dma_pub *pub)
- 
- void dma_txreclaim(struct dma_pub *pub, enum txd_range range)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct sk_buff *p;
- 
- 	brcms_dbg_dma(di->core, "%s: %s\n",
-@@ -1225,7 +1225,7 @@ void dma_txreclaim(struct dma_pub *pub, enum txd_range range)
- 
- bool dma_txreset(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	u32 status;
- 
- 	if (di->ntxd == 0)
-@@ -1252,7 +1252,7 @@ bool dma_txreset(struct dma_pub *pub)
- 
- bool dma_rxreset(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	u32 status;
- 
- 	if (di->nrxd == 0)
-@@ -1377,7 +1377,7 @@ static void dma_update_txavail(struct dma_info *di)
- int dma_txfast(struct brcms_c_info *wlc, struct dma_pub *pub,
- 	       struct sk_buff *p)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct brcms_ampdu_session *session = &di->ampdu_session;
- 	struct ieee80211_tx_info *tx_info;
- 	bool is_ampdu;
-@@ -1427,7 +1427,7 @@ int dma_txfast(struct brcms_c_info *wlc, struct dma_pub *pub,
- 
- void dma_txflush(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct brcms_ampdu_session *session = &di->ampdu_session;
- 
- 	if (!skb_queue_empty(&session->skb_list))
-@@ -1436,7 +1436,7 @@ void dma_txflush(struct dma_pub *pub)
- 
- int dma_txpending(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	return ntxdactive(di, di->txin, di->txout);
- }
- 
-@@ -1446,7 +1446,7 @@ int dma_txpending(struct dma_pub *pub)
-  */
- void dma_kick_tx(struct dma_pub *pub)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	struct brcms_ampdu_session *session = &di->ampdu_session;
- 
- 	if (!skb_queue_empty(&session->skb_list) && dma64_txidle(di))
-@@ -1465,7 +1465,7 @@ void dma_kick_tx(struct dma_pub *pub)
-  */
- struct sk_buff *dma_getnexttxp(struct dma_pub *pub, enum txd_range range)
- {
--	struct dma_info *di = (struct dma_info *)pub;
-+	struct dma_info *di = container_of(pub, struct dma_info, dma);
- 	u16 start, end, i;
- 	u16 active_desc;
- 	struct sk_buff *txp;
-@@ -1547,7 +1547,7 @@ struct sk_buff *dma_getnexttxp(struct dma_pub *pub, enum txd_range range)
- void dma_walk_packets(struct dma_pub *dmah, void (*callback_fnc)
- 		      (void *pkt, void *arg_a), void *arg_a)
- {
--	struct dma_info *di = (struct dma_info *) dmah;
-+	struct dma_info *di = container_of(dmah, struct dma_info, dma);
- 	uint i =   di->txin;
- 	uint end = di->txout;
- 	struct sk_buff *skb;
--- 
-1.8.4.5
+A oneliner bugfix for the jinxed futex code:
 
+- Drop has bucket lock in the error exit path. I really could slap
+  myself for intruducing that bug while fixing all the other horror in
+  that code three month ago ...
+
+Thanks,
+
+	tglx
+
+------------------>
+Thomas Gleixner (1):
+      futex: Unlock hb->lock in futex_wait_requeue_pi() error path
+
+
+ kernel/futex.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index d3a9d946d0b7..815d7af2ffe8 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2592,6 +2592,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 * shared futexes. We need to compare the keys:
+ 	 */
+ 	if (match_futex(&q.key, &key2)) {
++		queue_unlock(hb);
+ 		ret = -EINVAL;
+ 		goto out_put_keys;
+ 	}
