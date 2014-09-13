@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaIMRiu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 13:38:50 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:46440 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaIMRit (ORCPT
+	id S1752159AbaIMRut (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 13:50:49 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38825 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061AbaIMRus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 13:38:49 -0400
-Date: Sat, 13 Sep 2014 10:38:41 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Huang Shijie <shijie.huang@intel.com>,
-        Mike Voytovich <mvoytovich@paypal.com>, linux-kernel@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
-        Roy Lee <roylee@paypal.com>, David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20140913173841.GA18093@brian-ubuntu>
-References: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
- <20140911120928.GA1585@localhost.localdomain>
- <20140911143616.3ebb025a@bbrezillon>
- <20140911142511.GA2543@localhost.localdomain>
- <20140911163847.5e2f85c7@bbrezillon>
- <20140912004550.GB26904@shldeISGChi005.sh.intel.com>
- <20140912143050.014ad4c3@bbrezillon>
- <20140913153622.GA10132@localhost.localdomain>
+	Sat, 13 Sep 2014 13:50:48 -0400
+Date: Sat, 13 Sep 2014 10:50:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: fix regression that accidentally disabled
+ block-based tcq
+Message-ID: <20140913175047.GA28882@infradead.org>
+References: <540EC52C.3000804@redhat.com>
+ <20140909152730.GA17882@infradead.org>
+ <540FFBF4.9090001@redhat.com>
+ <20140910154535.GA5102@infradead.org>
+ <541172E9.8070309@redhat.com>
+ <20140911161331.GA24488@infradead.org>
+ <54134E50.6040805@redhat.com>
+ <20140912230032.GA21143@infradead.org>
+ <54141C59.7040707@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140913153622.GA10132@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54141C59.7040707@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 11:36:24PM +0800, Huang Shijie wrote:
-> On Fri, Sep 12, 2014 at 02:30:50PM +0200, Boris BREZILLON wrote:
-> > This test validates what's returned by ecc_strength file in sysfs
-> > (which in turn is specified by the NAND controller when initializing
-> > the NAND chip).
-> > 
-> > Doing this should not imply knowing the ECC algorithm in use in the
-> > NAND controller or the layout used to store data on NAND.
-> the difficulty is that the ECC parity area can be not byte aligned.
+On Sat, Sep 13, 2014 at 12:28:41PM +0200, Hans de Goede wrote:
+> Yes this one does the trick and fixes things. Note the git tree I used for
+> testing also had your previous fix to split up the blk_tcq union in 2
+> separate struct members. Let me know if you want me to re-test without that
+> fix.
 
-Is there a problem with just rounding up to the nearest byte alignment
-and ignoring the few bits that are wasted?
-
-> As I ever said, it is hard to implement the two hooks.
-
-"Hard" doesn't mean we shouldn't. I really would like to encourage more
-NAND drivers to be programmed against the expected MTD behavior -- that
-(if possible with the given hardware) they can pass the MTD tests
-(drivers/mtd/tests/*).
-
-Brian
+I'm pretty sure that isn't needed, so double testing it indeed doesn't
+would be helpful.  I'd like to add your Tested-by: tag after that, too.
