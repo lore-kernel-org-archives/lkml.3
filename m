@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaIME5O (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 00:57:14 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:54237 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaIME5N (ORCPT
+	id S1751648AbaIMFBY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 01:01:24 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:60734 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaIMFBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 00:57:13 -0400
-Message-ID: <5413CEA5.3060403@gmail.com>
-Date: Sat, 13 Sep 2014 06:57:09 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sat, 13 Sep 2014 01:01:23 -0400
 MIME-Version: 1.0
-To: Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: VGA resume & thaw (wake up from S3 & S4) broken - kernel exclusively
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140912170919.da0719f24020dc2c4a9ae0a7@linux-foundation.org>
+References: <20140830163834.29066.98205.stgit@zurg>
+	<20140912170919.da0719f24020dc2c4a9ae0a7@linux-foundation.org>
+Date: Sat, 13 Sep 2014 09:01:22 +0400
+Message-ID: <CALYGNiP7wGPqaCfVCcHwBJzOVTvCWfL6MK3NL5rFC2+vRT2A+A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/6] mm/balloon_compaction: fixes and cleanups
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Sep 13, 2014 at 4:09 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 30 Aug 2014 20:41:06 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>
+>> I've checked compilation of linux-next/x86 for allnoconfig, defconfig and
+>> defconfig + kvmconfig + virtio-balloon with and without balloon-compaction.
+>> For stable kernels first three patches should be enough.
+>>
+>> changes since v1:
+>>
+>> mm/balloon_compaction: ignore anonymous pages
+>> * no changes
+>>
+>> mm/balloon_compaction: keep ballooned pages away from normal migration path
+>> * fix compilation without CONFIG_BALLOON_COMPACTION
+>>
+>> mm/balloon_compaction: isolate balloon pages without lru_lock
+>> * no changes
+>>
+>> mm: introduce common page state for ballooned memory
+>> * move __Set/ClearPageBalloon into linux/mm.h
+>> * remove inc/dec_zone_page_state from __Set/ClearPageBalloon
+>>
+>> mm/balloon_compaction: use common page ballooning
+>> * call inc/dec_zone_page_state from balloon_page_insert/delete
+>>
+>> mm/balloon_compaction: general cleanup
+>> * fix compilation without CONFIG_MIGRATION
+>> * fix compilation without CONFIG_BALLOON_COMPACTION
+>>
+>
+> The patch "selftests/vm/transhuge-stress: stress test for memory
+> compaction" has silently and mysteriously vanished?
+>
 
-Actually I have nothing to show cause logs are all OK.
-Haha, it seems to me that the bugs become intelligent.
-
-3.15.10-201.fc20.x86_64
-3.16.2-200.fc20.x86_64
-3.17.0-0.rc4.git3.2.fc22.1.x86_64
- nouveau  [     DRM] suspending display...
- nouveau  [     DRM] unpinning framebuffer(s)...
- nouveau  [     DRM] evicting buffers...
- nouveau  [     DRM] waiting for kernel channels to go idle...
- nouveau  [     DRM] suspending client object trees...
- nouveau  [     DRM] suspending kernel object tree...
-...
- nouveau  [     DRM] re-enabling device...
- nouveau  [     DRM] resuming kernel object tree...
- nouveau  [   VBIOS][0000:02:00.0] running init tables
- nouveau  [  PTHERM][0000:02:00.0] fan management: automatic
- nouveau  [     CLK][0000:02:00.0] --: core 566 MHz shader 1400 MHz memory 399 MHz
- nouveau  [     DRM] resuming client object trees...
- nouveau  [     DRM] resuming display...
- nouveau 0000:02:00.0: no hotplug settings from platform
- nouveau 0000:02:00.0: no hotplug settings from platform
-
-Logs(dmesg) are literally identical.
-
-3.15.10-201.fc20.x86_64 - nouveau(fb) resume & thaw PASSED, and that's all what works.
-        Kernels >= 3.16 - nouveau(fb) resume & thaw BROKEN
-            ALL Kernels - vesa(fb)    resume & thaw BROKEN.
-
-
-Have a nice weekend folks.
-
-
-poma
-
+It's unchanged and has no direct connection to this patchset.
+So I've dropped it. If you like it you can keep the v1 version.
