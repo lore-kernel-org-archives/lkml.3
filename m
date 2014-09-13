@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbaIMCsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 22:48:16 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:58946 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaIMCsP (ORCPT
+	id S1751599AbaIMDIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 23:08:04 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59449 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaIMDID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 22:48:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140911191830.GA31511@roeck-us.net>
-References: <1410396496-13845-1-git-send-email-roy.qing.li@gmail.com>
-	<20140911191830.GA31511@roeck-us.net>
-Date: Sat, 13 Sep 2014 10:48:14 +0800
-Message-ID: <CAJFZqHwsjuw5As6duphrgbzxtwmE2ZqbraNEme88M3hi1WBiRQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] signal: replace !likely with unlikely!
-From: Li RongQing <roy.qing.li@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, fabf@skynet.be,
-        jkosina@suse.cz, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        richard@nod.at, oleg@redhat.com, akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Sep 2014 23:08:03 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@lst.de>
+Subject: [PATCH v3 0/10] block: per-distpatch_queue flush machinery
+Date: Sat, 13 Sep 2014 11:07:44 +0800
+Message-Id: <1410577674-17019-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did not test, how to test it?
+Hi,
 
-On Fri, Sep 12, 2014 at 3:18 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Thu, Sep 11, 2014 at 08:48:16AM +0800, roy.qing.li@gmail.com wrote:
->> From: Li RongQing <roy.qing.li@gmail.com>
->>
->> !likely() is hard to be understood, and I do not know if compiler can
->> optimise this condition, but unlikely(!()) is clear
->>
->> Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
->> ---
->>  kernel/signal.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/kernel/signal.c b/kernel/signal.c
->> index 8f0876f..6156cfa 100644
->> --- a/kernel/signal.c
->> +++ b/kernel/signal.c
->> @@ -1571,7 +1571,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
->>       BUG_ON(!(q->flags & SIGQUEUE_PREALLOC));
->>
->>       ret = -1;
->> -     if (!likely(lock_task_sighand(t, &flags)))
->> +     if (unlikely(!lock_task_sighand(t, &flags)))
->
-> I wonder if you tested this code. Seems to be unlikely (punt not intended).
->
-> Guenter
->
->>               goto ret;
->>
->>       ret = 1; /* the signal is ignored */
->> --
->> 1.7.10.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
+As recent discussion, especially suggested by Christoph, this patchset
+implements per-distpatch_queue flush machinery, so that:
+
+	- current init_request and exit_request callbacks can
+	cover flush request too, then the buggy copying way of
+	initializing flush request's pdu can be fixed
+
+	- flushing performance gets improved in case of multi hw-queue
+
+About 70% throughput improvement is observed in sync write
+over multi dispatch-queue virtio-blk, see details in commit log
+of patch 10/10.
+
+This patchset can be pulled from below tree too:
+
+        git://kernel.ubuntu.com/ming/linux.git v3.17-block-dev_v3
+
+V3:
+	- don't return failure code from blk_alloc_flush_queue() to
+	avoid freeing invalid buffer in case of allocation failure
+	- remove blk_init_flush() and blk_exit_flush()
+	- remove unnecessary WARN_ON() from blk_alloc_flush_queue()
+
+V2:
+	- refactor blk_mq_init_hw_queues() and its pair, also it is a fix
+	on failure path, so that conversion to per-queue flush becomes simple.
+	- allocate/initialize flush queue in blk_mq_init_hw_queues()
+	- add sync write tests on virtio-blk which is backed by SSD image
+
+V1:
+	- commit log typo fix
+	- introduce blk_alloc_flush_queue() and its pair earlier, so
+	that patch 5 and 8 become easier for review
+
+ block/blk-core.c       |   12 ++--
+ block/blk-flush.c      |  129 +++++++++++++++++++++++++-------------
+ block/blk-mq.c         |  160 ++++++++++++++++++++++++++++++------------------
+ block/blk-mq.h         |    1 -
+ block/blk-sysfs.c      |    4 +-
+ block/blk.h            |   35 ++++++++++-
+ include/linux/blk-mq.h |    2 +
+ include/linux/blkdev.h |   10 +--
+ 8 files changed, 230 insertions(+), 123 deletions(-)
+
+
+
+Thanks,
+--
+Ming Lei
+
+
