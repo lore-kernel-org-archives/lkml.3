@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaINDkP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 23:40:15 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:51421 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752271AbaINDkN (ORCPT
+	id S1752476AbaINDk4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 23:40:56 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59159 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaINDkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 23:40:13 -0400
-X-RL-SENDER: jay.xu@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <753d986bc16ecfd492b5e87a265aae95>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Jianqun <jay.xu@rock-chips.com>
-To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Cc: huangtao@rock-chips.com, cf@rock-chips.com,
-        Jianqun <jay.xu@rock-chips.com>
-Subject: [PATCH v2] ASoC: rockchip-i2s: dt: fix an error in the example
-Date: Sun, 14 Sep 2014 11:39:59 +0800
-Message-Id: <1410665999-16718-1-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410570281-23681-1-git-send-email-jay.xu@rock-chips.com>
-References: <1410570281-23681-1-git-send-email-jay.xu@rock-chips.com>
+	Sat, 13 Sep 2014 23:40:55 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Announcing the new TAB
+To: tech-board <tech-board-discuss@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CACxGe6sVi69_X4h6LB8s6K5DT19MhN5tW_xLenykt0tizRP7SQ@mail.gmail.com>
+References: <CACxGe6sVi69_X4h6LB8s6K5DT19MhN5tW_xLenykt0tizRP7SQ@mail.gmail.com>
+Date: Sun, 14 Sep 2014 00:40:39 +0100
+Message-Id: <20140913234039.625F7C41023@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reference to RK3288 TRM, fix an error in the example by swap "tx" and "rx".
+Last week, the TAB held its first meeting since the TAB elections at
+Kernel Summit and LinuxCon last month. As is our custom, this meeting
+included both incoming and outgoing members, and was the chance to
+bring the new members up to speed as well as say goodbye to those who
+are completing their terms.
 
-Table 10-1 DMAC_BUS Request Mapping Table
-Req number	Source	Polarity
-0		I2S tx	High level
-1		I2S rx	High level
+I want to say a big thank you to our outgoing members, James Bottomley,
+Jesse Barnes and Ric Wheeler, who have all served faithfully and done a
+great job representing our community. I especially want to thank James
+who has served as the TAB chair since its inception and has tirelessly
+championed Linux and Open Source developers.
 
-Tested on RK3288 board.
+Stepping into the TAB are three newly elected members, Kristen
+Accardi, H. Peter Anvin, and me, Grant Likely. Both Kristen and Peter
+are well known and respected members of our community, and I'm looking
+forward working with them. This is Peter's first term on the TAB,
+while Kristen and I have both served previously.
 
-Signed-off-by: Jianqun <jay.xu@rock-chips.com>
----
-change since v1:
-- modify patch's changelog as Mark's suggestion
+Also, each year the TAB elects a chair to coordinate our meetings and
+represent the TAB on the Linux Foundation Board of Directors. Normally
+the chair election is held six months after the TAB general election,
+but since the chair was held by one of our outgoing members, our first
+order of business was to elect a new chair. I put my name forward, as
+did Thomas Gleixner and John Linville. I'm honoured and humbled to
+announce that the TAB selected me to do the job. I'll work hard to live
+up to their expectations.
 
- Documentation/devicetree/bindings/sound/rockchip-i2s.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The members of the TAB are now:
+Chair: Grant Likely
+Vice-chair: Jonathan Corbet
+Kristen Accardi
+H. Peter Anvin
+Matthew Garrett
+Thomas Gleixner
+Greg Kroah-Hartman
+John Linville
+Chris Mason
+Sarah Sharp
 
-diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-index 6c55fcf..9b82c20 100644
---- a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-+++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
-@@ -31,7 +31,7 @@ i2s@ff890000 {
- 	#address-cells = <1>;
- 	#size-cells = <0>;
- 	dmas = <&pdma1 0>, <&pdma1 1>;
--	dma-names = "rx", "tx";
-+	dma-names = "tx", "rx";
- 	clock-names = "i2s_hclk", "i2s_clk";
- 	clocks = <&cru HCLK_I2S0>, <&cru SCLK_I2S0>;
- };
--- 
-1.9.1
-
+Cheers,
+g.
