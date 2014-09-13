@@ -1,202 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaIMRcV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 13:32:21 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48422 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaIMRcT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 13:32:19 -0400
-Message-ID: <54147F9F.3070804@kernel.org>
-Date: Sat, 13 Sep 2014 18:32:15 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, Stanimir Varbanov <svarbanov@mm-sol.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Fugang Duan <B38611@freescale.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Jean Delvare <jdelvare@suse.de>, Philippe Reynes <tremyfr@yahoo.fr>,
-        Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        David Collins <collinsd@codeaurora.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: Re: [PATCH v2 2/2] DT: iio: vadc: document dt binding
-References: <1410448403-19402-1-git-send-email-svarbanov@mm-sol.com> <1410448403-19402-3-git-send-email-svarbanov@mm-sol.com> <5413832F.6040503@gmx.de>
-In-Reply-To: <5413832F.6040503@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1752133AbaIMRho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 13:37:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45683 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751841AbaIMRhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 13:37:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="385706726"
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: tpmdd-devel@lists.sourceforge.net
+Cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
+        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Subject: [PATCH] tpm: merge duplicate transmit_cmd() functions
+Date: Sat, 13 Sep 2014 20:35:33 +0300
+Message-Id: <1410629733-10105-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/09/14 00:35, Hartmut Knaack wrote:
-> Stanimir Varbanov schrieb, Am 11.09.2014 17:13:
->> Document DT binding for Qualcomm SPMI PMIC voltage ADC
->> driver.
->>
-> Still one typo left.
->> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->> ---
->>  .../devicetree/bindings/iio/adc/qcom,spmi-vadc.txt |  123 ++++++++++++++++++++
->>  1 files changed, 123 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->>
->> diff --git a/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> new file mode 100644
->> index 0000000..5abb491
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/iio/adc/qcom,spmi-vadc.txt
->> @@ -0,0 +1,123 @@
->> +Qualcomm's SPMI PMIC voltage ADC
->> +
->> +SPMI PMIC voltage ADC (VADC) provides interface to clients to read
->> +voltage. A 15 bit ADC is used for voltage measurements. There are multiple
->> +peripherals to the VADC and the scope of the driver is to provide interface
->> +for the USR peripheral of the VADC.
->> +
->> +VADC node:
->> +
->> +- compatible:
->> +    Usage: required
->> +    Value type: <string>
->> +    Definition: Should contain "qcom,spmi-vadc".
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Base address in the SPMI PMIC register map.
->> +
->> +- address-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be one.
->> +
->> +- size-cells:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: Must be zero.
->> +
->> +- interrupts:
->> +    Usage: required
->> +    Value type: <prop-encoded-array>
->> +    Definition: End of convertion interrupt number.
-> Typo: conversion
->> +
->> +- qcom,poll-eoc:
->> +    Usage: optional
->> +    Value type: <empty>
->> +    Definition: Use polling instead of interrupt for end of conversion
->> +            completion.
->> +
->> +Channel node properties:
->> +
->> +- reg:
->> +    Usage: required
->> +    Value type: <u32>
->> +    Definition: AMUX channel number.
->> +            See include/dt-bindings/iio/qcom,spmi-pmic-vadc.h
->> +
->> +- qcom,decimation:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Sampling rate to use for the individual channel measurement.
->> +            Quicker measurements can be made by reducing decimation ratio.
->> +            Valid values are 512, 1024, 2048, 4096.
->> +            If property is not found, default value of 512 will be used.
->> +
->> +- qcom,pre-scaling:
->> +    Usage: optional
->> +    Value type: <u32 array>
->> +    Definition: Used for scaling the channel input signal before the signal is
->> +            fed to VADC. The configuration for this node is to know the
->> +            pre-determined ratio and use it for post scaling. Select one from
->> +            the following options.
->> +            <1 1>, <1 3>, <1 4>, <1 6>, <1 20>, <1 8>, <10 81>, <1 10>
->> +            If property is not found default value depending of chip will be used.
->> +
->> +- qcom,ratiometric:
->> +    Usage: optional
->> +    Value type: <empty>
->> +    Definition: Channel calibration type. If this property is specified
->> +            VADC will use the VDD reference(1.8V) and GND for channel
->> +            calibration. If property is not found, channel will be
->> +            calibrated with 625mV and 1.25V reference channels.
->> +
->> +- qcom,hw-settle-time:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Time between AMUX getting configured and the ADC starting
->> +            conversion. Delay = 100us * (value) for value < 11, and
->> +            2ms * (value - 10) otherwise.
->> +            Valid values are: 0, 100, 200, 300, 400, 500, 600, 700, 800,
->> +            900 us and 1, 2, 4, 6, 8, 10 ms
->> +            If property is not found, channel will use 0us.
->> +
->> +- qcom,avg-samples:
->> +    Usage: optional
->> +    Value type: <u32>
->> +    Definition: Number of samples to be used for measurement.
->> +            Fast averaging provides the option to obtain a single measurement
->> +            from the ADC that is an average of multiple samples. The value
->> +            selected is 2^(value).
->> +            Valid values are: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
->> +            If property is not found, 1 sample will be used.
->> +
->> +NOTE: At least one channel node is required.
+Replaced transmit_cmd() functions in tpm-interface.c and tpm-sysfs.c
+with a single tpm_transmit_cmd() that can be used in both files.
 
-Why?  As far as I can see it will register all the channels anyway.  If that is not the intent
-you need to build the iio_chan_spec array rather than using a static one.
+This patch is preliminary clean up work for the TPM2 support. This
+function is needed for implementing TPM2 versions of the in-kernel
+TPM utility functions.
 
-I'm fine with it providing channels with sensible defaults if they aren't overridden, but then
-it should work fine with no channel nodes.
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+---
+ drivers/char/tpm/tpm-interface.c | 44 ++++++++++++++++++++--------------------
+ drivers/char/tpm/tpm-sysfs.c     | 23 ++-------------------
+ drivers/char/tpm/tpm.h           |  2 ++
+ 3 files changed, 26 insertions(+), 43 deletions(-)
 
-Jonathan
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 6af1700..f638f9d 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -398,8 +398,8 @@ out:
+ #define TPM_DIGEST_SIZE 20
+ #define TPM_RET_CODE_IDX 6
+ 
+-static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+-			    int len, const char *desc)
++ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
++			 int len, const char *desc)
+ {
+ 	int err;
+ 
+@@ -448,7 +448,7 @@ ssize_t tpm_getcap(struct device *dev, __be32 subcap_id, cap_t *cap,
+ 		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 		tpm_cmd.params.getcap_in.subcap = subcap_id;
+ 	}
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, desc);
++	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, desc);
+ 	if (!rc)
+ 		*cap = tpm_cmd.params.getcap_out.cap;
+ 	return rc;
+@@ -464,8 +464,8 @@ void tpm_gen_interrupt(struct tpm_chip *chip)
+ 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
+ 
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+-			"attempting to determine the timeouts");
++	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
++			      "attempting to determine the timeouts");
+ }
+ EXPORT_SYMBOL_GPL(tpm_gen_interrupt);
+ 
+@@ -484,8 +484,8 @@ static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
+ 	struct tpm_cmd_t start_cmd;
+ 	start_cmd.header.in = tpm_startup_header;
+ 	start_cmd.params.startup_in.startup_type = startup_type;
+-	return transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
+-			    "attempting to start the TPM");
++	return tpm_transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
++				"attempting to start the TPM");
+ }
+ 
+ int tpm_get_timeouts(struct tpm_chip *chip)
+@@ -500,7 +500,7 @@ int tpm_get_timeouts(struct tpm_chip *chip)
+ 	tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+ 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
++	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE, NULL);
+ 
+ 	if (rc == TPM_ERR_INVALID_POSTINIT) {
+ 		/* The TPM is not started, we are the first to talk to it.
+@@ -513,7 +513,7 @@ int tpm_get_timeouts(struct tpm_chip *chip)
+ 		tpm_cmd.params.getcap_in.cap = TPM_CAP_PROP;
+ 		tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 		tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_TIMEOUT;
+-		rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
++		rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+ 				  NULL);
+ 	}
+ 	if (rc) {
+@@ -575,8 +575,8 @@ duration:
+ 	tpm_cmd.params.getcap_in.subcap_size = cpu_to_be32(4);
+ 	tpm_cmd.params.getcap_in.subcap = TPM_CAP_PROP_TIS_DURATION;
+ 
+-	rc = transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
+-			"attempting to determine the durations");
++	rc = tpm_transmit_cmd(chip, &tpm_cmd, TPM_INTERNAL_RESULT_SIZE,
++			      "attempting to determine the durations");
+ 	if (rc)
+ 		return rc;
+ 
+@@ -631,8 +631,8 @@ static int tpm_continue_selftest(struct tpm_chip *chip)
+ 	struct tpm_cmd_t cmd;
+ 
+ 	cmd.header.in = continue_selftest_header;
+-	rc = transmit_cmd(chip, &cmd, CONTINUE_SELFTEST_RESULT_SIZE,
+-			  "continue selftest");
++	rc = tpm_transmit_cmd(chip, &cmd, CONTINUE_SELFTEST_RESULT_SIZE,
++			      "continue selftest");
+ 	return rc;
+ }
+ 
+@@ -672,8 +672,8 @@ int tpm_pcr_read_dev(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
+ 
+ 	cmd.header.in = pcrread_header;
+ 	cmd.params.pcrread_in.pcr_idx = cpu_to_be32(pcr_idx);
+-	rc = transmit_cmd(chip, &cmd, READ_PCR_RESULT_SIZE,
+-			  "attempting to read a pcr value");
++	rc = tpm_transmit_cmd(chip, &cmd, READ_PCR_RESULT_SIZE,
++			      "attempting to read a pcr value");
+ 
+ 	if (rc == 0)
+ 		memcpy(res_buf, cmd.params.pcrread_out.pcr_result,
+@@ -737,8 +737,8 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
+ 	cmd.header.in = pcrextend_header;
+ 	cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(pcr_idx);
+ 	memcpy(cmd.params.pcrextend_in.hash, hash, TPM_DIGEST_SIZE);
+-	rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
+-			  "attempting extend a PCR value");
++	rc = tpm_transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
++			      "attempting extend a PCR value");
+ 
+ 	tpm_chip_put(chip);
+ 	return rc;
+@@ -817,7 +817,7 @@ int tpm_send(u32 chip_num, void *cmd, size_t buflen)
+ 	if (chip == NULL)
+ 		return -ENODEV;
+ 
+-	rc = transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
++	rc = tpm_transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
+ 
+ 	tpm_chip_put(chip);
+ 	return rc;
+@@ -938,14 +938,14 @@ int tpm_pm_suspend(struct device *dev)
+ 		cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(tpm_suspend_pcr);
+ 		memcpy(cmd.params.pcrextend_in.hash, dummy_hash,
+ 		       TPM_DIGEST_SIZE);
+-		rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
+-				  "extending dummy pcr before suspend");
++		rc = tpm_transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
++				      "extending dummy pcr before suspend");
+ 	}
+ 
+ 	/* now do the actual savestate */
+ 	for (try = 0; try < TPM_RETRY; try++) {
+ 		cmd.header.in = savestate_header;
+-		rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
++		rc = tpm_transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE, NULL);
+ 
+ 		/*
+ 		 * If the TPM indicates that it is too busy to respond to
+@@ -1022,7 +1022,7 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
+ 		tpm_cmd.header.in = tpm_getrandom_header;
+ 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
+ 
+-		err = transmit_cmd(chip, &tpm_cmd,
++		err = tpm_transmit_cmd(chip, &tpm_cmd,
+ 				   TPM_GETRANDOM_RESULT_SIZE + num_bytes,
+ 				   "attempting get random");
+ 		if (err)
+diff --git a/drivers/char/tpm/tpm-sysfs.c b/drivers/char/tpm/tpm-sysfs.c
+index 01730a2..8ecb052 100644
+--- a/drivers/char/tpm/tpm-sysfs.c
++++ b/drivers/char/tpm/tpm-sysfs.c
+@@ -20,25 +20,6 @@
+ #include <linux/device.h>
+ #include "tpm.h"
+ 
+-/* XXX for now this helper is duplicated in tpm-interface.c */
+-static ssize_t transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
+-			    int len, const char *desc)
+-{
+-	int err;
+-
+-	len = tpm_transmit(chip, (u8 *) cmd, len);
+-	if (len <  0)
+-		return len;
+-	else if (len < TPM_HEADER_SIZE)
+-		return -EFAULT;
+-
+-	err = be32_to_cpu(cmd->header.out.return_code);
+-	if (err != 0 && desc)
+-		dev_err(chip->dev, "A TPM error (%d) occurred %s\n", err, desc);
+-
+-	return err;
+-}
+-
+ #define READ_PUBEK_RESULT_SIZE 314
+ #define TPM_ORD_READPUBEK cpu_to_be32(124)
+ static struct tpm_input_header tpm_readpubek_header = {
+@@ -58,8 +39,8 @@ static ssize_t pubek_show(struct device *dev, struct device_attribute *attr,
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 
+ 	tpm_cmd.header.in = tpm_readpubek_header;
+-	err = transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
+-			   "attempting to read the PUBEK");
++	err = tpm_transmit_cmd(chip, &tpm_cmd, READ_PUBEK_RESULT_SIZE,
++			       "attempting to read the PUBEK");
+ 	if (err)
+ 		goto out;
+ 
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index e4d0888..d893335 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -317,6 +317,8 @@ ssize_t	tpm_getcap(struct device *, __be32, cap_t *, const char *);
+ 
+ ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
+ 		     size_t bufsiz);
++ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
++			 int len, const char *desc);
+ extern int tpm_get_timeouts(struct tpm_chip *);
+ extern void tpm_gen_interrupt(struct tpm_chip *);
+ extern int tpm_do_selftest(struct tpm_chip *);
+-- 
+2.1.0
 
-
->> +
->> +Example:
->> +	/* VADC node */
->> +	pmic_vadc: vadc@3100 {
->> +		compatible = "qcom,spmi-vadc";
->> +		reg = <0x3100 0x100>;
->> +		interrupts = <0x0 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +		#io-channel-cells = <1>;
->> +		io-channel-ranges;
->> +
->> +		/* Channel node */
->> +		usb_id_nopull {
->> +			reg = <VADC_LR_MUX10_USB_ID>;
->> +			qcom,decimation = <512>;
->> +			qcom,ratiometric;
->> +			qcom,hw-settle-time = <200>;
->> +			qcom,avg-samples = <1>;
->> +			qcom,pre-scaling = <1 3>;
->> +		};
->> +	};
->> +
->> +	/* IIO client node */
->> +	usb {
->> +		io-channels = <&pmic_vadc VADC_LR_MUX10_USB_ID>;
->> +		io-channel-names = "vadc";
->> +	};
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
