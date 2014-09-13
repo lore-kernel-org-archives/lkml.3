@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaIMXBU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 19:01:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38601 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724AbaIMXBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 19:01:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,519,1406617200"; 
-   d="scan'208";a="572790341"
-Date: Sun, 14 Sep 2014 01:21:49 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: tpmdd-devel@lists.sourceforge.net, Marcel Selhorst <tpmdd@selhorst.net>,
-        linux-kernel@vger.kernel.org, jgunthorpe@obsidianresearch.com
-Subject: Re: [PATCH] tpm: merge duplicate transmit_cmd() functions
-Message-ID: <20140913222149.GA18787@intel.com>
-References: <1410629733-10105-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <201409132313.53402.PeterHuewe@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201409132313.53402.PeterHuewe@gmx.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752202AbaIMXh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 19:37:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39939 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774AbaIMXh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 19:37:58 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@fb.com>
+Cc: Robert Elliott <elliott@hp.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: blk-mq timeout handling fixes
+Date: Sat, 13 Sep 2014 16:40:07 -0700
+Message-Id: <1410651613-1993-1-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.9.1
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This series fixes various issues with timeout handling that Robert
+ran into when testing scsi-mq heavily.  He tested an earlier version,
+and couldn't reproduce the issues anymore, although the series changed
+quite significantly since and should probably be retested.
 
-On Sat, Sep 13, 2014 at 11:13:53PM +0200, Peter Hüwe wrote:
-> Hi
-> 
-> 
-> Am Samstag, 13. September 2014, 19:35:33 schrieb Jarkko Sakkinen:
-> > Replaced transmit_cmd() functions in tpm-interface.c and tpm-sysfs.c
-> > with a single tpm_transmit_cmd() that can be used in both files.
-> > 
-> > This patch is preliminary clean up work for the TPM2 support. This
-> > function is needed for implementing TPM2 versions of the in-kernel
-> > TPM utility functions.
-> > 
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> 
-> why the renaming?
+In summary we not only start the blk-mq timer inside the drivers
+->queue_rq method after the request has been fully setup, and we
+also tell the drivers if we're timing out a reserved (internal)
+request or a real one.  Many drivers including will need to handle
+those internal ones differently, e.g. for scsi-mq we don't even
+have a scsi command structure allocated for the reserved commands.
 
-Because all the other non-static functions have tpm_ prefix.
-
-> > 
-> >  ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
-> >  		     size_t bufsiz);
-> Can this be removed then?
-
-Yes, it could be declared as a static function in tpm-interface.c and
-removed from tpm.h. I'll make this change and send a revised patch.
-
-> > +ssize_t tpm_transmit_cmd(struct tpm_chip *chip, struct tpm_cmd_t *cmd,
-> > +			 int len, const char *desc);
-> >  extern int tpm_get_timeouts(struct tpm_chip *);
-> >  extern void tpm_gen_interrupt(struct tpm_chip *);
-> >  extern int tpm_do_selftest(struct tpm_chip *);
-> 
-> 
-> 
-> Peter
-
-/Jarkko
