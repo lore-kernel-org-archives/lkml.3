@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaIMQgd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 12:36:33 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39320 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbaIMQgb (ORCPT
+	id S1752161AbaIMQgz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 12:36:55 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33823 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaIMQgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 12:36:31 -0400
-Date: Sat, 13 Sep 2014 09:36:13 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Jianqun <jay.xu@rock-chips.com>
-Cc: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
-        cf@rock-chips.com
-Message-ID: <20140913163613.GI7960@sirena.org.uk>
-References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com>
- <1410568932-21823-1-git-send-email-jay.xu@rock-chips.com>
+	Sat, 13 Sep 2014 12:36:53 -0400
+Message-ID: <54147292.2000901@samsung.com>
+Date: Sun, 14 Sep 2014 01:36:34 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xdAuejbAAr3yyIdQ"
-Content-Disposition: inline
-In-Reply-To: <1410568932-21823-1-git-send-email-jay.xu@rock-chips.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/5] ASoC: rockchip-i2s: fix registers' property of
- rockchip i2s controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Nick Dyer <nick.dyer@itdev.co.uk>, linux-kernel@vger.kernel.org,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        linux-samsung-soc@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Yufeng Shen <miletus@chromium.org>, afaerber@suse.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 1/3] ARM: dts: Add Peach Pit dts entry for Atmel touchpad
+References: <1410348691-18317-1-git-send-email-javier.martinez@collabora.co.uk> <1410348691-18317-2-git-send-email-javier.martinez@collabora.co.uk> <20140910222553.GF38736@core.coreip.homeip.net> <54116F07.9090007@collabora.co.uk>
+In-Reply-To: <54116F07.9090007@collabora.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/11/14 18:44, Javier Martinez Canillas wrote:
+> Hello Dmitry,
+>
+Hi,
 
---xdAuejbAAr3yyIdQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 09/11/2014 12:25 AM, Dmitry Torokhov wrote:
+>>>
+>>> +&hsi2c_8 {
+>>> +	status = "okay";
+>>> +	clock-frequency =<333000>;
+>>> +
+>>> +	/* Atmel mXT336S */
+>>> +	trackpad@4b {
+>>> +		compatible = "atmel,maxtouch";
+>>> +		reg =<0x4b>;
+>>> +		interrupt-parent =<&gpx1>;
+>>> +		interrupts =<1 IRQ_TYPE_EDGE_FALLING>;
+>>> +		wakeup-source;
+>>> +		pinctrl-names = "default";
+>>> +		pinctrl-0 =<&trackpad_irq>;
+>>> +		linux,gpio-keymap =<KEY_RESERVED
+>>> +				     KEY_RESERVED
+>>> +				     KEY_RESERVED	/* GPIO0 */
+>>> +				     KEY_RESERVED	/* GPIO1 */
+>>> +				     KEY_RESERVED	/* GPIO2 */
+>>> +				     BTN_LEFT>; 	/* GPIO3 */
+>>
+>> Seems like a single space sneaked between the semicolon and the tab.
+>> Maybe whoever applies could squash it.
+>>
+>
+> Right, I set c-default-style to "linux" on Emacs but seems it gets confused
+> sometimes when editing Device Tree source files. Sorry about that.
+>
+Applied this whole series with fixing a white space Dmitry commented.
 
-On Sat, Sep 13, 2014 at 08:42:12AM +0800, Jianqun wrote:
-> Reference rockchip I2S controller TRM, modify some registers' property
-> I2S_FIFOLR: read / write, but not volatile, not precious
-> I2S_INTSR: read / write
-> I2S_CLR: volatile, register value will be cleared by read
+Note, I will handle all of exynos_defconfig changes separately.
 
-Applied, again this is a bug fix (volatile and precious being wrong seem
-like bugs) so should have been earlier in the series.
-
---xdAuejbAAr3yyIdQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUFHJ8AAoJECTWi3JdVIfQOOIH/1RYoC6gaC3D0a+Kshwm+JYZ
-pZsZvJyMY6oysjfBiEUixjO7IdDjV4+lwkkQek4SGhufaZInl3jjXYp5+EyKf1Ex
-bBufOUQVpzb42URFVTH7kKSlhj0Z6h1CzuUBYI5VQTEuraqk2VIqi2dt2tzCVQm2
-uLisentGQ0lRfizGprfoI0GuqJGGCjkP9tfp5ivxP+tCaiGj/swTakFe3wuYDy2A
-HLq9ToE3md7IyiQbLjueRq4vSmLjz14IYMmlTh+AXY3PeBGzGdIUcBJIbmC/KqWx
-wwzCY6a7qzF2Gd0U4hIGIVwauaIp2t9vhhAYZSZJNyDKQf8z8vg9cYfwcwJrMrI=
-=Ra7Z
------END PGP SIGNATURE-----
-
---xdAuejbAAr3yyIdQ--
+Thanks,
+Kukjin
