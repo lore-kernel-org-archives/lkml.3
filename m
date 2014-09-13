@@ -1,31 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaIMIK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 04:10:58 -0400
-Received: from ozlabs.org ([103.22.144.67]:43078 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447AbaIMIKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 04:10:54 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, mst@redhat.com
-Subject: Re: [PATCH 1/3] virtio_net: pass well-formed sgs to virtqueue_add_*()
-In-Reply-To: <20140912.175440.1013837932148725302.davem@davemloft.net>
-References: <1410396458-1165-1-git-send-email-rusty@rustcorp.com.au> <1410396458-1165-2-git-send-email-rusty@rustcorp.com.au> <20140912.175440.1013837932148725302.davem@davemloft.net>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Sat, 13 Sep 2014 15:10:03 +0930
-Message-ID: <87ioksgjt8.fsf@rustcorp.com.au>
+	id S1751853AbaIMIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 04:22:27 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:35453 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaIMIWY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 04:22:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140912224221.9ee5888a.akpm@linux-foundation.org>
+References: <20140830163834.29066.98205.stgit@zurg>
+	<20140830164120.29066.8857.stgit@zurg>
+	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
+	<CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
+	<20140912224221.9ee5888a.akpm@linux-foundation.org>
+Date: Sat, 13 Sep 2014 12:22:23 +0400
+Message-ID: <CALYGNiNg5yLbAvqwG3nPqWZHkqXc1-3p4yqdP2Eo2rNJbRo0rg@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned memory
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: multipart/mixed; boundary=001a1135ffb8e8b2550502ee19ec
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
-> Do you guys want me to take this series directly into net-next?
+--001a1135ffb8e8b2550502ee19ec
+Content-Type: text/plain; charset=UTF-8
 
-Actually, yes.  Since I'm going to be travelling, that makes it much
-easier for me.  And no other patches I have depend on it.
+On Sat, Sep 13, 2014 at 9:42 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 13 Sep 2014 09:26:49 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+>
+>> >
+>> > Did we really need to put the BalloonPages count into per-zone vmstat,
+>> > global vmstat and /proc/meminfo?  Seems a bit overkillish - why so
+>> > important?
+>>
+>> Balloon grabs random pages, their distribution among numa nodes might
+>> be important.
+>> But I know nobody who uses numa-aware vm together with ballooning.
+>>
+>> Probably it's better to drop per-zone vmstat and line from meminfo,
+>> global vmstat counter should be enough.
+>
+> Yes, the less we add the better - we can always add stuff later if
+> there is a demonstrated need.
 
-Thanks!
-Rusty.
+Ok. (I guess incremental patches are more convenient for you)
+Here is two fixes which remove redundant per-zone counters and adds
+three vmstat counters: "balloon_inflate", "balloon_deflate" and
+"balloon_migrate".
+
+This statistic seems more useful than current state snapshot.
+Size of balloon is just a difference between "inflate" and "deflate".
+
+>
+>> >
+>> > Consuming another page flag is a big deal.  We keep on nearly running
+>> > out and one day we'll run out for real.  page-flags-layout.h is
+>> > incomprehensible.  How many flags do we have left (worst-case) with this
+>> > change?  Is there no other way?  Needs extraordinary justification,
+>> > please.
+>>
+>> PageBalloon is not a page flags, it's like PageBuddy -- special state
+>> of _mapcount (-256 in this case).
+>> The same was in v1 and is written in the comment above.
+>
+> oop sorry, I got confused about KPF_BALLOON.
+
+--001a1135ffb8e8b2550502ee19ec
+Content-Type: application/octet-stream; 
+	name=mm-balloon_compaction-use-common-page-ballooning-use-vmstat-counters
+Content-Disposition: attachment; 
+	filename=mm-balloon_compaction-use-common-page-ballooning-use-vmstat-counters
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i00odhgy0
+
+bW0tYmFsbG9vbl9jb21wYWN0aW9uLXVzZS1jb21tb24tcGFnZS1iYWxsb29uaW5nLXVzZS12bXN0
+YXQtY291bnRlcnMKCkZyb206IEtvbnN0YW50aW4gS2hsZWJuaWtvdiA8a29jdDlpQGdtYWlsLmNv
+bT4KCmZpeCBmb3IgbW0tYmFsbG9vbl9jb21wYWN0aW9uLXVzZS1jb21tb24tcGFnZS1iYWxsb29u
+aW5nLXYyCgpTaWduZWQtb2ZmLWJ5OiBLb25zdGFudGluIEtobGVibmlrb3YgPGtvY3Q5aUBnbWFp
+bC5jb20+Ci0tLQogZHJpdmVycy92aXJ0aW8vdmlydGlvX2JhbGxvb24uYyAgICB8ICAgIDEgKwog
+aW5jbHVkZS9saW51eC9iYWxsb29uX2NvbXBhY3Rpb24uaCB8ICAgIDIgLS0KIG1tL2JhbGxvb25f
+Y29tcGFjdGlvbi5jICAgICAgICAgICAgfCAgICAyICsrCiAzIGZpbGVzIGNoYW5nZWQsIDMgaW5z
+ZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL3ZpcnRpby92
+aXJ0aW9fYmFsbG9vbi5jIGIvZHJpdmVycy92aXJ0aW8vdmlydGlvX2JhbGxvb24uYwppbmRleCBj
+ODRkNmE4Li42YjM0NDRiIDEwMDY0NAotLS0gYS9kcml2ZXJzL3ZpcnRpby92aXJ0aW9fYmFsbG9v
+bi5jCisrKyBiL2RyaXZlcnMvdmlydGlvL3ZpcnRpb19iYWxsb29uLmMKQEAgLTM5NSw2ICszOTUs
+NyBAQCBzdGF0aWMgaW50IHZpcnRiYWxsb29uX21pZ3JhdGVwYWdlKHN0cnVjdCBiYWxsb29uX2Rl
+dl9pbmZvICp2Yl9kZXZfaW5mbywKIAkvKiBiYWxsb29uJ3MgcGFnZSBtaWdyYXRpb24gMXN0IHN0
+ZXAgIC0tIGluZmxhdGUgIm5ld3BhZ2UiICovCiAJc3Bpbl9sb2NrX2lycXNhdmUoJnZiX2Rldl9p
+bmZvLT5wYWdlc19sb2NrLCBmbGFncyk7CiAJYmFsbG9vbl9wYWdlX2luc2VydCh2Yl9kZXZfaW5m
+bywgbmV3cGFnZSk7CisJX19jb3VudF92bV9ldmVudChCQUxMT09OX01JR1JBVEUpOwogCXZiX2Rl
+dl9pbmZvLT5pc29sYXRlZF9wYWdlcy0tOwogCXNwaW5fdW5sb2NrX2lycXJlc3RvcmUoJnZiX2Rl
+dl9pbmZvLT5wYWdlc19sb2NrLCBmbGFncyk7CiAJdmItPm51bV9wZm5zID0gVklSVElPX0JBTExP
+T05fUEFHRVNfUEVSX1BBR0U7CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2JhbGxvb25fY29t
+cGFjdGlvbi5oIGIvaW5jbHVkZS9saW51eC9iYWxsb29uX2NvbXBhY3Rpb24uaAppbmRleCBhZDEx
+MmZjYzYuLmQ2OWYyYWUgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvYmFsbG9vbl9jb21wYWN0
+aW9uLmgKKysrIGIvaW5jbHVkZS9saW51eC9iYWxsb29uX2NvbXBhY3Rpb24uaApAQCAtODcsNyAr
+ODcsNiBAQCBzdGF0aWMgaW5saW5lIHZvaWQKIGJhbGxvb25fcGFnZV9pbnNlcnQoc3RydWN0IGJh
+bGxvb25fZGV2X2luZm8gKmJfZGV2X2luZm8sIHN0cnVjdCBwYWdlICpwYWdlKQogewogCV9fU2V0
+UGFnZUJhbGxvb24ocGFnZSk7Ci0JaW5jX3pvbmVfcGFnZV9zdGF0ZShwYWdlLCBOUl9CQUxMT09O
+X1BBR0VTKTsKIAlzZXRfcGFnZV9wcml2YXRlKHBhZ2UsICh1bnNpZ25lZCBsb25nKWJfZGV2X2lu
+Zm8pOwogCWxpc3RfYWRkKCZwYWdlLT5scnUsICZiX2Rldl9pbmZvLT5wYWdlcyk7CiB9CkBAIC0x
+MDQsNyArMTAzLDYgQEAgYmFsbG9vbl9wYWdlX2luc2VydChzdHJ1Y3QgYmFsbG9vbl9kZXZfaW5m
+byAqYl9kZXZfaW5mbywgc3RydWN0IHBhZ2UgKnBhZ2UpCiBzdGF0aWMgaW5saW5lIHZvaWQgYmFs
+bG9vbl9wYWdlX2RlbGV0ZShzdHJ1Y3QgcGFnZSAqcGFnZSwgYm9vbCBpc29sYXRlZCkKIHsKIAlf
+X0NsZWFyUGFnZUJhbGxvb24ocGFnZSk7Ci0JZGVjX3pvbmVfcGFnZV9zdGF0ZShwYWdlLCBOUl9C
+QUxMT09OX1BBR0VTKTsKIAlzZXRfcGFnZV9wcml2YXRlKHBhZ2UsIDApOwogCWlmICghaXNvbGF0
+ZWQpCiAJCWxpc3RfZGVsKCZwYWdlLT5scnUpOwpkaWZmIC0tZ2l0IGEvbW0vYmFsbG9vbl9jb21w
+YWN0aW9uLmMgYi9tbS9iYWxsb29uX2NvbXBhY3Rpb24uYwppbmRleCAzYzhjYjdhLi5jNTM2MzUw
+IDEwMDY0NAotLS0gYS9tbS9iYWxsb29uX2NvbXBhY3Rpb24uYworKysgYi9tbS9iYWxsb29uX2Nv
+bXBhY3Rpb24uYwpAQCAtMzYsNiArMzYsNyBAQCBzdHJ1Y3QgcGFnZSAqYmFsbG9vbl9wYWdlX2Vu
+cXVldWUoc3RydWN0IGJhbGxvb25fZGV2X2luZm8gKmJfZGV2X2luZm8pCiAJQlVHX09OKCF0cnls
+b2NrX3BhZ2UocGFnZSkpOwogCXNwaW5fbG9ja19pcnFzYXZlKCZiX2Rldl9pbmZvLT5wYWdlc19s
+b2NrLCBmbGFncyk7CiAJYmFsbG9vbl9wYWdlX2luc2VydChiX2Rldl9pbmZvLCBwYWdlKTsKKwlf
+X2NvdW50X3ZtX2V2ZW50KEJBTExPT05fSU5GTEFURSk7CiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9y
+ZSgmYl9kZXZfaW5mby0+cGFnZXNfbG9jaywgZmxhZ3MpOwogCXVubG9ja19wYWdlKHBhZ2UpOwog
+CXJldHVybiBwYWdlOwpAQCAtNjcsNiArNjgsNyBAQCBzdHJ1Y3QgcGFnZSAqYmFsbG9vbl9wYWdl
+X2RlcXVldWUoc3RydWN0IGJhbGxvb25fZGV2X2luZm8gKmJfZGV2X2luZm8pCiAJCWlmICh0cnls
+b2NrX3BhZ2UocGFnZSkpIHsKIAkJCXNwaW5fbG9ja19pcnFzYXZlKCZiX2Rldl9pbmZvLT5wYWdl
+c19sb2NrLCBmbGFncyk7CiAJCQliYWxsb29uX3BhZ2VfZGVsZXRlKHBhZ2UsIGZhbHNlKTsKKwkJ
+CV9fY291bnRfdm1fZXZlbnQoQkFMTE9PTl9ERUZMQVRFKTsKIAkJCXNwaW5fdW5sb2NrX2lycXJl
+c3RvcmUoJmJfZGV2X2luZm8tPnBhZ2VzX2xvY2ssIGZsYWdzKTsKIAkJCXVubG9ja19wYWdlKHBh
+Z2UpOwogCQkJcmV0dXJuIHBhZ2U7Cg==
+--001a1135ffb8e8b2550502ee19ec
+Content-Type: application/octet-stream; 
+	name=mm-introduce-common-page-state-for-ballooned-memory-vmstat-counters
+Content-Disposition: attachment; 
+	filename=mm-introduce-common-page-state-for-ballooned-memory-vmstat-counters
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i00odhhs1
+
+bW0taW50cm9kdWNlLWNvbW1vbi1wYWdlLXN0YXRlLWZvci1iYWxsb29uZWQtbWVtb3J5LXZtc3Rh
+dC1jb3VudGVycwoKRnJvbTogS29uc3RhbnRpbiBLaGxlYm5pa292IDxrb2N0OWlAZ21haWwuY29t
+PgoKZml4IGZvciBtbS1pbnRyb2R1Y2UtY29tbW9uLXBhZ2Utc3RhdGUtZm9yLWJhbGxvb25lZC1t
+ZW1vcnktZml4LXYyCgpUaGlzIHJldmVydHMgcGVyLXpvbmUgYmFsbG9vbiBjb3VudGVycyBhbmQg
+cmVtb3ZlcyB0aGVtIGZyb20gbWVtaW5mbywgem9uZWluZm8uCkluc3RlYWQgb2YgdGhhdCB0aGlz
+IHBhdGNoIGFkZHMgdGhyZWUgL3Byb2Mvdm1zdGF0IGNvdW50ZXJzOgoiYmFsbG9vbl9pbmZsYXRl
+IiwgImJhbGxvb25fZGVmbGF0ZSIgYW5kICJiYWxsb29uX21pZ3JhdGUiLgpDdXJyZW50IHNpemUg
+b2YgYmFsbG9vbiBpcyAoYmFsbG9vbl9pbmZsYXRlIC0gYmFsbG9vbl9kZWZsYXRlKSBwYWdlcy4K
+ClNpZ25lZC1vZmYtYnk6IEtvbnN0YW50aW4gS2hsZWJuaWtvdiA8a29jdDlpQGdtYWlsLmNvbT4K
+LS0tCiBEb2N1bWVudGF0aW9uL2ZpbGVzeXN0ZW1zL3Byb2MudHh0IHwgICAgMiAtLQogZHJpdmVy
+cy9iYXNlL25vZGUuYyAgICAgICAgICAgICAgICB8ICAgIDYgLS0tLS0tCiBmcy9wcm9jL21lbWlu
+Zm8uYyAgICAgICAgICAgICAgICAgIHwgICAgNiAtLS0tLS0KIGluY2x1ZGUvbGludXgvbW16b25l
+LmggICAgICAgICAgICAgfCAgICAzIC0tLQogaW5jbHVkZS9saW51eC92bV9ldmVudF9pdGVtLmgg
+ICAgICB8ICAgIDcgKysrKysrKwogbW0vdm1zdGF0LmMgICAgICAgICAgICAgICAgICAgICAgICB8
+ICAgMTAgKysrKysrKy0tLQogNiBmaWxlcyBjaGFuZ2VkLCAxNCBpbnNlcnRpb25zKCspLCAyMCBk
+ZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9Eb2N1bWVudGF0aW9uL2ZpbGVzeXN0ZW1zL3Byb2Mu
+dHh0IGIvRG9jdW1lbnRhdGlvbi9maWxlc3lzdGVtcy9wcm9jLnR4dAppbmRleCAxNTRhMzQ1Li5l
+YjhhMTBlIDEwMDY0NAotLS0gYS9Eb2N1bWVudGF0aW9uL2ZpbGVzeXN0ZW1zL3Byb2MudHh0Cisr
+KyBiL0RvY3VtZW50YXRpb24vZmlsZXN5c3RlbXMvcHJvYy50eHQKQEAgLTc5Niw3ICs3OTYsNiBA
+QCBWbWFsbG9jVG90YWw6ICAgMTEyMjE2IGtCCiBWbWFsbG9jVXNlZDogICAgICAgNDI4IGtCCiBW
+bWFsbG9jQ2h1bms6ICAgMTExMDg4IGtCCiBBbm9uSHVnZVBhZ2VzOiAgIDQ5MTUyIGtCCi1CYWxs
+b29uUGFnZXM6ICAgICAgICAwIGtCCiAKICAgICBNZW1Ub3RhbDogVG90YWwgdXNhYmxlIHJhbSAo
+aS5lLiBwaHlzaWNhbCByYW0gbWludXMgYSBmZXcgcmVzZXJ2ZWQKICAgICAgICAgICAgICAgYml0
+cyBhbmQgdGhlIGtlcm5lbCBiaW5hcnkgY29kZSkKQEAgLTgzOSw3ICs4MzgsNiBAQCBNZW1BdmFp
+bGFibGU6IEFuIGVzdGltYXRlIG9mIGhvdyBtdWNoIG1lbW9yeSBpcyBhdmFpbGFibGUgZm9yIHN0
+YXJ0aW5nIG5ldwogICAgV3JpdGViYWNrOiBNZW1vcnkgd2hpY2ggaXMgYWN0aXZlbHkgYmVpbmcg
+d3JpdHRlbiBiYWNrIHRvIHRoZSBkaXNrCiAgICBBbm9uUGFnZXM6IE5vbi1maWxlIGJhY2tlZCBw
+YWdlcyBtYXBwZWQgaW50byB1c2Vyc3BhY2UgcGFnZSB0YWJsZXMKIEFub25IdWdlUGFnZXM6IE5v
+bi1maWxlIGJhY2tlZCBodWdlIHBhZ2VzIG1hcHBlZCBpbnRvIHVzZXJzcGFjZSBwYWdlIHRhYmxl
+cwotQmFsbG9vblBhZ2VzOiBNZW1vcnkgd2hpY2ggd2FzIGJhbGxvb25lZCwgbm90IGluY2x1ZGVk
+IGludG8gTWVtVG90YWwKICAgICAgIE1hcHBlZDogZmlsZXMgd2hpY2ggaGF2ZSBiZWVuIG1tYXBl
+ZCwgc3VjaCBhcyBsaWJyYXJpZXMKICAgICAgICAgU2xhYjogaW4ta2VybmVsIGRhdGEgc3RydWN0
+dXJlcyBjYWNoZQogU1JlY2xhaW1hYmxlOiBQYXJ0IG9mIFNsYWIsIHRoYXQgbWlnaHQgYmUgcmVj
+bGFpbWVkLCBzdWNoIGFzIGNhY2hlcwpkaWZmIC0tZ2l0IGEvZHJpdmVycy9iYXNlL25vZGUuYyBi
+L2RyaXZlcnMvYmFzZS9ub2RlLmMKaW5kZXggMWY4ZDhiMS4uZjBjZGIwMiAxMDA2NDQKLS0tIGEv
+ZHJpdmVycy9iYXNlL25vZGUuYworKysgYi9kcml2ZXJzL2Jhc2Uvbm9kZS5jCkBAIC0xMjAsOSAr
+MTIwLDYgQEAgc3RhdGljIHNzaXplX3Qgbm9kZV9yZWFkX21lbWluZm8oc3RydWN0IGRldmljZSAq
+ZGV2LAogI2lmZGVmIENPTkZJR19UUkFOU1BBUkVOVF9IVUdFUEFHRQogCQkgICAgICAgIk5vZGUg
+JWQgQW5vbkh1Z2VQYWdlczogICU4bHUga0JcbiIKICNlbmRpZgotI2lmZGVmIENPTkZJR19NRU1P
+UllfQkFMTE9PTgotCQkgICAgICAgIk5vZGUgJWQgQmFsbG9vblBhZ2VzOiAgICU4bHUga0JcbiIK
+LSNlbmRpZgogCQkJLAogCQkgICAgICAgbmlkLCBLKG5vZGVfcGFnZV9zdGF0ZShuaWQsIE5SX0ZJ
+TEVfRElSVFkpKSwKIAkJICAgICAgIG5pZCwgSyhub2RlX3BhZ2Vfc3RhdGUobmlkLCBOUl9XUklU
+RUJBQ0spKSwKQEAgLTE0NCw5ICsxNDEsNiBAQCBzdGF0aWMgc3NpemVfdCBub2RlX3JlYWRfbWVt
+aW5mbyhzdHJ1Y3QgZGV2aWNlICpkZXYsCiAJCSAgICAgICAsbmlkLCBLKG5vZGVfcGFnZV9zdGF0
+ZShuaWQsCiAJCQkJTlJfQU5PTl9UUkFOU1BBUkVOVF9IVUdFUEFHRVMpICogSFBBR0VfUE1EX05S
+KQogI2VuZGlmCi0jaWZkZWYgQ09ORklHX01FTU9SWV9CQUxMT09OCi0JCSAgICAgICAsbmlkLCBL
+KG5vZGVfcGFnZV9zdGF0ZShuaWQsIE5SX0JBTExPT05fUEFHRVMpKQotI2VuZGlmCiAJCSAgICAg
+ICApOwogCW4gKz0gaHVnZXRsYl9yZXBvcnRfbm9kZV9tZW1pbmZvKG5pZCwgYnVmICsgbik7CiAJ
+cmV0dXJuIG47CmRpZmYgLS1naXQgYS9mcy9wcm9jL21lbWluZm8uYyBiL2ZzL3Byb2MvbWVtaW5m
+by5jCmluZGV4IGY4OTdmYmYuLmFhMWVlZTAgMTAwNjQ0Ci0tLSBhL2ZzL3Byb2MvbWVtaW5mby5j
+CisrKyBiL2ZzL3Byb2MvbWVtaW5mby5jCkBAIC0xMzgsOSArMTM4LDYgQEAgc3RhdGljIGludCBt
+ZW1pbmZvX3Byb2Nfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQgKnYpCiAjaWZkZWYgQ09O
+RklHX1RSQU5TUEFSRU5UX0hVR0VQQUdFCiAJCSJBbm9uSHVnZVBhZ2VzOiAgJThsdSBrQlxuIgog
+I2VuZGlmCi0jaWZkZWYgQ09ORklHX01FTU9SWV9CQUxMT09OCi0JCSJCYWxsb29uUGFnZXM6ICAg
+JThsdSBrQlxuIgotI2VuZGlmCiAJCSwKIAkJSyhpLnRvdGFscmFtKSwKIAkJSyhpLmZyZWVyYW0p
+LApAQCAtMTk2LDkgKzE5Myw2IEBAIHN0YXRpYyBpbnQgbWVtaW5mb19wcm9jX3Nob3coc3RydWN0
+IHNlcV9maWxlICptLCB2b2lkICp2KQogCQksSyhnbG9iYWxfcGFnZV9zdGF0ZShOUl9BTk9OX1RS
+QU5TUEFSRU5UX0hVR0VQQUdFUykgKgogCQkgICBIUEFHRV9QTURfTlIpCiAjZW5kaWYKLSNpZmRl
+ZiBDT05GSUdfTUVNT1JZX0JBTExPT04KLQkJLEsoZ2xvYmFsX3BhZ2Vfc3RhdGUoTlJfQkFMTE9P
+Tl9QQUdFUykpCi0jZW5kaWYKIAkJKTsKIAogCWh1Z2V0bGJfcmVwb3J0X21lbWluZm8obSk7CmRp
+ZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L21tem9uZS5oIGIvaW5jbHVkZS9saW51eC9tbXpvbmUu
+aAppbmRleCBmYmJmZjVjLi40OGJmMTJlIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21tem9u
+ZS5oCisrKyBiL2luY2x1ZGUvbGludXgvbW16b25lLmgKQEAgLTE1Nyw5ICsxNTcsNiBAQCBlbnVt
+IHpvbmVfc3RhdF9pdGVtIHsKIAlXT1JLSU5HU0VUX05PREVSRUNMQUlNLAogCU5SX0FOT05fVFJB
+TlNQQVJFTlRfSFVHRVBBR0VTLAogCU5SX0ZSRUVfQ01BX1BBR0VTLAotI2lmZGVmIENPTkZJR19N
+RU1PUllfQkFMTE9PTgotCU5SX0JBTExPT05fUEFHRVMsCi0jZW5kaWYKIAlOUl9WTV9aT05FX1NU
+QVRfSVRFTVMgfTsKIAogLyoKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvdm1fZXZlbnRfaXRl
+bS5oIGIvaW5jbHVkZS9saW51eC92bV9ldmVudF9pdGVtLmgKaW5kZXggY2VkOTIzNC4uNzMwMzM0
+YyAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC92bV9ldmVudF9pdGVtLmgKKysrIGIvaW5jbHVk
+ZS9saW51eC92bV9ldmVudF9pdGVtLmgKQEAgLTcyLDYgKzcyLDEzIEBAIGVudW0gdm1fZXZlbnRf
+aXRlbSB7IFBHUEdJTiwgUEdQR09VVCwgUFNXUElOLCBQU1dQT1VULAogCQlUSFBfWkVST19QQUdF
+X0FMTE9DLAogCQlUSFBfWkVST19QQUdFX0FMTE9DX0ZBSUxFRCwKICNlbmRpZgorI2lmZGVmIENP
+TkZJR19NRU1PUllfQkFMTE9PTgorCQlCQUxMT09OX0lORkxBVEUsCisJCUJBTExPT05fREVGTEFU
+RSwKKyNpZmRlZiBDT05GSUdfQkFMTE9PTl9DT01QQUNUSU9OCisJCUJBTExPT05fTUlHUkFURSwK
+KyNlbmRpZgorI2VuZGlmCiAjaWZkZWYgQ09ORklHX0RFQlVHX1RMQkZMVVNICiAjaWZkZWYgQ09O
+RklHX1NNUAogCQlOUl9UTEJfUkVNT1RFX0ZMVVNILAkvKiBjcHUgdHJpZWQgdG8gZmx1c2ggb3Ro
+ZXJzJyB0bGJzICovCmRpZmYgLS1naXQgYS9tbS92bXN0YXQuYyBiL21tL3Ztc3RhdC5jCmluZGV4
+IDg3MjczY2QuLjVkYTg4MzQgMTAwNjQ0Ci0tLSBhL21tL3Ztc3RhdC5jCisrKyBiL21tL3Ztc3Rh
+dC5jCkBAIC03OTQsOSArNzk0LDYgQEAgY29uc3QgY2hhciAqIGNvbnN0IHZtc3RhdF90ZXh0W10g
+PSB7CiAJIndvcmtpbmdzZXRfbm9kZXJlY2xhaW0iLAogCSJucl9hbm9uX3RyYW5zcGFyZW50X2h1
+Z2VwYWdlcyIsCiAJIm5yX2ZyZWVfY21hIiwKLSNpZmRlZiBDT05GSUdfTUVNT1JZX0JBTExPT04K
+LQkibnJfYmFsbG9vbl9wYWdlcyIsCi0jZW5kaWYKIAogCS8qIGVudW0gd3JpdGViYWNrX3N0YXRf
+aXRlbSBjb3VudGVycyAqLwogCSJucl9kaXJ0eV90aHJlc2hvbGQiLApAQCAtODgyLDYgKzg3OSwx
+MyBAQCBjb25zdCBjaGFyICogY29uc3Qgdm1zdGF0X3RleHRbXSA9IHsKIAkidGhwX3plcm9fcGFn
+ZV9hbGxvYyIsCiAJInRocF96ZXJvX3BhZ2VfYWxsb2NfZmFpbGVkIiwKICNlbmRpZgorI2lmZGVm
+IENPTkZJR19NRU1PUllfQkFMTE9PTgorCSJiYWxsb29uX2luZmxhdGUiLAorCSJiYWxsb29uX2Rl
+ZmxhdGUiLAorI2lmZGVmIENPTkZJR19CQUxMT09OX0NPTVBBQ1RJT04KKwkiYmFsbG9vbl9taWdy
+YXRlIiwKKyNlbmRpZgorI2VuZGlmIC8qIENPTkZJR19NRU1PUllfQkFMTE9PTiAqLwogI2lmZGVm
+IENPTkZJR19ERUJVR19UTEJGTFVTSAogI2lmZGVmIENPTkZJR19TTVAKIAkibnJfdGxiX3JlbW90
+ZV9mbHVzaCIsCg==
+--001a1135ffb8e8b2550502ee19ec--
