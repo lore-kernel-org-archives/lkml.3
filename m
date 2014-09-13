@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaIMBRH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 21:17:07 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:52845 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751685AbaIMBRF (ORCPT
+	id S1752141AbaIMB70 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 21:59:26 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:63882 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889AbaIMB7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 21:17:05 -0400
-X-RL-SENDER: jay.xu@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: jay.xu@rock-chips.com
-X-UNIQUE-TAG: <0d2ad325bded2ec36936f159d2e8adf8>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Jianqun <jay.xu@rock-chips.com>
-To: heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz,
-        tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Cc: huangtao@rock-chips.com, cf@rock-chips.com,
-        Jianqun <jay.xu@rock-chips.com>
-Subject: [PATCH 4/5] ASoC: rockchip-i2s: fix registers' property of rockchip i2s controller
-Date: Sat, 13 Sep 2014 08:42:12 +0800
-Message-Id: <1410568932-21823-1-git-send-email-jay.xu@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com>
-References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com>
+	Fri, 12 Sep 2014 21:59:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <ghk358crbe.fsf@quad.gouders.net>
+References: <ghiol53r9u.fsf@lena.gouders.net>
+	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
+	<ghwq9k3m6z.fsf@lena.gouders.net>
+	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
+	<ghioku5l29.fsf@lena.gouders.net>
+	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
+	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
+	<ghppf15236.fsf@quad.gouders.net>
+	<CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
+	<ghd2b1svdw.fsf@quad.gouders.net>
+	<CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
+	<ghvbotd8es.fsf@quad.gouders.net>
+	<ghzje5f5zt.fsf@lena.gouders.net>
+	<ghbnqkeh9k.fsf@quad.gouders.net>
+	<CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
+	<gh4mwcef0r.fsf@quad.gouders.net>
+	<CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
+	<ghoaukcx6b.fsf@quad.gouders.net>
+	<CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
+	<ghk358crbe.fsf@quad.gouders.net>
+Date: Fri, 12 Sep 2014 18:59:23 -0700
+X-Google-Sender-Auth: D5GWU9KeLRSDD4YguUBGDZ-0vrc
+Message-ID: <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dirk Gouders <dirk@gouders.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Noever <andreas.noever@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reference rockchip I2S controller TRM, modify some registers' property
-I2S_FIFOLR: read / write, but not volatile, not precious
-I2S_INTSR: read / write
-I2S_CLR: volatile, register value will be cleared by read
+On Fri, Sep 12, 2014 at 5:11 PM, Dirk Gouders <dirk@gouders.net> wrote:
+> Yinghai Lu <yinghai@kernel.org> writes:
+>
+> Yes, I skip them in pci_scan_device() to get the unused bus number space
+> that 0a.0 and 0b.0 then can use when reconfiguration is triggered.
 
-Test on RK3288 with max98090.
+That is not right. Can not let two bridges use same bus num.
 
-Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
----
- sound/soc/rockchip/rockchip_i2s.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+>
+>> Proper simulation could be:
+>> 1. remove 07:00.0
+>>     echo 1 > /sys/bus/pci/devices/0000:07:00.0/remove
+>> 2. change bus range in 00:0a.0 bus
+>>     setpci -s 00:0a.0 0x1c.l=0x00101000
+>> 3. remove 00:0a.0
+>>     echo 1 > /sys/bus/pci/devices/0000:00:0a.0/remove
+>> 4. rescan pci
+>>     echo 1 > /sys/bus/pci/rescan
+>> 5. reset pcie link from 00:0a.0
+>>     setpci -s 00:0a.0 0xc0.b=0x18
+>>     sleep 1s
+>>     setpci -s 00:0a.0 0xc0.b=0x08
+>> 6. rescan pci bus
+>>     echo 1 > /sys/bus/pci/rescan
+>
+> OK, I did that (with 3.16) but the reconfiguration code doesn't
+> get triggered.  Here is what dmesg and lspci -tv say:
 
-diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
-index 1b9b404..6595383 100644
---- a/sound/soc/rockchip/rockchip_i2s.c
-+++ b/sound/soc/rockchip/rockchip_i2s.c
-@@ -365,6 +365,8 @@ static bool rockchip_i2s_rd_reg(struct device *dev, unsigned int reg)
- 	case I2S_XFER:
- 	case I2S_CLR:
- 	case I2S_RXDR:
-+	case I2S_FIFOLR:
-+	case I2S_INTSR:
- 		return true;
- 	default:
- 		return false;
-@@ -374,8 +376,8 @@ static bool rockchip_i2s_rd_reg(struct device *dev, unsigned int reg)
- static bool rockchip_i2s_volatile_reg(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
--	case I2S_FIFOLR:
- 	case I2S_INTSR:
-+	case I2S_CLR:
- 		return true;
- 	default:
- 		return false;
-@@ -385,8 +387,6 @@ static bool rockchip_i2s_volatile_reg(struct device *dev, unsigned int reg)
- static bool rockchip_i2s_precious_reg(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
--	case I2S_FIFOLR:
--		return true;
- 	default:
- 		return false;
- 	}
--- 
-1.9.1
-
+2 should be
+   setpci -s 00:0a.0 0x18.l=0x00101000
