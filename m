@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaIMG1L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 02:27:11 -0400
-Received: from mail-bl2on0148.outbound.protection.outlook.com ([65.55.169.148]:33122
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751490AbaIMG1K convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 02:27:10 -0400
-From: Peter Chen <Peter.Chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "sergei.shtylyov@cogentembedded.com" 
-	<sergei.shtylyov@cogentembedded.com>,
-        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zmxu@marvell.com" <zmxu@marvell.com>,
-        "jszhang@marvell.com" <jszhang@marvell.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 7/9] usb: rename transceiver and phy to usb_phy in
- ChipIdea
-Thread-Topic: [PATCH v4 7/9] usb: rename transceiver and phy to usb_phy in
- ChipIdea
-Thread-Index: AQHPx0pkB/pfeOgOfECchw4BwShmBpv7pkgAgAHs9ICAARV98A==
-Date: Sat, 13 Sep 2014 06:27:06 +0000
-Message-ID: <32020f4ba5294d75811263cbb716948b@BN1PR0301MB0772.namprd03.prod.outlook.com>
-References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
- <1409730040-14200-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140911002858.GC3609@peterchendt> <20140912135319.GE18774@kwain>
-In-Reply-To: <20140912135319.GE18774@kwain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 03333C607F
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(199003)(31966008)(74662001)(85852003)(80022001)(97736003)(46102001)(79102001)(81542001)(101416001)(86362001)(83072002)(4396001)(81342001)(76576001)(20776003)(66066001)(54356999)(76482001)(50986999)(83322001)(77096002)(21056001)(19580395003)(76176999)(74502001)(92566001)(99396002)(64706001)(87936001)(95666004)(93886004)(85306004)(33646002)(99286002)(106356001)(2656002)(90102001)(110136001)(77982001)(107046002)(105586002)(74316001)(106116001)(108616004)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0772;H:BN1PR0301MB0772.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751769AbaIMGeh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 02:34:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9314 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751477AbaIMGef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 02:34:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,516,1406617200"; 
+   d="scan'208";a="598963154"
+Date: Sat, 13 Sep 2014 09:34:31 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [REGRESSION] i2c-acpi: Fix NULL Pointer dereference
+Message-ID: <20140913063431.GJ10854@lahna.fi.intel.com>
+References: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410548987-3558-1-git-send-email-peterhuewe@gmx.de>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> On Thu, Sep 11, 2014 at 08:28:59AM +0800, Peter Chen wrote:
-> > On Wed, Sep 03, 2014 at 09:40:38AM +0200, Antoine Tenart wrote:
-> >
-> > Again, rebase my next-tree, and modify the msm part.
+On Fri, Sep 12, 2014 at 09:09:47PM +0200, Peter Huewe wrote:
+> If adapter->dev.parent == NULL there is a NULL pointer dereference in
+> acpi_i2c_install_space_handler and acpi_i2c_remove_space_handler.
 > 
-> git://github.com/hzpeterchen/linux-usb.git ci-for-usb-next ?
+> This is present since introduction of this code:
+> 366047515c6e "i2c: rework kernel config I2C_ACPI" or even
+> da3c6647ee08 "I2C/ACPI: Clean up I2C ACPI code and Add CONFIG_I2C_ACPI"
 > 
-
-Yes.
-
-> I can do that. But that would be easier if you rebased this branch on top of at
-> least v3.17-rc1 so that other series depending on this one could be tested easily
-> (like my other series introducing the USB support for Marvell Berlin).
+> The adapter->dev.parent == NULL case is valid for the i2c_stub,
+> so loading i2c_stub with ACPI_I2C_OPREGION enabled results in an oops.
+> This is also valid at least for i2c_tiny_usb and i2c_robotfuzz_osif.
 > 
-> Antoine
- 
-Done 
+> Fix by checking whether it is null before calling ACPI_HANDLE.
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-Peter
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
