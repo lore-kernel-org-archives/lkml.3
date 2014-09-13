@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbaIMWjN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 18:39:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35481 "EHLO
+	id S1752305AbaIMWju (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 18:39:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35488 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752159AbaIMWjL (ORCPT
+	by vger.kernel.org with ESMTP id S1752159AbaIMWjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 18:39:11 -0400
-Message-ID: <1410647931.3040.20.camel@decadent.org.uk>
-Subject: Re: [PATCH 3.2 105/131] net: Correctly set segment mac_len in
- skb_segment().
+	Sat, 13 Sep 2014 18:39:49 -0400
+Message-ID: <1410647981.3040.21.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.2 000/131] 3.2.63-rc1 review
 From: Ben Hutchings <ben@decadent.org.uk>
-To: vyasevic@redhat.com
+To: Guenter Roeck <linux@roeck-us.net>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sat, 13 Sep 2014 23:38:51 +0100
-In-Reply-To: <54119A1C.4020501@redhat.com>
-References: <lsq.1410438733.15448606@decadent.org.uk>
-	 <54119A1C.4020501@redhat.com>
+        torvalds@linux-foundation.org,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>, akpm@linux-foundation.org
+Date: Sat, 13 Sep 2014 23:39:41 +0100
+In-Reply-To: <5411A3DE.4050509@roeck-us.net>
+References: <lsq.1410438733.176537304@decadent.org.uk>
+	 <5411A3DE.4050509@roeck-us.net>
 Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-hsw3a2dtVMbMtPXwISqY"
+	protocol="application/pgp-signature"; boundary="=-hTzcNXJfsrgs5/pHSNV9"
 X-Mailer: Evolution 3.12.5-1+b1 
 Mime-Version: 1.0
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:9881:80b9:b90a:1609
@@ -31,103 +30,41 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-hsw3a2dtVMbMtPXwISqY
+--=-hTzcNXJfsrgs5/pHSNV9
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2014-09-11 at 08:48 -0400, Vlad Yasevich wrote:
-> On 09/11/2014 08:32 AM, Ben Hutchings wrote:
-> > 3.2.63-rc1 review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Vlad Yasevich <vyasevic@redhat.com>
-> >=20
-> > [ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
-> >=20
-> > When performing segmentation, the mac_len value is copied right
-> > out of the original skb.  However, this value is not always set correct=
-ly
-> > (like when the packet is VLAN-tagged) and we'll end up copying a bad
-> > value.
-> >=20
-> > One way to demonstrate this is to configure a VM which tags
-> > packets internally and turn off VLAN acceleration on the forwarding
-> > bridge port.  The packets show up corrupt like this:
-> > 16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
-> > (0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
-> >         0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....=
-d.
-> >         0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0=
-..
-> >         0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........=
-3
-> >         0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.ne=
-tp
-> >         0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.ne=
-tp
-> >         0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.ne=
-tp
-> >         0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.ne=
-tp
-> >         ...
-> >=20
-> > This also leads to awful throughput as GSO packets are dropped and
-> > cause retransmissions.
-> >=20
-> > The solution is to set the mac_len using the values already available
-> > in then new skb.  We've already adjusted all of the header offset, so w=
-e
-> > might as well correctly figure out the mac_len using skb_reset_mac_len(=
-).
-> > After this change, packets are segmented correctly and performance
-> > is restored.
-> >=20
-> > CC: Eric Dumazet <edumazet@google.com>
-> > Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-> > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > ---
-> >  net/core/skbuff.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >=20
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index 7121d9b..0ccfb53 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -2669,7 +2669,6 @@ struct sk_buff *skb_segment(struct sk_buff *skb, =
-u32 features)
-> >  		tail =3D nskb;
-> > =20
-> >  		__copy_skb_header(nskb, skb);
-> > -		nskb->mac_len =3D skb->mac_len;
-> > =20
-> >  		/* nskb and skb might have different headroom */
-> >  		if (nskb->ip_summed =3D=3D CHECKSUM_PARTIAL)
-> > @@ -2679,6 +2678,7 @@ struct sk_buff *skb_segment(struct sk_buff *skb, =
-u32 features)
-> >  		skb_set_network_header(nskb, skb->mac_len);
-> >  		nskb->transport_header =3D (nskb->network_header +
-> >  					  skb_network_header_len(skb));
-> > +		skb_reset_mac_len(nskb);
+On Thu, 2014-09-11 at 06:30 -0700, Guenter Roeck wrote:
+> On 09/11/2014 05:32 AM, Ben Hutchings wrote:
+> > This is the start of the stable review cycle for the 3.2.63 release.
+> > There are 131 patches in this series, which will be posted as responses
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sat Sep 13 12:32:13 UTC 2014.
+> > Anything received after that time might be too late.
+> >
 >=20
-> This will not fix the problem here because the network header above will
-> already be set incorrectly based on the old mac_len.
+> Build results:
+> 	total: 111 pass: 106 fail: 5
+> Failed builds:
+> 	microblaze:mmu_defconfig
+> 	microblaze:nommu_defconfig
+> 	mips:allmodconfig
+> 	xtensa:defconfig
+> 	xtensa:allmodconfig
 >=20
-> This patch depends on
-> commit 030737bcc3c404e273e97dbe06fe9561699a411b
-> Author: Eric Dumazet <edumazet@google.com>
-> Date:   Sat Oct 19 11:42:54 2013 -0700
+> Qemu test results:
+> 	total: 18 pass: 17 fail: 1
+> Failed tests:
+> 	microblaze:microblaze_defconfig
 >=20
->     net: generalize skb_segment()
->=20
-> that correctly populates the header offsets in the new segment.
+> Results are as expected and an improvement over previous releases,
+> where sparc64:allmodconfig used to fail as well. The failing qemu
+> test was added to the list of tests only recently and is a known
+> problem.
 
-I can't apply that because 3.2 doesn't even have the
-skb_headers_offset_update() function.  So I'm going to drop this patch
-for now, but if you or David can provide a complete backport for this
-fix I would very much appreciate it.
+Thanks for testing!
 
 Ben.
 
@@ -136,26 +73,26 @@ Ben Hutchings
 I'm always amazed by the number of people who take up solipsism because
 they heard someone else explain it. - E*Borg on alt.fan.pratchett
 
---=-hsw3a2dtVMbMtPXwISqY
+--=-hTzcNXJfsrgs5/pHSNV9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIVAwUAVBTHhee/yOyVhhEJAQosog/+KcHcIK2whlHjeuILrfDMSvElmK8RMJay
-hTgxUDuzWXcQ2F2gvFZcW5KSPlcDbqcm3s/YYxupdcHr9bpc0BOGHR5SCwgl/1eA
-AqPZpRF8P1Y1afwNPIny/BkNova1uhXoBDmvROqsPPu63/6ciVc6J0rjgeHYCsld
-2tTx2hDRUPtcOc4FnhIBSaLsc5N0dv/LiEM72Q/E2Ld2B2WrxTO4wAy5zbR2Dw4q
-Q1WKxG3wl8T3svOuAkPlDzwgkaLPpbUNRi51hCipmKKvALy0M9n+gazuyFz2TfAu
-73g6lqHf4z+yJh4OLmH+9WCxiuZmrzPMslQjQn06lqRoj+3gQoGB1Yc48W4by3kW
-3yHXxLJZ5Ms7W04jYzL1HS2GE5wfhfNJxozbwNnu1K76HvOk0pBrNW0TCg0TQ3Q3
-fPds95IMnQAe41mzMNP8krIdTIXgxf3o+NiZm32kZJ2jA19oFj5/EBLUFQrjfrE6
-s3EpetxBwqXtndYB0qlnKvuScHx4UAzN0AMQey+d6jl4LZZlJOvnNFA8uEF4+y+3
-Tbkp/MaCZRp5Iep446HKXTzprU4PLtc9mbUXP/wKC1B5i7H5CG3aESwr8K+h0TJu
-ijhPXahViTxGpRQZVaaHZiCDjs9rb0Uc8Lh8ynP9MK1jSr+d1zJWmKY26uhjHZGx
-m3nPEv+tjcc=
-=KojE
+iQIVAwUAVBTHree/yOyVhhEJAQpndBAAnI8QTWjOIAqmCI8+EkpDV4auntlHeQDp
+2hH1rlYmgxlgSrFKqhlhW7g1SelJDnhd5FVIY/M+kDjcxN/BiHtetQA1d6kXxHOA
+JdycCVXHFvfJKC6LwAdLiN5mA4ilI9tHm9JU4/BPn6DT6Kv5f4yNHhqShvJLIDel
+olwiO7HE8Uj4AP/5aDmxg1D/WFu9AQDe+PDwUd9D1oiwv+lGBNw7FktbAEMGl3C+
+ZNZYVO2aC1q9PI891vRCxHajxoy94RX0wRorqtA5S/xmFDsCmH8I38A/f6jjXYX3
+xEXzZ70rVxZwfGLPLnfUIe8VMVVvx4yw1Nqf2N95RzhJ6+mswZ4g2Pc6W7yckv98
+VxUq3jq6Ga5eU8wXjhjIaYMsaQuKXux7YwcPIp5Xzdh+QujxQ9olS7M70CDYOwNg
+rHJvEZBb6pz6XI2NGwy7oACCCCpt03EbvuAGO7zTzXckPiHXaytIC6Zq0GN2RsLg
+QT9Q5tn2Uc9hx/1dzizLAU82gAWQEUgIrd0RY0McTNMAOI+WCwRnbmLZBN/MSpPh
+gxkGEh4m9E/FSBD5/n+FHRZWHAUV22uiDBK+JezNSkeaIJLD7Za5edMD25MZtXdA
+8nfEcclXwfP5/gaY3H1qA1R2p+ibTnxFQlWPNv1j7Op2kFmnf3FV32Ocsn+CGyqj
+NHXBT+GwAI0=
+=QSS1
 -----END PGP SIGNATURE-----
 
---=-hsw3a2dtVMbMtPXwISqY--
+--=-hTzcNXJfsrgs5/pHSNV9--
