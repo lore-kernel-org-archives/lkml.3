@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaIMKsF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 06:48:05 -0400
-Received: from blu004-omc1s18.hotmail.com ([65.55.116.29]:60866 "EHLO
-	BLU004-OMC1S18.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750884AbaIMKsD (ORCPT
+	id S1751487AbaIMK7U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 06:59:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59294 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751136AbaIMK7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 06:48:03 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Sep 2014 06:48:03 EDT
-X-TMN: [1trCVBGPEUgKuRXWvoZZspIpzgluZYZd]
-X-Originating-Email: [ashoekstra@hotmail.com]
-Message-ID: <BLU436-SMTP235F3B35BD0E0D957564A34C0CA0@phx.gbl>
-Date: Sat, 13 Sep 2014 12:42:43 +0200
-From: Aede Symen <ashoekstra@hotmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Sat, 13 Sep 2014 06:59:19 -0400
+Date: Sat, 13 Sep 2014 12:59:14 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Cc: Josh Wu <josh.wu@atmel.com>, Brian Norris <computersforpeace@gmail.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv5] mtd: nand: atmel_nand: retrieve NFC clock
+Message-ID: <20140913105914.GD26281@piout.net>
+References: <1410564239-8411-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <CAAEAJfD_Kujcf7m9RAbRrjA82A08N81rVwy6sXY_PORdrH0VkA@mail.gmail.com>
 MIME-Version: 1.0
-To: devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: [PATCH] staging: wlan-ng: fix coding style issues
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Sep 2014 10:42:54.0390 (UTC) FILETIME=[7969CD60:01CFCF3F]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAEAJfD_Kujcf7m9RAbRrjA82A08N81rVwy6sXY_PORdrH0VkA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Limited a long line to 80 columns.
+Hi,
 
-Signed-off-by: Aede Symen Hoekstra <ashoekstra@hotmail.com>
----
-  drivers/staging/wlan-ng/prism2fw.c |    3 ++-
-  1 file changed, 2 insertions(+), 1 deletion(-)
+On 13/09/2014 at 10:26:18 +0100, Ezequiel Garcia wrote :
+> > +       nfc->clk = devm_clk_get(&pdev->dev, NULL);
+> > +       if (!IS_ERR(nfc->clk)) {
+> > +               ret = clk_prepare_enable(nfc->clk);
+> > +               if (ret)
+> > +                       return ret;
+> > +       } else {
+> > +               dev_warn(&pdev->dev, "NFC clock missing, update your Device Tree");
+> 
+> Looks much better now thanks. If the clock is not really optional, you
+> can consider this a firmware bug. We've used FW_BUG messages for these
+> cases
+> (see vim drivers/watchdog/orion_wdt.c), so you could write something like:
+> 
+> dev_warn(..., FW_BUG "devicetree clock missing");
+> 
 
-diff --git a/drivers/staging/wlan-ng/prism2fw.c 
-b/drivers/staging/wlan-ng/prism2fw.c
-index 6c38f79..8bd7c65 100644
---- a/drivers/staging/wlan-ng/prism2fw.c
-+++ b/drivers/staging/wlan-ng/prism2fw.c
-@@ -238,7 +238,8 @@ static int prism2_fwtry(struct usb_device *udev, 
-wlandevice_t *wlandev)
-  *	0	- success
-  *	~0	- failure
-  ----------------------------------------------------------------*/
--static int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t 
-*wlandev)
-+static int prism2_fwapply(const struct ihex_binrec *rfptr,
-+	     wlandevice_t *wlandev)
-  {
-  	signed int result = 0;
-  	struct p80211msg_dot11req_mibget getmsg;
+Yeah, I've considered using FW_WARN like Thomas suggested but I'm not
+sure it really relates to device tree. Apart from x86, FW_WARN and
+FW_BUG are only used on mvebu stuff ;)
+
+
 -- 
-1.7.9.5
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
