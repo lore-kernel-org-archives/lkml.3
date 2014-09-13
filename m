@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaIMUDJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 16:03:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37696 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175AbaIMUDH (ORCPT
+	id S1752342AbaIMUFF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 16:05:05 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49303 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaIMUFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 16:03:07 -0400
-Date: Sat, 13 Sep 2014 16:03:02 -0400 (EDT)
-Message-Id: <20140913.160302.698126980021738731.davem@davemloft.net>
-To: joe@perches.com
-Cc: xypron.glpk@gmx.de, david.daney@cavium.com, luka@openwrt.org,
-        willemb@google.com, rmk+kernel@arm.linux.org.uk,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netdev: octeon_mgmt: ISO C90 forbids mixed
- declarations and code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410635472.917.1.camel@joe-AO725>
-References: <1410635108-3589-1-git-send-email-xypron.glpk@gmx.de>
-	<1410635472.917.1.camel@joe-AO725>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sat, 13 Sep 2014 16:05:03 -0400
+Message-ID: <5414A36B.3000106@kernel.org>
+Date: Sat, 13 Sep 2014 21:04:59 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: michals@xilinx.com, svemula@xilinx.com, anirudh@xilinx.com,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: Re: [PATCH] iio: adc: xilinx-xadc: assign auxiliary channels address
+ correctly
+References: <344d9464-c489-42cd-b9c4-a63759f8f6da@BL2FFO11FD040.protection.gbl> <54132C78.9000300@metafoo.de>
+In-Reply-To: <54132C78.9000300@metafoo.de>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 13 Sep 2014 13:03:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 13 Sep 2014 12:11:12 -0700
-
-> On Sat, 2014-09-13 at 21:05 +0200, Heinrich Schuchardt wrote:
->> Compiling with OCTEON_MGMT_ETHERNET gives a warning
->> drivers/net/ethernet/octeon/octeon_mgmt.c:295:4:
->> warning: ISO C90 forbids mixed declarations and code
->> [-Wdeclaration-after-statement]
+On 12/09/14 18:25, Lars-Peter Clausen wrote:
+> On 09/11/2014 10:55 AM, Subbaraya Sundeep Bhatta wrote:
+>> This patch fixes incorrect logic for assigning address
+>> to auxiliary channels of xilinx xadc.
+>>
+>> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
 > 
-> Maybe better to move the memset after the declaration.
+> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Applied to the fixes-togreg branch of iio.git and flagged
+for stable.
 
-Totally agree, keep the variable in the innermost scope
-in which it is used.
+Thanks,
+
+Jonathan
+> 
+>> ---
+>>   drivers/iio/adc/xilinx-xadc-core.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/iio/adc/xilinx-xadc-core.c b/drivers/iio/adc/xilinx-xadc-core.c
+>> index fd2745c..626b397 100644
+>> --- a/drivers/iio/adc/xilinx-xadc-core.c
+>> +++ b/drivers/iio/adc/xilinx-xadc-core.c
+>> @@ -1126,7 +1126,7 @@ static int xadc_parse_dt(struct iio_dev *indio_dev, struct device_node *np,
+>>                   chan->address = XADC_REG_VPVN;
+>>               } else {
+>>                   chan->scan_index = 15 + reg;
+>> -                chan->scan_index = XADC_REG_VAUX(reg - 1);
+>> +                chan->address = XADC_REG_VAUX(reg - 1);
+>>               }
+>>               num_channels++;
+>>               chan++;
+>>
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
