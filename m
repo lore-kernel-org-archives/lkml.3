@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaIMB70 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Sep 2014 21:59:26 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:63882 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889AbaIMB7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Sep 2014 21:59:24 -0400
+	id S1752314AbaIMCAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Sep 2014 22:00:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:49723 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751889AbaIMB76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Sep 2014 21:59:58 -0400
+Date: Sat, 13 Sep 2014 11:59:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        <helpdesk@kernel.org>
+Subject: Re: linux-next: Tree for Sep 12
+Message-ID: <20140913115950.0331951e@canb.auug.org.au>
+In-Reply-To: <54132FC7.1080004@infradead.org>
+References: <20140912173817.3c719e7d@canb.auug.org.au>
+	<54132FC7.1080004@infradead.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <ghk358crbe.fsf@quad.gouders.net>
-References: <ghiol53r9u.fsf@lena.gouders.net>
-	<CAMxnaaXiEZeJOsgQ6ZSbiqy5Z1zNoXonwNSQNRyRhV0t5jveYQ@mail.gmail.com>
-	<ghwq9k3m6z.fsf@lena.gouders.net>
-	<CAMxnaaUqTMf1uEQUqrAGjym8ZrQaBf2QbE4Jqxh2t6a2JgJkOQ@mail.gmail.com>
-	<ghioku5l29.fsf@lena.gouders.net>
-	<CAErSpo7j=a3y2MVsvEQGQ4B63_mNCyZSRNXNEZa-2++xs88NmQ@mail.gmail.com>
-	<CAE9FiQUXvuZo2bQSRg0vpuDVYrnkcXDu7KZBNp-YgXbKa2LQhw@mail.gmail.com>
-	<ghppf15236.fsf@quad.gouders.net>
-	<CAErSpo5SVUOz+qa_x5JTC+-Y5ewTyYzA0N=jyPtK9LaguRrt=w@mail.gmail.com>
-	<ghd2b1svdw.fsf@quad.gouders.net>
-	<CAErSpo5e0GOdVbZdQYriP+aWziKELpb9BWTgJ4ERPia354CM5w@mail.gmail.com>
-	<ghvbotd8es.fsf@quad.gouders.net>
-	<ghzje5f5zt.fsf@lena.gouders.net>
-	<ghbnqkeh9k.fsf@quad.gouders.net>
-	<CAE9FiQXQesrDMqf1b6ZhHdmY_wEEUrOEvNO4N_d6WtaNMGNLww@mail.gmail.com>
-	<gh4mwcef0r.fsf@quad.gouders.net>
-	<CAE9FiQWgioBeVmfWCaE38BrkjbWKaS+_FYYdmdd+7X8fpeEgnQ@mail.gmail.com>
-	<ghoaukcx6b.fsf@quad.gouders.net>
-	<CAE9FiQUk-sAHnjfBvNeHQWibJRqbPE1V0UtDtARtwxmS=7aQrw@mail.gmail.com>
-	<ghk358crbe.fsf@quad.gouders.net>
-Date: Fri, 12 Sep 2014 18:59:23 -0700
-X-Google-Sender-Auth: D5GWU9KeLRSDD4YguUBGDZ-0vrc
-Message-ID: <CAE9FiQUeP84585-4b+Y6WBVD3zqOi7ch_OXytsTmKEz9AyZ3Vg@mail.gmail.com>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-From: Yinghai Lu <yinghai@kernel.org>
-To: Dirk Gouders <dirk@gouders.net>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Noever <andreas.noever@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/UyI0KC/UN4Dm+1CM=2NThch"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 5:11 PM, Dirk Gouders <dirk@gouders.net> wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
->
-> Yes, I skip them in pci_scan_device() to get the unused bus number space
-> that 0a.0 and 0b.0 then can use when reconfiguration is triggered.
+--Sig_/UyI0KC/UN4Dm+1CM=2NThch
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That is not right. Can not let two bridges use same bus num.
+Hi Randy,
 
+On Fri, 12 Sep 2014 10:39:19 -0700 Randy Dunlap <rdunlap@infradead.org> wro=
+te:
 >
->> Proper simulation could be:
->> 1. remove 07:00.0
->>     echo 1 > /sys/bus/pci/devices/0000:07:00.0/remove
->> 2. change bus range in 00:0a.0 bus
->>     setpci -s 00:0a.0 0x1c.l=0x00101000
->> 3. remove 00:0a.0
->>     echo 1 > /sys/bus/pci/devices/0000:00:0a.0/remove
->> 4. rescan pci
->>     echo 1 > /sys/bus/pci/rescan
->> 5. reset pcie link from 00:0a.0
->>     setpci -s 00:0a.0 0xc0.b=0x18
->>     sleep 1s
->>     setpci -s 00:0a.0 0xc0.b=0x08
->> 6. rescan pci bus
->>     echo 1 > /sys/bus/pci/rescan
->
-> OK, I did that (with 3.16) but the reconfiguration code doesn't
-> get triggered.  Here is what dmesg and lspci -tv say:
+> On 09/12/14 00:38, Stephen Rothwell wrote:
+> >=20
+> > Changes since 20140911:
+> >=20
+> ---------------------------------------------------------------------
+> >=20
+> > I have created today's linux-next tree at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > (patches at http://www.kernel.org/pub/linux/kernel/next/ ).
+>=20
+> No patch tarball?
 
-2 should be
-   setpci -s 00:0a.0 0x18.l=0x00101000
+Hmm, sorry I didn't notice this:
+
+Pushing patch to kernel.org ...
+patch-v3.17-rc4-next-20140912 (1/1)
+  100 %      2,494.2 KiB / 15.7 MiB =3D 0.155   1.9 MiB/s       0:08       =
+     =20
+   2554072 [=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D]  100%
+Compressing: .gz: 100% .xz: 100%
+Calculating sha256 for /pub/linux/kernel/next/patch-v3.17-rc4-next-20140912=
+.gz ... logged.
+Cannot open lock file
+
+Helpdesk folks: is this expected?  This is a put of
+patch-v3.17-rc4-next-20140912.xz using kup.
+
+Randy: I will try to reupload the patch
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/UyI0KC/UN4Dm+1CM=2NThch
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUE6UbAAoJEMDTa8Ir7ZwVFkkP/1ccbnvz0yfVCVBV/BbkIYux
+NxpCHnsHIQPMUr8H4bTPZ60/2NuZk7RBQNJCtfgQo0hZaw7AaWeIUYrSwo60VOxp
+ehrRsVge83cYQbPbnL+8uRduFImwkPYIV6LLozmcNyOp+H6zpyZ3oRT0fEfkTkD3
+dyMqZ6j+6DyOLzv6VhQh4/Tp/63O58Ra0zZjZ0CBv1CDlsXpKJ6DgoRu/vPOFGWW
+vHA6dHqiaQfnkPtj+yTbGmiwNlE7orQmmQ3BXsmW34Pw4fpLV0UaCfQ++N7dbuAS
+RHHskL07GC1ycaKTxnaz5drUW0kXqc7on8FklS2nlUZxyk76XlZkfXLvLfu8JMVX
+91lpMUHFJinBNr4q+rV6p/XTecbbKTGb/FjJVLQhhK+6Bhxsn1TCmT8GKVt0+wfa
+7jqHHBfSopihI1Vgg9GpPHsc3s0TX9T/dJ9yCFeNXf2a/n4uv8RIkuSJ1okqOhjy
+TK+ag7XdV+cU72AUxpi+9g9dERBBUB2z80f+DMz945FZOJQX3SDBC751vBdsB4I4
+CK7hMNLLvrzuiMfE+Kv39DEY2rALkltXbKiTPsZUZRmSEW6MvtPiYXTAGdJipuG0
+AXI6UJO885QdEFzC91lXSLlZ9UP8R0nzKb8kYrmBhfhnhaNDtkDaGgvRUUYopAh0
+qNH1YR9mRiTJ/4fRD4K1
+=BO+i
+-----END PGP SIGNATURE-----
+
+--Sig_/UyI0KC/UN4Dm+1CM=2NThch--
