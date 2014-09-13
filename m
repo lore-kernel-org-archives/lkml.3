@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316AbaIMSh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 14:37:59 -0400
+	id S1752280AbaIMSh6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 14:37:58 -0400
 Received: from mga14.intel.com ([192.55.52.115]:60268 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752088AbaIMSh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 14:37:57 -0400
+	id S1752078AbaIMSh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 14:37:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,518,1406617200"; 
-   d="scan'208";a="590897157"
+   d="scan'208";a="590897136"
 From: Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
 To: Matt Fleming <matt.fleming@intel.com>
 Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-efi@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Glenn P. Williamson" <glenn.p.williamson@intel.com>,
         Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-Subject: [PATCH 1/6] x86/efi: find mem descriptor from phys address
-Date: Sat, 13 Sep 2014 11:36:11 -0700
-Message-Id: <1410633376-8822-2-git-send-email-ricardo.neri-calderon@linux.intel.com>
+Subject: [PATCH 0/6] Warn about illegal accesses to EFI_BOOT_SERVICES_* memory
+Date: Sat, 13 Sep 2014 11:36:10 -0700
+Message-Id: <1410633376-8822-1-git-send-email-ricardo.neri-calderon@linux.intel.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410633376-8822-1-git-send-email-ricardo.neri-calderon@linux.intel.com>
-References: <1410633376-8822-1-git-send-email-ricardo.neri-calderon@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several functions (efi_mem_type, efi_mem_attributes,
-efi_lookup_mapped_addr) scan the memory map looking for the memory
-descriptor to which a given physical address belongs for various
-purposes.
+The UEFI specification states that the firmware shall not access the
+BOOT_SERVICES_DATA/CODE * memory regions after the operating system has
+called ExitBootServices on it. Thus, the operating system is free to use
+such regions as it sees fit. Still, buggy UEFI firmware implementations
+may want to keep accessing these regions.
 
-The scan functionality is duplicated in all the three functions. The
-common functionality is consolidated into a single function that three
-functions mentioned above may call.
+The current approach of the kernel is to reserve and map the
+EFI_BOOT_SERVICES_* regions until efi_free_boot_services() is called
+(after calling SetVirtualAddressMap() on the firmware). Further details
+are show in the commit 916f676f8dc0 ("x86, efi: Retain boot service code
+until after switching to virtual mode") by Matthew Garrett.
 
-When checking the validity of the validity of the memory map, use
-efi_enabled(), provided for this purpose.
+A drawback of the current approach is that silently working around this
+kind of illegal accesses encourages the perpetuation of these bugs in
+UEFI firmware implementations. Rather, this set of patches proposes a
+more verbose behavior: continue reserving the EFI_BOOT_SERVICES_* regions
+but not map them. If they are not mapped, any access will cause a page
+fault that we can catch. Once the fault is catched, the kernel will fix
+it up (i.e., map the page for the firmware to use it) and, more important,
+complain about it.
 
-Signed-off-by: Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
----
- arch/x86/platform/efi/efi.c | 21 ++++++++++++++++++++-
- include/linux/efi.h         |  1 +
- 2 files changed, 21 insertions(+), 1 deletion(-)
+We are guaranteed to not have false positives (i.e., page faults caused
+by bad kernel code) as these memory regions are still reserved.
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 850da94..782d617 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -900,8 +900,27 @@ void __init efi_enter_virtual_mode(void)
- }
- 
- /*
-- * Convenience functions to obtain memory types and attributes
-+ * Convenience functions to obtain memory descriptors,
-+ * memory types and attributes
-  */
-+efi_memory_desc_t *efi_memory_descriptor(unsigned long phys_addr)
-+{
-+	efi_memory_desc_t *md;
-+	void *p;
-+
-+	if (!efi_enabled(EFI_MEMMAP))
-+		return NULL;
-+
-+	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-+		md = p;
-+		if ((md->phys_addr <= phys_addr) &&
-+		    (phys_addr < (md->phys_addr +
-+				  (md->num_pages << EFI_PAGE_SHIFT))))
-+			return md;
-+	}
-+	return NULL;
-+}
-+
- u32 efi_mem_type(unsigned long phys_addr)
- {
- 	efi_memory_desc_t *md;
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 45cb4ff..b36b588 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -866,6 +866,7 @@ static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned lon
- extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
- extern int efi_config_init(efi_config_table_type_t *arch_tables);
- extern u64 efi_get_iobase (void);
-+extern efi_memory_desc_t *efi_memory_descriptor(unsigned long phys_addr);
- extern u32 efi_mem_type (unsigned long phys_addr);
- extern u64 efi_mem_attributes (unsigned long phys_addr);
- extern u64 efi_mem_attribute (unsigned long phys_addr, unsigned long size);
+Besides fixing up the illegal accesses, no further action is required to
+update the memory map the firmware sees. This is true because after boot,
+the firmware would require access to the runtime services memory only,
+which should be mapped before calling SetVirtualAddressMap. Furthermore,
+a second attempt to update the virtual address map will result in a
+EFI_UNSUPPORTED from the firmware, as per the UEFI specification.
+
+Also, there is no need to update the system table as it should have been
+when mapping the rest of the memory regions.
+
+Finally, kexec is concerned only about the runtime services memory
+sections. Thus we don't need any special arrangements for kexec.
+
+The four last patches of the set implement this approach. The first two
+provide a rework for code reuse of the convenience functions that look
+for the descriptor of a physical memory address when then be used by the
+proposed solution.
+
+Ricardo Neri (6):
+  x86/efi: Add function to obtain mem descriptor from phys address
+  x86/efi: Use efi_memory_descriptor in mem convenience functions
+  x86/efi: Add function to fixup page faults in BOOT_SERVICES_* regions
+  x86/efi: Remove __init attribute from memory mapping functions
+  yx86/efi: Fixup faults from UEFI firmware
+  x86/efi: Introduce EFI_BOOT_SERVICES_WARN
+
+ arch/x86/Kconfig               | 12 ++++++++
+ arch/x86/include/asm/efi.h     |  4 +--
+ arch/x86/mm/fault.c            |  8 +++++
+ arch/x86/platform/efi/efi.c    | 66 ++++++++++++++++++++++++++++++++----------
+ arch/x86/platform/efi/efi_32.c |  2 +-
+ arch/x86/platform/efi/efi_64.c |  8 ++---
+ drivers/firmware/efi/efi.c     | 36 ++++++++++-------------
+ include/linux/efi.h            |  9 ++++++
+ 8 files changed, 101 insertions(+), 44 deletions(-)
+
 -- 
 1.9.1
 
