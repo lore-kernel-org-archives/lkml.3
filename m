@@ -1,49 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaIMFGq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 01:06:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:57803 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaIMFGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 01:06:43 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Rusty away 18th September -- 11th October
-In-Reply-To: <20140911114351.GA25736@redhat.com>
-References: <87oaunht4b.fsf@rustcorp.com.au> <20140911114351.GA25736@redhat.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 12 Sep 2014 10:58:03 +0930
-Message-ID: <87tx4dhbks.fsf@rustcorp.com.au>
+	id S1751552AbaIMF0v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 01:26:51 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:62513 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaIMF0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 01:26:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
+References: <20140830163834.29066.98205.stgit@zurg>
+	<20140830164120.29066.8857.stgit@zurg>
+	<20140912165143.86d5f83dcde4a9fd78069f79@linux-foundation.org>
+Date: Sat, 13 Sep 2014 09:26:49 +0400
+Message-ID: <CALYGNiM0Uh1KG8Z6pFEAn=uxZBRPfHDffXjKkKJoG-K0hCaqaA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] mm: introduce common page state for ballooned memory
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Rafael Aquini <aquini@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrey Ryabinin <ryabinin.a.a@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> On Thu, Sep 11, 2014 at 10:26:52AM +0930, Rusty Russell wrote:
->> Hi all,
->> 
->>         Probably won't read mail.  Linus, I'll have pull requests early
->> next week; if there's anything needed I'm sure Michael Tsirkin can
->> handle it.
+On Sat, Sep 13, 2014 at 3:51 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Sat, 30 Aug 2014 20:41:20 +0400 Konstantin Khlebnikov <koct9i@gmail.com> wrote:
 >
-> Sure.
-> Rusty, there's a small chance virtio 1.0 bits will be ready in time.
-> I started working on them based on your virtio-pci-new-layout branch.
+>> This patch adds page state PageBallon() and functions __Set/ClearPageBalloon.
+>> Like PageBuddy() PageBalloon() looks like page-flag but actually this is special
+>> state of page->_mapcount counter. There is no conflict because ballooned pages
+>> cannot be mapped and cannot be in buddy allocator.
+>>
+>> Ballooned pages are counted in vmstat counter NR_BALLOON_PAGES, it's shown them
+>> in /proc/meminfo and /proc/meminfo. Also this patch it exports PageBallon into
+>> userspace via /proc/kpageflags as KPF_BALLOON.
+>>
+>> All new code is under CONFIG_MEMORY_BALLOON, it should be selected by
+>> ballooning driver which wants use this feature.
 >
-> If ready before the merge window, are you ok with me merging this
-> support (without you having the opportunity to review first)?
+> The delta from the (fixed) v1 is below.
+>
+> What's up with those Kconfig/Makefile changes?  We're now including a
+> pile of balloon code into vmlinux when CONFIG_MEMORY_BALLOON=n?  These
+> changes were not changelogged?
 
-Sorry, absolutely not.  I *really* want to review this in depth; if we
-make a mistake, it's going to hurt us significantly.
+It's been moved into next patch, and not mentioned in changes. Sorry.
 
-And until we have the qemu bits ready, it's really hard to tell if we've
-got this right.  So I'd rather delay and make sure we're solid.
+>
+> Did we really need to put the BalloonPages count into per-zone vmstat,
+> global vmstat and /proc/meminfo?  Seems a bit overkillish - why so
+> important?
 
-Thanks,
-Rusty.
+Balloon grabs random pages, their distribution among numa nodes might
+be important.
+But I know nobody who uses numa-aware vm together with ballooning.
+
+Probably it's better to drop per-zone vmstat and line from meminfo,
+global vmstat counter should be enough.
+
+>
+> Consuming another page flag is a big deal.  We keep on nearly running
+> out and one day we'll run out for real.  page-flags-layout.h is
+> incomprehensible.  How many flags do we have left (worst-case) with this
+> change?  Is there no other way?  Needs extraordinary justification,
+> please.
+
+PageBalloon is not a page flags, it's like PageBuddy -- special state
+of _mapcount (-256 in this case).
+The same was in v1 and is written in the comment above.
+
+>
+>  drivers/virtio/Kconfig  |    1 -
+>  include/linux/mm.h      |   14 ++++++++++++--
+>  mm/Makefile             |    3 +--
+>  mm/balloon_compaction.c |   16 ----------------
+>  4 files changed, 13 insertions(+), 21 deletions(-)
+>
+> diff -puN drivers/virtio/Kconfig~mm-introduce-common-page-state-for-ballooned-memory-fix-v2 drivers/virtio/Kconfig
+> --- a/drivers/virtio/Kconfig~mm-introduce-common-page-state-for-ballooned-memory-fix-v2
+> +++ a/drivers/virtio/Kconfig
+> @@ -25,7 +25,6 @@ config VIRTIO_PCI
+>  config VIRTIO_BALLOON
+>         tristate "Virtio balloon driver"
+>         depends on VIRTIO
+> -       select MEMORY_BALLOON
+>         ---help---
+>          This driver supports increasing and decreasing the amount
+>          of memory within a KVM guest.
+> diff -puN include/linux/mm.h~mm-introduce-common-page-state-for-ballooned-memory-fix-v2 include/linux/mm.h
+> --- a/include/linux/mm.h~mm-introduce-common-page-state-for-ballooned-memory-fix-v2
+> +++ a/include/linux/mm.h
+> @@ -561,8 +561,18 @@ static inline int PageBalloon(struct pag
+>         return IS_ENABLED(CONFIG_MEMORY_BALLOON) &&
+>                 atomic_read(&page->_mapcount) == PAGE_BALLOON_MAPCOUNT_VALUE;
+>  }
+> -void __SetPageBalloon(struct page *page);
+> -void __ClearPageBalloon(struct page *page);
+> +
+> +static inline void __SetPageBalloon(struct page *page)
+> +{
+> +       VM_BUG_ON_PAGE(atomic_read(&page->_mapcount) != -1, page);
+> +       atomic_set(&page->_mapcount, PAGE_BALLOON_MAPCOUNT_VALUE);
+> +}
+> +
+> +static inline void __ClearPageBalloon(struct page *page)
+> +{
+> +       VM_BUG_ON_PAGE(!PageBalloon(page), page);
+> +       atomic_set(&page->_mapcount, -1);
+> +}
+>
+>  void put_page(struct page *page);
+>  void put_pages_list(struct list_head *pages);
+> diff -puN mm/Makefile~mm-introduce-common-page-state-for-ballooned-memory-fix-v2 mm/Makefile
+> --- a/mm/Makefile~mm-introduce-common-page-state-for-ballooned-memory-fix-v2
+> +++ a/mm/Makefile
+> @@ -16,7 +16,7 @@ obj-y                 := filemap.o mempool.o oom_kill.
+>                            readahead.o swap.o truncate.o vmscan.o shmem.o \
+>                            util.o mmzone.o vmstat.o backing-dev.o \
+>                            mm_init.o mmu_context.o percpu.o slab_common.o \
+> -                          compaction.o vmacache.o \
+> +                          compaction.o balloon_compaction.o vmacache.o \
+>                            interval_tree.o list_lru.o workingset.o \
+>                            iov_iter.o $(mmu-y)
+>
+> @@ -64,4 +64,3 @@ obj-$(CONFIG_ZBUD)    += zbud.o
+>  obj-$(CONFIG_ZSMALLOC) += zsmalloc.o
+>  obj-$(CONFIG_GENERIC_EARLY_IOREMAP) += early_ioremap.o
+>  obj-$(CONFIG_CMA)      += cma.o
+> -obj-$(CONFIG_MEMORY_BALLOON) += balloon_compaction.o
+> diff -puN mm/balloon_compaction.c~mm-introduce-common-page-state-for-ballooned-memory-fix-v2 mm/balloon_compaction.c
+> --- a/mm/balloon_compaction.c~mm-introduce-common-page-state-for-ballooned-memory-fix-v2
+> +++ a/mm/balloon_compaction.c
+> @@ -10,22 +10,6 @@
+>  #include <linux/export.h>
+>  #include <linux/balloon_compaction.h>
+>
+> -void __SetPageBalloon(struct page *page)
+> -{
+> -       VM_BUG_ON_PAGE(atomic_read(&page->_mapcount) != -1, page);
+> -       atomic_set(&page->_mapcount, PAGE_BALLOON_MAPCOUNT_VALUE);
+> -       inc_zone_page_state(page, NR_BALLOON_PAGES);
+> -}
+> -EXPORT_SYMBOL(__SetPageBalloon);
+> -
+> -void __ClearPageBalloon(struct page *page)
+> -{
+> -       VM_BUG_ON_PAGE(!PageBalloon(page), page);
+> -       atomic_set(&page->_mapcount, -1);
+> -       dec_zone_page_state(page, NR_BALLOON_PAGES);
+> -}
+> -EXPORT_SYMBOL(__ClearPageBalloon);
+> -
+>  /*
+>   * balloon_devinfo_alloc - allocates a balloon device information descriptor.
+>   * @balloon_dev_descriptor: pointer to reference the balloon device which
+> _
+>
