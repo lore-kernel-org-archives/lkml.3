@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaINSMs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 14:12:48 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46081 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbaINSMq (ORCPT
+	id S1752933AbaINSNK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 14:13:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35501 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892AbaINSNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 14:12:46 -0400
+	Sun, 14 Sep 2014 14:13:08 -0400
+Date: Sun, 14 Sep 2014 19:12:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Seunghun Lee <waydi1@gmail.com>
+Cc: rth@twiddle.net, ink@jurassic.park.msu.ru, mattst88@gmail.com,
+        jlayton@poochiereds.net, bfields@fieldses.org,
+        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: move getname() from callers to do_mount()
+Message-ID: <20140914181259.GQ7996@ZenIV.linux.org.uk>
+References: <1410537212-3153-1-git-send-email-waydi1@gmail.com>
+ <1410700510-15408-1-git-send-email-waydi1@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5415D6ED.30508@yandex.ru>
-References: <20140914100545.3745.23394.stgit@localhost>
-	<20140914153832.GC4064@kroah.com>
-	<20140914172709.GA1569@redhat.com>
-	<5415D6ED.30508@yandex.ru>
-Date: Sun, 14 Sep 2014 20:12:45 +0200
-Message-ID: <CAFLxGvyW8CWxkN=k5DE3OQ7HYTTMysOVttnrZGf7FTp53Z9Now@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to /proc/modules
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: tkhai@yandex.ru
-Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Michal Marek <mmarek@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>, ktkhai@parallels.com,
-        Sam Ravnborg <sam@ravnborg.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410700510-15408-1-git-send-email-waydi1@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 14, 2014 at 7:57 PM, Kirill Tkhai <tkhai@yandex.ru> wrote:
-> On 14.09.2014 21:27, Oleg Nesterov wrote:
->> On 09/14, Greg KH wrote:
->>>
->>> On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
->>>> This series implements a possibility to show the list of built-in drivers
->>>> to userspace. The names of drivers will be the same as when they are modules.
->>>
->>> Have you looked at /sys/modules/ ?  Doesn't that show what you want
->>> here?
->>
->> Well, /sys/module/ doesn't list the modules (drivers) compiled in. Say,
->> /sys/module/kernel. And it can't help a user to figure out that, say, the
->> loop driver is already "loaded" because CONFIG_BLK_DEV_LOOP=y.
->>
->>> Module names aren't "standardized", we change them at times when needed,
->>> just like CONFIG_ names.
->>
->> OK, but still the name will be the same, in /proc/modules or /proc/builtin.
->>
->>> What is your end goal here?  As you say, config.gz is the real kernel
->>> configuration, just having a list of modules built in isn't going to
->>> help much in getting a working kernel config without it.
->>
->> Perhaps you are right... but otoh perhaps this can can be useful anyway.
->> Again, a user can know about "insmod loop", but he can know nothing
->> about CONFIG_ names.
->>
->> That said, I do not really understand 2/3. Not only I do not understand
->> this kbuild magic, I am not sure I understand what /proc/built-in will
->> actually show.
->
-> It's a list of drivers, one driver per line:
+On Sun, Sep 14, 2014 at 10:15:10PM +0900, Seunghun Lee wrote:
+> It would make more sense to pass char __user * instead of
+> char * in callers of do_mount() and do getname() inside do_mount().
+> 
+> Suggested-by: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
 
-Built-in modules or drivers? :-)
+Applied with one modification: this getname/kern_path/putname is equivalent to
+user_path(dir_name, &path) and do_mount() becomes simpler if we use that
+instead of not-quite-opencoding it.
 
--- 
-Thanks,
-//richard
+Beginning of do_mount() becomes simply
+        /* Discard magic */
+        if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
+                flags &= ~MS_MGC_MSK;
+
+        /* Basic sanity checks */
+        if (data_page)
+                ((char *)data_page)[PAGE_SIZE - 1] = 0;
+
+        /* ... and get the mountpoint */
+        retval = user_path(dir_name, &path);
+        if (retval)
+                return retval;
+that way, and there's no struct filename * to discard on exit; getname and
+putname are done inside user_path().
