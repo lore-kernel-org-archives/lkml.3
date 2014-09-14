@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaINRfe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:35:34 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:58372 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804AbaINRfc (ORCPT
+	id S1752863AbaINRjV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 13:39:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43002 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750AbaINRjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:35:32 -0400
-Message-ID: <5415D1E0.3020905@gmail.com>
-Date: Sun, 14 Sep 2014 19:35:28 +0200
-From: =?ISO-8859-15?Q?Stephan_M=FCller?= <fruktopus@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Sun, 14 Sep 2014 13:39:20 -0400
+Date: Sun, 14 Sep 2014 10:39:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: mmarek@suse.cz, arnd@arndb.de, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        grant.likely@secretlab.ca, ebiederm@xmission.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to
+ /proc/modules
+Message-ID: <20140914173919.GA10059@kroah.com>
+References: <20140914100545.3745.23394.stgit@localhost>
+ <20140914153832.GC4064@kroah.com>
+ <5415D10E.90809@yandex.ru>
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: linux-api@vger.kernel.org
-Subject: [PATCH] Change userspace MKDEV, MAJOR, MINOR-macros from 8+8 bit,
- to 12+20 bit layout
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5415D10E.90809@yandex.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete old userspace-only versions (8+8 bit). Instead expose the kernel-space
-definitions (12+20 bit).
+On Sun, Sep 14, 2014 at 09:31:58PM +0400, Kirill Tkhai wrote:
+> On 14.09.2014 19:38, Greg KH wrote:
+> > On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
+> >> This series implements a possibility to show the list of built-in drivers
+> >> to userspace. The names of drivers will be the same as when they are modules.
+> > 
+> > Have you looked at /sys/modules/ ?  Doesn't that show what you want
+> > here?
+> 
+> There are only the drivers in "/sys/module" which have parameters.
+> Drivers without parameters do not appear there.
 
-Signed-off-by: Stephan Mueller <fruktopus@gmail.com>
----
+Ah, didn't realize that.  Should be easy to fix though, if you really
+wanted to list the modules.  Much better than a random proc file that
+you have to parse :)
 
-Browsing some code I found that user-space and kernel-space macros for (un-)packing major/minor device numbers differ. The user-space ones using still the old 16 bit scheme. There was no explaining comment around and most libraries have their own macros anyway so it should not be a problematic UAPI change. So IMHO we could win some coherence in abandon this discrepancy.
-Please correct me if I am wrong.
+> >> So, if your system has "loop" driver then it appears either in /proc/modules
+> >> or in /proc/built-in and userspace will be able to know about this.
+> >>
+> >> Now this is impossible. The only way to get kernel configuration is
+> >> /proc/config.gz, but CONFIG_* names can change from time to time. Module
+> >> names are more or less standardized.
+> > 
+> > Module names aren't "standardized", we change them at times when needed,
+> > just like CONFIG_ names.
+> > 
+> > What is your end goal here?  As you say, config.gz is the real kernel
+> > configuration, just having a list of modules built in isn't going to
+> > help much in getting a working kernel config without it.
+> 
+> It looks like userspace applications oriented on modules names rather
+> than on CONFIG_XXX parameters. /proc/config.gz is optional and userspace
+> applications can't base on it.
+> 
+> For example, when I compile "loop" module built-in and "loop" is in
+> /etc/modules, init script warns about this module is not present and
+> can't be autoloaded. The script does not store CONFIG_XXX <-> module_xxx
+> conformity. And nobody stores it.
+> 
+> When iptables wants extra functionality, it requests a module. Etc.
+> 
+> Nobody is oriented on CONFIG_XXX parameters. It would be simple for
+> userspace to add a support of /proc/built-in analysing. It's very
+> similar to /proc/modules.
 
+Shouldn't userspace focus on the functionality a module provides, not
+the module name itself?  Can't a test for the loop "module" just test to
+see if the loop control device is present?  Same for iptables (there's
+modprobe rules for iptable modules I think...)
 
- include/linux/kdev_t.h      |  7 -------
- include/uapi/linux/kdev_t.h | 16 +++++++---------
- 2 files changed, 7 insertions(+), 16 deletions(-)
+In other words, don't focus on the module names, focus on the userspace
+function a module provides, there should always be a way to check that
+at run time (if not, then the module doesn't actually do much...)
 
-diff --git a/include/linux/kdev_t.h b/include/linux/kdev_t.h
-index c838abe..0b09c12 100644
---- a/include/linux/kdev_t.h
-+++ b/include/linux/kdev_t.h
-@@ -3,13 +3,6 @@
- 
- #include <uapi/linux/kdev_t.h>
- 
--#define MINORBITS	20
--#define MINORMASK	((1U << MINORBITS) - 1)
--
--#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
--#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
--#define MKDEV(ma,mi)	(((ma) << MINORBITS) | (mi))
--
- #define print_dev_t(buffer, dev)					\
- 	sprintf((buffer), "%u:%u\n", MAJOR(dev), MINOR(dev))
- 
-diff --git a/include/uapi/linux/kdev_t.h b/include/uapi/linux/kdev_t.h
-index 0d881fa..6a8356b 100644
---- a/include/uapi/linux/kdev_t.h
-+++ b/include/uapi/linux/kdev_t.h
-@@ -1,13 +1,11 @@
- #ifndef _UAPI_LINUX_KDEV_T_H
- #define _UAPI_LINUX_KDEV_T_H
--#ifndef __KERNEL__
- 
--/*
--Some programs want their definitions of MAJOR and MINOR and MKDEV
--from the kernel sources. These must be the externally visible ones.
--*/
--#define MAJOR(dev)	((dev)>>8)
--#define MINOR(dev)	((dev) & 0xff)
--#define MKDEV(ma,mi)	((ma)<<8 | (mi))
--#endif /* __KERNEL__ */
-+#define MINORBITS	20
-+#define MINORMASK	((1U << MINORBITS) - 1)
-+
-+#define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
-+#define MINOR(dev)	((unsigned int) ((dev) & MINORMASK))
-+#define MKDEV(ma, mi)	(((ma) << MINORBITS) | (mi))
-+
- #endif /* _UAPI_LINUX_KDEV_T_H */
--- 
-1.9.3
+thanks,
 
+greg k-h
