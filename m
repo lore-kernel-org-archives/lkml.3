@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaINLPy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 07:15:54 -0400
-Received: from mail1.unibz.it ([46.18.24.79]:51563 "EHLO MAIL1.unibz.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453AbaINLPx convert rfc822-to-8bit (ORCPT
+	id S1752626AbaINLS0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 07:18:26 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:55261 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590AbaINLSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 07:15:53 -0400
-X-Greylist: delayed 317 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Sep 2014 07:15:53 EDT
-From: Mischi Giovanni <Giovanni.Mischi@unibz.it>
-Subject: RESPOND IMMEDIATELY
-Thread-Topic: RESPOND IMMEDIATELY
-Thread-Index: Ac/QDH57H+qhkIK1T2iIo92m8GF94g==
-Date: Sun, 14 Sep 2014 11:10:29 +0000
-Message-ID: <4C082E4313B369469EE148E520C6F9724CC69A49@SDCEMB01.unibz.it>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.7.29.64]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sun, 14 Sep 2014 07:18:24 -0400
+Message-ID: <5415797A.7000700@plexistor.com>
+Date: Sun, 14 Sep 2014 14:18:18 +0300
+From: Boaz Harrosh <boaz@plexistor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Undisclosed recipients:;
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Boaz Harrosh <openosd@gmail.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvdimm@ml01.01.org
+Subject: Re: [Linux-nvdimm] [PATCH v2] pmem: Initial version of persistent
+ memory driver
+References: <1409173922-7484-1-git-send-email-ross.zwisler@linux.intel.com>	<1409173922-7484-2-git-send-email-ross.zwisler@linux.intel.com>	<540F2977.7010006@plexistor.com>	<CAPcyv4gZBdtup+DuaYL2zOhP9KcRzDAq6vLih0tbpL+abGQv-g@mail.gmail.com>	<541050E5.60502@gmail.com>	<CAPcyv4hfNX4Q75AERfF4g5MVvG82j3tXWcunWiGpBgDS2+7_1Q@mail.gmail.com>	<54108ECA.6090200@plexistor.com>	<CAPcyv4gqyiTaSJY56ZrJh05kwh9O9sXNKOz40fGu5s_=eY=U6Q@mail.gmail.com>	<54117D3A.3010305@plexistor.com> <CAPcyv4io2P1TiXdnhQJMiWsYE5Rz+BiiAHqKZhDe5gh88PEWUA@mail.gmail.com>
+In-Reply-To: <CAPcyv4io2P1TiXdnhQJMiWsYE5Rz+BiiAHqKZhDe5gh88PEWUA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 09/11/2014 07:31 PM, Dan Williams wrote:
+<>
+> 
+> The point I am getting at is not requiring a priori knowledge of the
+> physical memory map of a system.  Rather, place holder variables to
+> enable simple dynamic discovery.
+> 
 
-We are conducting a standard process investigation involving a client who shares the same name with you and also the circumstances surrounding investments made by this client with HALIFAX BANK UK.
+"simple dynamic discovery" does not yet exist and when the DDR4 NvDIMM
+will be released then we still have those DDR3 out there which will
+not work with the new discovery, which I need to support as well.
 
-1,Are you aware of any relative/relation having the same surname?
+And ... The submitted API will always need to exist for the emulation
+case for the developer who wants to do memmap= at Kernel command line.
+Which does not have any "dynamic-discovery" because it is not a real
+device.
 
-Reply through my private email: max_archie@aol.com.
+And my point was that the "dynamic-discovery" can be d-coupled from
+pmem, and be driven via udev. Each technology/ARCH may have its own
+"dynamic-discovery" method and drivers, yet all load a generic pmem driver.
 
-Yours sincerely,
-Mr. Max Archie
-Family Researchers.
-For: HALIFAX BANK Private Client
+<>
+> Why start on step 2 when we haven't got agreement on step 1?
+> 
+
+So what you are saying that you do not agree with pmem driver at all?
+
+Because my patch came to better the one range global memory parameters
+of prd_start= , prd_size=, prd_nr= interface submitted by Ross to a
+simple map= Interface that can take us a very long way. Does cover all
+of today's usage including emulated memmap= at Kernel command line.
+
+I have not seen any objections to Ross's pmem driver in general from
+you. Only to my patch which changes the API to the better, and actually
+let us support all existing and future flat technologies. Yet, yes, do
+not have a "dynamic discovery". Which is out of scope for pmem right now.
+(And I hope will always be)
+
+I really do not understand what you are suggesting? Are you just saying
+NACK on pmem.c. It does not do its job? how can we make it does its job
+then?
+
+Thanks
+Boaz
+
