@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaINC3M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 22:29:12 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:42216 "EHLO
+	id S1752501AbaINCaA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 22:30:00 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:48785 "EHLO
 	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752475AbaINC3L (ORCPT
+	with ESMTP id S1752283AbaINC37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 22:29:11 -0400
+	Sat, 13 Sep 2014 22:29:59 -0400
 X-RL-SENDER: xjq@rock-chips.com
 X-FST-TO: cf@rock-chips.com
 X-SENDER-IP: 127.0.0.1
 X-LOGIN-NAME: xjq@rock-chips.com
-X-UNIQUE-TAG: <c8401aa6426dd04bbfb95718bd8120da>
+X-UNIQUE-TAG: <468c0db50b87cb43005c45a910d8c9a0>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 1
-Message-ID: <5414FD6E.2050006@rock-chips.com>
-Date: Sun, 14 Sep 2014 10:29:02 +0800
+Message-ID: <5414FD9E.4000602@rock-chips.com>
+Date: Sun, 14 Sep 2014 10:29:50 +0800
 From: Jianqun <xjq@rock-chips.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Jianqun <jay.xu@rock-chips.com>, heiko@sntech.de, lgirdwood@gmail.com,
-        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
+CC: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
         linux-arm-kernel@lists.infradead.org,
         linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-CC: huangtao@rock-chips.com, cf@rock-chips.com
-Subject: Re: [PATCH 4/5] ASoC: rockchip-i2s: fix registers' property of rockchip
- i2s controller
-References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com> <1410568932-21823-1-git-send-email-jay.xu@rock-chips.com> <5414AFA6.9060904@cogentembedded.com>
-In-Reply-To: <5414AFA6.9060904@cogentembedded.com>
+        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
+        cf@rock-chips.com
+Subject: Re: [PATCH] ASoC: rockchip-i2s: dt: swap tx and rx channed request
+ number
+References: <1410570281-23681-1-git-send-email-jay.xu@rock-chips.com> <20140913164032.GN7960@sirena.org.uk>
+In-Reply-To: <20140913164032.GN7960@sirena.org.uk>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,44 +37,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-在 09/14/2014 04:57 AM, Sergei Shtylyov 写道:
-> Hello.
+在 09/14/2014 12:40 AM, Mark Brown 写道:
+> On Sat, Sep 13, 2014 at 09:04:41AM +0800, Jianqun wrote:
+>> Reference to RK3288 TRM, fix an error channel id for i2s tx and rx
+>> Table 10-1 DMAC_BUS Request Mapping Table
+>> Req number	Source	Polarity
+>> 0		I2S tx	High level
+>> 1		I2S rx	High level
 > 
-> On 9/13/2014 3:42 AM, Jianqun wrote:
+> Applied, thanks.  The changelog should've just noted that this is an
+> error in the example rather than the code or the binding, I was a bit
+> confused about this.
 > 
->> Reference rockchip I2S controller TRM, modify some registers' property
->> I2S_FIFOLR: read / write, but not volatile, not precious
->> I2S_INTSR: read / write
->> I2S_CLR: volatile, register value will be cleared by read
-> 
->> Test on RK3288 with max98090.
-> 
->> Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
->> ---
->>   sound/soc/rockchip/rockchip_i2s.c | 6 +++---
->>   1 file changed, 3 insertions(+), 3 deletions(-)
-> 
->> diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
->> index 1b9b404..6595383 100644
->> --- a/sound/soc/rockchip/rockchip_i2s.c
->> +++ b/sound/soc/rockchip/rockchip_i2s.c
-> [...]
->> @@ -385,8 +387,6 @@ static bool rockchip_i2s_volatile_reg(struct device *dev, unsigned int reg)
->>   static bool rockchip_i2s_precious_reg(struct device *dev, unsigned int reg)
->>   {
->>       switch (reg) {
->> -    case I2S_FIFOLR:
->> -        return true;
->>       default:
->>           return false;
->>       }
-> 
->    Shouldn't this be folded into simple *return* false now?
-That is more reasonable, thank you.
-> 
-> WBR, Sergei
-> 
-> 
-> 
-> 
-> 
+ok, I will do it
