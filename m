@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaINSKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 14:10:00 -0400
-Received: from forward9l.mail.yandex.net ([84.201.143.142]:44669 "EHLO
-	forward9l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533AbaINSJ7 (ORCPT
+	id S1752878AbaINSMs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 14:12:48 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46081 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaINSMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 14:09:59 -0400
-X-Yandex-Uniq: d652ca09-6c64-49f7-a071-fc0311e93fc9
-Authentication-Results: smtp11.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <5415D9F1.4080605@yandex.ru>
-Date: Sun, 14 Sep 2014 22:09:53 +0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Sun, 14 Sep 2014 14:12:46 -0400
 MIME-Version: 1.0
-To: Peter Foley <pefoley2@pefoley.com>
-CC: Michal Marek <mmarek@suse.cz>, arnd@arndb.de, linux-kbuild@vger.kernel.org,
-        gregkh@linuxfoundation.org, LKML <linux-kernel@vger.kernel.org>,
-        oleg@redhat.com, grant.likely@secretlab.ca, ebiederm@xmission.com,
+In-Reply-To: <5415D6ED.30508@yandex.ru>
+References: <20140914100545.3745.23394.stgit@localhost>
+	<20140914153832.GC4064@kroah.com>
+	<20140914172709.GA1569@redhat.com>
+	<5415D6ED.30508@yandex.ru>
+Date: Sun, 14 Sep 2014 20:12:45 +0200
+Message-ID: <CAFLxGvyW8CWxkN=k5DE3OQ7HYTTMysOVttnrZGf7FTp53Z9Now@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to /proc/modules
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: tkhai@yandex.ru
+Cc: Oleg Nesterov <oleg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Michal Marek <mmarek@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>, ktkhai@parallels.com,
         Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 1/3] kbuild: Make targets names tree-wide unique on x86
-References: <20140914100545.3745.23394.stgit@localhost> <20140914101821.3745.21235.stgit@localhost> <CAOFdcFP0gRDX66ius=VAN8xZZUeX9f93C7YwL52TrsJegTyy1g@mail.gmail.com>
-In-Reply-To: <CAOFdcFP0gRDX66ius=VAN8xZZUeX9f93C7YwL52TrsJegTyy1g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.09.2014 19:57, Peter Foley wrote:
-> On Sun, Sep 14, 2014 at 6:18 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
->> diff --git a/init/Makefile b/init/Makefile
->> index 7bc47ee..566a9ff 100644
->> --- a/init/Makefile
->> +++ b/init/Makefile
->> @@ -2,23 +2,28 @@
->>  # Makefile for the linux kernel.
->>  #
+On Sun, Sep 14, 2014 at 7:57 PM, Kirill Tkhai <tkhai@yandex.ru> wrote:
+> On 14.09.2014 21:27, Oleg Nesterov wrote:
+>> On 09/14, Greg KH wrote:
+>>>
+>>> On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
+>>>> This series implements a possibility to show the list of built-in drivers
+>>>> to userspace. The names of drivers will be the same as when they are modules.
+>>>
+>>> Have you looked at /sys/modules/ ?  Doesn't that show what you want
+>>> here?
 >>
->> -obj-y                          := main.o version.o mounts.o
->> +obj-y                          := main.o version.o do_mounts.o
->> +
->>  ifneq ($(CONFIG_BLK_DEV_INITRD),y)
->>  obj-y                          += noinitramfs.o
->>  else
->> -obj-$(CONFIG_BLK_DEV_INITRD)   += initramfs.o
->> +obj-y                          += initramfs.o do_mounts_initrd.o
->> +endif
->> +
->> +ifeq ($(CONFIG_BLK_DEV_RAM),y)
->> +obj-y                          += do_mounts_rd.o
->>  endif
->> +
->> +ifeq ($(CONFIG_BLK_DEV_MD),y)
->> +obj-y                          += do_mounts_md.o
->> +endif
->> +
->>  obj-$(CONFIG_GENERIC_CALIBRATE_DELAY) += calibrate.o
+>> Well, /sys/module/ doesn't list the modules (drivers) compiled in. Say,
+>> /sys/module/kernel. And it can't help a user to figure out that, say, the
+>> loop driver is already "loaded" because CONFIG_BLK_DEV_LOOP=y.
 >>
->>  ifneq ($(CONFIG_ARCH_INIT_TASK),y)
->>  obj-y                          += init_task.o
->>  endif
+>>> Module names aren't "standardized", we change them at times when needed,
+>>> just like CONFIG_ names.
 >>
->> -mounts-y                       := do_mounts.o
->> -mounts-$(CONFIG_BLK_DEV_RAM)   += do_mounts_rd.o
->> -mounts-$(CONFIG_BLK_DEV_INITRD)        += do_mounts_initrd.o
->> -mounts-$(CONFIG_BLK_DEV_MD)    += do_mounts_md.o
->> -
-> 
-> Can't you keep the obj-$(CONFIG_*) syntax?
-> e.g.
-> obj-$(CONFIG_BLK_DEV_RAM) += do_mounts_rd.o
-> 
+>> OK, but still the name will be the same, in /proc/modules or /proc/builtin.
+>>
+>>> What is your end goal here?  As you say, config.gz is the real kernel
+>>> configuration, just having a list of modules built in isn't going to
+>>> help much in getting a working kernel config without it.
+>>
+>> Perhaps you are right... but otoh perhaps this can can be useful anyway.
+>> Again, a user can know about "insmod loop", but he can know nothing
+>> about CONFIG_ names.
+>>
+>> That said, I do not really understand 2/3. Not only I do not understand
+>> this kbuild magic, I am not sure I understand what /proc/built-in will
+>> actually show.
+>
+> It's a list of drivers, one driver per line:
 
-They are need only in CONFIG_XXX=y case. They contain stubs
-which are not compiled in case of =m. Look at rd_load_image()
-for example.
+Built-in modules or drivers? :-)
 
-So, here I prevent compilation errors, and make them uncompilable
-in =m case like it used to be before.
-
-Kirill
+-- 
+Thanks,
+//richard
