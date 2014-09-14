@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762AbaINQUW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 12:20:22 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63501 "HELO
+	id S1752777AbaINQX6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 12:23:58 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51920 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752668AbaINQUU (ORCPT
+	with SMTP id S1752668AbaINQX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 12:20:20 -0400
+	Sun, 14 Sep 2014 12:23:57 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Cong Wang <xiyou.wangcong@gmail.com>,
+To: Tejun Heo <tj@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Cong Wang <xiyou.wangcong@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
         David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Date: Sun, 14 Sep 2014 18:39:54 +0200
-Message-ID: <1507312.nQ09A9EeVa@vostro.rjw.lan>
+Date: Sun, 14 Sep 2014 18:43:31 +0200
+Message-ID: <1527959.PBej7RR7ig@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140911144509.GM22042@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <23520581.7q253rZGaa@vostro.rjw.lan> <20140911144509.GM22042@dhcp22.suse.cz>
+In-Reply-To: <20140912235935.GB28183@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com> <20140911163004.GN22042@dhcp22.suse.cz> <20140912235935.GB28183@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -26,66 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 11, 2014 04:45:09 PM Michal Hocko wrote:
-> On Thu 11-09-14 16:52:50, Rafael J. Wysocki wrote:
-> > On Thursday, September 11, 2014 04:28:22 PM Michal Hocko wrote:
-> > > On Thu 11-09-14 16:32:50, Rafael J. Wysocki wrote:
-> > > > On Thursday, September 11, 2014 04:10:51 PM Michal Hocko wrote:
-> > > > > On Thu 11-09-14 16:26:56, Rafael J. Wysocki wrote:
-> > > > > > On Thursday, September 11, 2014 04:04:48 PM Michal Hocko wrote:
-> > > > > > > On Thu 11-09-14 16:17:56, Rafael J. Wysocki wrote:
-> > > > > > > [...]
-> > > > > > > > And I'm still wondering if the OOM killer may be made avoid killing frozen
-> > > > > > > > tasks.
-> > > > > > > 
-> > > > > > > This is really tricky. OOM killer aims at the biggest memory hog. We
-> > > > > > > shouldn't ignore it just because it hides into the fridge... So even
-> > > > > > > if we "fix" oom killer to ignore frozen tasks (which is inherently
-> > > > > > > racy btw.) then we have a potential problem of freezer abuse (e.g. in
-> > > > > > > container environments). So I strongly believe that the OOM killer has
-> > > > > > > to be able to kill a frozen tasks.
-> > > > > > 
-> > > > > > OK
-> > > > > > 
-> > > > > > Is the OOM killer the only place where TIF_MEMDIE is set?
-> > > > > 
-> > > > > Yes. To be precise, lowmemorykiller (staging android thingy), global OOM
-> > > > > killer and memcg OOM killer. Any other users would be an abuse.
-> > > > 
-> > > > OK
-> > > > 
-> > > > So can we ensure that those things don't trigger during system suspend (or
-> > > > equivalent) and then simply use the TIF_MEMDIE check in __refrigerator()?
+On Saturday, September 13, 2014 08:59:35 AM Tejun Heo wrote:
+> On Thu, Sep 11, 2014 at 06:30:04PM +0200, Michal Hocko wrote:
+> > > I am wondering if the folllowing check makes any sense with regarding
+> > > to rule out PM freeze:
 > > > 
-> > > That would require that no memory allocation triggers OOM killer during
-> > > suspend. I don't think this will work out. OOM killer is the last resort
-> > > action. We cannot simply give access to memory reserves just because the
-> > > current context is in the middle of suspend.
-> > 
-> > But we can fail the allocation, can't we?
+> > >         if ((!pm_nosig_freezing && !pm_freezing) &&
+> > >             cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE))
+> > >                 return true;
 > 
-> We already do that by oom_killer_disable after all tasks are frozen in
-> freeze_processes. This is before all other device specific things are
-> done so I guess we cannot start killing after any device is suspended,
-> right? This should be sufficient.
+> Doesn't this mean that if PM freezing and OOM killing race each other,
+> the system may hang?  Driver PM operation may try to allocate memory
+> -> triggers OOM -> OOM killer selects an already frozen task ->
+> nothing happens.  I wonder whether OOM killing and PM operations
+> should be mutually exclusive at a higher level.  e.g. make OOM killing
+> always override freezing but let hibernation abort operation before
+> taking snapshot if OOM killing has happened since the beginning of the
+> PM operation.
 
-Yes, it should.
-
-> > > What is the worst thing that might happen when a task is killed in the
-> > > middle of suspend? I thought that suspend would fail after several
-> > > attempts to suspend all existing tasks.
-> > 
-> > The problem is what to do when we need to kill a frozen task.
-> > 
-> > In that case we need to thaw it and then it will die eventually.  Unfortunately,
-> > it generally can do something undesirable before dying.  That may be accessing
-> > a suspended device, for example.
-> 
-> OK, I have misunderstood you obviously. I thought we were discussing OOM
-> while we are in the middle of freezing tasks. After they are frozen
-> there is no OOM killer as per above.
-
-Right.
+As Michal noted, we do oom_killer_disable() in freeze_processes(), so the
+scenario above cannot actually happen to my eyes.  Or am I missing anything?
 
 -- 
 I speak only for myself.
