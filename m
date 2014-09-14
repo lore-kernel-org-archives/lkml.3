@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822AbaINTg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 15:36:57 -0400
-Received: from smtpout2.wakegov.com ([198.85.228.195]:49440 "EHLO
-	smtp02.co.wake.nc.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752708AbaINTg4 convert rfc822-to-8bit (ORCPT
+	id S1752781AbaINTmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 15:42:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43976 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708AbaINTmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 15:36:56 -0400
-X-Greylist: delayed 7237 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Sep 2014 15:36:56 EDT
-X-AuditID: 0a01460e-b7f7b8e000001b47-f0-5415dff6e2dd
-Subject: (IMAP) Server - requires Increase
-From: Michael.Collins@wakegov.com
-Message-ID: <OFC039F8D7.0ED6E01C-ON85257D53.00655E98-85257D53.00655EB7@LocalDomain>
-Date: Sun, 14 Sep 2014 14:27:13 -0400
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=ISO-8859-1
+	Sun, 14 Sep 2014 15:42:13 -0400
+Date: Sun, 14 Sep 2014 21:41:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+Message-ID: <20140914194156.GC2832@worktop.localdomain>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+ <20140911161517.GA3190@worktop.ger.corp.intel.com>
+ <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: Lotus Domino Web Server Release 9.0.1 HF193 January 23, 2014
-X-MIMETrack: Serialize by HTTP Server on Admin01/Wake County(Release 9.0.1 HF193|January
- 23, 2014) at 09/14/2014 02:27:13 PM,Serialize complete at 09/14/2014 02:27:13 PM,Itemize by HTTP Server on Admin01/Wake County(Release 9.0.1 HF193|January
- 23, 2014) at 09/14/2014 02:27:13 PM
-X-Disclaimed: 16451
-X-Notes-Item: linux-kernel@vger.kernel.org; name=AltBlindCopyTo
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42LhYozQ1v12XzTEoPe2gsXlXXPYHBg9Pm+S
-	C2CM8rLJSE1MSS1SSM1Lzk/JzEu3VfIM9te1sDC11DVUUshLzE21VYrQDSlKTM4GyioplCXm
-	lAKFLC2dPCoMzAzNjS0Mjc3cTJT07RK8Mvb9bGYpuM5c8f7vKuYGxgbmLkZODgkBE4nufYfY
-	IWwxiQv31rOB2EICxxklbh0sBbGFBbQk1n9exQhiswkoSvS96mIBsUUEWCRWfv8OZjMD2X/e
-	bACzeQWCJW4d2wc2h0VAVeLmpL2MEDXaEssWvmaGsPUk/v88xQhRLyhxcuYTFogb3CQWPPgL
-	ZHMB2bOZJD59uAmVEJbY//kz0FAODiagI2YciwUxJQTsJT69cZrAKDgLyYZZSDbMQrJhASPz
-	KkaR4tySAgMjveR8vfLE7FS9vGS90uJNjOCYcOPbwfh7uu0hxmSgyycyS4km5wNjKq8k3tDI
-	zNDA0NTEwtDczIA0YSVxXmNWrhAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjFvPWLteOfVm
-	fe9y+3aN+lfbeUUZ1d2YezdzmE/ZqNt6nud51PI3BV5bphqty+pddWBLGoulLEOilRZz+KUC
-	dYeYbLeoDDa1g5dYmt/6lEq2ufVpnv9RbLbnjuC+YE2u7PZpUc+bc9iX/U2fmpOpkNZ0d+8f
-	OWPe2knP+nbn75lbsEVpcpKXEktxRqKhFnNRcSIAGyExHJ8CAAA=
-X-Tracking: 99BHx061738136F4
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(IMAP) Server - requires Increase, Mailbox has exceeded its storage limit.
+On Thu, Sep 11, 2014 at 07:26:48PM +0200, Vincent Guittot wrote:
+> On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
+> >> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
+> >> +                     struct lb_env *env)
+> >>  {
+> >> +     if ((sgs->group_capacity_orig * 100) >
+> >> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+> >> +             return 1;
+> >> +
+> >> +     if (sgs->sum_nr_running < sgs->group_weight)
+> >> +             return 1;
+> >>
+> >> +     return 0;
+> >> +}
+> >>
+> >> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
+> >> +                     struct lb_env *env)
+> >> +{
+> >> +     if (sgs->sum_nr_running <= sgs->group_weight)
+> >> +             return 0;
+> >>
+> >> +     if ((sgs->group_capacity_orig * 100) <
+> >> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+> >> +             return 1;
+> >>
+> >> +     return 0;
+> >>  }
+> >
+> > I'm confused about the utilization vs capacity_orig. I see how we should
+> 
+> 1st point is that I should compare utilization vs capacity and not
+> capacity_orig.
+> I should have replaced capacity_orig by capacity in the functions
+> above when i move the utilization statistic from
+> rq->avg.runnable_avg_sum to cfs.usage_load_avg.
+> rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
+> cfs.usage_load_avg integrates only cfs tasks
+> 
+> With this change, we don't need sgs->group_capacity_orig anymore but
+> only sgs->group_capacity. So sgs->group_capacity_orig can be removed
+> as it's no more used in the code as sg_capacity_factor has been
+> removed
 
-Click on  Faculty and Staff <http://backonspot.co.uk/>   Portal to increase
-
-Mailbox SEND/RECEIVE Functions will be disabled if account increase is not completed.
- © 2014  Mailbox Portal. 
-
-E-mail correspondence to and from this address is subject to the North Carolina Public Records Act and may be disclosed to third parties unless made confidential under applicable law.
+Yes, but.. so I suppose we need to add DVFS accounting and remove
+cpufreq from the capacity thing. Otherwise I don't see it make sense.
