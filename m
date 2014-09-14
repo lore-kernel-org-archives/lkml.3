@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaINFzp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 01:55:45 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17457 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752301AbaINFzo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 01:55:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+BAI+NlYw0G4F8TWzRTbW+r7REim7RW94=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 3EA3F5E138A
-Date: Sun, 14 Sep 2014 01:55:33 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Robert Richter <rric@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Robert Richter <rrichter@cavium.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] GICv3: Fixing 32 bit compatibility
-Message-ID: <20140914055533.GK21986@titan.lakedaemon.net>
-References: <1410185480-5153-1-git-send-email-rric@kernel.org>
- <540DBC0C.7080902@arm.com>
+	id S1752473AbaINGSF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 02:18:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63298 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353AbaINGSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 02:18:04 -0400
+Date: Sun, 14 Sep 2014 09:21:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Rusty away 18th September -- 11th October
+Message-ID: <20140914062116.GA23868@redhat.com>
+References: <87oaunht4b.fsf@rustcorp.com.au>
+ <20140911114351.GA25736@redhat.com>
+ <87tx4dhbks.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <540DBC0C.7080902@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87tx4dhbks.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 03:24:12PM +0100, Marc Zyngier wrote:
-> Hi Robert,
+On Fri, Sep 12, 2014 at 10:58:03AM +0930, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > On Thu, Sep 11, 2014 at 10:26:52AM +0930, Rusty Russell wrote:
+> >> Hi all,
+> >> 
+> >>         Probably won't read mail.  Linus, I'll have pull requests early
+> >> next week; if there's anything needed I'm sure Michael Tsirkin can
+> >> handle it.
+> >
+> > Sure.
+> > Rusty, there's a small chance virtio 1.0 bits will be ready in time.
+> > I started working on them based on your virtio-pci-new-layout branch.
+> >
+> > If ready before the merge window, are you ok with me merging this
+> > support (without you having the opportunity to review first)?
 > 
-> On 08/09/14 15:11, Robert Richter wrote:
-> > From: Robert Richter <rrichter@cavium.com>
-> > 
-> > Fixing 32 bit compatibility by using ULL for u64 constants.
-> > 
-> > Signed-off-by: Robert Richter <rrichter@cavium.com>
-> > ---
-> >  drivers/irqchip/irq-gic-v3.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-> > index 57eaa5a0b1e3..9e13c87c7dfe 100644
-> > --- a/drivers/irqchip/irq-gic-v3.c
-> > +++ b/drivers/irqchip/irq-gic-v3.c
-> > @@ -441,7 +441,7 @@ static u16 gic_compute_target_list(int *base_cpu, const struct cpumask *mask,
-> >  
-> >  		mpidr = cpu_logical_map(cpu);
-> >  
-> > -		if (cluster_id != (mpidr & ~0xffUL)) {
-> > +		if (cluster_id != (mpidr & ~0xffULL)) {
-> >  			cpu--;
-> >  			goto out;
-> >  		}
-> > @@ -479,7 +479,7 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
-> >  	smp_wmb();
-> >  
-> >  	for_each_cpu_mask(cpu, *mask) {
-> > -		u64 cluster_id = cpu_logical_map(cpu) & ~0xffUL;
-> > +		u64 cluster_id = cpu_logical_map(cpu) & ~0xffULL;
-> >  		u16 tlist;
-> >  
-> >  		tlist = gic_compute_target_list(&cpu, mask, cluster_id);
-> > 
+> Sorry, absolutely not.  I *really* want to review this in depth; if we
+> make a mistake, it's going to hurt us significantly.
+
+Right but it's only a merge window - we can fix bugs and even disable
+the new driver afterwards, can't we?
+
+> And until we have the qemu bits ready, it's really hard to tell if we've
+> got this right.
+
+Sure, I meant if qemu bits are ready too, and if things work together.
+It wouldn't do to merge a driver that isn't ready.
+
+
+>  So I'd rather delay and make sure we're solid.
 > 
-> Yeah, and there are many more. I'm currently sitting on a rather long
-> queue of GICv3-related 32bit patches. I'll try to get that posted shortly.
+> Thanks,
+> Rusty.
 
-I'll hold off until you post a complete series then.
+Something else we can do, is refactoring that splits driver
+out to common and legacy bits, and changes APIs.
+No?
 
-thx,
-
-Jason.
+-- 
+MSt
