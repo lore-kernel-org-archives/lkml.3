@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbaINCaA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 22:30:00 -0400
-Received: from va-smtp01.263.net ([54.88.144.211]:48785 "EHLO
-	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752283AbaINC37 (ORCPT
+	id S1752385AbaINCmf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 22:42:35 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:46254 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaINCme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 22:29:59 -0400
-X-RL-SENDER: xjq@rock-chips.com
-X-FST-TO: cf@rock-chips.com
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: xjq@rock-chips.com
-X-UNIQUE-TAG: <468c0db50b87cb43005c45a910d8c9a0>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <5414FD9E.4000602@rock-chips.com>
-Date: Sun, 14 Sep 2014 10:29:50 +0800
-From: Jianqun <xjq@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 13 Sep 2014 22:42:34 -0400
+Message-ID: <54150090.1050306@gmail.com>
+Date: Sat, 13 Sep 2014 19:42:24 -0700
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
-CC: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
-        cf@rock-chips.com
-Subject: Re: [PATCH] ASoC: rockchip-i2s: dt: swap tx and rx channed request
- number
-References: <1410570281-23681-1-git-send-email-jay.xu@rock-chips.com> <20140913164032.GN7960@sirena.org.uk>
-In-Reply-To: <20140913164032.GN7960@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Andy Lutomirski <luto@amacapital.net>
+CC: mtk.manpages@gmail.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: For review: user_namespace(7) man page
+References: <53F5310A.5080503@gmail.com> <CALCETrX2qwvzmeoVcLFLxEK=1Fv+f0Ri0TouzzvbN_rgDjka4A@mail.gmail.com> <540F0810.7030408@gmail.com> <87ppf4n5ib.fsf@x220.int.ebiederm.org> <5411B5D6.9010201@gmail.com> <CALCETrV1EtrzfEhS55ToPD5VTbY9VjmmOA6bv2H9PGGQ-G=WGA@mail.gmail.com>
+In-Reply-To: <CALCETrV1EtrzfEhS55ToPD5VTbY9VjmmOA6bv2H9PGGQ-G=WGA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/11/2014 08:14 AM, Andy Lutomirski wrote:
+> On Thu, Sep 11, 2014 at 7:46 AM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> Hi Eric,
+>>
+>> On 09/09/2014 09:05 AM, Eric W. Biederman wrote:
+>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>>
+>>>> Hi Andy, and Eric,
+>>>>>>        1. The  writing  process  must  have  the CAP_SETUID (CAP_SETGID)
+>>>>>>           capability in the user namespace of the process pid.
+>>>>>
+>>>>> This checked for the opening process (and I don't actually remember
+>>>>> whether it's checked for the writing process).
+>>>>
+>>>> Eric, can you comment?
+>>>
+>>> We have to check for the opening processes and that changes was made
+>>> after I implemented my interface. Pieces of the code appear to also
+>>> examine the writing process and verify everything applies to it as well.
+>>>
+>>> I goofed when I designed the interface originall and had not realized
+>>> what a classic design error it can be to not restrict by the opening
+>>> process.
+>>
+>> So, I still need some help here. Should the sentence above just read:
+>>
+>>         1. The  *opening*  process  must  have  the CAP_SETUID (CAP_SETGID)
+>>            capability in the user namespace of the process pid.
+> 
+> I think this is sufficient.
+> 
+>>
+>> or must something also be said about the writing process? (If so, i'd
+>> appreciate a completely formed sentence or two that I can just drop into
+>> the man page..)
+> 
+> There might be a restriction there, too, but I think it could be
+> removed, and I also think that it's unlikely that anyone will
+> encounter it.
+
+Okay. Thanks, Andy.
+
+Cheers,
+
+Michael
 
 
-在 09/14/2014 12:40 AM, Mark Brown 写道:
-> On Sat, Sep 13, 2014 at 09:04:41AM +0800, Jianqun wrote:
->> Reference to RK3288 TRM, fix an error channel id for i2s tx and rx
->> Table 10-1 DMAC_BUS Request Mapping Table
->> Req number	Source	Polarity
->> 0		I2S tx	High level
->> 1		I2S rx	High level
-> 
-> Applied, thanks.  The changelog should've just noted that this is an
-> error in the example rather than the code or the binding, I was a bit
-> confused about this.
-> 
-ok, I will do it
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
