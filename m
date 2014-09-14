@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaINUrL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 16:47:11 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:54809 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798AbaINUrJ (ORCPT
+	id S1752877AbaINVhv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 17:37:51 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:28933 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822AbaINVht convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 16:47:09 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: scsi_devinfo.c:  Cleaning up unnecessarily complicated in conjunction with strncpy
-Date: Sun, 14 Sep 2014 22:48:58 +0200
-Message-Id: <1410727738-17430-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 14 Sep 2014 17:37:49 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] scsi: scsi_devinfo.c:  Cleaning up unnecessarily
+ complicated in conjunction with strncpy
+Thread-Topic: [PATCH] scsi: scsi_devinfo.c:  Cleaning up unnecessarily
+ complicated in conjunction with strncpy
+Thread-Index: AQHP0F0ZxtX8e4lX0kiowtIPF8yaZpwBJQzA
+Date: Sun, 14 Sep 2014 21:34:51 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C7A75B@G9W0745.americas.hpqcorp.net>
+References: <1410727738-17430-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1410727738-17430-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have revamped the code so it becomes both more effective and far more clear.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Rickard Strandqvist
+...
+> diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+...
+>  static void scsi_strcpy_devinfo(char *name, char *to, size_t to_length,
+>  				char *from, int compatible)
+>  {
+> -	size_t from_length;
+> -
+> -	from_length = strlen(from);
+> -	strncpy(to, from, min(to_length, from_length));
+> -	if (from_length < to_length) {
+> -		if (compatible) {
+> -			/*
+> -			 * NUL terminate the string if it is short.
+> -			 */
+> -			to[from_length] = '\0';
+> -		} else {
+> -			/*
+> -			 * space pad the string if it is short.
+> -			 */
+> -			strncpy(&to[from_length], spaces,
+> -				to_length - from_length);
+> -		}
+> -	}
+> -	if (from_length > to_length)
+> -		 printk(KERN_WARNING "%s: %s string '%s' is too long\n",
+> +	strncpy(to, from, to_length);
+> +	if (to[to_length - 1] != '\0') {
+> +		to[to_length - 1] = '\0';
+> +		printk(KERN_WARNING "%s: %s string '%s' is too long\n",
+>  			__func__, name, from);
+> +	}
+
+The caller of this function, scsi_dev_info_list_add_keyed, created
+the "to" destination buffer, devinfo, with kmalloc, so it's not
+guaranteed to be full of zeros.
+
+If from_length is shorter than to_length, then this code will
+be inspecting an uninitialized character that strncpy didn't
+touch.
+
 ---
- drivers/scsi/scsi_devinfo.c |   31 +++++++++++--------------------
- 1 file changed, 11 insertions(+), 20 deletions(-)
+Rob Elliott    HP Server Storage
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index 49014a1..f6752cc 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -282,27 +282,18 @@ static struct scsi_dev_info_list_table *scsi_devinfo_lookup_by_key(int key)
- static void scsi_strcpy_devinfo(char *name, char *to, size_t to_length,
- 				char *from, int compatible)
- {
--	size_t from_length;
--
--	from_length = strlen(from);
--	strncpy(to, from, min(to_length, from_length));
--	if (from_length < to_length) {
--		if (compatible) {
--			/*
--			 * NUL terminate the string if it is short.
--			 */
--			to[from_length] = '\0';
--		} else {
--			/* 
--			 * space pad the string if it is short. 
--			 */
--			strncpy(&to[from_length], spaces,
--				to_length - from_length);
--		}
--	}
--	if (from_length > to_length)
--		 printk(KERN_WARNING "%s: %s string '%s' is too long\n",
-+	strncpy(to, from, to_length);
-+	if (to[to_length - 1] != '\0') {
-+		to[to_length - 1] = '\0';
-+		printk(KERN_WARNING "%s: %s string '%s' is too long\n",
- 			__func__, name, from);
-+	}
-+	if (!compatible) {
-+		/*
-+		 * space pad the string if it is short.
-+		 */
-+		strlcat(to, spaces, to_length);
-+	}
- }
- 
- /**
--- 
-1.7.10.4
+
+
+
 
