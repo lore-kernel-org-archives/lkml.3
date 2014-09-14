@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbaINPo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 11:44:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1128 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641AbaINPo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 11:44:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,521,1406617200"; 
-   d="scan'208";a="572975662"
-Date: Sun, 14 Sep 2014 08:44:55 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Vince Weaver <vincent.weaver@maine.edu>, jolsa@redhat.com
-Subject: Re: [PATCH] Add some documentation on the perf sysfs ABI interface
-Message-ID: <20140914154455.GP5387@tassilo.jf.intel.com>
-References: <1410561259-523-1-git-send-email-andi@firstfloor.org>
- <20140914093033.GR346@worktop.programming.kicks-ass.net>
- <20140914153407.GA4064@kroah.com>
+	id S1752787AbaINPps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 11:45:48 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55108 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641AbaINPpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 11:45:47 -0400
+Message-ID: <5415B82A.8000205@kernel.org>
+Date: Sun, 14 Sep 2014 16:45:46 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140914153407.GA4064@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Karol Wrona <k.wrona@samsung.com>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [RFC/PATCH 3/6] sensorhub: Add sensorhub bindings
+References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com> <1409756150-30889-4-git-send-email-k.wrona@samsung.com>
+In-Reply-To: <1409756150-30889-4-git-send-email-k.wrona@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 14, 2014 at 08:34:07AM -0700, Greg KH wrote:
-> On Sun, Sep 14, 2014 at 11:30:33AM +0200, Peter Zijlstra wrote:
-> > On Fri, Sep 12, 2014 at 03:34:19PM -0700, Andi Kleen wrote:
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > Initial attempt of documenting the perf sysfs interface as
-> > > an ABI. I also added some additional pointers hopefully useful
-> > > to the users. Comments welcome.
-> > 
-> > My only worry is that its a little x86 centric and I'm not sure if that
-> > is acceptable with the sysfs crowd, Greg?
+On 03/09/14 15:55, Karol Wrona wrote:
+> Add sensorhub bindings for sensorhub on Galaxy Gear 2.
 > 
-> Does this document what you have today?  If so, that's fine, and good to
-> do.
+> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  .../devicetree/bindings/misc/sensorhub.txt         |   51 ++++++++++++++++++++
+>  1 file changed, 51 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/misc/sensorhub.txt
 > 
-> Or, is this a proposed interface that is different per architecture in
-> subtle non-portable ways?  If so, probably not :)
+> diff --git a/Documentation/devicetree/bindings/misc/sensorhub.txt b/Documentation/devicetree/bindings/misc/sensorhub.txt
+> new file mode 100644
+> index 0000000..b43c2b7
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/misc/sensorhub.txt
+> @@ -0,0 +1,50 @@
+> +Samsung Sensorhub driver
+> +
+> +Sensorhub is MCU which manages several sensors and also play the role
+> +of virtual sensor device.
+> +
+> +Required properties:
+> +- compatible: "samsung,sensorhub-rinato" or "samsung,sensorhub-thermostat"
+> +- spi-max-frequency: max SPI clock frequency
+> +- interrupt-parent
+> +- interrupts: communication interrupt
+> +- ap-mcu-int: [out] ap to sensorhub line - used during communication
+Ah, why call it int?  I assumed when reading some of the code that it was an interrupt line.
 
-Each architecture describes its own fields in a generic format that
-can be handled by a generic parser.  The generic description is documented.
+> +- mcu-ap-int: [in] sensorhub to ap - used during communication
+> +- mcu-reset: [out] sensorhub reset
+> +- mag-table: magnitude table
+Magnitude of what?
+> +
+> +Optional properties:
+> +- sensor's nodes:
+> +  compatible = "samsung,mpu6500-accel"
+> +  compatible = "samsung,mpu6500-gyro"
+> +  compatible = "samsung,adpd142"
+> +
+> +Sensor compatibles are used to match proper sensor driver to real sensor on
+> +the board. The firmware does not give such information, so it helps to specify
+> +some sensors properties. Sensors have "samsung" prefixes because frequently
+> +they will not have much in common with sensors used without sensorhub because
+> +it can do some data processing.
+I wonder if we can make the ssp bit explicit as well.  Chances are samsung might
+have another device similar to this (but with a different driver) in future.
 
-However I also described the x86 specific attributes.
-
-This is all implemented today.
-
--Andi
+> +
+> +Example:
+> +
+> +	shub_spi: shub {
+> +		compatible = "samsung,rinato-ssp-spi";
+> +		spi-max-frequency = <5000000>;
+> +		interrupt-parent = <&gpx0>;
+> +		interrupts = <2 0>;
+> +		ap-mcu-int = <&gpx0 0 0>;
+> +		mcu-ap-int = <&gpx0 4 0>;
+> +		mcu-reset = <&gpx0 5 0>;
+> +		mag-table = /bits/ 8 <110 85 171 71 203 195 0 67
+> +				208 56 175 244 206 213 0 92 250 0
+> +				55 48 189 252 171 243 13 45 250>;
+> +		sensor@0 {
+> +			compatible = "samsung,mpu6500-accel";
+> +		};
+> +		sensor@1 {
+> +			compatible = "samsung,mpu6500-gyro";
+> +		};
+> +		sensor@2 {
+> +			compatible = "samsung,adpd142";
+> +		};
+> +	};
+> 
