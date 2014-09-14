@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaINJIg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 05:08:36 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:51039 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaINJIe (ORCPT
+	id S1752573AbaINJNQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 05:13:16 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45661 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaINJNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 05:08:34 -0400
-Message-ID: <54155B14.9060809@gmail.com>
-Date: Sun, 14 Sep 2014 17:08:36 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Sun, 14 Sep 2014 05:13:14 -0400
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: eparis@redhat.com, paulmck@linux.vnet.ibm.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>, zhenglong.cai@cs2c.com.cn,
-        khilman@linaro.org, ak@linux.intel.com, mcgrof@suse.com,
-        fabf@skynet.be, "dhowells@redhat.com" <dhowells@redhat.com>,
-        pefoley2@pefoley.com, mgorman@suse.de, biederm@xmission.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures
- using
-References: <540494D6.40701@gmail.com> <20140901160828.GJ26632@windriver.com> <5404A66E.509@zytor.com> <20140902051737.GK26632@windriver.com> <54055FF8.3080907@gmail.com> <5406FFBD.8010207@gmail.com>
-In-Reply-To: <5406FFBD.8010207@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140914055450.GB296@x4>
+References: <20140914050905.GA296@x4>
+	<20140914055450.GB296@x4>
+Date: Sun, 14 Sep 2014 11:13:12 +0200
+X-Google-Sender-Auth: 9Q0jVljGb1znyA4W5PlnY0FToPw
+Message-ID: <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
+Subject: Re: Weird character in kernel message
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
-
-Is this patch worthy enough to be applied?
-
-Welcome any ideas, suggestions or completions.
-
-Thanks.
-
-On 09/03/2014 07:47 PM, Chen Gang wrote:
-> On 09/02/2014 02:13 PM, Chen Gang wrote:
->> On 9/2/14 13:17, Paul Gortmaker wrote:
->>>
->>> OK, but that was not at _all_ what I thought when looking at this...
->>>
->>> Instead I saw a well intentioned, but perhaps not fully thought out
->>> attempt at fixing a largely irrelevant randconfig/allmodconfig of a
->>> 1990's vintage ISDN driver coming from that x86-only era, built against
->>> an architecture that will never use or support it (microblaze).
->>>
->>> In today's world, we'd probably not accept a new ethernet driver or
->>> filesystem if it was incapable of handling both BE and LE (exception
->>> being SoC ethernet physically bound to one specific CPU, of course.)
->>> So the justification given in the commit log for expanding the scope to
->>> better deal with the stuff found in ISDN and the like was questionable.
->>>
+On Sun, Sep 14, 2014 at 7:54 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2014.09.14 at 07:09 +0200, Markus Trippelsdorf wrote:
+>> Just noticed this today:
 >>
-> 
-> I guess, we are mainly focus on: "Is it worthy enough to add *ENDIAN in
-> init/Kconfig?"
-> 
-> It seems really few modules need depend on LE or BE (although I am still
-> not quite sure). If it is true, for me, only for architectures, it is
-> still worthy enough to let all duplicated *ENDIAN to one place.
-> 
-> If it is still worthy, maybe this patch need be improvement (especially,
-> for its comments), so please help check when you have time, thanks.
-> 
-> 
-> Welcome any other members' ideas, suggestions, or completions.
-> 
-> Thanks.
-> 
->> After a simple search, for crypto, it may be endian sensitive, and for
->> architectures may be endian sensitive, in config time.
+>> Sep 14 06:51:57 x4 kernel: [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 >>
->>   bash-3.2# find ./ | grep Kconfig | xargs grep depend | grep ENDIAN
->>   .//arch/arm/mm/Kconfig:	depends on ARCH_SUPPORTS_BIG_ENDIAN
->>   .//arch/arm/mm/Kconfig:	depends on CPU_BIG_ENDIAN
->>   .//arch/arm/mm/Kconfig:	depends on CPU_BIG_ENDIAN
->>   .//arch/arm64/Kconfig:	depends on OF && !CPU_BIG_ENDIAN
->>   .//arch/mips/Kconfig:	depends on SYS_SUPPORTS_BIG_ENDIAN
->>   .//arch/mips/Kconfig:	depends on SYS_SUPPORTS_LITTLE_ENDIAN
->>   .//arch/mips/Kconfig:	depends on SGI_IP22 || SGI_IP28 || (SNI_RM && CPU_LITTLE_ENDIAN)
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on !CPU_LITTLE_ENDIAN
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on PPC_BOOK3S_64 && !CPU_LITTLE_ENDIAN
->>   .//arch/powerpc/platforms/Kconfig.cputype:	depends on CPU_LITTLE_ENDIAN
->>   [...]
->>   .//crypto/Kconfig:	depends on ARM && KERNEL_MODE_NEON && !CPU_BIG_ENDIAN
->>   .//crypto/Kconfig:	depends on ARM && KERNEL_MODE_NEON && !CPU_BIG_ENDIAN
->>   .//drivers/crypto/Kconfig:	depends on PPC64 && IBMVIO && !CPU_LITTLE_ENDIAN
->>   [...]
+>> in hex:
+>> 20 01 34 43 45 3A 20
 >>
->> It is a simple search, so I am not sure whether have other modules also
->> need LE or BE.
->>
-> 
-> Thanks.
-> 
+>> Must be a recent regression.
+>
+> It looks like a combination of commit 504d58745c9ca and commit
+> 458df9fd4815b causes the issue.
+> 458df9fd4815b changed the loglevel of printk_deferred to a hardcoded
+> KERN_WARNING. And 504d58745c9ca changed the printk in
+> kernel/time/clockevents.c to printk_deferred.
+> But now the KERN_WARNING loglevel of printk_deferred in
+> kernel/time/clockevents.c is redundant and responsible for the weird
+> 01 34 character combination (KERN_SOH "4").
 
+vprintk_emit() has:
 
--- 
-Chen Gang
+        if (in_sched)
+                text_len = scnprintf(text, sizeof(textbuf),
+                                     KERN_WARNING "[sched_delayed] ");
 
-Open share and attitude like air water and life which God blessed
+        text_len += vscnprintf(text + text_len,
+                               sizeof(textbuf) - text_len, fmt, args);
+
+Hence if in_sched, "[sched_delayed] " is inserted before the printed
+message. As most printed messages have a KERN_* prefix, this
+prefix now ends up in the middle of the message, causing the issue.
+
+A simple solution is to print a newline after the "[sched_delayed]", but
+this will break the line.
+
+Better, but more complicated, would be to remove the KERN_* prefix
+(if it exists) from the next message if in_sched is set.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
