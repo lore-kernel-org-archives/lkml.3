@@ -1,236 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548AbaINGbO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 02:31:14 -0400
-Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:48309
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752494AbaINGbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 02:31:11 -0400
-X-WSS-ID: 0NBVORG-08-F29-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <marc.zyngier@arm.com>, <mark.rutland@arm.com>, <jason@lakedaemon.net>
-CC: <pawel.moll@arm.com>, <Catalin.Marinas@arm.com>, <Will.Deacon@arm.com>,
-        <tglx@linutronix.de>, <Harish.Kasiviswanathan@amd.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "Marc Zyngier" <Marc.Zyngier@arm.com>
-Subject: [PATCH 2/2 V6] irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
-Date: Sun, 14 Sep 2014 01:30:16 -0500
-Message-ID: <1410676216-27953-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410676216-27953-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1410676216-27953-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1752470AbaINGgd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 02:36:33 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:48910 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaINGgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 02:36:31 -0400
+Message-ID: <5415376F.10302@linaro.org>
+Date: Sun, 14 Sep 2014 07:36:31 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(47776003)(83322001)(104166001)(99396002)(46102001)(44976005)(20776003)(84676001)(19580405001)(31966008)(48376002)(79102001)(36756003)(19580395003)(53416004)(50986999)(62966002)(74662001)(68736004)(76176999)(87286001)(86362001)(92566001)(106466001)(4396001)(50466002)(81342001)(97736003)(76482001)(50226001)(77096002)(64706001)(102836001)(95666004)(105586002)(90102001)(77982001)(107046002)(74502001)(2201001)(85852003)(86152002)(80022001)(81542001)(101416001)(229853001)(33646002)(21056001)(92726001)(89996001)(87936001)(85306004)(77156001)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB472;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 0334223192
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.17-rc4 v5 2/6] arm: fiq: Replace default FIQ handler
+References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-3-git-send-email-daniel.thompson@linaro.org> <20140912171404.GO12361@n2100.arm.linux.org.uk> <20140912171908.GP12361@n2100.arm.linux.org.uk> <20140912172337.GQ12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140912172337.GQ12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On 12/09/14 18:23, Russell King - ARM Linux wrote:
+> On Fri, Sep 12, 2014 at 06:19:08PM +0100, Russell King - ARM Linux wrote:
+>> On Fri, Sep 12, 2014 at 06:14:04PM +0100, Russell King - ARM Linux wrote:
+>>> On Thu, Sep 11, 2014 at 12:31:14PM +0100, Daniel Thompson wrote:
+>>>> This patch introduces a new default FIQ handler that is structured in a
+>>>> similar way to the existing ARM exception handler and result in the FIQ
+>>>> being handled by C code running on the SVC stack (despite this code run
+>>>> in the FIQ handler is subject to severe limitations with respect to
+>>>> locking making normal interaction with the kernel impossible).
+>>>>
+>>>> This default handler allows concepts that on x86 would be handled using
+>>>> NMIs to be realized on ARM.
+>>>
+>>> Okay, lastly... I sent you my version of this change, which contained
+>>> the changes I've detailed in the previous three emails, which are absent
+>>> from your version.
+>>>
+>>> However, you've taken on board the "trace" thing to svc_entry, and
+>>> renamed it to "call_trace".
+>>>
+>>> Now if I add this to usr_entry, "call_trace" doesn't make any sense,
+>>> nor does the .if/.endif placement because it's not just trace_hardirqs_off
+>>> which needs to be disabled there, but also ct_user_exit as well.
+>>>
+>>> I'm beginning to wonder why I tried to be nice here... it would've been
+>>> a lot faster for me to take your patch, make my own changes and commit
+>>> that instead.
+>>>
+>>> Frustrated.
+>>
+>> And another thing you're missing are the updates to arch/arm/kernel/fiq.c
+>> to ensure that the FIQ registers are preserved when we restore this new
+>> default FIQ handler.
+> 
+> Right, here's my remaining delta from your patch addressing all the points
+> from the last five emails.  If you have any disagreements with any of these
+> changes, then please discuss rather than choosing to ignore them.
 
-This patch extend GICv2m MSI to support multiple MSI in ARM64.
+Thanks for the diff.
 
-This requires the common arch_setup_msi_irqs() to be overwriten
-with ARM64 version which does not return 1 for PCI_CAP_ID_MSI and
-nvec > 1.
 
-Cc: Mark Rutland <Mark.Rutland@arm.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- arch/arm64/kernel/Makefile    |  1 +
- arch/arm64/kernel/msi.c       | 41 ++++++++++++++++++++
- drivers/irqchip/irq-gic-v2m.c | 87 ++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 119 insertions(+), 10 deletions(-)
- create mode 100644 arch/arm64/kernel/msi.c
+> 107e32b0b4ef5fa4191c9fc8415ca172b886e958
+> diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+> index 0c70fee9a7c9..3f6293ce0f2d 100644
+> --- a/arch/arm/kernel/entry-armv.S
+> +++ b/arch/arm/kernel/entry-armv.S
+> @@ -146,7 +146,7 @@ ENDPROC(__und_invalid)
+>  #define SPFIX(code...)
+>  #endif
+>  
+> -	.macro	svc_entry, stack_hole=0, call_trace=1
+> +	.macro	svc_entry, stack_hole=0, trace=1
+>   UNWIND(.fnstart		)
+>   UNWIND(.save {r0 - pc}		)
+>  	sub	sp, sp, #(S_FRAME_SIZE + \stack_hole - 4)
+> @@ -182,11 +182,11 @@ ENDPROC(__und_invalid)
+>  	@
+>  	stmia	r7, {r2 - r6}
+>  
+> +	.if \trace
+>  #ifdef CONFIG_TRACE_IRQFLAGS
+> -	.if \call_trace
+>  	bl	trace_hardirqs_off
+> -	.endif
+>  #endif
+> +	.endif
+>  	.endm
+>  
+>  	.align	5
+> @@ -298,7 +298,7 @@ ENDPROC(__pabt_svc)
+>  
+>  	.align	5
+>  __fiq_svc:
+> -	svc_entry 0, 0
+> +	svc_entry trace=0
+>  	mov	r0, sp				@ struct pt_regs *regs
+>  	bl	handle_fiq_as_nmi
+>  	svc_exit_via_fiq
+> @@ -326,7 +326,7 @@ ENDPROC(__fiq_svc)
+>  @
+>  	.align 5
+>  __fiq_abt:
+> -	svc_entry 0, 0
+> +	svc_entry trace=0
+>  
+>   ARM(	msr	cpsr_c, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+>   THUMB( mov	r0, #ABT_MODE | PSR_I_BIT | PSR_F_BIT )
+> @@ -353,7 +353,7 @@ __fiq_abt:
+>  
+>  	svc_exit_via_fiq
+>   UNWIND(.fnend		)
+> -ENDPROC(__fiq_svc)
+> +ENDPROC(__fiq_abt)
+>  
+>  /*
+>   * User mode handlers
+> @@ -365,7 +365,7 @@ ENDPROC(__fiq_svc)
+>  #error "sizeof(struct pt_regs) must be a multiple of 8"
+>  #endif
+>  
+> -	.macro	usr_entry
+> +	.macro	usr_entry, trace=1
+>   UNWIND(.fnstart	)
+>   UNWIND(.cantunwind	)	@ don't unwind the user space
+>  	sub	sp, sp, #S_FRAME_SIZE
+> @@ -402,10 +402,12 @@ ENDPROC(__fiq_svc)
+>  	@
+>  	zero_fp
+>  
+> +	.if	\trace
+>  #ifdef CONFIG_IRQSOFF_TRACER
+>  	bl	trace_hardirqs_off
+>  #endif
+>  	ct_user_exit save = 0
+> +	.endif
+>  	.endm
+>  
+>  	.macro	kuser_cmpxchg_check
+> @@ -736,13 +738,13 @@ ENDPROC(ret_from_exception)
+>  
+>  	.align	5
+>  __fiq_usr:
+> -	usr_entry
+> +	usr_entry trace=0
+>  	kuser_cmpxchg_check
+>  	mov	r0, sp				@ struct pt_regs *regs
+>  	bl	handle_fiq_as_nmi
+>  	get_thread_info tsk
+> -	mov	why, #0
+> -	b	ret_to_user_from_irq
+> +	restore_user_regs fast = 0, offset = 0
+> + UNWIND(.cantunwind	)
+>   UNWIND(.fnend		)
+>  ENDPROC(__fiq_usr)
+>  
+> diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+> index 918875d96d5d..1743049c433b 100644
+> --- a/arch/arm/kernel/fiq.c
+> +++ b/arch/arm/kernel/fiq.c
+> @@ -53,6 +53,7 @@
+>  	})
+>  
+>  static unsigned long no_fiq_insn;
+> +static struct pt_regs def_fiq_regs;
+>  
+>  /* Default reacquire function
+>   * - we always relinquish FIQ control
+> @@ -60,8 +61,15 @@ static unsigned long no_fiq_insn;
+>   */
+>  static int fiq_def_op(void *ref, int relinquish)
+>  {
+> -	if (!relinquish)
+> +	if (!relinquish) {
+> +		/* Restore default handler and registers */
+> +		local_fiq_disable();
+> +		set_fiq_regs(&dfl_fiq_regs);
 
-diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index df7ef87..a921c42 100644
---- a/arch/arm64/kernel/Makefile
-+++ b/arch/arm64/kernel/Makefile
-@@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
- arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
- arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
- arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
-+arm64-obj-$(CONFIG_PCI_MSI)		+= msi.o
- 
- obj-y					+= $(arm64-obj-y) vdso/
- obj-m					+= $(arm64-obj-m)
-diff --git a/arch/arm64/kernel/msi.c b/arch/arm64/kernel/msi.c
-new file mode 100644
-index 0000000..a295862
---- /dev/null
-+++ b/arch/arm64/kernel/msi.c
-@@ -0,0 +1,41 @@
-+/*
-+ * ARM64 architectural MSI implemention
-+ *
-+ * Support for Message Signalelled Interrupts for systems that
-+ * implement ARM Generic Interrupt Controller: GICv2m.
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#include <linux/irq.h>
-+#include <linux/msi.h>
-+#include <linux/pci.h>
-+
-+/*
-+ * ARM64 function for seting up MSI irqs.
-+ * Based on driver/pci/msi.c: arch_setup_msi_irqs().
-+ *
-+ * Note:
-+ * Current implementation assumes that all interrupt controller used in
-+ * ARM64 architecture _MUST_ supports multi-MSI.
-+ */
-+int arm64_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+{
-+	struct msi_desc *entry;
-+	int ret;
-+
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		ret = arch_setup_msi_irq(dev, entry);
-+		if (ret < 0)
-+			return ret;
-+		if (ret > 0)
-+			return -ENOSPC;
-+	}
-+
-+	return 0;
-+}
-diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-index 499bfb9..4ddb47d 100644
---- a/drivers/irqchip/irq-gic-v2m.c
-+++ b/drivers/irqchip/irq-gic-v2m.c
-@@ -99,13 +99,26 @@ static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
- 	spin_unlock(&data->msi_cnt_lock);
- }
- 
-+static int gicv2m_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc)
-+{
-+	int ret = -EINVAL;
-+#ifdef CONFIG_PCI_MSI
-+	if (desc->msi_attrib.is_msix)
-+		ret = pci_msix_vec_count(pdev);
-+	else
-+		ret = pci_msi_vec_count(pdev);
-+#endif
-+	return ret;
-+}
-+
- static int gicv2m_setup_msi_irq(struct msi_chip *chip,
- 				struct pci_dev *pdev,
- 				struct msi_desc *desc)
- {
--	int irq, avail;
-+	int i, irq, nvec, avail;
- 	struct msi_msg msg;
- 	phys_addr_t addr;
-+	struct msi_desc *entry;
- 	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
- 
- 	if (!desc) {
-@@ -114,16 +127,70 @@ static int gicv2m_setup_msi_irq(struct msi_chip *chip,
- 		return -EINVAL;
- 	}
- 
--	avail = alloc_msi_irq(data, 1, &irq);
--	if (avail != 0) {
--		dev_err(&pdev->dev,
--			"GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
--		return -ENOSPC;
--	}
-+	if (desc->msi_attrib.is_msix) {
-+		/**
-+		 * For MSIx:
-+		 * We allocate one irq at a time
-+		 */
-+		avail = alloc_msi_irq(data, 1, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
-+			return -ENOSPC;
-+		}
- 
--	irq_set_chip_data(irq, chip);
--	irq_set_msi_desc(irq, desc);
--	irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-+		irq_set_chip_data(irq, chip);
-+		irq_set_msi_desc(irq, desc);
-+		irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-+	} else {
-+		/**
-+		 * For MSI and Multi-MSI:
-+		 * All requested irqs are allocated and setup at
-+		 * once. Subsequent calls to this function would simply return
-+		 * success. This is to avoid having to implement a separate
-+		 * function for setting up multiple irqs.
-+		 */
-+		BUG_ON(list_empty(&pdev->msi_list));
-+		WARN_ON(!list_is_singular(&pdev->msi_list));
-+
-+		nvec = gicv2m_msi_get_vec_count(pdev, desc);
-+		if (WARN_ON(nvec <= 0))
-+			return nvec;
-+
-+		entry = list_first_entry(&pdev->msi_list,
-+					 struct msi_desc, list);
-+
-+		if ((nvec > 1) && (entry->msi_attrib.multiple))
-+			return 0;
-+
-+		avail = alloc_msi_irq(data, nvec, &irq);
-+		if (avail != 0) {
-+			dev_err(&pdev->dev,
-+				"GICv2m: Failed to allocate %d irqs.\n", nvec);
-+			return avail;
-+		}
-+
-+		if (nvec > 1) {
-+			/* Set lowest of the new interrupts assigned
-+			 * to the PCI device
-+			 */
-+			entry->nvec_used = nvec;
-+			entry->msi_attrib.multiple = ilog2(
-+						__roundup_pow_of_two(nvec));
-+		}
-+
-+		for (i = 0; i < nvec; i++) {
-+			irq_set_chip_data(irq+i, chip);
-+			if (irq_set_msi_desc_off(irq, i, entry)) {
-+				dev_err(&pdev->dev,
-+					"GICv2m: Failed to set up MSI irq %d\n",
-+					(irq+i));
-+				return -EINVAL;
-+			}
-+
-+			irq_set_irq_type((irq+i), IRQ_TYPE_EDGE_RISING);
-+		}
-+	}
- 
- 	addr = data->res.start + V2M_MSI_SETSPI_NS;
- 	msg.address_hi = (u32)(addr >> 32);
--- 
-1.9.3
+This variable was declared as def_fiq_regs .
+
+
+>  		set_fiq_handler(&no_fiq_insn, sizeof(no_fiq_insn));
+> +		local_fiq_enable();
+> +
+> +		/* FIXME: notify irq controller to standard enable FIQs */
+
+I don't understand what we need to tell the irq controller at this point.
+
+If we do want to mask sources of FIQ from arch code then in the case of
+IPI_CPU_BACKTRACE we might be better off disabling it at point of
+generation than at the interrupt controller (to avoid the long timeout).
+
+
+> +	}
+>  
+>  	return 0;
+>  }
+> @@ -151,5 +159,6 @@ void __init init_FIQ(int start)
+>  {
+>  	unsigned offset = FIQ_OFFSET;
+>  	no_fiq_insn = *(unsigned long *)(0xffff0000 + offset);
+> +	get_fiq_regs(&dfl_fiq_regs);
+>  	fiq_start = start;
+>  }
+> 
+> 
 
