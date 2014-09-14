@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaINPSx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 11:18:53 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:34600 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaINPSv (ORCPT
+	id S1752674AbaINPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 11:22:09 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:58198 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605AbaINPWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 11:18:51 -0400
-Date: Sun, 14 Sep 2014 16:18:47 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Glenn P. Williamson" <glenn.p.williamson@intel.com>
-Subject: Re: [PATCH 6/6] x86/efi: introduce EFI_BOOT_SERVICES_WARN
-Message-ID: <20140914151847.GK18582@console-pimps.org>
-References: <1410633376-8822-1-git-send-email-ricardo.neri-calderon@linux.intel.com>
- <1410633376-8822-7-git-send-email-ricardo.neri-calderon@linux.intel.com>
- <20140914000130.GC18296@nazgul.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140914000130.GC18296@nazgul.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 14 Sep 2014 11:22:07 -0400
+From: Spencer Baugh <sbaugh@andrew.cmu.edu>
+To: gregkh@linuxfoundation.org
+Cc: Spencer Baugh <sbaugh@andrew.cmu.edu>, Oleg Drokin <oleg.drokin@intel.com>,
+        Hongchao Zhang <hongchao.zhang@intel.com>,
+        Niu Yawei <yawei.niu@intel.com>,
+        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
+        Masanari Iida <standby24x7@gmail.com>,
+        devel@driverdev.osuosl.org (open list:STAGING SUBSYSTEM),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 1/2] staging: lustre: fix function definition style
+Date: Sun, 14 Sep 2014 11:21:10 -0400
+Message-Id: <1410708073-23713-1-git-send-email-sbaugh@andrew.cmu.edu>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Sep, at 02:01:30AM, Borislav Petkov wrote:
-> On Sat, Sep 13, 2014 at 11:36:16AM -0700, Ricardo Neri wrote:
-> > Being more verbose about this kind of illegal access from the firmware
-> > increases the likelihood of this kind firmware bugs to be fixed.
-> 
-> I sincerely hope you're right and, more importantly, how do we make sure
-> those warnings get seen in time for a fix to even be possible..?
+Fix errors reported by checkpatch of this kind:
+ERROR: open brace '{' following function declarations go on the next line
 
-Some firmware teams do run Linux as part of their validation process,
-and have been known to pay attention to the kernel boot messages. So
-there's definitely hope there.
+Signed-off-by: Spencer Baugh <sbaugh@andrew.cmu.edu>
+---
+ drivers/staging/lustre/lustre/include/lustre_import.h | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-But we are also taking a more active approach with the Linux UEFI
-Validation project [1], where we consume these kinds of error messages
-and turn them into explicit test passes/failures.
-
-We've been attending the UEFI plugfests and trying to work directly with
-firmware engineers to bridge that communication gap between firmware and
-OS, so that we can fix these kinds of bugs before they appear in the
-wild.
-
-[1] - https://01.org/linux-uefi-validation
-
+diff --git a/drivers/staging/lustre/lustre/include/lustre_import.h b/drivers/staging/lustre/lustre/include/lustre_import.h
+index 8304a55..7bf82e0 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_import.h
++++ b/drivers/staging/lustre/lustre/include/lustre_import.h
+@@ -346,21 +346,24 @@ static inline unsigned int at_timeout2est(unsigned int val)
+ 	return (max((val << 2) / 5, 5U) - 4);
+ }
+ 
+-static inline void at_reset(struct adaptive_timeout *at, int val) {
++static inline void at_reset(struct adaptive_timeout *at, int val)
++{
+ 	spin_lock(&at->at_lock);
+ 	at->at_current = val;
+ 	at->at_worst_ever = val;
+ 	at->at_worst_time = get_seconds();
+ 	spin_unlock(&at->at_lock);
+ }
+-static inline void at_init(struct adaptive_timeout *at, int val, int flags) {
++static inline void at_init(struct adaptive_timeout *at, int val, int flags)
++{
+ 	memset(at, 0, sizeof(*at));
+ 	spin_lock_init(&at->at_lock);
+ 	at->at_flags = flags;
+ 	at_reset(at, val);
+ }
+ extern unsigned int at_min;
+-static inline int at_get(struct adaptive_timeout *at) {
++static inline int at_get(struct adaptive_timeout *at)
++{
+ 	return (at->at_current > at_min) ? at->at_current : at_min;
+ }
+ int at_measured(struct adaptive_timeout *at, unsigned int val);
 -- 
-Matt Fleming, Intel Open Source Technology Center
+2.1.0
+
