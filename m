@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaINRaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:30:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40705 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863AbaINRaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:30:03 -0400
-Date: Sun, 14 Sep 2014 19:27:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, mmarek@suse.cz, arnd@arndb.de,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, ebiederm@xmission.com,
-        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
-Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to
-	/proc/modules
-Message-ID: <20140914172709.GA1569@redhat.com>
-References: <20140914100545.3745.23394.stgit@localhost> <20140914153832.GC4064@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140914153832.GC4064@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752998AbaINRaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 13:30:55 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:47340 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752861AbaINRax (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 13:30:53 -0400
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nimrod Andy <B38611@freescale.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Frank Li <frank.li@freescale.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH] net: ethernet: freescale: fec_main.c:  Cleaning up missing null-terminate in conjunction with strncpy
+Date: Sun, 14 Sep 2014 19:32:42 +0200
+Message-Id: <1410715962-15986-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14, Greg KH wrote:
->
-> On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
-> > This series implements a possibility to show the list of built-in drivers
-> > to userspace. The names of drivers will be the same as when they are modules.
->
-> Have you looked at /sys/modules/ ?  Doesn't that show what you want
-> here?
+Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 
-Well, /sys/module/ doesn't list the modules (drivers) compiled in. Say,
-/sys/module/kernel. And it can't help a user to figure out that, say, the
-loop driver is already "loaded" because CONFIG_BLK_DEV_LOOP=y.
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/net/ethernet/freescale/fec_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> Module names aren't "standardized", we change them at times when needed,
-> just like CONFIG_ names.
-
-OK, but still the name will be the same, in /proc/modules or /proc/builtin.
-
-> What is your end goal here?  As you say, config.gz is the real kernel
-> configuration, just having a list of modules built in isn't going to
-> help much in getting a working kernel config without it.
-
-Perhaps you are right... but otoh perhaps this can can be useful anyway.
-Again, a user can know about "insmod loop", but he can know nothing
-about CONFIG_ names.
-
-That said, I do not really understand 2/3. Not only I do not understand
-this kbuild magic, I am not sure I understand what /proc/built-in will
-actually show.
-
-To me it would be better to change the "ifndef MODULE" version of
-module_init() to add KBUILD_MODNAME into __builtin_drivers_list[].
-
-Yes, module_init() is overused. Say, why does kernel/kprobes.c use
-module_init() ? This looks confusing, this code can't be compiled as a
-module. And it seems that it has a lot more users which should have used
-__initcall() instead.
-
-In short, I dunno ;)
-
-Oleg.
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 89355a7..e84b132 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -1674,13 +1674,13 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 				continue;
+ 			if (dev_id--)
+ 				continue;
+-			strncpy(mdio_bus_id, fep->mii_bus->id, MII_BUS_ID_SIZE);
++			strlcpy(mdio_bus_id, fep->mii_bus->id, MII_BUS_ID_SIZE);
+ 			break;
+ 		}
+ 
+ 		if (phy_id >= PHY_MAX_ADDR) {
+ 			netdev_info(ndev, "no PHY, assuming direct connection to switch\n");
+-			strncpy(mdio_bus_id, "fixed-0", MII_BUS_ID_SIZE);
++			strlcpy(mdio_bus_id, "fixed-0", MII_BUS_ID_SIZE);
+ 			phy_id = 0;
+ 		}
+ 
+-- 
+1.7.10.4
 
