@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaINEYj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 00:24:39 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:61312 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524AbaINEYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 00:24:37 -0400
-Date: Sun, 14 Sep 2014 07:24:27 +0300
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-09-14
-Message-ID: <20140914042427.GA1926@t440s.P-661HNU-F1>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20140914041912.GA1623@t440s.P-661HNU-F1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
-Content-Disposition: inline
-In-Reply-To: <20140914041912.GA1623@t440s.P-661HNU-F1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752377AbaINFCz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 01:02:55 -0400
+Received: from mout.gmx.net ([212.227.15.19]:61345 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752283AbaINFCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 01:02:54 -0400
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: David Daney <david.daney@cavium.com>
+Cc: "David S. Miller" <davem@davemloft.net>, Luka Perkov <luka@openwrt.org>,
+        Willem de Bruijn <willemb@google.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH 1/1 v2] netdev: octeon_mgmt: ISO C90 forbids mixed declarations and code
+Date: Sun, 14 Sep 2014 07:02:14 +0200
+Message-Id: <1410670935-904-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 2.1.0
+X-Provags-ID: V03:K0:8enetx2LAq1/sM9bilqvAGxe5Jae6UJSvdMjp225uQLeX449rac
+ TQ9i7SysLu4wLzRNSxCQHB7IyQ5AOCHDtp4AiU50pcN5TH2kzDcYr75G/6h30kbG3tYiCYC
+ qU9r1+t8xXUsgLFhOvUJruOKj2hDPfoejOBm+df6w4OjqzUcvyI3YBzutQFTp2Z/Iu+/jDL
+ QYntRV0vgZxzQ4ZcDRIWw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Revised patch takes into account comments by Joe and David.
 
---BOKacYhQ+x31HxR3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Compiling with OCTEON_MGMT_ETHERNET gives a warning
+drivers/net/ethernet/octeon/octeon_mgmt.c:295:4:
+warning: ISO C90 forbids mixed declarations and code
+[-Wdeclaration-after-statement]
 
-Hi John,
+The patch cleans up the code.
 
-On Sun, Sep 14, 2014, Johan Hedberg wrote:
-> Here are some more patches intended for 3.18. Most of them are cleanups
-> or fixes for SMP. The only exception is a fix for BR/EDR L2CAP fixed
-> channels which should now work better together with the L2CAP
-> information request procedure.
->=20
-> Let me know if there are any issues pulling. Thanks.
->=20
-> Johan
->=20
-> ---
-> The following changes since commit 39e90c77637b3892a39f2908aea57539e961c5=
-0e:
->=20
->   Bluetooth: 6lowpan: Route packets that are not meant to peer via correc=
-t device (2014-09-09 15:51:47 +0200)
->=20
-> are available in the git repository at:
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.=
-git master
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+CC: Joe Perches <joe@perches.com>
+CC: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/octeon/octeon_mgmt.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This was supposed to be a reference to the for-upstream branch instead
-of master. Both point to the same commit at this moment but it'd be more
-convenient if you pull from for-upstream so that the master branch can
-continue living on without waiting for the pull to happen. Sorry for the
-extra hassle.
+diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
+index 979c698..6cc68b1 100644
+--- a/drivers/net/ethernet/octeon/octeon_mgmt.c
++++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
+@@ -290,9 +290,10 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
+ 		/* Read the hardware TX timestamp if one was recorded */
+ 		if (unlikely(re.s.tstamp)) {
+ 			struct skb_shared_hwtstamps ts;
++			u64 ns;
+ 			memset(&ts, 0, sizeof(ts));
+ 			/* Read the timestamp */
+-			u64 ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
++			ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
+ 			/* Remove the timestamp from the FIFO */
+ 			cvmx_write_csr(CVMX_MIXX_TSCTL(p->port), 0);
+ 			/* Tell the kernel about the timestamp */
+-- 
+2.1.0
 
-Johan
-
---BOKacYhQ+x31HxR3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUFRh7AAoJECQj9vv5qNQSzywP/3WE/WVtytzT+kURz02i/d+/
-xe8bFszWhbaLk2Aoiqv634UCaq2MiP9vhd1aPXl0eHI5dbV6/k1OMPmrszBzbJ7v
-qs3gbnbRfrGuW0udrQJTqt/WMXH0JmkGcL48i4V0fjf271e37aJAcvo/Rq67i+/o
-9LdaV1gLXfSs2bqtVUKvsXlBdF4HBNcUnPURjtWFDkytT7z4heci/7KdYpKcNDYk
-saksJbgalJ7wy3E/Uz3pkufMNTnxrmDJOLxRihZ3JDzRTPCNtkTyKOPvkjhl7nJp
-mA12NMOjC+V2vrJ9euFLnX17lJqwPZUkij51B4H/h0VaAwWdQHNM5OLhvsWqTDRa
-MBELzAWWGN4HHEn8JCQpHy8tCZKrOd33KmzTzY4u7kTc5zjK2Z+BQfP1PkXMxUFc
-ZupfUxMKj5HzV3t4qsMAy+e7Qj36HcYl93p6Aabb/27k8mS+6m3V1dFJ3Qal6aFb
-dY1nAzOx3CWO+xiuwZGCVObPl7s5LDgAeTVl3MBCodC9Z9oXbWdCmosIZrQuD8uQ
-QqQp+tvKjSSUF81s73gR73YIwmQpN/SVUaeUBOyySEUPIyki4Xp8DJvARnCj83PE
-svEUOySIzvak6Sz5H9XqZNUaTocmEP5i0qjTmngC5VNal0Bo4kxGfteBcTpA+mnH
-uHcMMTA5ONV1gYVg9NYn
-=hNjp
------END PGP SIGNATURE-----
-
---BOKacYhQ+x31HxR3--
