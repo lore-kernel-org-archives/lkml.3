@@ -1,159 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaINR5u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:57:50 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:55887 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652AbaINR5s (ORCPT
+	id S1752781AbaINSF4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 14:05:56 -0400
+Received: from forward2l.mail.yandex.net ([84.201.143.145]:47568 "EHLO
+	forward2l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaINSFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:57:48 -0400
+	Sun, 14 Sep 2014 14:05:55 -0400
+X-Yandex-Uniq: a15e2561-effd-4f03-8674-7c1585e9d163
+Authentication-Results: smtp16.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <5415D8FA.8040305@yandex.ru>
+Date: Sun, 14 Sep 2014 22:05:46 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <20140909105310.GC27786@leverpostej>
-References: <1410256619-3213-1-git-send-email-ankit.jindal@linaro.org>
- <1410256619-3213-5-git-send-email-ankit.jindal@linaro.org> <20140909105310.GC27786@leverpostej>
-From: Ankit Jindal <ankit.jindal@linaro.org>
-Date: Sun, 14 Sep 2014 23:27:27 +0530
-Message-ID: <CAPTm99XzJe8RWCaMCauGA9fgzRDNzk4bhZoKFtH3jiDHYek2fA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] dt-bindings: Add binding info for Xgene QMTM UIO driver
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "patches@apm.com" <patches@apm.com>, Rob Herring <robh+dt@kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: mmarek@suse.cz, arnd@arndb.de, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, oleg@redhat.com,
+        grant.likely@secretlab.ca, ebiederm@xmission.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to /proc/modules
+References: <20140914100545.3745.23394.stgit@localhost> <20140914153832.GC4064@kroah.com> <5415D10E.90809@yandex.ru> <20140914173919.GA10059@kroah.com>
+In-Reply-To: <20140914173919.GA10059@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 September 2014 16:23, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Sep 09, 2014 at 10:56:58AM +0100, Ankit Jindal wrote:
->> This patch adds device tree binding documentation for
->> Xgene QMTM UIO driver.
+On 14.09.2014 21:39, Greg KH wrote:
+> On Sun, Sep 14, 2014 at 09:31:58PM +0400, Kirill Tkhai wrote:
+>> On 14.09.2014 19:38, Greg KH wrote:
+>>> On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
+>>>> This series implements a possibility to show the list of built-in drivers
+>>>> to userspace. The names of drivers will be the same as when they are modules.
+>>>
+>>> Have you looked at /sys/modules/ ?  Doesn't that show what you want
+>>> here?
 >>
->> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
->> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
->> ---
->>  .../devicetree/bindings/uio/uio_xgene_qmtm.txt     |   45 ++++++++++++++++++++
->>  1 file changed, 45 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
+>> There are only the drivers in "/sys/module" which have parameters.
+>> Drivers without parameters do not appear there.
+> 
+> Ah, didn't realize that.  Should be easy to fix though, if you really
+> wanted to list the modules.  Much better than a random proc file that
+> you have to parse :)
+
+But it looks like one file is better than many new directories.
+Furthermore some utils already may consider /sys/module directory as
+a directory where all drivers have parameters. Is it good if we add
+new ones of different type there?
+
+>>>> So, if your system has "loop" driver then it appears either in /proc/modules
+>>>> or in /proc/built-in and userspace will be able to know about this.
+>>>>
+>>>> Now this is impossible. The only way to get kernel configuration is
+>>>> /proc/config.gz, but CONFIG_* names can change from time to time. Module
+>>>> names are more or less standardized.
+>>>
+>>> Module names aren't "standardized", we change them at times when needed,
+>>> just like CONFIG_ names.
+>>>
+>>> What is your end goal here?  As you say, config.gz is the real kernel
+>>> configuration, just having a list of modules built in isn't going to
+>>> help much in getting a working kernel config without it.
 >>
->> diff --git a/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
->> new file mode 100644
->> index 0000000..b71831b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/uio/uio_xgene_qmtm.txt
->> @@ -0,0 +1,45 @@
->> +APM X-Gene QMTM UIO nodes
->> +
->> +QMTM UIO nodes are defined for user space access to on-chip QMTM device
->> +on APM X-Gene SOC using UIO framework.
->> +
->
-> Userspace vs kernel space has precisely _nothing_ to do with a HW
-> description.
->
-> This doesn't describe at all what the device is (e.g. what does QMTM
-> stand for, what is it used for?).
->
-> NAK.
+>> It looks like userspace applications oriented on modules names rather
+>> than on CONFIG_XXX parameters. /proc/config.gz is optional and userspace
+>> applications can't base on it.
+>>
+>> For example, when I compile "loop" module built-in and "loop" is in
+>> /etc/modules, init script warns about this module is not present and
+>> can't be autoloaded. The script does not store CONFIG_XXX <-> module_xxx
+>> conformity. And nobody stores it.
+>>
+>> When iptables wants extra functionality, it requests a module. Etc.
+>>
+>> Nobody is oriented on CONFIG_XXX parameters. It would be simple for
+>> userspace to add a support of /proc/built-in analysing. It's very
+>> similar to /proc/modules.
+> 
+> Shouldn't userspace focus on the functionality a module provides, not
+> the module name itself?  Can't a test for the loop "module" just test to
+> see if the loop control device is present?  Same for iptables (there's
+> modprobe rules for iptable modules I think...)
+> 
+> In other words, don't focus on the module names, focus on the userspace
+> function a module provides, there should always be a way to check that
+> at run time (if not, then the module doesn't actually do much...)
 
-QMTM stands for queue manager and traffic manager. It is device managing
-the hardware queues. It also implements QoS among hardware queues hence
-term "traffic" manager is present in its name.
+Hm, I'm not sure that anybody stores CONFIG_XXX <-> module_xxx
+conformity. Everybody bases on module name. If application is seeing
+CONFIG_XXX=m, but the functionality, which it want's, is not available,
+what it has to do? How should it convert CONFIG_XXX to module name?
+So, many applications want module name instead of CONFIG_XXX, I believe.
 
-Sure, I will add more info about the device in the next revision.
-
-The primary purpose of QMTM UIO driver is to expose QMTM HW to
-user space so that frameworks like ODP (OpenDataPlane) can use
-this from user space.
-
->
-> Please ensure you Cc the devicetree list (devicetree@vger.kernel.org) in
-> future.
-
-Sure, will do.
-
->
->> +Required properties:
->> +- compatible: Should be "apm,xgene-qmtm-uio"
->
-> This should definitely not have "uio" in the name.
-
-I added "uio" in compatible string because in future APM might
-add separate driver for accessing QMTM from kernel space.
-
-Can you suggest better compatible strings for this UIO driver?
-
->
->> +- reg: Address and length of the register set for the device. It contains the
->> +  information of registers in the same order as described by reg-names.
->> +- reg-names: Should contain the register set names
->> +  - "csr": QMTM control and status register address space.
->> +  - "fabric": QMTM memory mapped access to queue states.
->
-> These look ok, I guess.
->
->> +  - "qpool": Memory location for creating QMTM queues. This could be some
->> +    SRAM or reserved portion of RAM. It is expected that size and location
->> +    of qpool memory will be configurable via bootloader.
->
-> I don't follow why this should be described in a reg entry. This is not
-> a property of the device; this is a separate resource being assigned to
-> the device.
-
-Ok, I will remove it from reg and add "qpool-addr" and "qpool-size"
-attributes to
-point the location of qpool.
-
->
-> Why can the kernel not allocate this dynamically?
-
-For faster access, this can be on-chip memory as well.
-
->
-> If you need a specific fixed pool, use the reserved-memory bindings.
-
-reserved-memory only apply to RAM, it does not apply to on-chip
-SRAMs. Right ?
-
->
->> +- clocks: Reference to the clock entry.
->
-> There is only one clock input to the IP block?
-
-Yes.
-
->
->> +- num_queues: Number of queues under this QMTM device.
->
-> s/_/-/, property names should use '-' rather than '_'.
-
-Sure, will rename it in next revision.
-
->
->> +- devid: QMTM identification number for the system having multiple QMTM devices
->
-> What exactly is this used for? Why is the reg entry not sufficient?
-
-When there are multiple QMTM devices, the devid is used to form a
-unique id (a tuple of queue number and device id) for the queues
-belonging to this device. Unfortunately, we don't have any register
-providing the devid of the device.
-
->
->> +Optional properties:
->> +- status: Should be "ok" or "disabled" for enabled/disabled. Default is "ok".
->
-> This is so standard I don't see the point in documenting it.
-
-Ok, I will remove it in next revision.
-
->
-> Mark.
-
-Thanks,
-Ankit
+Kirill
