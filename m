@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaINUCF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 16:02:05 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56177 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752766AbaINUCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 16:02:03 -0400
-Date: Sun, 14 Sep 2014 21:01:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ankit Jindal <ankit.jindal@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, patches@apm.com,
-        Rob Herring <robh+dt@kernel.org>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/5] Documentation: Update documentation for
-	UIO_MEM_PHYS_CACHE
-Message-ID: <20140914200152.GV12361@n2100.arm.linux.org.uk>
-References: <1410256619-3213-1-git-send-email-ankit.jindal@linaro.org> <1410256619-3213-3-git-send-email-ankit.jindal@linaro.org>
+	id S1752889AbaINUDK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 16:03:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771AbaINUDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 16:03:08 -0400
+Date: Sun, 14 Sep 2014 22:00:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Greg KH <gregkh@linuxfoundation.org>, mmarek@suse.cz, arnd@arndb.de,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, ebiederm@xmission.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to
+	/proc/modules
+Message-ID: <20140914200007.GA13254@redhat.com>
+References: <20140914100545.3745.23394.stgit@localhost> <20140914153832.GC4064@kroah.com> <20140914172709.GA1569@redhat.com> <5415D6ED.30508@yandex.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410256619-3213-3-git-send-email-ankit.jindal@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <5415D6ED.30508@yandex.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 03:26:56PM +0530, Ankit Jindal wrote:
-> This patch update UIO documentation for new mem region
-> type UIO_MEM_PHYS_CACHE.
-> 
-> Signed-off-by: Ankit Jindal <ankit.jindal@linaro.org>
-> Signed-off-by: Tushar Jagad <tushar.jagad@linaro.org>
-> ---
->  Documentation/DocBook/uio-howto.tmpl |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
-> index bbe9c1f..49e47d4 100644
-> --- a/Documentation/DocBook/uio-howto.tmpl
-> +++ b/Documentation/DocBook/uio-howto.tmpl
-> @@ -530,7 +530,8 @@ the memory region, it will show up in the corresponding sysfs node.
->  <varname>UIO_MEM_PHYS</varname> if you you have physical memory on your
->  card to be mapped. Use <varname>UIO_MEM_LOGICAL</varname> for logical
->  memory (e.g. allocated with <function>kmalloc()</function>). There's also
-> -<varname>UIO_MEM_VIRTUAL</varname> for virtual memory.
-> +<varname>UIO_MEM_VIRTUAL</varname> for virtual memory and
-> +<varname>UIO_MEM_PHYS_CACHE</varname> for physical cacheable memory.
+On 09/14, Kirill Tkhai wrote:
+>
+> On 14.09.2014 21:27, Oleg Nesterov wrote:
+> >
+> > That said, I do not really understand 2/3. Not only I do not understand
+> > this kbuild magic, I am not sure I understand what /proc/built-in will
+> > actually show.
+>
+> It's a list of drivers, one driver per line:
+>
+> loop
+> ipv4
+> ipv5
+> ipv6
+> ipv7
+> ipv8
+> etc ;)
 
-When I read this, I wondered what "physical cacheable memory" was.
-Then I found that what you're doing with this is mapping physical
-memory into userspace with cacheable attributes.
+which drivers ? ;)
 
-So, to avoid confusion, this should be "for physical memory, which
-will be cacheably mapped" or similar.
+OK, I blindly applied this series to my test kernel tree and the
+output is:
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+	$ cat /proc/built-in
+	proc
+	devpts
+	ext3
+	jbd
+	ramfs
+	hugetlbfs
+	debugfs
+	crypto
+	crypto_algapi
+	pcieportdrv
+	acpi
+	acpica
+	pnp
+	pnpacpi
+	8250
+	input-core
+	netfilter
+	unix
+
+and where is, say, af_packet driver? I have CONFIG_PACKET=y. Or, where
+is my deadline_iosched/cfq_iosched modules compiled in?
+
+> > To me it would be better to change the "ifndef MODULE" version of
+> > module_init() to add KBUILD_MODNAME into __builtin_drivers_list[].
+> >
+> > Yes, module_init() is overused. Say, why does kernel/kprobes.c use
+> > module_init() ? This looks confusing, this code can't be compiled as a
+> > module. And it seems that it has a lot more users which should have used
+> > __initcall() instead
+>
+> Yeh, the realization may be different. I do not insist on additional
+> section.
+
+The additional sction is fine, I think. I only meant that module_init()
+itself can be used to add a module name into that section.
+
+But of course I won't insist. And again, module_init() is abused by the
+non-modular kernel code.
+
+Oleg.
+
