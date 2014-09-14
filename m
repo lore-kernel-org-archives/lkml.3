@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaINBpY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 21:45:24 -0400
-Received: from p3plsmtpa08-07.prod.phx3.secureserver.net ([173.201.193.108]:46984
-	"EHLO p3plsmtpa08-07.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752232AbaINBpW (ORCPT
+	id S1752302AbaINCHA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 22:07:00 -0400
+Received: from va-smtp01.263.net ([54.88.144.211]:34735 "EHLO
+	vasmtpcom.263.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752258AbaINCG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 21:45:22 -0400
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Sep 2014 21:45:22 EDT
-Message-ID: <5414F163.6010309@componentsw.com>
-Date: Sat, 13 Sep 2014 18:37:39 -0700
-From: Walter Mack <wmack@componentsw.com>
+	Sat, 13 Sep 2014 22:06:59 -0400
+X-RL-SENDER: xjq@rock-chips.com
+X-FST-TO: cf@rock-chips.com
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: xjq@rock-chips.com
+X-UNIQUE-TAG: <f696155a88a7b319c4159f16f5e77e20>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+Message-ID: <5414F82E.9090004@rock-chips.com>
+Date: Sun, 14 Sep 2014 10:06:38 +0800
+From: Jianqun <xjq@rock-chips.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 001/001] IEEE 802.15.4: Add module parameter to mrf24j40 to
- allow use of external transmitters/receivers
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@kernel.org>, Jianqun <jay.xu@rock-chips.com>
+CC: heiko@sntech.de, lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
+        cf@rock-chips.com
+Subject: Re: [PATCH 2/5] ASoC: rockchip-i2s: fix master mode set bit error
+References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com> <1410568863-21723-1-git-send-email-jay.xu@rock-chips.com> <20140913163501.GH7960@sirena.org.uk>
+In-Reply-To: <20140913163501.GH7960@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enhance module drivers/net/ieee802154/mrf24j40.c to allow designs that 
-use external transmitters/receivers.
 
-Designs that use Microchip's MRF24J40 with external receivers and 
-transmitters require the chip to
-be specifically programmed for this, by setting the "test mode register" 
-to 0xf.
 
-In my testing, without this flag, I could only receive over a distance 
-of a few feet. Setting this flag allows
-distances well above 100 feet.
+在 09/14/2014 12:35 AM, Mark Brown 写道:
+> On Sat, Sep 13, 2014 at 08:41:03AM +0800, Jianqun wrote:
+>> Fix error format set to I2S master or slave mode.
+>> Test on RK3288 board with max98090.
+> 
+> Applied.  Since this is a bug fix it should be one of the first patches
+> in the series so that it can be sent to Linus as a fix, bug fixes should
+> go before any other patches.
+> 
 
-The patch adds a module parameter module_param(ext_rx_tx, bool, 0). When 
-setting the parameter to true,
-the driver configures the "test mode" register of the mrf24j40 device to 
-work with external tranmitters and receivers.
-
-patch applies to kernel version:3.16.0-rc4csi-git-dirty, git: commit 
-cd3de83f147601356395b57a8673e9c5ff1e59d1
-
-(I'm doing a patch submission the first time. If I'm doing this wrong, I 
-would appreciate feedback for how to do this better next time).
-
-Signed-off-by: Walter J. Mack <wmack@componentsw.com>
-
----
-diff --git a/drivers/net/ieee802154/mrf24j40.c 
-b/drivers/net/ieee802154/mrf24j40.c
-index 4048062..18cff47 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -26,6 +26,10 @@
-  #include <net/mac802154.h>
-  #include <net/ieee802154.h>
-
-+static bool ext_rx_tx = false ;
-+module_param(ext_rx_tx, bool, 0);
-+MODULE_PARM_DESC(ext_rx_tx, " turn on statemachine to manage external 
-tx/rx");
-+
-  /* MRF24J40 Short Address Registers */
-  #define REG_RXMCR    0x00  /* Receive MAC control */
-  #define REG_PANIDL   0x01  /* PAN ID (low) */
-@@ -63,6 +67,8 @@
-  #define REG_SLPCON1    0x220
-  #define REG_WAKETIMEL  0x222  /* Wake-up Time Match Value Low */
-  #define REG_WAKETIMEH  0x223  /* Wake-up Time Match Value High */
-+#define REG_TESTMODE   0x22f  /* test mode and state machine control 
-register */
-+
-  #define REG_RX_FIFO    0x300  /* Receive FIFO */
-
-  /* Device configuration: Only channels 11-26 on page 0 are supported. */
-@@ -669,6 +675,10 @@ static int mrf24j40_probe(struct spi_device *spi)
-      write_short_reg(devrec, REG_RFCTL, 0x0);
-      udelay(192);
-
-+    if ( false != ext_rx_tx ){
-+      write_long_reg(devrec, REG_TESTMODE, 0x0f);
-+    }
-+
-      /* Set RX Mode. RXMCR<1:0>: 0x0 normal, 0x1 promisc, 0x2 error */
-      ret = read_short_reg(devrec, REG_RXMCR, &val);
-      if (ret)
-
+got it, I'll do it at new version patch, thanks 
