@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaINKSw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 06:18:52 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:58462 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaINKSr (ORCPT
+	id S1752696AbaINKTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 06:19:34 -0400
+Received: from forward4l.mail.yandex.net ([84.201.143.137]:47331 "EHLO
+	forward4l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbaINKTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 06:18:47 -0400
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-nilfs <linux-nilfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Andreas Rohner <andreas.rohner@gmx.net>
-Subject: [PATCH 0/1] nilfs2: fix device cache flush in nilfs_sync_fs()
-Date: Sun, 14 Sep 2014 19:11:43 +0900
-Message-Id: <1410689504-10032-1-git-send-email-konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.7.9.4
-X-Dispatcher: imput version 20110525(IM151)
+	Sun, 14 Sep 2014 06:19:31 -0400
+X-Yandex-Uniq: a2e73bcc-2869-43c5-a330-46b1aca69efb
+Authentication-Results: smtp8.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Subject: [PATCH 2/3] core: Save list of built-in drivers names
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: mmarek@suse.cz, arnd@arndb.de, linux-kbuild@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        oleg@redhat.com, grant.likely@secretlab.ca, ebiederm@xmission.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
+Date: Sun, 14 Sep 2014 14:18:35 +0400
+Message-ID: <20140914101831.3745.78412.stgit@localhost>
+In-Reply-To: <20140914100545.3745.23394.stgit@localhost>
+References: <20140914100545.3745.23394.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Create section *(__builtin_drivers_list) to store the list of drivers names.
 
-Please add the following patch to the queue for the next merge window.
+Every driver name "modname" from directory "moddir" will be stored in array:
 
-It ensures that nilfs_sync_fs() function sends a cache flush request
-to the underlying device when required.  The current nilfs_sync_fs()
-has a defect that it can skip the flush if only a small amount of data
-is written.  The original cover letter can be seen at:
+const char moddir_modname[] __attribute__((section("__builtin_drivers_list")) = "modname";
 
-[1] http://marc.info/?l=linux-nilfs&m=141061909728506
-    "[PATCH v6 0/1] nilfs2: add missing blkdev_issue_flush() to
-    nilfs_sync_fs()"
+Using moddir prefix for variables names to prevent linking breakage
+on the set of all architectures where dupricate names present.
+The name template should be transmormed in something like __modname__name
+in the future to catch duplicates, but now it's impossible.
 
-Thanks,
-Ryusuke Konishi
---
-Andreas Rohner (1):
-      nilfs2: add missing blkdev_issue_flush() to nilfs_sync_fs()
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ include/asm-generic/vmlinux.lds.h |    3 +++
+ scripts/Makefile.build            |   14 ++++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
- fs/nilfs2/file.c      |    8 +++-----
- fs/nilfs2/ioctl.c     |    8 +++-----
- fs/nilfs2/segment.c   |    3 +++
- fs/nilfs2/super.c     |    6 ++++++
- fs/nilfs2/the_nilfs.h |   22 ++++++++++++++++++++++
- 5 files changed, 37 insertions(+), 10 deletions(-)
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 5ba0360..5bc6d56 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -237,6 +237,9 @@
+ 		*(__tracepoints_ptrs)	/* Tracepoints: pointer array */\
+ 		VMLINUX_SYMBOL(__stop___tracepoints_ptrs) = .;		\
+ 		*(__tracepoints_strings)/* Tracepoints: strings */	\
++		VMLINUX_SYMBOL(__start_builtin_drivers_list) = .;	\
++		*(__builtin_drivers_list)				\
++		VMLINUX_SYMBOL(__stop_builtin_drivers_list) = .;	\
+ 	}								\
+ 									\
+ 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index bf3e677..e158a4d 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -136,6 +136,7 @@ $(obj-m)              : quiet_modtag := [M]
+ 
+ # Default for not multi-part modules
+ modname = $(basetarget)
++modname_c_var = `echo $(kbuild-dir)/$(modname) | sed 's/\.\///g' | sed 's/-/_/g' | sed 's/\//__/g'`
+ 
+ $(multi-objs-m)         : modname = $(modname-multi)
+ $(multi-objs-m:.o=.i)   : modname = $(modname-multi)
+@@ -376,11 +377,16 @@ $(filter $(addprefix $(obj)/,         \
+ $($(subst $(obj)/,,$(@:.o=-objs)))    \
+ $($(subst $(obj)/,,$(@:.o=-y)))), $^)
+ 
+-quiet_cmd_link_multi-y = LD      $@
+-cmd_link_multi-y = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(cmd_secanalysis)
+-
+ quiet_cmd_link_multi-m = LD [M]  $@
+-cmd_link_multi-m = $(cmd_link_multi-y)
++cmd_link_multi-m = $(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(cmd_secanalysis)
++
++quiet_cmd_link_multi-y = LD      $@
++cmd_link_multi-y = \
++	echo "const char "$(modname_c_var)"[] __attribute__((section(\"__builtin_drivers_list\"))) " \
++	     "__attribute__ ((aligned(sizeof(unsigned long)))) = \""$(modname)"\";" > $(kbuild-dir)/.$(modname).c; \
++	$(CC) $(c_flags) -c $(kbuild-dir)/.$(modname).c -o $(kbuild-dir)/.$(modname).o; \
++	$(LD) $(ld_flags) -r -o $@ $(link_multi_deps) $(kbuild-dir)/.$(modname).o $(cmd_secanalysis); \
++	rm -f $(kbuild-dir)/.$(modname).c
+ 
+ # We would rather have a list of rules like
+ # 	foo.o: $(foo-objs)
 
