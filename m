@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaINMZw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 08:25:52 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:63194 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560AbaINMZu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 08:25:50 -0400
-Message-ID: <54158949.8080009@gmail.com>
-Date: Sun, 14 Sep 2014 15:25:45 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1752630AbaINMz1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 08:55:27 -0400
+Received: from mx.ungleich.ch ([77.109.138.221]:53756 "EHLO mx.ungleich.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752593AbaINMzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 08:55:25 -0400
+Date: Sun, 14 Sep 2014 14:55:22 +0200
+From: Nico Schottelius <nico-kernel-2014-08-14@schottelius.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Nico Schottelius <nico-kernel-2014-08-14@schottelius.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: Linux 3.16: O2 Micro MMC missing in lspci
+Message-ID: <20140914125522.GF26638@schottelius.org>
+Mail-Followup-To: Nico Schottelius <nico-kernel-2014-08-14@schottelius.org>,
+	Stefan Richter <stefanr@s5r6.in-berlin.de>,
+	linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+References: <20140814105351.GA3110@schottelius.org>
+ <20140914102408.391efcaf@kant>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ross Zwisler <ross.zwisler@linux.intel.com>, willy@linux.intel.com
-Subject: Re: [PATCH v10 20/21] ext4: Add DAX functionality
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com> <5422062f87eb5606f4632fd06575254379f40ddc.1409110741.git.matthew.r.wilcox@intel.com> <20140903111302.GG20473@dastard> <54108124.9030707@gmail.com> <20140911043815.GP20518@dastard>
-In-Reply-To: <20140911043815.GP20518@dastard>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140914102408.391efcaf@kant>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: freiheit (Linux 3.16.1-1-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/11/2014 07:38 AM, Dave Chinner wrote:
-<>
+Hey Stefan,
+
+(un-)fortunately I don't have the device anymore,
+so I cannot test anymore.
+
+Cheers,
+
+Nico
+
+Stefan Richter [Sun, Sep 14, 2014 at 10:24:08AM +0200]:
+> On Aug 14 Nico Schottelius wrote:
+> > Hello,
+> > 
+> > when booting into 3.16.0-2-ARCH I miss the following
+> > entry in lspci:
+> > 
+> > [12:50] gold:debug-sd-card-reader% diff 3.15/lspci 3.16/lspci 
+> > 17d16
+> > < 03:00.0 SD Host controller: O2 Micro, Inc. SD/MMC Card Reader
+> > Controller (rev 01)
+> > 
+> > This causes my system to be unable to mount/see the sd cards.
+> > My hardware is a Dell E7440 notebook.
+> > 
+> > I attached dmesg & lspci of both kernels.
+> > 
+> > Anyone an idea on what might be wrong?
+> > 
+> > The only related issues I found is
+> >     https://bugs.archlinux.org/task/26971
+> > 
+> > and that there was a change in the mmc area:
+> > 
+> >     https://lkml.org/lkml/2014/6/10/491
+> > 
+> > Cheers,
+> > 
+> > Nico
+> > 
+> > p.s.: Please cc on reply
 > 
-> And so ext4 is buggy, because what ext4 does ....
+> Both the archlinux bug and the pull request very much appear to be
+> unrelated to your issue.  In your case, the MMC subsystem is not involved
+> since the PCI device of the SD controller is not exposed to the MMC
+> subsystem anymore, just like it is not exposed in lspci anymore.
 > 
-> ... is not a retry - it falls back to a fundamentally different
-> code path. i.e:
+> I suggest as next steps:
+>   - Test whether the issue still exists in the newest kernel that you are
+>     able to install.  (v3.17-rc4 is current, v3.16.2 is the lastest on in
+>     the 3.16 branch.)
+>   - Post the dmesg output from a successful boot with 3.15 and from an
+>     unsuccessful boot with 3.16.
 > 
-> sys_write()
-> ....
-> 	new_sync_write
-> 	  ext4_file_write_iter
-> 	    __generic_file_write_iter(O_DIRECT)
-> 	      written = generic_file_direct_write()
-> 	      if (error || complete write)
-> 	        return
-> 	      /* short write! do buffered IO to finish! */
-> 	      generic_perform_write()
-> 	        loop {
-> 			ext4_write_begin
-> 			ext4_write_end
-> 		}
-> 
-> and so we allocate pages in the page cache and do buffered IO into
-> them because DAX doesn't hook ->writebegin/write_end as we are
-> supposed to intercept all buffered IO at a higher level.
-> 
-> This causes data corruption when tested at ENOSPC on DAX enabled
-> ext4 filesystems. I think that it's an oversight and hence a bug
-> that needs to be fixed but I'm first asking Willy to see if it was
-> intentional or not because maybe I missed sometihng in the past 4
-> months since I've paid really close attention to the DAX code.
-> 
-> And in saying that, Boaz, I'd suggest you spend some time looking at
-> the history of the DAX patchset. Pay careful note to who came up
-> with the original idea and architecture that led to the IO path you
-> are so stridently defending.....
-> 
+> [added Cc: linux-pci]
+> -- 
+> Stefan Richter
+> -=====-====- =--= -===-
+> http://arcgraph.de/sr/
 
-Yes! you are completely right, and I have not seen this bug. The same bug
-exist with ext2 as well. I think this is a bug in patch:
-	[PATCH v10 07/21] Replace XIP read and write with DAX I/O
-
-It needs a:
-@@ -2584,7 +2584,7 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
- 		loff_t endbyte;
- 
- 		written = generic_file_direct_write(iocb, from, pos);
--		if (written < 0 || written == count)
-+		if (written < 0 || written == count || IS_DAX(inode))
- 			goto out;
- 
- 		/*
-
-Or something like that. Is that what you meant?
-
-(You have commented on the ext4 patch but this is already earlier in ext2
- so I did not see it, sorry. "If you explain slow I finally get it ;-)" )
-
-> Cheers,
-> Dave.
-
-Yes I agree this is a very bad data corruption bug. I also think that the
-read path should not be allowed to fall back to buffered IO just the same
-for the same reason. We must not allow any real data in page_cache for a
-DAX file.
-
-Thanks for explaining
-Boaz
-
-
+-- 
+New PGP key: 659B 0D91 E86E 7E24 FD15  69D0 C729 21A1 293F 2D24
