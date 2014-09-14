@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbaINTTl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 15:19:41 -0400
-Received: from smtp0.kfki.hu ([148.6.0.25]:49558 "EHLO smtp0.kfki.hu"
+	id S1752979AbaINTU6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 15:20:58 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:39183 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700AbaINTTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 15:19:40 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Sep 2014 15:19:39 EDT
-Date: Sun, 14 Sep 2014 21:13:41 +0200 (CEST)
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-To: Joe Perches <joe@perches.com>
-cc: netdev@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 5/5] netfilter: Convert pr_warning to pr_warn
-In-Reply-To: <4708b4ef0485c1bc9efe3c0e59924a0f1c3c3bb4.1410322181.git.joe@perches.com>
-Message-ID: <alpine.DEB.2.10.1409142112320.1020@blackhole.kfki.hu>
-References: <cover.1410322181.git.joe@perches.com> <4708b4ef0485c1bc9efe3c0e59924a0f1c3c3bb4.1410322181.git.joe@perches.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752821AbaINTUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 15:20:53 -0400
+From: Heiko Stuebner <heiko@sntech.de>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, Heiko Stuebner <heiko@sntech.de>
+Subject: [PATCH 2/5] regulator: fan53555: set regulator name from constraints name
+Date: Sun, 14 Sep 2014 21:23:02 +0200
+Message-Id: <1410722585-13393-3-git-send-email-heiko@sntech.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1410722585-13393-1-git-send-email-heiko@sntech.de>
+References: <1410722585-13393-1-git-send-email-heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Sep 2014, Joe Perches wrote:
+There is a high potential of more than one of those regulators existing
+on a board, so name the regulator according to the name provided in the
+initdata instead of statically.
 
-> Use the more common pr_warn.
-> 
-> Other miscellanea:
-> 
-> o Coalesce formats
-> o Realign arguments
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  net/netfilter/ipset/ip_set_core.c     | 23 +++++++++++-----------
->  net/netfilter/ipset/ip_set_hash_gen.h | 12 ++++++------
->  net/netfilter/xt_connbytes.c          |  2 +-
->  net/netfilter/xt_hashlimit.c          |  2 +-
->  net/netfilter/xt_set.c                | 36 ++++++++++++++++-------------------
->  5 files changed, 35 insertions(+), 40 deletions(-)
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/regulator/fan53555.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Acked-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+diff --git a/drivers/regulator/fan53555.c b/drivers/regulator/fan53555.c
+index c912ba7..d143790 100644
+--- a/drivers/regulator/fan53555.c
++++ b/drivers/regulator/fan53555.c
+@@ -206,7 +206,12 @@ static int fan53555_regulator_register(struct fan53555_device_info *di,
+ {
+ 	struct regulator_desc *rdesc = &di->desc;
+ 
+-	rdesc->name = "fan53555-reg";
++	rdesc->name = devm_kstrdup(di->dev,
++				   di->regulator->constraints.name,
++				   GFP_KERNEL);
++	if (!rdesc->name)
++		return -ENOMEM;
++
+ 	rdesc->supply_name = "vin";
+ 	rdesc->ops = &fan53555_regulator_ops;
+ 	rdesc->type = REGULATOR_VOLTAGE;
+-- 
+2.0.1
 
-Best regards,
-Jozsef
--
-E-mail  : kadlec@blackhole.kfki.hu, kadlecsik.jozsef@wigner.mta.hu
-PGP key : http://www.kfki.hu/~kadlec/pgp_public_key.txt
-Address : Wigner Research Centre for Physics, Hungarian Academy of Sciences
-          H-1525 Budapest 114, POB. 49, Hungary
