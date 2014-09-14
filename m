@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaINXZN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 19:25:13 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49224 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998AbaINXZK (ORCPT
+	id S1752931AbaINXln (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 19:41:43 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:37440 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaINXlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 19:25:10 -0400
-Date: Mon, 15 Sep 2014 00:24:27 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Laight <David.Laight@ACULAB.COM>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Miroslav Franc <mfranc@redhat.com>,
-        Richard Henderson <rth@twiddle.net>, linux-alpha@vger.kernel.org
-Subject: Re: bit fields && data tearing
-Message-ID: <20140915002427.6ce18965@alan.etchedpixels.co.uk>
-In-Reply-To: <5411FFB6.2080702@hurleysoftware.com>
-References: <20140712181328.GA8738@redhat.com>
-	<54079B70.4050200@hurleysoftware.com>
-	<1409785893.30640.118.camel@pasglop>
-	<063D6719AE5E284EB5DD2968C1650D6D17487172@AcuExch.aculab.com>
-	<1409824374.4246.62.camel@pasglop>
-	<5408E458.3@zytor.com>
-	<54090AF4.7060406@hurleysoftware.com>
-	<54091B30.7080100@zytor.com>
-	<5409D76D.2070203@hurleysoftware.com>
-	<5409D9C0.7030403@zytor.com>
-	<20140908185240.21f52ca0@alan.etchedpixels.co.uk>
-	<540DEE6C.2060904@zytor.com>
-	<540E3207.7090007@hurleysoftware.com>
-	<20140911110411.2de01944@alan.etchedpixels.co.uk>
-	<5411FFB6.2080702@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sun, 14 Sep 2014 19:41:42 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH/RFC] rtc: rtc-twl: Fixed nested IRQ handling in resume from suspend
+Date: Mon, 15 Sep 2014 02:41:45 +0300
+Message-ID: <3285590.DFfac97QLO@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.10.1409132108520.23397@nanos>
+References: <1410607196-3941-1-git-send-email-laurent.pinchart@ideasonboard.com> <alpine.DEB.2.10.1409132108520.23397@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So a problem that no one has ever complained about on _any_ arch is suddenly
-> a problem on a subset of Alpha cpus, but a problem I know exists on Alpha
-> isn't important because no one's filed a bug about it?
+Hi Thomas,
 
-Yes - because if you think about it that tells you that nobody is hitting
-it with the old code and it probably doesn't matter.
- 
-> The only Alpha person in this discussion has come out clearly in favor
-> of dropping EV4/5 support.
-
-That's not a statistically valid sample size btw
-
-Plus as I pointed out (and you ignored) you are shutting out any future
-processors with this kind of oddity, and you have not audited all the
-embedded devices we support or may support in future.
- 
-> The fact is that the kernel itself is much more parallel than it was
-> 15 years ago, and that trend is going to continue. Paired with the fact
-> that the Alpha is the least-parallel-friendly arch, makes improving
-> parallelism and correctness even harder within kernel subsystems; harder
-> than it has to be and harder than it should be.
+On Saturday 13 September 2014 21:12:16 Thomas Gleixner wrote:
+> On Sat, 13 Sep 2014, Laurent Pinchart wrote:
+> > The TWL RTC interrupt is a double-nested threaded interrupt, handled
+> > through the TWL SIH (Secondary Interrupt Handler) and PIH (Primary
+> > Interrupt Handler).
+> > 
+> > When the system is woken up from suspend by a TWL RTC alarm interrupt,
+> > the TWL PIH and SIH are enabled first (due to the normal IRQ enabling
+> > sequence for the PIH and to the IRQF_EARLY_RESUME flag for the SIH)
+> > before the TWL RTC interrupt gets enabled. This results on the interrupt
+> > being processed by the TWL primary interrupt handler, forwarded to the
+> > nested SIH, and then marked as pending for the RTC by handle_nested_irq
+> > called from the SIH.
+> > 
+> > The RTC interrupt then eventually gets reenabled the kernel, which will
+> > try to call its top half interrupt handler. As the interrupt is a nested
+> > threaded IRQ, its primary handler has been set to the
+> > irq_nested_primary_handler function, which is never supposed to be
+> > called and generates a WARN_ON, without waking the IRQ thread up.
+> > 
+> > Fix this by setting the IRQF_EARLY_RESUME for the TWL RTC interrupt to
+> > ensure it gets enabled before the parent handlers try to process it.
+> > 
+> > This is likely a bit of a hack, I have a feeling that a more generic
+> > solution that would fix the problem for all nested threaded IRQs enabled
+> > as a wake up source by enable_irq_wake would be better.
 > 
-> Linus has repeatedly stated that non-arch code should be as
-> arch-independent as possible
+> Indeed. It's a hack. This is not the first abuse of IRQF_EARLY_RESUME
+> which is used to "fix" ordering issues with nested thread handlers.
+> 
+> I haven't come around yet to analyze the issue and come up with a proper
+> core side mechanism to handle that case. I put it on the "look at it while
+> trapped in a tin can" list.
 
-That's why many many years ago we added set_bit() and the other bit
-functions. On sane processors they are very fast. On insane ones they
-work. They understand byte tearing, they understand store ordering (which
-a simple variable does not so you've got to audit all your memory
-barriers too). In many cases they are faster than using memory barriers
-to guide the compiler because they invalidate less and allow the compiler
-more freedom.
+Should this patch be applied in the meantime, or do you think you will be 
+trapped in a tin can in the not too distant future ?
 
-All this started because I suggested you use set_bit and friends and for
-some reason you've decided to try and find another way to do it. We have
-the bit operations for a reason. On x86 they are very very fast, on
-uniprocessor anything they are very fast, on multiprocessor in general
-they are very fast, or you are dealing with boxes that have sanity
-problems of other kinds.
+-- 
+Regards,
 
-Alan
+Laurent Pinchart
+
