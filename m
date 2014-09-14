@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaINPnU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 11:43:20 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61924 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaINPnM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 11:43:12 -0400
-Message-ID: <5415B790.5010607@gmail.com>
-Date: Sun, 14 Sep 2014 09:43:12 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752768AbaINPo5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 11:44:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1128 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641AbaINPo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 11:44:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,521,1406617200"; 
+   d="scan'208";a="572975662"
+Date: Sun, 14 Sep 2014 08:44:55 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Vince Weaver <vincent.weaver@maine.edu>, jolsa@redhat.com
+Subject: Re: [PATCH] Add some documentation on the perf sysfs ABI interface
+Message-ID: <20140914154455.GP5387@tassilo.jf.intel.com>
+References: <1410561259-523-1-git-send-email-andi@firstfloor.org>
+ <20140914093033.GR346@worktop.programming.kicks-ass.net>
+ <20140914153407.GA4064@kroah.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
-References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com> <1410522513-1045-3-git-send-email-pawel.moll@arm.com> <54132F63.1010401@gmail.com> <20140912204444.GA11199@kernel.org>
-In-Reply-To: <20140912204444.GA11199@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140914153407.GA4064@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/12/14, 2:44 PM, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Sep 12, 2014 at 10:37:39AM -0700, David Ahern escreveu:
->> On 9/12/14, 4:48 AM, Pawel Moll wrote:
->>> This patch adds a PERF_COUNT_SW_MARKER event type, which
->>> can be requested by user and a PERF_EVENT_IOC_MARKER
->>> ioctl command which will inject an event of said type into
->>> the perf buffer. The ioctl can take a zero-terminated
->>> string argument, similar to tracing_marker in ftrace,
->>> which will be kept in the "raw" field of the sample.
->>>
->>> The main use case for this is synchronisation of
->>> performance data generated in user space with the perf
->>> stream coming from the kernel. For example, the marker
->>> can be inserted by a JIT engine after it generated
->>> portion of the code, but before the code is executed
->>> for the first time, allowing the post-processor to
->>> pick the correct debugging information. Other example
->>> is a system profiling tool taking data from other
->>> sources than just perf, which generates a marker
->>> at the beginning at at the end of the session
->>> (also possibly periodically during the session) to
->>> synchronise kernel timestamps with clock values
->>> obtained in userspace (gtod or raw_monotonic).
->>
->> Seems really similar to what I proposed in the past:
->>
->> https://lkml.org/lkml/2011/2/27/159
->>
->> Which was rejected.
->
-> I took a look at that thread, but just barely, emphasis on that.
->
-> Injecting something from userspace, a la ftrace, seems to be something,
-> as tglx mentioned, "buried" in that patchset.
+On Sun, Sep 14, 2014 at 08:34:07AM -0700, Greg KH wrote:
+> On Sun, Sep 14, 2014 at 11:30:33AM +0200, Peter Zijlstra wrote:
+> > On Fri, Sep 12, 2014 at 03:34:19PM -0700, Andi Kleen wrote:
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > Initial attempt of documenting the perf sysfs interface as
+> > > an ABI. I also added some additional pointers hopefully useful
+> > > to the users. Comments welcome.
+> > 
+> > My only worry is that its a little x86 centric and I'm not sure if that
+> > is acceptable with the sysfs crowd, Greg?
+> 
+> Does this document what you have today?  If so, that's fine, and good to
+> do.
+> 
+> Or, is this a proposed interface that is different per architecture in
+> subtle non-portable ways?  If so, probably not :)
 
-Thomas object to an ioctl buried deep in a patch -- newbie mistake.
+Each architecture describes its own fields in a generic format that
+can be handled by a generic parser.  The generic description is documented.
 
-Peter objected to the ioctl https://lkml.org/lkml/2011/3/1/229
+However I also described the x86 specific attributes.
 
-It was not userspace injecting random data into the stream but rather 
-forcing the sample to be generated and added to the stream.
+This is all implemented today.
 
-David
-
-David
-
-
+-Andi
