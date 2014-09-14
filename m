@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaINRaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:30:09 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55677 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878AbaINRaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752890AbaINRaG (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 14 Sep 2014 13:30:06 -0400
-Message-ID: <5415D09A.4070204@kernel.org>
-Date: Sun, 14 Sep 2014 18:30:02 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+Received: from mx1.redhat.com ([209.132.183.28]:40705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752863AbaINRaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 13:30:03 -0400
+Date: Sun, 14 Sep 2014 19:27:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, mmarek@suse.cz, arnd@arndb.de,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca, ebiederm@xmission.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to
+	/proc/modules
+Message-ID: <20140914172709.GA1569@redhat.com>
+References: <20140914100545.3745.23394.stgit@localhost> <20140914153832.GC4064@kroah.com>
 MIME-Version: 1.0
-To: Hartmut Knaack <knaack.h@gmx.de>, Irina Tirdea <irina.tirdea@intel.com>,
-        linux-iio@vger.kernel.org
-CC: Lars-Peter Clausen <lars@metafoo.de>, Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] iio: gyro: bmg160: only set power state if PM_RUNTIME
- is defined
-References: <1410185127-13039-1-git-send-email-irina.tirdea@intel.com> <540F7BB5.2080801@gmx.de>
-In-Reply-To: <540F7BB5.2080801@gmx.de>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140914153832.GC4064@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/09/14 23:14, Hartmut Knaack wrote:
-> Irina Tirdea schrieb, Am 08.09.2014 16:05:
->> When CONFIG_PM_RUNTIME is not defined and bmg160 tries to power
->> off the device, bmg160_set_power_state will call pm_runtime_put_autosuspend,
->> which is not implemented (wil return -ENOSYS).
->>
->> Only call bmg160_set_power_state when CONFIG_PM_RUNTIME is defined.
->>
->> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> Acked-by: Hartmut Knaack <knaack.h@gmx.de>
-Applied to the togreg branch of iio.git. Initially pushed out as testing
-for the autobuilders to play.
+On 09/14, Greg KH wrote:
+>
+> On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
+> > This series implements a possibility to show the list of built-in drivers
+> > to userspace. The names of drivers will be the same as when they are modules.
+>
+> Have you looked at /sys/modules/ ?  Doesn't that show what you want
+> here?
 
-Thanks,
+Well, /sys/module/ doesn't list the modules (drivers) compiled in. Say,
+/sys/module/kernel. And it can't help a user to figure out that, say, the
+loop driver is already "loaded" because CONFIG_BLK_DEV_LOOP=y.
 
-Jonathan
->> ---
->>
->> Changes in v2:
->>  - moved ifdef CONFIG_PM_RUNTIME inside bmg160_set_power_state as
->> Hartmut Knaack suggested
->>
->>  drivers/iio/gyro/bmg160.c |    2 ++
->>  1 file changed, 2 insertions(+)
->>
->> diff --git a/drivers/iio/gyro/bmg160.c b/drivers/iio/gyro/bmg160.c
->> index 7524698..1f967e0d 100644
->> --- a/drivers/iio/gyro/bmg160.c
->> +++ b/drivers/iio/gyro/bmg160.c
->> @@ -237,6 +237,7 @@ static int bmg160_chip_init(struct bmg160_data *data)
->>  
->>  static int bmg160_set_power_state(struct bmg160_data *data, bool on)
->>  {
->> +#ifdef CONFIG_PM_RUNTIME
->>  	int ret;
->>  
->>  	if (on)
->> @@ -251,6 +252,7 @@ static int bmg160_set_power_state(struct bmg160_data *data, bool on)
->>  			"Failed: bmg160_set_power_state for %d\n", on);
->>  		return ret;
->>  	}
->> +#endif
->>  
->>  	return 0;
->>  }
->>
-> 
+> Module names aren't "standardized", we change them at times when needed,
+> just like CONFIG_ names.
+
+OK, but still the name will be the same, in /proc/modules or /proc/builtin.
+
+> What is your end goal here?  As you say, config.gz is the real kernel
+> configuration, just having a list of modules built in isn't going to
+> help much in getting a working kernel config without it.
+
+Perhaps you are right... but otoh perhaps this can can be useful anyway.
+Again, a user can know about "insmod loop", but he can know nothing
+about CONFIG_ names.
+
+That said, I do not really understand 2/3. Not only I do not understand
+this kbuild magic, I am not sure I understand what /proc/built-in will
+actually show.
+
+To me it would be better to change the "ifndef MODULE" version of
+module_init() to add KBUILD_MODNAME into __builtin_drivers_list[].
+
+Yes, module_init() is overused. Say, why does kernel/kprobes.c use
+module_init() ? This looks confusing, this code can't be compiled as a
+module. And it seems that it has a lot more users which should have used
+__initcall() instead.
+
+In short, I dunno ;)
+
+Oleg.
+
