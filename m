@@ -1,88 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863AbaINRjV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:39:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43002 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750AbaINRjU (ORCPT
+	id S1752879AbaINRmi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 13:42:38 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55778 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742AbaINRmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:39:20 -0400
-Date: Sun, 14 Sep 2014 10:39:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: mmarek@suse.cz, arnd@arndb.de, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, oleg@redhat.com,
-        grant.likely@secretlab.ca, ebiederm@xmission.com,
-        akpm@linux-foundation.org, ktkhai@parallels.com, sam@ravnborg.org
-Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to
- /proc/modules
-Message-ID: <20140914173919.GA10059@kroah.com>
-References: <20140914100545.3745.23394.stgit@localhost>
- <20140914153832.GC4064@kroah.com>
- <5415D10E.90809@yandex.ru>
+	Sun, 14 Sep 2014 13:42:37 -0400
+Message-ID: <5415D388.60300@kernel.org>
+Date: Sun, 14 Sep 2014 18:42:32 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5415D10E.90809@yandex.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Irina Tirdea <irina.tirdea@intel.com>, linux-iio@vger.kernel.org
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Denis CIOCCA <denis.ciocca@st.com>
+Subject: Re: [PATCH] iio: gyro: bmi055 gyro sensor driver
+References: <1409655597-28781-1-git-send-email-irina.tirdea@intel.com>
+In-Reply-To: <1409655597-28781-1-git-send-email-irina.tirdea@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 14, 2014 at 09:31:58PM +0400, Kirill Tkhai wrote:
-> On 14.09.2014 19:38, Greg KH wrote:
-> > On Sun, Sep 14, 2014 at 02:18:13PM +0400, Kirill Tkhai wrote:
-> >> This series implements a possibility to show the list of built-in drivers
-> >> to userspace. The names of drivers will be the same as when they are modules.
-> > 
-> > Have you looked at /sys/modules/ ?  Doesn't that show what you want
-> > here?
+On 02/09/14 11:59, Irina Tirdea wrote:
+> Add support for the BMI055 gyroscope sensor. BMI055 is a package
+> consisting of an acceleration sensor and a gyroscope. This patch
+> adds support for the gyroscope only.
 > 
-> There are only the drivers in "/sys/module" which have parameters.
-> Drivers without parameters do not appear there.
-
-Ah, didn't realize that.  Should be easy to fix though, if you really
-wanted to list the modules.  Much better than a random proc file that
-you have to parse :)
-
-> >> So, if your system has "loop" driver then it appears either in /proc/modules
-> >> or in /proc/built-in and userspace will be able to know about this.
-> >>
-> >> Now this is impossible. The only way to get kernel configuration is
-> >> /proc/config.gz, but CONFIG_* names can change from time to time. Module
-> >> names are more or less standardized.
-> > 
-> > Module names aren't "standardized", we change them at times when needed,
-> > just like CONFIG_ names.
-> > 
-> > What is your end goal here?  As you say, config.gz is the real kernel
-> > configuration, just having a list of modules built in isn't going to
-> > help much in getting a working kernel config without it.
+> Spec downloaded from:
+> http://ae-bst.resource.bosch.com/media/products/dokumente/bmi055/BST-BMI055-DS000-06.pdf
 > 
-> It looks like userspace applications oriented on modules names rather
-> than on CONFIG_XXX parameters. /proc/config.gz is optional and userspace
-> applications can't base on it.
+> The BMI055 gyroscope uses the same register definition as BMG160,
+> but does not specify a temp register. However, the temp register
+> seems to be working in the same way as for BMG160, so this patch
+> does not remove the temp channel for BMI055.
 > 
-> For example, when I compile "loop" module built-in and "loop" is in
-> /etc/modules, init script warns about this module is not present and
-> can't be autoloaded. The script does not store CONFIG_XXX <-> module_xxx
-> conformity. And nobody stores it.
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+I would have slightly preferred this as a two patch series. The first
+would do the reworked sections of code, and the second actually add the device.
+Still it is pretty simple, so I'll let it go
+
+applied to the togreg branch of iio.git - pushed out initially as testing for the
+autobuilders to play.
+
+Thanks,
+
+Jonathan
+> ---
+>  drivers/iio/gyro/Kconfig  |    2 +-
+>  drivers/iio/gyro/bmg160.c |   39 +++++++++++++++++++++++++++------------
+>  2 files changed, 28 insertions(+), 13 deletions(-)
 > 
-> When iptables wants extra functionality, it requests a module. Etc.
+> diff --git a/drivers/iio/gyro/Kconfig b/drivers/iio/gyro/Kconfig
+> index d630ae9..b3d0e94 100644
+> --- a/drivers/iio/gyro/Kconfig
+> +++ b/drivers/iio/gyro/Kconfig
+> @@ -56,7 +56,7 @@ config BMG160
+>  	select IIO_TRIGGERED_BUFFER if IIO_BUFFER
+>  	help
+>  	  Say yes here to build support for Bosch BMG160 Tri-axis Gyro Sensor
+> -	  driver.
+> +	  driver. This driver also supports BMI055 gyroscope.
+>  
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called bmg160.
+> diff --git a/drivers/iio/gyro/bmg160.c b/drivers/iio/gyro/bmg160.c
+> index 80f92a6..7524698 100644
+> --- a/drivers/iio/gyro/bmg160.c
+> +++ b/drivers/iio/gyro/bmg160.c
+> @@ -947,10 +947,10 @@ static irqreturn_t bmg160_data_rdy_trig_poll(int irq, void *private)
+>  
+>  }
+>  
+> -static int bmg160_acpi_gpio_probe(struct i2c_client *client,
+> -				  struct bmg160_data *data)
+> +static int bmg160_gpio_probe(struct i2c_client *client,
+> +			     struct bmg160_data *data)
+> +
+>  {
+> -	const struct acpi_device_id *id;
+>  	struct device *dev;
+>  	struct gpio_desc *gpio;
+>  	int ret;
+> @@ -959,12 +959,6 @@ static int bmg160_acpi_gpio_probe(struct i2c_client *client,
+>  		return -EINVAL;
+>  
+>  	dev = &client->dev;
+> -	if (!ACPI_HANDLE(dev))
+> -		return -ENODEV;
+> -
+> -	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> -	if (!id)
+> -		return -ENODEV;
+>  
+>  	/* data ready gpio interrupt pin */
+>  	gpio = devm_gpiod_get_index(dev, BMG160_GPIO_NAME, 0);
+> @@ -984,12 +978,24 @@ static int bmg160_acpi_gpio_probe(struct i2c_client *client,
+>  	return ret;
+>  }
+>  
+> +static const char *bmg160_match_acpi_device(struct device *dev)
+> +{
+> +	const struct acpi_device_id *id;
+> +
+> +	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> +	if (!id)
+> +		return NULL;
+> +
+> +	return dev_name(dev);
+> +}
+> +
+>  static int bmg160_probe(struct i2c_client *client,
+>  			const struct i2c_device_id *id)
+>  {
+>  	struct bmg160_data *data;
+>  	struct iio_dev *indio_dev;
+>  	int ret;
+> +	const char *name = NULL;
+>  
+>  	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
+>  	if (!indio_dev)
+> @@ -1005,15 +1011,21 @@ static int bmg160_probe(struct i2c_client *client,
+>  
+>  	mutex_init(&data->mutex);
+>  
+> +	if (id)
+> +		name = id->name;
+> +
+> +	if (ACPI_HANDLE(&client->dev))
+> +		name = bmg160_match_acpi_device(&client->dev);
+> +
+>  	indio_dev->dev.parent = &client->dev;
+>  	indio_dev->channels = bmg160_channels;
+>  	indio_dev->num_channels = ARRAY_SIZE(bmg160_channels);
+> -	indio_dev->name = BMG160_DRV_NAME;
+> +	indio_dev->name = name;
+>  	indio_dev->modes = INDIO_DIRECT_MODE;
+>  	indio_dev->info = &bmg160_info;
+>  
+>  	if (client->irq <= 0)
+> -		client->irq = bmg160_acpi_gpio_probe(client, data);
+> +		client->irq = bmg160_gpio_probe(client, data);
+>  
+>  	if (client->irq > 0) {
+>  		ret = devm_request_threaded_irq(&client->dev,
+> @@ -1183,12 +1195,15 @@ static const struct dev_pm_ops bmg160_pm_ops = {
+>  
+>  static const struct acpi_device_id bmg160_acpi_match[] = {
+>  	{"BMG0160", 0},
+> -	{ },
+> +	{"BMI055B", 0},
+> +	{},
+>  };
+> +
+>  MODULE_DEVICE_TABLE(acpi, bmg160_acpi_match);
+>  
+>  static const struct i2c_device_id bmg160_id[] = {
+>  	{"bmg160", 0},
+> +	{"bmi055_gyro", 0},
+>  	{}
+>  };
+>  
 > 
-> Nobody is oriented on CONFIG_XXX parameters. It would be simple for
-> userspace to add a support of /proc/built-in analysing. It's very
-> similar to /proc/modules.
-
-Shouldn't userspace focus on the functionality a module provides, not
-the module name itself?  Can't a test for the loop "module" just test to
-see if the loop control device is present?  Same for iptables (there's
-modprobe rules for iptable modules I think...)
-
-In other words, don't focus on the module names, focus on the userspace
-function a module provides, there should always be a way to check that
-at run time (if not, then the module doesn't actually do much...)
-
-thanks,
-
-greg k-h
