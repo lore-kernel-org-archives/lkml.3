@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaINWNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 18:13:53 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:56787 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832AbaINWNw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 18:13:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958C7A75B@G9W0745.americas.hpqcorp.net>
-References: <1410727738-17430-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <94D0CD8314A33A4D9D801C0FE68B402958C7A75B@G9W0745.americas.hpqcorp.net>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 15 Sep 2014 00:13:31 +0200
-Message-ID: <CAFo99gbtGfEgcWukEQoEmcTro__aGND6-4bb4Ms+cV8Wu1FM4w@mail.gmail.com>
-Subject: Re: [PATCH] scsi: scsi_devinfo.c: Cleaning up unnecessarily
- complicated in conjunction with strncpy
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753004AbaINWO0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 18:14:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:32802 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970AbaINWOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 18:14:24 -0400
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 01/10] f2fs: fix negative value for lseek offset
+Date: Sun, 14 Sep 2014 15:14:15 -0700
+Message-Id: <1410732864-53069-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 1.8.5.2 (Apple Git-48)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-14 23:34 GMT+02:00 Elliott, Robert (Server Storage) <Elliott@hp.com>:
->
->
->> -----Original Message-----
->> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
->> owner@vger.kernel.org] On Behalf Of Rickard Strandqvist
-> ...
->> diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-> ...
->>  static void scsi_strcpy_devinfo(char *name, char *to, size_t to_length,
->>                               char *from, int compatible)
->>  {
->> -     size_t from_length;
->> -
->> -     from_length = strlen(from);
->> -     strncpy(to, from, min(to_length, from_length));
->> -     if (from_length < to_length) {
->> -             if (compatible) {
->> -                     /*
->> -                      * NUL terminate the string if it is short.
->> -                      */
->> -                     to[from_length] = '\0';
->> -             } else {
->> -                     /*
->> -                      * space pad the string if it is short.
->> -                      */
->> -                     strncpy(&to[from_length], spaces,
->> -                             to_length - from_length);
->> -             }
->> -     }
->> -     if (from_length > to_length)
->> -              printk(KERN_WARNING "%s: %s string '%s' is too long\n",
->> +     strncpy(to, from, to_length);
->> +     if (to[to_length - 1] != '\0') {
->> +             to[to_length - 1] = '\0';
->> +             printk(KERN_WARNING "%s: %s string '%s' is too long\n",
->>                       __func__, name, from);
->> +     }
->
-> The caller of this function, scsi_dev_info_list_add_keyed, created
-> the "to" destination buffer, devinfo, with kmalloc, so it's not
-> guaranteed to be full of zeros.
->
-> If from_length is shorter than to_length, then this code will
-> be inspecting an uninitialized character that strncpy didn't
-> touch.
->
-> ---
-> Rob Elliott    HP Server Storage
->
+If application throws negative value of lseek with SEEK_DATA|SEEK_HOLE,
+previous f2fs went into BUG_ON in get_dnode_of_data, which was reported
+by Tommi Rantala.
 
-Hi Elliott
+He could make a simple code to detect this having:
+	lseek(fd, -17595150933902LL, SEEK_DATA);
 
-How do you mean?
+This patch should resolve that bug.
 
-strncpy zeroes throughout the remainder of the string "from" until the
-length off to_length, or otherwise guaranteed trailing zero characters
-and a warning is printed.
+Reported-by: Tommi Rentala <tt.rantala@gmail.com>
+[Jaegeuk Kim: relocate the condition as suggested by Chao]
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
+---
+ fs/f2fs/file.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Is not it exactly the functionality that is desired?
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 9f0ea3d..5cde363 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -353,6 +353,8 @@ static loff_t f2fs_llseek(struct file *file, loff_t offset, int whence)
+ 						maxbytes, i_size_read(inode));
+ 	case SEEK_DATA:
+ 	case SEEK_HOLE:
++		if (offset < 0)
++			return -ENXIO;
+ 		return f2fs_seek_block(file, offset, whence);
+ 	}
+ 
+-- 
+1.8.5.2 (Apple Git-48)
 
-Kind regards
-Rickard Strandqvist
