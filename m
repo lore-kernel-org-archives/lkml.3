@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaINTrm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 15:47:42 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35759 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaINTrk (ORCPT
+	id S1752826AbaINTuS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 15:50:18 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:60283 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728AbaINTuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 15:47:40 -0400
-Date: Sun, 14 Sep 2014 20:47:38 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs fixes
-Message-ID: <20140914194738.GS7996@ZenIV.linux.org.uk>
+	Sun, 14 Sep 2014 15:50:16 -0400
+Message-ID: <5415E428.10101@cogentembedded.com>
+Date: Sun, 14 Sep 2014 22:53:28 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jianqun <xjq@rock-chips.com>, Jianqun <jay.xu@rock-chips.com>,
+        heiko@sntech.de, lgirdwood@gmail.com, broonie@kernel.org,
+        perex@perex.cz, tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+CC: huangtao@rock-chips.com, cf@rock-chips.com
+Subject: Re: [PATCH 4/5] ASoC: rockchip-i2s: fix registers' property of rockchip
+ i2s controller
+References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com> <1410568932-21823-1-git-send-email-jay.xu@rock-chips.com> <5414AFA6.9060904@cogentembedded.com> <5414FD6E.2050006@rock-chips.com>
+In-Reply-To: <5414FD6E.2050006@rock-chips.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-double iput() on failure exit in lustre, racy removal of spliced dentries
-from ->s_anon in __d_materialise_dentry() plus a bunch of assorted RCU pathwalk
-fixes.  Please, pull from the usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+Hello.
 
-Shortlog:
-Al Viro (5):
-      [fix] lustre: d_make_root() does iput() on dentry allocation failure
-      move the call of __d_drop(anon) into __d_materialise_unique(dentry, anon)
-      fix bogus read_seqretry() checks introduced in b37199e
-      don't bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
-      be careful with nd->inode in path_init() and follow_dotdot_rcu()
+On 09/14/2014 06:29 AM, Jianqun wrote:
 
-Diffstat:
- drivers/staging/lustre/lustre/llite/llite_lib.c |    2 +-
- fs/dcache.c                                     |    8 +++-
- fs/namei.c                                      |   52 ++++++++++++++---------
- 3 files changed, 39 insertions(+), 23 deletions(-)
+>>> Reference rockchip I2S controller TRM, modify some registers' property
+>>> I2S_FIFOLR: read / write, but not volatile, not precious
+>>> I2S_INTSR: read / write
+>>> I2S_CLR: volatile, register value will be cleared by read
+
+>>> Test on RK3288 with max98090.
+
+>>> Signed-off-by: Jianqun Xu <jay.xu@rock-chips.com>
+>>> ---
+>>>    sound/soc/rockchip/rockchip_i2s.c | 6 +++---
+>>>    1 file changed, 3 insertions(+), 3 deletions(-)
+
+>>> diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+>>> index 1b9b404..6595383 100644
+>>> --- a/sound/soc/rockchip/rockchip_i2s.c
+>>> +++ b/sound/soc/rockchip/rockchip_i2s.c
+>> [...]
+>>> @@ -385,8 +387,6 @@ static bool rockchip_i2s_volatile_reg(struct device *dev, unsigned int reg)
+>>>    static bool rockchip_i2s_precious_reg(struct device *dev, unsigned int reg)
+>>>    {
+>>>        switch (reg) {
+>>> -    case I2S_FIFOLR:
+>>> -        return true;
+>>>        default:
+>>>            return false;
+>>>        }
+
+>>     Shouldn't this be folded into simple *return* false now?
+
+> That is more reasonable, thank you.
+
+    Moreover, this function may be completely eliminated.
+
+WBR, Sergei
+
