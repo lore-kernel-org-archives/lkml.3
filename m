@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaINRaz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:30:55 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:47340 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbaINRax (ORCPT
+	id S1753049AbaINRbc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 13:31:32 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55695 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030AbaINRba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:30:53 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nimrod Andy <B38611@freescale.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Frank Li <frank.li@freescale.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH] net: ethernet: freescale: fec_main.c:  Cleaning up missing null-terminate in conjunction with strncpy
-Date: Sun, 14 Sep 2014 19:32:42 +0200
-Message-Id: <1410715962-15986-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 14 Sep 2014 13:31:30 -0400
+Message-ID: <5415D0F0.9080001@kernel.org>
+Date: Sun, 14 Sep 2014 18:31:28 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Irina Tirdea <irina.tirdea@intel.com>, linux-iio@vger.kernel.org
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Beomho Seo <beomho.seo@samsung.com>
+Subject: Re: [PATCH v2] iio: magn: ak8975: fix unnecessary casting between
+ char* and const char*
+References: <1410185888-18622-1-git-send-email-irina.tirdea@intel.com>
+In-Reply-To: <1410185888-18622-1-git-send-email-irina.tirdea@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+On 08/09/14 15:18, Irina Tirdea wrote:
+> Use const char* instead of casting const char* to char*.
+> 
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Applied to the togreg branch of iio.git - initially pushed out as testing.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/net/ethernet/freescale/fec_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 89355a7..e84b132 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -1674,13 +1674,13 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 				continue;
- 			if (dev_id--)
- 				continue;
--			strncpy(mdio_bus_id, fep->mii_bus->id, MII_BUS_ID_SIZE);
-+			strlcpy(mdio_bus_id, fep->mii_bus->id, MII_BUS_ID_SIZE);
- 			break;
- 		}
- 
- 		if (phy_id >= PHY_MAX_ADDR) {
- 			netdev_info(ndev, "no PHY, assuming direct connection to switch\n");
--			strncpy(mdio_bus_id, "fixed-0", MII_BUS_ID_SIZE);
-+			strlcpy(mdio_bus_id, "fixed-0", MII_BUS_ID_SIZE);
- 			phy_id = 0;
- 		}
- 
--- 
-1.7.10.4
-
+Jonathan
+> ---
+> 
+> Changes in v2:
+>  - fixed identation as Hartmut Knaack suggested
+> 
+>  drivers/iio/magnetometer/ak8975.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/iio/magnetometer/ak8975.c b/drivers/iio/magnetometer/ak8975.c
+> index a235792..bf5ef07 100644
+> --- a/drivers/iio/magnetometer/ak8975.c
+> +++ b/drivers/iio/magnetometer/ak8975.c
+> @@ -477,8 +477,8 @@ static const struct acpi_device_id ak_acpi_match[] = {
+>  };
+>  MODULE_DEVICE_TABLE(acpi, ak_acpi_match);
+>  
+> -static char *ak8975_match_acpi_device(struct device *dev,
+> -				enum asahi_compass_chipset *chipset)
+> +static const char *ak8975_match_acpi_device(struct device *dev,
+> +					    enum asahi_compass_chipset *chipset)
+>  {
+>  	const struct acpi_device_id *id;
+>  
+> @@ -487,7 +487,7 @@ static char *ak8975_match_acpi_device(struct device *dev,
+>  		return NULL;
+>  	*chipset = (int)id->driver_data;
+>  
+> -	return (char *)dev_name(dev);
+> +	return dev_name(dev);
+>  }
+>  
+>  static int ak8975_probe(struct i2c_client *client,
+> @@ -497,7 +497,7 @@ static int ak8975_probe(struct i2c_client *client,
+>  	struct iio_dev *indio_dev;
+>  	int eoc_gpio;
+>  	int err;
+> -	char *name = NULL;
+> +	const char *name = NULL;
+>  
+>  	/* Grab and set up the supplied GPIO. */
+>  	if (client->dev.platform_data)
+> @@ -539,7 +539,7 @@ static int ak8975_probe(struct i2c_client *client,
+>  	if (id) {
+>  		data->chipset =
+>  			(enum asahi_compass_chipset)(id->driver_data);
+> -		name = (char *) id->name;
+> +		name = id->name;
+>  	} else if (ACPI_HANDLE(&client->dev))
+>  		name = ak8975_match_acpi_device(&client->dev, &data->chipset);
+>  	else
+> 
