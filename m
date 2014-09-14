@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915AbaINWjn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 18:39:43 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:25932 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaINWjm (ORCPT
+	id S1752881AbaINXMh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 19:12:37 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:49199 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaINXMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 18:39:42 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] scsi: scsi_devinfo.c: Cleaning up unnecessarily
- complicated in conjunction with strncpy
-Thread-Topic: [PATCH] scsi: scsi_devinfo.c: Cleaning up unnecessarily
- complicated in conjunction with strncpy
-Thread-Index: AQHP0GkrGrhtkjH3rEi/yW328+UERZwBNxfA
-Date: Sun, 14 Sep 2014 22:38:02 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C7A8A6@G9W0745.americas.hpqcorp.net>
-References: <1410727738-17430-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <94D0CD8314A33A4D9D801C0FE68B402958C7A75B@G9W0745.americas.hpqcorp.net>
- <CAFo99gbtGfEgcWukEQoEmcTro__aGND6-4bb4Ms+cV8Wu1FM4w@mail.gmail.com>
-In-Reply-To: <CAFo99gbtGfEgcWukEQoEmcTro__aGND6-4bb4Ms+cV8Wu1FM4w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="utf-8"
+	Sun, 14 Sep 2014 19:12:36 -0400
+Date: Mon, 15 Sep 2014 00:12:19 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Mark S <mstanovich15@gmail.com>, linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Jun Tian <jun.j.tian@intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: 3.15 Regression Due to goldfish bus Commit
+Message-ID: <20140915001219.63fb91dd@alan.etchedpixels.co.uk>
+In-Reply-To: <20140914215737.GA945@kroah.com>
+References: <CAPC5HRoW4pdMhBrJfQ40ZnJoon+zCRtAnZzzgEExw4ks=Trr2g@mail.gmail.com>
+	<20140914215737.GA945@kroah.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8EMdmuH011941
 
+On Sun, 14 Sep 2014 14:57:37 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-
-> -----Original Message-----
-> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
-> How do you mean?
+> On Sun, Sep 14, 2014 at 05:38:55PM -0400, Mark S wrote:
+> > Commit c1bc97f8f498a2bfab63ceef761fb0e88ef7c065 causes a gateway x86 laptop,
+> > booting from a usb device, to hang before the kernel completes booting. The
+> > offending commit was found using git bisect. Reverting the commit fixes the
+> > problem on 3.16.2.
+> > 
+> > The error resulting in the hang may not be a concern since the goldfish option
+> > is not needed and should probably not be selected. I'm mentioning this problem
+> > just in case it is unexpected behavior and it is worth fixing. Maybe the
+> > goldfish option should not be selectable for a similar configuration as mine?
 > 
-> strncpy zeroes throughout the remainder of the string "from" until the
-> length off to_length, or otherwise guaranteed trailing zero characters
-> and a warning is printed.
+> There should be some other type of run-time option to not have this code
+> run if it is found to not be running on the goldfish virtual machine.
 > 
-> Is not it exactly the functionality that is desired?
+> Anyone know how to do that?
 
-Ah, I see that in man 3 strcpy: 
-    "If the length of src is less than n, strncpy() pads the 
-     remainder of dest with null bytes."
+I asked last time it was reported and the time before (it comes up every
+year or two). There is no sane documented way to detect the Goldfish
+virtual machine as distinct from anything else.
 
-I agree that should work.
+We could hide Goldfish under expert ?
 
----
-Rob Elliott    HP Server Storage
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Alan
