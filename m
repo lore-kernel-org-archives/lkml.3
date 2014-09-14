@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaINRpK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 13:45:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:49964 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752810AbaINRpI (ORCPT
+	id S1752937AbaINRqY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 13:46:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43023 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498AbaINRqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 13:45:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, SpacemanSpiff <a818958@trbvm.com>,
-        Rajat Jain <rajatxjain@gmail.com>, Dave Airlie <airlied@linux.ie>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        "Jose P." <lbdkmjdf@sharklasers.com>
-Subject: Re: [PATCH 0/2] PCI: Ignore hotplug events for dual GPU systems
-Date: Sun, 14 Sep 2014 20:04:40 +0200
-Message-ID: <1434331.0IZIM5O2Ci@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
-References: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	Sun, 14 Sep 2014 13:46:23 -0400
+Date: Sun, 14 Sep 2014 10:46:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Stephan =?iso-8859-1?Q?M=FCller?= <fruktopus@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH] Change userspace MKDEV, MAJOR, MINOR-macros from 8+8
+ bit, to 12+20 bit layout
+Message-ID: <20140914174622.GA10315@kroah.com>
+References: <5415D1E0.3020905@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5415D1E0.3020905@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 11, 2014 04:23:54 PM Bjorn Helgaas wrote:
-> These are intended to resolve problems on dual GPU systems where the radeon
-> driver becomes unusable because of problems suspending or resuming a GPU.
-> When the GPU is powered off, we may get hotplug remove events, and we 
-> would normally unbind the driver and destroy the pci_dev.  But in this
-> case, the radeon and nouveau drivers expect to remain bound to the device
-> because it isn't really removable, and they may power it back on later.
+On Sun, Sep 14, 2014 at 07:35:28PM +0200, Stephan Müller wrote:
+> Delete old userspace-only versions (8+8 bit). Instead expose the kernel-space
+> definitions (12+20 bit).
 > 
-> Links to the bug reports in the patch changelogs.
-> 
-> I would like to get these into v3.17 if they seem reasonable.
-
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-for both.
-
+> Signed-off-by: Stephan Mueller <fruktopus@gmail.com>
 > ---
 > 
-> Bjorn Helgaas (2):
->       PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
->       ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
-> 
-> 
->  drivers/acpi/bus.c                           |   10 ----------
->  drivers/gpu/drm/nouveau/nouveau_acpi.c       |   16 ++--------------
->  drivers/gpu/drm/nouveau/nouveau_drm.c        |    1 +
->  drivers/gpu/drm/radeon/radeon_atpx_handler.c |   16 ++--------------
->  drivers/gpu/drm/radeon/radeon_drv.c          |    1 +
->  drivers/pci/hotplug/acpiphp_glue.c           |   16 ++++++----------
->  drivers/pci/hotplug/pciehp_hpc.c             |   12 ++++++++++++
->  include/acpi/acpi_bus.h                      |    4 +---
->  include/linux/pci.h                          |    6 ++++++
->  9 files changed, 31 insertions(+), 51 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Browsing some code I found that user-space and kernel-space macros for (un-)packing major/minor device numbers differ. The user-space ones using still the old 16 bit scheme. There was no explaining comment around and most libraries have their own macros anyway so it should not be a problematic UAPI change. So IMHO we could win some coherence in abandon this discrepancy.
+> Please correct me if I am wrong.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+You are wrong, we can't change this api, things will break :(
+
+sorry,
+
+greg k-h
