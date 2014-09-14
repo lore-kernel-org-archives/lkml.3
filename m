@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaINKjd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 06:39:33 -0400
-Received: from sender1.zohomail.com ([74.201.84.155]:30720 "EHLO
-	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaINKjc (ORCPT
+	id S1752618AbaINKm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 06:42:58 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:55339 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426AbaINKm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 06:39:32 -0400
-From: Sorin Facaoaru <work@sorin.cc>
-To: liodot@gmail.com, charrer@alacritech.com, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Sorin Facaoaru <work@sorin.cc>
-Subject: [PATCH] Staging: slicoss: fix coding style
-Date: Sun, 14 Sep 2014 03:39:29 -0700
-Message-Id: <1410691169-10168-1-git-send-email-work@sorin.cc>
-X-Mailer: git-send-email 1.9.1
-X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_1_26084_0
-X-ZohoMail-Owner: <1410691169-10168-1-git-send-email-work@sorin.cc>+zmo_0_<work@sorin.cc>
-X-ZohoMail-Sender: 23.243.135.245
-X-Zoho-Virus-Status: 2
-X-ZohoMailClient: External
+	Sun, 14 Sep 2014 06:42:57 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Andreas Noever <andreas.noever@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
+Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
+Date: Sun, 14 Sep 2014 12:42:01 +0200
+Message-Id: <1410691321-17860-1-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <gh8uln71g1.fsf@lena.gouders.net>
+References: <gh8uln71g1.fsf@lena.gouders.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- remove return statement at the end of void function
-- add blank line after declaration
+This is an implementation of fix 1 (Add a quirk to fix the _CRS information
+based on what amd_bus.c read from the hardware) which makes pci=nocrs ignore bus numbers from crs.
 
-Signed-off-by: Sorin Facaoaru <work@sorin.cc>
+If this works then we can add the board to the crs blacklist (Dirk can you attach the output of dmidecode to the bugzilla report?).
+
+
+
 ---
- drivers/staging/slicoss/slicoss.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/pci/acpi.c     |  7 +++----
+ arch/x86/pci/bus_numa.c | 12 +-----------
+ 2 files changed, 4 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/slicoss/slicoss.c b/drivers/staging/slicoss/slicoss.c
-index f35fa3d..56ca3b6 100644
---- a/drivers/staging/slicoss/slicoss.c
-+++ b/drivers/staging/slicoss/slicoss.c
-@@ -1982,7 +1982,6 @@ static void slic_rcv_handle_error(struct adapter *adapter,
- 				adapter->if_events.uflow802++;
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index cfd1b13..b073948 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -522,15 +522,14 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	} else {
+ 		probe_pci_root_info(info, device, busnum, domain);
+ 
+-		/* insert busn res at first */
+-		pci_add_resource(&resources,  &root->secondary);
+ 		/*
+ 		 * _CRS with no apertures is normal, so only fall back to
+ 		 * defaults or native bridge info if we're ignoring _CRS.
+ 		 */
+-		if (pci_use_crs)
++		if (pci_use_crs) {
++			pci_add_resource(&resources,  &root->secondary);
+ 			add_resources(info, &resources);
+-		else {
++		} else {
+ 			free_pci_root_info_res(info);
+ 			x86_pci_root_bus_resources(busnum, &resources);
  		}
- 	}
--	return;
- }
+diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
+index f3a2cfc..b735d0e 100644
+--- a/arch/x86/pci/bus_numa.c
++++ b/arch/x86/pci/bus_numa.c
+@@ -31,8 +31,6 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
+ {
+ 	struct pci_root_info *info = x86_find_pci_root_info(bus);
+ 	struct pci_root_res *root_res;
+-	struct pci_host_bridge_window *window;
+-	bool found = false;
  
- #define TCP_OFFLOAD_FRAME_PUSHFLAG  0x10000000
-@@ -2455,6 +2454,7 @@ static void slic_entry_remove(struct pci_dev *pcidev)
- 	adapter->allocated = 0;
- 	if (!card->adapters_allocated) {
- 		struct sliccard *curr_card = slic_global.slic_card;
-+
- 		if (curr_card == card) {
- 			slic_global.slic_card = card->next;
- 		} else {
-@@ -2551,6 +2551,7 @@ static int slic_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- 	case SIOCSLICTRACEDUMP:
- 		{
- 			u32 value;
-+
- 			DBG_IOCTL("slic_ioctl  SIOCSLIC_TRACE_DUMP\n");
+ 	if (!info)
+ 		goto default_resources;
+@@ -40,15 +38,7 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
+ 	printk(KERN_DEBUG "PCI: root bus %02x: hardware-probed resources\n",
+ 	       bus);
  
- 			if (copy_from_user(data, rq->ifr_data, 28)) {
+-	/* already added by acpi ? */
+-	list_for_each_entry(window, resources, list)
+-		if (window->res->flags & IORESOURCE_BUS) {
+-			found = true;
+-			break;
+-		}
+-
+-	if (!found)
+-		pci_add_resource(resources, &info->busn);
++	pci_add_resource(resources, &info->busn);
+ 
+ 	list_for_each_entry(root_res, &info->resources, list) {
+ 		struct resource *res;
 -- 
-1.9.1
-
+2.1.0
 
