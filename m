@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaINAB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 20:01:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38899 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161AbaINABY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 20:01:24 -0400
-Date: Sun, 14 Sep 2014 02:01:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Glenn P. Williamson" <glenn.p.williamson@intel.com>
-Subject: Re: [PATCH 6/6] x86/efi: introduce EFI_BOOT_SERVICES_WARN
-Message-ID: <20140914000130.GC18296@nazgul.tnic>
-References: <1410633376-8822-1-git-send-email-ricardo.neri-calderon@linux.intel.com>
- <1410633376-8822-7-git-send-email-ricardo.neri-calderon@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1410633376-8822-7-git-send-email-ricardo.neri-calderon@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752250AbaINAHJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 20:07:09 -0400
+Received: from sender1.zohomail.com ([74.201.84.155]:30292 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaINAHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Sep 2014 20:07:07 -0400
+From: Sorin Facaoaru <work@sorin.cc>
+To: gregkh@linuxfoundation.org
+Cc: ccross@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Sorin Facaoaru <work@sorin.cc>
+Subject: [PATCH] Staging: android: ion: fix coding style
+Date: Sat, 13 Sep 2014 17:07:04 -0700
+Message-Id: <1410653224-4410-1-git-send-email-work@sorin.cc>
+X-Mailer: git-send-email 1.9.1
+X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_1_26084_0
+X-ZohoMail-Owner: <1410653224-4410-1-git-send-email-work@sorin.cc>+zmo_0_<work@sorin.cc>
+X-ZohoMail-Sender: 23.243.135.245
+X-Zoho-Virus-Status: 2
+X-ZohoMailClient: External
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 11:36:16AM -0700, Ricardo Neri wrote:
-> Being more verbose about this kind of illegal access from the firmware
-> increases the likelihood of this kind firmware bugs to be fixed.
+- remove return statement in empty void function
 
-I sincerely hope you're right and, more importantly, how do we make sure
-those warnings get seen in time for a fix to even be possible..?
+Signed-off-by: Sorin Facaoaru <work@sorin.cc>
+---
+ drivers/staging/android/ion/ion_carveout_heap.c | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/drivers/staging/android/ion/ion_carveout_heap.c b/drivers/staging/android/ion/ion_carveout_heap.c
+index dcb6f21..9156d82 100644
+--- a/drivers/staging/android/ion/ion_carveout_heap.c
++++ b/drivers/staging/android/ion/ion_carveout_heap.c
+@@ -133,7 +133,6 @@ static struct sg_table *ion_carveout_heap_map_dma(struct ion_heap *heap,
+ static void ion_carveout_heap_unmap_dma(struct ion_heap *heap,
+ 					struct ion_buffer *buffer)
+ {
+-	return;
+ }
+ 
+ static struct ion_heap_ops carveout_heap_ops = {
 -- 
-Regards/Gruss,
-    Boris.
---
+1.9.1
+
+
