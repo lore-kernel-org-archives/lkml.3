@@ -1,180 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaINITP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 04:19:15 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64788 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752397AbaINITM (ORCPT
+	id S1752532AbaINIYR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 04:24:17 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:57558 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaINIYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 04:19:12 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/v6oVflpiNbqN/r4NU3HHJRPavbOTd9Co=
-X-DKIM: OpenDKIM Filter v2.0.1 titan B20145E1688
-Date: Sun, 14 Sep 2014 04:19:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: Core changes for v3.18
-Message-ID: <20140914081909.GS21986@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 14 Sep 2014 04:24:13 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 14 Sep 2014 10:24:08 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Nico Schottelius <nico-kernel-2014-08-14@schottelius.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: Linux 3.16: O2 Micro MMC missing in lspci
+Message-ID: <20140914102408.391efcaf@kant>
+In-Reply-To: <20140814105351.GA3110@schottelius.org>
+References: <20140814105351.GA3110@schottelius.org>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Aug 14 Nico Schottelius wrote:
+> Hello,
+> 
+> when booting into 3.16.0-2-ARCH I miss the following
+> entry in lspci:
+> 
+> [12:50] gold:debug-sd-card-reader% diff 3.15/lspci 3.16/lspci 
+> 17d16
+> < 03:00.0 SD Host controller: O2 Micro, Inc. SD/MMC Card Reader
+> Controller (rev 01)
+> 
+> This causes my system to be unable to mount/see the sd cards.
+> My hardware is a Dell E7440 notebook.
+> 
+> I attached dmesg & lspci of both kernels.
+> 
+> Anyone an idea on what might be wrong?
+> 
+> The only related issues I found is
+>     https://bugs.archlinux.org/task/26971
+> 
+> and that there was a change in the mmc area:
+> 
+>     https://lkml.org/lkml/2014/6/10/491
+> 
+> Cheers,
+> 
+> Nico
+> 
+> p.s.: Please cc on reply
 
-Here's a round of changes I've had sitting in -next for a while.  The
-last couple renesas changes haven't had as much testing as I would like,
-but I didn't want to hold up everything else for those small, isolated
-changes.
+Both the archlinux bug and the pull request very much appear to be
+unrelated to your issue.  In your case, the MMC subsystem is not involved
+since the PCI device of the SD controller is not exposed to the MMC
+subsystem anymore, just like it is not exposed in lspci anymore.
 
-I have some more changes that haven't been in -next yet.  I'll try to
-turn those around quickly as the rumblings indicate there might not be
-an -rc7.
+I suggest as next steps:
+  - Test whether the issue still exists in the newest kernel that you are
+    able to install.  (v3.17-rc4 is current, v3.16.2 is the lastest on in
+    the 3.16 branch.)
+  - Post the dmesg output from a successful boot with 3.15 and from an
+    unsuccessful boot with 3.16.
 
-Please pull.
-
-thx,
-
-Jason.
-
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-
-are available in the git repository at:
-
-  git://git.infradead.org/users/jcooper/linux.git tags/irqchip-core-3.18
-
-for you to fetch changes up to 468a903c0e5147e3f93187f0b808a3ef957fd00e:
-
-  Merge branch 'irqchip/handle_domain' into irqchip/core (2014-09-14 07:53:54 +0000)
-
-----------------------------------------------------------------
-irqchip core changes for v3.18
-
- - renesas
-    - add suspend to RAM
-    - add runtime PM
-    - misc cleanup and DT binding docs
-
- - keystone
-    - add new driver
-
- - hip04
-    - add Hisilicon HiP04 driver (without touching irq-gic.c)
-
- - gic
-    - replace magic numbers with defined constants
-    - preserve v2 bypass bits in cpu ctrl register
-
- - handle_domain_irq
-    - whole conversion series replacing handle_IRQ
-
-----------------------------------------------------------------
-Feng Kan (2):
-      irqchip: gic: Replace hex numbers with defines.
-      irqchip: gic: Preserve gic V2 bypass bits in cpu ctrl register
-
-Geert Uytterhoeven (7):
-      irqchip: renesas-intc-irqpin: Add suspend-to-RAM wake up support
-      MAINTAINERS: Add irqchip DT bindings doc path to IRQCHIP DRIVERS section
-      irqchip: renesas-intc-irqpin: Document SoC-specific bindings
-      irqchip: renesas-irqc: Add DT binding documentation
-      irqchip: renesas-irqc: Add binding docs for new R-Car Gen2 SoCs
-      irqchip: renesas-intc-irqpin: Add helper variable dev = &pdev->dev
-      irqchip: renesas-intc-irqpin: Add minimal runtime PM support
-
-Grygorii Strashko (2):
-      irqchip: keystone: Add irq controller ip driver
-      irqchip: keystone: Remove warning unsigned 'kirq->irq' is never less than zero
-
-Haojian Zhuang (1):
-      irqchip: hip04: Enable Hisilicon HiP04 interrupt controller
-
-Jason Cooper (4):
-      Merge branch 'irqchip/keystone' into irqchip/core
-      Merge branch 'irqchip/hip04' into irqchip/core
-      Merge branch 'irqchip/gic' into irqchip/core
-      Merge branch 'irqchip/handle_domain' into irqchip/core
-
-Marc Zyngier (26):
-      genirq: Add irq_domain-aware core IRQ handler
-      arm64: Convert handle_IRQ to use __handle_domain_irq
-      ARM: Convert handle_IRQ to use __handle_domain_irq
-      openrisc: Convert handle_IRQ to use __handle_domain_irq
-      irqchip: gic: Convert to handle_domain_irq
-      irqchip: armada-370-xp: Convert to handle_domain_irq
-      irqchip: clps711x: Convert to handle_domain_irq
-      irqchip: mmp: Convert to handle_domain_irq
-      irqchip: mxs: Convert to handle_domain_irq
-      irqchip: orion: Convert to handle_domain_irq
-      irqchip: s3c24xx: Convert to handle_domain_irq
-      irqchip: sirfsoc: Convert to handle_domain_irq
-      irqchip: sun4i: Convert to handle_domain_irq
-      irqchip: versatile-fpga: Convert to handle_domain_irq
-      irqchip: vic: Convert to handle_domain_irq
-      irqchip: vt8500: Convert to handle_domain_irq
-      irqchip: zevio: Convert to handle_domain_irq
-      irqchip: gic-v3: Convert to handle_domain_irq
-      irqchip: atmel-aic: Convert to handle_domain_irq
-      irqchip: atmel-aic5: Convert to handle_domain_irq
-      irqchip: or1k-pic: Convert to handle_domain_irq
-      ARM: imx: avic: Convert to handle_domain_irq
-      ARM: imx: tzic: Convert to handle_domain_irq
-      ARM: omap2: irq: Convert to handle_domain_irq
-      arm64: Get rid of handle_IRQ
-      openrisc: Get rid of handle_IRQ
-
- .../interrupt-controller/renesas,intc-irqpin.txt   |   8 +-
- .../bindings/interrupt-controller/renesas,irqc.txt |  32 ++
- .../interrupt-controller/ti,keystone-irq.txt       |  36 ++
- MAINTAINERS                                        |   1 +
- arch/arm/Kconfig                                   |   1 +
- arch/arm/kernel/irq.c                              |  19 +-
- arch/arm/mach-imx/avic.c                           |   2 +-
- arch/arm/mach-imx/tzic.c                           |   3 +-
- arch/arm/mach-omap2/irq.c                          |   3 +-
- arch/arm64/Kconfig                                 |   1 +
- arch/arm64/include/asm/hardirq.h                   |   2 -
- arch/arm64/kernel/irq.c                            |  27 --
- arch/openrisc/Kconfig                              |   1 +
- arch/openrisc/include/asm/irq.h                    |   1 -
- arch/openrisc/kernel/irq.c                         |  12 -
- drivers/irqchip/Kconfig                            |   7 +
- drivers/irqchip/Makefile                           |   2 +
- drivers/irqchip/irq-armada-370-xp.c                |  19 +-
- drivers/irqchip/irq-atmel-aic.c                    |   4 +-
- drivers/irqchip/irq-atmel-aic5.c                   |   4 +-
- drivers/irqchip/irq-clps711x.c                     |  18 +-
- drivers/irqchip/irq-gic-common.c                   |  15 +-
- drivers/irqchip/irq-gic-v3.c                       |  13 +-
- drivers/irqchip/irq-gic.c                          |  49 ++-
- drivers/irqchip/irq-hip04.c                        | 424 +++++++++++++++++++++
- drivers/irqchip/irq-keystone.c                     | 232 +++++++++++
- drivers/irqchip/irq-mmp.c                          |  10 +-
- drivers/irqchip/irq-mxs.c                          |   3 +-
- drivers/irqchip/irq-or1k-pic.c                     |   4 +-
- drivers/irqchip/irq-orion.c                        |   5 +-
- drivers/irqchip/irq-renesas-intc-irqpin.c          |  85 +++--
- drivers/irqchip/irq-s3c24xx.c                      |   4 +-
- drivers/irqchip/irq-sirfsoc.c                      |   6 +-
- drivers/irqchip/irq-sun4i.c                        |   5 +-
- drivers/irqchip/irq-versatile-fpga.c               |   2 +-
- drivers/irqchip/irq-vic.c                          |   2 +-
- drivers/irqchip/irq-vt8500.c                       |   5 +-
- drivers/irqchip/irq-zevio.c                        |   3 +-
- include/linux/irqchip/arm-gic.h                    |  16 +
- include/linux/irqdesc.h                            |  19 +
- kernel/irq/Kconfig                                 |   3 +
- kernel/irq/irqdesc.c                               |  42 ++
- 42 files changed, 971 insertions(+), 179 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/renesas,irqc.txt
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/ti,keystone-irq.txt
- create mode 100644 drivers/irqchip/irq-hip04.c
- create mode 100644 drivers/irqchip/irq-keystone.c
+[added Cc: linux-pci]
+-- 
+Stefan Richter
+-=====-====- =--= -===-
+http://arcgraph.de/sr/
