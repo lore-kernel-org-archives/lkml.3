@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaINIp1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 04:45:27 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:62044 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaINIpZ (ORCPT
+	id S1752578AbaINIpf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 04:45:35 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:55238 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752458AbaINIpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 04:45:25 -0400
+	Sun, 14 Sep 2014 04:45:30 -0400
+Date: Sun, 14 Sep 2014 09:45:11 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.17-rc4 v5 2/6] arm: fiq: Replace default FIQ handler
+Message-ID: <20140914084511.GU12361@n2100.arm.linux.org.uk>
+References: <1410272111-30516-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-1-git-send-email-daniel.thompson@linaro.org> <1410435078-28462-3-git-send-email-daniel.thompson@linaro.org> <20140912171404.GO12361@n2100.arm.linux.org.uk> <20140912171908.GP12361@n2100.arm.linux.org.uk> <20140912172337.GQ12361@n2100.arm.linux.org.uk> <5415376F.10302@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <541552B8.8020807@gmail.com>
-References: <541552B8.8020807@gmail.com>
-Date: Sun, 14 Sep 2014 10:45:23 +0200
-X-Google-Sender-Auth: 1VrAt2fmfeicT8BSS2GwdIrPRWs
-Message-ID: <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
-Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default 'screen_info"
- for fixing compiling break
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5415376F.10302@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
+On Sun, Sep 14, 2014 at 07:36:31AM +0100, Daniel Thompson wrote:
+> > -	if (!relinquish)
+> > +	if (!relinquish) {
+> > +		/* Restore default handler and registers */
+> > +		local_fiq_disable();
+> > +		set_fiq_regs(&dfl_fiq_regs);
+> 
+> This variable was declared as def_fiq_regs .
 
-On Sun, Sep 14, 2014 at 10:32 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
-> Add default one just like other architectures have done (e.g. cris,
-> score, sh ...), the related error with allmodconfig:
->
->     LD      init/built-in.o
->   drivers/built-in.o: In function `vgacon_save_screen':
->   drivers/video/console/.tmp_vgacon.o:(.text+0x834d0): undefined reference to `screen_info'
->   drivers/video/console/.tmp_vgacon.o:(.text+0x834ec): undefined reference to `screen_info'
->   drivers/built-in.o: In function `vgacon_resize':
->   drivers/video/console/.tmp_vgacon.o:(.text+0x83cdc): undefined reference to `screen_info'
->   drivers/video/console/.tmp_vgacon.o:(.text+0x83d38): undefined reference to `screen_info'
->   drivers/built-in.o: In function `vgacon_switch':
->   drivers/video/console/.tmp_vgacon.o:(.text+0x83f50): undefined reference to `screen_info'
->   drivers/built-in.o:drivers/video/console/.tmp_vgacon.o:(.text+0x8407c): more undefined references to `screen_info' follow
->   make: *** [vmlinux] Error 1
+Yep.
 
-Can microblaze actually have VGA?
+> >  		set_fiq_handler(&no_fiq_insn, sizeof(no_fiq_insn));
+> > +		local_fiq_enable();
+> > +
+> > +		/* FIXME: notify irq controller to standard enable FIQs */
+> 
+> I don't understand what we need to tell the irq controller at this point.
+> 
+> If we do want to mask sources of FIQ from arch code then in the case of
+> IPI_CPU_BACKTRACE we might be better off disabling it at point of
+> generation than at the interrupt controller (to avoid the long timeout).
 
-If not, it's better to disable it.
+The point is, when a platform decides that it wants to insert its own
+/fast/ interrupt handler into the vector, our default one is moved out
+of the way.  Those fast interrupt handlers assume that they are the
+only user of FIQ (since only one fast interrupt handler routine can be
+in place at any one time.)  So, it's not going to expect to receive any
+other FIQs other than the one(s) it's written for.
 
-BTW, it's interesting you mention cris, as VGA_CONSOLE depends on !CRIS
-in drivers/video/console/Kconfig...
+So, when the platform gives up the FIQ vector, and we restore the
+default FIQ code, we need to make sure that the FIQ sources for that
+code are re-enabled.
 
-I (still) think it's time to introduce ARCH_MIGHT_HAVE_VGA, and make
-VGA_CONSOLE depend on that, cfr.
+Yes, you may not like this, and you may want to turn FIQ into a sprawling
+mess with interrupt source demux and such like, but that's not really on.
+The clue is in the name.  *Fast*.  On certain platforms, it gets used for
+time critical activities, and it being low latency is an absolute must.
 
-commit f13399f033ae3d49e1808bacabd83d116844c94e
-Merge: 049ffa8ab33a b2c32b32a212
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Fri Nov 15 14:05:15 2013 -0800
-
-    Merge tag 'for-linus' of
-git://linux-c6x.org/git/projects/linux-c6x-upstreaming
-
-    Pull Kconfig cleanups from Mark Salter:
-     "Remove some unused config options from C6X and clean up PC_PARPORT
-      dependencies.  The latter was discussed here:
-
-        https://lkml.org/lkml/2013/10/8/12"
-
-    * tag 'for-linus' of git://linux-c6x.org/git/projects/linux-c6x-upstreaming:
-      c6x: remove unused COMMON_CLKDEV Kconfig parameter
-      Kconfig cleanup (PARPORT_PC dependencies)
-      x86: select ARCH_MIGHT_HAVE_PC_PARPORT
-      unicore32: select ARCH_MIGHT_HAVE_PC_PARPORT
-      sparc: select ARCH_MIGHT_HAVE_PC_PARPORT
-      sh: select ARCH_MIGHT_HAVE_PC_PARPORT
-      powerpc: select ARCH_MIGHT_HAVE_PC_PARPORT
-      parisc: select ARCH_MIGHT_HAVE_PC_PARPORT
-      mips: select ARCH_MIGHT_HAVE_PC_PARPORT
-      microblaze: select ARCH_MIGHT_HAVE_PC_PARPORT
-      m68k: select ARCH_MIGHT_HAVE_PC_PARPORT
-      ia64: select ARCH_MIGHT_HAVE_PC_PARPORT
-      arm: select ARCH_MIGHT_HAVE_PC_PARPORT
-      alpha: select ARCH_MIGHT_HAVE_PC_PARPORT
-      c6x: remove unused parameter in Kconfig
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
