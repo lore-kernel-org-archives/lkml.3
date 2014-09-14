@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaINGzE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 02:55:04 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30620 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752401AbaINGzC (ORCPT
+	id S1752504AbaINHcn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 03:32:43 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:13048 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423AbaINHcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 02:55:02 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+IM6oWmLVfFL4LhnoX6nKxvr52xes/cbk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 5A45E5E1569
-Date: Sun, 14 Sep 2014 02:54:46 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 0/4] ARM: shmobile: r8a7740: Handle implicitly enabled
- clocks
-Message-ID: <20140914065446.GO21986@titan.lakedaemon.net>
-References: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
+	Sun, 14 Sep 2014 03:32:41 -0400
+X-IronPort-AV: E=Sophos;i="5.04,520,1406617200"; 
+   d="scan'208";a="45880206"
+Message-ID: <54154496.3070809@broadcom.com>
+Date: Sun, 14 Sep 2014 09:32:38 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Fabian Frederick <fabf@skynet.be>
+CC: <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <brcm80211-dev-list@broadcom.com>
+Subject: Re: [PATCH 0/4 linux-next] drivers/net: use container_of where possible
+References: <1410640709-18295-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1410640709-18295-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 03:15:16PM +0200, Geert Uytterhoeven wrote:
-> 	Hi all,
-> 
-> This patch series fixes an issue with the INTCA module clock, which we
-> currently assume enabled by the bootloader or reset state.
-> If this clock was not enabled before booting Linux, the intc-irqpin driver
-> and all devices connected to it (buttons, RTC on i2c-gpio) don't work.
-> 
-> To fix this, the clock is added to the system, and is managed in the driver
-> through runtime PM, taking into account wake-up sources (gpio-keys, RTC alarm).
-> 
-> There's one remaining issue for armadillo-legacy, which has support for the LCD
-> controller. Although the shmobile_lcd_fb driver doesn't use MERAM on r8a7740
-> (unlike on sh7372), the MERAM (Media RAM) and ICB (MERAM Interconnect Buffer)
-> clocks must be enabled to show a picture on the display. However, the MERAM
-> doesn't have any device associated with it, so it's non-trivial to hook it up.
-> 
-> This patch series is based on renesas-devel-20140911-v3.17-rc4 and
-> irqchip/for-next.
-> 
-> Geert Uytterhoeven (4):
->   irqchip: renesas-intc-irqpin: Add helper variable dev = &pdev->dev
->   irqchip: renesas-intc-irqpin: Add minimal runtime PM support
->   ARM: shmobile: r8a7740 legacy: Add missing INTCA clock for irqpin
->     module
->   ARM: shmobile: r8a7740 dtsi: Add missing INTCA clock for irqpin module
-> 
->  arch/arm/boot/dts/r8a7740.dtsi            | 14 ++++--
->  arch/arm/mach-shmobile/clock-r8a7740.c    |  7 ++-
->  drivers/irqchip/irq-renesas-intc-irqpin.c | 83 +++++++++++++++++++++----------
->  include/dt-bindings/clock/r8a7740-clock.h |  1 +
->  4 files changed, 73 insertions(+), 32 deletions(-)
+On 09/13/14 22:38, Fabian Frederick wrote:
+> Small patchset using container_of instead of casting on first structure member address.
 
-Patches 1 and 2 applied to irqchip/core
+Hi Fabian,
 
-thx,
+I think you need to split up this series. One for the ethernet drivers 
+and one for the wireless driver. As there is not dependency between the 
+patches they can each go through their own subsystem git tree. Generally 
+I tend to submit patches to the subsystem maintainer and Cc the 
+appropriate mailing lists.
 
-Jason.
+Regarding the patches for brcmsmac, you can add
+
+Acked-by: Arend van Spriel <arend@broadcom.com>
+
+Regards,
+Arend
+
+> Fabian Frederick (4):
+>    net: fec: use container_of to resolve bufdesc_ex from bufdesc
+>    bna: use container_of to resolve bufdesc_ex from bufdesc
+>    brcm80211: use container_of to resolve brcms_phy from brcms_phy_pub
+>    brcm80211: use container_of to resolve dma_info from dma_pub
+>
+>   drivers/net/ethernet/brocade/bna/bna_enet.c        |   9 +-
+>   drivers/net/ethernet/brocade/bna/bna_tx_rx.c       |   4 +-
+>   drivers/net/ethernet/freescale/fec_main.c          |   4 +-
+>   drivers/net/wireless/brcm80211/brcmsmac/dma.c      |  38 +++----
+>   .../net/wireless/brcm80211/brcmsmac/phy/phy_cmn.c  | 122 ++++++++++-----------
+>   .../net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c  |   6 +-
+>   .../net/wireless/brcm80211/brcmsmac/phy/phy_n.c    |   8 +-
+>   7 files changed, 97 insertions(+), 94 deletions(-)
+>
+
