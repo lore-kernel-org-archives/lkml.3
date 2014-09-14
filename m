@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761AbaINQqu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 12:46:50 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53192 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752359AbaINQqt (ORCPT
+	id S1752849AbaINQrO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 12:47:14 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:41147 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359AbaINQrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 12:46:49 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>,
-        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: Re: [REPOST PATCH v4 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-Date: Sun, 14 Sep 2014 19:06:22 +0200
-Message-ID: <3009588.qOkltIoajF@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAObsKBkjqJiJ4OC4FYDXDBSFMFzvbvD_vJ6KzhqyyPCCB-o7g@mail.gmail.com>
-References: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com> <1409759373-22696-2-git-send-email-tomeu.vizoso@collabora.com> <CAAObsKBkjqJiJ4OC4FYDXDBSFMFzvbvD_vJ6KzhqyyPCCB-o7g@mail.gmail.com>
+	Sun, 14 Sep 2014 12:47:13 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1409872027.5546.132.camel@x220>
+References: <1403167807.23136.31.camel@x220>
+	<CAD6h2NRb3tStSy-qiBRQHDo7Yy=Obvgt1hx17M13atXEtTxcaA@mail.gmail.com>
+	<1409872027.5546.132.camel@x220>
+Date: Mon, 15 Sep 2014 00:47:11 +0800
+Message-ID: <CAD6h2NSECE9XUN22oONtzMogKoOEq9us9pzi_y11YPTh=71BJw@mail.gmail.com>
+Subject: Re: clk: hisilicon: ARCH_HIP04 and ARCH_HIX5HD2?
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Haifeng Yan <haifeng.yan@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 12, 2014 11:11:25 AM Tomeu Vizoso wrote:
-> On 3 September 2014 17:49, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
-> > Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
-> >
-> > It can be used by memory controllers to calculate the optimum clock frequency
-> > based on the bandwidth needs of the different memory clients.
-> >
-> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> > Acked-by: Pavel Machek <pavel@ucw.cz>
-> 
-> Hi Rafael,
-> 
-> will you take this one for 3.18?
+On 5 September 2014 07:07, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Thu, 2014-06-19 at 17:00 +0800, Haojian Zhuang wrote:
+>> On 19 June 2014 16:50, Paul Bolle <pebolle@tiscali.nl> wrote:
+>> > 0) Commit d3e6573c48f4 ("clk: hip04: add clock driver") was included in
+>> > v3.15. That clock driver is built only if CONFIG_ARCH_HIP04 is set.
+>> >
+>> > And commit 5efaf09021a5 ("clk: hisi: add clk-hix5hd2.c") was included in
+>> > v3.16-rc1. And that driver is built only if CONFIG_ARCH_HIX5HD2 is set.
+>> >
+>> > 1) Neither the symbol ARCH_HIP04 nor the symbol ARCH_HIX5HD2 is part of
+>> > v3.16-rc1. These symbols are also not part of next-20140619. I assume
+>> > that both are pending somewhere. Is that correct?
+>> >
+>> > 2) It would probably be nice if these drivers got some (automatic) build
+>> > coverage until those symbols enter the tree. I don't know how that could
+>> > be achieved.
+>>
+>> Because clock driver is the first component should be merged into
+>> kernel tree. Otherwise, SoC couldn't be compiled at all since SoC &
+>> clock are in two different git tree.
+>>
+>> I also hope that SoC patches could be merged as soon as possible. But
+>> we also need to follow up the comments on SoC patches from mailing
+>> list. I can't not say when those SoC patches could be merged into
+>> mainline since I'm not the gate keeper. I could only say that we're
+>> making effort on this.
+>
+> ARCH_HIX5HD2 landed in v3.17-rc1, so it left my list of minor worries.
+>
+> I assume the code to add ARCH_HIP04 is still being worked on. Is that
+> correct?
+>
+>
+> Paul Bolle
+>
 
-Quite likely, but I'm traveling now, so I'll do that after I'm back home
-in a few days.  I'll write to you if there are any problems.
+Sorry for late response since I was in trip. Yes, you're right.
+ARCH_HIP04 is still working on.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Best Regards
+Haojian
