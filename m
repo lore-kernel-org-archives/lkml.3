@@ -1,166 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbaINDyn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 23:54:43 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43202 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaINDyd (ORCPT
+	id S1752358AbaINETc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 00:19:32 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:54411 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220AbaINETa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 23:54:33 -0400
-Message-ID: <1410666872.7106.140.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] Freeing dst when the reference count <0 causes general
- protection fault, it could be a major security flaw as rogue app can modify
- dst to crash kernel.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: shakil A Khan <shakilk1729@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, edumazet@google.com,
-        davem@davemloft.net
-Date: Sat, 13 Sep 2014 20:54:32 -0700
-In-Reply-To: <1723887.mNMu0nmDbO@localhost.localdomain>
-References: <1410596833-2548-1-git-send-email-shakilk1729@gmail.com>
-	 <1410609022.7106.132.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1723887.mNMu0nmDbO@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 14 Sep 2014 00:19:30 -0400
+Date: Sun, 14 Sep 2014 07:19:12 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-09-14
+Message-ID: <20140914041912.GA1623@t440s.P-661HNU-F1>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-09-13 at 11:35 -0700, shakil A Khan wrote:
-> On Saturday, September 13, 2014 04:50:22 AM Eric Dumazet wrote:
-> > On Sat, 2014-09-13 at 01:27 -0700, Shakil A Khan wrote:
-> > > Signed-off-by: Shakil A Khan <shakilk1729@gmail.com>
-> > > ---
-> > > 
-> > >  net/core/dst.c | 5 ++++-
-> > >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/net/core/dst.c b/net/core/dst.c
-> > > index a028409..6a848b0 100644
-> > > --- a/net/core/dst.c
-> > > +++ b/net/core/dst.c
-> > > @@ -284,7 +284,10 @@ void dst_release(struct dst_entry *dst)
-> > > 
-> > >  		int newrefcnt;
-> > >  		
-> > >  		newrefcnt = atomic_dec_return(&dst->__refcnt);
-> > > 
-> > > -		WARN_ON(newrefcnt < 0);
-> > > +
-> > > +		if (WARN(newrefcnt < 0, "dst reference count less than zero"))
-> > > +			return;
-> > > +
-> > > 
-> > >  		if (unlikely(dst->flags & DST_NOCACHE) && !newrefcnt)
-> > >  		
-> > >  			call_rcu(&dst->rcu_head, dst_destroy_rcu);
-> > >  	
-> > >  	}
-> > 
-> > A rogue application can not do trigger this, unless a major bug in the
-> > kernel exists.
-> 
-> Please check this kernel trace. It is able to crash the kernel.
-> 
-> general protection fault: 0000 [#1] PREEMPT SMP
-> Modules linked in: nfsv3 nfs_acl rpcsec_gss_krb5 auth_rpcgss oid_registry 
-> nfsv4 nfs fscache lockd sunrpc tun nbd ipmi_si ipmi_watchdog ipmi_devintf 
-> ipmi_msghandler xt_mark xt_owner ipt_MASQUERADE xt_physdev xt_state xt_LOG 
-> iptable_mangle iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat 
-> nf_conntrack iptable_filter ip_tables xen_acpi_processor xen_pciback 
-> xen_netback xen_blkback xen_gntalloc xen_gntdev xenfs xen_privcmd bridge stp 
-> llc ipv6 ext4 jbd2 freq_table mperf coretemp crc32c_intel ghash_clmulni_intel 
-> microcode pcspkr sb_edac edac_core lpc_ich mfd_core i2c_i801 sg ioatdma igb 
-> dca i2c_algo_bit i2c_core ptp pps_core ext3 jbd mbcache sd_mod crc_t10dif 
-> aesni_intel ablk_helper cryptd lrw gf128mul glue_helper aes_x86_64 ahci 
-> libahci isci libsas scsi_transport_sas megaraid_sas wmi dm_mirror 
-> dm_region_hash dm_log dm_mod [last unloaded: iTCO_vendor_support]
-> CPU: 6 PID: 15324 Comm: XXXX Not tainted 3.10.45-xen.322.17.41238 #1
-> Hardware name: McAfee, Inc. ATD-6000/S4600LH...., BIOS 
-> SE5C600.86B.02.01.0002.082220131453 08/22/2013
-> task: ffff882bc6255000 ti: ffff882bc61aa000 task.ti: ffff882bc61aa000
-> RIP: e030:[<ffffffff8148473f>]  [<ffffffff8148473f>] ipv4_dst_destroy+0x3b/0x77
-> RSP: e02b:ffff882bc61abb48  EFLAGS: 00010296
-> RAX: dead000000200200 RBX: ffff882bc625bc80 RCX: 0001338a9b7110db
-> RDX: dead000000100100 RSI: ffffffff82267e30 RDI: 00000000000003f4
-> RBP: ffff882bc61abb58 R08: 00000000d5d6df8b R09: 0000000000000000
-> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-> R13: ffffffff820e5880 R14: ffff88070e584b80 R15: 0000000000000000
-> FS:  00007f8d3fff2700(0000) GS:ffff88081e6c0000(0000) knlGS:0000000000000000
-> CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00000031d0e36ac0 CR3: 0000002db0165000 CR4: 0000000000042660
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Stack:
->  ffff882bc61abb58 ffff882bc625bc80 ffff882bc61abb88 ffffffff8145bfc5
->  ffff882bc61abba8 ffff882bc625bc80 0000000000000000 ffff882bc625bc80
->  ffff882bc61abba8 ffffffff8145c2c5 ffff88070e584b80 ffff882b991c2300
-> Call Trace:
->  [<ffffffff8145bfc5>] dst_destroy+0x29/0xbd
->  [<ffffffff8145c2c5>] dst_release+0x58/0x67
->  [<ffffffff814ad539>] tcp_v4_do_rcv+0x11b/0x287
->  [<ffffffff81443e24>] __release_sock+0x7c/0xe7
->  [<ffffffff81443ebd>] release_sock+0x2e/0x7c
->  [<ffffffff81499cdf>] tcp_sendmsg+0xe0/0xd41
->  [<ffffffff814bf369>] inet_sendmsg+0x7d/0xa0
->  [<ffffffff8143d794>] sock_aio_write+0x159/0x17d
->  [<ffffffff81005859>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
->  [<ffffffff8116d12b>] do_sync_write+0x7f/0xa7
->  [<ffffffff8116d392>] ? rw_verify_area+0x56/0xd5
->  [<ffffffff8116d555>] vfs_write+0x144/0x170
->  [<ffffffff8116d977>] SyS_write+0x54/0x8f
->  [<ffffffff810d078f>] ? __audit_syscall_exit+0x20c/0x29c
->  [<ffffffff8151e959>] system_call_fastpath+0x16/0x1b
-> Code: fb 48 8d 87 b0 00 00 00 48 39 87 b0 00 00 00 74 4f 48 c7 c7 04 8f 3c 82 
-> e8 32 23 09 00 48 8b 93 b0 00 00 00 48 8b 83 b8 00 00 00 <48> 89 42 08 48 89 
-> 10 48 b9 00 01 10 00 00 00 ad de 48 89 8b b0
-> RIP  [<ffffffff8148473f>] ipv4_dst_destroy+0x3b/0x77
->  RSP <ffff882bc61abb48>
-> ---[ end trace d56f90482c47af91 ]---
-> Kernel panic - not syncing: Fatal exception in interrupt
-> 
->  
-> > 
-> > Instead of trying to hide the kernel bug, we need to fix it.
->     There are two problems with this. First the list has somehow got out of 
-> sync in terms of number of delete and allocate, so we need to fix that.
-> But at the same time refcount if <0 signifies its been already freed so we need 
-> not free up.
-> We need fix for both and my patch targets later as my system works fine with 
-> this patch.
-> > 
-> > Can you describe how this could trigger with a pristine kernel ?
-> This is triggered with custom software to imitate malware traffic(Kernel was not 
-> having any custom patch whatsoever, it was a pristine kernel 3.10.45).
-> Point is if an application can crash this, then it would be big security flaw 
-> not exactly similar but like SSL love bug, which can be exploited to bring 
-> down systems.
 
-3.10.45 is old, you are a bit late, as we already spent a good amount of
-time fixing all this about 3 months ago.
+--J/dobhs11T7y2rNN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-3.10.45 misses this fix :
+Hi John,
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=7f502361531e9eecb396cf99bdc9e9a59f7ebd7f
+Here are some more patches intended for 3.18. Most of them are cleanups
+or fixes for SMP. The only exception is a fix for BR/EDR L2CAP fixed
+channels which should now work better together with the L2CAP
+information request procedure.
 
-And this one :
+Let me know if there are any issues pulling. Thanks.
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f88649721268999bdff09777847080a52004f691
+Johan
 
-And also :
+---
+The following changes since commit 39e90c77637b3892a39f2908aea57539e961c50e:
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=9709674e68646cee5a24e3000b3558d25412203a
+  Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device (2014-09-09 15:51:47 +0200)
 
-All these should already be in 3.10.54
+are available in the git repository at:
 
-I suggest you try a 3.10.54 kernel. If it still crashes, then try a 3.16
-kernel. 
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git master
 
-Then, we'll investigate, _if_ needed.
+for you to fetch changes up to 9a783a139c32a905825ee0aa9597f485ea461f76:
 
-Thanks.
+  Bluetooth: Fix re-setting RPA as expired when deferring update (2014-09-12 18:34:25 +0200)
+
+----------------------------------------------------------------
+Johan Hedberg (10):
+      Bluetooth: Fix allowing SMP Signing info PDU
+      Bluetooth: Remove unnecessary early initialization of variable
+      Bluetooth: Fix ignoring unknown SMP authentication requirement bits
+      Bluetooth: Centralize disallowing SMP commands to a single place
+      Bluetooth: Fix SMP security level when we have no IO capabilities
+      Bluetooth: Add smp_ltk_sec_level() helper function
+      Bluetooth: Fix L2CAP information request handling for fixed channels
+      Bluetooth: Avoid hard-coded IO capability values in SMP
+      Bluetooth: Expire RPA if encryption fails
+      Bluetooth: Fix re-setting RPA as expired when deferring update
+
+ net/bluetooth/hci_core.c   |  1 +
+ net/bluetooth/hci_event.c  | 11 +++++---
+ net/bluetooth/l2cap_core.c | 53 ++++++++++++++++++++++++---------------
+ net/bluetooth/smp.c        | 57 +++++++++++++++++++-----------------------
+ net/bluetooth/smp.h        |  8 ++++++
+ 5 files changed, 75 insertions(+), 55 deletions(-)
 
 
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUFRdAAAoJECQj9vv5qNQSAEYP/2C9l5K6EKCYOgyctzG/ptHs
+86ANYaKuOK7ABQHWOgKIFPT+8enKCOhZl1qFNGippyP94Eti+GjXavr1+d41Zb+V
+cWNZIVB1EG2P7jkUOYOwKAi9R1FkGKlRIG8MRwh3ikTNsfntn5tz6RyMJTCs/g8N
+4PmF/dyQqv5wFlAXnH+VYT3ulAgAFHoM6g3T5o6xBIkwrPD+HKK1LaHajT4lJ3vs
+LvV0R0x0N72ctkrCs351DZj7lsIt9KNfOmbL/JvuyQMigsDp2Sk0TimSRsEG1LA6
+Y5150tgMh7N7QaTJX4eixNvOkGwr6t6MJmg2db1+a9qlQAUCYHQ2t/2E/BV8F3H6
+z4f1HJ1eQHYZR3VL5GK+csulox8279nU3rxq0TDsA5ZXDj7okOIwvaGSG8N6RMJs
+XePIm481VuEF1v8HmtXW/OadV5+zuKSyulluCW32q3hNmTSkb/eY5Yc5D8s1aeIm
+7av+2JTpqXFYAGwIQJXdDuabHFhtlaywf8ZwSyU5efrIiHZwyg5glNoOHkNvTk72
+4CoZQMddj4FADic0P//k7fDxmoLr6/Z3ZMVzQraK3in7Hh+e1UQNHBMhlXMgqQdm
+0eW2LEGebr85W8KrcuNoz77qjUzsYXCfuG+HBdNeruYlWeGDbvvdrd6l+nP2tT+4
+jXYIpavxs721ek/bFGnv
+=DQom
+-----END PGP SIGNATURE-----
+
+--J/dobhs11T7y2rNN--
