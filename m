@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaINTvJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 15:51:09 -0400
-Received: from smtpout2.wakegov.com ([198.85.228.195]:62298 "EHLO
-	smtp02.co.wake.nc.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752728AbaINTvI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 15:51:08 -0400
-X-Greylist: delayed 8104 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Sep 2014 15:51:06 EDT
-X-AuditID: 0a01460e-b7f7b8e000001b47-7e-5415d2128175
-Subject: (IMAP) Server - requires Increase
-From: Michael.Collins@wakegov.com
-Message-ID: <OF6E00273A.7EBE4377-ON85257D53.0060ACFD-85257D53.0060AD21@LocalDomain>
-Date: Sun, 14 Sep 2014 13:35:57 -0400
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=ISO-8859-1
+	id S1752817AbaINT7K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 15:59:10 -0400
+Received: from [202.155.223.115] ([202.155.223.115]:44102 "EHLO hkmanfung.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752767AbaINT7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 15:59:09 -0400
+From: "Karim Wattara" <karimwattara22@gmail.com>
+Reply-To: karimwatara@voila.fr
+Subject: Are You interested?
+Date: Sun, 14 Sep 2014 11:03:22 +0800
+Message-Id: <20140914030315.M81631@gmail.com>
+X-Mailer: Open WebMail 2.51 20050228
+X-OriginatingIP: 212.52.159.74 (ma)
 MIME-Version: 1.0
-X-Mailer: Lotus Domino Web Server Release 9.0.1 HF193 January 23, 2014
-X-MIMETrack: Serialize by HTTP Server on Admin01/Wake County(Release 9.0.1 HF193|January
- 23, 2014) at 09/14/2014 01:35:57 PM,Serialize complete at 09/14/2014 01:35:57 PM,Itemize by HTTP Server on Admin01/Wake County(Release 9.0.1 HF193|January
- 23, 2014) at 09/14/2014 01:35:57 PM
-X-Disclaimed: 62755
-X-Notes-Item: linux-kernel@vger.kernel.org; name=AltBlindCopyTo
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42LhYozQ1hW6JBpiML9L1uLyrjlsDowenzfJ
-	BTBGedlkpCampBYppOYl56dk5qXbKnkG++taWJha6hoqKeQl5qbaKkXohhQlJmcDZZUUyhJz
-	SoFClpZOHhUGZobmxhaGxmZuJkr6dgleGft+NrMUXGeueP93FXMDYwNzFyMnh4SAicSudfNY
-	IGwxiQv31rN1MXJxCAkcZ5SY//U1K0hCWEBLYv3nVYwgNpuAokTfqy6wBhEBFomV37+D2cxA
-	9p83G8BsXoFgiRuPO8EWsAioSpx++xCqRlti2cLXzBC2nsT/n6cYIeoFJU7OfAJ1hJvEggd/
-	WUCOkBCYzSRxq7MTKiEscXTNZSCbg4MJ6IgZx2JBTAkBe4lPb5wmMArOQrJhFpINs5BsWMDI
-	vIpRpDi3pMDASC85X688MTtVLy9Zr7R4EyM4Ktz4djD+nm57iDEZ6PKJzFKiyfnAqMoriTc0
-	MjM0MDQ1sTA0NzMgTVhJnNeYlStESCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA+PcK/dCt13z
-	ylHIWuC9gDXrwrSJ2kH8O3ebbe11Dm08Fb+sSexC4NPNzP+OztQWMLIWu2j/oXDvBr+20gLx
-	FJttyZsTjjHNSvpV8rVOtyswLmt2lPytl32mF2Z9vFY+5eSlpXGPlij+jl0w5cTMqNTD0xe5
-	Lio1St1i0SuZE5zluacne7eKk7QSS3FGoqEWc1FxIgDDafePoAIAAA==
-X-Tracking: 99BHx061738136F4
+Content-Type: text/plain;
+	charset=gb2312
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(IMAP) Server - requires Increase, Mailbox has exceeded its storage limit.
+Greetings,
 
-Click on  Faculty and Staff <http://backonspot.co.uk/>   Portal to increase
+I am Mr.Karim Wattara. a banker, i know that this mail will come to you as a surprise 
+as we have never met before, but need not to worry as I am contacting you 
+independently of my investigation and no one is informed of this communication. I need 
+your urgent Cooperation in transferring the sum of $11.3 Million dollars immediately 
+to your private account.The money has been here in our Bank lying dormant for years 
+now without anybody coming for the claim of it.
 
-Mailbox SEND/RECEIVE Functions will be disabled if account increase is not completed.
- © 2014  Mailbox Portal. 
+The fund belong to our deceased Customer Mrs.Joy Lake who perished along with her 
+family since January 31 2000. The Banking laws here does not allow such money to stay 
+more than 15 years,that is the reason why i need your Cooperation in transferring the 
+money to your bank account so that we can use it to secure the future of our both 
+families because i don't want the money to be recalled to the bank treasury as 
+unclaimed fund.
 
-E-mail correspondence to and from this address is subject to the North Carolina Public Records Act and may be disclosed to third parties unless made confidential under applicable law.
+By indicating your interest I will send you the full details on how the business will 
+be executed. Please keep this proposal as a top secret and delete if you are not 
+interested,
+
+Best Regards,
+Karim Wattara.
