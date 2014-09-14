@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381AbaINAN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Sep 2014 20:13:27 -0400
-Received: from sender1.zohomail.com ([74.201.84.155]:29886 "EHLO
+	id S1752413AbaINANc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Sep 2014 20:13:32 -0400
+Received: from sender1.zohomail.com ([74.201.84.155]:29889 "EHLO
 	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353AbaINANZ (ORCPT
+	with ESMTP id S1752390AbaINANa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Sep 2014 20:13:25 -0400
+	Sat, 13 Sep 2014 20:13:30 -0400
 From: Sorin Facaoaru <work@sorin.cc>
 To: gregkh@linuxfoundation.org
 Cc: john.stultz@linaro.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Sorin Facaoaru <work@sorin.cc>
 Subject: [PATCH] Staging: android: fix coding style
-Date: Sat, 13 Sep 2014 17:13:20 -0700
-Message-Id: <1410653600-4651-1-git-send-email-work@sorin.cc>
+Date: Sat, 13 Sep 2014 17:13:27 -0700
+Message-Id: <1410653607-4691-1-git-send-email-work@sorin.cc>
 X-Mailer: git-send-email 1.9.1
-X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_1_26084_1
-X-ZohoMail-Owner: <1410653600-4651-1-git-send-email-work@sorin.cc>+zmo_0_<work@sorin.cc>
+X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_1_26084_0
+X-ZohoMail-Owner: <1410653607-4691-1-git-send-email-work@sorin.cc>+zmo_0_<work@sorin.cc>
 X-ZohoMail-Sender: 23.243.135.245
 X-Zoho-Virus-Status: 2
 X-ZohoMailClient: External
@@ -28,29 +28,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Sorin Facaoaru <work@sorin.cc>
 ---
- drivers/staging/android/sw_sync.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/staging/android/sync.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index a76db3f..863d4b1 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -97,6 +97,7 @@ static void sw_sync_pt_value_str(struct sync_pt *sync_pt,
- 				       char *str, int size)
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index e7b2e02..0d37495 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -705,6 +705,7 @@ static long sync_fence_ioctl(struct file *file, unsigned int cmd,
+ 			     unsigned long arg)
  {
- 	struct sw_sync_pt *pt = (struct sw_sync_pt *)sync_pt;
+ 	struct sync_fence *fence = file->private_data;
 +
- 	snprintf(str, size, "%d", pt->value);
- }
- 
-@@ -156,6 +157,7 @@ static int sw_sync_open(struct inode *inode, struct file *file)
- static int sw_sync_release(struct inode *inode, struct file *file)
- {
- 	struct sw_sync_timeline *obj = file->private_data;
-+
- 	sync_timeline_destroy(&obj->obj);
- 	return 0;
- }
+ 	switch (cmd) {
+ 	case SYNC_IOC_WAIT:
+ 		return sync_fence_ioctl_wait(fence, arg);
 -- 
 1.9.1
 
