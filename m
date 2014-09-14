@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaINKpC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 06:45:02 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:49302 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaINKpA (ORCPT
+	id S1752612AbaINKsM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 06:48:12 -0400
+Received: from sender1.zohomail.com ([74.201.84.155]:29827 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416AbaINKsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 06:45:00 -0400
-From: Andreas Noever <andreas.noever@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Andreas Noever <andreas.noever@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Dirk Gouders <dirk@gouders.net>
-Subject: Re: [BUG] Bisected Problem with LSI PCI FC Adapter
-Date: Sun, 14 Sep 2014 12:44:51 +0200
-Message-Id: <1410691491-18000-1-git-send-email-andreas.noever@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <gh8uln71g1.fsf@lena.gouders.net>
-References: <gh8uln71g1.fsf@lena.gouders.net>
+	Sun, 14 Sep 2014 06:48:11 -0400
+From: Sorin Facaoaru <work@sorin.cc>
+To: gregkh@linuxfoundation.org
+Cc: lordzen87@gmail.com, monamagarwal123@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Sorin Facaoaru <work@sorin.cc>
+Subject: [PATCH] Staging: gs_fpgaboot: fix coding style
+Date: Sun, 14 Sep 2014 03:48:08 -0700
+Message-Id: <1410691688-10263-1-git-send-email-work@sorin.cc>
+X-Mailer: git-send-email 1.9.1
+X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_1_26084_0
+X-ZohoMail-Owner: <1410691688-10263-1-git-send-email-work@sorin.cc>+zmo_0_<work@sorin.cc>
+X-ZohoMail-Sender: 23.243.135.245
+X-Zoho-Virus-Status: 2
+X-ZohoMailClient: External
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an implementation of fix 1 (Add a quirk to fix the _CRS information
-based on what amd_bus.c read from the hardware) which makes pci=nocrs ignore bus numbers from crs.
+- remove return statement at the end of void function
 
-If this works then we can add the board to the crs blacklist (Dirk can you attach the output of dmidecode to the bugzilla report?).
-
-
-
+Signed-off-by: Sorin Facaoaru <work@sorin.cc>
 ---
- arch/x86/pci/acpi.c     |  7 +++----
- arch/x86/pci/bus_numa.c | 12 +-----------
- 2 files changed, 4 insertions(+), 15 deletions(-)
+ drivers/staging/gs_fpgaboot/io.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index cfd1b13..b073948 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -522,15 +522,14 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
- 	} else {
- 		probe_pci_root_info(info, device, busnum, domain);
+diff --git a/drivers/staging/gs_fpgaboot/io.c b/drivers/staging/gs_fpgaboot/io.c
+index 23c12f4..f5cd33b 100644
+--- a/drivers/staging/gs_fpgaboot/io.c
++++ b/drivers/staging/gs_fpgaboot/io.c
+@@ -251,17 +251,14 @@ int xl_init_io(void)
  
--		/* insert busn res at first */
--		pci_add_resource(&resources,  &root->secondary);
- 		/*
- 		 * _CRS with no apertures is normal, so only fall back to
- 		 * defaults or native bridge info if we're ignoring _CRS.
- 		 */
--		if (pci_use_crs)
-+		if (pci_use_crs) {
-+			pci_add_resource(&resources,  &root->secondary);
- 			add_resources(info, &resources);
--		else {
-+		} else {
- 			free_pci_root_info_res(info);
- 			x86_pci_root_bus_resources(busnum, &resources);
- 		}
-diff --git a/arch/x86/pci/bus_numa.c b/arch/x86/pci/bus_numa.c
-index f3a2cfc..b735d0e 100644
---- a/arch/x86/pci/bus_numa.c
-+++ b/arch/x86/pci/bus_numa.c
-@@ -31,8 +31,6 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
+ void xl_program_b(int32_t i)
  {
- 	struct pci_root_info *info = x86_find_pci_root_info(bus);
- 	struct pci_root_res *root_res;
--	struct pci_host_bridge_window *window;
--	bool found = false;
+-	return;
+ }
  
- 	if (!info)
- 		goto default_resources;
-@@ -40,15 +38,7 @@ void x86_pci_root_bus_resources(int bus, struct list_head *resources)
- 	printk(KERN_DEBUG "PCI: root bus %02x: hardware-probed resources\n",
- 	       bus);
+ void xl_rdwr_b(int32_t i)
+ {
+-	return;
+ }
  
--	/* already added by acpi ? */
--	list_for_each_entry(window, resources, list)
--		if (window->res->flags & IORESOURCE_BUS) {
--			found = true;
--			break;
--		}
--
--	if (!found)
--		pci_add_resource(resources, &info->busn);
-+	pci_add_resource(resources, &info->busn);
+ void xl_csi_b(int32_t i)
+ {
+-	return;
+ }
  
- 	list_for_each_entry(root_res, &info->resources, list) {
- 		struct resource *res;
+ int xl_get_init_b(void)
+@@ -276,17 +273,14 @@ int xl_get_done_b(void)
+ 
+ static inline void byte0_out(unsigned char data)
+ {
+-	return;
+ }
+ 
+ static inline void byte1_out(unsigned char data)
+ {
+-	return;
+ }
+ 
+ static inline void xl_cclk_b(int32_t i)
+ {
+-	return;
+ }
+ 
+ /*
 -- 
-2.1.0
+1.9.1
+
 
