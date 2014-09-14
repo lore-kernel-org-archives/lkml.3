@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaIOMfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 08:35:38 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37145 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920AbaIOMfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 08:35:36 -0400
-Message-ID: <1410784535.7106.164.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH 1/5] rhashtable: Remove gfp_flags from insert and remove
- functions
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Graf <tgraf@suug.ch>
-Cc: davem@davemloft.net, paulmck@linux.vnet.ibm.com,
-        john.r.fastabend@intel.com, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 15 Sep 2014 05:35:35 -0700
-In-Reply-To: <bd3aa4282e89b022620225101ab491e344852f5f.1410782841.git.tgraf@suug.ch>
-References: <cover.1410782841.git.tgraf@suug.ch>
-	 <bd3aa4282e89b022620225101ab491e344852f5f.1410782841.git.tgraf@suug.ch>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752756AbaIOMgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 08:36:41 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:60958 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752704AbaIOMgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 08:36:40 -0400
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: linux-kernel@vger.kernel.org
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michal Marek <mmarek@suse.cz>, David Woodhouse <dwmw2@infradead.org>,
+        Rob Landley <rob@landley.net>, Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCHv2 2/2] Documentation/kbuild/headers_install.txt: update installation paths
+Date: Sun, 14 Sep 2014 22:27:01 +0200
+Message-Id: <60fe1d123c535a2f79841649b7f950de1863e63d.1410712841.git.ydroneaud@opteya.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1410712841.git.ydroneaud@opteya.com>
+References: <cover.1410712841.git.ydroneaud@opteya.com>
+In-Reply-To: <cover.1410712841.git.ydroneaud@opteya.com>
+References: <cover.1410712841.git.ydroneaud@opteya.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-15 at 14:18 +0200, Thomas Graf wrote:
-> As the expansion/shrinking is moved to a worker thread, no allocations
-> will be performed anymore.
-> 
+Documentation in kbuild/headers_install.txt is not up to date
+regarding paths where the headers are installed.
 
-You meant : no GFP_ATOMIC allocations ?
+This patch fixes the documention with the correct information.
 
-I would rephrase using something like :
+Link: http://lkml.kernel.org/r/cover.1410712841.git.ydroneaud@opteya.com
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+---
+ Documentation/kbuild/headers_install.txt | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Because hash resizes are potentially time consuming, they'll be
-performed in process context where GFP_KERNEL allocations are preferred.
-
-> Signed-off-by: Thomas Graf <tgraf@suug.ch>
-> ---
->  include/linux/rhashtable.h | 10 +++++-----
->  lib/rhashtable.c           | 41 +++++++++++++++++------------------------
->  net/netfilter/nft_hash.c   |  4 ++--
->  net/netlink/af_netlink.c   |  4 ++--
->  4 files changed, 26 insertions(+), 33 deletions(-)
-> 
-> diff --git a/include/linux/rhashtable.h b/include/linux/rhashtable.h
-> index fb298e9d..942fa44 100644
-> --- a/include/linux/rhashtable.h
-> +++ b/include/linux/rhashtable.h
-> @@ -96,16 +96,16 @@ int rhashtable_init(struct rhashtable *ht, struct rhashtable_params *params);
->  u32 rhashtable_hashfn(const struct rhashtable *ht, const void *key, u32 len);
->  u32 rhashtable_obj_hashfn(const struct rhashtable *ht, void *ptr);
->  
-> -void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node, gfp_t);
-> -bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node, gfp_t);
-> +void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node);
-> +bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node);
->  void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
-> -			     struct rhash_head __rcu **pprev, gfp_t flags);
-> +			     struct rhash_head __rcu **pprev);
->  
->  bool rht_grow_above_75(const struct rhashtable *ht, size_t new_size);
->  bool rht_shrink_below_30(const struct rhashtable *ht, size_t new_size);
->  
-> -int rhashtable_expand(struct rhashtable *ht, gfp_t flags);
-> -int rhashtable_shrink(struct rhashtable *ht, gfp_t flags);
-> +int rhashtable_expand(struct rhashtable *ht);
-> +int rhashtable_shrink(struct rhashtable *ht);
->  
->  void *rhashtable_lookup(const struct rhashtable *ht, const void *key);
->  void *rhashtable_lookup_compare(const struct rhashtable *ht, u32 hash,
-> diff --git a/lib/rhashtable.c b/lib/rhashtable.c
-> index 8dfec3f..c133d82 100644
-> --- a/lib/rhashtable.c
-> +++ b/lib/rhashtable.c
-> @@ -108,13 +108,13 @@ static u32 head_hashfn(const struct rhashtable *ht,
->  	return obj_hashfn(ht, rht_obj(ht, he), hsize);
->  }
->  
-> -static struct bucket_table *bucket_table_alloc(size_t nbuckets, gfp_t flags)
-> +static struct bucket_table *bucket_table_alloc(size_t nbuckets)
->  {
->  	struct bucket_table *tbl;
->  	size_t size;
->  
->  	size = sizeof(*tbl) + nbuckets * sizeof(tbl->buckets[0]);
-> -	tbl = kzalloc(size, flags);
-> +	tbl = kzalloc(size, GFP_KERNEL);
-
-Add __GFP_NOWARN, as you fallback to vzalloc ?
-
->  	if (tbl == NULL)
->  		tbl = vzalloc(size);
-
-btw, inet hash table uses alloc_large_system_hash() which spreads the
-pages on all available NUMA nodes :
-
-# dmesg | grep "TCP established"
-[    1.223046] TCP established hash table entries: 524288 (order: 10, 4194304 bytes)
-# grep alloc_large_system_hash /proc/vmallocinfo | grep pages=1024
-0xffffc900181d6000-0xffffc900185d7000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
-0xffffc900185d7000-0xffffc900189d8000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
-0xffffc90028a01000-0xffffc90028e02000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
-
-So we might keep in mind to keep this numa policy.
-
-Rest of the patch looks fine to me, thanks.
-
+diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
+index 0d8fe5e871c4..72ed4d1bd408 100644
+--- a/Documentation/kbuild/headers_install.txt
++++ b/Documentation/kbuild/headers_install.txt
+@@ -24,20 +24,20 @@ The "make headers_install" command can be run in the top level directory of the
+ kernel source code (or using a standard out-of-tree build).  It takes two
+ optional arguments:
+ 
+-  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
++  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
+ 
+ ARCH indicates which architecture to produce headers for, and defaults to the
+-current architecture.  The linux/asm directory of the exported kernel headers
++current architecture.  Note: the asm/ directory of the exported kernel headers
+ is platform-specific.
+ 
+-INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
+-"./usr/include".
++INSTALL_HDR_PATH indicates where to create include/ directory to install the
++headers. It defaults to "./usr/".
+ 
+ The command "make headers_install_all" exports headers for all architectures
+ simultaneously.  (This is mostly of interest to distribution maintainers,
+ who create an architecture-independent tarball from the resulting include
+ directory.)  You also can use HDR_ARCH_LIST to specify list of architectures.
+-Remember to provide the appropriate linux/asm directory via "mv" or "ln -s"
++Remember to provide the appropriate asm/ directory via "mv" or "ln -s"
+ before building a C library with headers exported this way.
+ 
+ The kernel header export infrastructure is maintained by David Woodhouse
+-- 
+1.9.3
 
