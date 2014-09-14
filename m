@@ -1,136 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaINOO0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 10:14:26 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54609 "EHLO
+	id S1752673AbaINOR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 10:17:59 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54641 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513AbaINOOY (ORCPT
+	with ESMTP id S1752534AbaINOR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 10:14:24 -0400
-Message-ID: <5415A2BE.7060405@kernel.org>
-Date: Sun, 14 Sep 2014 15:14:22 +0100
+	Sun, 14 Sep 2014 10:17:58 -0400
+Message-ID: <5415A394.2050802@kernel.org>
+Date: Sun, 14 Sep 2014 15:17:56 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Octavian Purdila <tavi.purdila@gmail.com>,
-        Karol Wrona <k.wrona@samsung.com>
-CC: linux-iio@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+To: Karol Wrona <k.wrona@samsung.com>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [RFC/PATCH 0/6] iio: Add sensorhub driver
-References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com>	<476dc5c4-557d-467c-9583-201b10b7e1df@email.android.com>	<540DC356.5040907@samsung.com> <CAMoF9u1+6b_3So7hLQ9iLCeFye5nggJvganGdqpeNmvu+5HqPQ@mail.gmail.com>
-In-Reply-To: <CAMoF9u1+6b_3So7hLQ9iLCeFye5nggJvganGdqpeNmvu+5HqPQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+Subject: Re: [RFC/PATCH 1/6] iio:sensorhub: Add sensorhub common library
+References: <1409756150-30889-1-git-send-email-k.wrona@samsung.com> <1409756150-30889-2-git-send-email-k.wrona@samsung.com>
+In-Reply-To: <1409756150-30889-2-git-send-email-k.wrona@samsung.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/14 12:05, Octavian Purdila wrote:
-> On Mon, Sep 8, 2014 at 5:55 PM, Karol Wrona <k.wrona@samsung.com> wrote:
->> On 09/03/2014 09:52 PM, Jonathan Cameron wrote:
->>>
->>>
->>> On September 3, 2014 3:55:44 PM GMT+01:00, Karol Wrona
->>> <k.wrona@samsung.com> wrote:
->>>>
->>>> Hello,
->>>>
->>>> This patchset adds support for sensorhub. It is an external mcu which
->>>> manages
->>>> and collects data from several sensors i.e. on Galaxy Gear 2 watch.
->>>>
->>>> It contains:
->>>> - spi driver for sensorhub device
->>>> - DT binding for the device
->>>> - IIO common utils for ssp sensors, a trigger module
->>>> - IIO accelerometer driver
->>>> - IIO gyroscope driver
->>>>
->>>> Generally this is an attempt to generalize sensors handling on some
->>>> Samsung
->>>> boards which have multiple sensors IC and also sensorhub does some data
->>>> processing itself.
->>>>
->>>> I would like to get your opinion about such solution. The idea is that
->>>> data communication layer gives control and data to proper IIO sensor
->>>> devices.
->>>> In this case I chose that sensor drivers are platform ones represented
->>>> by
->>>> child nodes of sensorhub in DT. These compatibles are used mainly to
->>>> match
->>>> sensor to driver. For example at this stage there is one accelerometer
->>>> but on
->>>> other board can have different one with changed data format etc. In
->>>> this case
->>>> ssp_accel_sensor driver could handle several physical devices of accel
->>>> class.
->>>> Unfortunately the firmware gives only an information about used sensor
->>>> type,
->>>> the driver can find out that there is an accelerometer on board but
->>>> nothing
->>>> specific about the sensor.
->>>
->>> Will look at this later... In the meantime..
->>
->> Before code review I want to know your opinion if passing information
->> about sensors in that way is ok - It's a hack but currently the firmware
->> do not provide such information and I do not know if I will be able to
->> change it.
->>>>
->>>> Other question:
->>>> The sensorhub can implement some devices which are non common for IIO
->>>> and hard
->>>> to standardise. These ones need two way communication (raw write will
->>>> not be
->>>> proper for that) and can produce data packets with flexible size to
->>>> 2KB).
->>>> I'm wondering if it is worth to look for solution in IIO and implement
->>>> something like IIO_BULK sensor with no standard channel description
->>>> or solve this problem using cdev. This is the reason why the part of
->>>> the
->>>> patchset is intended to be placed in misc.
->>>
->>> Out of curiosity, what are these other sensors, roughly?  If they are
->>> popular I am
->>>   sure there will be more out there soon!  Ideally we would work out how
->>> to standardize these. So convince is it can't be
->>>   done!
->>
->> These are very specific for Galaxy Gear watch like movement detector,
->> pedometer,
->> put down motion etc. The functionalities are mainly implemented by sensorhub
->> firmware, these ones are not physical chips. My first idea was to use IIO
->> for typical
->> sensors only (I can have there a bunch of thermometers, accelerometers,
->> lightsensors ...)
->> and one cdev for others. In this case data interpretation would be done by
->> userspace.
->> So:
->> - these specific "sensors" will be only implemented on some Samsung's boards
->> and depend on firmware.
->> - there will be a lot of it  - most of them are represented by an integer
->> value but there
->> are some which can send much more data.
->>
->>
+On 03/09/14 15:55, Karol Wrona wrote:
+> This patch adds common sensorhub library for sensorhub driver and iio drivers
+> which uses sensorhub MCU to communicate with sensors.
 > 
-> Hi Karol,
-> 
-> With the addition of new sensor types in Android (pedometer,
-> significant motion) and probably more to come in L-dessert, and with
-> the proliferation of sensor hub solutions, I am sure that we are going
-> to see more of these types of sensors coming.
-> 
-> With that in mind, I think it is worth trying to standardize the new
-> sensors at the kernel level. Having the data interpretation done in
-> userspace is going to make it hard to write portable application
-> across different sensors.
-I absolutely agree on this.  We may well need to extend IIO in new directions
-to do it, but we need a consistent interface for these signal types.
-(might take us a little while to pin down what it is however! Best get
-started :)
+> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  include/linux/iio/common/ssp_sensors.h |   82 ++++++++++++++++++++++++++++++++
+>  1 file changed, 82 insertions(+)
 
-Jonathan
+There is very little point in a separate patch to introduce a header, please combine this
+with the first patch to use it when you respin for V2.
+
+It can't be used on it's own or reviewed on it's own (except very superficially).
+
+
+
+>  create mode 100644 include/linux/iio/common/ssp_sensors.h
+> 
+> diff --git a/include/linux/iio/common/ssp_sensors.h b/include/linux/iio/common/ssp_sensors.h
+> new file mode 100644
+> index 0000000..ca4bdc4
+> --- /dev/null
+> +++ b/include/linux/iio/common/ssp_sensors.h
+> @@ -0,0 +1,82 @@
+> +/*
+> + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + */
+> +#ifndef _SSP_SENSORS_H_
+> +#define _SSP_SENSORS_H_
+> +
+> +#define SSP_TIME_SIZE	4
+> +
+> +#define SSP_ACCELEROMETER_SIZE			6
+> +#define SSP_GYROSCOPE_SIZE			6
+> +#define	SSP_BIO_HRM_RAW_SIZE			8
+> +#define	SSP_BIO_HRM_RAW_FAC_SIZE		36
+> +#define	SSP_BIO_HRM_LIB_SIZE			8
+> +
+> +/**
+> + * enum ssp_sensor_tyoe - SSP sensor type
+> + */
+> +enum ssp_sensor_type {
+> +	SSP_ACCELEROMETER_SENSOR = 0,
+> +	SSP_GYROSCOPE_SENSOR,
+> +	SSP_GEOMAGNETIC_UNCALIB_SENSOR,
+> +	SSP_GEOMAGNETIC_RAW,
+> +	SSP_GEOMAGNETIC_SENSOR,
+> +	SSP_PRESSURE_SENSOR,
+> +	SSP_GESTURE_SENSOR,
+> +	SSP_PROXIMITY_SENSOR,
+> +	SSP_TEMPERATURE_HUMIDITY_SENSOR,
+> +	SSP_LIGHT_SENSOR,
+> +	SSP_PROXIMITY_RAW,
+> +	SSP_ORIENTATION_SENSOR,
+> +	SSP_STEP_DETECTOR,
+> +	SSP_SIG_MOTION_SENSOR,
+> +	SSP_GYRO_UNCALIB_SENSOR,
+> +	SSP_GAME_ROTATION_VECTOR,
+> +	SSP_ROTATION_VECTOR,
+> +	SSP_STEP_COUNTER,
+> +	SSP_BIO_HRM_RAW,
+> +	SSP_BIO_HRM_RAW_FAC,
+> +	SSP_BIO_HRM_LIB,
+> +	SSP_SENSOR_MAX,
+> +};
+> +
+> +struct ssp_data;
+> +
+> +/**
+> + * struct ssp_sensor_data - Sensor object
+> + * @process_data:	Callback to feed sensor data.
+> + * @destroy:		Callback to destroy and cleanup sensor object.
+> + * @prv_data:		Sensor private data.
+> + * @type:		Used sensor type.
+> + */
+> +struct ssp_sensor_data {
+> +	int (*process_data)(struct iio_dev *indio_dev, void *buf,
+> +			    s64 timestamp);
+> +	void *prv_data;
+> +	enum ssp_sensor_type type;
+> +};
+> +
+> +void ssp_register_consumer(struct iio_dev *indio_dev, enum ssp_sensor_type);
+> +
+> +int ssp_enable_sensor(struct ssp_data *data, enum ssp_sensor_type type,
+> +		       u32 delay);
+> +
+> +int ssp_disable_sensor(struct ssp_data *data, enum ssp_sensor_type type);
+> +
+> +u32 ssp_get_sensor_delay(struct ssp_data *data, enum ssp_sensor_type);
+> +
+> +int ssp_change_delay(struct ssp_data *data, enum ssp_sensor_type type,
+> +		     u32 delay);
+> +
+> +#endif /* _SSP_SENSORS_H_ */
 > 
