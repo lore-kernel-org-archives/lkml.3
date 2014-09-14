@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaINJmI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 05:42:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416AbaINJmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 05:42:05 -0400
-Message-ID: <541562D4.90801@redhat.com>
-Date: Sun, 14 Sep 2014 11:41:40 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752563AbaINJty (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 05:49:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41983 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaINJtw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 05:49:52 -0400
+Date: Sun, 14 Sep 2014 11:41:12 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Avi Kivity <avi@cloudius-systems.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>,
+        Jan Stancek <jstancek@redhat.com>
+Subject: Re: [BUG] perf tools: Demangle kernel and kernel module symbols too
+Message-ID: <20140914094112.GT346@worktop.programming.kicks-ass.net>
+References: <20140906184631.GA6059@krava.brq.redhat.com>
+ <5413BB4D.10606@cloudius-systems.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-usb <linux-usb@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix regression that accidentally disabled block-based
- tcq
-References: <540EC52C.3000804@redhat.com> <20140909152730.GA17882@infradead.org> <540FFBF4.9090001@redhat.com> <20140910154535.GA5102@infradead.org> <541172E9.8070309@redhat.com> <20140911161331.GA24488@infradead.org> <54134E50.6040805@redhat.com> <20140912230032.GA21143@infradead.org> <54141C59.7040707@redhat.com> <20140913175047.GA28882@infradead.org>
-In-Reply-To: <20140913175047.GA28882@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5413BB4D.10606@cloudius-systems.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Sep 13, 2014 at 06:34:37AM +0300, Avi Kivity wrote:
 
-On 09/13/2014 07:50 PM, Christoph Hellwig wrote:
-> On Sat, Sep 13, 2014 at 12:28:41PM +0200, Hans de Goede wrote:
->> Yes this one does the trick and fixes things. Note the git tree I used for
->> testing also had your previous fix to split up the blk_tcq union in 2
->> separate struct members. Let me know if you want me to re-test without that
->> fix.
-> 
-> I'm pretty sure that isn't needed, so double testing it indeed doesn't
-> would be helpful.
+> It's not a simple matter of updating the test: the demangler interprets name
+> beginning with __vt as C++ mangles names, which of course they aren't.
 
-I can confirm that things still work fine with the union left in place.
+Oh, that'll give cute 'problems' in a mixed C/C++ project that just
+happens to have __vt names in. Now of course I'm aware that C/C++
+'reserve' the __ prefix, which I suppose that makes it less likely in
+practise.
 
->  I'd like to add your Tested-by: tag after that, too.
+> The only way I see to proceed is to make the demangling optional, default
+> off.
 
-Ack:
-
-Tested-by: Hans de Goede <hdegoede@redhat.com>
-
-Regards,
-
-Hans
+Seems like a good way out, we could think about adding a language
+heuristic that tries and guess the target language and auto enables when
+it guesses C++, but that needs to have overrides as well.
