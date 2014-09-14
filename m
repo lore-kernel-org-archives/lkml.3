@@ -1,276 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbaINNhE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 09:37:04 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:33476 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752622AbaINNhB (ORCPT
+	id S1752554AbaINN5W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 09:57:22 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:43233 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752489AbaINN5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 09:37:01 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Sun, 14 Sep 2014 09:36:57 -0400
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: viro@zeniv.linux.org.uk, rth@twiddle.net, ink@jurassic.park.msu.ru,
-        mattst88@gmail.com, bfields@fieldses.org, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] vfs: move getname() from callers to do_mount()
-Message-ID: <20140914093657.07bb0e86@tlielax.poochiereds.net>
-In-Reply-To: <1410700510-15408-1-git-send-email-waydi1@gmail.com>
-References: <1410537212-3153-1-git-send-email-waydi1@gmail.com>
-	<1410700510-15408-1-git-send-email-waydi1@gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Sep 2014 09:57:21 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ah0OAMWdFVRbsGnM/2dsb2JhbABggw2zSAEBAQEBAQUBbwGdfIEEF3iEMS8jgRo3iEIBqG2PGYV8iVEdhDUFnQiMMIkPghuBRTsvgkoBAQE
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Subject: [PATCH 1/1 linux-next] gpio: use container_of to resolve cs5535_gpio_chip from gpio_chip
+Date: Sun, 14 Sep 2014 15:56:55 +0200
+Message-Id: <1410703015-24127-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Sep 2014 22:15:10 +0900
-Seunghun Lee <waydi1@gmail.com> wrote:
+Use container_of instead of casting first structure member.
 
-> It would make more sense to pass char __user * instead of
-> char * in callers of do_mount() and do getname() inside do_mount().
-> 
-> Suggested-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
-> ---
->  arch/alpha/kernel/osf_sys.c | 23 ++++++++++-------------
->  fs/compat.c                 | 20 ++++++--------------
->  fs/namespace.c              | 29 ++++++++++++-----------------
->  include/linux/fs.h          |  3 ++-
->  4 files changed, 30 insertions(+), 45 deletions(-)
-> 
-> diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-> index 1402fcc..f9c732e 100644
-> --- a/arch/alpha/kernel/osf_sys.c
-> +++ b/arch/alpha/kernel/osf_sys.c
-> @@ -446,7 +446,8 @@ struct procfs_args {
->   * unhappy with OSF UFS. [CHECKME]
->   */
->  static int
-> -osf_ufs_mount(const char *dirname, struct ufs_args __user *args, int flags)
-> +osf_ufs_mount(const char __user *dirname,
-> +	      struct ufs_args __user *args, int flags)
->  {
->  	int retval;
->  	struct cdfs_args tmp;
-> @@ -466,7 +467,8 @@ osf_ufs_mount(const char *dirname, struct ufs_args __user *args, int flags)
->  }
->  
->  static int
-> -osf_cdfs_mount(const char *dirname, struct cdfs_args __user *args, int flags)
-> +osf_cdfs_mount(const char __user *dirname,
-> +	       struct cdfs_args __user *args, int flags)
->  {
->  	int retval;
->  	struct cdfs_args tmp;
-> @@ -486,7 +488,8 @@ osf_cdfs_mount(const char *dirname, struct cdfs_args __user *args, int flags)
->  }
->  
->  static int
-> -osf_procfs_mount(const char *dirname, struct procfs_args __user *args, int flags)
-> +osf_procfs_mount(const char __user *dirname,
-> +		 struct procfs_args __user *args, int flags)
->  {
->  	struct procfs_args tmp;
->  
-> @@ -500,28 +503,22 @@ SYSCALL_DEFINE4(osf_mount, unsigned long, typenr, const char __user *, path,
->  		int, flag, void __user *, data)
->  {
->  	int retval;
-> -	struct filename *name;
->  
-> -	name = getname(path);
-> -	retval = PTR_ERR(name);
-> -	if (IS_ERR(name))
-> -		goto out;
->  	switch (typenr) {
->  	case 1:
-> -		retval = osf_ufs_mount(name->name, data, flag);
-> +		retval = osf_ufs_mount(path, data, flag);
->  		break;
->  	case 6:
-> -		retval = osf_cdfs_mount(name->name, data, flag);
-> +		retval = osf_cdfs_mount(path, data, flag);
->  		break;
->  	case 9:
-> -		retval = osf_procfs_mount(name->name, data, flag);
-> +		retval = osf_procfs_mount(path, data, flag);
->  		break;
->  	default:
->  		retval = -EINVAL;
->  		printk("osf_mount(%ld, %x)\n", typenr, flag);
->  	}
-> -	putname(name);
-> - out:
-> +
->  	return retval;
->  }
->  
-> diff --git a/fs/compat.c b/fs/compat.c
-> index 6205c24..b13df99 100644
-> --- a/fs/compat.c
-> +++ b/fs/compat.c
-> @@ -794,7 +794,6 @@ COMPAT_SYSCALL_DEFINE5(mount, const char __user *, dev_name,
->  	char *kernel_type;
->  	unsigned long data_page;
->  	char *kernel_dev;
-> -	struct filename *dir;
->  	int retval;
->  
->  	kernel_type = copy_mount_string(type);
-> @@ -802,19 +801,14 @@ COMPAT_SYSCALL_DEFINE5(mount, const char __user *, dev_name,
->  	if (IS_ERR(kernel_type))
->  		goto out;
->  
-> -	dir = getname(dir_name);
-> -	retval = PTR_ERR(dir);
-> -	if (IS_ERR(dir))
-> -		goto out1;
-> -
->  	kernel_dev = copy_mount_string(dev_name);
->  	retval = PTR_ERR(kernel_dev);
->  	if (IS_ERR(kernel_dev))
-> -		goto out2;
-> +		goto out1;
->  
->  	retval = copy_mount_options(data, &data_page);
->  	if (retval < 0)
-> -		goto out3;
-> +		goto out2;
->  
->  	retval = -EINVAL;
->  
-> @@ -823,19 +817,17 @@ COMPAT_SYSCALL_DEFINE5(mount, const char __user *, dev_name,
->  			do_ncp_super_data_conv((void *)data_page);
->  		} else if (!strcmp(kernel_type, NFS4_NAME)) {
->  			if (do_nfs4_super_data_conv((void *) data_page))
-> -				goto out4;
-> +				goto out3;
->  		}
->  	}
->  
-> -	retval = do_mount(kernel_dev, dir->name, kernel_type,
-> +	retval = do_mount(kernel_dev, dir_name, kernel_type,
->  			flags, (void*)data_page);
->  
-> - out4:
-> -	free_page(data_page);
->   out3:
-> -	kfree(kernel_dev);
-> +	free_page(data_page);
->   out2:
-> -	putname(dir);
-> +	kfree(kernel_dev);
->   out1:
->  	kfree(kernel_type);
->   out:
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index bfd03c6..3e11e9e 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -2542,9 +2542,10 @@ char *copy_mount_string(const void __user *data)
->   * Therefore, if this magic number is present, it carries no information
->   * and must be discarded.
->   */
-> -long do_mount(const char *dev_name, const char *dir_name,
-> +long do_mount(const char *dev_name, const char __user *dir_name,
->  		const char *type_page, unsigned long flags, void *data_page)
->  {
-> +	struct filename *kernel_dir;
->  	struct path path;
->  	int retval = 0;
->  	int mnt_flags = 0;
-> @@ -2553,18 +2554,19 @@ long do_mount(const char *dev_name, const char *dir_name,
->  	if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
->  		flags &= ~MS_MGC_MSK;
->  
-> -	/* Basic sanity checks */
-> -
-> -	if (!dir_name || !*dir_name || !memchr(dir_name, 0, PAGE_SIZE))
-> -		return -EINVAL;
-> +	kernel_dir = getname(dir_name);
-> +	if (IS_ERR(kernel_dir)) {
-> +		retval = PTR_ERR(kernel_dir);
-> +		return retval;
-> +	}
->  
->  	if (data_page)
->  		((char *)data_page)[PAGE_SIZE - 1] = 0;
->  
->  	/* ... and get the mountpoint */
-> -	retval = kern_path(dir_name, LOOKUP_FOLLOW, &path);
-> +	retval = kern_path(kernel_dir->name, LOOKUP_FOLLOW, &path);
->  	if (retval)
-> -		return retval;
-> +		goto dir_out;
->  
->  	retval = security_sb_mount(dev_name, &path,
->  				   type_page, flags, data_page);
-> @@ -2619,6 +2621,8 @@ long do_mount(const char *dev_name, const char *dir_name,
->  				      dev_name, data_page);
->  dput_out:
->  	path_put(&path);
-> +dir_out:
-> +	putname(kernel_dir);
->  	return retval;
->  }
->  
-> @@ -2787,7 +2791,6 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
->  {
->  	int ret;
->  	char *kernel_type;
-> -	struct filename *kernel_dir;
->  	char *kernel_dev;
->  	unsigned long data_page;
->  
-> @@ -2796,12 +2799,6 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
->  	if (IS_ERR(kernel_type))
->  		goto out_type;
->  
-> -	kernel_dir = getname(dir_name);
-> -	if (IS_ERR(kernel_dir)) {
-> -		ret = PTR_ERR(kernel_dir);
-> -		goto out_dir;
-> -	}
-> -
->  	kernel_dev = copy_mount_string(dev_name);
->  	ret = PTR_ERR(kernel_dev);
->  	if (IS_ERR(kernel_dev))
-> @@ -2811,15 +2808,13 @@ SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
->  	if (ret < 0)
->  		goto out_data;
->  
-> -	ret = do_mount(kernel_dev, kernel_dir->name, kernel_type, flags,
-> +	ret = do_mount(kernel_dev, dir_name, kernel_type, flags,
->  		(void *) data_page);
->  
->  	free_page(data_page);
->  out_data:
->  	kfree(kernel_dev);
->  out_dev:
-> -	putname(kernel_dir);
-> -out_dir:
->  	kfree(kernel_type);
->  out_type:
->  	return ret;
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index bb2c58c..72cb93f 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1839,7 +1839,8 @@ extern struct vfsmount *kern_mount_data(struct file_system_type *, void *data);
->  extern void kern_unmount(struct vfsmount *mnt);
->  extern int may_umount_tree(struct vfsmount *);
->  extern int may_umount(struct vfsmount *);
-> -extern long do_mount(const char *, const char *, const char *, unsigned long, void *);
-> +extern long do_mount(const char *, const char __user *,
-> +		     const char *, unsigned long, void *);
->  extern struct vfsmount *collect_mounts(struct path *);
->  extern void drop_collected_mounts(struct vfsmount *);
->  extern int iterate_mounts(int (*)(struct vfsmount *, void *), void *,
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+Compiled but untested.
 
-Looks sane.
+ drivers/gpio/gpio-cs5535.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-Acked-by: Jeff Layton <jlayton@primarydata.com>
+diff --git a/drivers/gpio/gpio-cs5535.c b/drivers/gpio/gpio-cs5535.c
+index 92ec58f..668127f 100644
+--- a/drivers/gpio/gpio-cs5535.c
++++ b/drivers/gpio/gpio-cs5535.c
+@@ -201,7 +201,8 @@ EXPORT_SYMBOL_GPL(cs5535_gpio_setup_event);
+ 
+ static int chip_gpio_request(struct gpio_chip *c, unsigned offset)
+ {
+-	struct cs5535_gpio_chip *chip = (struct cs5535_gpio_chip *) c;
++	struct cs5535_gpio_chip *chip =
++		container_of(c, struct cs5535_gpio_chip, chip);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->lock, flags);
+@@ -241,7 +242,8 @@ static void chip_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+ 
+ static int chip_direction_input(struct gpio_chip *c, unsigned offset)
+ {
+-	struct cs5535_gpio_chip *chip = (struct cs5535_gpio_chip *) c;
++	struct cs5535_gpio_chip *chip =
++		container_of(c, struct cs5535_gpio_chip, chip);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->lock, flags);
+@@ -254,7 +256,8 @@ static int chip_direction_input(struct gpio_chip *c, unsigned offset)
+ 
+ static int chip_direction_output(struct gpio_chip *c, unsigned offset, int val)
+ {
+-	struct cs5535_gpio_chip *chip = (struct cs5535_gpio_chip *) c;
++	struct cs5535_gpio_chip *chip =
++		container_of(c, struct cs5535_gpio_chip, chip);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&chip->lock, flags);
+-- 
+1.9.1
+
