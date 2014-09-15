@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266AbaIOWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50548 "EHLO
+	id S932271AbaIOWLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:11:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50557 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246AbaIOWLU (ORCPT
+	with ESMTP id S932246AbaIOWL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:20 -0400
+	Mon, 15 Sep 2014 18:11:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Welling <mwelling@emacinc.com>, Lee Jones <lee.jones@linaro.org>,
+Cc: Eric Paris <eparis@redhat.com>, Andrew Vagin <avagin@openvz.org>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Steve Grubb <sgrubb@redhat.com>,
+        Dan Walsh <dwalsh@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 106/187] mfd: omap-usb-host: Fix improper mask use.
-Date: Mon, 15 Sep 2014 15:08:36 -0700
-Message-Id: <1410818997-9432-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 091/187] CAPABILITIES: remove undefined caps from all processes
+Date: Mon, 15 Sep 2014 15:08:21 -0700
+Message-Id: <1410818997-9432-92-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,37 +32,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Welling <mwelling@emacinc.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 46de8ff8e80a6546aa3d2fdf58c6776666301a0c upstream.
+commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
 
-single-ulpi-bypass is a flag used for older OMAP3 silicon.
+This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
+plus fixing it a different way...
 
-The flag when set, can excite code that improperly uses the
-OMAP_UHH_HOSTCONFIG_UPLI_BYPASS define to clear the corresponding bit.
-Instead it clears all of the other bits disabling all of the ports in
-the process.
+We found, when trying to run an application from an application which
+had dropped privs that the kernel does security checks on undefined
+capability bits.  This was ESPECIALLY difficult to debug as those
+undefined bits are hidden from /proc/$PID/status.
 
-Signed-off-by: Michael Welling <mwelling@emacinc.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Consider a root application which drops all capabilities from ALL 4
+capability sets.  We assume, since the application is going to set
+eff/perm/inh from an array that it will clear not only the defined caps
+less than CAP_LAST_CAP, but also the higher 28ish bits which are
+undefined future capabilities.
+
+The BSET gets cleared differently.  Instead it is cleared one bit at a
+time.  The problem here is that in security/commoncap.c::cap_task_prctl()
+we actually check the validity of a capability being read.  So any task
+which attempts to 'read all things set in bset' followed by 'unset all
+things set in bset' will not even attempt to unset the undefined bits
+higher than CAP_LAST_CAP.
+
+So the 'parent' will look something like:
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	ffffffc000000000
+
+All of this 'should' be fine.  Given that these are undefined bits that
+aren't supposed to have anything to do with permissions.  But they do...
+
+So lets now consider a task which cleared the eff/perm/inh completely
+and cleared all of the valid caps in the bset (but not the invalid caps
+it couldn't read out of the kernel).  We know that this is exactly what
+the libcap-ng library does and what the go capabilities library does.
+They both leave you in that above situation if you try to clear all of
+you capapabilities from all 4 sets.  If that root task calls execve()
+the child task will pick up all caps not blocked by the bset.  The bset
+however does not block bits higher than CAP_LAST_CAP.  So now the child
+task has bits in eff which are not in the parent.  These are
+'meaningless' undefined bits, but still bits which the parent doesn't
+have.
+
+The problem is now in cred_cap_issubset() (or any operation which does a
+subset test) as the child, while a subset for valid cap bits, is not a
+subset for invalid cap bits!  So now we set durring commit creds that
+the child is not dumpable.  Given it is 'more priv' than its parent.  It
+also means the parent cannot ptrace the child and other stupidity.
+
+The solution here:
+1) stop hiding capability bits in status
+	This makes debugging easier!
+
+2) stop giving any task undefined capability bits.  it's simple, it you
+don't put those invalid bits in CAP_FULL_SET you won't get them in init
+and you won't get them in any other task either.
+	This fixes the cap_issubset() tests and resulting fallout (which
+	made the init task in a docker container untraceable among other
+	things)
+
+3) mask out undefined bits when sys_capset() is called as it might use
+~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
+	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
+
+4) mask out undefined bit when we read a file capability off of disk as
+again likely all bits are set in the xattr for forward/backward
+compatibility.
+	This lets 'setcap all+pe /bin/bash; /bin/bash' run
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Andrew G. Morgan <morgan@kernel.org>
+Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Steve Grubb <sgrubb@redhat.com>
+Cc: Dan Walsh <dwalsh@redhat.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/omap-usb-host.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/proc/array.c            | 11 +----------
+ include/linux/capability.h |  5 ++++-
+ kernel/audit.c             |  2 +-
+ kernel/capability.c        |  4 ++++
+ security/commoncap.c       |  3 +++
+ 5 files changed, 13 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index 142650f..fcf426d 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -445,7 +445,7 @@ static unsigned omap_usbhs_rev1_hostconfig(struct usbhs_hcd_omap *omap,
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 1bd2077..fafb03d 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -306,15 +306,11 @@ static void render_cap_t(struct seq_file *m, const char *header,
+ 	seq_puts(m, header);
+ 	CAP_FOR_EACH_U32(__capi) {
+ 		seq_printf(m, "%08x",
+-			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
++			   a->cap[CAP_LAST_U32 - __capi]);
+ 	}
+ 	seq_putc(m, '\n');
+ }
  
- 		for (i = 0; i < omap->nports; i++) {
- 			if (is_ehci_phy_mode(pdata->port_mode[i])) {
--				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
-+				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
- 				break;
- 			}
- 		}
+-/* Remove non-existent capabilities */
+-#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
+-				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
+-
+ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ {
+ 	const struct cred *cred;
+@@ -328,11 +324,6 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ 	cap_bset	= cred->cap_bset;
+ 	rcu_read_unlock();
+ 
+-	NORM_CAPS(cap_inheritable);
+-	NORM_CAPS(cap_permitted);
+-	NORM_CAPS(cap_effective);
+-	NORM_CAPS(cap_bset);
+-
+ 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+ 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+ 	render_cap_t(m, "CapEff:\t", &cap_effective);
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 84b13ad..aa93e5e 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff_set;
+ # error Fix up hand-coded capability macro initializers
+ #else /* HAND-CODED capability initializers */
+ 
++#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
++#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
++
+ # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+-# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
++# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
+ # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+ 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+ 				    CAP_FS_MASK_B1 } })
+diff --git a/kernel/audit.c b/kernel/audit.c
+index b64b367..013d900 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1516,7 +1516,7 @@ void audit_log_cap(struct audit_buffer *ab, char *prefix, kernel_cap_t *cap)
+ 	audit_log_format(ab, " %s=", prefix);
+ 	CAP_FOR_EACH_U32(i) {
+ 		audit_log_format(ab, "%08x",
+-				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
++				 cap->cap[CAP_LAST_U32 - i]);
+ 	}
+ }
+ 
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 788653b..50fb74b 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -268,6 +268,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
+ 		i++;
+ 	}
+ 
++	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
+diff --git a/security/commoncap.c b/security/commoncap.c
+index b9d613e..963dc59 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data
+ 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
+ 	}
+ 
++	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	return 0;
+ }
+ 
 -- 
 1.9.1
 
