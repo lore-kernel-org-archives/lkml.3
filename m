@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755746AbaIOThK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
+	id S1757603AbaIOUZE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:25:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667AbaIOThC (ORCPT
+	with ESMTP id S1755742AbaIOThK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:02 -0400
+	Mon, 15 Sep 2014 15:37:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 023/114] powerpc/pseries: Failure on removing device node
-Date: Mon, 15 Sep 2014 12:25:23 -0700
-Message-Id: <20140915192642.148129442@linuxfoundation.org>
+        Scott Jiang <scott.jiang.linux@gmail.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 054/114] ASoC: blackfin: use samples to set silence
+Date: Mon, 15 Sep 2014 12:25:54 -0700
+Message-Id: <20140915192643.130445243@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,51 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+From: Scott Jiang <scott.jiang.linux@gmail.com>
 
-commit f1b3929c232784580e5d8ee324b6bc634e709575 upstream.
+commit 30443408fd7201fd1911b09daccf92fae3cc700d upstream.
 
-While running command "drmgr -c phb -r -s 'PHB 528'", following
-backtrace jumped out because the target device node isn't marked
-with OF_DETACHED by of_detach_node(), which caused by error
-returned from memory hotplug related reconfig notifier when
-disabling CONFIG_MEMORY_HOTREMOVE. The patch fixes it.
+The third parameter for snd_pcm_format_set_silence needs the number
+of samples instead of sample bytes.
 
-ERROR: Bad of_node_put() on /pci@800000020000210/ethernet@0
-CPU: 14 PID: 2252 Comm: drmgr Tainted: G        W     3.16.0+ #427
-Call Trace:
-[c000000012a776a0] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
-[c000000012a77750] [c00000000083cd34] .dump_stack+0x7c/0x9c
-[c000000012a777d0] [c0000000006807c4] .of_node_release+0x58/0xe0
-[c000000012a77860] [c00000000038a7d0] .kobject_release+0x174/0x1b8
-[c000000012a77900] [c00000000038a884] .kobject_put+0x70/0x78
-[c000000012a77980] [c000000000681680] .of_node_put+0x28/0x34
-[c000000012a77a00] [c000000000681ea8] .__of_get_next_child+0x64/0x70
-[c000000012a77a90] [c000000000682138] .of_find_node_by_path+0x1b8/0x20c
-[c000000012a77b40] [c000000000051840] .ofdt_write+0x308/0x688
-[c000000012a77c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
-[c000000012a77cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
-[c000000012a77d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
-[c000000012a77e30] [c00000000000a064] syscall_exit+0x0/0x98
-
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/blackfin/bf5xx-i2s-pcm.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -160,7 +160,7 @@ static int pseries_remove_memory(struct
- static inline int pseries_remove_memblock(unsigned long base,
- 					  unsigned int memblock_size)
- {
--	return -EOPNOTSUPP;
-+	return 0;
+--- a/sound/soc/blackfin/bf5xx-i2s-pcm.c
++++ b/sound/soc/blackfin/bf5xx-i2s-pcm.c
+@@ -290,19 +290,19 @@ static int bf5xx_pcm_silence(struct snd_
+ 	unsigned int sample_size = runtime->sample_bits / 8;
+ 	void *buf = runtime->dma_area;
+ 	struct bf5xx_i2s_pcm_data *dma_data;
+-	unsigned int offset, size;
++	unsigned int offset, samples;
+ 
+ 	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
+ 
+ 	if (dma_data->tdm_mode) {
+ 		offset = pos * 8 * sample_size;
+-		size = count * 8 * sample_size;
++		samples = count * 8;
+ 	} else {
+ 		offset = frames_to_bytes(runtime, pos);
+-		size = frames_to_bytes(runtime, count);
++		samples = count * runtime->channels;
+ 	}
+ 
+-	snd_pcm_format_set_silence(runtime->format, buf + offset, size);
++	snd_pcm_format_set_silence(runtime->format, buf + offset, samples);
+ 
+ 	return 0;
  }
- static inline int pseries_remove_memory(struct device_node *np)
- {
 
 
