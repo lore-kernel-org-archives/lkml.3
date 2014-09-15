@@ -1,229 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633AbaIOVpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:45:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60088 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117AbaIOVpq (ORCPT
+	id S1756200AbaIOVrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:47:32 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61747 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380AbaIOVra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:45:46 -0400
-Message-ID: <54175E06.1030203@codeaurora.org>
-Date: Mon, 15 Sep 2014 14:45:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 15 Sep 2014 17:47:30 -0400
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+In-Reply-To: <54174CFF.7050504@codeaurora.org>
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
+ <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com>
+ <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
+ <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+ <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org>
+ <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org>
+ <20140915111055.GD1577@arm.com> <54174CFF.7050504@codeaurora.org>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Mon, 15 Sep 2014 14:47:09 -0700
+X-Google-Sender-Auth: FDOaQCe-Eo8PWSg2iS-StA1ka2Q
+Message-ID: <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Georgi Djakov <gdjakov@mm-sol.com>,
-        Asutosh Das <asutoshd@codeaurora.org>,
-        Venkat Gopalakrishnan <venkatg@codeaurora.org>
-Subject: Re: [PATCH] mmc: sdhci-msm: Make tuning block table endian agnostic
-References: <1409752622-7564-1-git-send-email-sboyd@codeaurora.org> <5407F364.9030303@samsung.com> <CAPDyKFp0LwK=DABHaP-Ke=QZFP8bY5MO9RnYmUBqeEdDKp63BA@mail.gmail.com> <5408D81C.7070602@codeaurora.org> <5408E074.7090008@samsung.com> <20140904220126.GC28256@codeaurora.org>
-In-Reply-To: <20140904220126.GC28256@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/14 15:01, Stephen Boyd wrote:
+On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 >
-> ----8<----
-> From: Stephen Boyd <sboyd@codeaurora.org>
-> Subject: [PATCH] mmc: Consolidate emmc tuning blocks
+> On 09/15/14 04:10, Catalin Marinas wrote:
+> > On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
+> >> On 09/12/14 05:14, Marc Zyngier wrote:
+> >>> We surely can handle the UNDEF and do something there. We just can't do
+> >>> it the way Doug described it above.
+> >> I suggested doing that for something else a while ago and Will and Dave
+> >> we're not thrilled[1]. The suggestion back then was to use DT to
+> >> indicate what mode the kernel is running in.
+> >>
+> >> [1]
+> >> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
+> > I think the context was slightly different. As I re-read the thread, it
+> > seems that the discussion was around whether to use some SMC interface
+> > or not based on whether the kernel is running secure or non-secure. The
+> > argument made by Will was to actually specify the type of the firmware
+> > SMC interface in the DT and use it in the kernel (and probably assume
+> > the kernel is running in secure mode if no smc interface is specified in
+> > the DT; you could have both though, running in secure mode and also
+> > having firmware).
+> >
+> > In this arch timer case, we need to work around a firmware bug (or
+> > feature as 32-bit ARM kernels never required CNTVOFF initialisation by
+> > firmware, no matter how small such firmware is). We don't expect a
+> > specific SMC call to initialise CNTVOFF, so we can't describe it in the
+> > DT.
 >
-> The same tuning block array exists in the dw_mmc h.c and sdhci-msm.c
-> files. Move these into mmc.c so that they can be shared across
-> drivers.
+> Agreed, we can't described SMC calls that don't exist. From my
+> perspective it's just another part of the cpu boot sequence that needs
+> to be handled in the kernel, so describing the requirement via the
+> cpu-boot method seems appropriate. It seems like we're making it harder
+> than it should be by handling the undef when we could have slightly
+> different SMP boot code (and suspend/resume code) depending on the boot
+> method property.
+
+
++heiko
+
+So, for the case of rk3288, based on this discussion what I'm going to
+propose is to add code to rockchip.c which looks for a particular SMP
+enable method -- say something like "rockchip,rk3288-smp-secure-svc"
+which will then assume we have been booted in secure SVC mode and do
+the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
+as well, so I think it will need to scan the DT fairly early on the
+boot CPU and also perform the function there.
+
+I'll look into implementing this and post code.  Comments and
+suggestions appreciated, thanks.
+
+
 >
-> Reported-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-
-Hi Ulf,
-
-Can this and the previous patch be picked up for 3.18?
-
-Thanks,
-Stephen
-
->  drivers/mmc/core/mmc.c       | 32 ++++++++++++++++++++++++++++++++
->  drivers/mmc/host/dw_mmc.c    | 30 ------------------------------
->  drivers/mmc/host/sdhci-msm.c | 38 ++++----------------------------------
->  include/linux/mmc/mmc.h      |  5 +++++
->  4 files changed, 41 insertions(+), 64 deletions(-)
 >
-> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-> index 793c6f7ddb04..9608cc8a1f65 100644
-> --- a/drivers/mmc/core/mmc.c
-> +++ b/drivers/mmc/core/mmc.c
-> @@ -1135,6 +1135,38 @@ bus_speed:
->  	return err;
->  }
->  
-> +const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE] = {
-> +	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-> +	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-> +	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-> +	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-> +	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-> +	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-> +	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-> +	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
-> +};
-> +EXPORT_SYMBOL(tuning_blk_pattern_4bit);
-> +
-> +const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE] = {
-> +	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-> +	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-> +	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-> +	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-> +	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-> +	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-> +	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-> +	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-> +	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-> +	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-> +	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-> +	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-> +	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-> +	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-> +	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-> +	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
-> +};
-> +EXPORT_SYMBOL(tuning_blk_pattern_8bit);
-> +
->  /*
->   * Execute tuning sequence to seek the proper bus operating
->   * conditions for HS200 and HS400, which sends CMD21 to the device.
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 1ac227c603b7..f1cefdf5e2d0 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -81,36 +81,6 @@ struct idmac_desc {
->  };
->  #endif /* CONFIG_MMC_DW_IDMAC */
->  
-> -static const u8 tuning_blk_pattern_4bit[] = {
-> -	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-> -	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-> -	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-> -	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-> -	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-> -	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-> -	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-> -	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
-> -};
-> -
-> -static const u8 tuning_blk_pattern_8bit[] = {
-> -	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-> -	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-> -	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-> -	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-> -	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-> -	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-> -	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-> -	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-> -	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-> -	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-> -	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-> -	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-> -	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-> -	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-> -	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-> -	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
-> -};
-> -
->  static inline bool dw_mci_fifo_reset(struct dw_mci *host);
->  static inline bool dw_mci_ctrl_all_reset(struct dw_mci *host);
->  
-> diff --git a/drivers/mmc/host/sdhci-msm.c b/drivers/mmc/host/sdhci-msm.c
-> index 5aabffc15ae8..da74c77f34cc 100644
-> --- a/drivers/mmc/host/sdhci-msm.c
-> +++ b/drivers/mmc/host/sdhci-msm.c
-> @@ -47,36 +47,6 @@
->  #define CMUX_SHIFT_PHASE_SHIFT	24
->  #define CMUX_SHIFT_PHASE_MASK	(7 << CMUX_SHIFT_PHASE_SHIFT)
->  
-> -static const u8 tuning_block_64[] = {
-> -	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-> -	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-> -	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-> -	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-> -	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-> -	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-> -	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-> -	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
-> -};
-> -
-> -static const u8 tuning_block_128[] = {
-> -	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-> -	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-> -	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-> -	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-> -	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-> -	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-> -	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-> -	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-> -	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-> -	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-> -	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-> -	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-> -	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-> -	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-> -	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-> -	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
-> -};
-> -
->  struct sdhci_msm_host {
->  	struct platform_device *pdev;
->  	void __iomem *core_mem;	/* MSM SDCC mapped address */
-> @@ -371,8 +341,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
->  {
->  	int tuning_seq_cnt = 3;
->  	u8 phase, *data_buf, tuned_phases[16], tuned_phase_cnt = 0;
-> -	const u8 *tuning_block_pattern = tuning_block_64;
-> -	int size = sizeof(tuning_block_64);	/* Pattern size in bytes */
-> +	const u8 *tuning_block_pattern = tuning_blk_pattern_4bit;
-> +	int size = sizeof(tuning_blk_pattern_4bit);
->  	int rc;
->  	struct mmc_host *mmc = host->mmc;
->  	struct mmc_ios ios = host->mmc->ios;
-> @@ -388,8 +358,8 @@ static int sdhci_msm_execute_tuning(struct sdhci_host *host, u32 opcode)
->  
->  	if ((opcode == MMC_SEND_TUNING_BLOCK_HS200) &&
->  	    (mmc->ios.bus_width == MMC_BUS_WIDTH_8)) {
-> -		tuning_block_pattern = tuning_block_128;
-> -		size = sizeof(tuning_block_128);
-> +		tuning_block_pattern = tuning_blk_pattern_8bit;
-> +		size = sizeof(tuning_blk_pattern_8bit);
->  	}
->  
->  	data_buf = kmalloc(size, GFP_KERNEL);
-> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-> index 64ec963ed347..cff1f2622061 100644
-> --- a/include/linux/mmc/mmc.h
-> +++ b/include/linux/mmc/mmc.h
-> @@ -53,6 +53,11 @@
->  #define MMC_SEND_TUNING_BLOCK    19   /* adtc                    R1  */
->  #define MMC_SEND_TUNING_BLOCK_HS200	21	/* adtc R1  */
->  
-> +#define MMC_TUNING_BLK_PATTERN_4BIT_SIZE	 64
-> +#define MMC_TUNING_BLK_PATTERN_8BIT_SIZE	128
-> +extern const u8 tuning_blk_pattern_4bit[MMC_TUNING_BLK_PATTERN_4BIT_SIZE];
-> +extern const u8 tuning_blk_pattern_8bit[MMC_TUNING_BLK_PATTERN_8BIT_SIZE];
-> +
->    /* class 3 */
->  #define MMC_WRITE_DAT_UNTIL_STOP 20   /* adtc [31:0] data addr   R1  */
->  
-
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+> --
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+>
