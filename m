@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741AbaIOHeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:34:22 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53608 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690AbaIOHeP (ORCPT
+	id S1753763AbaIOHe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:34:28 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62201 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727AbaIOHeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:34:15 -0400
-Date: Mon, 15 Sep 2014 00:00:52 -0700
+	Mon, 15 Sep 2014 03:34:21 -0400
+Date: Mon, 15 Sep 2014 00:33:54 -0700
 From: Olof Johansson <olof@lixom.net>
 To: Hanjun Guo <hanjun.guo@linaro.org>
 Cc: Catalin Marinas <catalin.marinas@arm.com>,
@@ -28,365 +28,263 @@ Cc: Catalin Marinas <catalin.marinas@arm.com>,
         Liviu Dudau <Liviu.Dudau@arm.com>,
         Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
         linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 11/18] ARM64 / ACPI: Parse MADT for SMP initialization
-Message-ID: <20140915070052.GE26649@localhost>
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+Message-ID: <20140915073354.GH26649@localhost>
 References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-12-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410530416-30200-12-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 10:00:09PM +0800, Hanjun Guo wrote:
-> MADT contains the information for MPIDR which is essential for
-> SMP initialization, parse the GIC cpu interface structures to
-> get the MPIDR value and map it to cpu_logical_map(), and add
-> enabled cpu with valid MPIDR into cpu_possible_map.
+On Fri, Sep 12, 2014 at 10:00:16PM +0800, Hanjun Guo wrote:
+> From: Graeme Gregory <graeme.gregory@linaro.org>
 > 
-> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
-> Parking protocol, but the Parking protocol is only specified for
-> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
-> before some updates for the ACPI spec or the Parking protocol spec.
+> Add documentation for the guidelines of how to use ACPI
+> on ARM64.
 > 
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
 > Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
 > ---
->  arch/arm64/include/asm/acpi.h    |    2 +
->  arch/arm64/include/asm/cpu_ops.h |    1 +
->  arch/arm64/include/asm/smp.h     |    5 +-
->  arch/arm64/kernel/acpi.c         |  147 +++++++++++++++++++++++++++++++++++++-
->  arch/arm64/kernel/cpu_ops.c      |    4 +-
->  arch/arm64/kernel/setup.c        |    8 ++-
->  arch/arm64/kernel/smp.c          |    2 +-
->  7 files changed, 160 insertions(+), 9 deletions(-)
+>  Documentation/arm64/arm-acpi.txt |  218 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 218 insertions(+)
+>  create mode 100644 Documentation/arm64/arm-acpi.txt
 > 
-> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
-> index ecba671..da8f74a 100644
-> --- a/arch/arm64/include/asm/acpi.h
-> +++ b/arch/arm64/include/asm/acpi.h
-> @@ -51,11 +51,13 @@ static inline bool acpi_has_cpu_in_madt(void)
->  }
->  
->  static inline void arch_fix_phys_package_id(int num, u32 slot) { }
-> +void __init acpi_smp_init_cpus(void);
->  
->  #else
->  
->  static inline bool acpi_psci_present(void) { return false; }
->  static inline bool acpi_psci_use_hvc(void) { return false; }
-> +static inline void acpi_smp_init_cpus(void) { }
->  
->  #endif /* CONFIG_ACPI */
->  
-> diff --git a/arch/arm64/include/asm/cpu_ops.h b/arch/arm64/include/asm/cpu_ops.h
-> index d7b4b38..d149580 100644
-> --- a/arch/arm64/include/asm/cpu_ops.h
-> +++ b/arch/arm64/include/asm/cpu_ops.h
-> @@ -61,6 +61,7 @@ struct cpu_operations {
->  };
->  
->  extern const struct cpu_operations *cpu_ops[NR_CPUS];
-> +const struct cpu_operations *cpu_get_ops(const char *name);
->  extern int __init cpu_read_ops(struct device_node *dn, int cpu);
->  extern void __init cpu_read_bootcpu_ops(void);
->  
-> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
-> index a498f2c..c877adc 100644
-> --- a/arch/arm64/include/asm/smp.h
-> +++ b/arch/arm64/include/asm/smp.h
-> @@ -39,9 +39,10 @@ extern void show_ipi_list(struct seq_file *p, int prec);
->  extern void handle_IPI(int ipinr, struct pt_regs *regs);
->  
->  /*
-> - * Setup the set of possible CPUs (via set_cpu_possible)
-> + * Discover the set of possible CPUs and determine their
-> + * SMP operations.
->   */
-> -extern void smp_init_cpus(void);
-> +extern void of_smp_init_cpus(void);
->  
->  /*
->   * Provide a function to raise an IPI cross call on CPUs in callmap.
-> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> index 9e1ae37..644b8b8 100644
-> --- a/arch/arm64/kernel/acpi.c
-> +++ b/arch/arm64/kernel/acpi.c
-> @@ -24,6 +24,10 @@
->  #include <linux/bootmem.h>
->  #include <linux/smp.h>
->  
-> +#include <asm/smp_plat.h>
-> +#include <asm/cputype.h>
-> +#include <asm/cpu_ops.h>
+> diff --git a/Documentation/arm64/arm-acpi.txt b/Documentation/arm64/arm-acpi.txt
+> new file mode 100644
+> index 0000000..704a9e0
+> --- /dev/null
+> +++ b/Documentation/arm64/arm-acpi.txt
+> @@ -0,0 +1,218 @@
+> +ACPI on ARMv8 Servers
+> +---------------------
 > +
->  int acpi_noirq;			/* skip ACPI IRQ initialization */
->  int acpi_disabled;
->  EXPORT_SYMBOL(acpi_disabled);
-> @@ -31,6 +35,8 @@ EXPORT_SYMBOL(acpi_disabled);
->  int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
->  EXPORT_SYMBOL(acpi_pci_disabled);
->  
-> +static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
+> +ACPI can be used for ARMv8 general purpose servers designed to follow
+> +the SBSA specification (currently available to people with an ARM login at
+> +http://silver.arm.com).
 > +
->  /*
->   * __acpi_map_table() will be called before page_init(), so early_ioremap()
->   * or early_memremap() should be called here to for ACPI table mapping.
-> @@ -51,6 +57,131 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
->  	early_memunmap(map, size);
->  }
->  
-> +/**
-> + * acpi_map_gic_cpu_interface - generates a logical cpu number
-> + * and map to MPIDR represented by GICC structure
-> + * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
-> + * @enabled: this cpu is enabled or not
-> + *
-> + * Returns the logical cpu number which maps to MPIDR
-> + */
-> +static int acpi_map_gic_cpu_interface(u64 mpidr, u8 enabled)
-> +{
-> +	int cpu;
-> +
-> +	if (mpidr == INVALID_HWID) {
-> +		pr_info("Skip invalid cpu hardware ID\n");
+> +The kernel will implement minimum ACPI version is 5.1 + errata as released by
+> +the UEFI Forum, which is available at <http://www.uefi.org/acpi/specs>.
 
-This message, when showing up in dmesg, will probably mostly just make
-someone scratch their head. Something slightly more descriptive would
-be a good idea.
+"implements", not "will implement" (assuming the rest of the patch set
+is merged at the same time as this patch).
 
-> +		return -EINVAL;
-> +	}
+> +If the machine does not meet the requirements of the SBSA, or cannot be
+> +described in the required ACPI specifications then it is likely that Device Tree
+> +(DT) is more suitable for the hardware.
 > +
-> +	total_cpus++;
-> +	if (!enabled)
-> +		return -EINVAL;
+> +Relationship with Device Tree
+> +-----------------------------
 > +
-> +	if (enabled_cpus >=  NR_CPUS) {
-> +		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
-> +			NR_CPUS, total_cpus, mpidr);
-> +		return -EINVAL;
-> +	}
+> +ACPI support in drivers and subsystems for ARMv8 should never be mutually
+> +exclusive with DT support at compile time.
 > +
-> +	/* No need to check duplicate MPIDRs for the first CPU */
-> +	if (enabled_cpus) {
-> +		/*
-> +		 * Duplicate MPIDRs are a recipe for disaster. Scan
-> +		 * all initialized entries and check for
-> +		 * duplicates. If any is found just ignore the CPU.
-> +		 */
+> +At boot time the kernel will only use one description method depending on
+> +parameters passed from the bootloader (including kernel bootargs).
+> +
+> +Regardless of whether DT or ACPI is used, the kernel must always be capable
+> +of booting with either scheme (in kernels with both schemes enabled at compile
+> +time).
+> +
+> +When booting using ACPI tables the /chosen node in DT will still be parsed
+> +to extract the kernel command line and initrd path. No other section of
+> +the DT will be used.
+> +
+> +Booting using ACPI tables
+> +-------------------------
+> +
+> +Currently, the only defined method to pass ACPI tables to the kernel on ARMv8
+> +is via the UEFI system configuration table.
+> +
+> +The UEFI implementation MUST set the ACPI_20_TABLE_GUID to point to the
+> +RSDP table (the table with the ACPI signature "RSD PTR ").
+> +
+> +The pointer to the RSDP table will be retrieved from EFI by the ACPI core.
+> +
+> +Processing of ACPI tables may be disabled by passing acpi=off on the kernel
+> +command line.
+> +
+> +DO use an XSDT; RSDTs are deprecated and should not be used on arm64. They
+> +only allow for 32-bit addresses.
+> +
+> +DO NOT use the 32-bit address fields in the FADT; they are deprecated. The
+> +64-bit alternatives MUST be used.
+> +
+> +The minimum set of tables MUST include RSDP, XSDT, FACS, FADT, DSDT, MADT
+> +and GTDT. If PCI is used the MCFG table MUST also be present.
 
-But is it this entry or the other one that should be ignored? Is
-this expected to be something that firmware vendors get wrong all the
-time? Would it be better to abort SMP alltogether?
+This wording (DO NOT, MUST, etc) doesn't make sense in this doc. You're
+not instructing a firmware vendor how to implement their firmware here,
+you're documenting what the kernel expects from it.
 
-> +		for_each_possible_cpu(cpu) {
-> +			if (cpu_logical_map(cpu) == mpidr) {
-> +				pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
-> +				mpidr);
+> +
+> +ACPI Detection
+> +--------------
+> +
+> +Drivers should determine their probe() type by checking for ACPI_HANDLE,
+> +or .of_node, or other information in the device structure. This is
+> +detailed further in the "Driver Recommendations" section.
+> +
+> +In non-driver code If the presence of ACPI needs to be detected at runtime,
 
-Misindented.
+"code If" looks odd here. 
 
-> +				return -EINVAL;
-> +			}
-> +		}
-> +		
-> +		/* allocate a logical cpu id for the new comer */
-> +		cpu = cpumask_next_zero(-1, cpu_possible_mask);
-> +	} else {
-> +		/* First GICC entry must be BSP as ACPI spec said */
+> +then check the value of acpi_disabled. If CONFIG_ACPI is not set,
+> +acpi_disabled will always be 1.
+> +
+> +Device Enumeration
+> +------------------
+> +
+> +Device descriptions in ACPI should use standard recognized ACPI interfaces.
+> +These are far simpler than the information provided via Device Tree. Drivers
+> +should take into account this simplicity and work with sensible defaults.
 
-"spec said", would be nice to have a chapter/section reference.
+s/simpler/contains less information/
 
-> +		if  (cpu_logical_map(0) != mpidr) {
-> +			pr_err("First GICC entry with MPIDR 0x%llx is not BSP\n",
-> +			       mpidr);
+This is a key point in this doc (use sensible defaults), and I expect it's
+one of the major ones that people will get wrong. A bit of elaboration
+would be good.
 
-Same thing here about usefulness of error message. What is a user to do with this?
+> +
+> +On no account should a Device Tree attempt to be replicated in ASL using such
+> +constructs as Name(KEY0, "Value1") type constructs. Additional driver specific
+> +data should be represented with the appropriate _DSD (ACPI Section 6.2.5)
+> +structure. _DSM (ACPI Section 9.14.1) should only be used if _DSD cannot
+> +represent the data required.
+> +
+> +This data should be rare and not OS specific. For x86 ACPI has taken to
+> +identifying itself as Windows because it was found that only one path was
+> +routinely tested. For ARMv8 it would be preferable to have only one well
+> +tested path.
+> +
+> +_DSD covers more than the generic server case and care should be taken not to
+> +replicate highly specific embedded behaviour from DT into generic servers.
+> +
+> +Common _DSD bindings should be submitted to ASWG to be included in the
+> +document :-
+> +
+> +http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
+> +
+> +If these bindings are mirrored from DT care should be taken to ensure they are
+> +reviewed as DT bindings before submission to limit divergance in bindings.
 
-> +			return -EINVAL;
-> +		}
-> +
-> +		/*
-> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
-> +		 * for BSP, no need to allocate again.
-> +		 */
-> +		cpu = 0;
-> +	}
-> +
-> +	/* CPU 0 was already initialized */
-> +	if (cpu) {
-> +		cpu_ops[cpu] = cpu_get_ops(acpi_psci_present() ? "psci" : NULL);
-> +		if (!cpu_ops[cpu])
-> +			return -EINVAL;
-> +
-> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
-> +			return -EOPNOTSUPP;
-> +
-> +		/* map the logical cpu id to cpu MPIDR */
-> +		cpu_logical_map(cpu) = mpidr;
-> +
-> +		set_cpu_possible(cpu, true);
-> +	} else {
-> +		/* get cpu0's ops, no need to return if ops is null */
-> +		cpu_ops[0] = cpu_get_ops(acpi_psci_present() ? "psci" : NULL);
-> +	}
-> +
-> +	enabled_cpus++;
-> +	return cpu;
-> +}
-> +
-> +static int __init
-> +acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
-> +				const unsigned long end)
-> +{
-> +	struct acpi_madt_generic_interrupt *processor;
-> +
-> +	processor = (struct acpi_madt_generic_interrupt *)header;
-> +
-> +	if (BAD_MADT_ENTRY(processor, end))
-> +		return -EINVAL;
-> +
-> +	acpi_table_print_madt_entry(header);
-> +
-> +	acpi_map_gic_cpu_interface(processor->arm_mpidr & MPIDR_HWID_BITMASK,
-> +		processor->flags & ACPI_MADT_ENABLED);
-> +
-> +	return 0;
-> +}
-> +
-> +/* Parse GIC cpu interface entries in MADT for SMP init */
-> +void __init acpi_smp_init_cpus(void)
-> +{
-> +	int count;
-> +
-> +	/*
-> +	 * do a partial walk of MADT to determine how many CPUs
-> +	 * we have including disabled CPUs, and get information
-> +	 * we need for SMP init
-> +	 */
-> +	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
-> +			acpi_parse_gic_cpu_interface, 0);
-> +
-> +	if (!count) {
-> +		pr_err("No GIC CPU interface entries present\n");
-> +		return;
-> +	} else if (count < 0) {
-> +		pr_err("Error parsing GIC CPU interface entry\n");
-> +		return;
-> +	}
-> +
-> +	/* Make boot-up look pretty */
-> +	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
-> +}
-> +
->  static int __init acpi_parse_fadt(struct acpi_table_header *table)
->  {
->  	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
-> @@ -62,8 +193,20 @@ static int __init acpi_parse_fadt(struct acpi_table_header *table)
->  	 * to get arm boot flags, or we will disable ACPI.
->  	 */
->  	if (table->revision > 5 ||
-> -	    (table->revision == 5 && fadt->minor_revision >= 1))
-> -		return 0;
-> +	    (table->revision == 5 && fadt->minor_revision >= 1)) {
-> +		/*
-> +		 * ACPI 5.1 only has two explicit methods to boot up SMP,
-> +		 * PSCI and Parking protocol, but the Parking protocol is
-> +		 * only specified for ARMv7 now, so make PSCI as the only
-> +		 * way for the SMP boot protocol before some updates for
-> +		 * the ACPI spec or the Parking protocol spec.
-> +		 */
-> +		if (acpi_psci_present())
-> +			return 0;
-> +
-> +		pr_warn("has no PSCI support, will not bring up secondary CPUs\n");
+Some of the above is again not suitable language for this document. And
+again, this is likely the wrong place to educate system firware
+developers on how to describe their hardware.
 
-s/has//
+> +
+> +Programmable Power Control Resources
+> +------------------------------------
+> +
+> +Programmable power control resources include such resources as voltage/current
+> +providers (regulators) and clock sources.
+> +
+> +For power control of these resources they should be represented with Power
+> +Resource Objects (ACPI Section 7.1). The ACPI core will then handle correctly
+> +enabling/disabling of resources as they are needed.
+> +
+> +The ACPI 5.1 specification does not contain any standard binding for these
+> +objects to enable programmable levels or rates so this should be avoided if
+> +possible and the resources set to appropriate levels by the firmware. If this is
+> +not possible then any manipulation should be abstracted in ASL.
+> +
+> +Each device in ACPI has D-states and these can be controlled through
+> +the optional methods _PS0..._PS3 where _PS0 is full on and _PS3 is full off.
+> +
+> +If either _PS0 or _PS3 is implemented, then the other method must also be
+> +implemented.
+> +
+> +If a device requires usage or setup of a power resource when on, the ASL
+> +should organize that it is allocated/enabled using the _PS0 method.
 
-> +		return -EOPNOTSUPP;
-> +	}
->  
->  	pr_warn("Unsupported FADT revision %d.%d, should be 5.1+, will disable ACPI\n",
->  		table->revision, fadt->minor_revision);
-> diff --git a/arch/arm64/kernel/cpu_ops.c b/arch/arm64/kernel/cpu_ops.c
-> index cce9524..1a04deb 100644
-> --- a/arch/arm64/kernel/cpu_ops.c
-> +++ b/arch/arm64/kernel/cpu_ops.c
-> @@ -27,7 +27,7 @@ extern const struct cpu_operations cpu_psci_ops;
->  
->  const struct cpu_operations *cpu_ops[NR_CPUS];
->  
-> -static const struct cpu_operations *supported_cpu_ops[] __initconst = {
-> +static const struct cpu_operations *supported_cpu_ops[] = {
->  #ifdef CONFIG_SMP
->  	&smp_spin_table_ops,
->  #endif
-> @@ -35,7 +35,7 @@ static const struct cpu_operations *supported_cpu_ops[] __initconst = {
->  	NULL,
->  };
->  
-> -static const struct cpu_operations * __init cpu_get_ops(const char *name)
-> +const struct cpu_operations *cpu_get_ops(const char *name)
->  {
->  	const struct cpu_operations **ops = supported_cpu_ops;
->  
-> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
-> index 7ba20d4..281fa34 100644
-> --- a/arch/arm64/kernel/setup.c
-> +++ b/arch/arm64/kernel/setup.c
-> @@ -60,6 +60,7 @@
->  #include <asm/memblock.h>
->  #include <asm/psci.h>
->  #include <asm/efi.h>
-> +#include <asm/acpi.h>
->  
->  unsigned int processor_id;
->  EXPORT_SYMBOL(processor_id);
-> @@ -401,13 +402,16 @@ void __init setup_arch(char **cmdline_p)
->  	if (acpi_disabled) {
->  		unflatten_device_tree();
->  		psci_dt_init();
-> +		cpu_read_bootcpu_ops();
-> +#ifdef CONFIG_SMP
-> +		of_smp_init_cpus();
-> +#endif
+Again, some of this seems like the wrong place to mandate how firmware works.
 
-Please create a !SMP stub so you can do without the ifdef here, just
-like you did for the ACPI case.
+If anything, it can be rephrased as "the kernel assumes that ASL will
+handle power resource management/enablement through the _PS0 method", etc.
 
->  	} else {
->  		psci_acpi_init();
-> +		acpi_smp_init_cpus();
->  	}
->  
-> -	cpu_read_bootcpu_ops();
->  #ifdef CONFIG_SMP
-> -	smp_init_cpus();
->  	smp_build_mpidr_hash();
->  #endif
->  
-> diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-> index 4743397..4e390ac 100644
-> --- a/arch/arm64/kernel/smp.c
-> +++ b/arch/arm64/kernel/smp.c
-> @@ -321,7 +321,7 @@ void __init smp_prepare_boot_cpu(void)
->   * cpu logical map array containing MPIDR values related to logical
->   * cpus. Assumes that cpu_logical_map(0) has already been initialized.
->   */
-> -void __init smp_init_cpus(void)
-> +void __init of_smp_init_cpus(void)
->  {
->  	struct device_node *dn = NULL;
->  	unsigned int i, cpu = 1;
-> -- 
-> 1.7.9.5
-> 
+> +Resources allocated/enabled in the _PS0 method should be disabled/de-allocated
+> +in the _PS3 method.
+> +
+> +Such code in _PS? methods will of course be very platform specific but
+> +should allow the driver to operate the device without special non-standard
+> +values being read from ASL. Further, abstracting the use of these resources
+> +allows hardware revisions without requiring updates to the kernel.
+> +
+> +Clocks
+> +------
+> +
+> +Like clocks that are part of the power resources there is no standard way
+> +to represent a clock tree in ACPI 5.1 in a similar manner to how it is
+> +described in DT.
+> +
+> +Devices affected by this include things like UARTs, SoC driven LCD displays,
+> +etc.
+
+The devices aren't affected by the lack of clock tree representation, but they are affected
+by a possibly variable input clock to their blocks. That's quite a big difference.
+
+> +The firmware (for example, UEFI) should initialize these clocks to fixed working
+> +values before the kernel is executed.
+
+Add:
+
+", such that the driver can be hardcoded to assume those frequencies". :-(
+
+
+> +
+> +Driver Recommendations
+> +----------------------
+> +
+> +DO NOT remove any FDT handling when adding ACPI support for a driver. Different
+> +systems may use the same device.
+
+s/FDT/DT/
+
+> +
+> +DO try and keep complex sections of ACPI and DT functionality separate. This
+> +may mean a patch to break out some complex DT to another function before
+> +the patch to add ACPI. This may happen in other functions but is most likely
+> +in probe function. This gives a clearer flow of data for reviewing driver
+> +source.
+
+The above can be read as we're preferring to split the driver in two with
+as much code path divergence as possible. Instead, splitting probing
+in two but making the rest of the driver mostly execute off of data
+(i.e. setup internal per-device state in a struct based on defaults +
+what you discover at probe) is a much better approach, and it's what
+we have been pushing for in the platform code as well.
+
+> +ASWG
+> +----
+> +
+> +The following areas are not yet well defined for ARM in the current ACPI
+> +specification and are expected to be worked through in the UEFI ACPI
+
+Since docs go stale all the time, please refer to 5.1 instead of "current" here.
+
+> +Specification Working Group (ASWG) <http://www.uefi.org/workinggroups>.
+> +Participation in this group is open to all UEFI members.
+> +
+> +	- ACPI based CPU topology
+> +	- ACPI based Power management
+> +	- CPU idle control based on PSCI
+> +	- CPU performance control (CPPC)
+> +	- ACPI based SMMU
+> +	- ITS support for GIC in MADT
+> +
+> +No code shall be accepted into the kernel unless it complies with the released
+> +standards from UEFI ASWG. If there are features missing from ACPI to make it
+> +function on a platform, ECRs should be submitted to ASWG and go through the
+> +approval process.
+
+Technically this is untrue and should at least be rephrased. We're likely
+to at some point need to deal with bad tables that need quirks and fixups,
+just like we've had to do on other systems.
 
 
 -Olof
