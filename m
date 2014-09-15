@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958AbaIOUCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:02:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55604 "EHLO
+	id S1756943AbaIOUB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:01:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249AbaIOTrP (ORCPT
+	with ESMTP id S1756246AbaIOTrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
-        Rui Wang <wangr@lemote.com>, John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 22/71] MIPS: Remove BUG_ON(!is_fpu_owner()) in do_ade()
-Date: Mon, 15 Sep 2014 12:26:20 -0700
-Message-Id: <20140915192639.448447285@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 39/71] ring-buffer: Up rb_iter_peek() loop count to 3
+Date: Mon, 15 Sep 2014 12:26:37 -0700
+Message-Id: <20140915192639.997990877@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -32,62 +28,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 2e5767a27337812f6850b3fa362419e2f085e5c3 upstream.
+commit 021de3d904b88b1771a3a2cfc5b75023c391e646 upstream.
 
-In do_ade(), is_fpu_owner() isn't preempt-safe. For example, when an
-unaligned ldc1 is executed, do_cpu() is called and then FPU will be
-enabled (and TIF_USEDFPU will be set for the current process). Then,
-do_ade() is called because the access is unaligned.  If the current
-process is preempted at this time, TIF_USEDFPU will be cleard.  So when
-the process is scheduled again, BUG_ON(!is_fpu_owner()) is triggered.
+After writting a test to try to trigger the bug that caused the
+ring buffer iterator to become corrupted, I hit another bug:
 
-This small program can trigger this BUG in a preemptible kernel:
+ WARNING: CPU: 1 PID: 5281 at kernel/trace/ring_buffer.c:3766 rb_iter_peek+0x113/0x238()
+ Modules linked in: ipt_MASQUERADE sunrpc [...]
+ CPU: 1 PID: 5281 Comm: grep Tainted: G        W     3.16.0-rc3-test+ #143
+ Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+  0000000000000000 ffffffff81809a80 ffffffff81503fb0 0000000000000000
+  ffffffff81040ca1 ffff8800796d6010 ffffffff810c138d ffff8800796d6010
+  ffff880077438c80 ffff8800796d6010 ffff88007abbe600 0000000000000003
+ Call Trace:
+  [<ffffffff81503fb0>] ? dump_stack+0x4a/0x75
+  [<ffffffff81040ca1>] ? warn_slowpath_common+0x7e/0x97
+  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
+  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
+  [<ffffffff810c14df>] ? ring_buffer_iter_peek+0x2d/0x5c
+  [<ffffffff810c6f73>] ? tracing_iter_reset+0x6e/0x96
+  [<ffffffff810c74a3>] ? s_start+0xd7/0x17b
+  [<ffffffff8112b13e>] ? kmem_cache_alloc_trace+0xda/0xea
+  [<ffffffff8114cf94>] ? seq_read+0x148/0x361
+  [<ffffffff81132d98>] ? vfs_read+0x93/0xf1
+  [<ffffffff81132f1b>] ? SyS_read+0x60/0x8e
+  [<ffffffff8150bf9f>] ? tracesys+0xdd/0xe2
 
-int main (int argc, char *argv[])
-{
-        double u64[2];
+Debugging this bug, which triggers when the rb_iter_peek() loops too
+many times (more than 2 times), I discovered there's a case that can
+cause that function to legitimately loop 3 times!
 
-        while (1) {
-                asm volatile (
-                        ".set push \n\t"
-                        ".set noreorder \n\t"
-                        "ldc1 $f3, 4(%0) \n\t"
-                        ".set pop \n\t"
-                        ::"r"(u64):
-                );
-        }
+rb_iter_peek() is different than rb_buffer_peek() as the rb_buffer_peek()
+only deals with the reader page (it's for consuming reads). The
+rb_iter_peek() is for traversing the buffer without consuming it, and as
+such, it can loop for one more reason. That is, if we hit the end of
+the reader page or any page, it will go to the next page and try again.
 
-        return 0;
-}
+That is, we have this:
 
-V2: Remove the BUG_ON() unconditionally due to Paul's suggestion.
+ 1. iter->head > iter->head_page->page->commit
+    (rb_inc_iter() which moves the iter to the next page)
+    try again
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Jie Chen <chenj@lemote.com>
-Signed-off-by: Rui Wang <wangr@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+ 2. event = rb_iter_head_event()
+    event->type_len == RINGBUF_TYPE_TIME_EXTEND
+    rb_advance_iter()
+    try again
+
+ 3. read the event.
+
+But we never get to 3, because the count is greater than 2 and we
+cause the WARNING and return NULL.
+
+Up the counter to 3.
+
+Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/unaligned.c |    1 -
- 1 file changed, 1 deletion(-)
+ kernel/trace/ring_buffer.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/arch/mips/kernel/unaligned.c
-+++ b/arch/mips/kernel/unaligned.c
-@@ -604,7 +604,6 @@ static void emulate_load_store_insn(stru
- 	case sdc1_op:
- 		die_if_kernel("Unaligned FP access in kernel code", regs);
- 		BUG_ON(!used_math());
--		BUG_ON(!is_fpu_owner());
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1980,7 +1980,7 @@ rb_add_time_stamp(struct ring_buffer_eve
  
- 		lose_fpu(1);	/* Save FPU state for the emulator. */
- 		res = fpu_emulator_cop1Handler(regs, &current->thread.fpu, 1,
+ /**
+  * rb_update_event - update event type and data
+- * @event: the even to update
++ * @event: the event to update
+  * @type: the type of event
+  * @length: the size of the event field in the ring buffer
+  *
+@@ -3755,12 +3755,14 @@ rb_iter_peek(struct ring_buffer_iter *it
+ 		return NULL;
+ 
+ 	/*
+-	 * We repeat when a time extend is encountered.
+-	 * Since the time extend is always attached to a data event,
+-	 * we should never loop more than once.
+-	 * (We never hit the following condition more than twice).
++	 * We repeat when a time extend is encountered or we hit
++	 * the end of the page. Since the time extend is always attached
++	 * to a data event, we should never loop more than three times.
++	 * Once for going to next page, once on time extend, and
++	 * finally once to get the event.
++	 * (We never hit the following condition more than thrice).
+ 	 */
+-	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 2))
++	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 3))
+ 		return NULL;
+ 
+ 	if (rb_per_cpu_empty(cpu_buffer))
 
 
