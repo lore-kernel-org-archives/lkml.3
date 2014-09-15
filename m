@@ -1,303 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632AbaIOJOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 05:14:40 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:1931 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaIOJOj (ORCPT
+	id S1753757AbaIOJPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 05:15:31 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:36649 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734AbaIOJP2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 05:14:39 -0400
-Message-ID: <5416ADFD.9050507@atmel.com>
-Date: Mon, 15 Sep 2014 11:14:37 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 15 Sep 2014 05:15:28 -0400
+Date: Mon, 15 Sep 2014 10:15:16 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20140915091515.GA1577@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <20140911132935.068DCC408F6@trevor.secretlab.ca>
+ <20140911153739.GA24416@localhost>
+ <20140915043116.9985CC407E8@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCHv2 2/8] clk: at91: add a driver for the h32mx clock
-References: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com> <1410536587-24607-3-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1410536587-24607-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <20140915043116.9985CC407E8@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 15 Sep 2014 09:15:22.0800 (UTC) FILETIME=[940C4300:01CFD0C5]
+X-MC-Unique: 114091510152330801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 17:43, Alexandre Belloni :
-> Newer SoCs have two different peripheral master clocks, h32mx is able to divide
-
-Well, it is not the h32mx that allows it, it is the clock associated
-with it.
-
-> mck for slower peripherals.
-
-Maybe say at the beginning that h32mx stands for "AHB 32 bits Matrix
-interconnect" and that we are talking about the particular clock that is
-associated with it. This particular clock can be setup at the half of
-the H64mx clock which is the mck.
-
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
-> Cc: Mike Turquette <mturquette@linaro.org>
->  .../devicetree/bindings/clock/at91-clock.txt       |  15 +++
->  arch/arm/mach-at91/Kconfig                         |   3 +
->  drivers/clk/at91/Makefile                          |   1 +
->  drivers/clk/at91/clk-h32mx.c                       | 121 +++++++++++++++++++++
->  drivers/clk/at91/pmc.c                             |   6 +
->  drivers/clk/at91/pmc.h                             |   5 +
->  include/linux/clk/at91_pmc.h                       |   1 +
->  7 files changed, 152 insertions(+)
->  create mode 100644 drivers/clk/at91/clk-h32mx.c
+On Mon, Sep 15, 2014 at 05:31:16AM +0100, Grant Likely wrote:
+> On Thu, 11 Sep 2014 16:37:39 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
+> > > Regarding the requests to refactor ACPICA to work better for ARM. I
+> > > completely agree that it should be done, but I do not think it should be
+> > > a prerequisite to getting this core support merged. That kind of
+> > > refactoring is far easier to justify when it has immediate improvement
+> > > on the mainline codebase, and it gives us a working baseline to test
+> > > against. Doing it the other way around just makes things harder.
+> > 
+> > I have to disagree here. As I said, I'm perfectly fine with refactoring
+> > happening later but I'm not happy with compiling in code with undefined
+> > behaviour on ARM that may actually be executed at run-time.
+> > 
+> > I'm being told one of the main advantages of ACPI is forward
+> > compatibility: running older kernels on newer hardware (potentially with
+> > newer ACPI version tables). ACPI 5.1 includes partial support for ARM
+> > but the S and C states are not defined yet. We therefore assume that
+> > hardware vendors deploying servers using ACPI would not provide such
+> > yet to be defined information in ACPI 5.1 tables.
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> index b3d544ca522a..c8dcbbd242e5 100644
-> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> @@ -74,6 +74,9 @@ Required properties:
->  	"atmel,at91sam9x5-clk-utmi":
->  		at91 utmi clock
->  
-> +	"atmel,sama5d4-clk-h32mx":
-> +		at91 h32mx clock
-> +
->  Required properties for SCKC node:
->  - reg : defines the IO memory reserved for the SCKC.
->  - #size-cells : shall be 0 (reg is used to encode clk id).
-> @@ -447,3 +450,15 @@ For example:
->  		#clock-cells = <0>;
->  		clocks = <&main>;
->  	};
-> +
-> +Required properties for h32mx clock:
+> We're good on this front. ACPI-future platforms aren't allowed to use
+> new features when booting an older kernel.
 
-for the 32 bits bus Matrix clock (h32mx clock):
+Do you mean ACPI-future firmware should not provide new information to
+older kernels? The firmware must not care which kernel version (not even
+which OS) runs on top. That's the whole point of an OS-agnostic
+standardisation body).
 
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall be the master clock source phandle.
-> +
-> +For example:
-> +	h32ck: h32mxck {
-> +		#clock-cells = <0>;
-> +		compatible = "atmel,sama5d4-clk-h32mx";
-> +		clocks = <&mck>;
-> +	};
-> +
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 6eb3c658761d..a2c8ecb10730 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -39,6 +39,9 @@ config AT91_SAM9_TIME
->  config HAVE_AT91_SMD
->  	bool
->  
-> +config HAVE_AT91_H64MX
+> ACPI has a mechanism to check version numbers.
 
-HAVE_AT91_H32MX
+I assume you are referring to the kernel checking of the ACPI version
+the tables are compatible with (acpi_parse_fadt() in patch 7/17 in the
+v3 series). With these patches, it currently assumes that it is
+compatible with anything 5.1 and later.
 
-> +	bool
-> +
->  config SOC_AT91SAM9
->  	bool
->  	select AT91_SAM9_TIME
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> index 4998aee59267..b2d43ff8112b 100644
-> --- a/drivers/clk/at91/Makefile
-> +++ b/drivers/clk/at91/Makefile
-> @@ -9,3 +9,4 @@ obj-y += clk-system.o clk-peripheral.o clk-programmable.o
->  obj-$(CONFIG_HAVE_AT91_UTMI)		+= clk-utmi.o
->  obj-$(CONFIG_HAVE_AT91_USB_CLK)		+= clk-usb.o
->  obj-$(CONFIG_HAVE_AT91_SMD)		+= clk-smd.o
-> +obj-$(CONFIG_HAVE_AT91_H64MX)		+= clk-h32mx.o
+> Similarly, when ACPI-future defines those states, the kernel shouldn't
+> expose them to an older platform.
 
-Ditto.
+When the kernel implements ACPI-future, all is fine, it should still be
+backwards compatible with 5.1.
 
-> diff --git a/drivers/clk/at91/clk-h32mx.c b/drivers/clk/at91/clk-h32mx.c
-> new file mode 100644
-> index 000000000000..21a2f3630a43
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-h32mx.c
-> @@ -0,0 +1,121 @@
-> +/*
-> + * drivers/clk/at91/clk-h32mx.c
-
-Not the whole path, please.
-
-> + *
-> + *  Copyright (C) 2014 Atmel
-> + *
-> + * Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91_pmc.h>
-> +#include <linux/delay.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/io.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
-> +#include <linux/sched.h>
-> +#include <linux/wait.h>
-> +
-> +#include "pmc.h"
-> +
-> +struct clk_sama5d4_h32mx {
-> +	struct clk_hw hw;
-> +	struct at91_pmc *pmc;
-> +};
-> +
-> +#define to_clk_sama5d4_h32mx(hw) container_of(hw, struct clk_sama5d4_h32mx, hw)
-> +
-> +static unsigned long clk_sama5d4_h32mx_recalc_rate(struct clk_hw *hw,
-> +						 unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +
-> +	if (pmc_read(h32mxclk->pmc, AT91_PMC_MCKR) & AT91_PMC_H32MXDIV)
-> +		return parent_rate / 2;
-> +
-> +	if (parent_rate > 90000000)
-
-A #define here?
-
-> +		pr_warn("H32 clock is too fast\n");
-
-H32MX
-
-> +	return parent_rate;
-> +}
-> +
-> +static long clk_sama5d4_h32mx_round_rate(struct clk_hw *hw, unsigned long rate,
-> +				       unsigned long *parent_rate)
-> +{
-> +	unsigned long div;
-> +
-> +	if (rate > *parent_rate)
-> +		return *parent_rate;
-> +	div = *parent_rate / 2;
-> +	if (rate < div)
-> +		return div;
-> +
-> +	if (rate - div < *parent_rate - rate)
-> +		return div;
-> +
-> +	return *parent_rate;
-> +}
-> +
-> +static int clk_sama5d4_h32mx_set_rate(struct clk_hw *hw, unsigned long rate,
-> +				    unsigned long parent_rate)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk = to_clk_sama5d4_h32mx(hw);
-> +	struct at91_pmc *pmc = h32mxclk->pmc;
-> +	u32 tmp;
-> +
-> +	if (parent_rate != rate && (parent_rate / 2) != rate)
-> +		return -EINVAL;
-> +
-> +	pmc_lock(pmc);
-> +	tmp = pmc_read(pmc, AT91_PMC_MCKR) & ~AT91_PMC_H32MXDIV;
-> +	if ((parent_rate / 2) == rate)
-> +		tmp |= AT91_PMC_H32MXDIV;
-> +	pmc_write(pmc, AT91_PMC_MCKR, tmp);
-> +	pmc_unlock(pmc);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct clk_ops h32mx_ops = {
-> +	.recalc_rate = clk_sama5d4_h32mx_recalc_rate,
-> +	.round_rate = clk_sama5d4_h32mx_round_rate,
-> +	.set_rate = clk_sama5d4_h32mx_set_rate,
-> +};
-> +
-> +void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +				     struct at91_pmc *pmc)
-> +{
-> +	struct clk_sama5d4_h32mx *h32mxclk;
-> +	struct clk_init_data init;
-> +	const char *parent_name;
-> +	struct clk *clk;
-> +
-> +	h32mxclk = kzalloc(sizeof(*h32mxclk), GFP_KERNEL);
-> +	if (!h32mxclk)
-> +		return;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +
-> +	init.name = np->name;
-> +	init.ops = &h32mx_ops;
-> +	init.parent_names = parent_name ? &parent_name : NULL;
-> +	init.num_parents = parent_name ? 1 : 0;
-> +	init.flags = CLK_SET_RATE_GATE;
-> +
-> +	h32mxclk->hw.init = &init;
-> +	h32mxclk->pmc = pmc;
-> +
-> +	clk = clk_register(NULL, &h32mxclk->hw);
-> +	if (!clk)
-> +		return;
-> +
-> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> diff --git a/drivers/clk/at91/pmc.c b/drivers/clk/at91/pmc.c
-> index 524196bb35a5..0d98b3f2b780 100644
-> --- a/drivers/clk/at91/pmc.c
-> +++ b/drivers/clk/at91/pmc.c
-> @@ -337,6 +337,12 @@ static const struct of_device_id pmc_clk_ids[] __initconst = {
->  		.data = of_at91sam9x5_clk_smd_setup,
->  	},
->  #endif
-> +#if defined(CONFIG_HAVE_AT91_H64MX)
-> +	{
-> +		.compatible = "atmel,sama5d4-clk-h32mx",
-> +		.data = of_sama5d4_clk_h32mx_setup,
-> +	},
-> +#endif
->  	{ /*sentinel*/ }
->  };
->  
-> diff --git a/drivers/clk/at91/pmc.h b/drivers/clk/at91/pmc.h
-> index 6c7625976113..52d2041fa3f6 100644
-> --- a/drivers/clk/at91/pmc.h
-> +++ b/drivers/clk/at91/pmc.h
-> @@ -120,4 +120,9 @@ extern void __init of_at91sam9x5_clk_smd_setup(struct device_node *np,
->  					       struct at91_pmc *pmc);
->  #endif
->  
-> +#if defined(CONFIG_HAVE_AT91_SMD)
-> +extern void __init of_sama5d4_clk_h32mx_setup(struct device_node *np,
-> +					      struct at91_pmc *pmc);
-> +#endif
-> +
->  #endif /* __PMC_H_ */
-> diff --git a/include/linux/clk/at91_pmc.h b/include/linux/clk/at91_pmc.h
-> index de4268d4987a..c8e3b3d1eded 100644
-> --- a/include/linux/clk/at91_pmc.h
-> +++ b/include/linux/clk/at91_pmc.h
-> @@ -125,6 +125,7 @@ extern void __iomem *at91_pmc_base;
->  #define		AT91_PMC_PLLADIV2	(1 << 12)		/* PLLA divisor by 2 [some SAM9 only] */
->  #define			AT91_PMC_PLLADIV2_OFF		(0 << 12)
->  #define			AT91_PMC_PLLADIV2_ON		(1 << 12)
-> +#define		AT91_PMC_H32MXDIV	BIT(24)
->  
->  #define	AT91_PMC_USB		0x38			/* USB Clock Register [some SAM9 only] */
->  #define		AT91_PMC_USBS		(0x1 <<  0)		/* USB OHCI Input clock selection */
+> > What if in a year time we get ACPI 5.2 or 6 (or an errata update)
+> > covering the S and C states for ARM? I would expect hardware vendors
+> > to take advantage and provide such information in ACPI tables. Can we
+> > guarantee that a kernel with the current ACPI patches wouldn't blow up
+> > when it tries to interpret the new tables?
 > 
+> Yes - at least as much as we can guarantee anything in systems
+> programming.
 
-Best regards,
+No, we don't. Once you define some sleep states in ACPI-future and
+the firmware provides such tables to an older kernel, it is possible
+that the current (x86-centric) ACPI sleep code will fault. Just look at
+the acpi_suspend_enter() (and you also seemed OK to define
+ACPI_FLUSH_CPU_CACHE as BUG).
+
+Even if v4 of these patches removed the sleep code, given uncertainties
+like above I'm thinking more and more that we should actually make the
+acpi_parse_fadt() version check succeed only on ACPI 5.1 and no later
+version (apart from ACPI sleep, is there anything else we would expect
+to blow up when additional information is provided via ACPI-future
+tables?).
+
 -- 
-Nicolas Ferre
+Catalin
+
