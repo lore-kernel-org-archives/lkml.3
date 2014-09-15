@@ -1,148 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759550AbaIOWrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:47:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51084 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758174AbaIOWSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:18:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/187] sparc64: Guard against flushing openfirmware mappings.
-Date: Mon, 15 Sep 2014 15:07:20 -0700
-Message-Id: <1410818997-9432-31-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1759566AbaIOWro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:47:44 -0400
+Received: from mga01.intel.com ([192.55.52.88]:64143 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758174AbaIOWrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:47:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="386502021"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>,
+        Vince Weaver <vincent.weaver@maine.edu>, jolsa@redhat.com
+Subject: [PATCH] Add some documentation on the perf sysfs ABI interface
+Date: Mon, 15 Sep 2014 15:47:20 -0700
+Message-Id: <1410821240-30334-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+From: Andi Kleen <ak@linux.intel.com>
 
-------------------
+Initial attempt of documenting the perf sysfs interface as
+an ABI. I also added some additional pointers hopefully useful
+to the users. Comments welcome.
 
-From: "David S. Miller" <davem@davemloft.net>
-
-[ Upstream commit 4ca9a23765da3260058db3431faf5b4efd8cf926 ]
-
-Based almost entirely upon a patch by Christopher Alexander Tobias
-Schulze.
-
-In commit db64fe02258f1507e13fe5212a989922323685ce ("mm: rewrite vmap
-layer") lazy VMAP tlb flushing was added to the vmalloc layer.  This
-causes problems on sparc64.
-
-Sparc64 has two VMAP mapped regions and they are not contiguous with
-eachother.  First we have the malloc mapping area, then another
-unrelated region, then the vmalloc region.
-
-This "another unrelated region" is where the firmware is mapped.
-
-If the lazy TLB flushing logic in the vmalloc code triggers after
-we've had both a module unload and a vfree or similar, it will pass an
-address range that goes from somewhere inside the malloc region to
-somewhere inside the vmalloc region, and thus covering the
-openfirmware area entirely.
-
-The sparc64 kernel learns about openfirmware's dynamic mappings in
-this region early in the boot, and then services TLB misses in this
-area.  But openfirmware has some locked TLB entries which are not
-mentioned in those dynamic mappings and we should thus not disturb
-them.
-
-These huge lazy TLB flush ranges causes those openfirmware locked TLB
-entries to be removed, resulting in all kinds of problems including
-hard hangs and crashes during reboot/reset.
-
-Besides causing problems like this, such huge TLB flush ranges are
-also incredibly inefficient.  A plea has been made with the author of
-the VMAP lazy TLB flushing code, but for now we'll put a safety guard
-into our flush_tlb_kernel_range() implementation.
-
-Since the implementation has become non-trivial, stop defining it as a
-macro and instead make it a function in a C source file.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Cc: jolsa@redhat.com
+v2: Various fixes. Fix cmask/inv (Stephane) Fixes from Randy Dunlap.
+v3: Fix typo (Jiri).
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/sparc/include/asm/tlbflush_64.h | 12 ++----------
- arch/sparc/mm/init_64.c              | 23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 10 deletions(-)
+ Documentation/ABI/stable/sysfs-devices-perf | 99 +++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/ABI/stable/sysfs-devices-perf
 
-diff --git a/arch/sparc/include/asm/tlbflush_64.h b/arch/sparc/include/asm/tlbflush_64.h
-index 3c3c89f..7f9bab2 100644
---- a/arch/sparc/include/asm/tlbflush_64.h
-+++ b/arch/sparc/include/asm/tlbflush_64.h
-@@ -34,6 +34,8 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
- {
- }
- 
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end);
+diff --git a/Documentation/ABI/stable/sysfs-devices-perf b/Documentation/ABI/stable/sysfs-devices-perf
+new file mode 100644
+index 0000000..73693e7
+--- /dev/null
++++ b/Documentation/ABI/stable/sysfs-devices-perf
+@@ -0,0 +1,99 @@
++Perf events enumeration in sysfs
 +
- #define __HAVE_ARCH_ENTER_LAZY_MMU_MODE
- 
- extern void flush_tlb_pending(void);
-@@ -48,11 +50,6 @@ extern void __flush_tlb_kernel_range(unsigned long start, unsigned long end);
- 
- #ifndef CONFIG_SMP
- 
--#define flush_tlb_kernel_range(start,end) \
--do {	flush_tsb_kernel_range(start,end); \
--	__flush_tlb_kernel_range(start,end); \
--} while (0)
--
- static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr)
- {
- 	__flush_tlb_page(CTX_HWBITS(mm->context), vaddr);
-@@ -63,11 +60,6 @@ static inline void global_flush_tlb_page(struct mm_struct *mm, unsigned long vad
- extern void smp_flush_tlb_kernel_range(unsigned long start, unsigned long end);
- extern void smp_flush_tlb_page(struct mm_struct *mm, unsigned long vaddr);
- 
--#define flush_tlb_kernel_range(start, end) \
--do {	flush_tsb_kernel_range(start,end); \
--	smp_flush_tlb_kernel_range(start, end); \
--} while (0)
--
- #define global_flush_tlb_page(mm, vaddr) \
- 	smp_flush_tlb_page(mm, vaddr)
- 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 16b61aa..e275cde 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2701,3 +2701,26 @@ void hugetlb_setup(struct pt_regs *regs)
- 	}
- }
- #endif
++The perf events subsystem exports the format of hardware performance
++counter events supported by perf events. The events can be accessed
++using the perf_event_open() syscall. Each perf directory in devices
++represents a distinct PMU (Performance Monitoring Unit), but not all
++directories in this directory are perf directories.
 +
-+#ifdef CONFIG_SMP
-+#define do_flush_tlb_kernel_range	smp_flush_tlb_kernel_range
-+#else
-+#define do_flush_tlb_kernel_range	__flush_tlb_kernel_range
-+#endif
++What: /sys/devices/*/format/*
++Description:
 +
-+void flush_tlb_kernel_range(unsigned long start, unsigned long end)
-+{
-+	if (start < HI_OBP_ADDRESS && end > LOW_OBP_ADDRESS) {
-+		if (start < LOW_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(start, LOW_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
-+		}
-+		if (end > HI_OBP_ADDRESS) {
-+			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
-+			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+		}
-+	} else {
-+		flush_tsb_kernel_range(start, end);
-+		do_flush_tlb_kernel_range(start, end);
-+	}
-+}
++Each file in format describes how to fill in an event attribute on the
++current CPU for the perf_event_open syscall.  Multiple event
++attributes may be overlapping and only be valid for some combination
++of attributes (for example only for some event/umask combinations).
++Most attributes are optional.
++
++Each field may have the following contents:
++
++CONFIG:START-END      Field consists of bits START-END in the perf_event_attr
++		      CONFIG field
++		      XXX is END one beyond?
++CONFIG:BIT	      Field consists of a single bit with index BIT in
++		      CONFIG field
++
++Valid CONFIG fields are config, config1, config2. These map to the respective
++64bit words in struct perf_event_attr.
++
++Typical attributes on a x86 platform
++
++event		Set the 8 bit event code (required)
++umask		Set the 8 bit umask. Event code and umask together select a
++		hardware event.
++cmask		Set the 8 bit counter Mask. Only increment counters when at
++		least cmask events happen during the same cycle.
++inv		(1bit flag) Invert the cmask condition. Only valid with
++		cmask>0.
++edge		(1bit flag) Only increment the event when the condition
++		changes (starts happening)
++any		(1bit flag) Count on both threads of a core
++pc		(1bit flag) Toggle the PMi pins when the condition happens
++
++Attributes available on some x86 platforms:
++
++in_tx		(1bit flag) Only count in a hardware transaction.
++in_tx_cp	(1bit flag) Undo counts inside transaction when the
++		transaction aborts.
++ldlat		Set the load-use latency threshold for sampling loads.
++		Note this is a load-use latency so includes pipeline delays.
++offcore_rsp     Set an extra mask qualifying the type of offcore access.
++		Only with OFFCORE_RESPONSE events. The actual mask is CPU model
++		specific.
++
++For more details on the x86 attributes on Intel platforms please see
++http://www.intel.com/sdm Volume 3, Chapter 18 and 19.  For more
++details on the perf_event_attr struct please see the perf_event_open
++manpage and include/uapi/linux/perf_event.h.
++
++What: /sys/devices/*/events/*
++Description:
++
++Describe predefined events available in the CPU. Each file describes an event.
++The format is attr=0xHEXNUM{,attr=0xHEXNUM}. Each attr is described in a config
++file. Together all the attributes can be used to set up a valid event for the
++perf_event_open syscall.
++
++Typically only a small subset of the CPU events is described in sysfs.
++Some more events are available through predefined classes in perf_event_attr.
++Even more events require filling in CPU specific values. The libraries referenced
++below provide larger event lists.
++
++What: /sys/devices/*/type
++Description:
++
++Decimal number: The PMU type to fill into perf_event_attr in the
++type field to select the correct PMU.
++
++What: /sys/devices/*/perf_event_mux_interval_ms
++Description:
++
++Decimal number: Set the counter multiplexing interval in ms. When more
++events are active than the hardware directly supports perf events
++multiplexes the event. By default (value 0) this is done on timer interrupts
++(depending on the CONFIG_HZ setting) and not done while idle. This
++allows to set a different frequency. Note that setting this to non 0
++may impact idle time, as the event switches will wake up the CPUs now.
++
++What: /sys/devices/*/rdpmc
++Description:
++
++[x86] Decimal number: When 1, allow the RDPMC instruction in user space
++to read performance events that have been set up with perf. When 0
++ring 3 RDPMC access is disallowed.
++
++Users: perf (tools/perf/*)
++The following libraries provide more user friendly interfaces:
++       PAPI (http://icl.cs.utk.edu/papi/)
++       libpfm4 (http://perfmon2.sourceforge.net/)
++       jevents (http://github.com/andikleen/pmu-tools)
 -- 
-1.9.1
+1.9.3
 
