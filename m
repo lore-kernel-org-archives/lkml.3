@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaIOJ7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 05:59:33 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:5987 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753571AbaIOJ7b convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 05:59:31 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-CC: "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Mon, 15 Sep 2014 17:59:27 +0800
-Subject: RE: [RFC] arm:extend the reserved mrmory for initrd to be page
-	aligned
-Thread-Topic: [RFC] arm:extend the reserved mrmory for initrd to be page
-	aligned
-Thread-Index: Ac/Qx7JtuLhS+rS3QNC767QJQsQoPgAA9jzw
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB491605@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB4915FC@CNBJMBX05.corpusers.net>
- <20140915084616.GX12361@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103D6DB491604@CNBJMBX05.corpusers.net>
- <20140915093014.GZ12361@n2100.arm.linux.org.uk>
-In-Reply-To: <20140915093014.GZ12361@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753877AbaIOKAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:00:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36664 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753367AbaIOKAk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 06:00:40 -0400
+Date: Mon, 15 Sep 2014 12:00:36 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Peter Chen <Peter.Chen@freescale.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kishon@ti.com" <kishon@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "sergei.shtylyov@cogentembedded.com" 
+	<sergei.shtylyov@cogentembedded.com>,
+        "yoshihiro.shimoda.uh@renesas.com" <yoshihiro.shimoda.uh@renesas.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "zmxu@marvell.com" <zmxu@marvell.com>,
+        "jszhang@marvell.com" <jszhang@marvell.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 7/9] usb: rename transceiver and phy to usb_phy in
+ ChipIdea
+Message-ID: <20140915100036.GA8254@kwain>
+References: <1409730040-14200-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1409730040-14200-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140911002858.GC3609@peterchendt>
+ <20140912135319.GE18774@kwain>
+ <32020f4ba5294d75811263cbb716948b@BN1PR0301MB0772.namprd03.prod.outlook.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <32020f4ba5294d75811263cbb716948b@BN1PR0301MB0772.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-Add more log:
-<4>[    0.000000] INITRD unalign phys address:0x02000000+0x0022fb0e
-<4>[    0.000000] INITRD aligned phys address:0x02000000+0x00230000
-<4>[    0.574868] free_initrd: free initrd 0xc2000000+0xc222fb0e
-<4>[    0.579398] free_initrd_mem: free pfn:8192---8752
-
-The inird used memory is still the same as the one passed by bootloads,
-I don't change it. It should be safe.
-
-
------Original Message-----
-From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk] 
-Sent: Monday, September 15, 2014 5:30 PM
-To: Wang, Yalin
-Cc: 'Will Deacon'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-mm@kvack.org'; linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC] arm:extend the reserved mrmory for initrd to be page aligned
-
-On Mon, Sep 15, 2014 at 05:07:53PM +0800, Wang, Yalin wrote:
-> Hi
+On Sat, Sep 13, 2014 at 06:27:06AM +0000, Peter Chen wrote:
+>  
+> > On Thu, Sep 11, 2014 at 08:28:59AM +0800, Peter Chen wrote:
+> > > On Wed, Sep 03, 2014 at 09:40:38AM +0200, Antoine Tenart wrote:
+> > >
+> > > Again, rebase my next-tree, and modify the msm part.
+> > 
+> > git://github.com/hzpeterchen/linux-usb.git ci-for-usb-next ?
+> > 
 > 
-> I tested it on my phone,
-> >From log:
-> <4>[    0.000000] INITRD unalign phys address:0x02000000+0x0022fb0e
-> <4>[    0.000000] INITRD aligned phys address:0x02000000+0x00230000
+> Yes.
 > 
-> <4>[    0.579474] free_initrd_mem: free pfn:8192---8752
-> 
-> The tail address is not aligned for most initrd image, This page will 
-> not be freed and lost .
+> > I can do that. But that would be easier if you rebased this branch on top of at
+> > least v3.17-rc1 so that other series depending on this one could be tested easily
+> > (like my other series introducing the USB support for Marvell Berlin).
+> > 
+> > Antoine
+>  
+> Done 
 
-Right, so from this I can assume that you only tested it by seeing what the addresses were, and the values used in free_initrd_mem().
+Thanks! I'll send a new version today then.
 
-What you haven't tested is whether the initrd actually gets used with your changes, which is more what I was interested in given what I found when reading your patch.
+Antoine
 
---
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up according to speedtest.net.
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
