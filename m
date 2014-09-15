@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaIOCbJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:31:09 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51670 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbaIOCbI (ORCPT
+	id S1753318AbaIOCcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:32:52 -0400
+Received: from mail-bl2on0142.outbound.protection.outlook.com ([65.55.169.142]:28832
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753244AbaIOCcu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:31:08 -0400
-X-Original-SENDERIP: 10.177.220.159
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 15 Sep 2014 11:31:06 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/4] mm/page_alloc: fix incorrect isolation
- behavior by rechecking migratetype
-Message-ID: <20140915023106.GD2676@js1304-P5Q-DELUXE>
-References: <1409040498-10148-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1409040498-10148-2-git-send-email-iamjoonsoo.kim@lge.com>
- <540D6961.8060209@suse.cz>
+	Sun, 14 Sep 2014 22:32:50 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Sep 2014 22:32:49 EDT
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "peter.griffin@linaro.org" <peter.griffin@linaro.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "laurent.pinchart@ideasonboard.com" 
+	<laurent.pinchart@ideasonboard.com>,
+        "robdclark@gmail.com" <robdclark@gmail.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
+Thread-Topic: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
+Thread-Index: AQHPyMvaWBifoj9+nk+GtZ+aL5BNi5v9R9mAgAQ5dcA=
+Date: Mon, 15 Sep 2014 02:17:24 +0000
+Message-ID: <d94bf53d85884b4da0fb4da3041e5742@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1409892517-29816-1-git-send-email-Li.Xiubo@freescale.com>
+ <5412BE19.2010302@ti.com>
+In-Reply-To: <5412BE19.2010302@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+x-forefront-prvs: 03355EE97E
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(6029001)(24454002)(479174003)(199003)(51704005)(189002)(164054003)(31966008)(86362001)(74502001)(108616004)(106356001)(106116001)(85306004)(110136001)(74662001)(74316001)(85852003)(81542001)(101416001)(76576001)(83072002)(21056001)(33646002)(105586002)(90102001)(87936001)(46102001)(79102001)(92566001)(99396002)(107046002)(76482001)(20776003)(95666004)(2656002)(66066001)(64706001)(81342001)(80022001)(99286002)(4396001)(97736003)(54356999)(76176999)(50986999)(19580395003)(19580405001)(77982001)(83322001)(77096002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0613;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <540D6961.8060209@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 10:31:29AM +0200, Vlastimil Babka wrote:
-> On 08/26/2014 10:08 AM, Joonsoo Kim wrote:
+Hi Tomi,
+
+Thanks very much for your comments.
+
+
+> Subject: Re: [PATCH] fbdev: fsl-sii902x: HDMI support for Freescale SoCs
 > 
-> >diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> >index f86023b..51e0d13 100644
-> >--- a/mm/page_alloc.c
-> >+++ b/mm/page_alloc.c
-> >@@ -740,9 +740,15 @@ static void free_one_page(struct zone *zone,
-> >  	if (nr_scanned)
-> >  		__mod_zone_page_state(zone, NR_PAGES_SCANNED, -nr_scanned);
+> Hi,
+> 
+> On 05/09/14 07:48, Xiubo Li wrote:
+> > Some Freescale SoCs, there has an DVI/HDMI controller and a PHY,
+> > attached to one of their display controller unit's LCDC interfaces.
+> > This patch adds a preliminary static support for such controllers.
 > >
-> >+	if (unlikely(has_isolate_pageblock(zone))) {
-> >+		migratetype = get_pfnblock_migratetype(page, pfn);
-> >+		if (is_migrate_isolate(migratetype))
-> >+			goto skip_counting;
-> >+	}
-> >+	__mod_zone_freepage_state(zone, 1 << order, migratetype);
-> >+
-> >+skip_counting:
+> > This will support for many modes and a dynamic switching between
+> > them.
+> >
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > ---
+> >  .../devicetree/bindings/video/fsl-sii902x.txt      |  17 +
+> >  drivers/video/fbdev/Kconfig                        |   7 +
+> >  drivers/video/fbdev/Makefile                       |   1 +
+> >  drivers/video/fbdev/fsl-sii902x.c                  | 526
+> +++++++++++++++++++++
+> >  4 files changed, 551 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/video/fsl-sii902x.txt
+> >  create mode 100644 drivers/video/fbdev/fsl-sii902x.c
 > 
-> Here, wouldn't a simple 'else __mod_zone_freepage_state...' look
-> better than goto + label? (same for the following 2 patches). Or
-> does that generate worse code?
+> I don't know how you picked the names of the people you sent this patch
+> to, but looks to me that most of them are probably not interested in
+> this patch.
+> 
 
-To remove goto label, we need two __mod_zone_freepage_state() like
-as below. On my system, it doesn't generate worse code, but, I am not
-sure that this is true if more logic would be added. I think that
-goto + label is better.
+I just using the get_maintainer.pl script.
 
-+	if (unlikely(has_isolate_pageblock(zone))) {
-+		migratetype = get_pfnblock_migratetype(page, pfn);
-+               if (!is_migrate_isolate(migratetype))
-+                       __mod_zone_freepage_state(zone, 1 << order, migratetype);
-+       } else {
-+               __mod_zone_freepage_state(zone, 1 << order, migratetype);
-        }
 
-Anyway, What do you think which one is better, either v2 or v3? Still, v3? :)
+> Anyway, a few quick comments on the patch:
+> 
+> - You should probably use regmap instead of direct i2c calls.
+> Interestingly, you define regmap variable, but you never use it.
 
-Thanks.
+Yes, this it's my another version in my local machine using regmap which
+need much more test.
+
+> - Use defines for register offsets, instead of magic numbers.
+
+This will be fixed together with regmap using.
+
+> - You should not use static variables. They prevent having multiple
+> instances of the device.
+> 
+
+Okay.
+
+> So the SiI902x chip is on the SoC, not on the board? And it's a plain
+> standard SiI902x in other aspects?
+> 
+
+No, it's on board.
+
+And it will be used for i.MX and LS1+ platforms.
+
+Thanks,
+
+BRs
+Xiubo
