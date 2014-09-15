@@ -1,55 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006AbaIOWSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:18:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51125 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932954AbaIOWS0 (ORCPT
+	id S933042AbaIOWSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:18:45 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:61284 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933008AbaIOWSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:18:26 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 041/187] x86, espfix: Fix broken header guard
-Date: Mon, 15 Sep 2014 15:07:31 -0700
-Message-Id: <1410818997-9432-42-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:18:33 -0400
+Date: Mon, 15 Sep 2014 23:18:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, IIO <linux-iio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH v3 1/5] mfd/axp20x: rename files to support more devices
+Message-ID: <20140915221827.GA25162@lee--X1>
+References: <1410477357-6407-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1410477357-6407-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <5414A264.8090100@kernel.org>
+ <20140915092817.071fd722@ultegra>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140915092817.071fd722@ultegra>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 15 Sep 2014, Jacob Pan wrote:
 
-------------------
+> On Sat, 13 Sep 2014 21:00:36 +0100
+> Jonathan Cameron <jic23@kernel.org> wrote:
+> 
+> > On 12/09/14 00:15, Jacob Pan wrote:
+> > > More XPowers PMIC devices can be supported by extending this
+> > > driver, so rename it to axp2xx to cover axp288 variant.
+> > > 
+> > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > I'm not sure this rename is a good idea (or the original wild
+> > card was for that matter).
+> > 
+> > For example, just a quick look at the xpowers website shows there is
+> > a AXP228 which just got swept up by the name change.
+> > 
+> > Best plan, in my view, is to always name a driver after an individual
+> > part it supports and rely on Kconfig description to say what else is
+> > supported. Bit late here, but perhaps best not to make things worse!
+> > > ---
+> OK. I agree with this plan to keep axp20x name and modify Kconfig
+> description.
+> 
+> Lee is that OK with you? please help to make a decision here.
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+I have no strong opinion either way.
 
-commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
+> > >  drivers/mfd/Kconfig                      | 7 ++++---
+> > >  drivers/mfd/Makefile                     | 2 +-
+> > >  drivers/mfd/{axp20x.c => axp2xx.c}       | 6 +++---
+> > >  include/linux/mfd/{axp20x.h => axp2xx.h} | 6 +++---
+> > >  4 files changed, 11 insertions(+), 10 deletions(-)
+> > >  rename drivers/mfd/{axp20x.c => axp2xx.c} (97%)
+> > >  rename include/linux/mfd/{axp20x.h => axp2xx.h} (98%)
+> > > 
+> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > > index de5abf2..42a70a3 100644
+> > > --- a/drivers/mfd/Kconfig
+> > > +++ b/drivers/mfd/Kconfig
+> > > @@ -67,14 +67,15 @@ config MFD_BCM590XX
+> > >  	help
+> > >  	  Support for the BCM590xx PMUs from Broadcom
+> > >  
+> > > -config MFD_AXP20X
+> > > -	bool "X-Powers AXP20X"
+> > > +config MFD_AXP2XX
+> > > +	bool "X-Powers AXP2XX"
+> > >  	select MFD_CORE
+> > >  	select REGMAP_I2C
+> > >  	select REGMAP_IRQ
+> > >  	depends on I2C=y
+> > >  	help
+> > > -	  If you say Y here you get support for the X-Powers
+> > > AXP202 and AXP209.
+> > > +	  If you say Y here you get support for the X-Powers
+> > > AXP202, AXP209 and
+> > > +	  AXP288 power management IC (PMIC).
+> > >  	  This driver include only the core APIs. You have to
+> > > select individual components like regulators or the PEK (Power
+> > > Enable Key) under the corresponding menus.
+> > > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > > index 3fcfdfc..8d0beb2 100644
+> > > --- a/drivers/mfd/Makefile
+> > > +++ b/drivers/mfd/Makefile
+> > > @@ -103,7 +103,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-irq.o
+> > >  obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+> > >  obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+> > >  obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+> > > -obj-$(CONFIG_MFD_AXP20X)	+= axp20x.o
+> > > +obj-$(CONFIG_MFD_AXP2XX)	+= axp2xx.o
+> > >  
+> > >  obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+> > >  obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+> > > diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp2xx.c
+> > > similarity index 97%
+> > > rename from drivers/mfd/axp20x.c
+> > > rename to drivers/mfd/axp2xx.c
+> > > index dee6539..332a8a0 100644
+> > > --- a/drivers/mfd/axp20x.c
+> > > +++ b/drivers/mfd/axp2xx.c
+> > > @@ -1,7 +1,7 @@
+> > >  /*
+> > > - * axp20x.c - MFD core driver for the X-Powers AXP202 and AXP209
+> > > + * axp2xx.c - MFD core driver for the X-Powers AXP202 and AXP209
+> > >   *
+> > > - * AXP20x comprises an adaptive USB-Compatible PWM charger, 2 BUCK
+> > > DC-DC
+> > > + * AXP2xx comprises an adaptive USB-Compatible PWM charger, 2 BUCK
+> > > DC-DC
+> > >   * converters, 5 LDOs, multiple 12-bit ADCs of voltage, current
+> > > and temperature
+> > >   * as well as 4 configurable GPIOs.
+> > >   *
+> > > @@ -21,7 +21,7 @@
+> > >  #include <linux/regmap.h>
+> > >  #include <linux/slab.h>
+> > >  #include <linux/regulator/consumer.h>
+> > > -#include <linux/mfd/axp20x.h>
+> > > +#include <linux/mfd/axp2xx.h>
+> > >  #include <linux/mfd/core.h>
+> > >  #include <linux/of_device.h>
+> > >  #include <linux/of_irq.h>
+> > > diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp2xx.h
+> > > similarity index 98%
+> > > rename from include/linux/mfd/axp20x.h
+> > > rename to include/linux/mfd/axp2xx.h
+> > > index d0e31a2..a36d91b 100644
+> > > --- a/include/linux/mfd/axp20x.h
+> > > +++ b/include/linux/mfd/axp2xx.h
+> > > @@ -8,8 +8,8 @@
+> > >   * published by the Free Software Foundation.
+> > >   */
+> > >  
+> > > -#ifndef __LINUX_MFD_AXP20X_H
+> > > -#define __LINUX_MFD_AXP20X_H
+> > > +#ifndef __LINUX_MFD_AXP2XX_H
+> > > +#define __LINUX_MFD_AXP2XX_H
+> > >  
+> > >  enum {
+> > >  	AXP202_ID = 0,
+> > > @@ -177,4 +177,4 @@ struct axp20x_dev {
+> > >  	long				variant;
+> > >  };
+> > >  
+> > > -#endif /* __LINUX_MFD_AXP20X_H */
+> > > +#endif /* __LINUX_MFD_AXP2XX_H */
+> > > 
+> 
+> [Jacob Pan]
 
-Header guard is #ifndef, not #ifdef...
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/include/asm/espfix.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/include/asm/espfix.h b/arch/x86/include/asm/espfix.h
-index 729051c..99efebb 100644
---- a/arch/x86/include/asm/espfix.h
-+++ b/arch/x86/include/asm/espfix.h
-@@ -1,4 +1,4 @@
--#ifdef _ASM_X86_ESPFIX_H
-+#ifndef _ASM_X86_ESPFIX_H
- #define _ASM_X86_ESPFIX_H
- 
- #ifdef CONFIG_X86_64
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
