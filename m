@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605AbaIOTvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:51:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
+	id S1756591AbaIOTvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:51:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756348AbaIOTr0 (ORCPT
+	with ESMTP id S1756351AbaIOTr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Hao <haokexin@gmail.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 65/71] mtd/ftl: fix the double free of the buffers allocated in build_maps()
-Date: Mon, 15 Sep 2014 12:27:03 -0700
-Message-Id: <20140915192640.864803257@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.10 66/71] mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
+Date: Mon, 15 Sep 2014 12:27:04 -0700
+Message-Id: <20140915192640.897692100@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,98 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hao <haokexin@gmail.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit a152056c912db82860a8b4c23d0bd3a5aa89e363 upstream.
+commit 40ddbf5069bd4e11447c0088fc75318e0aac53f0 upstream.
 
-I got the following panic on my fsl p5020ds board.
+commit 65b97cf6b8de introduced in v3.7 caused a regression
+by using a reversed CS_MASK thus causing omap_calculate_ecc to
+always fail. As the NAND base driver never checks for .calculate()'s
+return value, the zeroed ECC values are used as is without showing
+any error to the user. However, this won't work and the NAND device
+won't be guarded by any error code.
 
-  Unable to handle kernel paging request for data at address 0x7375627379737465
-  Faulting instruction address: 0xc000000000100778
-  Oops: Kernel access of bad area, sig: 11 [#1]
-  SMP NR_CPUS=24 CoreNet Generic
-  Modules linked in:
-  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-next-20140613 #145
-  task: c0000000fe080000 ti: c0000000fe088000 task.ti: c0000000fe088000
-  NIP: c000000000100778 LR: c00000000010073c CTR: 0000000000000000
-  REGS: c0000000fe08aa00 TRAP: 0300   Not tainted  (3.15.0-next-20140613)
-  MSR: 0000000080029000 <CE,EE,ME>  CR: 24ad2e24  XER: 00000000
-  DEAR: 7375627379737465 ESR: 0000000000000000 SOFTE: 1
-  GPR00: c0000000000c99b0 c0000000fe08ac80 c0000000009598e0 c0000000fe001d80
-  GPR04: 00000000000000d0 0000000000000913 c000000007902b20 0000000000000000
-  GPR08: c0000000feaae888 0000000000000000 0000000007091000 0000000000200200
-  GPR12: 0000000028ad2e28 c00000000fff4000 c0000000007abe08 0000000000000000
-  GPR16: c0000000007ab160 c0000000007aaf98 c00000000060ba68 c0000000007abda8
-  GPR20: c0000000007abde8 c0000000feaea6f8 c0000000feaea708 c0000000007abd10
-  GPR24: c000000000989370 c0000000008c6228 00000000000041ed c0000000fe00a400
-  GPR28: c00000000017c1cc 00000000000000d0 7375627379737465 c0000000fe001d80
-  NIP [c000000000100778] .__kmalloc_track_caller+0x70/0x168
-  LR [c00000000010073c] .__kmalloc_track_caller+0x34/0x168
-  Call Trace:
-  [c0000000fe08ac80] [c00000000087e6b8] uevent_sock_list+0x0/0x10 (unreliable)
-  [c0000000fe08ad20] [c0000000000c99b0] .kstrdup+0x44/0x90
-  [c0000000fe08adc0] [c00000000017c1cc] .__kernfs_new_node+0x4c/0x130
-  [c0000000fe08ae70] [c00000000017d7e4] .kernfs_new_node+0x2c/0x64
-  [c0000000fe08aef0] [c00000000017db00] .kernfs_create_dir_ns+0x34/0xc8
-  [c0000000fe08af80] [c00000000018067c] .sysfs_create_dir_ns+0x58/0xcc
-  [c0000000fe08b010] [c0000000002c711c] .kobject_add_internal+0xc8/0x384
-  [c0000000fe08b0b0] [c0000000002c7644] .kobject_add+0x64/0xc8
-  [c0000000fe08b140] [c000000000355ebc] .device_add+0x11c/0x654
-  [c0000000fe08b200] [c0000000002b5988] .add_disk+0x20c/0x4b4
-  [c0000000fe08b2c0] [c0000000003a21d4] .add_mtd_blktrans_dev+0x340/0x514
-  [c0000000fe08b350] [c0000000003a3410] .mtdblock_add_mtd+0x74/0xb4
-  [c0000000fe08b3e0] [c0000000003a32cc] .blktrans_notify_add+0x64/0x94
-  [c0000000fe08b470] [c00000000039b5b4] .add_mtd_device+0x1d4/0x368
-  [c0000000fe08b520] [c00000000039b830] .mtd_device_parse_register+0xe8/0x104
-  [c0000000fe08b5c0] [c0000000003b8408] .of_flash_probe+0x72c/0x734
-  [c0000000fe08b750] [c00000000035ba40] .platform_drv_probe+0x38/0x84
-  [c0000000fe08b7d0] [c0000000003599a4] .really_probe+0xa4/0x29c
-  [c0000000fe08b870] [c000000000359d3c] .__driver_attach+0x100/0x104
-  [c0000000fe08b900] [c00000000035746c] .bus_for_each_dev+0x84/0xe4
-  [c0000000fe08b9a0] [c0000000003593c0] .driver_attach+0x24/0x38
-  [c0000000fe08ba10] [c000000000358f24] .bus_add_driver+0x1c8/0x2ac
-  [c0000000fe08bab0] [c00000000035a3a4] .driver_register+0x8c/0x158
-  [c0000000fe08bb30] [c00000000035b9f4] .__platform_driver_register+0x6c/0x80
-  [c0000000fe08bba0] [c00000000084e080] .of_flash_driver_init+0x1c/0x30
-  [c0000000fe08bc10] [c000000000001864] .do_one_initcall+0xbc/0x238
-  [c0000000fe08bd00] [c00000000082cdc0] .kernel_init_freeable+0x188/0x268
-  [c0000000fe08bdb0] [c0000000000020a0] .kernel_init+0x1c/0xf7c
-  [c0000000fe08be30] [c000000000000884] .ret_from_kernel_thread+0x58/0xd4
-  Instruction dump:
-  41bd0010 480000c8 4bf04eb5 60000000 e94d0028 e93f0000 7cc95214 e8a60008
-  7fc9502a 2fbe0000 419e00c8 e93f0022 <7f7e482a> 39200000 88ed06b2 992d06b2
-  ---[ end trace b4c9a94804a42d40 ]---
+Fix the issue by using the correct mask.
 
-It seems that the corrupted partition header on my mtd device triggers
-a bug in the ftl. In function build_maps() it will allocate the buffers
-needed by the mtd partition, but if something goes wrong such as kmalloc
-failure, mtd read error or invalid partition header parameter, it will
-free all allocated buffers and then return non-zero. In my case, it
-seems that partition header parameter 'NumTransferUnits' is invalid.
+Code was tested on omap3beagle using the following procedure
+- flash the primary bootloader (MLO) from the kernel to the first
+NAND partition using nandwrite.
+- boot the board from NAND. This utilizes OMAP ROM loader that
+relies on 1-bit Hamming code ECC.
 
-And the ftl_freepart() is a function which free all the partition
-buffers allocated by build_maps(). Given the build_maps() is a self
-cleaning function, so there is no need to invoke this function even
-if build_maps() return with error. Otherwise it will causes the
-buffers to be freed twice and then weird things would happen.
+Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
 
-Signed-off-by: Kevin Hao <haokexin@gmail.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ftl.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mtd/nand/omap2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/ftl.c
-+++ b/drivers/mtd/ftl.c
-@@ -1075,7 +1075,6 @@ static void ftl_add_mtd(struct mtd_blktr
- 			return;
- 	}
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -948,7 +948,7 @@ static int omap_calculate_ecc(struct mtd
+ 	u32 val;
  
--	ftl_freepart(partition);
- 	kfree(partition);
- }
+ 	val = readl(info->reg.gpmc_ecc_config);
+-	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
++	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
+ 		return -EINVAL;
  
+ 	/* read ecc result */
 
 
