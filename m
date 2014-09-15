@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184AbaIOQiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:38:04 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33675 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772AbaIOQiB (ORCPT
+	id S1753944AbaIOQmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:42:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35278 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772AbaIOQmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:38:01 -0400
-Date: Mon, 15 Sep 2014 12:37:55 -0400 (EDT)
-Message-Id: <20140915.123755.1868053059646672094.davem@davemloft.net>
-To: santosh.shilimkar@ti.com
-Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        grant.likely@linaro.org, devicetree@vger.kernel.org, sandeep_n@ti.com,
-        jhs@mojatatu.com
-Subject: Re: [PATCH v3 2/3] net: Add Keystone NetCP ethernet driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410638839-14792-3-git-send-email-santosh.shilimkar@ti.com>
-References: <1410638839-14792-1-git-send-email-santosh.shilimkar@ti.com>
-	<1410638839-14792-3-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 09:38:01 -0700 (PDT)
+	Mon, 15 Sep 2014 12:42:11 -0400
+Message-ID: <541716DC.9020904@linutronix.de>
+Date: Mon, 15 Sep 2014 18:42:04 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Frans Klaver <frans.klaver@xsens.com>
+CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, tony@atomide.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        linux-serial@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5411967A.6090406@hurleysoftware.com> <54119AAA.9080907@linutronix.de> <20140911151114.GD28458@ci00147.xsens-tech.local> <5411C810.7070906@linutronix.de> <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com> <54129F6C.7040508@linutronix.de> <20140912094010.GE28458@ci00147.xsens-tech.local> <5412C21A.8020203@linutronix.de> <20140912102816.GF28458@ci00147.xsens-tech.local>
+In-Reply-To: <20140912102816.GF28458@ci00147.xsens-tech.local>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Date: Sat, 13 Sep 2014 16:07:18 -0400
+On 09/12/2014 12:28 PM, Frans Klaver wrote:
+> port config is 115200 8N1. I don't recall doing anything special. I
+> boot, login, less file and get a lock.
 
-> +	/* Find this module in the sub-tree for this device */
-> +	devices = of_get_child_by_name(node, "netcp-devices");
-> +	if (!devices) {
-> +		dev_err(dev, "could not find netcp-devices node\n");
-> +		return NETCP_MOD_PROBE_SKIPPED;
-> +	}
-> +
-> +	for_each_available_child_of_node(devices, child) {
-> +		const char *name = netcp_node_name(child);
-> +
-> +		if (!strcasecmp(module->name, name))
-> +			break;
-> +	}
-> +
-> +	/* If module not used for this device, skip it */
-> +	if (child == NULL) {
-> +		dev_warn(dev, "module(%s) not used for device\n", module->name);
-> +		return NETCP_MOD_PROBE_SKIPPED;
-> +	}
+So I booted my mini Debian 7.6 (basic system + openssh) on my beagle
+bone black which is:
 
-of_get_child_by_name() takes a reference to an OF node, you must release
-it in the error path.
+[    0.000000] AM335X ES2.0 (neon )
 
-> +	inst_modpriv = devm_kzalloc(dev, sizeof(*inst_modpriv), GFP_KERNEL);
-> +	if (!inst_modpriv) {
-> +		dev_err(dev, "Failed to allocate instance for %s\n",
-> +			module->name);
-> +		return -ENOMEM;
-> +	}
+configured a console, login, invoked "less file". The file was shown, I
+hit on the space key so less shows me more of the file. No lock-up.
+I tried booting via NFS and MMC. I tried various files with less.
 
-Likewise, but here you have to release both "devices" and "child".
+My dot config is here
+	https://breakpoint.cc/config-am335x-bb.txt.xz
 
-You're going to have to fix this OF node refcount problem for this
-entire probe routine.
+If there is nothing specific to the file you do less on I have no idea
+what else it could if it is not the config.
+
+Sebastian
+
