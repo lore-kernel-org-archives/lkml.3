@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161AbaIORH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:07:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34360 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaIORHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:07:25 -0400
-Date: Mon, 15 Sep 2014 13:07:21 -0400 (EDT)
-Message-Id: <20140915.130721.589682835868904320.davem@davemloft.net>
-To: stephen@networkplumber.org
-Cc: rickard_strandqvist@spectrumdigital.se, mlindner@marvell.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: marvell: sky2.c: Cleaning up missing
- null-terminate in conjunction with strncpy
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140914190557.690183d2@urahara>
-References: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20140914190557.690183d2@urahara>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 10:07:24 -0700 (PDT)
+	id S1754189AbaIORHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:07:55 -0400
+Received: from verein.lst.de ([213.95.11.211]:33183 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753361AbaIORHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 13:07:52 -0400
+Date: Mon, 15 Sep 2014 19:07:50 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: linux-next: build failure after merge of the nfs tree
+Message-ID: <20140915170749.GB23433@lst.de>
+References: <20140915170453.0e8d4e85@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915170453.0e8d4e85@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <stephen@networkplumber.org>
-Date: Sun, 14 Sep 2014 19:05:57 -0700
+Thanks Stephen!
 
-> On Sun, 14 Sep 2014 19:33:43 +0200
-> Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
-> 
->> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->> 
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/net/ethernet/marvell/sky2.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
->> index dba48a5c..7053d38 100644
->> --- a/drivers/net/ethernet/marvell/sky2.c
->> +++ b/drivers/net/ethernet/marvell/sky2.c
->> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
->>  	};
->>  
->>  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
->> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
->> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
->>  	else
->>  		snprintf(buf, sz, "(chip %#x)", chipid);
->>  	return buf;
-> 
-> Useless and unnecessary since the list of names is right there.
-> Why not avoid the copy all together?
-> 
-> Subject: sky2: avoid strncpy
-> 
-> Don't use strncpy() since security thought police think it is bad.
-> 
-> Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+Trond, can you just pick up the patch?  Considered it:
 
-I think providing the buffer on the stack of the thread executing the
-probe is superior because it will allow enabling parallel probing
-in the future.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-I don't think you have to change that aspect to achieve your goal
-of returning the const char * string when possible.
+On Mon, Sep 15, 2014 at 05:04:53PM +1000, Stephen Rothwell wrote:
+> Hi Trond,
+> 
+> After merging the nfs tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> fs/nfs/blocklayout/extent_tree.c: In function 'ext_tree_prepare_commit':
+> fs/nfs/blocklayout/extent_tree.c:540:3: error: implicit declaration of function '__vmalloc' [-Werror=implicit-function-declaration]
+>    start_p = __vmalloc(buffer_size, GFP_NOFS, PAGE_KERNEL);
+>    ^
+> fs/nfs/blocklayout/extent_tree.c:540:11: warning: assignment makes pointer from integer without a cast
+>    start_p = __vmalloc(buffer_size, GFP_NOFS, PAGE_KERNEL);
+>            ^
+> 
+> Caused by commit 34dc93c2fc04 ("pnfs/blocklayout: allocate separate
+> pages for the layoutcommit payload").
+> 
+> I added the following fix patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 15 Sep 2014 17:01:32 +1000
+> Subject: [PATCH] pnfs/blocklayout: include vmalloc.h for __vmalloc
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  fs/nfs/blocklayout/extent_tree.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/fs/nfs/blocklayout/extent_tree.c b/fs/nfs/blocklayout/extent_tree.c
+> index 93193616205a..31d0b5e53dfd 100644
+> --- a/fs/nfs/blocklayout/extent_tree.c
+> +++ b/fs/nfs/blocklayout/extent_tree.c
+> @@ -2,6 +2,8 @@
+>   * Copyright (c) 2014 Christoph Hellwig.
+>   */
+>  
+> +#include <linux/vmalloc.h>
+> +
+>  #include "blocklayout.h"
+>  
+>  #define NFSDBG_FACILITY		NFSDBG_PNFS_LD
+> -- 
+> 2.1.0
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+
+
+---end quoted text---
