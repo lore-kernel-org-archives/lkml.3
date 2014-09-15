@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887AbaIOWRz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:17:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51073 "EHLO
+	id S1758186AbaIOWSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:18:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51079 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758157AbaIOWRu (ORCPT
+	with ESMTP id S1758157AbaIOWSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:50 -0400
+	Mon, 15 Sep 2014 18:18:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christoph Schulz <develop@kristov.de>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 078/187] x86: don't exclude low BIOS area when allocating address space for non-PCI cards
-Date: Mon, 15 Sep 2014 15:08:08 -0700
-Message-Id: <1410818997-9432-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 031/187] bbc-i2c: Fix BBC I2C envctrl on SunBlade 2000
+Date: Mon, 15 Sep 2014 15:07:21 -0700
+Message-Id: <1410818997-9432-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,94 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Schulz <develop@kristov.de>
+From: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 
-commit cbace46a9710a480cae51e4611697df5de41713e upstream.
+[ Upstream commit 5cdceab3d5e02eb69ea0f5d8fa9181800baf6f77 ]
 
-Commit 30919b0bf356 ("x86: avoid low BIOS area when allocating address
-space") moved the test for resource allocations that fall within the first
-1MB of address space from the PCI-specific path to a generic path, such
-that all resource allocations will avoid this area.  However, this breaks
-ISA cards which need to allocate a memory region within the first 1MB.  An
-example is the i82365 PCMCIA controller and derivatives like the Ricoh
-RF5C296/396 which map part of the PCMCIA socket memory address space into
-the first 1MB of system memory address space.  They do not work anymore as
-no usable memory region exists due to this change:
+Fix regression in bbc i2c temperature and fan control on some Sun systems
+that causes the driver to refuse to load due to the bbc_i2c_bussel resource not
+being present on the (second) i2c bus where the temperature sensors and fan
+control are located. (The check for the number of resources was removed when
+the driver was ported to a pure OF driver in mid 2008.)
 
-  Intel ISA PCIC probe: Ricoh RF5C296/396 ISA-to-PCMCIA at port 0x3e0 ofs 0x00, 2 sockets
-  host opts [0]: none
-  host opts [1]: none
-  ISA irqs (scanned) = 3,4,5,9,10 status change on irq 10
-  pcmcia_socket pcmcia_socket1: pccard: PCMCIA card inserted into slot 1
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket0: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket0: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xc00-0xcff: excluding 0xcf8-0xcff
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0xa00-0xaff: clean.
-  pcmcia_socket pcmcia_socket1: cs: IO port probe 0x100-0x3ff: excluding 0x170-0x177 0x1f0-0x1f7 0x2f8-0x2ff 0x370-0x37f 0x3c0-0x3e7 0x3f0-0x3ff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0a0000-0x0affff: excluding 0xa0000-0xaffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0b0000-0x0bffff: excluding 0xb0000-0xbffff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0c0000-0x0cffff: excluding 0xc0000-0xcbfff
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0d0000-0x0dffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0e0000-0x0effff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x60000000-0x60ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0xa0000000-0xa0ffffff: clean.
-  pcmcia_socket pcmcia_socket1: cs: memory probe 0x0cc000-0x0effff: excluding 0xe0000-0xeffff
-  pcmcia_socket pcmcia_socket1: cs: unable to map card memory!
-
-If filtering out the first 1MB is reverted, everything works as expected.
-
-Tested-by: Robert Resch <fli4l@robert.reschpara.de>
-Signed-off-by: Christoph Schulz <develop@kristov.de>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/resource.c | 8 +++++---
- arch/x86/pci/i386.c        | 4 ++++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/sbus/char/bbc_envctrl.c |  6 ++++++
+ drivers/sbus/char/bbc_i2c.c     | 11 ++++++++---
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/resource.c b/arch/x86/kernel/resource.c
-index 2a26819..80eab01 100644
---- a/arch/x86/kernel/resource.c
-+++ b/arch/x86/kernel/resource.c
-@@ -37,10 +37,12 @@ static void remove_e820_regions(struct resource *avail)
+diff --git a/drivers/sbus/char/bbc_envctrl.c b/drivers/sbus/char/bbc_envctrl.c
+index 160e751..0787b97 100644
+--- a/drivers/sbus/char/bbc_envctrl.c
++++ b/drivers/sbus/char/bbc_envctrl.c
+@@ -452,6 +452,9 @@ static void attach_one_temp(struct bbc_i2c_bus *bp, struct platform_device *op,
+ 	if (!tp)
+ 		return;
  
- void arch_remove_reservations(struct resource *avail)
- {
--	/* Trim out BIOS areas (low 1MB and high 2MB) and E820 regions */
-+	/*
-+	 * Trim out BIOS area (high 2MB) and E820 regions. We do not remove
-+	 * the low 1MB unconditionally, as this area is needed for some ISA
-+	 * cards requiring a memory range, e.g. the i82365 PCMCIA controller.
-+	 */
- 	if (avail->flags & IORESOURCE_MEM) {
--		if (avail->start < BIOS_END)
--			avail->start = BIOS_END;
- 		resource_clip(avail, BIOS_ROM_BASE, BIOS_ROM_END);
++	INIT_LIST_HEAD(&tp->bp_list);
++	INIT_LIST_HEAD(&tp->glob_list);
++
+ 	tp->client = bbc_i2c_attach(bp, op);
+ 	if (!tp->client) {
+ 		kfree(tp);
+@@ -497,6 +500,9 @@ static void attach_one_fan(struct bbc_i2c_bus *bp, struct platform_device *op,
+ 	if (!fp)
+ 		return;
  
- 		remove_e820_regions(avail);
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index db6b1ab..96a159a 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -162,6 +162,10 @@ pcibios_align_resource(void *data, const struct resource *res,
- 			return start;
- 		if (start & 0x300)
- 			start = (start + 0x3ff) & ~0x3ff;
-+	} else if (res->flags & IORESOURCE_MEM) {
-+		/* The low 1MB range is reserved for ISA cards */
-+		if (start < BIOS_END)
-+			start = BIOS_END;
- 	}
- 	return start;
- }
++	INIT_LIST_HEAD(&fp->bp_list);
++	INIT_LIST_HEAD(&fp->glob_list);
++
+ 	fp->client = bbc_i2c_attach(bp, op);
+ 	if (!fp->client) {
+ 		kfree(fp);
+diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
+index c1441ed..e0e6cd6 100644
+--- a/drivers/sbus/char/bbc_i2c.c
++++ b/drivers/sbus/char/bbc_i2c.c
+@@ -301,13 +301,18 @@ static struct bbc_i2c_bus * attach_one_i2c(struct platform_device *op, int index
+ 	if (!bp)
+ 		return NULL;
+ 
++	INIT_LIST_HEAD(&bp->temps);
++	INIT_LIST_HEAD(&bp->fans);
++
+ 	bp->i2c_control_regs = of_ioremap(&op->resource[0], 0, 0x2, "bbc_i2c_regs");
+ 	if (!bp->i2c_control_regs)
+ 		goto fail;
+ 
+-	bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
+-	if (!bp->i2c_bussel_reg)
+-		goto fail;
++	if (op->num_resources == 2) {
++		bp->i2c_bussel_reg = of_ioremap(&op->resource[1], 0, 0x1, "bbc_i2c_bussel");
++		if (!bp->i2c_bussel_reg)
++			goto fail;
++	}
+ 
+ 	bp->waiting = 0;
+ 	init_waitqueue_head(&bp->wq);
 -- 
 1.9.1
 
