@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017AbaIOVUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:20:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54514 "EHLO
+	id S1755942AbaIOVUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:20:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54517 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635AbaIOT0j (ORCPT
+	with ESMTP id S1754638AbaIOT0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.16 001/158] reiserfs: fix corruption introduced by balance_leaf refactor
-Date: Mon, 15 Sep 2014 12:24:00 -0700
-Message-Id: <20140915192542.919146543@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.16 002/158] reiserfs: Fix use after free in journal teardown
+Date: Mon, 15 Sep 2014 12:24:01 -0700
+Message-Id: <20140915192542.947905753@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,382 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d upstream.
+commit 01777836c87081e4f68c4a43c9abe6114805f91e upstream.
 
-Commits f1f007c308e (reiserfs: balance_leaf refactor, pull out
-balance_leaf_insert_left) and cf22df182bf (reiserfs: balance_leaf
-refactor, pull out balance_leaf_paste_left) missed that the `body'
-pointer was getting repositioned. Subsequent users of the pointer
-would expect it to be repositioned, and as a result, parts of the
-tree would get overwritten. The most common observed corruption
-is indirect block pointers being overwritten.
+If do_journal_release() races with do_journal_end() which requeues
+delayed works for transaction flushing, we can leave work items for
+flushing outstanding transactions queued while freeing them. That
+results in use after free and possible crash in run_timers_softirq().
 
-Since the body value isn't actually used anymore in the called routines,
-we can pass back the offset it should be shifted. We constify the body
-and ih pointers in the balance_leaf as a mostly-free preventative measure.
+Fix the problem by not requeueing works if superblock is being shut down
+(MS_ACTIVE not set) and using cancel_delayed_work_sync() in
+do_journal_release().
 
-Reported-and-tested-by: Jeff Chua <jeff.chua.linux@gmail.com>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/do_balan.c |  111 +++++++++++++++++++++++++++----------------------
- fs/reiserfs/lbalance.c |    5 +-
- fs/reiserfs/reiserfs.h |    9 ++-
- 3 files changed, 71 insertions(+), 54 deletions(-)
+ fs/reiserfs/journal.c |   22 ++++++++++++++++------
+ fs/reiserfs/super.c   |    6 +++++-
+ 2 files changed, 21 insertions(+), 7 deletions(-)
 
---- a/fs/reiserfs/do_balan.c
-+++ b/fs/reiserfs/do_balan.c
-@@ -286,12 +286,14 @@ static int balance_leaf_when_delete(stru
- 	return 0;
- }
- 
--static void balance_leaf_insert_left(struct tree_balance *tb,
--				     struct item_head *ih, const char *body)
-+static unsigned int balance_leaf_insert_left(struct tree_balance *tb,
-+					     struct item_head *const ih,
-+					     const char * const body)
- {
- 	int ret;
- 	struct buffer_info bi;
- 	int n = B_NR_ITEMS(tb->L[0]);
-+	unsigned body_shift_bytes = 0;
- 
- 	if (tb->item_pos == tb->lnum[0] - 1 && tb->lbytes != -1) {
- 		/* part of new item falls into L[0] */
-@@ -329,7 +331,7 @@ static void balance_leaf_insert_left(str
- 
- 		put_ih_item_len(ih, new_item_len);
- 		if (tb->lbytes > tb->zeroes_num) {
--			body += (tb->lbytes - tb->zeroes_num);
-+			body_shift_bytes = tb->lbytes - tb->zeroes_num;
- 			tb->zeroes_num = 0;
- 		} else
- 			tb->zeroes_num -= tb->lbytes;
-@@ -349,11 +351,12 @@ static void balance_leaf_insert_left(str
- 		tb->insert_size[0] = 0;
- 		tb->zeroes_num = 0;
- 	}
-+	return body_shift_bytes;
- }
- 
- static void balance_leaf_paste_left_shift_dirent(struct tree_balance *tb,
--						 struct item_head *ih,
--						 const char *body)
-+						 struct item_head * const ih,
-+						 const char * const body)
- {
- 	int n = B_NR_ITEMS(tb->L[0]);
- 	struct buffer_info bi;
-@@ -413,17 +416,18 @@ static void balance_leaf_paste_left_shif
- 	tb->pos_in_item -= tb->lbytes;
- }
- 
--static void balance_leaf_paste_left_shift(struct tree_balance *tb,
--					  struct item_head *ih,
--					  const char *body)
-+static unsigned int balance_leaf_paste_left_shift(struct tree_balance *tb,
-+						  struct item_head * const ih,
-+						  const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	int n = B_NR_ITEMS(tb->L[0]);
- 	struct buffer_info bi;
-+	int body_shift_bytes = 0;
- 
- 	if (is_direntry_le_ih(item_head(tbS0, tb->item_pos))) {
- 		balance_leaf_paste_left_shift_dirent(tb, ih, body);
--		return;
-+		return 0;
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -1947,8 +1947,6 @@ static int do_journal_release(struct rei
+ 		}
  	}
  
- 	RFALSE(tb->lbytes <= 0,
-@@ -497,7 +501,7 @@ static void balance_leaf_paste_left_shif
- 		 * insert_size[0]
- 		 */
- 		if (l_n > tb->zeroes_num) {
--			body += (l_n - tb->zeroes_num);
-+			body_shift_bytes = l_n - tb->zeroes_num;
- 			tb->zeroes_num = 0;
- 		} else
- 			tb->zeroes_num -= l_n;
-@@ -526,13 +530,14 @@ static void balance_leaf_paste_left_shif
- 		 */
- 		leaf_shift_left(tb, tb->lnum[0], tb->lbytes);
- 	}
-+	return body_shift_bytes;
- }
+-	/* wait for all commits to finish */
+-	cancel_delayed_work(&SB_JOURNAL(sb)->j_work);
  
+ 	/*
+ 	 * We must release the write lock here because
+@@ -1956,8 +1954,14 @@ static int do_journal_release(struct rei
+ 	 */
+ 	reiserfs_write_unlock(sb);
  
- /* appended item will be in L[0] in whole */
- static void balance_leaf_paste_left_whole(struct tree_balance *tb,
--					  struct item_head *ih,
--					  const char *body)
-+					  struct item_head * const ih,
-+					  const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	int n = B_NR_ITEMS(tb->L[0]);
-@@ -584,39 +589,44 @@ static void balance_leaf_paste_left_whol
- 	tb->zeroes_num = 0;
- }
++	/*
++	 * Cancel flushing of old commits. Note that neither of these works
++	 * will be requeued because superblock is being shutdown and doesn't
++	 * have MS_ACTIVE set.
++	 */
+ 	cancel_delayed_work_sync(&REISERFS_SB(sb)->old_work);
+-	flush_workqueue(REISERFS_SB(sb)->commit_wq);
++	/* wait for all commits to finish */
++	cancel_delayed_work_sync(&SB_JOURNAL(sb)->j_work);
  
--static void balance_leaf_paste_left(struct tree_balance *tb,
--				    struct item_head *ih, const char *body)
-+static unsigned int balance_leaf_paste_left(struct tree_balance *tb,
-+					    struct item_head * const ih,
-+					    const char * const body)
- {
- 	/* we must shift the part of the appended item */
- 	if (tb->item_pos == tb->lnum[0] - 1 && tb->lbytes != -1)
--		balance_leaf_paste_left_shift(tb, ih, body);
-+		return balance_leaf_paste_left_shift(tb, ih, body);
- 	else
- 		balance_leaf_paste_left_whole(tb, ih, body);
-+	return 0;
- }
+ 	free_journal_ram(sb);
  
- /* Shift lnum[0] items from S[0] to the left neighbor L[0] */
--static void balance_leaf_left(struct tree_balance *tb, struct item_head *ih,
--			      const char *body, int flag)
-+static unsigned int balance_leaf_left(struct tree_balance *tb,
-+				      struct item_head * const ih,
-+				      const char * const body, int flag)
- {
- 	if (tb->lnum[0] <= 0)
--		return;
-+		return 0;
+@@ -4292,9 +4296,15 @@ static int do_journal_end(struct reiserf
+ 	if (flush) {
+ 		flush_commit_list(sb, jl, 1);
+ 		flush_journal_list(sb, jl, 1);
+-	} else if (!(jl->j_state & LIST_COMMIT_PENDING))
+-		queue_delayed_work(REISERFS_SB(sb)->commit_wq,
+-				   &journal->j_work, HZ / 10);
++	} else if (!(jl->j_state & LIST_COMMIT_PENDING)) {
++		/*
++		 * Avoid queueing work when sb is being shut down. Transaction
++		 * will be flushed on journal shutdown.
++		 */
++		if (sb->s_flags & MS_ACTIVE)
++			queue_delayed_work(REISERFS_SB(sb)->commit_wq,
++					   &journal->j_work, HZ / 10);
++	}
  
- 	/* new item or it part falls to L[0], shift it too */
- 	if (tb->item_pos < tb->lnum[0]) {
- 		BUG_ON(flag != M_INSERT && flag != M_PASTE);
+ 	/*
+ 	 * if the next transaction has any chance of wrapping, flush
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -100,7 +100,11 @@ void reiserfs_schedule_old_flush(struct
+ 	struct reiserfs_sb_info *sbi = REISERFS_SB(s);
+ 	unsigned long delay;
  
- 		if (flag == M_INSERT)
--			balance_leaf_insert_left(tb, ih, body);
-+			return balance_leaf_insert_left(tb, ih, body);
- 		else /* M_PASTE */
--			balance_leaf_paste_left(tb, ih, body);
-+			return balance_leaf_paste_left(tb, ih, body);
- 	} else
- 		/* new item doesn't fall into L[0] */
- 		leaf_shift_left(tb, tb->lnum[0], tb->lbytes);
-+	return 0;
- }
- 
- 
- static void balance_leaf_insert_right(struct tree_balance *tb,
--				      struct item_head *ih, const char *body)
-+				      struct item_head * const ih,
-+				      const char * const body)
- {
- 
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
-@@ -704,7 +714,8 @@ static void balance_leaf_insert_right(st
- 
- 
- static void balance_leaf_paste_right_shift_dirent(struct tree_balance *tb,
--				     struct item_head *ih, const char *body)
-+				     struct item_head * const ih,
-+				     const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	struct buffer_info bi;
-@@ -754,7 +765,8 @@ static void balance_leaf_paste_right_shi
- }
- 
- static void balance_leaf_paste_right_shift(struct tree_balance *tb,
--				     struct item_head *ih, const char *body)
-+				     struct item_head * const ih,
-+				     const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	int n_shift, n_rem, r_zeroes_number, version;
-@@ -831,7 +843,8 @@ static void balance_leaf_paste_right_shi
- }
- 
- static void balance_leaf_paste_right_whole(struct tree_balance *tb,
--				     struct item_head *ih, const char *body)
-+				     struct item_head * const ih,
-+				     const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	int n = B_NR_ITEMS(tbS0);
-@@ -874,7 +887,8 @@ static void balance_leaf_paste_right_who
- }
- 
- static void balance_leaf_paste_right(struct tree_balance *tb,
--				     struct item_head *ih, const char *body)
-+				     struct item_head * const ih,
-+				     const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	int n = B_NR_ITEMS(tbS0);
-@@ -896,8 +910,9 @@ static void balance_leaf_paste_right(str
- }
- 
- /* shift rnum[0] items from S[0] to the right neighbor R[0] */
--static void balance_leaf_right(struct tree_balance *tb, struct item_head *ih,
--			       const char *body, int flag)
-+static void balance_leaf_right(struct tree_balance *tb,
-+			       struct item_head * const ih,
-+			       const char * const body, int flag)
- {
- 	if (tb->rnum[0] <= 0)
+-	if (s->s_flags & MS_RDONLY)
++	/*
++	 * Avoid scheduling flush when sb is being shut down. It can race
++	 * with journal shutdown and free still queued delayed work.
++	 */
++	if (s->s_flags & MS_RDONLY || !(s->s_flags & MS_ACTIVE))
  		return;
-@@ -911,8 +926,8 @@ static void balance_leaf_right(struct tr
- }
  
- static void balance_leaf_new_nodes_insert(struct tree_balance *tb,
--					  struct item_head *ih,
--					  const char *body,
-+					  struct item_head * const ih,
-+					  const char * const body,
- 					  struct item_head *insert_key,
- 					  struct buffer_head **insert_ptr,
- 					  int i)
-@@ -1003,8 +1018,8 @@ static void balance_leaf_new_nodes_inser
- 
- /* we append to directory item */
- static void balance_leaf_new_nodes_paste_dirent(struct tree_balance *tb,
--					 struct item_head *ih,
--					 const char *body,
-+					 struct item_head * const ih,
-+					 const char * const body,
- 					 struct item_head *insert_key,
- 					 struct buffer_head **insert_ptr,
- 					 int i)
-@@ -1058,8 +1073,8 @@ static void balance_leaf_new_nodes_paste
- }
- 
- static void balance_leaf_new_nodes_paste_shift(struct tree_balance *tb,
--					 struct item_head *ih,
--					 const char *body,
-+					 struct item_head * const ih,
-+					 const char * const body,
- 					 struct item_head *insert_key,
- 					 struct buffer_head **insert_ptr,
- 					 int i)
-@@ -1131,8 +1146,8 @@ static void balance_leaf_new_nodes_paste
- }
- 
- static void balance_leaf_new_nodes_paste_whole(struct tree_balance *tb,
--					       struct item_head *ih,
--					       const char *body,
-+					       struct item_head * const ih,
-+					       const char * const body,
- 					       struct item_head *insert_key,
- 					       struct buffer_head **insert_ptr,
- 					       int i)
-@@ -1184,8 +1199,8 @@ static void balance_leaf_new_nodes_paste
- 
- }
- static void balance_leaf_new_nodes_paste(struct tree_balance *tb,
--					 struct item_head *ih,
--					 const char *body,
-+					 struct item_head * const ih,
-+					 const char * const body,
- 					 struct item_head *insert_key,
- 					 struct buffer_head **insert_ptr,
- 					 int i)
-@@ -1214,8 +1229,8 @@ static void balance_leaf_new_nodes_paste
- 
- /* Fill new nodes that appear in place of S[0] */
- static void balance_leaf_new_nodes(struct tree_balance *tb,
--				   struct item_head *ih,
--				   const char *body,
-+				   struct item_head * const ih,
-+				   const char * const body,
- 				   struct item_head *insert_key,
- 				   struct buffer_head **insert_ptr,
- 				   int flag)
-@@ -1254,8 +1269,8 @@ static void balance_leaf_new_nodes(struc
- }
- 
- static void balance_leaf_finish_node_insert(struct tree_balance *tb,
--					    struct item_head *ih,
--					    const char *body)
-+					    struct item_head * const ih,
-+					    const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	struct buffer_info bi;
-@@ -1271,8 +1286,8 @@ static void balance_leaf_finish_node_ins
- }
- 
- static void balance_leaf_finish_node_paste_dirent(struct tree_balance *tb,
--						  struct item_head *ih,
--						  const char *body)
-+						  struct item_head * const ih,
-+						  const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	struct item_head *pasted = item_head(tbS0, tb->item_pos);
-@@ -1305,8 +1320,8 @@ static void balance_leaf_finish_node_pas
- }
- 
- static void balance_leaf_finish_node_paste(struct tree_balance *tb,
--					   struct item_head *ih,
--					   const char *body)
-+					   struct item_head * const ih,
-+					   const char * const body)
- {
- 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
- 	struct buffer_info bi;
-@@ -1349,8 +1364,8 @@ static void balance_leaf_finish_node_pas
-  * of the affected item which remains in S
-  */
- static void balance_leaf_finish_node(struct tree_balance *tb,
--				      struct item_head *ih,
--				      const char *body, int flag)
-+				      struct item_head * const ih,
-+				      const char * const body, int flag)
- {
- 	/* if we must insert or append into buffer S[0] */
- 	if (0 <= tb->item_pos && tb->item_pos < tb->s0num) {
-@@ -1402,7 +1417,7 @@ static int balance_leaf(struct tree_bala
- 	    && is_indirect_le_ih(item_head(tbS0, tb->item_pos)))
- 		tb->pos_in_item *= UNFM_P_SIZE;
- 
--	balance_leaf_left(tb, ih, body, flag);
-+	body += balance_leaf_left(tb, ih, body, flag);
- 
- 	/* tb->lnum[0] > 0 */
- 	/* Calculate new item position */
---- a/fs/reiserfs/lbalance.c
-+++ b/fs/reiserfs/lbalance.c
-@@ -899,8 +899,9 @@ void leaf_delete_items(struct buffer_inf
- 
- /* insert item into the leaf node in position before */
- void leaf_insert_into_buf(struct buffer_info *bi, int before,
--			  struct item_head *inserted_item_ih,
--			  const char *inserted_item_body, int zeros_number)
-+			  struct item_head * const inserted_item_ih,
-+			  const char * const inserted_item_body,
-+			  int zeros_number)
- {
- 	struct buffer_head *bh = bi->bi_bh;
- 	int nr, free_space;
---- a/fs/reiserfs/reiserfs.h
-+++ b/fs/reiserfs/reiserfs.h
-@@ -3216,11 +3216,12 @@ int leaf_shift_right(struct tree_balance
- void leaf_delete_items(struct buffer_info *cur_bi, int last_first, int first,
- 		       int del_num, int del_bytes);
- void leaf_insert_into_buf(struct buffer_info *bi, int before,
--			  struct item_head *inserted_item_ih,
--			  const char *inserted_item_body, int zeros_number);
--void leaf_paste_in_buffer(struct buffer_info *bi, int pasted_item_num,
--			  int pos_in_item, int paste_size, const char *body,
-+			  struct item_head * const inserted_item_ih,
-+			  const char * const inserted_item_body,
- 			  int zeros_number);
-+void leaf_paste_in_buffer(struct buffer_info *bi, int pasted_item_num,
-+			  int pos_in_item, int paste_size,
-+			  const char * const body, int zeros_number);
- void leaf_cut_from_buffer(struct buffer_info *bi, int cut_item_num,
- 			  int pos_in_item, int cut_size);
- void leaf_paste_entries(struct buffer_info *bi, int item_num, int before,
+ 	spin_lock(&sbi->old_work_lock);
 
 
