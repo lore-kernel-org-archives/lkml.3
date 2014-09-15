@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760406AbaIOXVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:21:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50485 "EHLO
+	id S1760391AbaIOXVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:21:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50489 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756456AbaIOWKb (ORCPT
+	with ESMTP id S1756625AbaIOWKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 18:10:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Eric Dumazet <edumazet@google.com>, Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 012/187] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
-Date: Mon, 15 Sep 2014 15:07:02 -0700
-Message-Id: <1410818997-9432-13-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 009/187] net: Correctly set segment mac_len in skb_segment().
+Date: Mon, 15 Sep 2014 15:06:59 -0700
+Message-Id: <1410818997-9432-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,74 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
+[ Upstream commit fcdfe3a7fa4cb74391d42b6a26dc07c20dab1d82 ]
 
-Dave reported following splat, caused by improper use of
-IP_INC_STATS_BH() in process context.
+When performing segmentation, the mac_len value is copied right
+out of the original skb.  However, this value is not always set correctly
+(like when the packet is VLAN-tagged) and we'll end up copying a bad
+value.
 
-BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
-caller is __this_cpu_preempt_check+0x13/0x20
-CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
- ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
- 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
- ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
-Call Trace:
- [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
- [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
- [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
- [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
- [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
- [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
- [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
- [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
- [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
- [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
- [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
- [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
- [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
- [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
- [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
- [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
- [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
- [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
- [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
- [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
- [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
- [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
- [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
- [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
- [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+One way to demonstrate this is to configure a VM which tags
+packets internally and turn off VLAN acceleration on the forwarding
+bridge port.  The packets show up corrupt like this:
+16:18:24.985548 52:54:00:ab:be:25 > 52:54:00:26:ce:a3, ethertype 802.1Q
+(0x8100), length 1518: vlan 100, p 0, ethertype 0x05e0,
+        0x0000:  8cdb 1c7c 8cdb 0064 4006 b59d 0a00 6402 ...|...d@.....d.
+        0x0010:  0a00 6401 9e0d b441 0a5e 64ec 0330 14fa ..d....A.^d..0..
+        0x0020:  29e3 01c9 f871 0000 0101 080a 000a e833)....q.........3
+        0x0030:  000f 8c75 6e65 7470 6572 6600 6e65 7470 ...unetperf.netp
+        0x0040:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0050:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        0x0060:  6572 6600 6e65 7470 6572 6600 6e65 7470 erf.netperf.netp
+        ...
 
-This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
-seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
-deadlock in ip6_finish_output2")
+This also leads to awful throughput as GSO packets are dropped and
+cause retransmissions.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Reported-by: Dave Jones <davej@redhat.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+The solution is to set the mac_len using the values already available
+in then new skb.  We've already adjusted all of the header offset, so we
+might as well correctly figure out the mac_len using skb_reset_mac_len().
+After this change, packets are segmented correctly and performance
+is restored.
+
+CC: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sctp/output.c | 2 +-
+ net/core/skbuff.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 0fb140f..e867326 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -601,7 +601,7 @@ out:
- 	return err;
- no_route:
- 	kfree_skb(nskb);
--	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
-+	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index f7eca05..808a270 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2872,9 +2872,9 @@ struct sk_buff *skb_segment(struct sk_buff *head_skb,
+ 		tail = nskb;
  
- 	/* FIXME: Returning the 'err' will effect all the associations
- 	 * associated with a socket, although only one of the paths of the
+ 		__copy_skb_header(nskb, head_skb);
+-		nskb->mac_len = head_skb->mac_len;
+ 
+ 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
++		skb_reset_mac_len(nskb);
+ 
+ 		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
+ 						 nskb->data - tnl_hlen,
 -- 
 1.9.1
 
