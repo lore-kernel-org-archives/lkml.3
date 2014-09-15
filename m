@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaIOSY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 14:24:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:36135 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089AbaIOSY1 (ORCPT
+	id S1754171AbaIOSaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 14:30:15 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33952 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089AbaIOSaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 14:24:27 -0400
-Date: Mon, 15 Sep 2014 14:24:25 -0400 (EDT)
-Message-Id: <20140915.142425.1929538078667151559.davem@davemloft.net>
-To: mike.looijmans@topic.nl
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] net/phy: micrel: Disable asymmetric pause for
- KSZ9031
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410775594-3129-1-git-send-email-mike.looijmans@topic.nl>
-References: <20140912.181820.1440041146938289489.davem@davemloft.net>
-	<1410775594-3129-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 11:24:27 -0700 (PDT)
+	Mon, 15 Sep 2014 14:30:14 -0400
+Date: Mon, 15 Sep 2014 11:30:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
+Cc: jespern@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, edgar.iglesias@gmail.com
+Subject: Re: Status of 'cris' architecture support in Linux kernel
+Message-ID: <20140915183007.GA25962@roeck-us.net>
+References: <20140915145203.GK4659@axis.com>
+ <201409151549.s8FFnner005703@ignucius.se.axis.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201409151549.s8FFnner005703@ignucius.se.axis.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Looijmans <mike.looijmans@topic.nl>
-Date: Mon, 15 Sep 2014 12:06:33 +0200
-
-> The KSZ9031 appears to suffer from the same hardware bug as described
-> for the KSZ9021 in commit 32fcafbcd1c9f6c7013016a22a5369b4acb93577
-> ("net/phy: micrel: Disable asymmetric pause for KSZ9021")
-> you have to unplug the cable and plug it back to get it to work.
+On Mon, Sep 15, 2014 at 05:49:49PM +0200, Hans-Peter Nilsson wrote:
+> Following up on Jesper's reply...
 > 
-> Remove the SUPPORTED_Asym_Pause flag for the KSZ9031 to fix this.
+> > From: Jesper Nilsson <jespern@axis.com>
+> > Date: Mon, 15 Sep 2014 16:52:03 +0200
 > 
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> > > Toolchain
+> > > 
+> > > Creating a toolchain from upstream sources required a number of patches.
+> 
+> > > - gcc 4.7.4
+> > >   Requires a backport from upstream gcc to compile.
+> > >   Later versions of gcc (4.8.3, 4.9.1) fail with internal compiler errors
+> > >   even after patching.
+> 
+> This sounds like PR61737 (fixed; use 4.9.2 not released yet),
+> but of course with the above sentence serving as your complete
+> bug-report (or did I miss one?) that will only be a guess.
+> 
+Confirmed; gcc 4.9.1 for crisv32 builds after applying the patch fixing
+PR61737 (and the patch to fic config.gcc) on top of gcc 4.9.1.
 
-Applied, thanks.
+Guenter
