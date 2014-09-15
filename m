@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019AbaIOTkQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:40:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48905 "EHLO mx1.redhat.com"
+	id S1755379AbaIOTkO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:40:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46326 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383AbaIOTkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:40:09 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, linux-usb <linux-usb@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix regression that accidentally disabled block-based tcq
-References: <540EC52C.3000804@redhat.com>
-	<20140909152730.GA17882@infradead.org> <540FFBF4.9090001@redhat.com>
-	<20140910154535.GA5102@infradead.org> <541172E9.8070309@redhat.com>
-	<20140911161331.GA24488@infradead.org> <54134E50.6040805@redhat.com>
-	<20140912230032.GA21143@infradead.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 15 Sep 2014 15:39:44 -0400
-In-Reply-To: <20140912230032.GA21143@infradead.org> (Christoph Hellwig's
-	message of "Fri, 12 Sep 2014 16:00:32 -0700")
-Message-ID: <x49lhpkr7un.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754619AbaIOTkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:40:10 -0400
+Message-ID: <54174082.4010008@ti.com>
+Date: Mon, 15 Sep 2014 14:39:46 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Dave Gerlach <d-gerlach@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Robert Tivy <rtivy@ti.com>
+Subject: Re: [PATCH 2/2] remoteproc: add support to handle internal memories
+References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-3-git-send-email-s-anna@ti.com> <CAK=WgbY-WmcJdnLHDf1CSkJqNBUeUMPTLcEZyLGKnECbxH1OAQ@mail.gmail.com> <53D7F6F3.9020804@ti.com> <CAK=WgbZ+NhA5AAhURUOojwnCbi2wYkJ11i-C5e7-kpZL5vD_3g@mail.gmail.com>
+In-Reply-To: <CAK=WgbZ+NhA5AAhURUOojwnCbi2wYkJ11i-C5e7-kpZL5vD_3g@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Hi Ohad,
 
-> Please try the fix below, looks like the commit broke TCQ for all drivers 
-> using block-level tagging.
->
-> ---
-> From 865a19b760d2786fe37d3b5c151a4ecea4c0e95e Mon Sep 17 00:00:00 2001
-> From: Christoph Hellwig <hch@lst.de>
-> Date: Fri, 12 Sep 2014 16:00:19 -0700
-> Subject: scsi: fix regression that accidentally disabled block-based tcq
->
-> The scsi blk-mq support accidentally flipped a conditional, which lead to
-> never enabling block based tcq when using the legacy request path.
->
-> Fixes: d285203cf647d7c9 scsi: add support for a blk-mq based I/O path.
-> Reported-by: Hans de Goede <hdegoede@redhat.com>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  include/scsi/scsi_tcq.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
-> index cdcc90b..e645835 100644
-> --- a/include/scsi/scsi_tcq.h
-> +++ b/include/scsi/scsi_tcq.h
-> @@ -68,7 +68,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
->  		return;
->  
->  	if (!shost_use_blk_mq(sdev->host) &&
-> -	    blk_queue_tagged(sdev->request_queue))
-> +	    !blk_queue_tagged(sdev->request_queue))
->  		blk_queue_init_tags(sdev->request_queue, depth,
->  				    sdev->host->bqt);
+> On Tue, Jul 29, 2014 at 10:33 PM, Suman Anna <s-anna@ti.com> wrote:
+>> We currently have two usecases. The primary usecase is the WkupM3
+>> processor on TI Sitara AM335x/AM437x SoCs used for suspend/resume
+>> management. This series is a dependency for the WkupM3 remoteproc driver
+>> that Dave posted [1]. More details are in section 8.1.4.6 of the AM335x
+>> TRM [2]. The program/data sections for this processor all _needs_ to be
+>> in the two internal memory RAMS (16K Unified RAM and 8K Data RAM), and
+>> there is no MMU for this processor. The current RSC_CARVEOUT and
+>> RSC_DEVMEM do not fit to describe this type of memory (we neither
+>> allocate memory through dma api nor do we need to map these into an MMU).
+> 
+> Thanks for the details.
+> 
+> Can we define a CMA block for these regions, and then just use
+> carveout resource entries instead of the ioremap approach?
 
-Introduced by d285203:
+I am looking at refreshing these patches, and found that I missed
+responding to this message.
 
--       if (!blk_queue_tagged(sdev->request_queue))
-+       if (!shost_use_blk_mq(sdev->host) &&
-+           blk_queue_tagged(sdev->request_queue))
+These processors need to use their internal RAM for loading, which is
+not for generic usage by the kernel, so defining a CMA block for this
+memory doesn't make sense.
 
-Seems like an obvious fix.
+> This may require some changes in remoteproc which we'll need to think
+> about, but it sounds like it may fit the problem better instead of
+> forcing ioremap to provide a regular pointer (we're supposed to use
+> ioremaped memory only with memory primitives such as readl/writel/..).
 
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Will it suffice to replace the memcpy() with memcpy_toio()?
+
+regards
+Suman
