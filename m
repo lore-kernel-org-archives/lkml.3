@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaIOWL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50598 "EHLO
+	id S932348AbaIOWL5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:11:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50605 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932317AbaIOWLs (ORCPT
+	with ESMTP id S932310AbaIOWLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:48 -0400
+	Mon, 15 Sep 2014 18:11:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Peter Huewe <peterhuewe@gmx.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 107/187] tpm: Add missing tpm_do_selftest to ST33 I2C driver
-Date: Mon, 15 Sep 2014 15:08:37 -0700
-Message-Id: <1410818997-9432-108-git-send-email-kamal@canonical.com>
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 110/187] hwmon: (ads1015) Fix off-by-one for valid channel index checking
+Date: Mon, 15 Sep 2014 15:08:40 -0700
+Message-Id: <1410818997-9432-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,38 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit f07a5e9a331045e976a3d317ba43d14859d9407c upstream.
+commit 56de1377ad92f72ee4e5cb0faf7a9b6048fdf0bf upstream.
 
-Most device drivers do call 'tpm_do_selftest' which executes a
-TPM_ContinueSelfTest. tpm_i2c_stm_st33 is just pointlessly different,
-I think it is bug.
+Current code uses channel as array index, so the valid channel value is
+0 .. ADS1015_CHANNELS - 1.
 
-These days we have the general assumption that the TPM is usable by
-the kernel immediately after the driver is finished, so we can no
-longer defer the mandatory self test to userspace.
-
-Reported-by: Richard Marciel <rmaciel@linux.vnet.ibm.com>
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/tpm/tpm_i2c_stm_st33.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/ads1015.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index cf68403..b2cb24c 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -750,6 +750,7 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 	}
+diff --git a/drivers/hwmon/ads1015.c b/drivers/hwmon/ads1015.c
+index 7f9dc2f..22e0c92 100644
+--- a/drivers/hwmon/ads1015.c
++++ b/drivers/hwmon/ads1015.c
+@@ -198,7 +198,7 @@ static int ads1015_get_channels_config_of(struct i2c_client *client)
+ 		}
  
- 	tpm_get_timeouts(chip);
-+	tpm_do_selftest(chip);
- 
- 	dev_info(chip->dev, "TPM I2C Initialized\n");
- 	return 0;
+ 		channel = be32_to_cpup(property);
+-		if (channel > ADS1015_CHANNELS) {
++		if (channel >= ADS1015_CHANNELS) {
+ 			dev_err(&client->dev,
+ 				"invalid channel index %d on %s\n",
+ 				channel, node->full_name);
 -- 
 1.9.1
 
