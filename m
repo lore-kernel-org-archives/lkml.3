@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466AbaIOTrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55959 "EHLO
+	id S1756449AbaIOTri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407AbaIOTre (ORCPT
+	with ESMTP id S1756406AbaIOTre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 084/114] md/raid1,raid10: always abort recover on write error.
-Date: Mon, 15 Sep 2014 12:26:24 -0700
-Message-Id: <20140915192644.059518506@linuxfoundation.org>
+        Jiri Kosina <jkosina@suse.cz>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 069/114] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+Date: Mon, 15 Sep 2014 12:26:09 -0700
+Message-Id: <20140915192643.603266651@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,80 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 2446dba03f9dabe0b477a126cbeb377854785b47 upstream.
+commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
 
-Currently we don't abort recovery on a write error if the write error
-to the recovering device was triggerd by normal IO (as opposed to
-recovery IO).
+There is a following AB-BA dependency between cpu_hotplug.lock and
+cpuidle_lock:
 
-This means that for one bitmap region, the recovery might write to the
-recovering device for a few sectors, then not bother for subsequent
-sectors (as it never writes to failed devices).  In this case
-the bitmap bit will be cleared, but it really shouldn't.
+1) cpu_hotplug.lock -> cpuidle_lock
+enable_nonboot_cpus()
+ _cpu_up()
+  cpu_hotplug_begin()
+   LOCK(cpu_hotplug.lock)
+ cpu_notify()
+  ...
+  acpi_processor_hotplug()
+   cpuidle_pause_and_lock()
+    LOCK(cpuidle_lock)
 
-The result is that if the recovering device fails and is then re-added
-(after fixing whatever hardware problem triggerred the failure),
-the second recovery won't redo the region it was in the middle of,
-so some of the device will not be recovered properly.
+2) cpuidle_lock -> cpu_hotplug.lock
+acpi_os_execute_deferred() workqueue
+ ...
+ acpi_processor_cst_has_changed()
+  cpuidle_pause_and_lock()
+   LOCK(cpuidle_lock)
+  get_online_cpus()
+   LOCK(cpu_hotplug.lock)
 
-If we abort the recovery, the region being processes will be cancelled
-(bit not cleared) and the whole region will be retried.
+Fix this by reversing the order acpi_processor_cst_has_changed() does
+thigs -- let it first execute the protection against CPU hotplug by
+calling get_online_cpus() and obtain the cpuidle lock only after that (and
+perform the symmentric change when allowing CPUs hotplug again and
+dropping cpuidle lock).
 
-As the bug can result in data corruption the patch is suitable for
--stable.  For kernels prior to 3.11 there is a conflict in raid10.c
-which will require care.
+Spotted by lockdep.
 
-Original-from: jiao hui <jiaohui@bwstor.com.cn>
-Reported-and-tested-by: jiao hui <jiaohui@bwstor.com.cn>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |    8 ++++----
- drivers/md/raid10.c |   11 +++++------
- 2 files changed, 9 insertions(+), 10 deletions(-)
+ drivers/acpi/processor_idle.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1501,12 +1501,12 @@ static void error(struct mddev *mddev, s
- 		mddev->degraded++;
- 		set_bit(Faulty, &rdev->flags);
- 		spin_unlock_irqrestore(&conf->device_lock, flags);
--		/*
--		 * if recovery is running, make sure it aborts.
--		 */
--		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	} else
- 		set_bit(Faulty, &rdev->flags);
-+	/*
-+	 * if recovery is running, make sure it aborts.
-+	 */
-+	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
- 	printk(KERN_ALERT
- 	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1684,13 +1684,12 @@ static void error(struct mddev *mddev, s
- 		spin_unlock_irqrestore(&conf->device_lock, flags);
- 		return;
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struc
+ 
+ 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+ 
+-		cpuidle_pause_and_lock();
+ 		/* Protect against cpu-hotplug */
+ 		get_online_cpus();
++		cpuidle_pause_and_lock();
+ 
+ 		/* Disable all cpuidle devices */
+ 		for_each_online_cpu(cpu) {
+@@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struc
+ 				cpuidle_enable_device(dev);
+ 			}
+ 		}
+-		put_online_cpus();
+ 		cpuidle_resume_and_unlock();
++		put_online_cpus();
  	}
--	if (test_and_clear_bit(In_sync, &rdev->flags)) {
-+	if (test_and_clear_bit(In_sync, &rdev->flags))
- 		mddev->degraded++;
--			/*
--		 * if recovery is running, make sure it aborts.
--		 */
--		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
--	}
-+	/*
-+	 * If recovery is running, make sure it aborts.
-+	 */
-+	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	set_bit(Blocked, &rdev->flags);
- 	set_bit(Faulty, &rdev->flags);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 
+ 	return 0;
 
 
