@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319AbaIOUpd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:45:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8957 "EHLO mx1.redhat.com"
+	id S1758334AbaIOUpm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:45:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32248 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689AbaIOUp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:45:28 -0400
+	id S1758315AbaIOUpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 16:45:32 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 05/10] KEYS: Make the key matching functions return bool
- [ver #2]
+Subject: [PATCH 06/10] KEYS: Update the keyrings documentation for match
+ changes [ver #2]
 From: David Howells <dhowells@redhat.com>
 To: vgoyal@redhat.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Sep 2014 21:45:22 +0100
-Message-ID: <20140915204522.27499.20166.stgit@warthog.procyon.org.uk>
+Date: Mon, 15 Sep 2014 21:45:28 +0100
+Message-ID: <20140915204528.27499.34138.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 References: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -27,125 +27,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the key matching functions pointed to by key_match_data::cmp return bool
-rather than int.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |    4 ++--
- include/linux/key-type.h                 |   10 ++++++----
- net/dns_resolver/dns_key.c               |    4 ++--
- security/keys/internal.h                 |    8 ++++----
- security/keys/keyring.c                  |    4 ++--
- security/keys/process_keys.c             |    4 ++--
- 6 files changed, 18 insertions(+), 16 deletions(-)
+ Documentation/security/keys.txt |   65 +++++++++++++++++++++++++++++++--------
+ 1 file changed, 52 insertions(+), 13 deletions(-)
 
-diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index 7c0498968975..7755f918e8d9 100644
---- a/crypto/asymmetric_keys/asymmetric_type.c
-+++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -59,8 +59,8 @@ EXPORT_SYMBOL_GPL(asymmetric_keyid_match);
-  *	"id:<id>"	- request a key matching the ID
-  *	"<subtype>:<id>" - request a key of a subtype
-  */
--static int asymmetric_key_cmp(const struct key *key,
--			      const struct key_match_data *match_data)
-+static bool asymmetric_key_cmp(const struct key *key,
-+			       const struct key_match_data *match_data)
- {
- 	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
- 	const char *description = match_data->raw_data;
-diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index c14816bd3b44..ff9f1d394235 100644
---- a/include/linux/key-type.h
-+++ b/include/linux/key-type.h
-@@ -56,10 +56,12 @@ typedef int (*request_key_actor_t)(struct key_construction *key,
-  * Preparsed matching criterion.
-  */
- struct key_match_data {
--	/* Comparison function, defaults to type->match, but can be replaced by
--	 * type->match_preparse(). */
--	int (*cmp)(const struct key *key,
--		   const struct key_match_data *match_data);
-+	/* Comparison function, defaults to exact description match, but can be
-+	 * overridden by type->match_preparse().  Should return true if a match
-+	 * is found and false if not.
-+	 */
-+	bool (*cmp)(const struct key *key,
-+		    const struct key_match_data *match_data);
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index 8727c194ca16..821c936e1a63 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -888,11 +888,11 @@ payload contents" for more information.
+ 				const char *callout_info);
  
- 	const void	*raw_data;	/* Raw match data */
- 	void		*preparsed;	/* For ->match_preparse() to stash stuff */
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index a07b9ba7e0b7..31cd4fd75486 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -176,8 +176,8 @@ static void dns_resolver_free_preparse(struct key_preparsed_payload *prep)
-  * The domain name may be a simple name or an absolute domain name (which
-  * should end with a period).  The domain name is case-independent.
-  */
--static int dns_resolver_cmp(const struct key *key,
--			    const struct key_match_data *match_data)
-+static bool dns_resolver_cmp(const struct key *key,
-+			     const struct key_match_data *match_data)
- {
- 	int slen, dlen, ret = 0;
- 	const char *src = key->description, *dsp = match_data->raw_data;
-diff --git a/security/keys/internal.h b/security/keys/internal.h
-index e66a16cb63e1..b8960c4959a5 100644
---- a/security/keys/internal.h
-+++ b/security/keys/internal.h
-@@ -127,8 +127,8 @@ struct keyring_search_context {
- 	struct timespec		now;
- };
+     This is used to request a key or keyring with a description that matches
+-    the description specified according to the key type's match function. This
+-    permits approximate matching to occur. If callout_string is not NULL, then
+-    /sbin/request-key will be invoked in an attempt to obtain the key from
+-    userspace. In that case, callout_string will be passed as an argument to
+-    the program.
++    the description specified according to the key type's match_preparse()
++    method. This permits approximate matching to occur. If callout_string is
++    not NULL, then /sbin/request-key will be invoked in an attempt to obtain
++    the key from userspace. In that case, callout_string will be passed as an
++    argument to the program.
  
--extern int key_default_cmp(const struct key *key,
--			   const struct key_match_data *match_data);
-+extern bool key_default_cmp(const struct key *key,
+     Should the function fail error ENOKEY, EKEYEXPIRED or EKEYREVOKED will be
+     returned.
+@@ -1170,7 +1170,7 @@ The structure has a number of fields, some of which are mandatory:
+      The method should return 0 if successful or a negative error code
+      otherwise.
+ 
+-     
++
+  (*) void (*free_preparse)(struct key_preparsed_payload *prep);
+ 
+      This method is only required if the preparse() method is provided,
+@@ -1225,16 +1225,55 @@ The structure has a number of fields, some of which are mandatory:
+      It is safe to sleep in this method.
+ 
+ 
+- (*) int (*match)(const struct key *key, const void *desc);
++ (*) int (*match_preparse)(struct key_match_data *match_data);
++
++     This method is optional.  It is called when a key search is about to be
++     performed.  It is given the following structure:
+ 
+-     This method is called to match a key against a description. It should
+-     return non-zero if the two match, zero if they don't.
++	struct key_match_data {
++		bool (*cmp)(const struct key *key,
 +			    const struct key_match_data *match_data);
- extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
- 				    struct keyring_search_context *ctx);
++		const void	*raw_data;
++		void		*preparsed;
++		unsigned	lookup_type;
++	};
  
-@@ -150,8 +150,8 @@ extern struct key *request_key_and_link(struct key_type *type,
- 					struct key *dest_keyring,
- 					unsigned long flags);
+-     This method should not need to lock the key in any way. The type and
+-     description can be considered invariant, and the payload should not be
+-     accessed (the key may not yet be instantiated).
++     On entry, raw_data will be pointing to the criteria to be used in matching
++     a key by the caller and should not be modified.  (*cmp)() will be pointing
++     to the default matcher function (which does an exact description match
++     against raw_data) and lookup_type will be set to indicate a direct lookup.
  
--extern int lookup_user_key_possessed(const struct key *key,
--				     const struct key_match_data *match_data);
-+extern bool lookup_user_key_possessed(const struct key *key,
-+				      const struct key_match_data *match_data);
- extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- 				 key_perm_t perm);
- #define KEY_LOOKUP_CREATE	0x01
-diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 253c9a0eb092..8177010174f7 100644
---- a/security/keys/keyring.c
-+++ b/security/keys/keyring.c
-@@ -513,8 +513,8 @@ EXPORT_SYMBOL(keyring_alloc);
- /*
-  * By default, we keys found by getting an exact match on their descriptions.
-  */
--int key_default_cmp(const struct key *key,
--		    const struct key_match_data *match_data)
-+bool key_default_cmp(const struct key *key,
-+		     const struct key_match_data *match_data)
- {
- 	return strcmp(key->description, match_data->raw_data) == 0;
- }
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 08bd533d014f..bd536cb221e2 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -489,8 +489,8 @@ found:
- /*
-  * See if the key we're looking at is the target key.
-  */
--int lookup_user_key_possessed(const struct key *key,
--			      const struct key_match_data *match_data)
-+bool lookup_user_key_possessed(const struct key *key,
-+			       const struct key_match_data *match_data)
- {
- 	return key == match_data->raw_data;
- }
+-     It is not safe to sleep in this method; the caller may hold spinlocks.
++     The following lookup_type values are available:
++
++      [*] KEYRING_SEARCH_LOOKUP_DIRECT - A direct lookup hashes the type and
++      	  description to narrow down the search to a small number of keys.
++
++      [*] KEYRING_SEARCH_LOOKUP_ITERATE - An iterative lookup walks all the
++      	  keys in the keyring until one is matched.  This must be used for any
++      	  search that's not doing a simple direct match on the key description.
++
++     The method may set cmp to point to a function of its choice that does some
++     other form of match, may set lookup_type to KEYRING_SEARCH_LOOKUP_ITERATE
++     and may attach something to the preparsed pointer for use by (*cmp)().
++     (*cmp)() should return true if a key matches and false otherwise.
++
++     If preparsed is set, it may be necessary to use the match_free() method to
++     clean it up.
++
++     The method should return 0 if successful or a negative error code
++     otherwise.
++
++     It is permitted to sleep in this method, but (*cmp)() may not sleep as
++     locks will be held over it.
++
++     If match_preparse() is not provided, keys of this type will be matched
++     exactly by their description.
++
++
++ (*) void (*match_free)(struct key_match_data *match_data);
++
++     This method is optional.  If given, it called to clean up
++     match_data->preparsed after a successful call to match_preparse().
+ 
+ 
+  (*) void (*revoke)(struct key *key);
 
