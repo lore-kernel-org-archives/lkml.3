@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaIOHbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:31:31 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:37985 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343AbaIOHb0 (ORCPT
+	id S1753554AbaIOHiG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:38:06 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:51357 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352AbaIOHb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:31:26 -0400
+	Mon, 15 Sep 2014 03:31:29 -0400
 From: behanw@converseincode.com
 To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
         fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
@@ -20,11 +20,11 @@ Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
         neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
         thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
         torvalds@linux-foundation.org,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
+        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
         Behan Webster <behanw@converseincode.com>
-Subject: [PATCH v3 02/12] btrfs: LLVMLinux: Remove VLAIS
-Date: Mon, 15 Sep 2014 00:30:24 -0700
-Message-Id: <1410766234-1634-3-git-send-email-behanw@converseincode.com>
+Subject: [PATCH v3 03/12] crypto: LLVMLinux: Remove VLAIS from crypto/ccp/ccp-crypto-sha.c
+Date: Mon, 15 Sep 2014 00:30:25 -0700
+Message-Id: <1410766234-1634-4-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
 References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
@@ -35,61 +35,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinícius Tinti <viniciustinti@gmail.com>
+From: Jan-Simon Möller <dl9pf@gmx.de>
 
 Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This is the original VLAIS struct.
-
-struct {
-	struct shash_desc shash;
-	char ctx[crypto_shash_descsize(tfm)];
-} desc;
-
-This patch instead allocates the appropriate amount of memory using a
-char array using the SHASH_DESC_ON_STACK macro.
+compliant equivalent. This patch allocates the appropriate amount of memory
+using a char array using the SHASH_DESC_ON_STACK macro.
 
 The new code can be compiled with both gcc and clang.
 
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
-Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 Signed-off-by: Behan Webster <behanw@converseincode.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
 ---
- fs/btrfs/hash.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/crypto/ccp/ccp-crypto-sha.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/fs/btrfs/hash.c b/fs/btrfs/hash.c
-index 85889aa..4bf4d3a 100644
---- a/fs/btrfs/hash.c
-+++ b/fs/btrfs/hash.c
-@@ -33,18 +33,16 @@ void btrfs_hash_exit(void)
- 
- u32 btrfs_crc32c(u32 crc, const void *address, unsigned int length)
+diff --git a/drivers/crypto/ccp/ccp-crypto-sha.c b/drivers/crypto/ccp/ccp-crypto-sha.c
+index 873f234..9653157 100644
+--- a/drivers/crypto/ccp/ccp-crypto-sha.c
++++ b/drivers/crypto/ccp/ccp-crypto-sha.c
+@@ -198,10 +198,9 @@ static int ccp_sha_setkey(struct crypto_ahash *tfm, const u8 *key,
  {
+ 	struct ccp_ctx *ctx = crypto_tfm_ctx(crypto_ahash_tfm(tfm));
+ 	struct crypto_shash *shash = ctx->u.sha.hmac_tfm;
 -	struct {
--		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm)];
+-		struct shash_desc sdesc;
+-		char ctx[crypto_shash_descsize(shash)];
 -	} desc;
-+	SHASH_DESC_ON_STACK(shash, tfm);
-+	u32 *ctx = (u32 *)shash_desc_ctx(shash);
- 	int err;
++
++	SHASH_DESC_ON_STACK(sdesc, shash);
++
+ 	unsigned int block_size = crypto_shash_blocksize(shash);
+ 	unsigned int digest_size = crypto_shash_digestsize(shash);
+ 	int i, ret;
+@@ -216,11 +215,11 @@ static int ccp_sha_setkey(struct crypto_ahash *tfm, const u8 *key,
  
--	desc.shash.tfm = tfm;
--	desc.shash.flags = 0;
--	*(u32 *)desc.ctx = crc;
-+	shash->tfm = tfm;
-+	shash->flags = 0;
-+	*ctx = crc;
+ 	if (key_len > block_size) {
+ 		/* Must hash the input key */
+-		desc.sdesc.tfm = shash;
+-		desc.sdesc.flags = crypto_ahash_get_flags(tfm) &
++		sdesc->tfm = shash;
++		sdesc->flags = crypto_ahash_get_flags(tfm) &
+ 			CRYPTO_TFM_REQ_MAY_SLEEP;
  
--	err = crypto_shash_update(&desc.shash, address, length);
-+	err = crypto_shash_update(shash, address, length);
- 	BUG_ON(err);
- 
--	return *(u32 *)desc.ctx;
-+	return *ctx;
- }
+-		ret = crypto_shash_digest(&desc.sdesc, key, key_len,
++		ret = crypto_shash_digest(sdesc, key, key_len,
+ 					  ctx->u.sha.key);
+ 		if (ret) {
+ 			crypto_ahash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
 -- 
 1.9.1
 
