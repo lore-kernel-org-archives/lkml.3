@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaIOMVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 08:21:43 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41729 "EHLO mail.skyhub.de"
+	id S1752447AbaIOMXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 08:23:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60244 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaIOMVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 08:21:41 -0400
-Date: Mon, 15 Sep 2014 14:21:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Doug Thompson <dougthompson@xmission.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "open list:EDAC-CORE" <linux-edac@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Andre Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] edac: Fix build error caused by wrong member access
-Message-ID: <20140915122139.GE3340@nazgul.tnic>
-References: <1408482646-22541-1-git-send-email-bobby.prani@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1408482646-22541-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751138AbaIOMXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 08:23:41 -0400
+Message-ID: <1410783796.31754.85.camel@pasglop>
+Subject: Re: [PATCH] cpuidle/powernv: Enter fastsleep on checking if deep
+ idle states are allowed
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>, mikey@neuling.org,
+        linux-pm@vger.kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Date: Mon, 15 Sep 2014 08:23:16 -0400
+In-Reply-To: <5416A8B0.8040603@linux.vnet.ibm.com>
+References: <20140912110131.7311.86417.stgit@preeti.in.ibm.com>
+	 <1410764352.32643.2.camel@concordia> <5416A8B0.8040603@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 19, 2014 at 05:10:46PM -0400, Pranith Kumar wrote:
-> Fix the following error 
+On Mon, 2014-09-15 at 14:22 +0530, Preeti U Murthy wrote:
+> > We were talking about getting rid of powersave_nap altogether, but I
+> think we
+> > decided we couldn't, I forget.
 > 
-> drivers/edac/ppc4xx_edac.c:977:45: error: request for member 'dimm' in something
-> not a structure or union
-> 
-> by changing member access to pointer dereference
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> CC: Andre Morton <akpm@linux-foundation.org>
+> Isn't this a helpful knob to disable cpuidle at runtime? Currently we
+> check the value of powersave_nap before entering both nap and
+> fastsleep.
 
-Applied, thanks.
+It's useful when diagnosing some problems that can be caused by idle
+states.
 
--- 
-Regards/Gruss,
-    Boris.
---
+Cheers,
+Ben.
+
+
