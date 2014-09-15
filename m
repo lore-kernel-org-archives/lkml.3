@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbaIOUSS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:18:18 -0400
+	id S1757433AbaIOUSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:18:39 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756120AbaIOTq5 (ORCPT
+	with ESMTP id S1755999AbaIOTq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:46:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 102/114] vfs: add d_is_dir()
-Date: Mon, 15 Sep 2014 12:26:42 -0700
-Message-Id: <20140915192644.611148266@linuxfoundation.org>
+        Steve French <smfrench@gmail.com>,
+        Raphael Geissert <geissert@debian.org>
+Subject: [PATCH 3.14 100/114] CIFS: Possible null ptr deref in SMB2_tcon
+Date: Mon, 15 Sep 2014 12:26:40 -0700
+Message-Id: <20140915192644.546825097@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,138 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Steve French <smfrench@gmail.com>
 
-commit 44b1d53043c482225196e8a9cd9f35163a1b3336 upstream.
+commit 18f39e7be0121317550d03e267e3ebd4dbfbb3ce upstream.
 
-Add d_is_dir(dentry) helper which is analogous to S_ISDIR().
+As Raphael Geissert pointed out, tcon_error_exit can dereference tcon
+and there is one path in which tcon can be null.
 
-To avoid confusion, rename d_is_directory() to d_can_lookup().
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Reviewed-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Reported-by: Raphael Geissert <geissert@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c             |   23 +++++++++++------------
- include/linux/dcache.h |    7 ++++++-
- 2 files changed, 17 insertions(+), 13 deletions(-)
+ fs/cifs/smb2pdu.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1797,7 +1797,7 @@ static int link_path_walk(const char *na
- 			if (err)
- 				return err;
- 		}
--		if (!d_is_directory(nd->path.dentry)) {
-+		if (!d_can_lookup(nd->path.dentry)) {
- 			err = -ENOTDIR; 
- 			break;
- 		}
-@@ -1818,7 +1818,7 @@ static int path_init(int dfd, const char
- 		struct dentry *root = nd->root.dentry;
- 		struct inode *inode = root->d_inode;
- 		if (*name) {
--			if (!d_is_directory(root))
-+			if (!d_can_lookup(root))
- 				return -ENOTDIR;
- 			retval = inode_permission(inode, MAY_EXEC);
- 			if (retval)
-@@ -1874,7 +1874,7 @@ static int path_init(int dfd, const char
- 		dentry = f.file->f_path.dentry;
- 
- 		if (*name) {
--			if (!d_is_directory(dentry)) {
-+			if (!d_can_lookup(dentry)) {
- 				fdput(f);
- 				return -ENOTDIR;
- 			}
-@@ -1956,7 +1956,7 @@ static int path_lookupat(int dfd, const
- 		err = complete_walk(nd);
- 
- 	if (!err && nd->flags & LOOKUP_DIRECTORY) {
--		if (!d_is_directory(nd->path.dentry)) {
-+		if (!d_can_lookup(nd->path.dentry)) {
- 			path_put(&nd->path);
- 			err = -ENOTDIR;
- 		}
-@@ -2416,11 +2416,11 @@ static int may_delete(struct inode *dir,
- 	    IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
- 		return -EPERM;
- 	if (isdir) {
--		if (!d_is_directory(victim) && !d_is_autodir(victim))
-+		if (!d_is_dir(victim))
- 			return -ENOTDIR;
- 		if (IS_ROOT(victim))
- 			return -EBUSY;
--	} else if (d_is_directory(victim) || d_is_autodir(victim))
-+	} else if (d_is_dir(victim))
- 		return -EISDIR;
- 	if (IS_DEADDIR(dir))
- 		return -ENOENT;
-@@ -3018,11 +3018,10 @@ finish_open:
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -916,7 +916,8 @@ tcon_exit:
+ tcon_error_exit:
+ 	if (rsp->hdr.Status == STATUS_BAD_NETWORK_NAME) {
+ 		cifs_dbg(VFS, "BAD_NETWORK_NAME: %s\n", tree);
+-		tcon->bad_network_name = true;
++		if (tcon)
++			tcon->bad_network_name = true;
  	}
- 	audit_inode(name, nd->path.dentry, 0);
- 	error = -EISDIR;
--	if ((open_flag & O_CREAT) &&
--	    (d_is_directory(nd->path.dentry) || d_is_autodir(nd->path.dentry)))
-+	if ((open_flag & O_CREAT) && d_is_dir(nd->path.dentry))
- 		goto out;
- 	error = -ENOTDIR;
--	if ((nd->flags & LOOKUP_DIRECTORY) && !d_is_directory(nd->path.dentry))
-+	if ((nd->flags & LOOKUP_DIRECTORY) && !d_can_lookup(nd->path.dentry))
- 		goto out;
- 	if (!S_ISREG(nd->inode->i_mode))
- 		will_truncate = false;
-@@ -3746,7 +3745,7 @@ exit1:
- slashes:
- 	if (d_is_negative(dentry))
- 		error = -ENOENT;
--	else if (d_is_directory(dentry) || d_is_autodir(dentry))
-+	else if (d_is_dir(dentry))
- 		error = -EISDIR;
- 	else
- 		error = -ENOTDIR;
-@@ -4125,7 +4124,7 @@ int vfs_rename(struct inode *old_dir, st
- 	       struct inode **delegated_inode)
- {
- 	int error;
--	int is_dir = d_is_directory(old_dentry) || d_is_autodir(old_dentry);
-+	int is_dir = d_is_dir(old_dentry);
- 	const unsigned char *old_name;
- 
- 	if (old_dentry->d_inode == new_dentry->d_inode)
-@@ -4218,7 +4217,7 @@ retry_deleg:
- 	if (d_is_negative(old_dentry))
- 		goto exit4;
- 	/* unless the source is a directory trailing slashes give -ENOTDIR */
--	if (!d_is_directory(old_dentry) && !d_is_autodir(old_dentry)) {
-+	if (!d_is_dir(old_dentry)) {
- 		error = -ENOTDIR;
- 		if (oldnd.last.name[oldnd.last.len])
- 			goto exit4;
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -429,7 +429,7 @@ static inline unsigned __d_entry_type(co
- 	return dentry->d_flags & DCACHE_ENTRY_TYPE;
+ 	goto tcon_exit;
  }
- 
--static inline bool d_is_directory(const struct dentry *dentry)
-+static inline bool d_can_lookup(const struct dentry *dentry)
- {
- 	return __d_entry_type(dentry) == DCACHE_DIRECTORY_TYPE;
- }
-@@ -439,6 +439,11 @@ static inline bool d_is_autodir(const st
- 	return __d_entry_type(dentry) == DCACHE_AUTODIR_TYPE;
- }
- 
-+static inline bool d_is_dir(const struct dentry *dentry)
-+{
-+	return d_can_lookup(dentry) || d_is_autodir(dentry);
-+}
-+
- static inline bool d_is_symlink(const struct dentry *dentry)
- {
- 	return __d_entry_type(dentry) == DCACHE_SYMLINK_TYPE;
 
 
