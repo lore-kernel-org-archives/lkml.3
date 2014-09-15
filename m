@@ -1,302 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189AbaIOKgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:36:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36932 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753915AbaIOKgZ (ORCPT
+	id S1754221AbaIOKhK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:37:10 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52520 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665AbaIOKhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:36:25 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
-        p.zabel@pengutronix.de
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
+	Mon, 15 Sep 2014 06:37:04 -0400
+Subject: Re: [PATCH v4 1/2] arcmsr: simplify ioctl data read/write
+From: Ching Huang <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 05/12] phy: add the Berlin USB PHY driver
-Date: Mon, 15 Sep 2014 12:36:11 +0200
-Message-Id: <1410777378-12726-6-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <5416BE99.3000409@redhat.com>
+References: <1410506960.5045.250.camel@Centos6.3-64>
+	 <5412F680.2070702@redhat.com> <1410749808.4764.5.camel@Centos6.3-64>
+	 <5416BE99.3000409@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Sep 2014 18:36:55 +0800
+Message-ID: <1410777415.4774.3.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the driver driving the Marvell Berlin USB PHY. This allows to
-initialize the PHY and to use it from the USB driver later.
+On Mon, 2014-09-15 at 12:25 +0200, Tomas Henzl wrote:
+> On 09/15/2014 04:56 AM, Ching Huang wrote:
+> > On Fri, 2014-09-12 at 15:34 +0200, Tomas Henzl wrote:
+> >> On 09/12/2014 09:29 AM, Ching Huang wrote:
+> >>> From: Ching Huang <ching2048@areca.com.tw>
+> >>>
+> >>> This patch is to modify previous patch 13/17 and it is relative to
+> >>> http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
+> >>>
+> >>> change in v4:
+> >>> 1. for readability, rename firstindex to getIndex, rename lastindex to putIndex
+> >> For some reason, the names head+tail areusual for a circular buffer.
+> >> But let us ignore the names, I don't care.
+> >>> 2. define ARCMSR_API_DATA_BUFLEN as 1032
+> >>> 3. simplify ioctl data read by macro CIRC_CNT_TO_END and CIRC_CNT
+> >> It's definitely better when you post renames and other non-functional changes in separate
+> >> patches, it's easier for the reviewer. 
+> >>> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+> >>> ---
+> >>>
+> >>> diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
+> >>> --- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-08-21 12:14:27.000000000 +0800
+> >>> +++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-09-12 15:18:46.659125000 +0800
+> >>> @@ -50,6 +50,7 @@
+> >>>  #include <linux/errno.h>
+> >>>  #include <linux/delay.h>
+> >>>  #include <linux/pci.h>
+> >>> +#include <linux/circ_buf.h>
+> >>>  
+> >>>  #include <scsi/scsi_cmnd.h>
+> >>>  #include <scsi/scsi_device.h>
+> >>> @@ -68,7 +69,7 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >>>  	struct device *dev = container_of(kobj,struct device,kobj);
+> >>>  	struct Scsi_Host *host = class_to_shost(dev);
+> >>>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+> >>> -	uint8_t *pQbuffer,*ptmpQbuffer;
+> >>> +	uint8_t *ptmpQbuffer;
+> >>>  	int32_t allxfer_len = 0;
+> >>>  	unsigned long flags;
+> >>>  
+> >>> @@ -78,57 +79,22 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >>>  	/* do message unit read. */
+> >>>  	ptmpQbuffer = (uint8_t *)buf;
+> >>>  	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> >>> -	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
+> >>> -		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
+> >>> -		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
+> >>> -			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
+> >>> -				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> >>> -				acb->rqbuf_firstindex += 1032;
+> >>> -				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> >>> -				allxfer_len = 1032;
+> >>> -			} else {
+> >>> -				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
+> >>> -					+ acb->rqbuf_lastindex) > 1032) {
+> >>> -					memcpy(ptmpQbuffer, pQbuffer,
+> >>> -						ARCMSR_MAX_QBUFFER
+> >>> -						- acb->rqbuf_firstindex);
+> >>> -					ptmpQbuffer += ARCMSR_MAX_QBUFFER
+> >>> -						- acb->rqbuf_firstindex;
+> >>> -					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
+> >>> -						- (ARCMSR_MAX_QBUFFER -
+> >>> -						acb->rqbuf_firstindex));
+> >>> -					acb->rqbuf_firstindex = 1032 -
+> >>> -						(ARCMSR_MAX_QBUFFER -
+> >>> -						acb->rqbuf_firstindex);
+> >>> -					allxfer_len = 1032;
+> >>> -				} else {
+> >>> -					memcpy(ptmpQbuffer, pQbuffer,
+> >>> -						ARCMSR_MAX_QBUFFER -
+> >>> -						acb->rqbuf_firstindex);
+> >>> -					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
+> >>> -						acb->rqbuf_firstindex;
+> >>> -					memcpy(ptmpQbuffer, acb->rqbuffer,
+> >>> -						acb->rqbuf_lastindex);
+> >>> -					allxfer_len = ARCMSR_MAX_QBUFFER -
+> >>> -						acb->rqbuf_firstindex +
+> >>> -						acb->rqbuf_lastindex;
+> >>> -					acb->rqbuf_firstindex =
+> >>> -						acb->rqbuf_lastindex;
+> >>> -				}
+> >>> -			}
+> >>> -		} else {
+> >>> -			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
+> >>> -				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> >>> -				acb->rqbuf_firstindex += 1032;
+> >>> -				allxfer_len = 1032;
+> >>> -			} else {
+> >>> -				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
+> >>> -					- acb->rqbuf_firstindex);
+> >>> -				allxfer_len = acb->rqbuf_lastindex -
+> >>> -					acb->rqbuf_firstindex;
+> >>> -				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
+> >>> -			}
+> >>> +	if (acb->rqbuf_getIndex != acb->rqbuf_putIndex) {
+> >>> +		unsigned int tail = acb->rqbuf_getIndex;
+> >>> +		unsigned int head = acb->rqbuf_putIndex;
+> >>> +		unsigned int cnt_to_end = CIRC_CNT_TO_END(head, tail, ARCMSR_MAX_QBUFFER);
+> >>> +
+> >>> +		allxfer_len = CIRC_CNT(head, tail, ARCMSR_MAX_QBUFFER);
+> >>> +		if (allxfer_len > ARCMSR_API_DATA_BUFLEN)
+> >>> +			allxfer_len = ARCMSR_API_DATA_BUFLEN;
+> >>> +
+> >>> +		if (allxfer_len <= cnt_to_end)
+> >>> +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, allxfer_len);
+> >>> +		else {
+> >>> +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, cnt_to_end);
+> >>> +			memcpy(ptmpQbuffer + cnt_to_end, acb->rqbuffer, allxfer_len - cnt_to_end);
+> >>>  		}
+> >>> +		acb->rqbuf_getIndex = (acb->rqbuf_getIndex + allxfer_len) % ARCMSR_MAX_QBUFFER;
+> >>>  	}
+> >>>  	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> >>>  		struct QBUFFER __iomem *prbuffer;
+> >>> @@ -150,33 +116,32 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >>>  	struct device *dev = container_of(kobj,struct device,kobj);
+> >>>  	struct Scsi_Host *host = class_to_shost(dev);
+> >>>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+> >>> -	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
+> >>> +	int32_t my_empty_len, user_len, wqbuf_getIndex, wqbuf_putIndex;
+> >>>  	uint8_t *pQbuffer, *ptmpuserbuffer;
+> >>>  	unsigned long flags;
+> >>>  
+> >>>  	if (!capable(CAP_SYS_ADMIN))
+> >>>  		return -EACCES;
+> >>> -	if (count > 1032)
+> >>> +	if (count > ARCMSR_API_DATA_BUFLEN)
+> >>>  		return -EINVAL;
+> >>>  	/* do message unit write. */
+> >>>  	ptmpuserbuffer = (uint8_t *)buf;
+> >>>  	user_len = (int32_t)count;
+> >>>  	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+> >>> -	wqbuf_lastindex = acb->wqbuf_lastindex;
+> >>> -	wqbuf_firstindex = acb->wqbuf_firstindex;
+> >>> -	if (wqbuf_lastindex != wqbuf_firstindex) {
+> >>> +	wqbuf_putIndex = acb->wqbuf_putIndex;
+> >>> +	wqbuf_getIndex = acb->wqbuf_getIndex;
+> >>> +	if (wqbuf_putIndex != wqbuf_getIndex) {
+> >>>  		arcmsr_write_ioctldata2iop(acb);
+> >>>  		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+> >>>  		return 0;	/*need retry*/
+> >>>  	} else {
+> >>> -		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
+> >>> -			&(ARCMSR_MAX_QBUFFER - 1);
+> >>> +		my_empty_len = ARCMSR_MAX_QBUFFER - 1;
+> >> This^ doesn't look like like an rename can you explain?
+> > It is just a code simplification.
+> 
+> Yes it is of some kind. But I think it's also a bug, because you have replaced
+> 'firstindex - lastindex' with nothing.
+It will be not a bug. At here, firstindex == lastindex, so firstindex-lastindex is 0
+> 
+> >> Let us stop here, or we end in an endless loop of corrections. The original 13/17
+> >> you are trying to improve here was at least without bugs (better said I haven't noticed) so
+> >> improving it now only complicates the process.
+> >> My suggestion is -let us skip this patch and focus only on fixing the spinlock problem found in 16/17.
+> >> OKay?
+> > Agree.
+> >> Cheers,
+> >> Tomas
+> >>
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
----
- drivers/phy/Kconfig          |   7 ++
- drivers/phy/Makefile         |   1 +
- drivers/phy/phy-berlin-usb.c | 224 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 232 insertions(+)
- create mode 100644 drivers/phy/phy-berlin-usb.c
-
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index 0dd742719154..d1d73dd8c1fb 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -15,6 +15,13 @@ config GENERIC_PHY
- 	  phy users can obtain reference to the PHY. All the users of this
- 	  framework should select this config.
- 
-+config PHY_BERLIN_USB
-+	tristate "Marvell Berlin USB PHY Driver"
-+	depends on ARCH_BERLIN && HAS_IOMEM && OF
-+	select GENERIC_PHY
-+	help
-+	  Enable this to support the USB PHY on Marvell Berlin SoCs.
-+
- config PHY_BERLIN_SATA
- 	tristate "Marvell Berlin SATA PHY driver"
- 	depends on ARCH_BERLIN && HAS_IOMEM && OF
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 95c69ed5ed45..b12e84b69c23 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -3,6 +3,7 @@
- #
- 
- obj-$(CONFIG_GENERIC_PHY)		+= phy-core.o
-+obj-$(CONFIG_PHY_BERLIN_USB)		+= phy-berlin-usb.o
- obj-$(CONFIG_PHY_BERLIN_SATA)		+= phy-berlin-sata.o
- obj-$(CONFIG_BCM_KONA_USB2_PHY)		+= phy-bcm-kona-usb2.o
- obj-$(CONFIG_PHY_EXYNOS_DP_VIDEO)	+= phy-exynos-dp-video.o
-diff --git a/drivers/phy/phy-berlin-usb.c b/drivers/phy/phy-berlin-usb.c
-new file mode 100644
-index 000000000000..f9f13067f50f
---- /dev/null
-+++ b/drivers/phy/phy-berlin-usb.c
-@@ -0,0 +1,224 @@
-+/*
-+ * Copyright (C) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Antoine Tenart <antoine.tenart@free-electrons.com>
-+ * Jisheng Zhang <jszhang@marvell.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/gpio.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/reset.h>
-+
-+#define USB_PHY_PLL		0x04
-+#define USB_PHY_PLL_CONTROL	0x08
-+#define USB_PHY_TX_CTRL0	0x10
-+#define USB_PHY_TX_CTRL1	0x14
-+#define USB_PHY_TX_CTRL2	0x18
-+#define USB_PHY_RX_CTRL		0x20
-+#define USB_PHY_ANALOG		0x34
-+
-+/* USB_PHY_PLL */
-+#define CLK_REF_DIV(x)		((x) << 4)
-+#define FEEDBACK_CLK_DIV(x)	((x) << 8)
-+
-+/* USB_PHY_PLL_CONTROL */
-+#define CLK_STABLE		BIT(0)
-+#define PLL_CTRL_PIN		BIT(1)
-+#define PLL_CTRL_REG		BIT(2)
-+#define PLL_ON			BIT(3)
-+#define PHASE_OFF_TOL_125	(0x0 << 5)
-+#define PHASE_OFF_TOL_250	BIT(5)
-+#define KVC0_CALIB		(0x0 << 9)
-+#define KVC0_REG_CTRL		BIT(9)
-+#define KVC0_HIGH		(0x0 << 10)
-+#define KVC0_LOW		(0x3 << 10)
-+#define CLK_BLK_EN		BIT(13)
-+
-+/* USB_PHY_TX_CTRL0 */
-+#define EXT_HS_RCAL_EN		BIT(3)
-+#define EXT_FS_RCAL_EN		BIT(4)
-+#define IMPCAL_VTH_DIV(x)	((x) << 5)
-+#define EXT_RS_RCAL_DIV(x)	((x) << 8)
-+#define EXT_FS_RCAL_DIV(x)	((x) << 12)
-+
-+/* USB_PHY_TX_CTRL1 */
-+#define TX_VDD15_14		(0x0 << 4)
-+#define TX_VDD15_15		BIT(4)
-+#define TX_VDD15_16		(0x2 << 4)
-+#define TX_VDD15_17		(0x3 << 4)
-+#define TX_VDD12_VDD		(0x0 << 6)
-+#define TX_VDD12_11		BIT(6)
-+#define TX_VDD12_12		(0x2 << 6)
-+#define TX_VDD12_13		(0x3 << 6)
-+#define LOW_VDD_EN		BIT(8)
-+#define TX_OUT_AMP(x)		((x) << 9)
-+
-+/* USB_PHY_TX_CTRL2 */
-+#define TX_CHAN_CTRL_REG(x)	((x) << 0)
-+#define DRV_SLEWRATE(x)		((x) << 4)
-+#define IMP_CAL_FS_HS_DLY_0	(0x0 << 6)
-+#define IMP_CAL_FS_HS_DLY_1	BIT(6)
-+#define IMP_CAL_FS_HS_DLY_2	(0x2 << 6)
-+#define IMP_CAL_FS_HS_DLY_3	(0x3 << 6)
-+#define FS_DRV_EN_MASK(x)	((x) << 8)
-+#define HS_DRV_EN_MASK(x)	((x) << 12)
-+
-+/* USB_PHY_RX_CTRL */
-+#define PHASE_FREEZE_DLY_2_CL	(0x0 << 0)
-+#define PHASE_FREEZE_DLY_4_CL	BIT(0)
-+#define ACK_LENGTH_8_CL		(0x0 << 2)
-+#define ACK_LENGTH_12_CL	BIT(2)
-+#define ACK_LENGTH_16_CL	(0x2 << 2)
-+#define ACK_LENGTH_20_CL	(0x3 << 2)
-+#define SQ_LENGTH_3		(0x0 << 4)
-+#define SQ_LENGTH_6		BIT(4)
-+#define SQ_LENGTH_9		(0x2 << 4)
-+#define SQ_LENGTH_12		(0x3 << 4)
-+#define DISCON_THRESHOLD_260	(0x0 << 6)
-+#define DISCON_THRESHOLD_270	BIT(6)
-+#define DISCON_THRESHOLD_280	(0x2 << 6)
-+#define DISCON_THRESHOLD_290	(0x3 << 6)
-+#define SQ_THRESHOLD(x)		((x) << 8)
-+#define LPF_COEF(x)		((x) << 12)
-+#define INTPL_CUR_10		(0x0 << 14)
-+#define INTPL_CUR_20		BIT(14)
-+#define INTPL_CUR_30		(0x2 << 14)
-+#define INTPL_CUR_40		(0x3 << 14)
-+
-+/* USB_PHY_ANALOG */
-+#define ANA_PWR_UP		BIT(1)
-+#define ANA_PWR_DOWN		BIT(2)
-+#define V2I_VCO_RATIO(x)	((x) << 7)
-+#define R_ROTATE_90		(0x0 << 10)
-+#define R_ROTATE_0		BIT(10)
-+#define MODE_TEST_EN		BIT(11)
-+#define ANA_TEST_DC_CTRL(x)	((x) << 12)
-+
-+#define to_phy_berlin_usb_priv(p)	\
-+	container_of((p), struct phy_berlin_usb_priv, phy)
-+
-+static const u32 phy_berlin_pll_dividers[] = {
-+	/* Berlin 2 */
-+	CLK_REF_DIV(0xc) | FEEDBACK_CLK_DIV(0x54),
-+	/* Berlin 2CD */
-+	CLK_REF_DIV(0x6) | FEEDBACK_CLK_DIV(0x55),
-+};
-+
-+struct phy_berlin_usb_priv {
-+	void __iomem		*base;
-+	struct phy		*phy;
-+	struct reset_control	*rst_ctrl;
-+	u32			pll_divider;
-+};
-+
-+static int phy_berlin_usb_power_on(struct phy *phy)
-+{
-+	struct phy_berlin_usb_priv *priv = dev_get_drvdata(phy->dev.parent);
-+
-+	reset_control_reset(priv->rst_ctrl);
-+
-+	writel(priv->pll_divider,
-+	       priv->base + USB_PHY_PLL);
-+	writel(CLK_STABLE | PLL_CTRL_REG | PHASE_OFF_TOL_250 | KVC0_REG_CTRL |
-+	       CLK_BLK_EN, priv->base + USB_PHY_PLL_CONTROL);
-+	writel(V2I_VCO_RATIO(0x5) | R_ROTATE_0 | ANA_TEST_DC_CTRL(0x5),
-+	       priv->base + USB_PHY_ANALOG);
-+	writel(PHASE_FREEZE_DLY_4_CL | ACK_LENGTH_16_CL | SQ_LENGTH_12 |
-+	       DISCON_THRESHOLD_260 | SQ_THRESHOLD(0xa) | LPF_COEF(0x2) |
-+	       INTPL_CUR_30, priv->base + USB_PHY_RX_CTRL);
-+
-+	writel(TX_VDD12_13 | TX_OUT_AMP(0x3), priv->base + USB_PHY_TX_CTRL1);
-+	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
-+	       priv->base + USB_PHY_TX_CTRL0);
-+
-+	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4) |
-+	       EXT_FS_RCAL_DIV(0x2), priv->base + USB_PHY_TX_CTRL0);
-+
-+	writel(EXT_HS_RCAL_EN | IMPCAL_VTH_DIV(0x3) | EXT_RS_RCAL_DIV(0x4),
-+	       priv->base + USB_PHY_TX_CTRL0);
-+	writel(TX_CHAN_CTRL_REG(0xf) | DRV_SLEWRATE(0x3) | IMP_CAL_FS_HS_DLY_3 |
-+	       FS_DRV_EN_MASK(0xd), priv->base + USB_PHY_TX_CTRL2);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops phy_berlin_usb_ops = {
-+	.power_on	= phy_berlin_usb_power_on,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static const struct of_device_id phy_berlin_sata_of_match[] = {
-+	{
-+		.compatible = "marvell,berlin2-usb-phy",
-+		.data = &phy_berlin_pll_dividers[0],
-+	},
-+	{
-+		.compatible = "marvell,berlin2cd-usb-phy",
-+		.data = &phy_berlin_pll_dividers[1],
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, phy_berlin_sata_of_match);
-+
-+static int phy_berlin_usb_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id *match =
-+		of_match_device(phy_berlin_sata_of_match, &pdev->dev);
-+	struct phy_berlin_usb_priv *priv;
-+	struct resource *res;
-+	struct phy_provider *phy_provider;
-+
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	priv->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(priv->base))
-+		return PTR_ERR(priv->base);
-+
-+	priv->rst_ctrl = devm_reset_control_get(&pdev->dev, NULL);
-+	if (IS_ERR(priv->rst_ctrl))
-+		return PTR_ERR(priv->rst_ctrl);
-+
-+	priv->pll_divider = *((u32 *)match->data);
-+
-+	priv->phy = devm_phy_create(&pdev->dev, NULL, &phy_berlin_usb_ops,
-+				    NULL);
-+	if (IS_ERR(priv->phy)) {
-+		dev_err(&pdev->dev, "failed to create PHY\n");
-+		return PTR_ERR(priv->phy);
-+	}
-+
-+	platform_set_drvdata(pdev, priv);
-+
-+	phy_provider =
-+		devm_of_phy_provider_register(&pdev->dev, of_phy_simple_xlate);
-+	if (IS_ERR(phy_provider))
-+		return PTR_ERR(phy_provider);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver phy_berlin_usb_driver = {
-+	.probe	= phy_berlin_usb_probe,
-+	.driver	= {
-+		.name		= "phy-berlin-usb",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= phy_berlin_sata_of_match,
-+	 },
-+};
-+module_platform_driver(phy_berlin_usb_driver);
-+
-+MODULE_AUTHOR("Antoine Tenart <antoine.tenart@free-electrons.com>");
-+MODULE_DESCRIPTION("Marvell Berlin PHY driver for USB");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
 
