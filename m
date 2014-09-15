@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115AbaIOVG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:06:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54606 "EHLO
+	id S1758969AbaIOVG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:06:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953AbaIOT05 (ORCPT
+	with ESMTP id S1754941AbaIOT05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 037/158] powerpc/mm: Use read barrier when creating real_pte
-Date: Mon, 15 Sep 2014 12:24:36 -0700
-Message-Id: <20140915192544.005082947@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 034/158] regulator: tps65218: fix DCDC4 linear voltage range
+Date: Mon, 15 Sep 2014 12:24:33 -0700
+Message-Id: <20140915192543.910677835@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,64 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 85c1fafd7262e68ad821ee1808686b1392b1167d upstream.
+commit 42ab0f3915f22728f54bb1f3c0dcf38ab2335b5b upstream.
 
-On ppc64 we support 4K hash pte with 64K page size. That requires
-us to track the hash pte slot information on a per 4k basis. We do that
-by storing the slot details in the second half of pte page. The pte bit
-_PAGE_COMBO is used to indicate whether the second half need to be
-looked while building real_pte. We need to use read memory barrier while
-doing that so that load of hidx is not reordered w.r.t _PAGE_COMBO
-check. On the store side we already do a lwsync in __hash_page_4K
+The second range of this particular regulator,
+starts at 1.60V, not as 1.55V as it was originally
+implied by code.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/pte-hash64-64k.h |   30 +++++++++++++++++++++++++-----
- 1 file changed, 25 insertions(+), 5 deletions(-)
+ drivers/regulator/tps65218-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/include/asm/pte-hash64-64k.h
-+++ b/arch/powerpc/include/asm/pte-hash64-64k.h
-@@ -46,11 +46,31 @@
-  * in order to deal with 64K made of 4K HW pages. Thus we override the
-  * generic accessors and iterators here
-  */
--#define __real_pte(e,p) 	((real_pte_t) { \
--			(e), (pte_val(e) & _PAGE_COMBO) ? \
--				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
--#define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
--        (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
-+#define __real_pte __real_pte
-+static inline real_pte_t __real_pte(pte_t pte, pte_t *ptep)
-+{
-+	real_pte_t rpte;
-+
-+	rpte.pte = pte;
-+	rpte.hidx = 0;
-+	if (pte_val(pte) & _PAGE_COMBO) {
-+		/*
-+		 * Make sure we order the hidx load against the _PAGE_COMBO
-+		 * check. The store side ordering is done in __hash_page_4K
-+		 */
-+		smp_rmb();
-+		rpte.hidx = pte_val(*((ptep) + PTRS_PER_PTE));
-+	}
-+	return rpte;
-+}
-+
-+static inline unsigned long __rpte_to_hidx(real_pte_t rpte, unsigned long index)
-+{
-+	if ((pte_val(rpte.pte) & _PAGE_COMBO))
-+		return (rpte.hidx >> (index<<2)) & 0xf;
-+	return (pte_val(rpte.pte) >> 12) & 0xf;
-+}
-+
- #define __rpte_to_pte(r)	((r).pte)
- #define __rpte_sub_valid(rpte, index) \
- 	(pte_val(rpte.pte) & (_PAGE_HPTE_SUB0 >> (index)))
+--- a/drivers/regulator/tps65218-regulator.c
++++ b/drivers/regulator/tps65218-regulator.c
+@@ -68,7 +68,7 @@ static const struct regulator_linear_ran
+ 
+ static const struct regulator_linear_range dcdc4_ranges[] = {
+ 	REGULATOR_LINEAR_RANGE(1175000, 0x0, 0xf, 25000),
+-	REGULATOR_LINEAR_RANGE(1550000, 0x10, 0x34, 50000),
++	REGULATOR_LINEAR_RANGE(1600000, 0x10, 0x34, 50000),
+ };
+ 
+ static struct tps_info tps65218_pmic_regs[] = {
 
 
