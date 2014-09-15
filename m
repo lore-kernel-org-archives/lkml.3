@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaIORwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:52:54 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55119 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaIORww (ORCPT
+	id S1754247AbaIORyL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:54:11 -0400
+Received: from mail-oa0-f73.google.com ([209.85.219.73]:43552 "EHLO
+	mail-oa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040AbaIORyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:52:52 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 10/18] ACPI / table: Print GIC information when MADT
- is parsed
-To: Olof Johansson <olof@lixom.net>, Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-In-Reply-To: <20140915064010.GD26649@localhost>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
-	<1410530416-30200-11-git-send-email-hanjun.guo@linaro.org>
-	<20140915064010.GD26649@localhost>
-Date: Mon, 15 Sep 2014 10:52:50 -0700
-Message-Id: <20140915175250.8177DC40A42@trevor.secretlab.ca>
+	Mon, 15 Sep 2014 13:54:04 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>,
+        Jayachandran C <jchandra@broadcom.com>,
+        Qais Yousef <qais.yousef@imgtec.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Jonas Gorski <jogo@openwrt.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH v3 2/3] MIPS: Add support for building and installing device-tree binaries
+Date: Mon, 15 Sep 2014 10:53:58 -0700
+Message-Id: <1410803639-3159-3-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1410803639-3159-1-git-send-email-abrestic@chromium.org>
+References: <1410803639-3159-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Sep 2014 23:40:10 -0700, Olof Johansson <olof@lixom.net> wrote:
-> On Fri, Sep 12, 2014 at 10:00:08PM +0800, Hanjun Guo wrote:
-> > When MADT is parsed, print GIC information to make the boot
-> > log look pretty.
-> 
-> If you do this for prettiness, having an example output in the commit
-> message would be a nice touch.
+Add 'dtbs' and 'dtbs_install" Makefile targets that build and install
+the device-tree binaries enabled by the configuration.
 
-Agreed.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+Changes from v2:
+ - added 'dtbs_install' target
+ - removed 'dtbs' target from dts makefile
+No changes from v1.
+---
+ arch/mips/Makefile        | 10 ++++++++++
+ arch/mips/boot/.gitignore |  1 +
+ 2 files changed, 11 insertions(+)
 
-> The question is why it's needed though? Do we really need all this verbose
-> information in dmesg when it could be found out in other ways instead?
-> 
-> x86 is notoriously verbose in some of these aspects, I'm not sure it's
-> something we need to mimic here?
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 72cdd6a..434c834 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -330,6 +330,14 @@ core-$(CONFIG_BUILTIN_DTB) += arch/mips/boot/dts/
+ %.dtb %.dtb.S %.dtb.o: | scripts
+ 	$(Q)$(MAKE) $(build)=arch/mips/boot/dts arch/mips/boot/dts/$@
+ 
++dtbs: scripts
++	$(Q)$(MAKE) $(build)=arch/mips/boot/dts
++
++dtbs_install:
++	$(Q)$(MAKE) $(dtbinst)=arch/mips/boot/dts
++
++PHONY += dtbs dtbs_install
++
+ archprepare:
+ ifdef CONFIG_MIPS32_N32
+ 	@echo '  Checking missing-syscalls for N32'
+@@ -364,6 +372,8 @@ define archhelp
+ 	echo '  vmlinuz.srec         - SREC zboot image'
+ 	echo '  uImage               - U-Boot image'
+ 	echo '  uImage.gz            - U-Boot image (gzip)'
++	echo '  dtbs                 - Device-tree blobs for enabled boards'
++	echo '  dtbs_install         - Install dtbs into $(INSTALL_DTBS_PATH)'
+ 	echo
+ 	echo '  These will be default as appropriate for a configured platform.'
+ endef
+diff --git a/arch/mips/boot/.gitignore b/arch/mips/boot/.gitignore
+index a73d6e2..d3962cd 100644
+--- a/arch/mips/boot/.gitignore
++++ b/arch/mips/boot/.gitignore
+@@ -5,3 +5,4 @@ zImage
+ zImage.tmp
+ calc_vmlinuz_load_addr
+ uImage
++*.dtb
+-- 
+2.1.0.rc2.206.gedb03e5
 
-For consistency, it does make sense to have the common x86 and ARM64
-code outputing information in the same way, so I think the patch still
-makes sense. All of them could be moved to KERN_DEBUG as a separate
-patch if we want to cull early boot output. I would split that off and
-discuss it separately.
-
-g.
