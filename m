@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975AbaIOWSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:18:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51113 "EHLO
+	id S1759218AbaIOWj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:39:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51117 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932954AbaIOWSU (ORCPT
+	with ESMTP id S932904AbaIOWSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:18:20 -0400
+	Mon, 15 Sep 2014 18:18:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 021/187] sparc64: Fix top-level fault handling bugs.
-Date: Mon, 15 Sep 2014 15:07:11 -0700
-Message-Id: <1410818997-9432-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 029/187] sparc64: Do not insert non-valid PTEs into the TSB hash table.
+Date: Mon, 15 Sep 2014 15:07:19 -0700
+Message-Id: <1410818997-9432-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,151 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 70ffc6ebaead783ac8dafb1e87df0039bb043596 ]
+[ Upstream commit 18f38132528c3e603c66ea464727b29e9bbcb91b ]
 
-Make get_user_insn() able to cope with huge PMDs.
+The assumption was that update_mmu_cache() (and the equivalent for PMDs) would
+only be called when the PTE being installed will be accessible by the user.
 
-Next, make do_fault_siginfo() more robust when get_user_insn() can't
-actually fetch the instruction.  In particular, use the MMU announced
-fault address when that happens, instead of calling
-compute_effective_address() and computing garbage.
+This is not true for code paths originating from remove_migration_pte().
+
+There are dire consequences for placing a non-valid PTE into the TSB.  The TLB
+miss frramework assumes thatwhen a TSB entry matches we can just load it into
+the TLB and return from the TLB miss trap.
+
+So if a non-valid PTE is in there, we will deadlock taking the TLB miss over
+and over, never satisfying the miss.
+
+Just exit early from update_mmu_cache() and friends in this situation.
+
+Based upon a report and patch from Christopher Alexander Tobias Schulze.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/mm/fault_64.c | 82 ++++++++++++++++++++++++++++++------------------
- 1 file changed, 52 insertions(+), 30 deletions(-)
+ arch/sparc/mm/init_64.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index 69bb818..a8ff0d1 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -96,38 +96,51 @@ static unsigned int get_user_insn(unsigned long tpc)
- 	pte_t *ptep, pte;
- 	unsigned long pa;
- 	u32 insn = 0;
--	unsigned long pstate;
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 848bea7..16b61aa 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -350,6 +350,10 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *
  
--	if (pgd_none(*pgdp))
--		goto outret;
-+	if (pgd_none(*pgdp) || unlikely(pgd_bad(*pgdp)))
-+		goto out;
- 	pudp = pud_offset(pgdp, tpc);
--	if (pud_none(*pudp))
--		goto outret;
--	pmdp = pmd_offset(pudp, tpc);
--	if (pmd_none(*pmdp))
--		goto outret;
-+	if (pud_none(*pudp) || unlikely(pud_bad(*pudp)))
-+		goto out;
+ 	mm = vma->vm_mm;
  
- 	/* This disables preemption for us as well. */
--	__asm__ __volatile__("rdpr %%pstate, %0" : "=r" (pstate));
--	__asm__ __volatile__("wrpr %0, %1, %%pstate"
--				: : "r" (pstate), "i" (PSTATE_IE));
--	ptep = pte_offset_map(pmdp, tpc);
--	pte = *ptep;
--	if (!pte_present(pte))
--		goto out;
-+	local_irq_disable();
- 
--	pa  = (pte_pfn(pte) << PAGE_SHIFT);
--	pa += (tpc & ~PAGE_MASK);
-+	pmdp = pmd_offset(pudp, tpc);
-+	if (pmd_none(*pmdp) || unlikely(pmd_bad(*pmdp)))
-+		goto out_irq_enable;
++	/* Don't insert a non-valid PTE into the TSB, we'll deadlock.  */
++	if (!pte_accessible(mm, pte))
++		return;
 +
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+	if (pmd_trans_huge(*pmdp)) {
-+		if (pmd_trans_splitting(*pmdp))
-+			goto out_irq_enable;
+ 	spin_lock_irqsave(&mm->context.lock, flags);
  
--	/* Use phys bypass so we don't pollute dtlb/dcache. */
--	__asm__ __volatile__("lduwa [%1] %2, %0"
--			     : "=r" (insn)
--			     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		pa  = pmd_pfn(*pmdp) << PAGE_SHIFT;
-+		pa += tpc & ~HPAGE_MASK;
+ #if defined(CONFIG_HUGETLB_PAGE) || defined(CONFIG_TRANSPARENT_HUGEPAGE)
+@@ -2613,6 +2617,10 @@ void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
  
-+		/* Use phys bypass so we don't pollute dtlb/dcache. */
-+		__asm__ __volatile__("lduwa [%1] %2, %0"
-+				     : "=r" (insn)
-+				     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+	} else
-+#endif
-+	{
-+		ptep = pte_offset_map(pmdp, tpc);
-+		pte = *ptep;
-+		if (pte_present(pte)) {
-+			pa  = (pte_pfn(pte) << PAGE_SHIFT);
-+			pa += (tpc & ~PAGE_MASK);
+ 	pte = pmd_val(entry);
+ 
++	/* Don't insert a non-valid PMD into the TSB, we'll deadlock.  */
++	if (!(pte & _PAGE_VALID))
++		return;
 +
-+			/* Use phys bypass so we don't pollute dtlb/dcache. */
-+			__asm__ __volatile__("lduwa [%1] %2, %0"
-+					     : "=r" (insn)
-+					     : "r" (pa), "i" (ASI_PHYS_USE_EC));
-+		}
-+		pte_unmap(ptep);
-+	}
-+out_irq_enable:
-+	local_irq_enable();
- out:
--	pte_unmap(ptep);
--	__asm__ __volatile__("wrpr %0, 0x0, %%pstate" : : "r" (pstate));
--outret:
- 	return insn;
- }
+ 	/* We are fabricating 8MB pages using 4MB real hw pages.  */
+ 	pte |= (addr & (1UL << REAL_HPAGE_SHIFT));
  
-@@ -153,7 +166,8 @@ show_signal_msg(struct pt_regs *regs, int sig, int code,
- }
- 
- static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
--			     unsigned int insn, int fault_code)
-+			     unsigned long fault_addr, unsigned int insn,
-+			     int fault_code)
- {
- 	unsigned long addr;
- 	siginfo_t info;
-@@ -161,10 +175,18 @@ static void do_fault_siginfo(int code, int sig, struct pt_regs *regs,
- 	info.si_code = code;
- 	info.si_signo = sig;
- 	info.si_errno = 0;
--	if (fault_code & FAULT_CODE_ITLB)
-+	if (fault_code & FAULT_CODE_ITLB) {
- 		addr = regs->tpc;
--	else
--		addr = compute_effective_address(regs, insn, 0);
-+	} else {
-+		/* If we were able to probe the faulting instruction, use it
-+		 * to compute a precise fault address.  Otherwise use the fault
-+		 * time provided address which may only have page granularity.
-+		 */
-+		if (insn)
-+			addr = compute_effective_address(regs, insn, 0);
-+		else
-+			addr = fault_addr;
-+	}
- 	info.si_addr = (void __user *) addr;
- 	info.si_trapno = 0;
- 
-@@ -239,7 +261,7 @@ static void __kprobes do_kernel_fault(struct pt_regs *regs, int si_code,
- 		/* The si_code was set to make clear whether
- 		 * this was a SEGV_MAPERR or SEGV_ACCERR fault.
- 		 */
--		do_fault_siginfo(si_code, SIGSEGV, regs, insn, fault_code);
-+		do_fault_siginfo(si_code, SIGSEGV, regs, address, insn, fault_code);
- 		return;
- 	}
- 
-@@ -525,7 +547,7 @@ do_sigbus:
- 	 * Send a sigbus, regardless of whether we were in kernel
- 	 * or user mode.
- 	 */
--	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, insn, fault_code);
-+	do_fault_siginfo(BUS_ADRERR, SIGBUS, regs, address, insn, fault_code);
- 
- 	/* Kernel mode? Handle exceptions or die */
- 	if (regs->tstate & TSTATE_PRIV)
 -- 
 1.9.1
 
