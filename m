@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831AbaIOT6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:58:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	id S1756889AbaIOT7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:59:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756272AbaIOTrS (ORCPT
+	with ESMTP id S1756261AbaIOTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:18 -0400
+	Mon, 15 Sep 2014 15:47:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 50/71] RDMA/iwcm: Use a default listen backlog if needed
-Date: Mon, 15 Sep 2014 12:26:48 -0700
-Message-Id: <20140915192640.365603644@linuxfoundation.org>
+        Ralf Baechle <ralf@linux-mips.org>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 27/71] MIPS: Fix accessing to per-cpu data when flushing the cache
+Date: Mon, 15 Sep 2014 12:26:25 -0700
+Message-Id: <20140915192639.609542164@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,87 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Ralf Baechle <ralf@linux-mips.org>
 
-commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+commit ff522058bd717506b2fa066fa564657f2b86477e upstream.
 
-If the user creates a listening cm_id with backlog of 0 the IWCM ends
-up not allowing any connection requests at all.  The correct behavior
-is for the IWCM to pick a default value if the user backlog parameter
-is zero.
+This fixes the following issue
 
-Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
-iwarp support without this fix.
+BUG: using smp_processor_id() in preemptible [00000000] code: kjournald/1761
+caller is blast_dcache32+0x30/0x254
+Call Trace:
+[<8047f02c>] dump_stack+0x8/0x34
+[<802e7e40>] debug_smp_processor_id+0xe0/0xf0
+[<80114d94>] blast_dcache32+0x30/0x254
+[<80118484>] r4k_dma_cache_wback_inv+0x200/0x288
+[<80110ff0>] mips_dma_map_sg+0x108/0x180
+[<80355098>] ide_dma_prepare+0xf0/0x1b8
+[<8034eaa4>] do_rw_taskfile+0x1e8/0x33c
+[<8035951c>] ide_do_rw_disk+0x298/0x3e4
+[<8034a3c4>] do_ide_request+0x2e0/0x704
+[<802bb0dc>] __blk_run_queue+0x44/0x64
+[<802be000>] queue_unplugged.isra.36+0x1c/0x54
+[<802beb94>] blk_flush_plug_list+0x18c/0x24c
+[<802bec6c>] blk_finish_plug+0x18/0x48
+[<8026554c>] journal_commit_transaction+0x3b8/0x151c
+[<80269648>] kjournald+0xec/0x238
+[<8014ac00>] kthread+0xb8/0xc0
+[<8010268c>] ret_from_kernel_thread+0x14/0x1c
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Caches in most systems are identical - but not always, so we can't avoid
+the use of smp_call_function() by just looking at the boot CPU's data,
+have to fiddle with preemption instead.
+
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5835
+Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/iwcm.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ arch/mips/mm/c-r4k.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/infiniband/core/iwcm.c
-+++ b/drivers/infiniband/core/iwcm.c
-@@ -46,6 +46,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/sysctl.h>
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -12,6 +12,7 @@
+ #include <linux/highmem.h>
+ #include <linux/kernel.h>
+ #include <linux/linkage.h>
++#include <linux/preempt.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+@@ -601,6 +602,7 @@ static void r4k_dma_cache_wback_inv(unsi
+ 	/* Catch bad driver code */
+ 	BUG_ON(size == 0);
  
- #include <rdma/iw_cm.h>
- #include <rdma/ib_addr.h>
-@@ -65,6 +66,20 @@ struct iwcm_work {
- 	struct list_head free_list;
- };
++	preempt_disable();
+ 	if (cpu_has_inclusive_pcaches) {
+ 		if (size >= scache_size)
+ 			r4k_blast_scache();
+@@ -621,6 +623,7 @@ static void r4k_dma_cache_wback_inv(unsi
+ 		R4600_HIT_CACHEOP_WAR_IMPL;
+ 		blast_dcache_range(addr, addr + size);
+ 	}
++	preempt_enable();
  
-+static unsigned int default_backlog = 256;
-+
-+static struct ctl_table_header *iwcm_ctl_table_hdr;
-+static struct ctl_table iwcm_ctl_table[] = {
-+	{
-+		.procname	= "default_backlog",
-+		.data		= &default_backlog,
-+		.maxlen		= sizeof(default_backlog),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
- /*
-  * The following services provide a mechanism for pre-allocating iwcm_work
-  * elements.  The design pre-allocates them  based on the cm_id type:
-@@ -419,6 +434,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
+ 	bc_wback_inv(addr, size);
+ 	__sync();
+@@ -631,6 +634,7 @@ static void r4k_dma_cache_inv(unsigned l
+ 	/* Catch bad driver code */
+ 	BUG_ON(size == 0);
  
- 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
++	preempt_disable();
+ 	if (cpu_has_inclusive_pcaches) {
+ 		if (size >= scache_size)
+ 			r4k_blast_scache();
+@@ -655,6 +659,7 @@ static void r4k_dma_cache_inv(unsigned l
+ 		R4600_HIT_CACHEOP_WAR_IMPL;
+ 		blast_inv_dcache_range(addr, addr + size);
+ 	}
++	preempt_enable();
  
-+	if (!backlog)
-+		backlog = default_backlog;
-+
- 	ret = alloc_work_entries(cm_id_priv, backlog);
- 	if (ret)
- 		return ret;
-@@ -1024,11 +1042,20 @@ static int __init iw_cm_init(void)
- 	if (!iwcm_wq)
- 		return -ENOMEM;
- 
-+	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
-+						 iwcm_ctl_table);
-+	if (!iwcm_ctl_table_hdr) {
-+		pr_err("iw_cm: couldn't register sysctl paths\n");
-+		destroy_workqueue(iwcm_wq);
-+		return -ENOMEM;
-+	}
-+
- 	return 0;
- }
- 
- static void __exit iw_cm_cleanup(void)
- {
-+	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
- 	destroy_workqueue(iwcm_wq);
- }
- 
+ 	bc_inv(addr, size);
+ 	__sync();
 
 
