@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097AbaIOWTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:19:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51221 "EHLO
+	id S1758958AbaIOWdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:33:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51231 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281AbaIOWTn (ORCPT
+	with ESMTP id S1758291AbaIOWTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:43 -0400
+	Mon, 15 Sep 2014 18:19:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@gentwo.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Tejun Heo <htejun@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 169/187] kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
-Date: Mon, 15 Sep 2014 15:09:39 -0700
-Message-Id: <1410818997-9432-170-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 051/187] [media] v4l: vsp1: Remove the unneeded vsp1_video_buffer video field
+Date: Mon, 15 Sep 2014 15:07:41 -0700
+Message-Id: <1410818997-9432-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -32,40 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 618fde872163e782183ce574c77f1123e2be8887 upstream.
+commit e51daefc228aa164adcc17fe8fce0f856ad0a1cc upstream.
 
-The rarely-executed memry-allocation-failed callback path generates a
-WARN_ON_ONCE() when smp_call_function_single() succeeds.  Presumably
-it's supposed to warn on failures.
+The field is assigned but never read, remove it.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Tejun Heo <htejun@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This fixes a bug caused by the struct vb2_buffer field not being be the
+very first field of the vsp1_video_buffer buffer structure as required
+by videobuf2.
+
+Reported-by: Takanari Hayama <taki@igel.co.jp>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/smp.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/platform/vsp1/vsp1_video.c | 2 --
+ drivers/media/platform/vsp1/vsp1_video.h | 1 -
+ 2 files changed, 3 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c
-index bd9f940..cc2bbf7 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -657,7 +657,7 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
- 			if (cond_func(cpu, info)) {
- 				ret = smp_call_function_single(cpu, func,
- 								info, wait);
--				WARN_ON_ONCE(!ret);
-+				WARN_ON_ONCE(ret);
- 			}
- 		preempt_enable();
- 	}
+diff --git a/drivers/media/platform/vsp1/vsp1_video.c b/drivers/media/platform/vsp1/vsp1_video.c
+index 4b0ac07..daa992c 100644
+--- a/drivers/media/platform/vsp1/vsp1_video.c
++++ b/drivers/media/platform/vsp1/vsp1_video.c
+@@ -622,8 +622,6 @@ static int vsp1_video_buffer_prepare(struct vb2_buffer *vb)
+ 	if (vb->num_planes < format->num_planes)
+ 		return -EINVAL;
+ 
+-	buf->video = video;
+-
+ 	for (i = 0; i < vb->num_planes; ++i) {
+ 		buf->addr[i] = vb2_dma_contig_plane_dma_addr(vb, i);
+ 		buf->length[i] = vb2_plane_size(vb, i);
+diff --git a/drivers/media/platform/vsp1/vsp1_video.h b/drivers/media/platform/vsp1/vsp1_video.h
+index d8612a3..47b7a8a 100644
+--- a/drivers/media/platform/vsp1/vsp1_video.h
++++ b/drivers/media/platform/vsp1/vsp1_video.h
+@@ -89,7 +89,6 @@ static inline struct vsp1_pipeline *to_vsp1_pipeline(struct media_entity *e)
+ }
+ 
+ struct vsp1_video_buffer {
+-	struct vsp1_video *video;
+ 	struct vb2_buffer buf;
+ 	struct list_head queue;
+ 
 -- 
 1.9.1
 
