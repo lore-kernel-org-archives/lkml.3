@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbaIOOuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:50:08 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:60936 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaIOOuB (ORCPT
+	id S1752593AbaIOOvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:51:23 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:32953 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaIOOvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:50:01 -0400
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Nitin Gupta <ngupta@vflare.org>, Chao Yu <chao2.yu@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: [PATCHv3] zram: use notify_free to account all free notifications
-Date: Mon, 15 Sep 2014 23:49:28 +0900
-Message-Id: <1410792568-31539-2-git-send-email-sergey.senozhatsky@gmail.com>
-X-Mailer: git-send-email 2.1.0.350.g8b25fe0
-In-Reply-To: <1410792568-31539-1-git-send-email-sergey.senozhatsky@gmail.com>
-References: <1410792568-31539-1-git-send-email-sergey.senozhatsky@gmail.com>
+	Mon, 15 Sep 2014 10:51:21 -0400
+Date: Mon, 15 Sep 2014 15:51:07 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v4 06/18] ARM64 / ACPI: Introduce early_param for "acpi"
+Message-ID: <20140915145106.GC5415@arm.com>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-7-git-send-email-hanjun.guo@linaro.org>
+ <20140915062824.GB26649@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915062824.GB26649@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-`notify_free' device attribute accounts the number of slot free notifications
-and internally represents the number of zram_free_page() calls. Slot free
-notifications are sent only when device is used as a swap device, hence
-`notify_free' is used only for swap devices. Since f4659d8e620d08 (zram:
-support REQ_DISCARD) ZRAM handles yet another one free notification (also
-via zram_free_page() call) -- REQ_DISCARD requests, which are sent by a
-filesystem, whenever some data blocks are discarded. However, there is no
-way to know the number of notifications in the latter case.
+On Mon, Sep 15, 2014 at 07:28:24AM +0100, Olof Johansson wrote:
+> On Fri, Sep 12, 2014 at 10:00:04PM +0800, Hanjun Guo wrote:
+> >  			See also Documentation/power/runtime_pm.txt, pci=noacpi
+> >  
+> > diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> > index 9252f72..693da7f 100644
+> > --- a/arch/arm64/kernel/acpi.c
+> > +++ b/arch/arm64/kernel/acpi.c
+> > @@ -67,3 +67,18 @@ void __init acpi_boot_table_init(void)
+> >  	if (acpi_table_init())
+> >  		disable_acpi();
+> >  }
+> > +
+> > +static int __init parse_acpi(char *arg)
+> > +{
+> > +	if (!arg)
+> > +		return -EINVAL;
+> > +
+> > +	/* "acpi=off" disables both ACPI table parsing and interpreter */
+> > +	if (strcmp(arg, "off") == 0)
+> > +		disable_acpi();
+> > +	else
+> > +		return -EINVAL;	/* Core will print when we return error */
+> 
+> For symmetry, you should handle acpi=force here too (i.e. if someone
+> disables by default, which I expect we'll ask for when this code is
+> first merged).
 
-Use `notify_free' to account the number of pages freed by zram_bio_discard()
-and zram_slot_free_notify(). Depending on usage scenario `notify_free'
-represents:
- a) the number of pages freed because of slot free notifications, which is
-   equal to the number of swap_slot_free_notify() calls, so there is no
-   behaviour change
+Does this mean you want another Kconfig option - ACPI_DEFAULT_OFF (which
+would be set by default)?
 
- b) the number of pages freed because of REQ_DISCARD notifications
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
----
- Documentation/ABI/testing/sysfs-block-zram | 13 ++++++++-----
- drivers/block/zram/zram_drv.c              |  1 +
- 2 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-index b13dc99..a6148ea 100644
---- a/Documentation/ABI/testing/sysfs-block-zram
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -77,11 +77,14 @@ What:		/sys/block/zram<id>/notify_free
- Date:		August 2010
- Contact:	Nitin Gupta <ngupta@vflare.org>
- Description:
--		The notify_free file is read-only and specifies the number of
--		swap slot free notifications received by this device. These
--		notifications are sent to a swap block device when a swap slot
--		is freed. This statistic is applicable only when this disk is
--		being used as a swap disk.
-+		The notify_free file is read-only. Depending on device usage
-+		scenario it may account a) the number of pages freed because
-+		of swap slot free notifications or b) the number of pages freed
-+		because of REQ_DISCARD requests sent by bio. The former ones
-+		are sent to a swap block device when a swap slot is freed, which
-+		implies that this disk is being used as a swap disk. The latter
-+		ones are sent by filesystem mounted with discard option,
-+		whenever some data blocks are getting discarded.
- 
- What:		/sys/block/zram<id>/zero_pages
- Date:		August 2010
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index d78b245..3b85016 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -698,6 +698,7 @@ static void zram_bio_discard(struct zram *zram, u32 index,
- 		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
- 		zram_free_page(zram, index);
- 		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-+		atomic64_inc(&zram->stats.notify_free);
- 		index++;
- 		n -= PAGE_SIZE;
- 	}
 -- 
-2.1.0.350.g8b25fe0
-
+Catalin
