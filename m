@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013AbaIOUfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:35:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55206 "EHLO
+	id S1757998AbaIOUfL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:35:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755641AbaIOTg7 (ORCPT
+	with ESMTP id S1755642AbaIOTg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Tejun Heo <htejun@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 018/114] kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
-Date: Mon, 15 Sep 2014 12:25:18 -0700
-Message-Id: <20140915192641.996085323@linuxfoundation.org>
+        Michael Welling <mwelling@emacinc.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.14 019/114] mfd: omap-usb-host: Fix improper mask use.
+Date: Mon, 15 Sep 2014 12:25:19 -0700
+Message-Id: <20140915192642.026336800@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -34,38 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Michael Welling <mwelling@emacinc.com>
 
-commit 618fde872163e782183ce574c77f1123e2be8887 upstream.
+commit 46de8ff8e80a6546aa3d2fdf58c6776666301a0c upstream.
 
-The rarely-executed memry-allocation-failed callback path generates a
-WARN_ON_ONCE() when smp_call_function_single() succeeds.  Presumably
-it's supposed to warn on failures.
+single-ulpi-bypass is a flag used for older OMAP3 silicon.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Tejun Heo <htejun@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The flag when set, can excite code that improperly uses the
+OMAP_UHH_HOSTCONFIG_UPLI_BYPASS define to clear the corresponding bit.
+Instead it clears all of the other bits disabling all of the ports in
+the process.
+
+Signed-off-by: Michael Welling <mwelling@emacinc.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/smp.c |    2 +-
+ drivers/mfd/omap-usb-host.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -617,7 +617,7 @@ void on_each_cpu_cond(bool (*cond_func)(
- 			if (cond_func(cpu, info)) {
- 				ret = smp_call_function_single(cpu, func,
- 								info, wait);
--				WARN_ON_ONCE(!ret);
-+				WARN_ON_ONCE(ret);
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -445,7 +445,7 @@ static unsigned omap_usbhs_rev1_hostconf
+ 
+ 		for (i = 0; i < omap->nports; i++) {
+ 			if (is_ehci_phy_mode(pdata->port_mode[i])) {
+-				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
++				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
+ 				break;
  			}
- 		preempt_enable();
- 	}
+ 		}
 
 
