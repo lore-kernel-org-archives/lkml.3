@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaIOThF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	id S1757141AbaIOUaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:30:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635AbaIOThB (ORCPT
+	with ESMTP id S1755685AbaIOThF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:01 -0400
+	Mon, 15 Sep 2014 15:37:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marti Raudsepp <marti@juffo.org>, Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 3.14 008/114] iommu/amd: Fix cleanup_domain for mass device removal
-Date: Mon, 15 Sep 2014 12:25:08 -0700
-Message-Id: <20140915192641.686703154@linuxfoundation.org>
+        KY Srinivasan <kys@microsoft.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 039/114] scsi: add a blacklist flag which enables VPD page inquiries
+Date: Mon, 15 Sep 2014 12:25:39 -0700
+Message-Id: <20140915192642.667743291@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,47 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <jroedel@suse.de>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
+commit c1d40a527e885a40bb9ea6c46a1b1145d42b66a0 upstream.
 
-When multiple devices are detached in __detach_device, they
-are also removed from the domains dev_list. This makes it
-unsafe to use list_for_each_entry_safe, as the next pointer
-might also not be in the list anymore after __detach_device
-returns. So just repeatedly remove the first element of the
-list until it is empty.
+Despite supporting modern SCSI features some storage devices continue to
+claim conformance to an older version of the SPC spec. This is done for
+compatibility with legacy operating systems.
 
-Tested-by: Marti Raudsepp <marti@juffo.org>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Linux by default will not attempt to read VPD pages on devices that
+claim SPC-2 or older. Introduce a blacklist flag that can be used to
+trigger VPD page inquiries on devices that are known to support them.
+
+Reported-by: KY Srinivasan <kys@microsoft.com>
+Tested-by: KY Srinivasan <kys@microsoft.com>
+Reviewed-by: KY Srinivasan <kys@microsoft.com>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/scsi/scsi_scan.c    |    4 +++-
+ drivers/scsi/sd.c           |    5 +++++
+ include/scsi/scsi_device.h  |    1 +
+ include/scsi/scsi_devinfo.h |    1 +
+ 4 files changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3227,14 +3227,16 @@ free_domains:
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -950,7 +950,9 @@ static int scsi_add_lun(struct scsi_devi
  
- static void cleanup_domain(struct protection_domain *domain)
+ 	sdev->eh_timeout = SCSI_DEFAULT_EH_TIMEOUT;
+ 
+-	if (*bflags & BLIST_SKIP_VPD_PAGES)
++	if (*bflags & BLIST_TRY_VPD_PAGES)
++		sdev->try_vpd_pages = 1;
++	else if (*bflags & BLIST_SKIP_VPD_PAGES)
+ 		sdev->skip_vpd_pages = 1;
+ 
+ 	transport_configure_device(&sdev->sdev_gendev);
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2686,6 +2686,11 @@ static void sd_read_write_same(struct sc
+ 
+ static int sd_try_extended_inquiry(struct scsi_device *sdp)
  {
--	struct iommu_dev_data *dev_data, *next;
-+	struct iommu_dev_data *entry;
- 	unsigned long flags;
- 
- 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
- 
--	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
--		__detach_device(dev_data);
--		atomic_set(&dev_data->bind, 0);
-+	while (!list_empty(&domain->dev_list)) {
-+		entry = list_first_entry(&domain->dev_list,
-+					 struct iommu_dev_data, list);
-+		__detach_device(entry);
-+		atomic_set(&entry->bind, 0);
- 	}
- 
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
++	/* Attempt VPD inquiry if the device blacklist explicitly calls
++	 * for it.
++	 */
++	if (sdp->try_vpd_pages)
++		return 1;
+ 	/*
+ 	 * Although VPD inquiries can go to SCSI-2 type devices,
+ 	 * some USB ones crash on receiving them, and the pages
+--- a/include/scsi/scsi_device.h
++++ b/include/scsi/scsi_device.h
+@@ -149,6 +149,7 @@ struct scsi_device {
+ 	unsigned skip_ms_page_8:1;	/* do not use MODE SENSE page 0x08 */
+ 	unsigned skip_ms_page_3f:1;	/* do not use MODE SENSE page 0x3f */
+ 	unsigned skip_vpd_pages:1;	/* do not read VPD pages */
++	unsigned try_vpd_pages:1;	/* attempt to read VPD pages */
+ 	unsigned use_192_bytes_for_3f:1; /* ask for 192 bytes from page 0x3f */
+ 	unsigned no_start_on_add:1;	/* do not issue start on add */
+ 	unsigned allow_restart:1; /* issue START_UNIT in error handler */
+--- a/include/scsi/scsi_devinfo.h
++++ b/include/scsi/scsi_devinfo.h
+@@ -34,4 +34,5 @@
+ #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages */
+ #define BLIST_SCSI3LUN		0x8000000 /* Scan more than 256 LUNs
+ 					     for sequential scan */
++#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
+ #endif
 
 
