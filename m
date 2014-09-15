@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861AbaIOVTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:19:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54580 "EHLO
+	id S1756017AbaIOVUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:20:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678AbaIOT0o (ORCPT
+	with ESMTP id S1754635AbaIOT0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:44 -0400
+	Mon, 15 Sep 2014 15:26:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 007/158] media: mt9v032: fix hblank calculation
-Date: Mon, 15 Sep 2014 12:24:06 -0700
-Message-Id: <20140915192543.099621639@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.16 001/158] reiserfs: fix corruption introduced by balance_leaf refactor
+Date: Mon, 15 Sep 2014 12:24:00 -0700
+Message-Id: <20140915192542.919146543@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,35 +28,382 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit f17bc3f4707eb87bdb80b895911c551cdd606fbd upstream.
+commit 27d0e5bc85f3341b9ba66f0c23627cf9d7538c9d upstream.
 
-Since (min_row_time - crop->width) can be negative, we have to do a signed
-comparison here. Otherwise max_t casts the negative value to unsigned int
-and sets min_hblank to that invalid value.
+Commits f1f007c308e (reiserfs: balance_leaf refactor, pull out
+balance_leaf_insert_left) and cf22df182bf (reiserfs: balance_leaf
+refactor, pull out balance_leaf_paste_left) missed that the `body'
+pointer was getting repositioned. Subsequent users of the pointer
+would expect it to be repositioned, and as a result, parts of the
+tree would get overwritten. The most common observed corruption
+is indirect block pointers being overwritten.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Since the body value isn't actually used anymore in the called routines,
+we can pass back the offset it should be shifted. We constify the body
+and ih pointers in the balance_leaf as a mostly-free preventative measure.
+
+Reported-and-tested-by: Jeff Chua <jeff.chua.linux@gmail.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/mt9v032.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/reiserfs/do_balan.c |  111 +++++++++++++++++++++++++++----------------------
+ fs/reiserfs/lbalance.c |    5 +-
+ fs/reiserfs/reiserfs.h |    9 ++-
+ 3 files changed, 71 insertions(+), 54 deletions(-)
 
---- a/drivers/media/i2c/mt9v032.c
-+++ b/drivers/media/i2c/mt9v032.c
-@@ -305,8 +305,8 @@ mt9v032_update_hblank(struct mt9v032 *mt
+--- a/fs/reiserfs/do_balan.c
++++ b/fs/reiserfs/do_balan.c
+@@ -286,12 +286,14 @@ static int balance_leaf_when_delete(stru
+ 	return 0;
+ }
  
- 	if (mt9v032->version->version == MT9V034_CHIP_ID_REV1)
- 		min_hblank += (mt9v032->hratio - 1) * 10;
--	min_hblank = max_t(unsigned int, (int)mt9v032->model->data->min_row_time - crop->width,
--			   (int)min_hblank);
-+	min_hblank = max_t(int, mt9v032->model->data->min_row_time - crop->width,
-+			   min_hblank);
- 	hblank = max_t(unsigned int, mt9v032->hblank, min_hblank);
+-static void balance_leaf_insert_left(struct tree_balance *tb,
+-				     struct item_head *ih, const char *body)
++static unsigned int balance_leaf_insert_left(struct tree_balance *tb,
++					     struct item_head *const ih,
++					     const char * const body)
+ {
+ 	int ret;
+ 	struct buffer_info bi;
+ 	int n = B_NR_ITEMS(tb->L[0]);
++	unsigned body_shift_bytes = 0;
  
- 	return mt9v032_write(client, MT9V032_HORIZONTAL_BLANKING, hblank);
+ 	if (tb->item_pos == tb->lnum[0] - 1 && tb->lbytes != -1) {
+ 		/* part of new item falls into L[0] */
+@@ -329,7 +331,7 @@ static void balance_leaf_insert_left(str
+ 
+ 		put_ih_item_len(ih, new_item_len);
+ 		if (tb->lbytes > tb->zeroes_num) {
+-			body += (tb->lbytes - tb->zeroes_num);
++			body_shift_bytes = tb->lbytes - tb->zeroes_num;
+ 			tb->zeroes_num = 0;
+ 		} else
+ 			tb->zeroes_num -= tb->lbytes;
+@@ -349,11 +351,12 @@ static void balance_leaf_insert_left(str
+ 		tb->insert_size[0] = 0;
+ 		tb->zeroes_num = 0;
+ 	}
++	return body_shift_bytes;
+ }
+ 
+ static void balance_leaf_paste_left_shift_dirent(struct tree_balance *tb,
+-						 struct item_head *ih,
+-						 const char *body)
++						 struct item_head * const ih,
++						 const char * const body)
+ {
+ 	int n = B_NR_ITEMS(tb->L[0]);
+ 	struct buffer_info bi;
+@@ -413,17 +416,18 @@ static void balance_leaf_paste_left_shif
+ 	tb->pos_in_item -= tb->lbytes;
+ }
+ 
+-static void balance_leaf_paste_left_shift(struct tree_balance *tb,
+-					  struct item_head *ih,
+-					  const char *body)
++static unsigned int balance_leaf_paste_left_shift(struct tree_balance *tb,
++						  struct item_head * const ih,
++						  const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	int n = B_NR_ITEMS(tb->L[0]);
+ 	struct buffer_info bi;
++	int body_shift_bytes = 0;
+ 
+ 	if (is_direntry_le_ih(item_head(tbS0, tb->item_pos))) {
+ 		balance_leaf_paste_left_shift_dirent(tb, ih, body);
+-		return;
++		return 0;
+ 	}
+ 
+ 	RFALSE(tb->lbytes <= 0,
+@@ -497,7 +501,7 @@ static void balance_leaf_paste_left_shif
+ 		 * insert_size[0]
+ 		 */
+ 		if (l_n > tb->zeroes_num) {
+-			body += (l_n - tb->zeroes_num);
++			body_shift_bytes = l_n - tb->zeroes_num;
+ 			tb->zeroes_num = 0;
+ 		} else
+ 			tb->zeroes_num -= l_n;
+@@ -526,13 +530,14 @@ static void balance_leaf_paste_left_shif
+ 		 */
+ 		leaf_shift_left(tb, tb->lnum[0], tb->lbytes);
+ 	}
++	return body_shift_bytes;
+ }
+ 
+ 
+ /* appended item will be in L[0] in whole */
+ static void balance_leaf_paste_left_whole(struct tree_balance *tb,
+-					  struct item_head *ih,
+-					  const char *body)
++					  struct item_head * const ih,
++					  const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	int n = B_NR_ITEMS(tb->L[0]);
+@@ -584,39 +589,44 @@ static void balance_leaf_paste_left_whol
+ 	tb->zeroes_num = 0;
+ }
+ 
+-static void balance_leaf_paste_left(struct tree_balance *tb,
+-				    struct item_head *ih, const char *body)
++static unsigned int balance_leaf_paste_left(struct tree_balance *tb,
++					    struct item_head * const ih,
++					    const char * const body)
+ {
+ 	/* we must shift the part of the appended item */
+ 	if (tb->item_pos == tb->lnum[0] - 1 && tb->lbytes != -1)
+-		balance_leaf_paste_left_shift(tb, ih, body);
++		return balance_leaf_paste_left_shift(tb, ih, body);
+ 	else
+ 		balance_leaf_paste_left_whole(tb, ih, body);
++	return 0;
+ }
+ 
+ /* Shift lnum[0] items from S[0] to the left neighbor L[0] */
+-static void balance_leaf_left(struct tree_balance *tb, struct item_head *ih,
+-			      const char *body, int flag)
++static unsigned int balance_leaf_left(struct tree_balance *tb,
++				      struct item_head * const ih,
++				      const char * const body, int flag)
+ {
+ 	if (tb->lnum[0] <= 0)
+-		return;
++		return 0;
+ 
+ 	/* new item or it part falls to L[0], shift it too */
+ 	if (tb->item_pos < tb->lnum[0]) {
+ 		BUG_ON(flag != M_INSERT && flag != M_PASTE);
+ 
+ 		if (flag == M_INSERT)
+-			balance_leaf_insert_left(tb, ih, body);
++			return balance_leaf_insert_left(tb, ih, body);
+ 		else /* M_PASTE */
+-			balance_leaf_paste_left(tb, ih, body);
++			return balance_leaf_paste_left(tb, ih, body);
+ 	} else
+ 		/* new item doesn't fall into L[0] */
+ 		leaf_shift_left(tb, tb->lnum[0], tb->lbytes);
++	return 0;
+ }
+ 
+ 
+ static void balance_leaf_insert_right(struct tree_balance *tb,
+-				      struct item_head *ih, const char *body)
++				      struct item_head * const ih,
++				      const char * const body)
+ {
+ 
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+@@ -704,7 +714,8 @@ static void balance_leaf_insert_right(st
+ 
+ 
+ static void balance_leaf_paste_right_shift_dirent(struct tree_balance *tb,
+-				     struct item_head *ih, const char *body)
++				     struct item_head * const ih,
++				     const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	struct buffer_info bi;
+@@ -754,7 +765,8 @@ static void balance_leaf_paste_right_shi
+ }
+ 
+ static void balance_leaf_paste_right_shift(struct tree_balance *tb,
+-				     struct item_head *ih, const char *body)
++				     struct item_head * const ih,
++				     const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	int n_shift, n_rem, r_zeroes_number, version;
+@@ -831,7 +843,8 @@ static void balance_leaf_paste_right_shi
+ }
+ 
+ static void balance_leaf_paste_right_whole(struct tree_balance *tb,
+-				     struct item_head *ih, const char *body)
++				     struct item_head * const ih,
++				     const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	int n = B_NR_ITEMS(tbS0);
+@@ -874,7 +887,8 @@ static void balance_leaf_paste_right_who
+ }
+ 
+ static void balance_leaf_paste_right(struct tree_balance *tb,
+-				     struct item_head *ih, const char *body)
++				     struct item_head * const ih,
++				     const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	int n = B_NR_ITEMS(tbS0);
+@@ -896,8 +910,9 @@ static void balance_leaf_paste_right(str
+ }
+ 
+ /* shift rnum[0] items from S[0] to the right neighbor R[0] */
+-static void balance_leaf_right(struct tree_balance *tb, struct item_head *ih,
+-			       const char *body, int flag)
++static void balance_leaf_right(struct tree_balance *tb,
++			       struct item_head * const ih,
++			       const char * const body, int flag)
+ {
+ 	if (tb->rnum[0] <= 0)
+ 		return;
+@@ -911,8 +926,8 @@ static void balance_leaf_right(struct tr
+ }
+ 
+ static void balance_leaf_new_nodes_insert(struct tree_balance *tb,
+-					  struct item_head *ih,
+-					  const char *body,
++					  struct item_head * const ih,
++					  const char * const body,
+ 					  struct item_head *insert_key,
+ 					  struct buffer_head **insert_ptr,
+ 					  int i)
+@@ -1003,8 +1018,8 @@ static void balance_leaf_new_nodes_inser
+ 
+ /* we append to directory item */
+ static void balance_leaf_new_nodes_paste_dirent(struct tree_balance *tb,
+-					 struct item_head *ih,
+-					 const char *body,
++					 struct item_head * const ih,
++					 const char * const body,
+ 					 struct item_head *insert_key,
+ 					 struct buffer_head **insert_ptr,
+ 					 int i)
+@@ -1058,8 +1073,8 @@ static void balance_leaf_new_nodes_paste
+ }
+ 
+ static void balance_leaf_new_nodes_paste_shift(struct tree_balance *tb,
+-					 struct item_head *ih,
+-					 const char *body,
++					 struct item_head * const ih,
++					 const char * const body,
+ 					 struct item_head *insert_key,
+ 					 struct buffer_head **insert_ptr,
+ 					 int i)
+@@ -1131,8 +1146,8 @@ static void balance_leaf_new_nodes_paste
+ }
+ 
+ static void balance_leaf_new_nodes_paste_whole(struct tree_balance *tb,
+-					       struct item_head *ih,
+-					       const char *body,
++					       struct item_head * const ih,
++					       const char * const body,
+ 					       struct item_head *insert_key,
+ 					       struct buffer_head **insert_ptr,
+ 					       int i)
+@@ -1184,8 +1199,8 @@ static void balance_leaf_new_nodes_paste
+ 
+ }
+ static void balance_leaf_new_nodes_paste(struct tree_balance *tb,
+-					 struct item_head *ih,
+-					 const char *body,
++					 struct item_head * const ih,
++					 const char * const body,
+ 					 struct item_head *insert_key,
+ 					 struct buffer_head **insert_ptr,
+ 					 int i)
+@@ -1214,8 +1229,8 @@ static void balance_leaf_new_nodes_paste
+ 
+ /* Fill new nodes that appear in place of S[0] */
+ static void balance_leaf_new_nodes(struct tree_balance *tb,
+-				   struct item_head *ih,
+-				   const char *body,
++				   struct item_head * const ih,
++				   const char * const body,
+ 				   struct item_head *insert_key,
+ 				   struct buffer_head **insert_ptr,
+ 				   int flag)
+@@ -1254,8 +1269,8 @@ static void balance_leaf_new_nodes(struc
+ }
+ 
+ static void balance_leaf_finish_node_insert(struct tree_balance *tb,
+-					    struct item_head *ih,
+-					    const char *body)
++					    struct item_head * const ih,
++					    const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	struct buffer_info bi;
+@@ -1271,8 +1286,8 @@ static void balance_leaf_finish_node_ins
+ }
+ 
+ static void balance_leaf_finish_node_paste_dirent(struct tree_balance *tb,
+-						  struct item_head *ih,
+-						  const char *body)
++						  struct item_head * const ih,
++						  const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	struct item_head *pasted = item_head(tbS0, tb->item_pos);
+@@ -1305,8 +1320,8 @@ static void balance_leaf_finish_node_pas
+ }
+ 
+ static void balance_leaf_finish_node_paste(struct tree_balance *tb,
+-					   struct item_head *ih,
+-					   const char *body)
++					   struct item_head * const ih,
++					   const char * const body)
+ {
+ 	struct buffer_head *tbS0 = PATH_PLAST_BUFFER(tb->tb_path);
+ 	struct buffer_info bi;
+@@ -1349,8 +1364,8 @@ static void balance_leaf_finish_node_pas
+  * of the affected item which remains in S
+  */
+ static void balance_leaf_finish_node(struct tree_balance *tb,
+-				      struct item_head *ih,
+-				      const char *body, int flag)
++				      struct item_head * const ih,
++				      const char * const body, int flag)
+ {
+ 	/* if we must insert or append into buffer S[0] */
+ 	if (0 <= tb->item_pos && tb->item_pos < tb->s0num) {
+@@ -1402,7 +1417,7 @@ static int balance_leaf(struct tree_bala
+ 	    && is_indirect_le_ih(item_head(tbS0, tb->item_pos)))
+ 		tb->pos_in_item *= UNFM_P_SIZE;
+ 
+-	balance_leaf_left(tb, ih, body, flag);
++	body += balance_leaf_left(tb, ih, body, flag);
+ 
+ 	/* tb->lnum[0] > 0 */
+ 	/* Calculate new item position */
+--- a/fs/reiserfs/lbalance.c
++++ b/fs/reiserfs/lbalance.c
+@@ -899,8 +899,9 @@ void leaf_delete_items(struct buffer_inf
+ 
+ /* insert item into the leaf node in position before */
+ void leaf_insert_into_buf(struct buffer_info *bi, int before,
+-			  struct item_head *inserted_item_ih,
+-			  const char *inserted_item_body, int zeros_number)
++			  struct item_head * const inserted_item_ih,
++			  const char * const inserted_item_body,
++			  int zeros_number)
+ {
+ 	struct buffer_head *bh = bi->bi_bh;
+ 	int nr, free_space;
+--- a/fs/reiserfs/reiserfs.h
++++ b/fs/reiserfs/reiserfs.h
+@@ -3216,11 +3216,12 @@ int leaf_shift_right(struct tree_balance
+ void leaf_delete_items(struct buffer_info *cur_bi, int last_first, int first,
+ 		       int del_num, int del_bytes);
+ void leaf_insert_into_buf(struct buffer_info *bi, int before,
+-			  struct item_head *inserted_item_ih,
+-			  const char *inserted_item_body, int zeros_number);
+-void leaf_paste_in_buffer(struct buffer_info *bi, int pasted_item_num,
+-			  int pos_in_item, int paste_size, const char *body,
++			  struct item_head * const inserted_item_ih,
++			  const char * const inserted_item_body,
+ 			  int zeros_number);
++void leaf_paste_in_buffer(struct buffer_info *bi, int pasted_item_num,
++			  int pos_in_item, int paste_size,
++			  const char * const body, int zeros_number);
+ void leaf_cut_from_buffer(struct buffer_info *bi, int cut_item_num,
+ 			  int pos_in_item, int cut_size);
+ void leaf_paste_entries(struct buffer_info *bi, int item_num, int before,
 
 
