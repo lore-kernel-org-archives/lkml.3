@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917AbaIOUcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:32:17 -0400
+	id S1757173AbaIOUcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:32:15 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaIOThB (ORCPT
+	with ESMTP id S1755671AbaIOThD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:01 -0400
+	Mon, 15 Sep 2014 15:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 009/114] spi: orion: fix incorrect handling of cell-index DT property
-Date: Mon, 15 Sep 2014 12:25:09 -0700
-Message-Id: <20140915192641.717919275@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 033/114] Drivers: scsi: storvsc: Change the limits to reflect the values on the host
+Date: Mon, 15 Sep 2014 12:25:33 -0700
+Message-Id: <20140915192642.481824478@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -30,61 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit e06871cd2c92e5c65d7ca1d32866b4ca5dd4ac30 upstream.
+commit 4cd83ecdac20d30725b4f96e5d7814a1e290bc7e upstream.
 
-In commit f814f9ac5a81 ("spi/orion: add device tree binding"), Device
-Tree support was added to the spi-orion driver. However, this commit
-reads the "cell-index" property, without taking into account the fact
-that DT properties are big-endian encoded.
+Hyper-V hosts can support multiple targets and multiple channels and larger number of
+LUNs per target. Update the code to reflect this. With this patch we can correctly
+enumerate all the paths in a multi-path storage environment.
 
-Since most of the platforms using spi-orion with DT have apparently
-not used anything but cell-index = <0>, the problem was not
-visible. But as soon as one starts using cell-index = <1>, the problem
-becomes clearly visible, as the master->bus_num gets a wrong value
-(actually it gets the value 0, which conflicts with the first bus that
-has cell-index = <0>).
-
-This commit fixes that by using of_property_read_u32() to read the
-property value, which does the appropriate endianness conversion when
-needed.
-
-Fixes: f814f9ac5a81 ("spi/orion: add device tree binding")
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-orion.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/scsi/storvsc_drv.c |   51 +++++++++++++++++++++++++++++----------------
+ 1 file changed, 33 insertions(+), 18 deletions(-)
 
---- a/drivers/spi/spi-orion.c
-+++ b/drivers/spi/spi-orion.c
-@@ -404,8 +404,6 @@ static int orion_spi_probe(struct platfo
- 	struct resource *r;
- 	unsigned long tclk_hz;
- 	int status = 0;
--	const u32 *iprop;
--	int size;
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -331,17 +331,17 @@ static int storvsc_timeout = 180;
  
- 	master = spi_alloc_master(&pdev->dev, sizeof(*spi));
- 	if (master == NULL) {
-@@ -416,10 +414,10 @@ static int orion_spi_probe(struct platfo
- 	if (pdev->id != -1)
- 		master->bus_num = pdev->id;
- 	if (pdev->dev.of_node) {
--		iprop = of_get_property(pdev->dev.of_node, "cell-index",
--					&size);
--		if (iprop && size == sizeof(*iprop))
--			master->bus_num = *iprop;
-+		u32 cell_index;
-+		if (!of_property_read_u32(pdev->dev.of_node, "cell-index",
-+					  &cell_index))
-+			master->bus_num = cell_index;
+ static void storvsc_on_channel_callback(void *context);
+ 
+-/*
+- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+- * reality, the path/target is not used (ie always set to 0) so our
+- * scsi host adapter essentially has 1 bus with 1 target that contains
+- * up to 256 luns.
+- */
+-#define STORVSC_MAX_LUNS_PER_TARGET			64
+-#define STORVSC_MAX_TARGETS				1
+-#define STORVSC_MAX_CHANNELS				1
+-
+-
++#define STORVSC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_MAX_TARGETS				2
++#define STORVSC_MAX_CHANNELS				8
++
++#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
++#define STORVSC_FC_MAX_TARGETS				128
++#define STORVSC_FC_MAX_CHANNELS				8
++
++#define STORVSC_IDE_MAX_LUNS_PER_TARGET			64
++#define STORVSC_IDE_MAX_TARGETS				1
++#define STORVSC_IDE_MAX_CHANNELS			1
+ 
+ struct storvsc_cmd_request {
+ 	struct list_head entry;
+@@ -1713,7 +1713,6 @@ static struct scsi_host_template scsi_dr
+ 	.slave_destroy =	storvsc_device_destroy,
+ 	.slave_configure =	storvsc_device_configure,
+ 	.cmd_per_lun =		1,
+-	/* 64 max_queue * 1 target */
+ 	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
+ 	.this_id =		-1,
+ 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
+@@ -1778,6 +1777,9 @@ static int storvsc_probe(struct hv_devic
  	}
  
- 	/* we support only mode 0, and no options */
+ 
++	if (dev_id->driver_data == SFC_GUID)
++		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
++					 STORVSC_FC_MAX_TARGETS);
+ 	host = scsi_host_alloc(&scsi_driver,
+ 			       sizeof(struct hv_host_device));
+ 	if (!host)
+@@ -1811,12 +1813,25 @@ static int storvsc_probe(struct hv_devic
+ 	host_dev->path = stor_device->path_id;
+ 	host_dev->target = stor_device->target_id;
+ 
+-	/* max # of devices per target */
+-	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
+-	/* max # of targets per channel */
+-	host->max_id = STORVSC_MAX_TARGETS;
+-	/* max # of channels */
+-	host->max_channel = STORVSC_MAX_CHANNELS - 1;
++	switch (dev_id->driver_data) {
++	case SFC_GUID:
++		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_FC_MAX_TARGETS;
++		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
++		break;
++
++	case SCSI_GUID:
++		host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_MAX_TARGETS;
++		host->max_channel = STORVSC_MAX_CHANNELS - 1;
++		break;
++
++	default:
++		host->max_lun = STORVSC_IDE_MAX_LUNS_PER_TARGET;
++		host->max_id = STORVSC_IDE_MAX_TARGETS;
++		host->max_channel = STORVSC_IDE_MAX_CHANNELS - 1;
++		break;
++	}
+ 	/* max cmd length */
+ 	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
+ 
 
 
