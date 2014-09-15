@@ -1,359 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722AbaIOTTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:19:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:57569 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754564AbaIOTTO (ORCPT
+	id S1754736AbaIOTTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:19:34 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:60188 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564AbaIOTTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:19:14 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v12 net-next 07/11] bpf: verifier (add ability to receive verification log)
-Date: Mon, 15 Sep 2014 12:18:37 -0700
-Message-Id: <1410808721-27493-8-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
-References: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
+	Mon, 15 Sep 2014 15:19:32 -0400
+From: Peter Feiner <pfeiner@google.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Peter Feiner <pfeiner@google.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] mm: softdirty: addresses before VMAs in PTE holes aren't softdirty
+Date: Mon, 15 Sep 2014 12:19:27 -0700
+Message-Id: <1410808767-9047-1-git-send-email-pfeiner@google.com>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1410374050-13074-1-git-send-email-pfeiner@google.com>
+References: <1410374050-13074-1-git-send-email-pfeiner@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add optional attributes for BPF_PROG_LOAD syscall:
-union bpf_attr {
-    struct {
-	...
-	__u32 log_level;	/* verbosity level of eBPF verifier */
-	__u32 log_size;		/* size of user buffer */
-	char __user *log_buf;	/* user supplied buffer */
-    };
-};
+In PTE holes that contain VM_SOFTDIRTY VMAs, unmapped addresses before
+VM_SOFTDIRTY VMAs are reported as softdirty by /proc/pid/pagemap. This
+bug was introduced in 68b5a652485682f67eacdee3deae640fb7845b63. The
+aforementioned patch made /proc/pid/pagemap look at VM_SOFTDIRTY in PTE
+holes but neglected to observe the start of VMAs returned by find_vma.
 
-when log_level > 0 the verifier will return its verification log in the user
-supplied buffer 'log_buf' which can be used by program author to analyze why
-verifier rejected given program.
+Tested:
+  Wrote a selftest that creates a PMD-sized VMA then unmaps the first
+  page and asserts that the page is not softdirty. I'm going to send the
+  pagemap selftest in a later commit.
 
-'Understanding eBPF verifier messages' section of Documentation/networking/filter.txt
-provides several examples of these messages, like the program:
+Signed-off-by: Peter Feiner <pfeiner@google.com>
 
-  BPF_ST_MEM(BPF_DW, BPF_REG_10, -8, 0),
-  BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-  BPF_ALU64_IMM(BPF_ADD, BPF_REG_2, -8),
-  BPF_LD_MAP_FD(BPF_REG_1, 0),
-  BPF_CALL_FUNC(BPF_FUNC_map_lookup_elem),
-  BPF_JMP_IMM(BPF_JEQ, BPF_REG_0, 0, 1),
-  BPF_ST_MEM(BPF_DW, BPF_REG_0, 4, 0),
-  BPF_EXIT_INSN(),
-
-will be rejected with the following multi-line message in log_buf:
-
-  0: (7a) *(u64 *)(r10 -8) = 0
-  1: (bf) r2 = r10
-  2: (07) r2 += -8
-  3: (b7) r1 = 0
-  4: (85) call 1
-  5: (15) if r0 == 0x0 goto pc+1
-   R0=map_ptr R10=fp
-  6: (7a) *(u64 *)(r0 +4) = 0
-  misaligned access off 4 size 8
-
-The format of the output can change at any time as verifier evolves.
-
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- include/uapi/linux/bpf.h |    3 +
- kernel/bpf/syscall.c     |    2 +-
- kernel/bpf/verifier.c    |  235 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 239 insertions(+), 1 deletion(-)
 
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index a9d56d128b8c..a6331f2ccf93 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -138,6 +138,9 @@ union bpf_attr {
- 		__u32 insn_cnt;
- 		const struct bpf_insn __user *insns;
- 		const char __user *license;
-+		__u32 log_level;	/* verbosity level of eBPF verifier */
-+		__u32 log_size;		/* size of user buffer */
-+		char __user *log_buf;	/* user supplied buffer */
- 	};
- };
+v1 -> v2:
+	Rewrote to make logic easier to follow.
+---
+ fs/proc/task_mmu.c | 27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index dfc791c..c341568 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -931,23 +931,32 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	while (addr < end) {
+ 		struct vm_area_struct *vma = find_vma(walk->mm, addr);
+ 		pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
+-		unsigned long vm_end;
++		/* End of address space hole, which we mark as non-present. */
++		unsigned long hole_end;
  
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-index 10a50453d101..7c062a34c696 100644
---- a/kernel/bpf/syscall.c
-+++ b/kernel/bpf/syscall.c
-@@ -452,7 +452,7 @@ struct bpf_prog *bpf_prog_get(u32 ufd)
- }
- 
- /* last field in 'union bpf_attr' used by this command */
--#define	BPF_PROG_LOAD_LAST_FIELD license
-+#define	BPF_PROG_LOAD_LAST_FIELD log_buf
- 
- static int bpf_prog_load(union bpf_attr *attr)
- {
-diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
-index d6f9c3d6b4d7..c721d1f4d3cc 100644
---- a/kernel/bpf/verifier.c
-+++ b/kernel/bpf/verifier.c
-@@ -125,9 +125,244 @@
-  * are set to NOT_INIT to indicate that they are no longer readable.
-  */
- 
-+/* single container for all structs
-+ * one verifier_env per bpf_check() call
-+ */
-+struct verifier_env {
-+};
-+
-+/* verbose verifier prints what it's seeing
-+ * bpf_check() is called under lock, so no race to access these global vars
-+ */
-+static u32 log_level, log_size, log_len;
-+static char *log_buf;
-+
-+static DEFINE_MUTEX(bpf_verifier_lock);
-+
-+/* log_level controls verbosity level of eBPF verifier.
-+ * verbose() is used to dump the verification trace to the log, so the user
-+ * can figure out what's wrong with the program
-+ */
-+static void verbose(const char *fmt, ...)
-+{
-+	va_list args;
-+
-+	if (log_level == 0 || log_len >= log_size - 1)
-+		return;
-+
-+	va_start(args, fmt);
-+	log_len += vscnprintf(log_buf + log_len, log_size - log_len, fmt, args);
-+	va_end(args);
-+}
-+
-+static const char *const bpf_class_string[] = {
-+	[BPF_LD]    = "ld",
-+	[BPF_LDX]   = "ldx",
-+	[BPF_ST]    = "st",
-+	[BPF_STX]   = "stx",
-+	[BPF_ALU]   = "alu",
-+	[BPF_JMP]   = "jmp",
-+	[BPF_RET]   = "BUG",
-+	[BPF_ALU64] = "alu64",
-+};
-+
-+static const char *const bpf_alu_string[] = {
-+	[BPF_ADD >> 4]  = "+=",
-+	[BPF_SUB >> 4]  = "-=",
-+	[BPF_MUL >> 4]  = "*=",
-+	[BPF_DIV >> 4]  = "/=",
-+	[BPF_OR  >> 4]  = "|=",
-+	[BPF_AND >> 4]  = "&=",
-+	[BPF_LSH >> 4]  = "<<=",
-+	[BPF_RSH >> 4]  = ">>=",
-+	[BPF_NEG >> 4]  = "neg",
-+	[BPF_MOD >> 4]  = "%=",
-+	[BPF_XOR >> 4]  = "^=",
-+	[BPF_MOV >> 4]  = "=",
-+	[BPF_ARSH >> 4] = "s>>=",
-+	[BPF_END >> 4]  = "endian",
-+};
-+
-+static const char *const bpf_ldst_string[] = {
-+	[BPF_W >> 3]  = "u32",
-+	[BPF_H >> 3]  = "u16",
-+	[BPF_B >> 3]  = "u8",
-+	[BPF_DW >> 3] = "u64",
-+};
-+
-+static const char *const bpf_jmp_string[] = {
-+	[BPF_JA >> 4]   = "jmp",
-+	[BPF_JEQ >> 4]  = "==",
-+	[BPF_JGT >> 4]  = ">",
-+	[BPF_JGE >> 4]  = ">=",
-+	[BPF_JSET >> 4] = "&",
-+	[BPF_JNE >> 4]  = "!=",
-+	[BPF_JSGT >> 4] = "s>",
-+	[BPF_JSGE >> 4] = "s>=",
-+	[BPF_CALL >> 4] = "call",
-+	[BPF_EXIT >> 4] = "exit",
-+};
-+
-+static void print_bpf_insn(struct bpf_insn *insn)
-+{
-+	u8 class = BPF_CLASS(insn->code);
-+
-+	if (class == BPF_ALU || class == BPF_ALU64) {
-+		if (BPF_SRC(insn->code) == BPF_X)
-+			verbose("(%02x) %sr%d %s %sr%d\n",
-+				insn->code, class == BPF_ALU ? "(u32) " : "",
-+				insn->dst_reg,
-+				bpf_alu_string[BPF_OP(insn->code) >> 4],
-+				class == BPF_ALU ? "(u32) " : "",
-+				insn->src_reg);
+-		if (!vma) {
+-			vm_end = end;
+-		} else {
+-			vm_end = min(end, vma->vm_end);
+-			if (vma->vm_flags & VM_SOFTDIRTY)
+-				pme.pme |= PM_STATUS2(pm->v2, __PM_SOFT_DIRTY);
++		if (vma)
++			hole_end = min(end, vma->vm_start);
 +		else
-+			verbose("(%02x) %sr%d %s %s%d\n",
-+				insn->code, class == BPF_ALU ? "(u32) " : "",
-+				insn->dst_reg,
-+				bpf_alu_string[BPF_OP(insn->code) >> 4],
-+				class == BPF_ALU ? "(u32) " : "",
-+				insn->imm);
-+	} else if (class == BPF_STX) {
-+		if (BPF_MODE(insn->code) == BPF_MEM)
-+			verbose("(%02x) *(%s *)(r%d %+d) = r%d\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->dst_reg,
-+				insn->off, insn->src_reg);
-+		else if (BPF_MODE(insn->code) == BPF_XADD)
-+			verbose("(%02x) lock *(%s *)(r%d %+d) += r%d\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->dst_reg, insn->off,
-+				insn->src_reg);
-+		else
-+			verbose("BUG_%02x\n", insn->code);
-+	} else if (class == BPF_ST) {
-+		if (BPF_MODE(insn->code) != BPF_MEM) {
-+			verbose("BUG_st_%02x\n", insn->code);
-+			return;
-+		}
-+		verbose("(%02x) *(%s *)(r%d %+d) = %d\n",
-+			insn->code,
-+			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+			insn->dst_reg,
-+			insn->off, insn->imm);
-+	} else if (class == BPF_LDX) {
-+		if (BPF_MODE(insn->code) != BPF_MEM) {
-+			verbose("BUG_ldx_%02x\n", insn->code);
-+			return;
-+		}
-+		verbose("(%02x) r%d = *(%s *)(r%d %+d)\n",
-+			insn->code, insn->dst_reg,
-+			bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+			insn->src_reg, insn->off);
-+	} else if (class == BPF_LD) {
-+		if (BPF_MODE(insn->code) == BPF_ABS) {
-+			verbose("(%02x) r0 = *(%s *)skb[%d]\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->imm);
-+		} else if (BPF_MODE(insn->code) == BPF_IND) {
-+			verbose("(%02x) r0 = *(%s *)skb[r%d + %d]\n",
-+				insn->code,
-+				bpf_ldst_string[BPF_SIZE(insn->code) >> 3],
-+				insn->src_reg, insn->imm);
-+		} else if (BPF_MODE(insn->code) == BPF_IMM) {
-+			verbose("(%02x) r%d = 0x%x\n",
-+				insn->code, insn->dst_reg, insn->imm);
-+		} else {
-+			verbose("BUG_ld_%02x\n", insn->code);
-+			return;
-+		}
-+	} else if (class == BPF_JMP) {
-+		u8 opcode = BPF_OP(insn->code);
++			hole_end = end;
 +
-+		if (opcode == BPF_CALL) {
-+			verbose("(%02x) call %d\n", insn->code, insn->imm);
-+		} else if (insn->code == (BPF_JMP | BPF_JA)) {
-+			verbose("(%02x) goto pc%+d\n",
-+				insn->code, insn->off);
-+		} else if (insn->code == (BPF_JMP | BPF_EXIT)) {
-+			verbose("(%02x) exit\n", insn->code);
-+		} else if (BPF_SRC(insn->code) == BPF_X) {
-+			verbose("(%02x) if r%d %s r%d goto pc%+d\n",
-+				insn->code, insn->dst_reg,
-+				bpf_jmp_string[BPF_OP(insn->code) >> 4],
-+				insn->src_reg, insn->off);
-+		} else {
-+			verbose("(%02x) if r%d %s 0x%x goto pc%+d\n",
-+				insn->code, insn->dst_reg,
-+				bpf_jmp_string[BPF_OP(insn->code) >> 4],
-+				insn->imm, insn->off);
-+		}
-+	} else {
-+		verbose("(%02x) %s\n", insn->code, bpf_class_string[class]);
-+	}
-+}
-+
- int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
- {
-+	char __user *log_ubuf = NULL;
-+	struct verifier_env *env;
- 	int ret = -EINVAL;
++		for (; addr < hole_end; addr += PAGE_SIZE) {
++			err = add_to_pagemap(addr, &pme, pm);
++			if (err)
++				goto out;
+ 		}
  
-+	if (prog->len <= 0 || prog->len > BPF_MAXINSNS)
-+		return -E2BIG;
+-		for (; addr < vm_end; addr += PAGE_SIZE) {
++		if (!vma)
++			break;
 +
-+	/* 'struct verifier_env' can be global, but since it's not small,
-+	 * allocate/free it every time bpf_check() is called
-+	 */
-+	env = kzalloc(sizeof(struct verifier_env), GFP_KERNEL);
-+	if (!env)
-+		return -ENOMEM;
-+
-+	/* grab the mutex to protect few globals used by verifier */
-+	mutex_lock(&bpf_verifier_lock);
-+
-+	if (attr->log_level || attr->log_buf || attr->log_size) {
-+		/* user requested verbose verifier output
-+		 * and supplied buffer to store the verification trace
-+		 */
-+		log_level = attr->log_level;
-+		log_ubuf = attr->log_buf;
-+		log_size = attr->log_size;
-+		log_len = 0;
-+
-+		ret = -EINVAL;
-+		/* log_* values have to be sane */
-+		if (log_size < 128 || log_size > UINT_MAX >> 8 ||
-+		    log_level == 0 || log_ubuf == NULL)
-+			goto free_env;
-+
-+		ret = -ENOMEM;
-+		log_buf = vmalloc(log_size);
-+		if (!log_buf)
-+			goto free_env;
-+	} else {
-+		log_level = 0;
-+	}
-+
-+	/* ret = do_check(env); */
-+
-+	if (log_level && log_len >= log_size - 1) {
-+		BUG_ON(log_len >= log_size);
-+		/* verifier log exceeded user supplied buffer */
-+		ret = -ENOSPC;
-+		/* fall through to return what was recorded */
-+	}
-+
-+	/* copy verifier log back to user space including trailing zero */
-+	if (log_level && copy_to_user(log_ubuf, log_buf, log_len + 1) != 0) {
-+		ret = -EFAULT;
-+		goto free_log_buf;
-+	}
-+
-+
-+free_log_buf:
-+	if (log_level)
-+		vfree(log_buf);
-+free_env:
-+	kfree(env);
-+	mutex_unlock(&bpf_verifier_lock);
- 	return ret;
++		/* Addresses in the VMA. */
++		if (vma->vm_flags & VM_SOFTDIRTY)
++			pme.pme |= PM_STATUS2(pm->v2, __PM_SOFT_DIRTY);
++		for (; addr < min(end, vma->vm_end); addr += PAGE_SIZE) {
+ 			err = add_to_pagemap(addr, &pme, pm);
+ 			if (err)
+ 				goto out;
+ 		}
+ 	}
+-
+ out:
+ 	return err;
  }
 -- 
-1.7.9.5
+2.1.0.rc2.206.gedb03e5
 
