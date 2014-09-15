@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaIOTll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:41:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55538 "EHLO
+	id S1755102AbaIOTlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:41:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55543 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaIOTlg (ORCPT
+	with ESMTP id S1754596AbaIOTlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:41:36 -0400
+	Mon, 15 Sep 2014 15:41:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 071/114] ring-buffer: Always reset iterator to reader page
-Date: Mon, 15 Sep 2014 12:26:11 -0700
-Message-Id: <20140915192643.664211254@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 062/114] bfa: Fix undefined bit shift on big-endian architectures with 32-bit DMA address
+Date: Mon, 15 Sep 2014 12:26:02 -0700
+Message-Id: <20140915192643.383399495@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,131 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 651e22f2701b4113989237c3048d17337dd2185c upstream.
+commit 03a6c3ff3282ee9fa893089304d951e0be93a144 upstream.
 
-When performing a consuming read, the ring buffer swaps out a
-page from the ring buffer with a empty page and this page that
-was swapped out becomes the new reader page. The reader page
-is owned by the reader and since it was swapped out of the ring
-buffer, writers do not have access to it (there's an exception
-to that rule, but it's out of scope for this commit).
+bfa_swap_words() shifts its argument (assumed to be 64-bit) by 32 bits
+each way.  In two places the argument type is dma_addr_t, which may be
+32-bit, in which case the effect of the bit shift is undefined:
 
-When reading the "trace" file, it is a non consuming read, which
-means that the data in the ring buffer will not be modified.
-When the trace file is opened, a ring buffer iterator is allocated
-and writes to the ring buffer are disabled, such that the iterator
-will not have issues iterating over the data.
+drivers/scsi/bfa/bfa_fcpim.c: In function 'bfa_ioim_send_ioreq':
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: right shift count >= width of type [enabled by default]
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: right shift count >= width of type [enabled by default]
 
-Although the ring buffer disabled writes, it does not disable other
-reads, or even consuming reads. If a consuming read happens, then
-the iterator is reset and starts reading from the beginning again.
+Avoid this by adding casts to u64 in bfa_swap_words().
 
-My tests would sometimes trigger this bug on my i386 box:
+Compile-tested only.
 
-WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
-Modules linked in:
-CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
- 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
- f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
- ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
-Call Trace:
- [<c18796b3>] dump_stack+0x4b/0x75
- [<c103a0e3>] warn_slowpath_common+0x7e/0x95
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c103a185>] warn_slowpath_fmt+0x33/0x35
- [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
- [<c10bed04>] trace_find_cmdline+0x40/0x64
- [<c10c3c16>] trace_print_context+0x27/0xec
- [<c10c4360>] ? trace_seq_printf+0x37/0x5b
- [<c10c0b15>] print_trace_line+0x319/0x39b
- [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
- [<c10c13b1>] s_show+0x192/0x1ab
- [<c10bfd9a>] ? s_next+0x5a/0x7c
- [<c112e76e>] seq_read+0x267/0x34c
- [<c1115a25>] vfs_read+0x8c/0xef
- [<c112e507>] ? seq_lseek+0x154/0x154
- [<c1115ba2>] SyS_read+0x54/0x7f
- [<c188488e>] syscall_call+0x7/0xb
----[ end trace 3f507febd6b4cc83 ]---
->>>> ##### CPU 1 buffer started ####
-
-Which was the __trace_find_cmdline() function complaining about the pid
-in the event record being negative.
-
-After adding more test cases, this would trigger more often. Strangely
-enough, it would never trigger on a single test, but instead would trigger
-only when running all the tests. I believe that was the case because it
-required one of the tests to be shutting down via delayed instances while
-a new test started up.
-
-After spending several days debugging this, I found that it was caused by
-the iterator becoming corrupted. Debugging further, I found out why
-the iterator became corrupted. It happened with the rb_iter_reset().
-
-As consuming reads may not read the full reader page, and only part
-of it, there's a "read" field to know where the last read took place.
-The iterator, must also start at the read position. In the rb_iter_reset()
-code, if the reader page was disconnected from the ring buffer, the iterator
-would start at the head page within the ring buffer (where writes still
-happen). But the mistake there was that it still used the "read" field
-to start the iterator on the head page, where it should always start
-at zero because readers never read from within the ring buffer where
-writes occur.
-
-I originally wrote a patch to have it set the iter->head to 0 instead
-of iter->head_page->read, but then I questioned why it wasn't always
-setting the iter to point to the reader page, as the reader page is
-still valid.  The list_empty(reader_page->list) just means that it was
-successful in swapping out. But the reader_page may still have data.
-
-There was a bug report a long time ago that was not reproducible that
-had something about trace_pipe (consuming read) not matching trace
-(iterator read). This may explain why that happened.
-
-Anyway, the correct answer to this bug is to always use the reader page
-an not reset the iterator to inside the writable ring buffer.
-
-Fixes: d769041f8653 "ring_buffer: implement new locking"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Fixes: f16a17507b09 ('[SCSI] bfa: remove all OS wrappers')
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |   17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/scsi/bfa/bfa_ioc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3354,21 +3354,16 @@ static void rb_iter_reset(struct ring_bu
- 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+--- a/drivers/scsi/bfa/bfa_ioc.h
++++ b/drivers/scsi/bfa/bfa_ioc.h
+@@ -72,7 +72,7 @@ struct bfa_sge_s {
+ } while (0)
  
- 	/* Iterator usage is expected to have record disabled */
--	if (list_empty(&cpu_buffer->reader_page->list)) {
--		iter->head_page = rb_set_head_page(cpu_buffer);
--		if (unlikely(!iter->head_page))
--			return;
--		iter->head = iter->head_page->read;
--	} else {
--		iter->head_page = cpu_buffer->reader_page;
--		iter->head = cpu_buffer->reader_page->read;
--	}
-+	iter->head_page = cpu_buffer->reader_page;
-+	iter->head = cpu_buffer->reader_page->read;
-+
-+	iter->cache_reader_page = iter->head_page;
-+	iter->cache_read = iter->head;
-+
- 	if (iter->head)
- 		iter->read_stamp = cpu_buffer->read_stamp;
- 	else
- 		iter->read_stamp = iter->head_page->page->time_stamp;
--	iter->cache_reader_page = cpu_buffer->reader_page;
--	iter->cache_read = cpu_buffer->read;
- }
+ #define bfa_swap_words(_x)  (	\
+-	((_x) << 32) | ((_x) >> 32))
++	((u64)(_x) << 32) | ((u64)(_x) >> 32))
  
- /**
+ #ifdef __BIG_ENDIAN
+ #define bfa_sge_to_be(_x)
 
 
