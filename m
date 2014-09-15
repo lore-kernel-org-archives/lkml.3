@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaIOUtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:49:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55124 "EHLO
+	id S1758591AbaIOUun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:50:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55103 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbaIOTgq (ORCPT
+	with ESMTP id S1755137AbaIOTgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:46 -0400
+	Mon, 15 Sep 2014 15:36:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Szymon Janc <szymon.janc@tieto.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.16 118/158] Bluetooth: Fix tracking local SSP authentication requirement
-Date: Mon, 15 Sep 2014 12:25:57 -0700
-Message-Id: <20140915192546.424410627@linuxfoundation.org>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.16 113/158] mnt: Add tests for unprivileged remount cases that have found to be faulty
+Date: Mon, 15 Sep 2014 12:25:52 -0700
+Message-Id: <20140915192546.272599629@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,77 +29,309 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 6c53823ae0e10e723131055e1e65dd6a328a228e upstream.
+commit db181ce011e3c033328608299cd6fac06ea50130 upstream.
 
-When we need to make the decision whether to perform just-works or real
-user confirmation we need to know the exact local authentication
-requirement that was passed to the controller. So far conn->auth_type
-(the local requirement) wasn't in one case updated appropriately in fear
-of the user confirmation being rejected later.
+Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
+read-only bind mount read-only in a user namespace the
+MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
+to the remount a read-only mount read-write.
 
-The real problem however was not really that conn->auth_type couldn't
-represent the true value but that we were checking the local MITM
-requirement in an incorrect way. It's perfectly fine to let auth_type
-follow what we tell the controller since we're still tracking the target
-security level with conn->pending_sec_level.
+Upon review of the code in remount it was discovered that the code allowed
+nosuid, noexec, and nodev to be cleared.  It was also discovered that
+the code was allowing the per mount atime flags to be changed.
 
-This patch updates the check for local MITM requirement in the
-hci_user_confirm_request_evt function to use the locally requested
-security level and ensures that auth_type always represents what we tell
-the controller. All other code in hci_user_confirm_request_evt still
-uses the auth_type instead of pending_sec_level for determining whether
-to do just-works or not, since that's the only value that's in sync with
-what the remote device knows.
+The first naive patch to fix these issues contained the flaw that using
+default atime settings when remounting a filesystem could be disallowed.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Tested-by: Szymon Janc <szymon.janc@tieto.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+To avoid this problems in the future add tests to ensure unprivileged
+remounts are succeeding and failing at the appropriate times.
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |   17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ tools/testing/selftests/Makefile                          |    1 
+ tools/testing/selftests/mount/Makefile                    |   17 
+ tools/testing/selftests/mount/unprivileged-remount-test.c |  242 ++++++++++++++
+ 3 files changed, 260 insertions(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3538,18 +3538,14 @@ static void hci_io_capa_request_evt(stru
- 
- 		/* If we are initiators, there is no remote information yet */
- 		if (conn->remote_auth == 0xff) {
--			cp.authentication = conn->auth_type;
--
- 			/* Request MITM protection if our IO caps allow it
- 			 * except for the no-bonding case.
--			 * conn->auth_type is not updated here since
--			 * that might cause the user confirmation to be
--			 * rejected in case the remote doesn't have the
--			 * IO capabilities for MITM.
- 			 */
- 			if (conn->io_capability != HCI_IO_NO_INPUT_OUTPUT &&
- 			    cp.authentication != HCI_AT_NO_BONDING)
--				cp.authentication |= 0x01;
-+				conn->auth_type |= 0x01;
+--- a/tools/testing/selftests/Makefile
++++ b/tools/testing/selftests/Makefile
+@@ -4,6 +4,7 @@ TARGETS += efivarfs
+ TARGETS += kcmp
+ TARGETS += memory-hotplug
+ TARGETS += mqueue
++TARGETS += mount
+ TARGETS += net
+ TARGETS += ptrace
+ TARGETS += timers
+--- /dev/null
++++ b/tools/testing/selftests/mount/Makefile
+@@ -0,0 +1,17 @@
++# Makefile for mount selftests.
 +
-+			cp.authentication = conn->auth_type;
- 		} else {
- 			conn->auth_type = hci_get_auth_req(conn);
- 			cp.authentication = conn->auth_type;
-@@ -3621,9 +3617,12 @@ static void hci_user_confirm_request_evt
- 	rem_mitm = (conn->remote_auth & 0x01);
- 
- 	/* If we require MITM but the remote device can't provide that
--	 * (it has NoInputNoOutput) then reject the confirmation request
-+	 * (it has NoInputNoOutput) then reject the confirmation
-+	 * request. We check the security level here since it doesn't
-+	 * necessarily match conn->auth_type.
- 	 */
--	if (loc_mitm && conn->remote_cap == HCI_IO_NO_INPUT_OUTPUT) {
-+	if (conn->pending_sec_level > BT_SECURITY_MEDIUM &&
-+	    conn->remote_cap == HCI_IO_NO_INPUT_OUTPUT) {
- 		BT_DBG("Rejecting request: remote device can't provide MITM");
- 		hci_send_cmd(hdev, HCI_OP_USER_CONFIRM_NEG_REPLY,
- 			     sizeof(ev->bdaddr), &ev->bdaddr);
++all: unprivileged-remount-test
++
++unprivileged-remount-test: unprivileged-remount-test.c
++	gcc -Wall -O2 unprivileged-remount-test.c -o unprivileged-remount-test
++
++# Allow specific tests to be selected.
++test_unprivileged_remount: unprivileged-remount-test
++	@if [ -f /proc/self/uid_map ] ; then ./unprivileged-remount-test ; fi
++
++run_tests: all test_unprivileged_remount
++
++clean:
++	rm -f unprivileged-remount-test
++
++.PHONY: all test_unprivileged_remount
+--- /dev/null
++++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
+@@ -0,0 +1,242 @@
++#define _GNU_SOURCE
++#include <sched.h>
++#include <stdio.h>
++#include <errno.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/mount.h>
++#include <sys/wait.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <grp.h>
++#include <stdbool.h>
++#include <stdarg.h>
++
++#ifndef CLONE_NEWNS
++# define CLONE_NEWNS 0x00020000
++#endif
++#ifndef CLONE_NEWUTS
++# define CLONE_NEWUTS 0x04000000
++#endif
++#ifndef CLONE_NEWIPC
++# define CLONE_NEWIPC 0x08000000
++#endif
++#ifndef CLONE_NEWNET
++# define CLONE_NEWNET 0x40000000
++#endif
++#ifndef CLONE_NEWUSER
++# define CLONE_NEWUSER 0x10000000
++#endif
++#ifndef CLONE_NEWPID
++# define CLONE_NEWPID 0x20000000
++#endif
++
++#ifndef MS_RELATIME
++#define MS_RELATIME (1 << 21)
++#endif
++#ifndef MS_STRICTATIME
++#define MS_STRICTATIME (1 << 24)
++#endif
++
++static void die(char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	vfprintf(stderr, fmt, ap);
++	va_end(ap);
++	exit(EXIT_FAILURE);
++}
++
++static void write_file(char *filename, char *fmt, ...)
++{
++	char buf[4096];
++	int fd;
++	ssize_t written;
++	int buf_len;
++	va_list ap;
++
++	va_start(ap, fmt);
++	buf_len = vsnprintf(buf, sizeof(buf), fmt, ap);
++	va_end(ap);
++	if (buf_len < 0) {
++		die("vsnprintf failed: %s\n",
++		    strerror(errno));
++	}
++	if (buf_len >= sizeof(buf)) {
++		die("vsnprintf output truncated\n");
++	}
++
++	fd = open(filename, O_WRONLY);
++	if (fd < 0) {
++		die("open of %s failed: %s\n",
++		    filename, strerror(errno));
++	}
++	written = write(fd, buf, buf_len);
++	if (written != buf_len) {
++		if (written >= 0) {
++			die("short write to %s\n", filename);
++		} else {
++			die("write to %s failed: %s\n",
++				filename, strerror(errno));
++		}
++	}
++	if (close(fd) != 0) {
++		die("close of %s failed: %s\n",
++			filename, strerror(errno));
++	}
++}
++
++static void create_and_enter_userns(void)
++{
++	uid_t uid;
++	gid_t gid;
++
++	uid = getuid();
++	gid = getgid();
++
++	if (unshare(CLONE_NEWUSER) !=0) {
++		die("unshare(CLONE_NEWUSER) failed: %s\n",
++			strerror(errno));
++	}
++
++	write_file("/proc/self/uid_map", "0 %d 1", uid);
++	write_file("/proc/self/gid_map", "0 %d 1", gid);
++
++	if (setgroups(0, NULL) != 0) {
++		die("setgroups failed: %s\n",
++			strerror(errno));
++	}
++	if (setgid(0) != 0) {
++		die ("setgid(0) failed %s\n",
++			strerror(errno));
++	}
++	if (setuid(0) != 0) {
++		die("setuid(0) failed %s\n",
++			strerror(errno));
++	}
++}
++
++static
++bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
++{
++	pid_t child;
++
++	child = fork();
++	if (child == -1) {
++		die("fork failed: %s\n",
++			strerror(errno));
++	}
++	if (child != 0) { /* parent */
++		pid_t pid;
++		int status;
++		pid = waitpid(child, &status, 0);
++		if (pid == -1) {
++			die("waitpid failed: %s\n",
++				strerror(errno));
++		}
++		if (pid != child) {
++			die("waited for %d got %d\n",
++				child, pid);
++		}
++		if (!WIFEXITED(status)) {
++			die("child did not terminate cleanly\n");
++		}
++		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
++	}
++
++	create_and_enter_userns();
++	if (unshare(CLONE_NEWNS) != 0) {
++		die("unshare(CLONE_NEWNS) failed: %s\n",
++			strerror(errno));
++	}
++
++	if (mount("testing", "/tmp", "ramfs", mount_flags, NULL) != 0) {
++		die("mount of /tmp failed: %s\n",
++			strerror(errno));
++	}
++
++	create_and_enter_userns();
++
++	if (unshare(CLONE_NEWNS) != 0) {
++		die("unshare(CLONE_NEWNS) failed: %s\n",
++			strerror(errno));
++	}
++
++	if (mount("/tmp", "/tmp", "none",
++		  MS_REMOUNT | MS_BIND | remount_flags, NULL) != 0) {
++		/* system("cat /proc/self/mounts"); */
++		die("remount of /tmp failed: %s\n",
++		    strerror(errno));
++	}
++
++	if (mount("/tmp", "/tmp", "none",
++		  MS_REMOUNT | MS_BIND | invalid_flags, NULL) == 0) {
++		/* system("cat /proc/self/mounts"); */
++		die("remount of /tmp with invalid flags "
++		    "succeeded unexpectedly\n");
++	}
++	exit(EXIT_SUCCESS);
++}
++
++static bool test_unpriv_remount_simple(int mount_flags)
++{
++	return test_unpriv_remount(mount_flags, mount_flags, 0);
++}
++
++static bool test_unpriv_remount_atime(int mount_flags, int invalid_flags)
++{
++	return test_unpriv_remount(mount_flags, mount_flags, invalid_flags);
++}
++
++int main(int argc, char **argv)
++{
++	if (!test_unpriv_remount_simple(MS_RDONLY|MS_NODEV)) {
++		die("MS_RDONLY malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NODEV)) {
++		die("MS_NODEV malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NOSUID|MS_NODEV)) {
++		die("MS_NOSUID malfunctions\n");
++	}
++	if (!test_unpriv_remount_simple(MS_NOEXEC|MS_NODEV)) {
++		die("MS_NOEXEC malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_STRICTATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODEV,
++				       MS_STRICTATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_RELATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_STRICTATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_NOATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount_atime(MS_NOATIME|MS_NODIRATIME|MS_NODEV,
++				       MS_STRICTATIME|MS_NODEV))
++	{
++		die("MS_RELATIME malfunctions\n");
++	}
++	if (!test_unpriv_remount(MS_STRICTATIME|MS_NODEV, MS_NODEV,
++				 MS_NOATIME|MS_NODEV))
++	{
++		die("Default atime malfunctions\n");
++	}
++	return EXIT_SUCCESS;
++}
 
 
