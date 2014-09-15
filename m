@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620AbaIOUI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:08:28 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:56394 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640AbaIOUIZ (ORCPT
+	id S1757248AbaIOUJf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:09:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55647 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188AbaIOTrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:08:25 -0400
-Date: Mon, 15 Sep 2014 13:08:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: gxt@mprc.pku.edu.cn
-Cc: linux-kernel@vger.kernel.org, gxt@pku.edu.cn, gang.chen.5i5j@gmail.com,
-        Qin Rui <qinrui@pku.edu.cn>
-Subject: Re: [PATCH 1/4] unicore32-oldabi: add CONFIG_UNICORE32_OLDABI for
- distinguishing two ABIs
-Message-ID: <20140915200820.GD18175@roeck-us.net>
-References: <1b5cc90293670926b5a1e5a06995e527442f8bde.1410502415.git.gxt@mprc.pku.edu.cn>
+	Mon, 15 Sep 2014 15:47:06 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Welling <mwelling@emacinc.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 12/71] mfd: omap-usb-host: Fix improper mask use.
+Date: Mon, 15 Sep 2014 12:26:10 -0700
+Message-Id: <20140915192639.124774954@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1b5cc90293670926b5a1e5a06995e527442f8bde.1410502415.git.gxt@mprc.pku.edu.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 02:41:43PM +0800, gxt@mprc.pku.edu.cn wrote:
-> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> 
-> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Signed-off-by: Qin Rui <qinrui@pku.edu.cn>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-This series lets me build and run an initramfs with the published toolchain,
-after adding the patch 'unicore32: Add ocd console and qemu-defconfig
-to support qemu simulator' as well to get console output. So feel free
-to add
+------------------
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+From: Michael Welling <mwelling@emacinc.com>
 
-to the series.
+commit 46de8ff8e80a6546aa3d2fdf58c6776666301a0c upstream.
 
-I have a couple of questions:
+single-ulpi-bypass is a flag used for older OMAP3 silicon.
 
-- After adding the patch 'unicore32: Add ocd console and qemu-defconfig
-  to support qemu simulator', I only get console output, but no input.
-  Is there a way (for example with a qemu command line option) to get
-  input as well ?
-- Is it possible to connect a console to a serial device in qemu (in other
-  words to run the image in qemu without the ocd console patch) ?
-- Is there a working description on how to create a toolchain for the _new_
-  ABI ? Alternatively, would it be possible to publish such a toolchain ?
+The flag when set, can excite code that improperly uses the
+OMAP_UHH_HOSTCONFIG_UPLI_BYPASS define to clear the corresponding bit.
+Instead it clears all of the other bits disabling all of the ports in
+the process.
 
-Thanks a lot,
+Signed-off-by: Michael Welling <mwelling@emacinc.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Guenter
+---
+ drivers/mfd/omap-usb-host.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> ---
->  arch/unicore32/Kconfig | 11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-> index 928237a..e5d25b4 100644
-> --- a/arch/unicore32/Kconfig
-> +++ b/arch/unicore32/Kconfig
-> @@ -72,6 +72,17 @@ source "kernel/Kconfig.freezer"
->  
->  menu "System Type"
->  
-> +config UNICORE32_OLDABI
-> +	bool "Allow old ABI binaries to run with this kernel"
-> +	default y
-> +	help
-> +	  This option preserves the old syscall interface instead of the
-> +	  asm-generic one. It also provides a compatibility layer to
-> +	  intercept syscalls that have structure arguments which layout
-> +	  in memory differs between the asm-generic ABI and this old one.
-> +
-> +	  If in doubt, say Y.
-> +
->  config MMU
->  	def_bool y
->  
-> -- 
-> 2.0.0.GIT
-> 
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -445,7 +445,7 @@ static unsigned omap_usbhs_rev1_hostconf
+ 
+ 		for (i = 0; i < omap->nports; i++) {
+ 			if (is_ehci_phy_mode(pdata->port_mode[i])) {
+-				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
++				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
+ 				break;
+ 			}
+ 		}
+
+
