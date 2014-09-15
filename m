@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759809AbaIOW7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:59:51 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:58144 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758057AbaIOW7t (ORCPT
+	id S1759835AbaIOXAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:00:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50839 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678AbaIOWOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:59:49 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Phong Tran <tranmanphong@gmail.com>,
-        linux-api@vger.kernel.org (open list:KERNEL SELFTEST F...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] selftests/memfd: Run test on all architectures
-Date: Mon, 15 Sep 2014 18:59:42 -0400
-Message-Id: <1410821984-11160-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Mon, 15 Sep 2014 18:14:08 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>,
+        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 064/187] drm/tilcdc: tfp410: fix dangling sysfs connector node
+Date: Mon, 15 Sep 2014 15:07:54 -0700
+Message-Id: <1410818997-9432-65-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the dependence on x86 to run the memfd test. Verfied on 32-bit powerpc.
+3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+------------------
+
+From: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
+
+commit 16dcbdef404f4e87dab985494381939fe0a2d456 upstream.
+
+Add a drm_sysfs_connector_remove call when we destroy the panel to make
+sure the connector node in sysfs gets deleted.
+
+This is required for proper unload and re-load of this driver, otherwise
+we will get a warning about a duplicate filename in sysfs.
+
+Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- tools/testing/selftests/memfd/Makefile | 21 ---------------------
- 1 file changed, 21 deletions(-)
+ drivers/gpu/drm/tilcdc/tilcdc_tfp410.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
-index ad4ab01..b80cd10 100644
---- a/tools/testing/selftests/memfd/Makefile
-+++ b/tools/testing/selftests/memfd/Makefile
-@@ -1,38 +1,17 @@
--uname_M := $(shell uname -m 2>/dev/null || echo not)
--ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
--ifeq ($(ARCH),i386)
--	ARCH := x86
--endif
--ifeq ($(ARCH),x86_64)
--	ARCH := x86
--endif
--
- CFLAGS += -D_FILE_OFFSET_BITS=64
--CFLAGS += -I../../../../arch/x86/include/generated/uapi/
--CFLAGS += -I../../../../arch/x86/include/uapi/
- CFLAGS += -I../../../../include/uapi/
- CFLAGS += -I../../../../include/
- 
- all:
--ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) memfd_test.c -o memfd_test
--else
--	echo "Not an x86 target, can't build memfd selftest"
--endif
- 
- run_tests: all
--ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) memfd_test.c -o memfd_test
--endif
- 	@./memfd_test || echo "memfd_test: [FAIL]"
- 
- build_fuse:
--ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
- 	gcc $(CFLAGS) fuse_test.c -o fuse_test
--else
--	echo "Not an x86 target, can't build memfd selftest"
--endif
- 
- run_fuse: build_fuse
- 	@./run_fuse_test.sh || echo "fuse_test: [FAIL]"
+diff --git a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
+index c38b56b..ce75ac8 100644
+--- a/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
++++ b/drivers/gpu/drm/tilcdc/tilcdc_tfp410.c
+@@ -167,6 +167,7 @@ struct tfp410_connector {
+ static void tfp410_connector_destroy(struct drm_connector *connector)
+ {
+ 	struct tfp410_connector *tfp410_connector = to_tfp410_connector(connector);
++	drm_sysfs_connector_remove(connector);
+ 	drm_connector_cleanup(connector);
+ 	kfree(tfp410_connector);
+ }
 -- 
-2.1.0
+1.9.1
 
