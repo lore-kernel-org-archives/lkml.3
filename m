@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760422AbaIOXVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:21:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50484 "EHLO
+	id S1760406AbaIOXVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:21:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50485 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911AbaIOWKb (ORCPT
+	with ESMTP id S1756456AbaIOWKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 18:10:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sasha Levin <sasha.levin@oracle.com>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 010/187] iovec: make sure the caller actually wants anything in memcpy_fromiovecend
-Date: Mon, 15 Sep 2014 15:07:00 -0700
-Message-Id: <1410818997-9432-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 012/187] sctp: fix possible seqlock seadlock in sctp_packet_transmit()
+Date: Mon, 15 Sep 2014 15:07:02 -0700
+Message-Id: <1410818997-9432-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,35 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 06ebb06d49486676272a3c030bfeef4bd969a8e6 ]
+[ Upstream commit 757efd32d5ce31f67193cc0e6a56e4dffcc42fb1 ]
 
-Check for cases when the caller requests 0 bytes instead of running off
-and dereferencing potentially invalid iovecs.
+Dave reported following splat, caused by improper use of
+IP_INC_STATS_BH() in process context.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+BUG: using __this_cpu_add() in preemptible [00000000] code: trinity-c117/14551
+caller is __this_cpu_preempt_check+0x13/0x20
+CPU: 3 PID: 14551 Comm: trinity-c117 Not tainted 3.16.0+ #33
+ ffffffff9ec898f0 0000000047ea7e23 ffff88022d32f7f0 ffffffff9e7ee207
+ 0000000000000003 ffff88022d32f818 ffffffff9e397eaa ffff88023ee70b40
+ ffff88022d32f970 ffff8801c026d580 ffff88022d32f828 ffffffff9e397ee3
+Call Trace:
+ [<ffffffff9e7ee207>] dump_stack+0x4e/0x7a
+ [<ffffffff9e397eaa>] check_preemption_disabled+0xfa/0x100
+ [<ffffffff9e397ee3>] __this_cpu_preempt_check+0x13/0x20
+ [<ffffffffc0839872>] sctp_packet_transmit+0x692/0x710 [sctp]
+ [<ffffffffc082a7f2>] sctp_outq_flush+0x2a2/0xc30 [sctp]
+ [<ffffffff9e0d985c>] ? mark_held_locks+0x7c/0xb0
+ [<ffffffff9e7f8c6d>] ? _raw_spin_unlock_irqrestore+0x5d/0x80
+ [<ffffffffc082b99a>] sctp_outq_uncork+0x1a/0x20 [sctp]
+ [<ffffffffc081e112>] sctp_cmd_interpreter.isra.23+0x1142/0x13f0 [sctp]
+ [<ffffffffc081c86b>] sctp_do_sm+0xdb/0x330 [sctp]
+ [<ffffffff9e0b8f1b>] ? preempt_count_sub+0xab/0x100
+ [<ffffffffc083b350>] ? sctp_cname+0x70/0x70 [sctp]
+ [<ffffffffc08389ca>] sctp_primitive_ASSOCIATE+0x3a/0x50 [sctp]
+ [<ffffffffc083358f>] sctp_sendmsg+0x88f/0xe30 [sctp]
+ [<ffffffff9e0d673a>] ? lock_release_holdtime.part.28+0x9a/0x160
+ [<ffffffff9e0d62ce>] ? put_lock_stats.isra.27+0xe/0x30
+ [<ffffffff9e73b624>] inet_sendmsg+0x104/0x220
+ [<ffffffff9e73b525>] ? inet_sendmsg+0x5/0x220
+ [<ffffffff9e68ac4e>] sock_sendmsg+0x9e/0xe0
+ [<ffffffff9e1c0c09>] ? might_fault+0xb9/0xc0
+ [<ffffffff9e1c0bae>] ? might_fault+0x5e/0xc0
+ [<ffffffff9e68b234>] SYSC_sendto+0x124/0x1c0
+ [<ffffffff9e0136b0>] ? syscall_trace_enter+0x250/0x330
+ [<ffffffff9e68c3ce>] SyS_sendto+0xe/0x10
+ [<ffffffff9e7f9be4>] tracesys+0xdd/0xe2
+
+This is a followup of commits f1d8cba61c3c4b ("inet: fix possible
+seqlock deadlocks") and 7f88c6b23afbd315 ("ipv6: fix possible seqlock
+deadlock in ip6_finish_output2")
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Reported-by: Dave Jones <davej@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/core/iovec.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/sctp/output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/core/iovec.c b/net/core/iovec.c
-index a9c46ba..26dc006 100644
---- a/net/core/iovec.c
-+++ b/net/core/iovec.c
-@@ -107,6 +107,10 @@ EXPORT_SYMBOL(memcpy_toiovecend);
- int memcpy_fromiovecend(unsigned char *kdata, const struct iovec *iov,
- 			int offset, int len)
- {
-+	/* No data? Done! */
-+	if (len == 0)
-+		return 0;
-+
- 	/* Skip over the finished iovecs */
- 	while (offset >= iov->iov_len) {
- 		offset -= iov->iov_len;
+diff --git a/net/sctp/output.c b/net/sctp/output.c
+index 0fb140f..e867326 100644
+--- a/net/sctp/output.c
++++ b/net/sctp/output.c
+@@ -601,7 +601,7 @@ out:
+ 	return err;
+ no_route:
+ 	kfree_skb(nskb);
+-	IP_INC_STATS_BH(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
++	IP_INC_STATS(sock_net(asoc->base.sk), IPSTATS_MIB_OUTNOROUTES);
+ 
+ 	/* FIXME: Returning the 'err' will effect all the associations
+ 	 * associated with a socket, although only one of the paths of the
 -- 
 1.9.1
 
