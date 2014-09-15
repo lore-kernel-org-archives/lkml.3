@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbaIOTGH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:06:07 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:54184 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbaIOTGF (ORCPT
+	id S1754518AbaIOTGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:06:44 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62931 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754265AbaIOTGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:06:05 -0400
-Message-ID: <54173874.6080900@hp.com>
-Date: Mon, 15 Sep 2014 15:05:24 -0400
-From: Webb Scales <webbnh@hp.com>
-Organization: HP Architectural Simulator Devleopment Group
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 15 Sep 2014 15:06:42 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, Hans de Goede <hdegoede@redhat.com>
-CC: linux-usb <linux-usb@vger.kernel.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix regression that accidentally disabled block-based
- tcq
-References: <540EC52C.3000804@redhat.com> <20140909152730.GA17882@infradead.org> <540FFBF4.9090001@redhat.com> <20140910154535.GA5102@infradead.org> <541172E9.8070309@redhat.com> <20140911161331.GA24488@infradead.org> <54134E50.6040805@redhat.com> <20140912230032.GA21143@infradead.org>
-In-Reply-To: <20140912230032.GA21143@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: rajatxjain@gmail.com
+In-Reply-To: <alpine.DEB.2.00.1409151152400.28050@skynet.skynet.ie>
+References: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com>
+	<1434331.0IZIM5O2Ci@vostro.rjw.lan>
+	<alpine.DEB.2.00.1409151152400.28050@skynet.skynet.ie>
+Date: Mon, 15 Sep 2014 12:06:42 -0700
+Message-ID: <CAA93t1qEmGkVHOJFjvB3OGecjC3c43SmpJW2yKv-OZTDESBWDw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] PCI: Ignore hotplug events for dual GPU systems
+From: Rajat Jain <rajatxjain@gmail.com>
+To: Dave Airlie <airlied@linux.ie>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        SpacemanSpiff <a818958@trbvm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org,
+        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        "Jose P." <lbdkmjdf@sharklasers.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/12/14 7:00 PM, Christoph Hellwig wrote:
-> Please try the fix below, looks like the commit broke TCQ for all drivers
-> using block-level tagging.
+On Mon, Sep 15, 2014 at 3:53 AM, Dave Airlie <airlied@linux.ie> wrote:
 >
-> ---
->  From 865a19b760d2786fe37d3b5c151a4ecea4c0e95e Mon Sep 17 00:00:00 2001
-> From: Christoph Hellwig <hch@lst.de>
-> Date: Fri, 12 Sep 2014 16:00:19 -0700
-> Subject: scsi: fix regression that accidentally disabled block-based tcq
+>> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> The scsi blk-mq support accidentally flipped a conditional, which lead to
-> never enabling block based tcq when using the legacy request path.
->
-> Fixes: d285203cf647d7c9 scsi: add support for a blk-mq based I/O path.
-> Reported-by: Hans de Goede <hdegoede@redhat.com>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->   include/scsi/scsi_tcq.h | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
-> index cdcc90b..e645835 100644
-> --- a/include/scsi/scsi_tcq.h
-> +++ b/include/scsi/scsi_tcq.h
-> @@ -68,7 +68,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
->   		return;
->   
->   	if (!shost_use_blk_mq(sdev->host) &&
-> -	    blk_queue_tagged(sdev->request_queue))
-> +	    !blk_queue_tagged(sdev->request_queue))
->   		blk_queue_init_tags(sdev->request_queue, depth,
->   				    sdev->host->bqt);
->   
+> Acked-by: Dave Airlie <airlied@redhat.com>
 
+Acked-by: Rajat Jain <rajatxjain@gmail.com>
 
-Reviewed-by: Webb Scales <webbnh@hp.com>
-
+>>
+>> for both.
+>>
+>> > ---
+>> >
+>> > Bjorn Helgaas (2):
+>> >       PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
+>> >       ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
+>> >
+>> >
+>> >  drivers/acpi/bus.c                           |   10 ----------
+>> >  drivers/gpu/drm/nouveau/nouveau_acpi.c       |   16 ++--------------
+>> >  drivers/gpu/drm/nouveau/nouveau_drm.c        |    1 +
+>> >  drivers/gpu/drm/radeon/radeon_atpx_handler.c |   16 ++--------------
+>> >  drivers/gpu/drm/radeon/radeon_drv.c          |    1 +
+>> >  drivers/pci/hotplug/acpiphp_glue.c           |   16 ++++++----------
+>> >  drivers/pci/hotplug/pciehp_hpc.c             |   12 ++++++++++++
+>> >  include/acpi/acpi_bus.h                      |    4 +---
+>> >  include/linux/pci.h                          |    6 ++++++
+>> >  9 files changed, 31 insertions(+), 51 deletions(-)
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
