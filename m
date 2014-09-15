@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaIOThY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770AbaIOThO (ORCPT
+	id S1756030AbaIOTlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:41:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:54593 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385AbaIOTln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
-        John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 047/114] MIPS: tlbex: Fix a missing statement for HUGETLB
-Date: Mon, 15 Sep 2014 12:25:47 -0700
-Message-Id: <20140915192642.913458023@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 15:41:43 -0400
+Date: Mon, 15 Sep 2014 12:41:41 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/13] eeepc-laptop: coding style: add curly braces
+ around else compound
+Message-ID: <20140915194141.GA62440@vmdeb7>
+References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
+ <1410563212-31565-4-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410563212-31565-4-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Sep 13, 2014 at 01:06:42AM +0200, Frans Klaver wrote:
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
 
-------------------
+Hi Frans,
 
-From: Huacai Chen <chenhc@lemote.com>
+Please merge the 3 coding style fixes into one patch. There is no functional
+change here, and each of the 3 is obvious. Please include a simple commit
+message to the effect of:
 
-commit 8393c524a25609a30129e4a8975cf3b91f6c16a5 upstream.
+"
+eeepc-laptop: Coding style cleanup
 
-In commit 2c8c53e28f1 (MIPS: Optimize TLB handlers for Octeon CPUs)
-build_r4000_tlb_refill_handler() is modified. But it doesn't compatible
-with the original code in HUGETLB case. Because there is a copy & paste
-error and one line of code is missing. It is very easy to produce a bug
-with LTP's hugemmap05 test.
+Correct white space and brace usage per Documentation/CodingStyle.
+"
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/7496/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+As a point of policy, I will not merge commits without a message, no matter how
+trivial.
 
----
- arch/mips/mm/tlbex.c |    1 +
- 1 file changed, 1 insertion(+)
+Thanks,
 
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -1295,6 +1295,7 @@ static void build_r4000_tlb_refill_handl
- 	}
- #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
- 	uasm_l_tlb_huge_update(&l, p);
-+	UASM_i_LW(&p, K0, 0, K1);
- 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
- 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
- 				   htlb_info.restore_scratch);
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 702fcbb..9d8dff9 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -1425,8 +1425,9 @@ static int eeepc_acpi_add(struct acpi_device *device)
+>  		result = eeepc_backlight_init(eeepc);
+>  		if (result)
+>  			goto fail_backlight;
+> -	} else
+> +	} else {
+>  		pr_info("Backlight controlled by ACPI video driver\n");
+> +	}
+>  
+>  	result = eeepc_input_init(eeepc);
+>  	if (result)
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
