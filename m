@@ -1,109 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564AbaIOItP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 04:49:15 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:39181 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753434AbaIOItN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 04:49:13 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Marc Kleine-Budde'" <mkl@pengutronix.de>,
-        "'Rickard Strandqvist'" <rickard_strandqvist@spectrumdigital.se>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c:  Cleaning up
- missing null-terminate in conjunction with strncpy
-Thread-Topic: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c:  Cleaning up
- missing null-terminate in conjunction with strncpy
-Thread-Index: AQHP0EGesx6Ru+ZEc0K0ZqftXKP+D5wB3RxQ///zd4CAABEekA==
-Date: Mon, 15 Sep 2014 08:47:18 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
-References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <063D6719AE5E284EB5DD2968C1650D6D17491F2B@AcuExch.aculab.com>
- <5416A65D.6010500@pengutronix.de>
-In-Reply-To: <5416A65D.6010500@pengutronix.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1753434AbaIOIwK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 04:52:10 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50426 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753400AbaIOIwI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 04:52:08 -0400
+Message-ID: <5416A8B0.8040603@linux.vnet.ibm.com>
+Date: Mon, 15 Sep 2014 14:22:00 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: mikey@neuling.org, linux-pm@vger.kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] cpuidle/powernv: Enter fastsleep on checking if deep
+ idle states are allowed
+References: <20140912110131.7311.86417.stgit@preeti.in.ibm.com> <1410764352.32643.2.camel@concordia>
+In-Reply-To: <1410764352.32643.2.camel@concordia>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091508-0928-0000-0000-000004D51533
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8F8nMRS013617
 
-From: Marc Kleine-Budde [ 
-> On 09/15/2014 10:28 AM, David Laight wrote:
-> > From: Rickard Strandqvist
-> > ...
-> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
-> > ...
-> >> diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> >> b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> >> index 644e6ab..d4fe8ac 100644
-> >> --- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> >> +++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> >> @@ -830,7 +830,7 @@ static void peak_usb_disconnect(struct usb_interface *intf)
-> >>  		char name[IFNAMSIZ];
-> >>
-> >>  		dev->state &= ~PCAN_USB_STATE_CONNECTED;
-> >> -		strncpy(name, netdev->name, IFNAMSIZ);
-> >> +		strlcpy(name, netdev->name, IFNAMSIZ);
-> >>
-> >>  		unregister_netdev(netdev);
-> >>  		free_candev(netdev);
-> >
-> > Or:
-> > 	char name[sizeof netdev->name];
-> > 	memcpy(name, netdev->name, sizeof netdev->name);
+On 09/15/2014 12:29 PM, Michael Ellerman wrote:
+> On Fri, 2014-09-12 at 16:31 +0530, Preeti U Murthy wrote:
+>> Today the procfs interface /proc/sys/kernel/powersave-nap is used to control
+>> entry into deep idle states beyond snooze. Check for the value of this
+>> parameter before entering fastsleep. We already do this check for nap in
+>> power7_idle().
+>>
+>> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>> ---
+>>
+>>  drivers/cpuidle/cpuidle-powernv.c |    6 ++++++
+>>  1 file changed, 6 insertions(+)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+>> index a64be57..b8ba52e 100644
+>> --- a/drivers/cpuidle/cpuidle-powernv.c
+>> +++ b/drivers/cpuidle/cpuidle-powernv.c
+>> @@ -69,6 +69,12 @@ static int fastsleep_loop(struct cpuidle_device *dev,
+>>  	unsigned long old_lpcr = mfspr(SPRN_LPCR);
+>>  	unsigned long new_lpcr;
+>>  
+>> +	/*
+>> +	 * Verify if snooze is the only valid cpuidle state
+>> +	 */
+>> +	if (!(powersave_nap > 0))
+>> +		return index;
+>> +
+>>  	if (unlikely(system_state < SYSTEM_RUNNING))
+>>  		return index;
 > 
-> I would be "sizeof(foo)" in kernel coding style,
-But not in mine :-)
-sizeof is an operator, not a function, it's argument can be (type).
+> Doesn't the above mean we are just going to keep trying to go into fastsleep
+> again and again? Or does the idle code work out that it didn't work based on
+> the fact that we didn't sleep for the right period?
 
-> but let's have a look at the original code:
-> 
->                 struct net_device *netdev = dev->netdev;
->                 char name[IFNAMSIZ];
-> 
->                 dev->state &= ~PCAN_USB_STATE_CONNECTED;
->                 strncpy(name, netdev->name, IFNAMSIZ);
-> 
->                 unregister_netdev(netdev);
->                 free_candev(netdev);
-> 
->                 kfree(dev->cmd_buf);
->                 dev->next_siblings = NULL;
->                 if (dev->adapter->dev_free)
->                         dev->adapter->dev_free(dev);
-> 
->                 dev_info(&intf->dev, "%s removed\n", name);
-> 
-> I think it's save to use:
-> 
->     dev_info(&intf->dev, "%s removed\n", netdev_name(dev->netdev));
-> 
-> instead of doing the str?cpy() in the first place. But why not use:
-> 
->     netdev_info(dev->netdev, "removed\n");
-> 
-> Is the USB device information lost when using netdev_info()?
+Thats right. The idle code figures that its judgment to enter fastsleep
+was not correct and applies a correction factor to its future decisions
+. This correction factor is intended to influence the cpuidle governor's
+decision on choosing an idle state for the cpu based on the history of
+wakeups. Hence a shallower idle state will be chosen here on in the
+above circumstance.
 
-My guess is it avoids a 'use after free' - but I'm not going to
-dig that far.
+> 
+> We were talking about getting rid of powersave_nap altogether, but I think we
+> decided we couldn't, I forget.
 
-Another issue with blindly replacing strncpy() with strlcpy()
-(which doesn't affect the above) is when copying status to userspace.
+Isn't this a helpful knob to disable cpuidle at runtime? Currently we
+check the value of powersave_nap before entering both nap and fastsleep.
 
-	David
+Regards
+Preeti U Murthy
+> 
+> cheers
+> 
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
