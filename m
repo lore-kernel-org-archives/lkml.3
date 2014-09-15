@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699AbaIOVAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:00:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54606 "EHLO
+	id S1758804AbaIOVB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:01:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006AbaIOT1C (ORCPT
+	with ESMTP id S1754755AbaIOT1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:02 -0400
+	Mon, 15 Sep 2014 15:27:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 077/158] ASoC: wm8994: Prevent double lock of accdet_lock mutex on wm1811
-Date: Mon, 15 Sep 2014 12:25:16 -0700
-Message-Id: <20140915192545.205675855@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 3.16 071/158] MIPS: scall64-o32: Fix indirect syscall detection
+Date: Mon, 15 Sep 2014 12:25:10 -0700
+Message-Id: <20140915192545.032411334@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,62 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit b38314179c9ccb789e6fe967cff171fa817e8978 upstream.
+commit 5245689900804604fdc349c8d9b8985b0e401ae2 upstream.
 
-wm1811_micd_stop takes the accdet_lock mutex, and is called from two
-places, one of which is already holding the accdet_lock. This obviously
-causes a lock up.
+Commit 4c21b8fd8f14 (MIPS: seccomp: Handle indirect system calls (o32))
+added indirect syscall detection for O32 processes running on MIPS64
+but it did not work as expected. The reason is the the scall64-o32
+implementation differs compared to scall32-o32. In the former, the v0
+(syscall number) register contains the absolute syscall number
+(4000 + X) whereas in the latter it contains the relative syscall
+number (X). Fix the code to avoid doing an extra addition, and load
+the v0 register directly to the first argument for syscall_trace_enter.
+Moreover, set the .reorder assembler option in order to have better
+control on this part of the assembly code.
 
-This patch fixes this issue by removing the lock from wm1811_micd_stop
-and ensuring that it is always locked externally.
-
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: http://patchwork.linux-mips.org/patch/7481/
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm8994.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ arch/mips/kernel/scall64-o32.S |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3505,6 +3505,7 @@ static irqreturn_t wm8994_mic_irq(int ir
- 	return IRQ_HANDLED;
- }
+--- a/arch/mips/kernel/scall64-o32.S
++++ b/arch/mips/kernel/scall64-o32.S
+@@ -113,15 +113,19 @@ trace_a_syscall:
+ 	move	s0, t2			# Save syscall pointer
+ 	move	a0, sp
+ 	/*
+-	 * syscall number is in v0 unless we called syscall(__NR_###)
++	 * absolute syscall number is in v0 unless we called syscall(__NR_###)
+ 	 * where the real syscall number is in a0
+ 	 * note: NR_syscall is the first O32 syscall but the macro is
+ 	 * only defined when compiling with -mabi=32 (CONFIG_32BIT)
+ 	 * therefore __NR_O32_Linux is used (4000)
+ 	 */
+-	addiu	a1, v0,  __NR_O32_Linux
+-	bnez	v0, 1f /* __NR_syscall at offset 0 */
+-	lw	a1, PT_R4(sp)
++	.set	push
++	.set	reorder
++	subu	t1, v0,  __NR_O32_Linux
++	move	a1, v0
++	bnez	t1, 1f /* __NR_syscall at offset 0 */
++	lw	a1, PT_R4(sp) /* Arg1 for __NR_syscall case */
++	.set	pop
  
-+/* Should be called with accdet_lock held */
- static void wm1811_micd_stop(struct snd_soc_codec *codec)
- {
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
-@@ -3512,14 +3513,10 @@ static void wm1811_micd_stop(struct snd_
- 	if (!wm8994->jackdet)
- 		return;
+ 1:	jal	syscall_trace_enter
  
--	mutex_lock(&wm8994->accdet_lock);
--
- 	snd_soc_update_bits(codec, WM8958_MIC_DETECT_1, WM8958_MICD_ENA, 0);
- 
- 	wm1811_jackdet_set_mode(codec, WM1811_JACKDET_MODE_JACK);
- 
--	mutex_unlock(&wm8994->accdet_lock);
--
- 	if (wm8994->wm8994->pdata.jd_ext_cap)
- 		snd_soc_dapm_disable_pin(&codec->dapm,
- 					 "MICBIAS2");
-@@ -3560,10 +3557,10 @@ static void wm8958_open_circuit_work(str
- 						  open_circuit_work.work);
- 	struct device *dev = wm8994->wm8994->dev;
- 
--	wm1811_micd_stop(wm8994->hubs.codec);
--
- 	mutex_lock(&wm8994->accdet_lock);
- 
-+	wm1811_micd_stop(wm8994->hubs.codec);
-+
- 	dev_dbg(dev, "Reporting open circuit\n");
- 
- 	wm8994->jack_mic = false;
 
 
