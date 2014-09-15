@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248AbaIOOHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:07:51 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:38896 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaIOOHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:07:49 -0400
-Message-ID: <5416F2B2.1060300@collabora.co.uk>
-Date: Mon, 15 Sep 2014 16:07:46 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        rtc-linux@googlegroups.com, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>
-Subject: Re: [PATCH RESEND v9 5/5] rtc: Add driver for Maxim 77802 PMIC Real-Time-Clock
-References: <1410509864-10019-1-git-send-email-javier.martinez@collabora.co.uk>	<1410509864-10019-6-git-send-email-javier.martinez@collabora.co.uk> <20140912151334.cd53fca611a7de487f23241b@linux-foundation.org>
-In-Reply-To: <20140912151334.cd53fca611a7de487f23241b@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753281AbaIOOJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:09:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32865 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751979AbaIOOJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 10:09:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,528,1406617200"; 
+   d="scan'208";a="599766311"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>,
+        Ning Li <ning.li@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] gpio: Increase ARCH_NR_GPIOs to 512
+Date: Mon, 15 Sep 2014 17:09:44 +0300
+Message-Id: <1410790185-31101-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+Some newer Intel SoCs, like Braswell already have more than 256 GPIOs
+available so the default limit is exceeded. Instead of adding more
+architecture specific gpio.h files with custom ARCH_NR_GPIOs we increase
+the gpiolib default limit to be twice the current.
 
-On 09/13/2014 12:13 AM, Andrew Morton wrote:
-> On Fri, 12 Sep 2014 10:17:43 +0200 Javier Martinez Canillas <javier.martinez@collabora.co.uk> wrote:
-> 
->> The MAX7802 PMIC has a Real-Time-Clock (RTC) with two alarms.
->> This patch adds support for the RTC and is based on a driver
->> added by Simon Glass to the Chrome OS kernel 3.8 tree.
->> 
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> Would it be appropriate to gather Simon's signoff?
-> 
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Changes to previous version is that now we increase the common limit
+instead of adding x86 specific gpio.h
 
-I don't know. The original driver written by Simon supported 2 devices:
-max77686 and max77802. I split the max77802 bits and addressed all the issues
-pointed out on early revisions so even when Simon is mentioned as the
-MODULE_AUTHOR(), I didn't know if he would like his s-o-b to remain in the
-patch since it was quite different than the original one from which was based.
+ include/asm-generic/gpio.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->> +static inline int max77802_rtc_calculate_wday(u8 shifted)
->> +{
->> +	int counter = -1;
->> +
->> +	while (shifted) {
->> +		shifted >>= 1;
->> +		counter++;
->> +	}
-> 
-> Can't use log2() or similar?
-> 
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index c1d4105e1c1d..383ade1a211b 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -27,7 +27,7 @@
+  */
+ 
+ #ifndef ARCH_NR_GPIOS
+-#define ARCH_NR_GPIOS		256
++#define ARCH_NR_GPIOS		512
+ #endif
+ 
+ /*
+-- 
+2.1.0
 
-Yes, ffs() - 1 can be used instead of this function indeed.
-
-I see that you already included this patch to your -mm tree [0]. Does it mean
-that I've to send a follow-up patch on top of this to remove this function or
-should I send a new version of this patch?
-
-Best regards,
-Javier
-
-[0]:
-http://ozlabs.org/~akpm/mmots/broken-out/rtc-add-driver-for-maxim-77802-pmic-real-time-clock.patch
