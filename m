@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319AbaIOWmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:42:03 -0400
-Received: from qmta11.westchester.pa.mail.comcast.net ([76.96.59.211]:33667
-	"EHLO QMTA11.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932088AbaIOWka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:40:30 -0400
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
-        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
-        felipensp@gmail.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] selftests/mount: change mount test to use kselftest exit codes
-Date: Mon, 15 Sep 2014 16:34:00 -0600
-Message-Id: <1410820442-8774-6-git-send-email-shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
-References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
+	id S932096AbaIOWnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:43:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759268AbaIOWk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:40:29 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>, <stable@vger.kernel.org>
+Subject: [PATCH v3 4/5] mm/hugetlb: add migration/hwpoisoned entry check in hugetlb_change_protection
+Date: Mon, 15 Sep 2014 18:39:58 -0400
+Message-Id: <1410820799-27278-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change mount test to use kselftest exit codes in kselftest.h
-to report test results.
+There is a race condition between hugepage migration and change_protection(),
+where hugetlb_change_protection() doesn't care about migration entries and
+wrongly overwrites them. That causes unexpected results like kernel crash.
+HWPoison entries also can cause the same problem.
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+This patch adds is_hugetlb_entry_(migration|hwpoisoned) check in this
+function to do proper actions.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: <stable@vger.kernel.org> # [2.6.36+]
 ---
- tools/testing/selftests/mount/unprivileged-remount-test.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ChangeLog v4:
+- s/set_pte_at/set_huge_pte_at/
 
-diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
-index 1b3ff2f..d3c703f 100644
---- a/tools/testing/selftests/mount/unprivileged-remount-test.c
-+++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
-@@ -13,6 +13,8 @@
- #include <stdbool.h>
- #include <stdarg.h>
- 
-+#include "../kselftest.h"
-+
- #ifndef CLONE_NEWNS
- # define CLONE_NEWNS 0x00020000
- #endif
-@@ -45,7 +47,7 @@ static void die(char *fmt, ...)
- 	va_start(ap, fmt);
- 	vfprintf(stderr, fmt, ap);
- 	va_end(ap);
--	exit(EXIT_FAILURE);
-+	exit(EXIT_FAIL);
- }
- 
- static void write_file(char *filename, char *fmt, ...)
-@@ -142,7 +144,7 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
- 		if (!WIFEXITED(status)) {
- 			die("child did not terminate cleanly\n");
+ChangeLog v3:
+- handle migration entry correctly (instead of just skipping)
+---
+ mm/hugetlb.c | 21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+
+diff --git mmotm-2014-09-09-14-42.orig/mm/hugetlb.c mmotm-2014-09-09-14-42/mm/hugetlb.c
+index 52f001943169..461ee1e10067 100644
+--- mmotm-2014-09-09-14-42.orig/mm/hugetlb.c
++++ mmotm-2014-09-09-14-42/mm/hugetlb.c
+@@ -3372,7 +3372,26 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 			spin_unlock(ptl);
+ 			continue;
  		}
--		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
-+		return WEXITSTATUS(status) == EXIT_PASS ? true : false;
- 	}
- 
- 	create_and_enter_userns();
-@@ -176,7 +178,7 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
- 		die("remount of /tmp with invalid flags "
- 		    "succeeded unexpectedly\n");
- 	}
--	exit(EXIT_SUCCESS);
-+	exit(EXIT_PASS);
- }
- 
- static bool test_unpriv_remount_simple(int mount_flags)
-@@ -238,5 +240,5 @@ int main(int argc, char **argv)
- 	{
- 		die("Default atime malfunctions\n");
- 	}
--	return EXIT_SUCCESS;
-+	return EXIT_PASS;
- }
+-		if (!huge_pte_none(huge_ptep_get(ptep))) {
++		pte = huge_ptep_get(ptep);
++		if (unlikely(is_hugetlb_entry_hwpoisoned(pte))) {
++			spin_unlock(ptl);
++			continue;
++		}
++		if (unlikely(is_hugetlb_entry_migration(pte))) {
++			swp_entry_t entry = pte_to_swp_entry(pte);
++
++			if (is_write_migration_entry(entry)) {
++				pte_t newpte;
++
++				make_migration_entry_read(&entry);
++				newpte = swp_entry_to_pte(entry);
++				set_huge_pte_at(mm, address, ptep, newpte);
++				pages++;
++			}
++			spin_unlock(ptl);
++			continue;
++		}
++		if (!huge_pte_none(pte)) {
+ 			pte = huge_ptep_get_and_clear(mm, address, ptep);
+ 			pte = pte_mkhuge(huge_pte_modify(pte, newprot));
+ 			pte = arch_make_huge_pte(pte, vma, NULL, 0);
 -- 
-1.9.1
+1.9.3
 
