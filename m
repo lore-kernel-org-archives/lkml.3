@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886AbaIOU7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:59:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54846 "EHLO
+	id S1758777AbaIOVAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:00:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028AbaIOT1H (ORCPT
+	with ESMTP id S1754639AbaIOT1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:07 -0400
+	Mon, 15 Sep 2014 15:27:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Sagi Grimberg <sagig@mellanox.com>, David Dillow <dave@thedillows.org>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.16 057/158] scsi_transport_srp: Fix fast_io_fail_tmo=dev_loss_tmo=off behavior
-Date: Mon, 15 Sep 2014 12:24:56 -0700
-Message-Id: <20140915192544.605701395@linuxfoundation.org>
+        Paul Burton <paul.burton@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 3.16 076/158] MIPS: CPS: Initialize EVA before bringing up VPEs from secondary cores
+Date: Mon, 15 Sep 2014 12:25:15 -0700
+Message-Id: <20140915192545.177179387@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,40 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit cd53eb686d2418eda938aad3c9da42b7dfa9351f upstream.
+commit 6521d9a436a62e83ce57d6be6e5484e1098c1380 upstream.
 
-If scsi_remove_host() is called while an rport is in the blocked state
-then scsi_remove_host() will only finish if the rport is unblocked
-from inside a timer function. Make sure that an rport only enters the
-blocked state if a timer will be started that will unblock it. This
-avoids that unloading the ib_srp kernel module after having
-disconnected the initiator from the target system results in a
-deadlock if both the fast_io_fail_tmo and dev_loss_tmo parameters have
-been set to "off".
+The CPS code is doing several memory loads when configuring the VPEs
+from secondary cores, so the segmentation control registers must be
+initialized in time otherwise the kernel will crash with strange
+TLB exceptions.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Reviewed-by: David Dillow <dave@thedillows.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reviewed-by: Paul Burton <paul.burton@imgtec.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: http://patchwork.linux-mips.org/patch/7424/
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/scsi_transport_srp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/mips/kernel/cps-vec.S |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/scsi/scsi_transport_srp.c
-+++ b/drivers/scsi/scsi_transport_srp.c
-@@ -473,7 +473,8 @@ static void __srp_start_tl_fail_timers(s
- 	if (delay > 0)
- 		queue_delayed_work(system_long_wq, &rport->reconnect_work,
- 				   1UL * delay * HZ);
--	if (srp_rport_set_state(rport, SRP_RPORT_BLOCKED) == 0) {
-+	if ((fast_io_fail_tmo >= 0 || dev_loss_tmo >= 0) &&
-+	    srp_rport_set_state(rport, SRP_RPORT_BLOCKED) == 0) {
- 		pr_debug("%s new state: %d\n", dev_name(&shost->shost_gendev),
- 			 rport->state);
- 		scsi_target_block(&shost->shost_gendev);
+--- a/arch/mips/kernel/cps-vec.S
++++ b/arch/mips/kernel/cps-vec.S
+@@ -13,6 +13,7 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/asmmacro.h>
+ #include <asm/cacheops.h>
++#include <asm/eva.h>
+ #include <asm/mipsregs.h>
+ #include <asm/mipsmtregs.h>
+ #include <asm/pm.h>
+@@ -166,6 +167,9 @@ dcache_done:
+ 1:	jal	mips_cps_core_init
+ 	 nop
+ 
++	/* Do any EVA initialization if necessary */
++	eva_init
++
+ 	/*
+ 	 * Boot any other VPEs within this core that should be online, and
+ 	 * deactivate this VPE if it should be offline.
 
 
