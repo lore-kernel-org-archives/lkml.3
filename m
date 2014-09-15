@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743AbaIOW0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:26:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51340 "EHLO
+	id S1758747AbaIOW1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:27:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51339 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758515AbaIOWUa (ORCPT
+	with ESMTP id S1758514AbaIOWUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 18:20:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 050/187] ASoC: wm8994: Prevent double lock of accdet_lock mutex on wm1811
-Date: Mon, 15 Sep 2014 15:07:40 -0700
-Message-Id: <1410818997-9432-51-git-send-email-kamal@canonical.com>
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 121/187] hwmon: (lm85) Fix various errors on attribute writes
+Date: Mon, 15 Sep 2014 15:08:51 -0700
+Message-Id: <1410818997-9432-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,64 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit b38314179c9ccb789e6fe967cff171fa817e8978 upstream.
+commit 3248c3b771ddd9d31695da17ba350eb6e1b80a53 upstream.
 
-wm1811_micd_stop takes the accdet_lock mutex, and is called from two
-places, one of which is already holding the accdet_lock. This obviously
-causes a lock up.
+Temperature limit register writes did not account for negative numbers.
+As a result, writing -127000 resulted in -126000 written into the
+temperature limit register. This problem affected temp[1-3]_min,
+temp[1-3]_max, temp[1-3]_auto_temp_crit, and temp[1-3]_auto_temp_min.
 
-This patch fixes this issue by removing the lock from wm1811_micd_stop
-and ensuring that it is always locked externally.
+When writing pwm[1-3]_freq, a long variable was auto-converted into an int
+without range check. Wiring values larger than MAXINT resulted in unexpected
+register values.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+When writing temp[1-3]_auto_temp_max, an unsigned long variable was
+auto-converted into an int without range check. Writing values larger than
+MAXINT resulted in unexpected register values.
+
+vrm is an u8, so the written value needs to be limited to [0, 255].
+
+Cc: Axel Lin <axel.lin@ingics.com>
+Reviewed-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8994.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/hwmon/lm85.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 86426a1..c9ce977 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -3492,6 +3492,7 @@ static irqreturn_t wm8994_mic_irq(int irq, void *data)
- 	return IRQ_HANDLED;
- }
+diff --git a/drivers/hwmon/lm85.c b/drivers/hwmon/lm85.c
+index 3894c40..b9d6e7d 100644
+--- a/drivers/hwmon/lm85.c
++++ b/drivers/hwmon/lm85.c
+@@ -158,7 +158,7 @@ static inline u16 FAN_TO_REG(unsigned long val)
  
-+/* Should be called with accdet_lock held */
- static void wm1811_micd_stop(struct snd_soc_codec *codec)
+ /* Temperature is reported in .001 degC increments */
+ #define TEMP_TO_REG(val)	\
+-		clamp_val(SCALE(val, 1000, 1), -127, 127)
++		DIV_ROUND_CLOSEST(clamp_val((val), -127000, 127000), 1000)
+ #define TEMPEXT_FROM_REG(val, ext)	\
+ 		SCALE(((val) << 4) + (ext), 16, 1000)
+ #define TEMP_FROM_REG(val)	((val) * 1000)
+@@ -192,7 +192,7 @@ static const int lm85_range_map[] = {
+ 	13300, 16000, 20000, 26600, 32000, 40000, 53300, 80000
+ };
+ 
+-static int RANGE_TO_REG(int range)
++static int RANGE_TO_REG(long range)
  {
- 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
-@@ -3499,14 +3500,10 @@ static void wm1811_micd_stop(struct snd_soc_codec *codec)
- 	if (!wm8994->jackdet)
- 		return;
+ 	int i;
  
--	mutex_lock(&wm8994->accdet_lock);
--
- 	snd_soc_update_bits(codec, WM8958_MIC_DETECT_1, WM8958_MICD_ENA, 0);
+@@ -214,7 +214,7 @@ static const int adm1027_freq_map[8] = { /* 1 Hz */
+ 	11, 15, 22, 29, 35, 44, 59, 88
+ };
  
- 	wm1811_jackdet_set_mode(codec, WM1811_JACKDET_MODE_JACK);
+-static int FREQ_TO_REG(const int *map, int freq)
++static int FREQ_TO_REG(const int *map, unsigned long freq)
+ {
+ 	int i;
  
--	mutex_unlock(&wm8994->accdet_lock);
--
- 	if (wm8994->wm8994->pdata.jd_ext_cap)
- 		snd_soc_dapm_disable_pin(&codec->dapm,
- 					 "MICBIAS2");
-@@ -3547,10 +3544,10 @@ static void wm8958_open_circuit_work(struct work_struct *work)
- 						  open_circuit_work.work);
- 	struct device *dev = wm8994->wm8994->dev;
+@@ -463,6 +463,9 @@ static ssize_t store_vrm_reg(struct device *dev, struct device_attribute *attr,
+ 	if (err)
+ 		return err;
  
--	wm1811_micd_stop(wm8994->hubs.codec);
--
- 	mutex_lock(&wm8994->accdet_lock);
- 
-+	wm1811_micd_stop(wm8994->hubs.codec);
++	if (val > 255)
++		return -EINVAL;
 +
- 	dev_dbg(dev, "Reporting open circuit\n");
- 
- 	wm8994->jack_mic = false;
+ 	data->vrm = val;
+ 	return count;
+ }
 -- 
 1.9.1
 
