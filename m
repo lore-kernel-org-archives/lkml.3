@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344AbaIOUiQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:38:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621AbaIOTgz (ORCPT
+	id S1757317AbaIOUiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:38:54 -0400
+Received: from sub5.mail.dreamhost.com ([208.113.200.129]:43081 "EHLO
+	homiemail-a56.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755865AbaIOUiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:55 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>, Dave Chinner <dchinner@redhat.com>,
-        Brian Foster <bfoster@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.16 136/158] xfs: dont zero partial page cache pages during O_DIRECT write
-Date: Mon, 15 Sep 2014 12:26:15 -0700
-Message-Id: <20140915192546.956398332@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 16:38:52 -0400
+Date: Mon, 15 Sep 2014 16:38:44 -0400
+From: Shea Levy <shea@shealevy.com>
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
+Subject: Re: [RFC PATCH 0/2] Loop device psuedo filesystem
+Message-ID: <20140915203844.GA14761@nixos.hsd1.nh.comcast.net>
+References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+I wanted to test these patches (to support creating and filling a disk
+image containing a btrfs filesystem and several subvolumes as an
+unprivileged user), but the build fails due to what looks like a missing
+loopfs.c in fs/loopfs (or alternatively an erroneous line in
+fs/loopfs/Makefile). I built based off of 3.17-rc5.
 
-From: Chris Mason <clm@fb.com>
-
-commit 85e584da3212140ee80fd047f9058bbee0bc00d5 upstream.
-
-xfs is using truncate_pagecache_range to invalidate the page cache
-during DIO reads.  This is different from the other filesystems who
-only invalidate pages during DIO writes.
-
-truncate_pagecache_range is meant to be used when we are freeing the
-underlying data structs from disk, so it will zero any partial
-ranges in the page.  This means a DIO read can zero out part of the
-page cache page, and it is possible the page will stay in cache.
-
-buffered reads will find an up to date page with zeros instead of
-the data actually on disk.
-
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
-
-[dchinner: catch error and warn if it fails. Comment.]
-
-Signed-off-by: Chris Mason <clm@fb.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/xfs/xfs_file.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -295,7 +295,16 @@ xfs_file_read_iter(
- 				xfs_rw_iunlock(ip, XFS_IOLOCK_EXCL);
- 				return ret;
- 			}
--			truncate_pagecache_range(VFS_I(ip), pos, -1);
-+
-+			/*
-+			 * Invalidate whole pages. This can return an error if
-+			 * we fail to invalidate a page, but this should never
-+			 * happen on XFS. Warn if it does fail.
-+			 */
-+			ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+			WARN_ON_ONCE(ret);
-+			ret = 0;
- 		}
- 		xfs_rw_ilock_demote(ip, XFS_IOLOCK_EXCL);
- 	}
+~Shea
 
 
+On Tue, May 27, 2014 at 11:58:54PM +0200, Seth Forshee wrote:
+> I'm posting these patches in response to the ongoing discussion of loop
+> devices in containers at [1].
+> 
+> The patches implement a psuedo filesystem for loop devices, which will
+> allow use of loop devices in containters using standard utilities. Under
+> normal use a loopfs mount will initially contain a single device node
+> for loop-control which can be used to request and release loop devices.
+> Any devices allocated via this node will automatically appear in that
+> loopfs mount (and in devtmpfs) but not in any other loopfs mounts.
+> CAP_SYS_ADMIN in the userns of the process which performed the mount is
+> allowed to perform privileged loop ioctls on these devices.
+> 
+> Alternately loopfs can be mounted with the hostmount option, intended
+> for mounting /dev/loop in the host. This is the default mount for any
+> devices not created via loop-control in a loopfs mount (e.g. devices
+> created during driver init, devices created via /dev/loop-control, etc).
+> This is only available to system-wide CAP_SYS_ADMIN.
+> 
+> I still have some testing to do on these patches, but they work at
+> minimum for simple use cases. It's possible to use an unmodified losetup
+> if it's new enough to know about loop-control, with a couple of caveats:
+> 
+>  * /dev/loop-control must be symlinked to /dev/loop/loop-control
+>  * In some cases losetup attempts to use /dev/loopN when the device node
+>    is at /dev/loop/N. For example, 'losetup -f disk.img' fails.
+> 
+> Device nodes for loop partitions are not created in loopfs. These
+> devices are created by the generic block layer, and the loop driver has
+> no way of knowing when they are created, so some kind of hook into the
+> driver will be needed to support this.
+> 
+> Thanks,
+> Seth
+> 
+> [1] http://article.gmane.org/gmane.linux.kernel/1703988
+> 
+> Seth Forshee (2):
+>   loop: Add loop filesystem
+>   loop: Permit priveleged operations within user namespaces
+> 
+>  drivers/block/loop.c       | 137 +++++++++++++----
+>  drivers/block/loop.h       |   2 +
+>  fs/Makefile                |   1 +
+>  fs/loopfs/Makefile         |   6 +
+>  fs/loopfs/inode.c          | 360 +++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/loopfs.h     |  53 +++++++
+>  include/uapi/linux/magic.h |   1 +
+>  7 files changed, 535 insertions(+), 25 deletions(-)
+>  create mode 100644 fs/loopfs/Makefile
+>  create mode 100644 fs/loopfs/inode.c
+>  create mode 100644 include/linux/loopfs.h
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
