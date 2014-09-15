@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699AbaIOTyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:54:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756324AbaIOTrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756323AbaIOTrX (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Sep 2014 15:47:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756293AbaIOTrU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:47:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vignesh Raman <Vignesh_Raman@mentor.com>,
-        Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>,
-        Dean Jenkins <Dean_Jenkins@mentor.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.10 46/71] Bluetooth: Avoid use of session socket after the session gets freed
-Date: Mon, 15 Sep 2014 12:26:44 -0700
-Message-Id: <20140915192640.218023468@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>,
+        Alex Elder <elder@linaro.org>
+Subject: [PATCH 3.10 56/71] libceph: set last_piece in ceph_msg_data_pages_cursor_init() correctly
+Date: Mon, 15 Sep 2014 12:26:54 -0700
+Message-Id: <20140915192640.563221917@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -31,51 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vignesh Raman <Vignesh_Raman@mentor.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 32333edb82fb2009980eefc5518100068147ab82 upstream.
+commit 5f740d7e1531099b888410e6bab13f68da9b1a4d upstream.
 
-The commits 08c30aca9e698faddebd34f81e1196295f9dc063 "Bluetooth: Remove
-RFCOMM session refcnt" and 8ff52f7d04d9cc31f1e81dcf9a2ba6335ed34905
-"Bluetooth: Return RFCOMM session ptrs to avoid freed session"
-allow rfcomm_recv_ua and rfcomm_session_close to delete the session
-(and free the corresponding socket) and propagate NULL session pointer
-to the upper callers.
+Determining ->last_piece based on the value of ->page_offset + length
+is incorrect because length here is the length of the entire message.
+->last_piece set to false even if page array data item length is <=
+PAGE_SIZE, which results in invalid length passed to
+ceph_tcp_{send,recv}page() and causes various asserts to fire.
 
-Additional fix is required to terminate the loop in rfcomm_process_rx
-function to avoid use of freed 'sk' memory.
+    # cat pages-cursor-init.sh
+    #!/bin/bash
+    rbd create --size 10 --image-format 2 foo
+    FOO_DEV=$(rbd map foo)
+    dd if=/dev/urandom of=$FOO_DEV bs=1M &>/dev/null
+    rbd snap create foo@snap
+    rbd snap protect foo@snap
+    rbd clone foo@snap bar
+    # rbd_resize calls librbd rbd_resize(), size is in bytes
+    ./rbd_resize bar $(((4 << 20) + 512))
+    rbd resize --size 10 bar
+    BAR_DEV=$(rbd map bar)
+    # trigger a 512-byte copyup -- 512-byte page array data item
+    dd if=/dev/urandom of=$BAR_DEV bs=1M count=1 seek=5
 
-The issue is only reproducible with kernel option CONFIG_PAGE_POISONING
-enabled making freed memory being changed and filled up with fixed char
-value used to unmask use-after-free issues.
+The problem exists only in ceph_msg_data_pages_cursor_init(),
+ceph_msg_data_pages_advance() does the right thing.  The size_t cast is
+unnecessary.
 
-Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
-Signed-off-by: Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>
-Acked-by: Dean Jenkins <Dean_Jenkins@mentor.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
+Reviewed-by: Alex Elder <elder@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/rfcomm/core.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/ceph/messenger.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -1857,10 +1857,13 @@ static struct rfcomm_session *rfcomm_pro
- 	/* Get data directly from socket receive queue without copying it. */
- 	while ((skb = skb_dequeue(&sk->sk_receive_queue))) {
- 		skb_orphan(skb);
--		if (!skb_linearize(skb))
-+		if (!skb_linearize(skb)) {
- 			s = rfcomm_recv_frame(s, skb);
--		else
-+			if (!s)
-+				break;
-+		} else {
- 			kfree_skb(skb);
-+		}
- 	}
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -904,7 +904,7 @@ static void ceph_msg_data_pages_cursor_i
+ 	BUG_ON(page_count > (int)USHRT_MAX);
+ 	cursor->page_count = (unsigned short)page_count;
+ 	BUG_ON(length > SIZE_MAX - cursor->page_offset);
+-	cursor->last_piece = (size_t)cursor->page_offset + length <= PAGE_SIZE;
++	cursor->last_piece = cursor->page_offset + cursor->resid <= PAGE_SIZE;
+ }
  
- 	if (s && (sk->sk_state == BT_CLOSED))
+ static struct page *
 
 
