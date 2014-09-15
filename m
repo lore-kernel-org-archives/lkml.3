@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684AbaIOVBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:01:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
+	id S1758864AbaIOVDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:03:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998AbaIOT1B (ORCPT
+	with ESMTP id S1754975AbaIOT1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:01 -0400
+	Mon, 15 Sep 2014 15:27:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@nsn.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 3.16 073/158] MIPS: OCTEON: make get_system_type() thread-safe
-Date: Mon, 15 Sep 2014 12:25:12 -0700
-Message-Id: <20140915192545.090569325@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
+        Rui Wang <wangr@lemote.com>, John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.16 068/158] MIPS: Remove BUG_ON(!is_fpu_owner()) in do_ade()
+Date: Mon, 15 Sep 2014 12:25:07 -0700
+Message-Id: <20140915192544.939362236@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,66 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
+commit 2e5767a27337812f6850b3fa362419e2f085e5c3 upstream.
 
-get_system_type() is not thread-safe on OCTEON. It uses static data,
-also more dangerous issue is that it's calling cvmx_fuse_read_byte()
-every time without any synchronization. Currently it's possible to get
-processes stuck looping forever in kernel simply by launching multiple
-readers of /proc/cpuinfo:
+In do_ade(), is_fpu_owner() isn't preempt-safe. For example, when an
+unaligned ldc1 is executed, do_cpu() is called and then FPU will be
+enabled (and TIF_USEDFPU will be set for the current process). Then,
+do_ade() is called because the access is unaligned.  If the current
+process is preempted at this time, TIF_USEDFPU will be cleard.  So when
+the process is scheduled again, BUG_ON(!is_fpu_owner()) is triggered.
 
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	...
+This small program can trigger this BUG in a preemptible kernel:
 
-Fix by initializing the system type string only once during the early
-boot.
+int main (int argc, char *argv[])
+{
+        double u64[2];
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
-Patchwork: http://patchwork.linux-mips.org/patch/7437/
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+        while (1) {
+                asm volatile (
+                        ".set push \n\t"
+                        ".set noreorder \n\t"
+                        "ldc1 $f3, 4(%0) \n\t"
+                        ".set pop \n\t"
+                        ::"r"(u64):
+                );
+        }
+
+        return 0;
+}
+
+V2: Remove the BUG_ON() unconditionally due to Paul's suggestion.
+
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Jie Chen <chenj@lemote.com>
+Signed-off-by: Rui Wang <wangr@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/cavium-octeon/setup.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ arch/mips/kernel/unaligned.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -458,6 +458,18 @@ static void octeon_halt(void)
- 	octeon_kill_core(NULL);
- }
+--- a/arch/mips/kernel/unaligned.c
++++ b/arch/mips/kernel/unaligned.c
+@@ -690,7 +690,6 @@ static void emulate_load_store_insn(stru
+ 	case sdc1_op:
+ 		die_if_kernel("Unaligned FP access in kernel code", regs);
+ 		BUG_ON(!used_math());
+-		BUG_ON(!is_fpu_owner());
  
-+static char __read_mostly octeon_system_type[80];
-+
-+static int __init init_octeon_system_type(void)
-+{
-+	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
-+		cvmx_board_type_to_string(octeon_bootinfo->board_type),
-+		octeon_model_get_string(read_c0_prid()));
-+
-+	return 0;
-+}
-+early_initcall(init_octeon_system_type);
-+
- /**
-  * Return a string representing the system type
-  *
-@@ -465,11 +477,7 @@ static void octeon_halt(void)
-  */
- const char *octeon_board_type_string(void)
- {
--	static char name[80];
--	sprintf(name, "%s (%s)",
--		cvmx_board_type_to_string(octeon_bootinfo->board_type),
--		octeon_model_get_string(read_c0_prid()));
--	return name;
-+	return octeon_system_type;
- }
- 
- const char *get_system_type(void)
+ 		lose_fpu(1);	/* Save FPU state for the emulator. */
+ 		res = fpu_emulator_cop1Handler(regs, &current->thread.fpu, 1,
 
 
