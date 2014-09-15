@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899AbaIOWQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:16:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50984 "EHLO
+	id S1757933AbaIOWRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:17:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaIOWQw (ORCPT
+	with ESMTP id S1754881AbaIOWRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:16:52 -0400
+	Mon, 15 Sep 2014 18:17:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 181/187] powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
-Date: Mon, 15 Sep 2014 15:09:51 -0700
-Message-Id: <1410818997-9432-182-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 076/187] ext4: Fix block zeroing when punching holes in indirect block files
+Date: Mon, 15 Sep 2014 15:08:06 -0700
+Message-Id: <1410818997-9432-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,154 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 629149fae478f0ac6bf705a535708b192e9c6b59 upstream.
+commit 77ea2a4ba657a1ad4fb7c64bc5cdce84b8a132b6 upstream.
 
-If we changed base page size of the segment, either via sub_page_protect
-or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
-table entries. We do a lazy hash page table flush for all mapped pages
-in the demoted segment. This happens when we handle hash page fault
-for these pages.
+free_holes_block() passed local variable as a block pointer
+to ext4_clear_blocks(). Thus ext4_clear_blocks() zeroed out this local
+variable instead of proper place in inode / indirect block. We later
+zero out proper place in inode / indirect block but don't dirty the
+inode / buffer again which can lead to subtle issues (some changes e.g.
+to inode can be lost).
 
-We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
-pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
-that implies that we could possibly have older 64K hash pte entries in
-the hash page table and we need to invalidate those entries.
-
-Handle this correctly for 16M pages
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/mm/hugepage-hash64.c | 79 ++++++++++++++++++++++++++++++++++-----
- 1 file changed, 70 insertions(+), 9 deletions(-)
+ fs/ext4/indirect.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/mm/hugepage-hash64.c b/arch/powerpc/mm/hugepage-hash64.c
-index f50c4df..e0da847 100644
---- a/arch/powerpc/mm/hugepage-hash64.c
-+++ b/arch/powerpc/mm/hugepage-hash64.c
-@@ -18,6 +18,57 @@
- #include <linux/mm.h>
- #include <asm/machdep.h>
- 
-+static void invalidate_old_hpte(unsigned long vsid, unsigned long addr,
-+				pmd_t *pmdp, unsigned int psize, int ssize)
-+{
-+	int i, max_hpte_count, valid;
-+	unsigned long s_addr;
-+	unsigned char *hpte_slot_array;
-+	unsigned long hidx, shift, vpn, hash, slot;
-+
-+	s_addr = addr & HPAGE_PMD_MASK;
-+	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	/*
-+	 * IF we try to do a HUGE PTE update after a withdraw is done.
-+	 * we will find the below NULL. This happens when we do
-+	 * split_huge_page_pmd
-+	 */
-+	if (!hpte_slot_array)
-+		return;
-+
-+	if (ppc_md.hugepage_invalidate)
-+		return ppc_md.hugepage_invalidate(vsid, s_addr, hpte_slot_array,
-+						  psize, ssize);
-+	/*
-+	 * No bluk hpte removal support, invalidate each entry
-+	 */
-+	shift = mmu_psize_defs[psize].shift;
-+	max_hpte_count = HPAGE_PMD_SIZE >> shift;
-+	for (i = 0; i < max_hpte_count; i++) {
-+		/*
-+		 * 8 bits per each hpte entries
-+		 * 000| [ secondary group (one bit) | hidx (3 bits) | valid bit]
-+		 */
-+		valid = hpte_valid(hpte_slot_array, i);
-+		if (!valid)
-+			continue;
-+		hidx =  hpte_hash_index(hpte_slot_array, i);
-+
-+		/* get the vpn */
-+		addr = s_addr + (i * (1ul << shift));
-+		vpn = hpt_vpn(addr, vsid, ssize);
-+		hash = hpt_hash(vpn, shift, ssize);
-+		if (hidx & _PTEIDX_SECONDARY)
-+			hash = ~hash;
-+
-+		slot = (hash & htab_hash_mask) * HPTES_PER_GROUP;
-+		slot += hidx & _PTEIDX_GROUP_IX;
-+		ppc_md.hpte_invalidate(slot, vpn, psize,
-+				       MMU_PAGE_16M, ssize, 0);
-+	}
-+}
-+
-+
- int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 		    pmd_t *pmdp, unsigned long trap, int local, int ssize,
- 		    unsigned int psize)
-@@ -85,6 +136,15 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 	vpn = hpt_vpn(ea, vsid, ssize);
- 	hash = hpt_hash(vpn, shift, ssize);
- 	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	if (psize == MMU_PAGE_4K) {
-+		/*
-+		 * invalidate the old hpte entry if we have that mapped via 64K
-+		 * base page size. This is because demote_segment won't flush
-+		 * hash page table entries.
-+		 */
-+		if ((old_pmd & _PAGE_HASHPTE) && !(old_pmd & _PAGE_COMBO))
-+			invalidate_old_hpte(vsid, ea, pmdp, MMU_PAGE_64K, ssize);
-+	}
- 
- 	valid = hpte_valid(hpte_slot_array, index);
- 	if (valid) {
-@@ -107,11 +167,8 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 			 * safely update this here.
- 			 */
- 			valid = 0;
--			new_pmd &= ~_PAGE_HPTEFLAGS;
- 			hpte_slot_array[index] = 0;
--		} else
--			/* clear the busy bits and set the hash pte bits */
--			new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		}
- 	}
- 
- 	if (!valid) {
-@@ -119,15 +176,13 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 
- 		/* insert new entry */
- 		pa = pmd_pfn(__pmd(old_pmd)) << PAGE_SHIFT;
--repeat:
--		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
--
--		/* clear the busy bits and set the hash pte bits */
--		new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		new_pmd |= _PAGE_HASHPTE;
- 
- 		/* Add in WIMG bits */
- 		rflags |= (new_pmd & (_PAGE_WRITETHRU | _PAGE_NO_CACHE |
- 				      _PAGE_COHERENT | _PAGE_GUARDED));
-+repeat:
-+		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
- 
- 		/* Insert into the hash table, primary slot */
- 		slot = ppc_md.hpte_insert(hpte_group, vpn, pa, rflags, 0,
-@@ -168,6 +223,12 @@ repeat:
- 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
- 	}
- 	/*
-+	 * Mark the pte with _PAGE_COMBO, if we are trying to hash it with
-+	 * base page size 4k.
-+	 */
-+	if (psize == MMU_PAGE_4K)
-+		new_pmd |= _PAGE_COMBO;
-+	/*
- 	 * The hpte valid is stored in the pgtable whose address is in the
- 	 * second half of the PMD. Order this against clearing of the busy bit in
- 	 * huge pmd.
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index e6574d7..c30cbe2 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1345,8 +1345,8 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
+ 		if (level == 0 ||
+ 		    (bh && all_zeroes((__le32 *)bh->b_data,
+ 				      (__le32 *)bh->b_data + addr_per_block))) {
+-			ext4_free_data(handle, inode, parent_bh, &blk, &blk+1);
+-			*i_data = 0;
++			ext4_free_data(handle, inode, parent_bh,
++				       i_data, i_data + 1);
+ 		}
+ 		brelse(bh);
+ 		bh = NULL;
 -- 
 1.9.1
 
