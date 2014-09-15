@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885AbaIOVEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:04:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54675 "EHLO
+	id S1758877AbaIOVEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:04:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766AbaIOT07 (ORCPT
+	with ESMTP id S1754970AbaIOT07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Marcel Witte <wittemar@googlemail.com>,
-        Roger Tseng <rogerable@realtek.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 031/158] drivers/mfd/rtsx_usb.c: export device table
-Date: Mon, 15 Sep 2014 12:24:30 -0700
-Message-Id: <20140915192543.816848949@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
+        John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.16 067/158] MIPS: tlbex: Fix a missing statement for HUGETLB
+Date: Mon, 15 Sep 2014 12:25:06 -0700
+Message-Id: <20140915192544.910327407@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -31,36 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 1813908986e36119228c158aae1c6a0267c99e77 upstream.
+commit 8393c524a25609a30129e4a8975cf3b91f6c16a5 upstream.
 
-The rtsx_usb driver contains the table for the devices it supports but
-doesn't export it.  As a result, no alias is generated and it doesn't
-get loaded automatically.
+In commit 2c8c53e28f1 (MIPS: Optimize TLB handlers for Octeon CPUs)
+build_r4000_tlb_refill_handler() is modified. But it doesn't compatible
+with the original code in HUGETLB case. Because there is a copy & paste
+error and one line of code is missing. It is very easy to produce a bug
+with LTP's hugemmap05 test.
 
-Via https://bugzilla.novell.com/show_bug.cgi?id=890096
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Reported-by: Marcel Witte <wittemar@googlemail.com>
-Cc: Roger Tseng <rogerable@realtek.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/7496/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/rtsx_usb.c |    1 +
+ arch/mips/mm/tlbex.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/mfd/rtsx_usb.c
-+++ b/drivers/mfd/rtsx_usb.c
-@@ -744,6 +744,7 @@ static struct usb_device_id rtsx_usb_usb
- 	{ USB_DEVICE(0x0BDA, 0x0140) },
- 	{ }
- };
-+MODULE_DEVICE_TABLE(usb, rtsx_usb_usb_ids);
- 
- static struct usb_driver rtsx_usb_driver = {
- 	.name			= "rtsx_usb",
+--- a/arch/mips/mm/tlbex.c
++++ b/arch/mips/mm/tlbex.c
+@@ -1299,6 +1299,7 @@ static void build_r4000_tlb_refill_handl
+ 	}
+ #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
+ 	uasm_l_tlb_huge_update(&l, p);
++	UASM_i_LW(&p, K0, 0, K1);
+ 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
+ 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
+ 				   htlb_info.restore_scratch);
 
 
