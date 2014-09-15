@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbaIOBKW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 21:10:22 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42797 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981AbaIOBKU (ORCPT
+	id S1753108AbaIOBSb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 21:18:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57199 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753038AbaIOBS2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 21:10:20 -0400
-X-Original-SENDERIP: 10.177.220.159
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 15 Sep 2014 10:10:18 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Gioh Kim <gioh.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        paulmck@linux.vnet.ibm.com, peterz@infradead.org,
-        adilger.kernel@dilger.ca, minchan@kernel.org, gunho.lee@lge.com
-Cc: Mel Gorman <mgorman@suse.de>, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCHv4 0/3] new APIs to allocate buffer-cache with user
- specific flag
-Message-ID: <20140915011018.GA2676@js1304-P5Q-DELUXE>
-References: <1409815781-28011-1-git-send-email-gioh.kim@lge.com>
- <20140904151612.7bf5b813069ff78973e01571@linux-foundation.org>
- <540905B1.1050200@lge.com>
- <20140905011419.GE4364@thunk.org>
- <20140905014808.GA26070@js1304-P5Q-DELUXE>
- <20140905031735.GD1971@thunk.org>
- <20140905073247.GA31827@js1304-P5Q-DELUXE>
- <20140905141416.GA1510@thunk.org>
+	Sun, 14 Sep 2014 21:18:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,523,1406617200"; 
+   d="scan'208";a="602802923"
+From: "Chen, Alvin" <alvin.chen@intel.com>
+To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, atull <atull@opensource.altera.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+Thread-Topic: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver
+ binding to MFD driver
+Thread-Index: AQHP0ILxaGk/ya5Mn0yC06Al/AQx+A==
+Date: Mon, 15 Sep 2014 01:18:24 +0000
+Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9915E6@SHSMSX101.ccr.corp.intel.com>
+References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
+  <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
+  <alpine.DEB.2.02.1409101353500.2790@atx-linux-37>
+ <1410422381.7023.15.camel@intel.com>
+ <alpine.DEB.2.02.1409111020130.19272@atx-linux-37>
+In-Reply-To: <alpine.DEB.2.02.1409111020130.19272@atx-linux-37>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140905141416.GA1510@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 05, 2014 at 10:14:16AM -0400, Theodore Ts'o wrote:
-> On Fri, Sep 05, 2014 at 04:32:48PM +0900, Joonsoo Kim wrote:
-> > I also test another approach, such as allocate freepage in CMA
-> > reserved region as late as possible, which is also similar to your
-> > suggestion and this doesn't works well. When reclaim is started,
-> > too many pages reclaim at once, because lru list has successive pages
-> > in CMA region and these doesn't help kswapd's reclaim. kswapd stop
-> > reclaiming when freepage count is recovered. But, CMA pages isn't
-> > counted for freepage for kswapd because they can't be usable for
-> > unmovable, reclaimable allocation. So kswap reclaim too many pages
-> > at once unnecessarilly.
+> >
+> > > >  static int dwapb_gpio_probe(struct platform_device *pdev)  {
+> > > > +	int i;
+> > > >  	struct resource *res;
+> > > >  	struct dwapb_gpio *gpio;
+> > > > -	struct device_node *np;
+> > > >  	int err;
+> > > > -	unsigned int offs = 0;
+> > > > +	struct device *dev = &pdev->dev;
+> > > > +	struct dwapb_platform_data *pdata = dev_get_platdata(dev);
+> > > > +	bool is_pdata_alloc = !pdata;
+> > >
+> > > Please combine the int's in one line (int err, i;) and put them as
+> > > the last one on this list.  It looks the same to the compiler of
+> > > course, but more uniform for human eyes :)
+> >
+> > Do you think it's a good idea? In this case I, for example, would like
+> > to see int err as a separate line at the end of definition block. It
+> > would be better to distinguish counters and return code storage.
+> > Moreover, often counters would be unsigned int.
 > 
-> Have you considered putting the pages in a CMA region in a separate
-> zone?  After all, that's what we originally did with brain-damaged
-> hardware that could only DMA into the low 16M of memory.  We just
-> reserved a separate zone for that?  That way, we could do
-> zone-directed reclaim and free pages in that zone, if that was what
-> was actually needed.
+> If they are both 'int' they should be combined.  If 'i' is changed to be an
+> unsigned int they would be separate.
 
-Sorry for long delay. It was long holidays.
-
-No, I haven't consider it. It sounds good idea to place the pages in a
-CMA region into a separate zone. Perhaps we can remove one of
-migratetype, MIGRATE_CMA, with this way and it would be a good long-term
-architecture for CMA.
-
-I don't know exact history and reason why CMA is implemented in current
-form. Ccing some experts in this area.
-
-Thanks.
+Linus, do you have any idea about it? I think it is not a big issue.
+> 
