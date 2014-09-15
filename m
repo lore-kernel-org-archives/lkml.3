@@ -1,148 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158AbaIOHEG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:04:06 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:58586 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaIOHEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:04:04 -0400
-From: bharata.rao@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/1] pseries: Make CPU hotplug path endian safe
-Date: Mon, 15 Sep 2014 12:33:26 +0530
-Message-Id: <1410764606-14746-1-git-send-email-bharata.rao@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1753307AbaIOHFB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:05:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:48018 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752546AbaIOHFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 03:05:00 -0400
+Date: Mon, 15 Sep 2014 17:04:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: build failure after merge of the nfs tree
+Message-ID: <20140915170453.0e8d4e85@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/IbQG_eWMVj=qp7ZVnuefNoH"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+--Sig_/IbQG_eWMVj=qp7ZVnuefNoH
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-- ibm,rtas-configure-connector should treat the RTAS data as big endian.
-- Treat ibm,ppc-interrupt-server#s as big-endian when setting
-  smp_processor_id during hotplug.
+Hi Trond,
 
-Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
-Signed-off-by: Thomas Falcon <tlfalcon@linux.vnet.ibm.com>
+After merging the nfs tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+fs/nfs/blocklayout/extent_tree.c: In function 'ext_tree_prepare_commit':
+fs/nfs/blocklayout/extent_tree.c:540:3: error: implicit declaration of func=
+tion '__vmalloc' [-Werror=3Dimplicit-function-declaration]
+   start_p =3D __vmalloc(buffer_size, GFP_NOFS, PAGE_KERNEL);
+   ^
+fs/nfs/blocklayout/extent_tree.c:540:11: warning: assignment makes pointer =
+from integer without a cast
+   start_p =3D __vmalloc(buffer_size, GFP_NOFS, PAGE_KERNEL);
+           ^
+
+Caused by commit 34dc93c2fc04 ("pnfs/blocklayout: allocate separate
+pages for the layoutcommit payload").
+
+I added the following fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 15 Sep 2014 17:01:32 +1000
+Subject: [PATCH] pnfs/blocklayout: include vmalloc.h for __vmalloc
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ fs/nfs/blocklayout/extent_tree.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Changes in v2:
-- Don't convert drc_index to BE in dlpar_configure_connector() but instead
-  convert in the caller dlpar_cpu_probe() so that migration path isn't
-  affected.
-- Mark members of cc_workarea struct as __be32 instead of u32 (Thomas)
-- Based on top of Thomas Falcon's two patches.
-  (http://patchwork.ozlabs.org/patch/388767/)
+diff --git a/fs/nfs/blocklayout/extent_tree.c b/fs/nfs/blocklayout/extent_t=
+ree.c
+index 93193616205a..31d0b5e53dfd 100644
+--- a/fs/nfs/blocklayout/extent_tree.c
++++ b/fs/nfs/blocklayout/extent_tree.c
+@@ -2,6 +2,8 @@
+  * Copyright (c) 2014 Christoph Hellwig.
+  */
+=20
++#include <linux/vmalloc.h>
++
+ #include "blocklayout.h"
+=20
+ #define NFSDBG_FACILITY		NFSDBG_PNFS_LD
+--=20
+2.1.0
 
-v1: http://patchwork.ozlabs.org/patch/386216/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- arch/powerpc/platforms/pseries/dlpar.c       | 22 +++++++++++-----------
- arch/powerpc/platforms/pseries/hotplug-cpu.c |  4 ++--
- arch/powerpc/platforms/pseries/pseries.h     |  3 ++-
- 3 files changed, 15 insertions(+), 14 deletions(-)
+--Sig_/IbQG_eWMVj=qp7ZVnuefNoH
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-diff --git a/arch/powerpc/platforms/pseries/dlpar.c b/arch/powerpc/platforms/pseries/dlpar.c
-index 8718227..52aeb37 100644
---- a/arch/powerpc/platforms/pseries/dlpar.c
-+++ b/arch/powerpc/platforms/pseries/dlpar.c
-@@ -24,11 +24,11 @@
- #include <asm/rtas.h>
- 
- struct cc_workarea {
--	u32	drc_index;
--	u32	zero;
--	u32	name_offset;
--	u32	prop_length;
--	u32	prop_offset;
-+	__be32	drc_index;
-+	__be32	zero;
-+	__be32	name_offset;
-+	__be32	prop_length;
-+	__be32	prop_offset;
- };
- 
- void dlpar_free_cc_property(struct property *prop)
-@@ -48,11 +48,11 @@ static struct property *dlpar_parse_cc_property(struct cc_workarea *ccwa)
- 	if (!prop)
- 		return NULL;
- 
--	name = (char *)ccwa + ccwa->name_offset;
-+	name = (char *)ccwa + be32_to_cpu(ccwa->name_offset);
- 	prop->name = kstrdup(name, GFP_KERNEL);
- 
--	prop->length = ccwa->prop_length;
--	value = (char *)ccwa + ccwa->prop_offset;
-+	prop->length = be32_to_cpu(ccwa->prop_length);
-+	value = (char *)ccwa + be32_to_cpu(ccwa->prop_offset);
- 	prop->value = kmemdup(value, prop->length, GFP_KERNEL);
- 	if (!prop->value) {
- 		dlpar_free_cc_property(prop);
-@@ -78,7 +78,7 @@ static struct device_node *dlpar_parse_cc_node(struct cc_workarea *ccwa,
- 	if (!dn)
- 		return NULL;
- 
--	name = (char *)ccwa + ccwa->name_offset;
-+	name = (char *)ccwa + be32_to_cpu(ccwa->name_offset);
- 	dn->full_name = kasprintf(GFP_KERNEL, "%s/%s", path, name);
- 	if (!dn->full_name) {
- 		kfree(dn);
-@@ -125,7 +125,7 @@ void dlpar_free_cc_nodes(struct device_node *dn)
- #define CALL_AGAIN	-2
- #define ERR_CFG_USE     -9003
- 
--struct device_node *dlpar_configure_connector(u32 drc_index,
-+struct device_node *dlpar_configure_connector(__be32 drc_index,
- 					      struct device_node *parent)
- {
- 	struct device_node *dn;
-@@ -413,7 +413,7 @@ static ssize_t dlpar_cpu_probe(const char *buf, size_t count)
- 	if (!parent)
- 		return -ENODEV;
- 
--	dn = dlpar_configure_connector(drc_index, parent);
-+	dn = dlpar_configure_connector(cpu_to_be32(drc_index), parent);
- 	if (!dn)
- 		return -EINVAL;
- 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-cpu.c b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-index b174fa7..5c375f9 100644
---- a/arch/powerpc/platforms/pseries/hotplug-cpu.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-cpu.c
-@@ -247,7 +247,7 @@ static int pseries_add_processor(struct device_node *np)
- 	unsigned int cpu;
- 	cpumask_var_t candidate_mask, tmp;
- 	int err = -ENOSPC, len, nthreads, i;
--	const u32 *intserv;
-+	const __be32 *intserv;
- 
- 	intserv = of_get_property(np, "ibm,ppc-interrupt-server#s", &len);
- 	if (!intserv)
-@@ -293,7 +293,7 @@ static int pseries_add_processor(struct device_node *np)
- 	for_each_cpu(cpu, tmp) {
- 		BUG_ON(cpu_present(cpu));
- 		set_cpu_present(cpu, true);
--		set_hard_smp_processor_id(cpu, *intserv++);
-+		set_hard_smp_processor_id(cpu, be32_to_cpu(*intserv++));
- 	}
- 	err = 0;
- out_unlock:
-diff --git a/arch/powerpc/platforms/pseries/pseries.h b/arch/powerpc/platforms/pseries/pseries.h
-index 361add6..1796c54 100644
---- a/arch/powerpc/platforms/pseries/pseries.h
-+++ b/arch/powerpc/platforms/pseries/pseries.h
-@@ -56,7 +56,8 @@ extern void hvc_vio_init_early(void);
- /* Dynamic logical Partitioning/Mobility */
- extern void dlpar_free_cc_nodes(struct device_node *);
- extern void dlpar_free_cc_property(struct property *);
--extern struct device_node *dlpar_configure_connector(u32, struct device_node *);
-+extern struct device_node *dlpar_configure_connector(__be32,
-+						struct device_node *);
- extern int dlpar_attach_node(struct device_node *);
- extern int dlpar_detach_node(struct device_node *);
- 
--- 
-1.7.11.7
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUFo+aAAoJEMDTa8Ir7ZwVNuwP/3CeGubkoEz5GDCSeM3WVcPi
+DzPJ+K3uKahjiUx/CK05UCivIWIi728IA7lyDZb72IvO7LyiwHCSE38RIpkub4Uf
+KKi+rL7loEFLSXN6OPtWmYg+zwZ857khoiF0sGedjVPrE9pv8eGH5IfFwc5jwWZR
+n18F5Tf3ozFgksuPZnxw4U7hnc5DRLoz5aOqwigHTU+MAotXTNJA+SDumRG+TOBW
+7m/fAZxa+nCdUDP2GPxUy7Mp3NAWtFVaOIyaqpzvENqf7OXSZIu7gZLDUQGP9pvJ
+hNYjHX6H1LlH7ziBHZ2O0jI9gsP9BTzLIIPmyJhMXlrP+x+HQpUkP/+Wi8/ZdLpy
+/FCAmlOWLfcPKf+dzEtWRmb8yPC+H12Ddk0hmAc5UvN6JtYzaFgzsD0gT9ajRL1G
+SW2lax/49xtZg2B4003bTLW7qovCNB/dQy4jrHY+iCRjAPLtlponCRBAAxQDwUKi
+u/rfurSGau4gvjCNTaHhtgCAiPIQzMWUrg/tZAIV4mWHGc0L5zdCa0YCrljkqHrE
+Y7ma0cZ3fnKZwMMo9sL53+Aas4h6G8WZzsZkWSFCrAFBPhJkkVjVRyd98k1I1ntB
+EzSMAgHQC2Hby8qXzB2twoBNc1oHIr1qJcHudbd4cGlXFceGpP2kAzbYolUtMXtE
+ChkVNrIiuXKtejL6tSf8
+=KyuS
+-----END PGP SIGNATURE-----
+
+--Sig_/IbQG_eWMVj=qp7ZVnuefNoH--
