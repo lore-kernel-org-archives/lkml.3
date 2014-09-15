@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaIOJlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 05:41:39 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:43746 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610AbaIOJlh (ORCPT
+	id S1753868AbaIOJoO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 05:44:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50760 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700AbaIOJoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 05:41:37 -0400
-Message-ID: <5416B447.8030606@gmail.com>
-Date: Mon, 15 Sep 2014 12:41:27 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ross Zwisler <ross.zwisler@linux.intel.com>, willy@linux.intel.com
-Subject: Re: [PATCH v10 20/21] ext4: Add DAX functionality
-References: <cover.1409110741.git.matthew.r.wilcox@intel.com> <5422062f87eb5606f4632fd06575254379f40ddc.1409110741.git.matthew.r.wilcox@intel.com> <20140903111302.GG20473@dastard> <54108124.9030707@gmail.com> <20140911043815.GP20518@dastard> <54158949.8080009@gmail.com> <20140915061534.GF4322@dastard>
-In-Reply-To: <20140915061534.GF4322@dastard>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 05:44:13 -0400
+Message-ID: <1410774073.3314.1.camel@pengutronix.de>
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+From: Lucas Stach <l.stach@pengutronix.de>
+To: Robin Gong <b38343@freescale.com>
+Cc: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Sep 2014 11:41:13 +0200
+In-Reply-To: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.5-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 09:15 AM, Dave Chinner wrote:
-> On Sun, Sep 14, 2014 at 03:25:45PM +0300, Boaz Harrosh wrote:
-<>
+Am Mittwoch, den 10.09.2014, 13:30 +0800 schrieb Robin Gong:
+> There is one weird data in rxfifo after one full rx/tx transfer
+> done sometimes. It looks a design issue and hard to workaround
+> totally, so disable dma functhion here. And will re-enable it
+> once the root cause found.
 > 
-> Well, that's one way of working around the immediate issue, but I
-> don't think it solves the whole problem. e.g. what do you do with the
-> bit of the partial write that failed? We may have allocated space
-> for it but not written data to it, so to simply fail exposes stale
-> data in the file(*).
+Sorry, I'm late to this as Shawn seems to already have picked up this
+patch, but this isn't the right way to fix the problem.
+
+We made it clear at kernel summit last year that we try to not break
+existing DTs as booting a new kernel with an old DT is a valid use case.
+While you don't strictly violate this rule what you do here is only
+fixing systems booting with a new DT while leaving others broken.
+
+If you are working around a hardware problem please disable DMA support
+in the driver. This will also allow you to enable it again, if you find
+another workaround without touching the DT again.
+
+So this patch gets a NAK from me.
+
+> Signed-off-by: Robin Gong <b38343@freescale.com>
+> ---
+>  arch/arm/boot/dts/imx6q.dtsi   | 20 ++++++++++++++++++++
+>  arch/arm/boot/dts/imx6qdl.dtsi |  8 --------
+>  2 files changed, 20 insertions(+), 8 deletions(-)
 > 
+> diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
+> index e9f3646..8d5d33b 100644
+> --- a/arch/arm/boot/dts/imx6q.dtsi
+> +++ b/arch/arm/boot/dts/imx6q.dtsi
+> @@ -291,6 +291,26 @@
+>  	};
+>  };
+>  
+> +&ecspi1 {
+> +	dmas = <&sdma 3 7 1>, <&sdma 4 7 2>;
+> +	dma-names = "rx", "tx";
+> +};
+> +
+> +&ecspi2 {
+> +	dmas = <&sdma 5 7 1>, <&sdma 6 7 2>;
+> +	dma-names = "rx", "tx";
+> +};
+> +
+> +&ecspi3 {
+> +	dmas = <&sdma 7 7 1>, <&sdma 8 7 2>;
+> +	dma-names = "rx", "tx";
+> +};
+> +
+> +&ecspi4 {
+> +	dmas = <&sdma 9 7 1>, <&sdma 10 7 2>;
+> +	dma-names = "rx", "tx";
+> +};
+> +
+>  &mipi_dsi {
+>  	port@2 {
+>  		reg = <2>;
+> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
+> index 70d7207..f696546 100644
+> --- a/arch/arm/boot/dts/imx6qdl.dtsi
+> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
+> @@ -210,8 +210,6 @@
+>  					clocks = <&clks IMX6QDL_CLK_ECSPI1>,
+>  						 <&clks IMX6QDL_CLK_ECSPI1>;
+>  					clock-names = "ipg", "per";
+> -					dmas = <&sdma 3 7 1>, <&sdma 4 7 2>;
+> -					dma-names = "rx", "tx";
+>  					status = "disabled";
+>  				};
+>  
+> @@ -224,8 +222,6 @@
+>  					clocks = <&clks IMX6QDL_CLK_ECSPI2>,
+>  						 <&clks IMX6QDL_CLK_ECSPI2>;
+>  					clock-names = "ipg", "per";
+> -					dmas = <&sdma 5 7 1>, <&sdma 6 7 2>;
+> -					dma-names = "rx", "tx";
+>  					status = "disabled";
+>  				};
+>  
+> @@ -238,8 +234,6 @@
+>  					clocks = <&clks IMX6QDL_CLK_ECSPI3>,
+>  						 <&clks IMX6QDL_CLK_ECSPI3>;
+>  					clock-names = "ipg", "per";
+> -					dmas = <&sdma 7 7 1>, <&sdma 8 7 2>;
+> -					dma-names = "rx", "tx";
+>  					status = "disabled";
+>  				};
+>  
+> @@ -252,8 +246,6 @@
+>  					clocks = <&clks IMX6QDL_CLK_ECSPI4>,
+>  						 <&clks IMX6QDL_CLK_ECSPI4>;
+>  					clock-names = "ipg", "per";
+> -					dmas = <&sdma 9 7 1>, <&sdma 10 7 2>;
+> -					dma-names = "rx", "tx";
+>  					status = "disabled";
+>  				};
+>  
 
-I'm confused. From what you said and what I read of the dax_do_io
-code the only possible error is ENOSPC from getblock. 
-(since ->direct_access() and memcopy cannot fail.)
-
-Is it possible to fail with ENOSPC and still allocate an unwritten
-block?
-
-> Hence it's not clear to me that simply returning the short write is
-> a valid solution for DAX-enabled filesystems. I think that the
-> above - initially, at least - is much better than falling back to
-> buffered IO but filesystems are going to have to be updated to work
-> correctly without that fallback.
-> 
-
-The way I read dax_do_io it will call getblock, write or zero it
-and continue to the next one only after that.
-If not we should establish an handshake that will at least zero out
-any error blocks, and or d-allocates them. But can you see such code
-path in dax_do_io?
-
->> Yes I agree this is a very bad data corruption bug. I also think
->> that the read path should not be allowed to fall back to buffered
->> IO just the same for the same reason. We must not allow any real
->> data in page_cache for a DAX file.
-> 
-> Right, I didn't check the read path for the same issue as XFS won't
-> return a short read on direct IO unless the read spans EOF. And in
-> that case it won't ever do buffered reads. ;)
-> 
-
-Right read is less problematic. I guess. But we should not attempt
-a buffered read anyway.
-
-> Cheers,
-> Dave.
-> 
-> (*) XFS avoids this problem by always using unwritten extents for
-> direct IO allocation, but I'm pretty sure that ext4 doesn't do this.
-> Using unwritten extents means that we don't expose stale data in the
-> event we don't end up writing to the allocated space.
-> 
-If only we had an xfstest for this ?
-
-Thanks
-Boaz
+-- 
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
 
