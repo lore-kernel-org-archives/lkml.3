@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755952AbaIOTui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:50:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	id S1756576AbaIOTuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:50:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358AbaIOTr1 (ORCPT
+	with ESMTP id S1756353AbaIOTr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Sagi Grimberg <sagig@mellanox.com>, David Dillow <dave@thedillows.org>,
-        Sebastian Parschauer <sebastian.riemer@profitbricks.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 68/71] IB/srp: Fix deadlock between host removal and multipathd
-Date: Mon, 15 Sep 2014 12:27:06 -0700
-Message-Id: <20140915192640.969071542@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Shirish Pargaonkar <spargaonkar@suse.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jet Chen <jet.chen@intel.com>,
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 67/71] blkcg: dont call into policy draining if root_blkg is already gone
+Date: Mon, 15 Sep 2014 12:27:05 -0700
+Message-Id: <20140915192640.937559780@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -31,154 +30,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Van Assche <bvanassche@acm.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit bcc05910359183b431da92713e98eed478edf83a upstream.
+commit 2a1b4cf2331d92bc009bf94fa02a24604cdaf24c upstream.
 
-If scsi_remove_host() is invoked after a SCSI device has been blocked,
-if the fast_io_fail_tmo or dev_loss_tmo work gets scheduled on the
-workqueue executing srp_remove_work() and if an I/O request is
-scheduled after the SCSI device had been blocked by e.g. multipathd
-then the following deadlock can occur:
+While a queue is being destroyed, all the blkgs are destroyed and its
+->root_blkg pointer is set to NULL.  If someone else starts to drain
+while the queue is in this state, the following oops happens.
 
-    kworker/6:1     D ffff880831f3c460     0   195      2 0x00000000
-    Call Trace:
-     [<ffffffff814aafd9>] schedule+0x29/0x70
-     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
-     [<ffffffff8105af6f>] msleep+0x2f/0x40
-     [<ffffffff8123b0ae>] __blk_drain_queue+0x4e/0x180
-     [<ffffffff8123d2d5>] blk_cleanup_queue+0x225/0x230
-     [<ffffffffa0010732>] __scsi_remove_device+0x62/0xe0 [scsi_mod]
-     [<ffffffffa000ed2f>] scsi_forget_host+0x6f/0x80 [scsi_mod]
-     [<ffffffffa0002eba>] scsi_remove_host+0x7a/0x130 [scsi_mod]
-     [<ffffffffa07cf5c5>] srp_remove_work+0x95/0x180 [ib_srp]
-     [<ffffffff8106d7aa>] process_one_work+0x1ea/0x6c0
-     [<ffffffff8106dd9b>] worker_thread+0x11b/0x3a0
-     [<ffffffff810758bd>] kthread+0xed/0x110
-     [<ffffffff814b972c>] ret_from_fork+0x7c/0xb0
-    multipathd      D ffff880096acc460     0  5340      1 0x00000000
-    Call Trace:
-     [<ffffffff814aafd9>] schedule+0x29/0x70
-     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
-     [<ffffffff814ab79b>] io_schedule_timeout+0x9b/0xf0
-     [<ffffffff814abe1c>] wait_for_completion_io_timeout+0xdc/0x110
-     [<ffffffff81244b9b>] blk_execute_rq+0x9b/0x100
-     [<ffffffff8124f665>] sg_io+0x1a5/0x450
-     [<ffffffff8124fd21>] scsi_cmd_ioctl+0x2a1/0x430
-     [<ffffffff8124fef2>] scsi_cmd_blk_ioctl+0x42/0x50
-     [<ffffffffa00ec97e>] sd_ioctl+0xbe/0x140 [sd_mod]
-     [<ffffffff8124bd04>] blkdev_ioctl+0x234/0x840
-     [<ffffffff811cb491>] block_ioctl+0x41/0x50
-     [<ffffffff811a0df0>] do_vfs_ioctl+0x300/0x520
-     [<ffffffff811a1051>] SyS_ioctl+0x41/0x80
-     [<ffffffff814b9962>] tracesys+0xd0/0xd5
+  NULL pointer dereference at 0000000000000028
+  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  PGD e4a1067 PUD b773067 PMD 0
+  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
+  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
+  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
+  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
+  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
+  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
+  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
+  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
+  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
+  Stack:
+   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
+   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
+   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
+  Call Trace:
+   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
+   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
+   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
+   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
+   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
+   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
+   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff81427505>] blk_put_queue+0x15/0x20
+   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
+   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
+   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
+   [<ffffffff817930e2>] device_release+0x32/0xa0
+   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
+   [<ffffffff81454848>] kobject_put+0x28/0x60
+   [<ffffffff817934d7>] put_device+0x17/0x20
+   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
+   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
+   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
+   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
+   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
+   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
+   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
+   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
+   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
 
-Fix this by scheduling removal work on another workqueue than the
-transport layer timers.
+776687bce42b ("block, blk-mq: draining can't be skipped even if
+bypass_depth was non-zero") made it easier to trigger this bug by
+making blk_queue_bypass_start() drain even when it loses the first
+bypass test to blk_cleanup_queue(); however, the bug has always been
+there even before the commit as blk_queue_bypass_start() could race
+against queue destruction, win the initial bypass test but perform the
+actual draining after blk_cleanup_queue() already destroyed all blkgs.
 
-Signed-off-by: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Reviewed-by: David Dillow <dave@thedillows.org>
-Cc: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Fix it by skippping calling into policy draining if all the blkgs are
+already gone.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Reported-by: Jet Chen <jet.chen@intel.com>
+Tested-by: Shirish Pargaonkar <spargaonkar@suse.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srp/ib_srp.c |   38 ++++++++++++++++++++++++++----------
- 1 file changed, 28 insertions(+), 10 deletions(-)
+ block/blk-cgroup.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/infiniband/ulp/srp/ib_srp.c
-+++ b/drivers/infiniband/ulp/srp/ib_srp.c
-@@ -93,6 +93,7 @@ static void srp_send_completion(struct i
- static int srp_cm_handler(struct ib_cm_id *cm_id, struct ib_cm_event *event);
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -883,6 +883,13 @@ void blkcg_drain_queue(struct request_qu
+ 	if (!q->root_blkg)
+ 		return;
  
- static struct scsi_transport_template *ib_srp_transport_template;
-+static struct workqueue_struct *srp_remove_wq;
- 
- static struct ib_client srp_client = {
- 	.name   = "srp",
-@@ -456,7 +457,7 @@ static bool srp_queue_remove_work(struct
- 	spin_unlock_irq(&target->lock);
- 
- 	if (changed)
--		queue_work(system_long_wq, &target->remove_work);
-+		queue_work(srp_remove_wq, &target->remove_work);
- 
- 	return changed;
- }
-@@ -2530,9 +2531,10 @@ static void srp_remove_one(struct ib_dev
- 		spin_unlock(&host->target_lock);
- 
- 		/*
--		 * Wait for target port removal tasks.
-+		 * Wait for tl_err and target port removal tasks.
- 		 */
- 		flush_workqueue(system_long_wq);
-+		flush_workqueue(srp_remove_wq);
- 
- 		kfree(host);
- 	}
-@@ -2577,16 +2579,22 @@ static int __init srp_init_module(void)
- 		indirect_sg_entries = cmd_sg_entries;
- 	}
- 
-+	srp_remove_wq = create_workqueue("srp_remove");
-+	if (IS_ERR(srp_remove_wq)) {
-+		ret = PTR_ERR(srp_remove_wq);
-+		goto out;
-+	}
++	/*
++	 * @q could be exiting and already have destroyed all blkgs as
++	 * indicated by NULL root_blkg.  If so, don't confuse policies.
++	 */
++	if (!q->root_blkg)
++		return;
 +
-+	ret = -ENOMEM;
- 	ib_srp_transport_template =
- 		srp_attach_transport(&ib_srp_transport_functions);
- 	if (!ib_srp_transport_template)
--		return -ENOMEM;
-+		goto destroy_wq;
- 
- 	ret = class_register(&srp_class);
- 	if (ret) {
- 		pr_err("couldn't register class infiniband_srp\n");
--		srp_release_transport(ib_srp_transport_template);
--		return ret;
-+		goto release_tr;
- 	}
- 
- 	ib_sa_register_client(&srp_sa_client);
-@@ -2594,13 +2602,22 @@ static int __init srp_init_module(void)
- 	ret = ib_register_client(&srp_client);
- 	if (ret) {
- 		pr_err("couldn't register IB client\n");
--		srp_release_transport(ib_srp_transport_template);
--		ib_sa_unregister_client(&srp_sa_client);
--		class_unregister(&srp_class);
--		return ret;
-+		goto unreg_sa;
- 	}
- 
--	return 0;
-+out:
-+	return ret;
-+
-+unreg_sa:
-+	ib_sa_unregister_client(&srp_sa_client);
-+	class_unregister(&srp_class);
-+
-+release_tr:
-+	srp_release_transport(ib_srp_transport_template);
-+
-+destroy_wq:
-+	destroy_workqueue(srp_remove_wq);
-+	goto out;
+ 	blk_throtl_drain(q);
  }
  
- static void __exit srp_cleanup_module(void)
-@@ -2609,6 +2626,7 @@ static void __exit srp_cleanup_module(vo
- 	ib_sa_unregister_client(&srp_sa_client);
- 	class_unregister(&srp_class);
- 	srp_release_transport(ib_srp_transport_template);
-+	destroy_workqueue(srp_remove_wq);
- }
- 
- module_init(srp_init_module);
 
 
