@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522AbaIOU4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:56:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54679 "EHLO
+	id S1758629AbaIOU4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:56:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54669 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaIOT1K (ORCPT
+	with ESMTP id S1755038AbaIOT1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:10 -0400
+	Mon, 15 Sep 2014 15:27:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lv Zheng <lv.zheng@intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 101/158] ACPI / scan: not cache _SUN value in struct acpi_device_pnp
-Date: Mon, 15 Sep 2014 12:25:40 -0700
-Message-Id: <20140915192545.915729187@linuxfoundation.org>
+Subject: [PATCH 3.16 099/158] ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isnt set
+Date: Mon, 15 Sep 2014 12:25:38 -0700
+Message-Id: <20140915192545.857120129@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,81 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit a383b68d9fe9864c4d3b86f67ad6488f58136435 upstream.
+commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08 upstream.
 
-The _SUN device indentification object is not guaranteed to return
-the same value every time it is executed, so we should not cache its
-return value, but rather execute it every time as needed.  If it is
-cached, an incorrect stale value may be used in some situations.
+There is a platform refusing to respond QR_EC when SCI_EVT isn't set
+(Acer Aspire V5-573G).
 
-This issue was exposed by commit 202317a573b2 (ACPI / scan: Add
-acpi_device objects for all device nodes in the namespace).  Fix it
-by avoiding to cache the return value of _SUN.
+Currently, we rely on the behaviour that the EC firmware can respond
+something (for example, 0x00 to indicate "no outstanding events") to
+QR_EC even when SCI_EVT is not set, but the reporter has complained
+about AC/battery pluging/unpluging and video brightness change delay
+on that platform.
 
-Fixes: 202317a573b2 (ACPI / scan: Add acpi_device objects for all device nodes in the namespace)
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-[ rjw: Changelog ]
+This is because the work item that has issued QR_EC has to wait until
+timeout in this case, and the _Qxx method evaluation work item queued
+after QR_EC one is delayed.
+
+It sounds reasonable to fix this issue by:
+ 1. Implementing SCI_EVT sanity check before issuing QR_EC in the EC
+    driver's main state machine.
+ 2. Moving QR_EC issuing out of the work queue used by _Qxx evaluation
+    to a seperate IRQ handling thread.
+
+This patch fixes this issue using solution 1.
+
+By disallowing QR_EC to be issued when SCI_EVT isn't set, we are able to
+handle such platform in the EC driver's main state machine. This patch
+enhances the state machine in this way to survive with such malfunctioning
+EC firmware.
+
+Note that this patch can also fix CLEAR_ON_RESUME quirk which also relies
+on the assumption that the platforms are able to respond even when SCI_EVT
+isn't set.
+
+Fixes: c0d653412fc8 ACPI / EC: Fix race condition in ec_transaction_completed()
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
+Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c     |   15 ++++++++-------
- include/acpi/acpi_bus.h |    1 -
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/acpi/ec.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -665,8 +665,14 @@ static ssize_t
- acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
- 		     char *buf) {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
-+	acpi_status status;
-+	unsigned long long sun;
-+
-+	status = acpi_evaluate_integer(acpi_dev->handle, "_SUN", NULL, &sun);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
- 
--	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-+	return sprintf(buf, "%llu\n", sun);
- }
- static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
- 
-@@ -688,7 +694,6 @@ static int acpi_device_setup_files(struc
- {
- 	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
- 	acpi_status status;
--	unsigned long long sun;
- 	int result = 0;
- 
- 	/*
-@@ -729,14 +734,10 @@ static int acpi_device_setup_files(struc
- 	if (dev->pnp.unique_id)
- 		result = device_create_file(&dev->dev, &dev_attr_uid);
- 
--	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
--	if (ACPI_SUCCESS(status)) {
--		dev->pnp.sun = (unsigned long)sun;
-+	if (acpi_has_method(dev->handle, "_SUN")) {
- 		result = device_create_file(&dev->dev, &dev_attr_sun);
- 		if (result)
- 			goto end;
--	} else {
--		dev->pnp.sun = (unsigned long)-1;
- 	}
- 
- 	if (acpi_has_method(dev->handle, "_STA")) {
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -246,7 +246,6 @@ struct acpi_device_pnp {
- 	acpi_device_name device_name;	/* Driver-determined */
- 	acpi_device_class device_class;	/*        "          */
- 	union acpi_object *str_obj;	/* unicode string for _STR method */
--	unsigned long sun;		/* _SUN */
- };
- 
- #define acpi_device_bid(d)	((d)->pnp.bus_id)
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -197,6 +197,8 @@ static bool advance_transaction(struct a
+ 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
+ 				if (t->rlen == t->ri) {
+ 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
++					if (t->command == ACPI_EC_COMMAND_QUERY)
++						pr_debug("hardware QR_EC completion\n");
+ 					wakeup = true;
+ 				}
+ 			} else
+@@ -208,7 +210,20 @@ static bool advance_transaction(struct a
+ 		}
+ 		return wakeup;
+ 	} else {
+-		if ((status & ACPI_EC_FLAG_IBF) == 0) {
++		/*
++		 * There is firmware refusing to respond QR_EC when SCI_EVT
++		 * is not set, for which case, we complete the QR_EC
++		 * without issuing it to the firmware.
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
++		 */
++		if (!(status & ACPI_EC_FLAG_SCI) &&
++		    (t->command == ACPI_EC_COMMAND_QUERY)) {
++			t->flags |= ACPI_EC_COMMAND_POLL;
++			t->rdata[t->ri++] = 0x00;
++			t->flags |= ACPI_EC_COMMAND_COMPLETE;
++			pr_debug("software QR_EC completion\n");
++			wakeup = true;
++		} else if ((status & ACPI_EC_FLAG_IBF) == 0) {
+ 			acpi_ec_write_cmd(ec, t->command);
+ 			t->flags |= ACPI_EC_COMMAND_POLL;
+ 		} else
 
 
