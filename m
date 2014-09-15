@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaIOT1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:27:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54669 "EHLO
+	id S1755218AbaIOT12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:27:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017AbaIOT1E (ORCPT
+	with ESMTP id S1755025AbaIOT1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:04 -0400
+	Mon, 15 Sep 2014 15:27:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Jiang <scott.jiang.linux@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 080/158] ASoC: blackfin: use samples to set silence
-Date: Mon, 15 Sep 2014 12:25:19 -0700
-Message-Id: <20140915192545.294463478@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [PATCH 3.16 065/158] MIPS: smp-mt: Fix link error when PROC_FS=n
+Date: Mon, 15 Sep 2014 12:25:04 -0700
+Message-Id: <20140915192544.845153571@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,46 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Jiang <scott.jiang.linux@gmail.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit 30443408fd7201fd1911b09daccf92fae3cc700d upstream.
+commit 7d907fa1c6ccb64c7f64cc7d3dcc7f6fe30a67b4 upstream.
 
-The third parameter for snd_pcm_format_set_silence needs the number
-of samples instead of sample bytes.
+Commit d6d3c9afaab4 (MIPS: MT: proc: Add support for printing VPE and TC
+ids) causes a link error when CONFIG_PROC_FS=n:
 
-Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+arch/mips/built-in.o: In function `proc_cpuinfo_notifier_init':
+smp-mt.c: undefined reference to `register_proc_cpuinfo_notifier'
+
+This is fixed by adding an ifdef around the procfs handling code
+in smp-mt.c.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Reported-by: Markos Chandras <markos.chandras@imgtec.com>
+Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7244/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/blackfin/bf5xx-i2s-pcm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/mips/kernel/smp-mt.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/blackfin/bf5xx-i2s-pcm.c
-+++ b/sound/soc/blackfin/bf5xx-i2s-pcm.c
-@@ -290,19 +290,19 @@ static int bf5xx_pcm_silence(struct snd_
- 	unsigned int sample_size = runtime->sample_bits / 8;
- 	void *buf = runtime->dma_area;
- 	struct bf5xx_i2s_pcm_data *dma_data;
--	unsigned int offset, size;
-+	unsigned int offset, samples;
+--- a/arch/mips/kernel/smp-mt.c
++++ b/arch/mips/kernel/smp-mt.c
+@@ -288,6 +288,7 @@ struct plat_smp_ops vsmp_smp_ops = {
+ 	.prepare_cpus		= vsmp_prepare_cpus,
+ };
  
- 	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
- 
- 	if (dma_data->tdm_mode) {
- 		offset = pos * 8 * sample_size;
--		size = count * 8 * sample_size;
-+		samples = count * 8;
- 	} else {
- 		offset = frames_to_bytes(runtime, pos);
--		size = frames_to_bytes(runtime, count);
-+		samples = count * runtime->channels;
- 	}
- 
--	snd_pcm_format_set_silence(runtime->format, buf + offset, size);
-+	snd_pcm_format_set_silence(runtime->format, buf + offset, samples);
- 
- 	return 0;
++#ifdef CONFIG_PROC_FS
+ static int proc_cpuinfo_chain_call(struct notifier_block *nfb,
+ 	unsigned long action_unused, void *data)
+ {
+@@ -309,3 +310,4 @@ static int __init proc_cpuinfo_notifier_
  }
+ 
+ subsys_initcall(proc_cpuinfo_notifier_init);
++#endif
 
 
