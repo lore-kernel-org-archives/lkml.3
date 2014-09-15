@@ -1,129 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaIOQsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:48:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260AbaIOQsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:48:36 -0400
-Message-ID: <54171829.3090108@redhat.com>
-Date: Mon, 15 Sep 2014 18:47:37 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-mm@kvack.org, Randy Dunlap <rdunlap@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [RFC PATCH v2 5/5] mm, shmem: Show location of non-resident shmem
- pages in smaps
-References: <1410791077-5300-1-git-send-email-jmarchan@redhat.com> <1410791077-5300-6-git-send-email-jmarchan@redhat.com> <20140915162131.GA22768@redhat.com>
-In-Reply-To: <20140915162131.GA22768@redhat.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="bVD1OPQdIR0iBiXkwXeDAPwH088WoRpcP"
+	id S1754325AbaIOQtA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:49:00 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:34507 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307AbaIOQs6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 12:48:58 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 03/18] ACPI / table: Count matched and successfully
+ parsed entries without specifying max entries
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+In-Reply-To: <1410530416-30200-4-git-send-email-hanjun.guo@linaro.org>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+	<1410530416-30200-4-git-send-email-hanjun.guo@linaro.org>
+Date: Mon, 15 Sep 2014 09:48:56 -0700
+Message-Id: <20140915164856.53B3EC40A26@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---bVD1OPQdIR0iBiXkwXeDAPwH088WoRpcP
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 12 Sep 2014 22:00:01 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> 
+> It is very useful to traverse all available table entries without max
+> number of expected entries type. Current acpi_parse_entries()
+> implementation gives that feature but it does not count those entries,
+> it returns 0 instead, so fix it to count matched and successfully
+> entries and return it.
+> 
+> NOTE: This change has no impact to x86 and ia64 archs since existing code
+> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
+> 
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 
-On 09/15/2014 06:21 PM, Oleg Nesterov wrote:
-> Hi Jerome,
->=20
-> Not sure I understand this patch correctly, will try to read it later.
-> But a couple of nits/questions anyway,
->=20
-> On 09/15, Jerome Marchand wrote:
->>
->> +The ShmXXX lines only appears for shmem mapping. They show the amount=
- of memory
->> +from the mapping that is currently:
->> + - resident in RAM but not mapped into any process (ShmNotMapped)
->=20
-> But how can we know that it is not mapped by another process?
+Acked-by: Grant Likely <grant.likely@linaro.org>
 
-Its mapcount is zero.
+> ---
+>  drivers/acpi/tables.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
+> index 21ae521..b18e45e 100644
+> --- a/drivers/acpi/tables.c
+> +++ b/drivers/acpi/tables.c
+> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
+>  	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
+>  	       table_end) {
+>  		if (entry->type == entry_id
+> -		    && (!max_entries || count++ < max_entries))
+> +		    && (!max_entries || count < max_entries)) {
+>  			if (handler(entry, table_end))
+>  				return -EINVAL;
+>  
+> +			count++;
+> +		}
+> +
+>  		/*
+>  		 * If entry->length is 0, break from this loop to avoid
+>  		 * infinite loop.
+> -- 
+> 1.7.9.5
+> 
 
->=20
-> And in fact "not mapped" looks confusing (at least to me).
-
-"Not mapped" as "not present in a page table". It does belong to a
-userspace mapping though. I wonder if there is a less ambiguous terminolo=
-gy.
-
-> IIUC it is actually
-> mapped even by this process, just it never tried to fault these (reside=
-nt or
-> swapped) pages in. Right?
-
-No these pages are in the page cache. This can happen when the only
-process which have accessed these exits or munmap() the mapping.
-
->=20
->> +void update_shmem_stats(struct mem_size_stats *mss, struct vm_area_st=
-ruct *vma,
->> +			pgoff_t pgoff, unsigned long size)
->=20
-> static?
->=20
->> +{
->> +	int count =3D 0;
->> +
->> +	switch (shmem_locate(vma, pgoff, &count)) {
->> +	case SHMEM_RESIDENT:
->> +		if (!count)
->> +			mss->shmem_notmapped +=3D size;
->> +		break;
->> +	case SHMEM_SWAP:
->> +		mss->shmem_swap +=3D size;
->> +		break;
->> +	}
->> +}
->=20
-> It seems that shmem_locate() and shmem_vma() are only defined if CONFIG=
-_SHMEM,
-> probably this series needs more ifdef's.
-
-Now I wonder. Did I try to compile this with CONFIG_SHMEM unset?
-
->=20
-> And I am not sure why we ignore SHMEM_SWAPCACHE...
-
-Hugh didn't like it as it is a small and transient value.
-
-Thanks,
-Jerome
-
->=20
-> Oleg.
->=20
-
-
-
---bVD1OPQdIR0iBiXkwXeDAPwH088WoRpcP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUFxguAAoJEHTzHJCtsuoC31gH/3FfHNjSV00R8MdgB6PJ0r2D
-hVB9Q/mJRjeKF5douSp/cLQposRdWpIxH8UqqhtdYBfQtv8w9v5bENpg3JLWKL/8
-tLjFwHFc+GdSV5r/SlzyX+UQPS4YzMcVIlYeI8Lz5A8K/W2VTijYHJLDsRbaTta1
-6ZlvGon0JviFV/2fkYUZCKMYPp7JtIErHa2Vj87CcHNDNP5TaceFjxu40EvbKEWw
-QWh+OFPKNJZr5SKBvvyWf/dSFFmnJK2u3JhDeYDjclAL/+Xoxh3s8BEMQbTIz7td
-ZvjzYnd4Vpmzzb82ZyIBMg5Bgt5UVa7e5L+DmRNzoH8jBFN5O9Jd2SBRyiFqLm0=
-=U+SD
------END PGP SIGNATURE-----
-
---bVD1OPQdIR0iBiXkwXeDAPwH088WoRpcP--
