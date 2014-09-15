@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaIOPI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:08:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54560 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752823AbaIOPI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:08:26 -0400
-Date: Mon, 15 Sep 2014 17:08:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: dougthompson@xmission.com, m.chehab@samsung.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] edac, amd64_edac: Modify usage of
- amd64_read_dct_pci_cfg()
-Message-ID: <20140915150823.GH3340@nazgul.tnic>
-References: <1410292346-3352-1-git-send-email-aravind.gopalakrishnan@amd.com>
- <20140915120925.GD3340@nazgul.tnic>
- <5416FDDA.2070208@amd.com>
+	id S1753690AbaIOPJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:09:14 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:34344 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaIOPJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 11:09:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5416FDDA.2070208@amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140915144803.GL18566@dragon>
+References: <cover.1410253534.git.shengjiu.wang@freescale.com>
+	<7ed21195ebff8b3ccbecaeb492504edd28deea2d.1410253534.git.shengjiu.wang@freescale.com>
+	<CAOMZO5A4FLbA_+u4oMTqgAY69DaF93V=oLiy+op=tEHbagF1pg@mail.gmail.com>
+	<CAOMZO5DJZHKAV4Y9aUwMNWZqhoLrKrsZdYnKqPem2ZSy=-oAYw@mail.gmail.com>
+	<20140915115855.GC23877@audiosh1>
+	<20140915144803.GL18566@dragon>
+Date: Mon, 15 Sep 2014 12:09:10 -0300
+Message-ID: <CAOMZO5DOPgLz3UMvVbJh33AuQfbs0G7XTCvTnVePHrpSyXiHiQ@mail.gmail.com>
+Subject: Re: [PATCH V1 1/3] ARM: clk-imx6sl: refine clock tree for SSI
+From: Fabio Estevam <festevam@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Shengjiu Wang <shengjiu.wang@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 09:55:22AM -0500, Aravind Gopalakrishnan wrote:
-> >>+		 * Note: If ganging is enabled, barring the regs
-> >>+		 * F2x[1,0]98 and F2x[1,0]9C; reads reads to F2x1xx
-> >Why aren't we dealing with those registers here then?
-> 
-> According to BKDG, these registers are used to control DRAM electrical
-> parameters..
-> Afaict, we have never had to use these regs here..
+On Mon, Sep 15, 2014 at 11:48 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
 
-... until someone decides to access them and copies the code here, which
-would be wrong. Oh well, I guess someone will hopefully read the note
-too, while copying...
+> Shengjiu,
+>
+> Your analysis is right.  I hope the following change will get the shared
+> gate clock code eventually does the right thing.
+>
+> Shawn
+>
+> diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
+> index 84acdfd1d715..89abdf738dc9 100644
+> --- a/arch/arm/mach-imx/clk-gate2.c
+> +++ b/arch/arm/mach-imx/clk-gate2.c
+> @@ -97,7 +97,7 @@ static int clk_gate2_is_enabled(struct clk_hw *hw)
+>         struct clk_gate2 *gate = to_clk_gate2(hw);
+>
+>         if (gate->share_count)
+> -               return !!(*gate->share_count);
+> +               return !!__clk_get_enable_count(hw->clk);
+>         else
+>                 return clk_gate2_reg_is_enabled(gate->reg, gate->bit_idx);
 
-> >>  	amd64_read_pci_cfg(pvt->F3, F10_ONLINE_SPARE, &pvt->online_spare);
-> >>-	amd64_read_dct_pci_cfg(pvt, DCLR0, &pvt->dclr0);
-> >>-	amd64_read_dct_pci_cfg(pvt, DCHR0, &pvt->dchr0);
-> >>-
-> >>-	if (!dct_ganging_enabled(pvt)) {
-> >>-		amd64_read_dct_pci_cfg(pvt, DCLR1, &pvt->dclr1);
-> >>-		amd64_read_dct_pci_cfg(pvt, DCHR1, &pvt->dchr1);
-> >>-	}
-> >>+	amd64_read_dct_pci_cfg(pvt, 0, DCLR0, &pvt->dclr0);
-> >>+	amd64_read_dct_pci_cfg(pvt, 0, DCHR0, &pvt->dchr0);
-> >>  	pvt->ecc_sym_sz = 4;
-> >>  	if (pvt->fam >= 0x10) {
-> >>+		amd64_read_dct_pci_cfg(pvt, 1, DCLR0, &pvt->dclr1);
-> >>+		amd64_read_dct_pci_cfg(pvt, 1, DCHR0, &pvt->dchr1);
-> >This doesn't look equivalent - above we're checking whether we're ganged
-> >now you're doing it for >= F10h. Why?
-> >
-> >Because only F10h supports ganging?
-> 
-> That's right.
-> If ganging is enabled (which is a condition we check for in
-> amd64_read_dct_pci_cfg();
-> Then we return 0.
+This fixes the audio playback, thanks. Tested on a mx6qsabresd and
+also on mx6sx sdb:
 
-Right, but you're reading them now even if you don't have to. So why are
-you even changing this? What's wrong with doing:
-
-	if (!dct_ganging_enabled(pvt)) {
-		amd64_read_dct_pci_cfg(pvt, 1, DCLR0, &pvt->dclr1);
-		amd64_read_dct_pci_cfg(pvt, 1, DCHR0, &pvt->dchr1);
-	}
-
-which is much clearer than doing the family check.
-
--- 
-Regards/Gruss,
-    Boris.
---
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
