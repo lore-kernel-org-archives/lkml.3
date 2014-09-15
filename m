@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755575AbaIOTgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:36:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55074 "EHLO
+	id S1758209AbaIOUmb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:42:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaIOTgn (ORCPT
+	with ESMTP id S1755562AbaIOTgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:43 -0400
+	Mon, 15 Sep 2014 15:36:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>, David Dillow <dave@thedillows.org>,
+        Sebastian Parschauer <sebastian.riemer@profitbricks.com>,
         Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.16 130/158] RDMA/iwcm: Use a default listen backlog if needed
-Date: Mon, 15 Sep 2014 12:26:09 -0700
-Message-Id: <20140915192546.782704793@linuxfoundation.org>
+Subject: [PATCH 3.16 152/158] IB/srp: Fix deadlock between host removal and multipathd
+Date: Mon, 15 Sep 2014 12:26:31 -0700
+Message-Id: <20140915192547.430562831@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,87 +31,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+commit bcc05910359183b431da92713e98eed478edf83a upstream.
 
-If the user creates a listening cm_id with backlog of 0 the IWCM ends
-up not allowing any connection requests at all.  The correct behavior
-is for the IWCM to pick a default value if the user backlog parameter
-is zero.
+If scsi_remove_host() is invoked after a SCSI device has been blocked,
+if the fast_io_fail_tmo or dev_loss_tmo work gets scheduled on the
+workqueue executing srp_remove_work() and if an I/O request is
+scheduled after the SCSI device had been blocked by e.g. multipathd
+then the following deadlock can occur:
 
-Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
-iwarp support without this fix.
+    kworker/6:1     D ffff880831f3c460     0   195      2 0x00000000
+    Call Trace:
+     [<ffffffff814aafd9>] schedule+0x29/0x70
+     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
+     [<ffffffff8105af6f>] msleep+0x2f/0x40
+     [<ffffffff8123b0ae>] __blk_drain_queue+0x4e/0x180
+     [<ffffffff8123d2d5>] blk_cleanup_queue+0x225/0x230
+     [<ffffffffa0010732>] __scsi_remove_device+0x62/0xe0 [scsi_mod]
+     [<ffffffffa000ed2f>] scsi_forget_host+0x6f/0x80 [scsi_mod]
+     [<ffffffffa0002eba>] scsi_remove_host+0x7a/0x130 [scsi_mod]
+     [<ffffffffa07cf5c5>] srp_remove_work+0x95/0x180 [ib_srp]
+     [<ffffffff8106d7aa>] process_one_work+0x1ea/0x6c0
+     [<ffffffff8106dd9b>] worker_thread+0x11b/0x3a0
+     [<ffffffff810758bd>] kthread+0xed/0x110
+     [<ffffffff814b972c>] ret_from_fork+0x7c/0xb0
+    multipathd      D ffff880096acc460     0  5340      1 0x00000000
+    Call Trace:
+     [<ffffffff814aafd9>] schedule+0x29/0x70
+     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
+     [<ffffffff814ab79b>] io_schedule_timeout+0x9b/0xf0
+     [<ffffffff814abe1c>] wait_for_completion_io_timeout+0xdc/0x110
+     [<ffffffff81244b9b>] blk_execute_rq+0x9b/0x100
+     [<ffffffff8124f665>] sg_io+0x1a5/0x450
+     [<ffffffff8124fd21>] scsi_cmd_ioctl+0x2a1/0x430
+     [<ffffffff8124fef2>] scsi_cmd_blk_ioctl+0x42/0x50
+     [<ffffffffa00ec97e>] sd_ioctl+0xbe/0x140 [sd_mod]
+     [<ffffffff8124bd04>] blkdev_ioctl+0x234/0x840
+     [<ffffffff811cb491>] block_ioctl+0x41/0x50
+     [<ffffffff811a0df0>] do_vfs_ioctl+0x300/0x520
+     [<ffffffff811a1051>] SyS_ioctl+0x41/0x80
+     [<ffffffff814b9962>] tracesys+0xd0/0xd5
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Fix this by scheduling removal work on another workqueue than the
+transport layer timers.
+
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Reviewed-by: David Dillow <dave@thedillows.org>
+Cc: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
 Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/iwcm.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/infiniband/ulp/srp/ib_srp.c |   38 ++++++++++++++++++++++++++----------
+ 1 file changed, 28 insertions(+), 10 deletions(-)
 
---- a/drivers/infiniband/core/iwcm.c
-+++ b/drivers/infiniband/core/iwcm.c
-@@ -46,6 +46,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/sysctl.h>
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -130,6 +130,7 @@ static void srp_send_completion(struct i
+ static int srp_cm_handler(struct ib_cm_id *cm_id, struct ib_cm_event *event);
  
- #include <rdma/iw_cm.h>
- #include <rdma/ib_addr.h>
-@@ -65,6 +66,20 @@ struct iwcm_work {
- 	struct list_head free_list;
- };
+ static struct scsi_transport_template *ib_srp_transport_template;
++static struct workqueue_struct *srp_remove_wq;
  
-+static unsigned int default_backlog = 256;
-+
-+static struct ctl_table_header *iwcm_ctl_table_hdr;
-+static struct ctl_table iwcm_ctl_table[] = {
-+	{
-+		.procname	= "default_backlog",
-+		.data		= &default_backlog,
-+		.maxlen		= sizeof(default_backlog),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
- /*
-  * The following services provide a mechanism for pre-allocating iwcm_work
-  * elements.  The design pre-allocates them  based on the cm_id type:
-@@ -425,6 +440,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
+ static struct ib_client srp_client = {
+ 	.name   = "srp",
+@@ -731,7 +732,7 @@ static bool srp_queue_remove_work(struct
+ 	spin_unlock_irq(&target->lock);
  
- 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
+ 	if (changed)
+-		queue_work(system_long_wq, &target->remove_work);
++		queue_work(srp_remove_wq, &target->remove_work);
  
-+	if (!backlog)
-+		backlog = default_backlog;
-+
- 	ret = alloc_work_entries(cm_id_priv, backlog);
- 	if (ret)
- 		return ret;
-@@ -1030,11 +1048,20 @@ static int __init iw_cm_init(void)
- 	if (!iwcm_wq)
- 		return -ENOMEM;
+ 	return changed;
+ }
+@@ -3261,9 +3262,10 @@ static void srp_remove_one(struct ib_dev
+ 		spin_unlock(&host->target_lock);
  
-+	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
-+						 iwcm_ctl_table);
-+	if (!iwcm_ctl_table_hdr) {
-+		pr_err("iw_cm: couldn't register sysctl paths\n");
-+		destroy_workqueue(iwcm_wq);
-+		return -ENOMEM;
+ 		/*
+-		 * Wait for target port removal tasks.
++		 * Wait for tl_err and target port removal tasks.
+ 		 */
+ 		flush_workqueue(system_long_wq);
++		flush_workqueue(srp_remove_wq);
+ 
+ 		kfree(host);
+ 	}
+@@ -3313,16 +3315,22 @@ static int __init srp_init_module(void)
+ 		indirect_sg_entries = cmd_sg_entries;
+ 	}
+ 
++	srp_remove_wq = create_workqueue("srp_remove");
++	if (IS_ERR(srp_remove_wq)) {
++		ret = PTR_ERR(srp_remove_wq);
++		goto out;
 +	}
 +
- 	return 0;
++	ret = -ENOMEM;
+ 	ib_srp_transport_template =
+ 		srp_attach_transport(&ib_srp_transport_functions);
+ 	if (!ib_srp_transport_template)
+-		return -ENOMEM;
++		goto destroy_wq;
+ 
+ 	ret = class_register(&srp_class);
+ 	if (ret) {
+ 		pr_err("couldn't register class infiniband_srp\n");
+-		srp_release_transport(ib_srp_transport_template);
+-		return ret;
++		goto release_tr;
+ 	}
+ 
+ 	ib_sa_register_client(&srp_sa_client);
+@@ -3330,13 +3338,22 @@ static int __init srp_init_module(void)
+ 	ret = ib_register_client(&srp_client);
+ 	if (ret) {
+ 		pr_err("couldn't register IB client\n");
+-		srp_release_transport(ib_srp_transport_template);
+-		ib_sa_unregister_client(&srp_sa_client);
+-		class_unregister(&srp_class);
+-		return ret;
++		goto unreg_sa;
+ 	}
+ 
+-	return 0;
++out:
++	return ret;
++
++unreg_sa:
++	ib_sa_unregister_client(&srp_sa_client);
++	class_unregister(&srp_class);
++
++release_tr:
++	srp_release_transport(ib_srp_transport_template);
++
++destroy_wq:
++	destroy_workqueue(srp_remove_wq);
++	goto out;
  }
  
- static void __exit iw_cm_cleanup(void)
- {
-+	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
- 	destroy_workqueue(iwcm_wq);
+ static void __exit srp_cleanup_module(void)
+@@ -3345,6 +3362,7 @@ static void __exit srp_cleanup_module(vo
+ 	ib_sa_unregister_client(&srp_sa_client);
+ 	class_unregister(&srp_class);
+ 	srp_release_transport(ib_srp_transport_template);
++	destroy_workqueue(srp_remove_wq);
  }
  
+ module_init(srp_init_module);
 
 
