@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485AbaIOUUA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:20:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753AbaIOThL (ORCPT
+	id S1757497AbaIOUUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:20:11 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:34918 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755489AbaIOUUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Mon, 15 Sep 2014 16:20:07 -0400
+Date: Mon, 15 Sep 2014 16:20:01 -0400
+From: Milosz Tanski <milosz@adfin.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 058/114] ASoC: pxa: pxa-ssp: small leak in probe()
-Date: Mon, 15 Sep 2014 12:25:58 -0700
-Message-Id: <20140915192643.257941062@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+Message-ID: <cover.1410810247.git.milosz@adfin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+This patcheset introduces an ability to perform a non-blocking read from 
+regular files in buffered IO mode. This works by only for those filesystems
+that have data in the page cache.
 
-------------------
+It does this by introducing new syscalls new syscalls readv2/writev2 and
+preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
+syscalls that accept an extra flag argument (O_NONBLOCK).
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+It's a very common patern today (samba, libuv, etc..) use a large threadpool to 
+perform buffered IO operations. They submit the work form another thread
+that performs network IO and epoll or other threads that perform CPU work. This
+leads to increased latency for processing, esp. in the case of data that's
+already cached in the page cache.
 
-commit 4548728981de259d7d37d0ae968a777b09794168 upstream.
+With the new interface the applications will now be able to fetch the data in
+their network / cpu bound thread(s) and only defer to a threadpool if it's not
+there. In our own application (VLDB) we've observed a decrease in latency for
+"fast" request by avoiding unnecessary queuing and having to swap out current
+tasks in IO bound work threads.
 
-There is a small memory leak if probe() fails.
+I have co-developed these changes with Christoph Hellwig, a whole lot of his
+fixes went into the first patch in the series (were squashed with his
+approval).
 
-Fixes: 2023c90c3a2c ('ASoC: pxa: pxa-ssp: add DT bindings')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+I am going to post the perf report in a reply-to to this RFC.
 
----
- sound/soc/pxa/pxa-ssp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Christoph Hellwig (3):
+  documentation updates
+  move flags enforcement to vfs_preadv/vfs_pwritev
+  check for O_NONBLOCK in all read_iter instances
 
---- a/sound/soc/pxa/pxa-ssp.c
-+++ b/sound/soc/pxa/pxa-ssp.c
-@@ -725,7 +725,8 @@ static int pxa_ssp_probe(struct snd_soc_
- 		ssp_handle = of_parse_phandle(dev->of_node, "port", 0);
- 		if (!ssp_handle) {
- 			dev_err(dev, "unable to get 'port' phandle\n");
--			return -ENODEV;
-+			ret = -ENODEV;
-+			goto err_priv;
- 		}
- 
- 		priv->ssp = pxa_ssp_request_of(ssp_handle, "SoC audio");
+Milosz Tanski (4):
+  Prepare for adding a new readv/writev with user flags.
+  Define new syscalls readv2,preadv2,writev2,pwritev2
+  Export new vector IO (with flags) to userland
+  O_NONBLOCK flag for readv2/preadv2
 
+ Documentation/filesystems/Locking |    4 +-
+ Documentation/filesystems/vfs.txt |    4 +-
+ arch/x86/syscalls/syscall_32.tbl  |    4 +
+ arch/x86/syscalls/syscall_64.tbl  |    4 +
+ drivers/target/target_core_file.c |    6 +-
+ fs/afs/internal.h                 |    2 +-
+ fs/afs/write.c                    |    4 +-
+ fs/aio.c                          |    4 +-
+ fs/block_dev.c                    |    9 ++-
+ fs/btrfs/file.c                   |    2 +-
+ fs/ceph/file.c                    |   10 ++-
+ fs/cifs/cifsfs.c                  |    9 ++-
+ fs/cifs/cifsfs.h                  |   12 ++-
+ fs/cifs/file.c                    |   30 +++++---
+ fs/ecryptfs/file.c                |    4 +-
+ fs/ext4/file.c                    |    4 +-
+ fs/fuse/file.c                    |   10 ++-
+ fs/gfs2/file.c                    |    5 +-
+ fs/nfs/file.c                     |   13 ++--
+ fs/nfs/internal.h                 |    4 +-
+ fs/nfsd/vfs.c                     |    4 +-
+ fs/ocfs2/file.c                   |   13 +++-
+ fs/pipe.c                         |    7 +-
+ fs/read_write.c                   |  146 +++++++++++++++++++++++++++++++------
+ fs/splice.c                       |    4 +-
+ fs/ubifs/file.c                   |    5 +-
+ fs/udf/file.c                     |    5 +-
+ fs/xfs/xfs_file.c                 |   12 ++-
+ include/linux/fs.h                |   16 ++--
+ include/linux/syscalls.h          |   12 +++
+ include/uapi/asm-generic/unistd.h |   10 ++-
+ mm/filemap.c                      |   34 +++++++--
+ mm/shmem.c                        |    6 +-
+ 33 files changed, 306 insertions(+), 112 deletions(-)
+
+-- 
+1.7.9.5
 
