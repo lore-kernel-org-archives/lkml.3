@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaIOCie (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:38:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64435 "EHLO mx1.redhat.com"
+	id S1753321AbaIOCj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:39:57 -0400
+Received: from ozlabs.org ([103.22.144.67]:47147 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099AbaIOCib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:38:31 -0400
-Date: Mon, 15 Sep 2014 10:38:05 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@acpica.org, lenb@kernel.org,
-        rafael.j.wysocki@intel.com, robert.moore@intel.com,
-        stable@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH RFC] x86 early_ioremap: increase FIX_BTMAPS_SLOTS to 8
-Message-ID: <20140915023805.GA2700@darkstar.nay.redhat.com>
-References: <20140826090641.GA16550@darkstar.nay.redhat.com>
- <20140914141412.GJ18582@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140914141412.GJ18582@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753099AbaIOCjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 22:39:55 -0400
+Message-ID: <1410748793.24738.2.camel@concordia>
+Subject: Re: [PATCH v3 3/3] sched: BUG when stack end location is over
+ written
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Aaron Tomlin <atomlin@redhat.com>, peterz@infradead.org,
+        dzickus@redhat.com, jcastillo@redhat.com, riel@redhat.com,
+        x86@kernel.org, akpm@linux-foundation.org, minchan@kernel.org,
+        bmr@redhat.com, prarit@redhat.com, oleg@redhat.com,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        mingo@redhat.com, aneesh.kumar@linux.vnet.ibm.com, akpm@google.com,
+        jgh@redhat.com, linuxppc-dev@lists.ozlabs.org, tglx@linutronix.de,
+        pzijlstr@redhat.com
+Date: Mon, 15 Sep 2014 12:39:53 +1000
+In-Reply-To: <1410519533.5547.49.camel@marge.simpson.net>
+References: <1410255749-2956-1-git-send-email-atomlin@redhat.com>
+	 <1410450088-18236-1-git-send-email-atomlin@redhat.com>
+	 <1410450088-18236-4-git-send-email-atomlin@redhat.com>
+	 <1410494817.17540.4.camel@concordia>
+	 <20140912094419.GD1873@atomlin.usersys.redhat.com>
+	 <1410519533.5547.49.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/14/14 at 03:14pm, Matt Fleming wrote:
-> On Tue, 26 Aug, at 05:06:41PM, Dave Young wrote:
-> > 3.16 kernel boot fail with earlyprintk=efi, it keeps scrolling at the
-> > bottom line of screen.
+On Fri, 2014-09-12 at 12:58 +0200, Mike Galbraith wrote:
+> On Fri, 2014-09-12 at 10:44 +0100, Aaron Tomlin wrote: 
+> > On Fri, Sep 12, 2014 at 02:06:57PM +1000, Michael Ellerman wrote:
+> > > On Thu, 2014-09-11 at 16:41 +0100, Aaron Tomlin wrote:
+> > > > diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> > > > index a285900..2a8280a 100644
+> > > > --- a/lib/Kconfig.debug
+> > > > +++ b/lib/Kconfig.debug
+> > > > @@ -824,6 +824,18 @@ config SCHEDSTATS
+> > > >  	  application, you can say N to avoid the very slight overhead
+> > > >  	  this adds.
+> > > >  
+> > > > +config SCHED_STACK_END_CHECK
+> > > > +	bool "Detect stack corruption on calls to schedule()"
+> > > > +	depends on DEBUG_KERNEL
+> > > > +	default y
+> > > 
+> > > Did you really mean default y?
+> > > 
+> > > Doing so means it will be turned on more or less everywhere, which defeats the
+> > > purpose of having a config option in the first place.
 > > 
-> > Bisected, the first bad commit is below:
-> > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
-> > Author: Lv Zheng <lv.zheng@intel.com>
-> > Date:   Fri Apr 4 12:38:57 2014 +0800
-> > 
-> >     ACPICA: Tables: Fix table checksums verification before installation.
+> > Only if Kconfig CONFIG_DEBUG_KERNEL is enabled in the first place.
 > 
-> [...]
-> 
-> > Quote reply from Lv.zheng about the early ioremap slot usage in this case:
-> > 
-> > """
-> > In early_efi_scroll_up(), 2 mapping entries will be used for the src/dst screen buffer.
-> > In drivers/acpi/acpica/tbutils.c, we've improved the early table loading code in acpi_tb_parse_root_table().
-> > We now need 2 mapping entries:
-> > 1. One mapping entry is used for RSDT table mapping. Each RSDT entry contains an address for another ACPI table.
-> > 2. For each entry in RSDP, we need another mapping entry to map the table to perform necessary check/override before installing it.
-> > 
-> > When acpi_tb_parse_root_table() prints something through EFI earlyprintk console, we'll have 4 mapping entries used.
-> > The current 4 slots setting of early_ioremap() seems to be too small for such a use case.
-> > """
-> > 
-> > Thus increase the slot to 8 in this patch to fix this issue.
-> > boot-time mappings become 512 page with this patch.
->  
-> This analysis and solution makes sense to me, but I was really hoping
-> for one of the x86 maintainers to ACK the below patch. I'm happy to take
-> it through the EFI tree if it's not picked up into tip meanwhile.
-> 
-> Also, Dave, it sounds like this should be tagged for stable if the bug
-> has been around since v3.16?
+> Which is likely enabled just about everywhere on the planet.
 
-Matt, yes, it should be a stable issue, ccing Greg and stable list.
+Yes, including all distros I'm aware of.
 
-> 
-> > Signed-off-by: Dave Young <dyoung@redhat.com>
-> > ---
-> > I'm not sure if this is ok in 32bit, review and comments are appreciated.
-> >  arch/x86/include/asm/fixmap.h |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > Index: linux/arch/x86/include/asm/fixmap.h
-> > ===================================================================
-> > --- linux.orig/arch/x86/include/asm/fixmap.h
-> > +++ linux/arch/x86/include/asm/fixmap.h
-> > @@ -106,14 +106,14 @@ enum fixed_addresses {
-> >  	__end_of_permanent_fixed_addresses,
-> >  
-> >  	/*
-> > -	 * 256 temporary boot-time mappings, used by early_ioremap(),
-> > +	 * 512 temporary boot-time mappings, used by early_ioremap(),
-> >  	 * before ioremap() is functional.
-> >  	 *
-> > -	 * If necessary we round it up to the next 256 pages boundary so
-> > +	 * If necessary we round it up to the next 512 pages boundary so
-> >  	 * that we can have a single pgd entry and a single pte table:
-> >  	 */
-> >  #define NR_FIX_BTMAPS		64
-> > -#define FIX_BTMAPS_SLOTS	4
-> > +#define FIX_BTMAPS_SLOTS	8
-> >  #define TOTAL_FIX_BTMAPS	(NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
-> >  	FIX_BTMAP_END =
-> >  	 (__end_of_permanent_fixed_addresses ^
-> 
-> 
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
+cheers
+
+
