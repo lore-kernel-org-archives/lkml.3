@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052AbaIOUEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:04:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55653 "EHLO
+	id S1756213AbaIOTrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaIOTrM (ORCPT
+	with ESMTP id S1756175AbaIOTrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:12 -0400
+	Mon, 15 Sep 2014 15:47:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 32/71] ASoC: max98090: Fix missing free_irq
-Date: Mon, 15 Sep 2014 12:26:30 -0700
-Message-Id: <20140915192639.776999201@linuxfoundation.org>
+        Andreea-Cristina Bernat <bernat.ada@gmail.com>,
+        David Howells <dhowells@redhat.com>, shemming@brocade.com,
+        paulmck@linux.vnet.ibm.com, James Morris <james.l.morris@oracle.com>
+Subject: [PATCH 3.14 113/114] KEYS: Fix use-after-free in assoc_array_gc()
+Date: Mon, 15 Sep 2014 12:26:53 -0700
+Message-Id: <20140915192644.940429648@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,38 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 4adeb0ccf86a5af1825bbfe290dee9e60a5ab870 upstream.
+commit 27419604f51a97d497853f14142c1059d46eb597 upstream.
 
-max98090.c doesn't free the threaded interrupt it requests. This causes
-an oops when doing "cat /proc/interrupts" after snd-soc-max98090.ko is
-unloaded.
+An edit script should be considered inaccessible by a function once it has
+called assoc_array_apply_edit() or assoc_array_cancel_edit().
 
-Fix this by requesting the interrupt by using devm_request_threaded_irq().
+However, assoc_array_gc() is accessing the edit script just after the
+gc_complete: label.
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
+cc: shemming@brocade.com
+cc: paulmck@linux.vnet.ibm.com
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    2 +-
+ lib/assoc_array.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -2234,7 +2234,7 @@ static int max98090_probe(struct snd_soc
- 	/* Register for interrupts */
- 	dev_dbg(codec->dev, "irq = %d\n", max98090->irq);
+--- a/lib/assoc_array.c
++++ b/lib/assoc_array.c
+@@ -1735,7 +1735,7 @@ ascend_old_tree:
+ gc_complete:
+ 	edit->set[0].to = new_root;
+ 	assoc_array_apply_edit(edit);
+-	edit->array->nr_leaves_on_tree = nr_leaves_on_tree;
++	array->nr_leaves_on_tree = nr_leaves_on_tree;
+ 	return 0;
  
--	ret = request_threaded_irq(max98090->irq, NULL,
-+	ret = devm_request_threaded_irq(codec->dev, max98090->irq, NULL,
- 		max98090_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 		"max98090_interrupt", codec);
- 	if (ret < 0) {
+ enomem:
 
 
