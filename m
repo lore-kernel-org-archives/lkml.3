@@ -1,106 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344AbaIOWvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:51:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51023 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758011AbaIOWRT (ORCPT
+	id S1759573AbaIOWvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:51:25 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37666 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758352AbaIOWvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:19 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Vidya Sagar <sagar.tv@gmail.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 079/187] PCI: Configure ASPM when enabling device
-Date: Mon, 15 Sep 2014 15:08:09 -0700
-Message-Id: <1410818997-9432-80-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:51:19 -0400
+Message-ID: <54176D62.9010600@codeaurora.org>
+Date: Mon, 15 Sep 2014 18:51:14 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Sonny Rao <sonnyrao@chromium.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com> <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org> <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org> <20140915111055.GD1577@arm.com> <54174CFF.7050504@codeaurora.org> <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com> <54175EFE.6010509@codeaurora.org> <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com> <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
+In-Reply-To: <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+Hi Sonny,
 
-------------------
+On 09/15/2014 06:04 PM, Sonny Rao wrote:
+> On Mon, Sep 15, 2014 at 2:52 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>> On Mon, Sep 15, 2014 at 2:49 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> On 09/15/14 14:47, Sonny Rao wrote:
+>>>> On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>>>> On 09/15/14 04:10, Catalin Marinas wrote:
+>>>>>> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
+>>>>>>> On 09/12/14 05:14, Marc Zyngier wrote:
+>>>>>>>> We surely can handle the UNDEF and do something there. We just can't do
+>>>>>>>> it the way Doug described it above.
+>>>>>>> I suggested doing that for something else a while ago and Will and Dave
+>>>>>>> we're not thrilled[1]. The suggestion back then was to use DT to
+>>>>>>> indicate what mode the kernel is running in.
+>>>>>>>
+>>>>>>> [1]
+>>>>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
+>>>>>> I think the context was slightly different. As I re-read the thread, it
+>>>>>> seems that the discussion was around whether to use some SMC interface
+>>>>>> or not based on whether the kernel is running secure or non-secure. The
+>>>>>> argument made by Will was to actually specify the type of the firmware
+>>>>>> SMC interface in the DT and use it in the kernel (and probably assume
+>>>>>> the kernel is running in secure mode if no smc interface is specified in
+>>>>>> the DT; you could have both though, running in secure mode and also
+>>>>>> having firmware).
+>>>>>>
+>>>>>> In this arch timer case, we need to work around a firmware bug (or
+>>>>>> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
+>>>>>> firmware, no matter how small such firmware is). We don't expect a
+>>>>>> specific SMC call to initialise CNTVOFF, so we can't describe it in the
+>>>>>> DT.
+>>>>> Agreed, we can't described SMC calls that don't exist. From my
+>>>>> perspective it's just another part of the cpu boot sequence that needs
+>>>>> to be handled in the kernel, so describing the requirement via the
+>>>>> cpu-boot method seems appropriate. It seems like we're making it harder
+>>>>> than it should be by handling the undef when we could have slightly
+>>>>> different SMP boot code (and suspend/resume code) depending on the boot
+>>>>> method property.
+>>>>
+>>>> +heiko
+>>>>
+>>>> So, for the case of rk3288, based on this discussion what I'm going to
+>>>> propose is to add code to rockchip.c which looks for a particular SMP
+>>>> enable method -- say something like "rockchip,rk3288-smp-secure-svc"
+>>>> which will then assume we have been booted in secure SVC mode and do
+>>>> the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
+>>>> as well, so I think it will need to scan the DT fairly early on the
+>>>> boot CPU and also perform the function there.
+>>>>
+>>>> I'll look into implementing this and post code.  Comments and
+>>>> suggestions appreciated, thanks.
+>>>
+>>> What goes wrong if we read the cntvoff from the boot CPU during
+>>> smp_prepare_cpus() phase and use that to set the cntvoff on the other
+>>> CPUs? That avoids needing to do anything very early by making the value
+>>> the same. It does mean that cntvoff is some random out of reset value
+>>> for CPU0, but at least it's consistent.
+>>
+>> I think we cannot read the value if we're not in hyp mode.
+> 
+> Well, thinking about it a little more, I think you still have a good point.
+> 
+> We don't need to do this early on, as long as we haven't started using
+> the arch timers yet.  If we are still able to do this at the point
+> where we're executing the code in arch/arm/mach-rockchip/platsmp.c
+> that finds the enable method then we can just handle it there.
 
-From: Vidya Sagar <sagar.tv@gmail.com>
+I've been playing around with the probe-based approach and while I need to do
+a lot more testing, it seems to be working for the first tens of instructions.
+I hope to be able to share a draft of that soon. Basically, I just read the
+current NSACR value and write it back (although maybe in the long term we
+would want to make sure a few of those bits are set or cleared). If that
+succeeds, we know we're in secure SVC and can proceed to set up MON and HYP.
 
-commit 1f6ae47ecff7f23da73417e068018b311f3b5583 upstream.
+Christopher
 
-We can't do ASPM configuration at enumeration-time because enabling it
-makes some defective hardware unresponsive, even if ASPM is disabled later
-(see 41cd766b0659 ("PCI: Don't enable aspm before drivers have had a chance
-to veto it").  Therefore, we have to do it after a driver claims the
-device.
-
-We previously configured ASPM in pci_set_power_state(), but that's not a
-very good place because it's not really related to setting the PCI device
-power state, and doing it there means:
-
-  - We incorrectly skipped ASPM config when setting a device that's
-    already in D0 to D0.
-
-  - We unnecessarily configured ASPM when setting a device to a low-power
-    state (the ASPM feature only applies when the device is in D0).
-
-  - We unnecessarily configured ASPM when called from a .resume() method
-    (ASPM configuration needs to be restored during resume, but
-    pci_restore_pcie_state() should already do this).
-
-Move ASPM configuration from pci_set_power_state() to
-do_pci_enable_device() so we do it when a driver enables a device.
-
-[bhelgaas: changelog]
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=79621
-Fixes: db288c9c5f9d ("PCI / PM: restore the original behavior of pci_set_power_state()")
-Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Vidya Sagar <sagar.tv@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/pci/pci.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 1a8a4fd..49ca284 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -782,12 +782,6 @@ int pci_set_power_state(struct pci_dev *dev, pci_power_t state)
- 
- 	if (!__pci_complete_power_transition(dev, state))
- 		error = 0;
--	/*
--	 * When aspm_policy is "powersave" this call ensures
--	 * that ASPM is configured.
--	 */
--	if (!error && dev->bus->self)
--		pcie_aspm_powersave_config_link(dev->bus->self);
- 
- 	return error;
- }
-@@ -1120,12 +1114,18 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
- static int do_pci_enable_device(struct pci_dev *dev, int bars)
- {
- 	int err;
-+	struct pci_dev *bridge;
- 	u16 cmd;
- 	u8 pin;
- 
- 	err = pci_set_power_state(dev, PCI_D0);
- 	if (err < 0 && err != -EIO)
- 		return err;
-+
-+	bridge = pci_upstream_bridge(dev);
-+	if (bridge)
-+		pcie_aspm_powersave_config_link(bridge);
-+
- 	err = pcibios_enable_device(dev, bars);
- 	if (err < 0)
- 		return err;
 -- 
-1.9.1
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
