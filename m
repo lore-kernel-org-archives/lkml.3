@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980AbaIOUCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:02:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
+	id S1757010AbaIOUDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:03:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55788 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244AbaIOTrP (ORCPT
+	with ESMTP id S1756233AbaIOTrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:15 -0400
+	Mon, 15 Sep 2014 15:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
-        John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 21/71] MIPS: tlbex: Fix a missing statement for HUGETLB
-Date: Mon, 15 Sep 2014 12:26:19 -0700
-Message-Id: <20140915192639.415554189@linuxfoundation.org>
+        Benjamin Block <bebl@mageta.org>,
+        Knut Petersen <Knut_Petersen@t-online.de>,
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 36/71] ACPI: Run fixed event device notifications in process context
+Date: Mon, 15 Sep 2014 12:26:34 -0700
+Message-Id: <20140915192639.902614783@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -32,40 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit 8393c524a25609a30129e4a8975cf3b91f6c16a5 upstream.
+commit 236105db632c6279a020f78c83e22eaef746006b upstream.
 
-In commit 2c8c53e28f1 (MIPS: Optimize TLB handlers for Octeon CPUs)
-build_r4000_tlb_refill_handler() is modified. But it doesn't compatible
-with the original code in HUGETLB case. Because there is a copy & paste
-error and one line of code is missing. It is very easy to produce a bug
-with LTP's hugemmap05 test.
+Currently, notify callbacks for fixed button events are run from
+interrupt context.  That is not necessary and after commit 0bf6368ee8f2
+(ACPI / button: Add ACPI Button event via netlink routine) it causes
+netlink routines to be called from interrupt context which is not
+correct.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/7496/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Also, that is different from non-fixed device events (including
+non-fixed button events) whose notify callbacks are all executed from
+process context.
+
+For the above reasons, make fixed button device notify callbacks run
+in process context which will avoid the deadlock when using netlink
+to report button events to user space.
+
+Fixes: 0bf6368ee8f2 (ACPI / button: Add ACPI Button event via netlink routine)
+Link: https://lkml.org/lkml/2014/8/21/606
+Reported-by: Benjamin Block <bebl@mageta.org>
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+[rjw: Function names, subject and changelog.]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/tlbex.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/acpi/scan.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -1329,6 +1329,7 @@ static void __cpuinit build_r4000_tlb_re
- 	}
- #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
- 	uasm_l_tlb_huge_update(&l, p);
-+	UASM_i_LW(&p, K0, 0, K1);
- 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
- 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
- 				   htlb_info.restore_scratch);
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -769,12 +769,17 @@ static void acpi_device_notify(acpi_hand
+ 	device->driver->ops.notify(device, event);
+ }
+ 
+-static acpi_status acpi_device_notify_fixed(void *data)
++static void acpi_device_notify_fixed(void *data)
+ {
+ 	struct acpi_device *device = data;
+ 
+ 	/* Fixed hardware devices have no handles */
+ 	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
++}
++
++static acpi_status acpi_device_fixed_event(void *data)
++{
++	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed, data);
+ 	return AE_OK;
+ }
+ 
+@@ -785,12 +790,12 @@ static int acpi_device_install_notify_ha
+ 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
+ 		status =
+ 		    acpi_install_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
+-						     acpi_device_notify_fixed,
++						     acpi_device_fixed_event,
+ 						     device);
+ 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
+ 		status =
+ 		    acpi_install_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
+-						     acpi_device_notify_fixed,
++						     acpi_device_fixed_event,
+ 						     device);
+ 	else
+ 		status = acpi_install_notify_handler(device->handle,
+@@ -807,10 +812,10 @@ static void acpi_device_remove_notify_ha
+ {
+ 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
+ 		acpi_remove_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
+-						acpi_device_notify_fixed);
++						acpi_device_fixed_event);
+ 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
+ 		acpi_remove_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
+-						acpi_device_notify_fixed);
++						acpi_device_fixed_event);
+ 	else
+ 		acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
+ 					   acpi_device_notify);
 
 
