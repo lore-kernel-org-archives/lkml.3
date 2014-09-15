@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159AbaIOUle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:41:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55133 "EHLO
+	id S1758180AbaIOUmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:42:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579AbaIOTgv (ORCPT
+	with ESMTP id S1755576AbaIOTgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.16 156/158] CIFS: Fix SMB2 readdir error handling
-Date: Mon, 15 Sep 2014 12:26:35 -0700
-Message-Id: <20140915192547.547829206@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, Chris Mason <clm@fb.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 155/158] vfs: fix bad hashing of dentries
+Date: Mon, 15 Sep 2014 12:26:34 -0700
+Message-Id: <20140915192547.518695194@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,165 +31,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 52755808d4525f4d5b86d112d36ffc7a46f3fb48 upstream.
+commit 99d263d4c5b2f541dfacb5391e22e8c91ea982a6 upstream.
 
-SMB2 servers indicates the end of a directory search with
-STATUS_NO_MORE_FILE error code that is not processed now.
-This causes generic/257 xfstest to fail. Fix this by triggering
-the end of search by this error code in SMB2_query_directory.
+Josef Bacik found a performance regression between 3.2 and 3.10 and
+narrowed it down to commit bfcfaa77bdf0 ("vfs: use 'unsigned long'
+accesses for dcache name comparison and hashing"). He reports:
 
-Also when negotiating CIFS protocol we tell the server to close
-the search automatically at the end and there is no need to do
-it itself. In the case of SMB2 protocol, we need to close it
-explicitly - separate close directory checks for different
-protocols.
+ "The test case is essentially
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+      for (i = 0; i < 1000000; i++)
+              mkdir("a$i");
+
+  On xfs on a fio card this goes at about 20k dir/sec with 3.2, and 12k
+  dir/sec with 3.10.  This is because we spend waaaaay more time in
+  __d_lookup on 3.10 than in 3.2.
+
+  The new hashing function for strings is suboptimal for <
+  sizeof(unsigned long) string names (and hell even > sizeof(unsigned
+  long) string names that I've tested).  I broke out the old hashing
+  function and the new one into a userspace helper to get real numbers
+  and this is what I'm getting:
+
+      Old hash table had 1000000 entries, 0 dupes, 0 max dupes
+      New hash table had 12628 entries, 987372 dupes, 900 max dupes
+      We had 11400 buckets with a p50 of 30 dupes, p90 of 240 dupes, p99 of 567 dupes for the new hash
+
+  My test does the hash, and then does the d_hash into a integer pointer
+  array the same size as the dentry hash table on my system, and then
+  just increments the value at the address we got to see how many
+  entries we overlap with.
+
+  As you can see the old hash function ended up with all 1 million
+  entries in their own bucket, whereas the new one they are only
+  distributed among ~12.5k buckets, which is why we're using so much
+  more CPU in __d_lookup".
+
+The reason for this hash regression is two-fold:
+
+ - On 64-bit architectures the down-mixing of the original 64-bit
+   word-at-a-time hash into the final 32-bit hash value is very
+   simplistic and suboptimal, and just adds the two 32-bit parts
+   together.
+
+   In particular, because there is no bit shuffling and the mixing
+   boundary is also a byte boundary, similar character patterns in the
+   low and high word easily end up just canceling each other out.
+
+ - the old byte-at-a-time hash mixed each byte into the final hash as it
+   hashed the path component name, resulting in the low bits of the hash
+   generally being a good source of hash data.  That is not true for the
+   word-at-a-time case, and the hash data is distributed among all the
+   bits.
+
+The fix is the same in both cases: do a better job of mixing the bits up
+and using as much of the hash data as possible.  We already have the
+"hash_32|64()" functions to do that.
+
+Reported-by: Josef Bacik <jbacik@fb.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Chris Mason <clm@fb.com>
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsglob.h     |    2 ++
- fs/cifs/file.c         |    2 +-
- fs/cifs/readdir.c      |    2 +-
- fs/cifs/smb1ops.c      |    7 +++++++
- fs/cifs/smb2maperror.c |    2 +-
- fs/cifs/smb2ops.c      |    9 +++++++++
- fs/cifs/smb2pdu.c      |    9 ++++-----
- 7 files changed, 25 insertions(+), 8 deletions(-)
+ fs/dcache.c |    3 +--
+ fs/namei.c  |    4 ++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -399,6 +399,8 @@ struct smb_version_operations {
- 			const struct cifs_fid *, u32 *);
- 	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
- 			int);
-+	/* check if we need to issue closedir */
-+	bool (*dir_needs_close)(struct cifsFileInfo *);
- };
- 
- struct smb_version_values {
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -762,7 +762,7 @@ int cifs_closedir(struct inode *inode, s
- 
- 	cifs_dbg(FYI, "Freeing private data in close dir\n");
- 	spin_lock(&cifs_file_list_lock);
--	if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
-+	if (server->ops->dir_needs_close(cfile)) {
- 		cfile->invalidHandle = true;
- 		spin_unlock(&cifs_file_list_lock);
- 		if (server->ops->close_dir)
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -593,7 +593,7 @@ find_cifs_entry(const unsigned int xid,
- 		/* close and restart search */
- 		cifs_dbg(FYI, "search backing up - close and restart search\n");
- 		spin_lock(&cifs_file_list_lock);
--		if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
-+		if (server->ops->dir_needs_close(cfile)) {
- 			cfile->invalidHandle = true;
- 			spin_unlock(&cifs_file_list_lock);
- 			if (server->ops->close_dir)
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -1009,6 +1009,12 @@ cifs_is_read_op(__u32 oplock)
- 	return oplock == OPLOCK_READ;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -106,8 +106,7 @@ static inline struct hlist_bl_head *d_ha
+ 					unsigned int hash)
+ {
+ 	hash += (unsigned long) parent / L1_CACHE_BYTES;
+-	hash = hash + (hash >> d_hash_shift);
+-	return dentry_hashtable + (hash & d_hash_mask);
++	return dentry_hashtable + hash_32(hash, d_hash_shift);
  }
  
-+static bool
-+cifs_dir_needs_close(struct cifsFileInfo *cfile)
-+{
-+	return !cfile->srch_inf.endOfSearch && !cfile->invalidHandle;
-+}
-+
- struct smb_version_operations smb1_operations = {
- 	.send_cancel = send_nt_cancel,
- 	.compare_fids = cifs_compare_fids,
-@@ -1078,6 +1084,7 @@ struct smb_version_operations smb1_opera
- 	.query_mf_symlink = cifs_query_mf_symlink,
- 	.create_mf_symlink = cifs_create_mf_symlink,
- 	.is_read_op = cifs_is_read_op,
-+	.dir_needs_close = cifs_dir_needs_close,
- #ifdef CONFIG_CIFS_XATTR
- 	.query_all_EAs = CIFSSMBQAllEAs,
- 	.set_EA = CIFSSMBSetEA,
---- a/fs/cifs/smb2maperror.c
-+++ b/fs/cifs/smb2maperror.c
-@@ -214,7 +214,7 @@ static const struct status_to_posix_erro
- 	{STATUS_BREAKPOINT, -EIO, "STATUS_BREAKPOINT"},
- 	{STATUS_SINGLE_STEP, -EIO, "STATUS_SINGLE_STEP"},
- 	{STATUS_BUFFER_OVERFLOW, -EIO, "STATUS_BUFFER_OVERFLOW"},
--	{STATUS_NO_MORE_FILES, -EIO, "STATUS_NO_MORE_FILES"},
-+	{STATUS_NO_MORE_FILES, -ENODATA, "STATUS_NO_MORE_FILES"},
- 	{STATUS_WAKE_SYSTEM_DEBUGGER, -EIO, "STATUS_WAKE_SYSTEM_DEBUGGER"},
- 	{STATUS_HANDLES_CLOSED, -EIO, "STATUS_HANDLES_CLOSED"},
- 	{STATUS_NO_INHERITANCE, -EIO, "STATUS_NO_INHERITANCE"},
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -1104,6 +1104,12 @@ smb3_parse_lease_buf(void *buf, unsigned
- 	return le32_to_cpu(lc->lcontext.LeaseState);
+ /* Statistics gathering. */
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -34,6 +34,7 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
+ #include <linux/posix_acl.h>
++#include <linux/hash.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -1629,8 +1630,7 @@ static inline int nested_symlink(struct
+ 
+ static inline unsigned int fold_hash(unsigned long hash)
+ {
+-	hash += hash >> (8*sizeof(int));
+-	return hash;
++	return hash_64(hash, 32);
  }
  
-+static bool
-+smb2_dir_needs_close(struct cifsFileInfo *cfile)
-+{
-+	return !cfile->invalidHandle;
-+}
-+
- struct smb_version_operations smb20_operations = {
- 	.compare_fids = smb2_compare_fids,
- 	.setup_request = smb2_setup_request,
-@@ -1177,6 +1183,7 @@ struct smb_version_operations smb20_oper
- 	.create_lease_buf = smb2_create_lease_buf,
- 	.parse_lease_buf = smb2_parse_lease_buf,
- 	.clone_range = smb2_clone_range,
-+	.dir_needs_close = smb2_dir_needs_close,
- };
- 
- struct smb_version_operations smb21_operations = {
-@@ -1252,6 +1259,7 @@ struct smb_version_operations smb21_oper
- 	.create_lease_buf = smb2_create_lease_buf,
- 	.parse_lease_buf = smb2_parse_lease_buf,
- 	.clone_range = smb2_clone_range,
-+	.dir_needs_close = smb2_dir_needs_close,
- };
- 
- struct smb_version_operations smb30_operations = {
-@@ -1330,6 +1338,7 @@ struct smb_version_operations smb30_oper
- 	.parse_lease_buf = smb3_parse_lease_buf,
- 	.clone_range = smb2_clone_range,
- 	.validate_negotiate = smb3_validate_negotiate,
-+	.dir_needs_close = smb2_dir_needs_close,
- };
- 
- struct smb_version_values smb20_values = {
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -2142,6 +2142,10 @@ SMB2_query_directory(const unsigned int
- 	rsp = (struct smb2_query_directory_rsp *)iov[0].iov_base;
- 
- 	if (rc) {
-+		if (rc == -ENODATA && rsp->hdr.Status == STATUS_NO_MORE_FILES) {
-+			srch_inf->endOfSearch = true;
-+			rc = 0;
-+		}
- 		cifs_stats_fail_inc(tcon, SMB2_QUERY_DIRECTORY_HE);
- 		goto qdir_exit;
- 	}
-@@ -2179,11 +2183,6 @@ SMB2_query_directory(const unsigned int
- 	else
- 		cifs_dbg(VFS, "illegal search buffer type\n");
- 
--	if (rsp->hdr.Status == STATUS_NO_MORE_FILES)
--		srch_inf->endOfSearch = 1;
--	else
--		srch_inf->endOfSearch = 0;
--
- 	return rc;
- 
- qdir_exit:
+ #else	/* 32-bit case */
 
 
