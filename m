@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183AbaIOTrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:04 -0400
+	id S1756291AbaIOTrU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:20 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114AbaIOTq5 (ORCPT
+	with ESMTP id S1756212AbaIOTrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:46:57 -0400
+	Mon, 15 Sep 2014 15:47:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.14 101/114] CIFS: Fix wrong directory attributes after rename
-Date: Mon, 15 Sep 2014 12:26:41 -0700
-Message-Id: <20140915192644.582523871@linuxfoundation.org>
+        "Mark A. Greer" <mgreer@animalcreek.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 07/71] spi: omap2-mcspi: Configure hardware when slave driver changes mode
+Date: Mon, 15 Sep 2014 12:26:05 -0700
+Message-Id: <20140915192638.957619203@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,41 +25,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: "Mark A. Greer" <mgreer@animalcreek.com>
 
-commit b46799a8f28c43c5264ac8d8ffa28b311b557e03 upstream.
+commit 97ca0d6cc118716840ea443e010cb3d5f2d25eaf upstream.
 
-When we requests rename we also need to update attributes
-of both source and target parent directories. Not doing it
-causes generic/309 xfstest to fail on SMB2 mounts. Fix this
-by marking these directories for force revalidating.
+Commit id 2bd16e3e23d9df41592c6b257c59b6860a9cc3ea
+(spi: omap2-mcspi: Do not configure the controller
+on each transfer unless needed) does its job too
+well so omap2_mcspi_setup_transfer() isn't called
+even when an SPI slave driver changes 'spi->mode'.
+The result is that the mode requested by the SPI
+slave driver never takes effect.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Fix this by adding the 'mode' member to the
+omap2_mcspi_cs structure which holds the mode
+value that the hardware is configured for.
+When the SPI slave driver changes 'spi->mode'
+it will be different than the value of this new
+member and the SPI master driver will know that
+the hardware must be reconfigured (by calling
+omap2_mcspi_setup_transfer()).
+
+Fixes: 2bd16e3e23 (spi: omap2-mcspi: Do not configure the controller on each transfer unless needed)
+Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/inode.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/spi/spi-omap2-mcspi.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1713,6 +1713,12 @@ unlink_target:
- 				    target_dentry, to_name);
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -136,6 +136,7 @@ struct omap2_mcspi_cs {
+ 	void __iomem		*base;
+ 	unsigned long		phys;
+ 	int			word_len;
++	u16			mode;
+ 	struct list_head	node;
+ 	/* Context save and restore shadow register */
+ 	u32			chconf0;
+@@ -801,6 +802,8 @@ static int omap2_mcspi_setup_transfer(st
+ 
+ 	mcspi_write_chconf0(spi, l);
+ 
++	cs->mode = spi->mode;
++
+ 	dev_dbg(&spi->dev, "setup: speed %d, sample %s edge, clk %s\n",
+ 			OMAP2_MCSPI_MAX_FREQ >> div,
+ 			(spi->mode & SPI_CPHA) ? "trailing" : "leading",
+@@ -871,6 +874,7 @@ static int omap2_mcspi_setup(struct spi_
+ 			return -ENOMEM;
+ 		cs->base = mcspi->base + spi->chip_select * 0x14;
+ 		cs->phys = mcspi->phys + spi->chip_select * 0x14;
++		cs->mode = 0;
+ 		cs->chconf0 = 0;
+ 		spi->controller_state = cs;
+ 		/* Link this to context save list */
+@@ -1043,6 +1047,16 @@ static void omap2_mcspi_work(struct omap
+ 			mcspi_read_cs_reg(spi, OMAP2_MCSPI_MODULCTRL);
  	}
  
-+	/* force revalidate to go get info when needed */
-+	CIFS_I(source_dir)->time = CIFS_I(target_dir)->time = 0;
++	/*
++	 * The slave driver could have changed spi->mode in which case
++	 * it will be different from cs->mode (the current hardware setup).
++	 * If so, set par_override (even though its not a parity issue) so
++	 * omap2_mcspi_setup_transfer will be called to configure the hardware
++	 * with the correct mode on the first iteration of the loop below.
++	 */
++	if (spi->mode != cs->mode)
++		par_override = 1;
 +
-+	source_dir->i_ctime = source_dir->i_mtime = target_dir->i_ctime =
-+		target_dir->i_mtime = current_fs_time(source_dir->i_sb);
-+
- cifs_rename_exit:
- 	kfree(info_buf_source);
- 	kfree(from_name);
+ 	omap2_mcspi_set_enable(spi, 0);
+ 
+ 	m->status = status;
 
 
