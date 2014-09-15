@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815AbaIOVG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:06:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54579 "EHLO
+	id S1757115AbaIOVG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:06:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948AbaIOT05 (ORCPT
+	with ESMTP id S1754953AbaIOT05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Binderman <dcb314@hotmail.com>,
-        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 036/158] powerpc/mm/numa: Fix break placement
-Date: Mon, 15 Sep 2014 12:24:35 -0700
-Message-Id: <20140915192543.969361051@linuxfoundation.org>
+Subject: [PATCH 3.16 037/158] powerpc/mm: Use read barrier when creating real_pte
+Date: Mon, 15 Sep 2014 12:24:36 -0700
+Message-Id: <20140915192544.005082947@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,31 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit b00fc6ec1f24f9d7af9b8988b6a198186eb3408c upstream.
+commit 85c1fafd7262e68ad821ee1808686b1392b1167d upstream.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81631
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+On ppc64 we support 4K hash pte with 64K page size. That requires
+us to track the hash pte slot information on a per 4k basis. We do that
+by storing the slot details in the second half of pte page. The pte bit
+_PAGE_COMBO is used to indicate whether the second half need to be
+looked while building real_pte. We need to use read memory barrier while
+doing that so that load of hidx is not reordered w.r.t _PAGE_COMBO
+check. On the store side we already do a lwsync in __hash_page_4K
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/pte-hash64-64k.h |   30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -611,8 +611,8 @@ static int cpu_numa_callback(struct noti
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
- 		unmap_cpu_from_node(lcpu);
--		break;
- 		ret = NOTIFY_OK;
-+		break;
- #endif
- 	}
- 	return ret;
+--- a/arch/powerpc/include/asm/pte-hash64-64k.h
++++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+@@ -46,11 +46,31 @@
+  * in order to deal with 64K made of 4K HW pages. Thus we override the
+  * generic accessors and iterators here
+  */
+-#define __real_pte(e,p) 	((real_pte_t) { \
+-			(e), (pte_val(e) & _PAGE_COMBO) ? \
+-				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
+-#define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
+-        (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
++#define __real_pte __real_pte
++static inline real_pte_t __real_pte(pte_t pte, pte_t *ptep)
++{
++	real_pte_t rpte;
++
++	rpte.pte = pte;
++	rpte.hidx = 0;
++	if (pte_val(pte) & _PAGE_COMBO) {
++		/*
++		 * Make sure we order the hidx load against the _PAGE_COMBO
++		 * check. The store side ordering is done in __hash_page_4K
++		 */
++		smp_rmb();
++		rpte.hidx = pte_val(*((ptep) + PTRS_PER_PTE));
++	}
++	return rpte;
++}
++
++static inline unsigned long __rpte_to_hidx(real_pte_t rpte, unsigned long index)
++{
++	if ((pte_val(rpte.pte) & _PAGE_COMBO))
++		return (rpte.hidx >> (index<<2)) & 0xf;
++	return (pte_val(rpte.pte) >> 12) & 0xf;
++}
++
+ #define __rpte_to_pte(r)	((r).pte)
+ #define __rpte_sub_valid(rpte, index) \
+ 	(pte_val(rpte.pte) & (_PAGE_HPTE_SUB0 >> (index)))
 
 
