@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745AbaIOWOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:14:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50874 "EHLO
+	id S932762AbaIOWPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:15:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50879 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932728AbaIOWOt (ORCPT
+	with ESMTP id S932732AbaIOWOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:14:49 -0400
+	Mon, 15 Sep 2014 18:14:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt.fleming@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 161/187] RDMA/iwcm: Use a default listen backlog if needed
-Date: Mon, 15 Sep 2014 15:09:31 -0700
-Message-Id: <1410818997-9432-162-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 162/187] x86/efi: Enforce CONFIG_RELOCATABLE for EFI boot stub
+Date: Mon, 15 Sep 2014 15:09:32 -0700
+Message-Id: <1410818997-9432-163-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,89 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+commit 7b2a583afb4ab894f78bc0f8bd136e96b6499a7e upstream.
 
-If the user creates a listening cm_id with backlog of 0 the IWCM ends
-up not allowing any connection requests at all.  The correct behavior
-is for the IWCM to pick a default value if the user backlog parameter
-is zero.
+Without CONFIG_RELOCATABLE the early boot code will decompress the
+kernel to LOAD_PHYSICAL_ADDR. While this may have been fine in the BIOS
+days, that isn't going to fly with UEFI since parts of the firmware
+code/data may be located at LOAD_PHYSICAL_ADDR.
 
-Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
-iwarp support without this fix.
+Straying outside of the bounds of the regions we've explicitly requested
+from the firmware will cause all sorts of trouble. Bruno reports that
+his machine resets while trying to decompress the kernel image.
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+We already go to great pains to ensure the kernel is loaded into a
+suitably aligned buffer, it's just that the address isn't necessarily
+LOAD_PHYSICAL_ADDR, because we can't guarantee that address isn't in-use
+by the firmware.
+
+Explicitly enforce CONFIG_RELOCATABLE for the EFI boot stub, so that we
+can load the kernel at any address with the correct alignment.
+
+Reported-by: Bruno Prémont <bonbons@linux-vserver.org>
+Tested-by: Bruno Prémont <bonbons@linux-vserver.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/core/iwcm.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/infiniband/core/iwcm.c b/drivers/infiniband/core/iwcm.c
-index 0717940..a86b6ca 100644
---- a/drivers/infiniband/core/iwcm.c
-+++ b/drivers/infiniband/core/iwcm.c
-@@ -46,6 +46,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/sysctl.h>
- 
- #include <rdma/iw_cm.h>
- #include <rdma/ib_addr.h>
-@@ -65,6 +66,20 @@ struct iwcm_work {
- 	struct list_head free_list;
- };
- 
-+static unsigned int default_backlog = 256;
-+
-+static struct ctl_table_header *iwcm_ctl_table_hdr;
-+static struct ctl_table iwcm_ctl_table[] = {
-+	{
-+		.procname	= "default_backlog",
-+		.data		= &default_backlog,
-+		.maxlen		= sizeof(default_backlog),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
- /*
-  * The following services provide a mechanism for pre-allocating iwcm_work
-  * elements.  The design pre-allocates them  based on the cm_id type:
-@@ -426,6 +441,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id, int backlog)
- 
- 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
- 
-+	if (!backlog)
-+		backlog = default_backlog;
-+
- 	ret = alloc_work_entries(cm_id_priv, backlog);
- 	if (ret)
- 		return ret;
-@@ -1031,11 +1049,20 @@ static int __init iw_cm_init(void)
- 	if (!iwcm_wq)
- 		return -ENOMEM;
- 
-+	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
-+						 iwcm_ctl_table);
-+	if (!iwcm_ctl_table_hdr) {
-+		pr_err("iw_cm: couldn't register sysctl paths\n");
-+		destroy_workqueue(iwcm_wq);
-+		return -ENOMEM;
-+	}
-+
- 	return 0;
- }
- 
- static void __exit iw_cm_cleanup(void)
- {
-+	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
- 	destroy_workqueue(iwcm_wq);
- }
- 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 08fa7df..03e74b3 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1613,6 +1613,7 @@ config EFI
+ config EFI_STUB
+        bool "EFI stub support"
+        depends on EFI
++       select RELOCATABLE
+        ---help---
+           This kernel feature allows a bzImage to be loaded directly
+ 	  by EFI firmware without the use of a bootloader.
 -- 
 1.9.1
 
