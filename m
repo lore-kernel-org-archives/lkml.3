@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840AbaIOHis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:38:48 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57050 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554AbaIOHbX (ORCPT
+	id S1753425AbaIOHnS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:43:18 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35853 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320AbaIOHnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:31:23 -0400
-From: behanw@converseincode.com
-To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
-        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
-        snitzer@redhat.com, tadeusz.struk@intel.com
-Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, john.griffin@intel.com,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
-        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org,
-        Behan Webster <behanw@converseincode.com>
-Subject: [PATCH v3 01/12] crypto: LLVMLinux: Add macro to remove use of VLAIS in crypto code
-Date: Mon, 15 Sep 2014 00:30:23 -0700
-Message-Id: <1410766234-1634-2-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
-References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
+	Mon, 15 Sep 2014 03:43:16 -0400
+Date: Mon, 15 Sep 2014 11:42:57 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
+        "Johannes Weiner" <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>,
+        "Pavel Emelianov" <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
+Message-ID: <20140915074257.GB11353@esperanza>
+References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
+ <20140912171809.GA24469@dhcp22.suse.cz>
+ <20140912175516.GB6298@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140912175516.GB6298@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Behan Webster <behanw@converseincode.com>
+Hi Tejun,
 
-Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
-with a C99 compliant equivalent. This macro instead allocates the appropriate
-amount of memory using an char array.
+On Sat, Sep 13, 2014 at 02:55:16AM +0900, Tejun Heo wrote:
+> Hello, guys.
+> 
+> On Fri, Sep 12, 2014 at 07:18:09PM +0200, Michal Hocko wrote:
+> > On Fri 12-09-14 19:26:58, Vladimir Davydov wrote:
+> > > memory.kmem.tcp.limit_in_bytes works as the system-wide tcp_mem sysctl,
+> > > but per memory cgroup. While the existence of the latter is justified
+> > > (it prevents the system from becoming unusable due to uncontrolled tcp
+> > > buffers growth) the reason why we need such a knob in containers isn't
+> > > clear to me.
+> > 
+> > Parallels was the primary driver for this change. I haven't heard of
+> > anybody using the feature other than Parallels. I also remember there
+> > was a strong push for this feature before it was merged besides there
+> > were some complains at the time. I do not remember details (and I am
+> > one half way gone for the weekend now) so I do not have pointers to
+> > discussions.
+> > 
+> > I would love to get rid of the code and I am pretty sure that networking
+> > people would love this go even more. I didn't plan to provide kmem.tcp.*
+> > knobs for the cgroups v2 interface but getting rid of it altogether
+> > sounds even better. I am just not sure whether some additional users
+> > grown over time.
+> > Nevertheless I am really curious. What has changed that Parallels is not
+> > interested in kmem.tcp anymore?
+> 
+> So, I'd love to see this happen too but I don't think we can do this.
+> People use published interface.  The usages might be utterly one-off
+> and mental but let's please not underestimate the sometimes senseless
+> creativity found in the wild.  We simply can't remove a bunch of
+> control knobs like this.
 
-The new code can be compiled with both gcc and clang.
+We definitely can't remove something properly operating and widely used,
+but kmem limits are not working and never worked properly due to lack of
+kmem shrinkers, and furthermore CONFIG_MEMCG_KMEM, which tcp accounting
+is enabled by, is marked as UNDER DEVELOPMENT.
 
-struct shash_desc contains a flexible array member member ctx declared with
-CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-of the array declared after struct shash_desc with long long.
-
-No trailing padding is required because it is not a struct type that can
-be used in an array.
-
-The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-as would be the case for a struct containing a member with
-CRYPTO_MINALIGN_ATTR.
-
-Signed-off-by: Behan Webster <behanw@converseincode.com>
----
- include/crypto/hash.h | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/include/crypto/hash.h b/include/crypto/hash.h
-index a391955..541125b 100644
---- a/include/crypto/hash.h
-+++ b/include/crypto/hash.h
-@@ -58,6 +58,11 @@ struct shash_desc {
- 	void *__ctx[] CRYPTO_MINALIGN_ATTR;
- };
- 
-+#define SHASH_DESC_ON_STACK(shash, tfm)				  \
-+	char __desc[sizeof(struct shash_desc) +                   \
-+		crypto_shash_descsize(tfm)] CRYPTO_MINALIGN_ATTR; \
-+	struct shash_desc *shash = (struct shash_desc *)__desc
-+
- struct shash_alg {
- 	int (*init)(struct shash_desc *desc);
- 	int (*update)(struct shash_desc *desc, const u8 *data,
--- 
-1.9.1
-
+Thanks,
+Vladimir
