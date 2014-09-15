@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaIOTrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
+	id S1756389AbaIOTrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55795 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746AbaIOTrZ (ORCPT
+	with ESMTP id S1756290AbaIOTrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:25 -0400
+	Mon, 15 Sep 2014 15:47:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.10 63/71] CIFS: Fix wrong filename length for SMB2
-Date: Mon, 15 Sep 2014 12:27:01 -0700
-Message-Id: <20140915192640.797922444@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 55/71] md/raid1,raid10: always abort recover on write error.
+Date: Mon, 15 Sep 2014 12:26:53 -0700
+Message-Id: <20140915192640.529590882@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,84 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: NeilBrown <neilb@suse.de>
 
-commit 1bbe4997b13de903c421c1cc78440e544b5f9064 upstream.
+commit 2446dba03f9dabe0b477a126cbeb377854785b47 upstream.
 
-The existing code uses the old MAX_NAME constant. This causes
-XFS test generic/013 to fail. Fix it by replacing MAX_NAME with
-PATH_MAX that SMB1 uses. Also remove an unused MAX_NAME constant
-definition.
+Currently we don't abort recovery on a write error if the write error
+to the recovering device was triggerd by normal IO (as opposed to
+recovery IO).
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This means that for one bitmap region, the recovery might write to the
+recovering device for a few sectors, then not bother for subsequent
+sectors (as it never writes to failed devices).  In this case
+the bitmap bit will be cleared, but it really shouldn't.
+
+The result is that if the recovering device fails and is then re-added
+(after fixing whatever hardware problem triggerred the failure),
+the second recovery won't redo the region it was in the middle of,
+so some of the device will not be recovered properly.
+
+If we abort the recovery, the region being processes will be cancelled
+(bit not cleared) and the whole region will be retried.
+
+As the bug can result in data corruption the patch is suitable for
+-stable.  For kernels prior to 3.11 there is a conflict in raid10.c
+which will require care.
+
+Original-from: jiao hui <jiaohui@bwstor.com.cn>
+Reported-and-tested-by: jiao hui <jiaohui@bwstor.com.cn>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- fs/cifs/cifsglob.h  |    5 -----
- fs/cifs/smb2file.c  |    2 +-
- fs/cifs/smb2inode.c |    2 +-
- fs/cifs/smb2ops.c   |    2 +-
- fs/cifs/smb2pdu.c   |    2 +-
- 5 files changed, 4 insertions(+), 9 deletions(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -74,11 +74,6 @@
- #define SERVER_NAME_LENGTH 40
- #define SERVER_NAME_LEN_WITH_NULL     (SERVER_NAME_LENGTH + 1)
- 
--/* used to define string lengths for reversing unicode strings */
--/*         (256+1)*2 = 514                                     */
--/*           (max path length + 1 for null) * 2 for unicode    */
--#define MAX_NAME 514
--
- /* SMB echo "timeout" -- FIXME: tunable? */
- #define SMB_ECHO_INTERVAL (60 * HZ)
- 
---- a/fs/cifs/smb2file.c
-+++ b/fs/cifs/smb2file.c
-@@ -73,7 +73,7 @@ smb2_open_file(const unsigned int xid, s
- 		goto out;
+---
+ drivers/md/raid1.c  |    8 ++++----
+ drivers/md/raid10.c |    8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1681,11 +1681,11 @@ static void error(struct mddev *mddev, s
+ 		spin_lock_irqsave(&conf->device_lock, flags);
+ 		mddev->degraded++;
+ 		spin_unlock_irqrestore(&conf->device_lock, flags);
+-		/*
+-		 * if recovery is running, make sure it aborts.
+-		 */
+-		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
  	}
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL) {
- 		rc = -ENOMEM;
---- a/fs/cifs/smb2inode.c
-+++ b/fs/cifs/smb2inode.c
-@@ -123,7 +123,7 @@ smb2_query_path_info(const unsigned int
- 
- 	*adjust_tz = false;
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL)
- 		return -ENOMEM;
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -243,7 +243,7 @@ smb2_query_file_info(const unsigned int
- 	int rc;
- 	struct smb2_file_all_info *smb2_data;
- 
--	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			    GFP_KERNEL);
- 	if (smb2_data == NULL)
- 		return -ENOMEM;
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -1204,7 +1204,7 @@ SMB2_query_info(const unsigned int xid,
- {
- 	return query_info(xid, tcon, persistent_fid, volatile_fid,
- 			  FILE_ALL_INFORMATION,
--			  sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
-+			  sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
- 			  sizeof(struct smb2_file_all_info), data);
- }
- 
++	/*
++	 * If recovery is running, make sure it aborts.
++	 */
++	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	set_bit(Blocked, &rdev->flags);
+ 	set_bit(Faulty, &rdev->flags);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1406,12 +1406,12 @@ static void error(struct mddev *mddev, s
+ 		mddev->degraded++;
+ 		set_bit(Faulty, &rdev->flags);
+ 		spin_unlock_irqrestore(&conf->device_lock, flags);
+-		/*
+-		 * if recovery is running, make sure it aborts.
+-		 */
+-		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	} else
+ 		set_bit(Faulty, &rdev->flags);
++	/*
++	 * if recovery is running, make sure it aborts.
++	 */
++	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
+ 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+ 	printk(KERN_ALERT
+ 	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
 
 
