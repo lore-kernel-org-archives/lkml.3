@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804AbaIOVB6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:01:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54700 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755AbaIOT1B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:01 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 3.16 071/158] MIPS: scall64-o32: Fix indirect syscall detection
-Date: Mon, 15 Sep 2014 12:25:10 -0700
-Message-Id: <20140915192545.032411334@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1758814AbaIOVCK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:02:10 -0400
+Received: from mga14.intel.com ([192.55.52.115]:56070 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755731AbaIOVCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 17:02:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="386460491"
+Message-ID: <541753A3.8010102@linux.intel.com>
+Date: Mon, 15 Sep 2014 14:01:23 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@infradead.org>
+CC: Azael Avalos <coproscefalo@gmail.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH v2 3/5] toshiba_acpi: Fix accelerometer direction reporting
+References: <1410569437-3066-1-git-send-email-coproscefalo@gmail.com> <1410569437-3066-2-git-send-email-coproscefalo@gmail.com> <20140915192923.GA61529@vmdeb7> <20140915195617.GA3652@kroah.com>
+In-Reply-To: <20140915195617.GA3652@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On 09/15/2014 12:56 PM, Greg Kroah-Hartman wrote:
+> 
+>> I have also suggested this device (2 actually) would be better supported as an
+>> IIO accelerometer device, but even that would change the sysfs interface by
+>> removing these altogether and using the IIO standardized path and accelerometer
+>> interface.
+> 
+> That's a better goal overall, then the "odd" sysfs files are now gone,
+> to be replaced with the standard interface which all tools should
+> already be using.
+> 
 
-------------------
+I would definitely agree with that, although I understood there were
+technical concerns with that?
 
-From: Markos Chandras <markos.chandras@imgtec.com>
-
-commit 5245689900804604fdc349c8d9b8985b0e401ae2 upstream.
-
-Commit 4c21b8fd8f14 (MIPS: seccomp: Handle indirect system calls (o32))
-added indirect syscall detection for O32 processes running on MIPS64
-but it did not work as expected. The reason is the the scall64-o32
-implementation differs compared to scall32-o32. In the former, the v0
-(syscall number) register contains the absolute syscall number
-(4000 + X) whereas in the latter it contains the relative syscall
-number (X). Fix the code to avoid doing an extra addition, and load
-the v0 register directly to the first argument for syscall_trace_enter.
-Moreover, set the .reorder assembler option in order to have better
-control on this part of the assembly code.
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Patchwork: http://patchwork.linux-mips.org/patch/7481/
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/mips/kernel/scall64-o32.S |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/arch/mips/kernel/scall64-o32.S
-+++ b/arch/mips/kernel/scall64-o32.S
-@@ -113,15 +113,19 @@ trace_a_syscall:
- 	move	s0, t2			# Save syscall pointer
- 	move	a0, sp
- 	/*
--	 * syscall number is in v0 unless we called syscall(__NR_###)
-+	 * absolute syscall number is in v0 unless we called syscall(__NR_###)
- 	 * where the real syscall number is in a0
- 	 * note: NR_syscall is the first O32 syscall but the macro is
- 	 * only defined when compiling with -mabi=32 (CONFIG_32BIT)
- 	 * therefore __NR_O32_Linux is used (4000)
- 	 */
--	addiu	a1, v0,  __NR_O32_Linux
--	bnez	v0, 1f /* __NR_syscall at offset 0 */
--	lw	a1, PT_R4(sp)
-+	.set	push
-+	.set	reorder
-+	subu	t1, v0,  __NR_O32_Linux
-+	move	a1, v0
-+	bnez	t1, 1f /* __NR_syscall at offset 0 */
-+	lw	a1, PT_R4(sp) /* Arg1 for __NR_syscall case */
-+	.set	pop
- 
- 1:	jal	syscall_trace_enter
- 
+	-hpa
 
 
