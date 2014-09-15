@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaIOUQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:16:34 -0400
+	id S1757411AbaIOUQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:16:51 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756139AbaIOTq7 (ORCPT
+	with ESMTP id S1756137AbaIOTq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:46:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 088/114] RDMA/iwcm: Use a default listen backlog if needed
-Date: Mon, 15 Sep 2014 12:26:28 -0700
-Message-Id: <20140915192644.175364307@linuxfoundation.org>
+        mdraid.pkoch@dfgh.net (Peter Koch), NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 086/114] md/raid10: fix memory leak when reshaping a RAID10.
+Date: Mon, 15 Sep 2014 12:26:26 -0700
+Message-Id: <20140915192644.118077738@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,87 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+commit ce0b0a46955d1bb389684a2605dbcaa990ba0154 upstream.
 
-If the user creates a listening cm_id with backlog of 0 the IWCM ends
-up not allowing any connection requests at all.  The correct behavior
-is for the IWCM to pick a default value if the user backlog parameter
-is zero.
+raid10 reshape clears unwanted bits from a bio->bi_flags using
+a method which, while clumsy, worked until 3.10 when BIO_OWNS_VEC
+was added.
+Since then it clears that bit but shouldn't.  This results in a
+memory leak.
 
-Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
-iwarp support without this fix.
+So change to used the approved method of clearing unwanted bits.
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+As this causes a memory leak which can consume all of memory
+the fix is suitable for -stable.
+
+Fixes: a38352e0ac02dbbd4fa464dc22d1352b5fbd06fd
+Reported-by: mdraid.pkoch@dfgh.net (Peter Koch)
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/iwcm.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/md/raid10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/iwcm.c
-+++ b/drivers/infiniband/core/iwcm.c
-@@ -46,6 +46,7 @@
- #include <linux/completion.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/sysctl.h>
- 
- #include <rdma/iw_cm.h>
- #include <rdma/ib_addr.h>
-@@ -65,6 +66,20 @@ struct iwcm_work {
- 	struct list_head free_list;
- };
- 
-+static unsigned int default_backlog = 256;
-+
-+static struct ctl_table_header *iwcm_ctl_table_hdr;
-+static struct ctl_table iwcm_ctl_table[] = {
-+	{
-+		.procname	= "default_backlog",
-+		.data		= &default_backlog,
-+		.maxlen		= sizeof(default_backlog),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{ }
-+};
-+
- /*
-  * The following services provide a mechanism for pre-allocating iwcm_work
-  * elements.  The design pre-allocates them  based on the cm_id type:
-@@ -425,6 +440,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
- 
- 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
- 
-+	if (!backlog)
-+		backlog = default_backlog;
-+
- 	ret = alloc_work_entries(cm_id_priv, backlog);
- 	if (ret)
- 		return ret;
-@@ -1030,11 +1048,20 @@ static int __init iw_cm_init(void)
- 	if (!iwcm_wq)
- 		return -ENOMEM;
- 
-+	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
-+						 iwcm_ctl_table);
-+	if (!iwcm_ctl_table_hdr) {
-+		pr_err("iw_cm: couldn't register sysctl paths\n");
-+		destroy_workqueue(iwcm_wq);
-+		return -ENOMEM;
-+	}
-+
- 	return 0;
- }
- 
- static void __exit iw_cm_cleanup(void)
- {
-+	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
- 	destroy_workqueue(iwcm_wq);
- }
- 
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -4410,7 +4410,7 @@ read_more:
+ 	read_bio->bi_private = r10_bio;
+ 	read_bio->bi_end_io = end_sync_read;
+ 	read_bio->bi_rw = READ;
+-	read_bio->bi_flags &= ~(BIO_POOL_MASK - 1);
++	read_bio->bi_flags &= (~0UL << BIO_RESET_BITS);
+ 	read_bio->bi_flags |= 1 << BIO_UPTODATE;
+ 	read_bio->bi_vcnt = 0;
+ 	read_bio->bi_iter.bi_size = 0;
 
 
