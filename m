@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaIOT1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:27:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54675 "EHLO
+	id S1755165AbaIOT1Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:27:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54589 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020AbaIOT1E (ORCPT
+	with ESMTP id S1754728AbaIOT1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:04 -0400
+	Mon, 15 Sep 2014 15:27:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 081/158] ASoC: samsung: Correct I2S DAI suspend/resume ops
-Date: Mon, 15 Sep 2014 12:25:20 -0700
-Message-Id: <20140915192545.323174250@linuxfoundation.org>
+        Alex Smith <alex@alex-smith.me.uk>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.16 063/158] MIPS: ptrace: Change GP regset to use correct core dump register layout
+Date: Mon, 15 Sep 2014 12:25:02 -0700
+Message-Id: <20140915192544.786807254@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,55 +29,287 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Alex Smith <alex@alex-smith.me.uk>
 
-commit d3d4e5247b013008a39e4d5f69ce4c60ed57f997 upstream.
+commit c23b3d1a53119849dc3c23c417124deb067aa33d upstream.
 
-We should save/restore relevant I2S registers regardless of
-the dai->active flag, otherwise some settings are being lost
-after system suspend/resume cycle. E.g. I2S slave mode set only
-during dai initialization is not preserved and the device ends
-up in master mode after system resume.
+Commit 6a9c001b7ec3 ("MIPS: Switch ELF core dumper to use regsets.")
+switched the core dumper to use regsets, however the GP regset code
+simply makes a direct copy of the kernel's pt_regs, which does not
+match the original core dump register layout as defined in asm/reg.h.
+Furthermore, the definition of pt_regs can vary with certain Kconfig
+variables, therefore the GP regset can never be relied upon to return
+registers in the same layout.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Therefore, this patch changes the GP regset to match the original core
+dump layout. The layout differs for 32- and 64-bit processes, so
+separate implementations of the get/set functions are added for the
+32- and 64-bit regsets.
+
+Signed-off-by: Alex Smith <alex@alex-smith.me.uk>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7452/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/samsung/i2s.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ arch/mips/kernel/ptrace.c |  189 ++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 160 insertions(+), 29 deletions(-)
 
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -920,11 +920,9 @@ static int i2s_suspend(struct snd_soc_da
- {
- 	struct i2s_dai *i2s = to_info(dai);
+--- a/arch/mips/kernel/ptrace.c
++++ b/arch/mips/kernel/ptrace.c
+@@ -246,36 +246,160 @@ int ptrace_set_watch_regs(struct task_st
  
--	if (dai->active) {
--		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
--		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
--		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
--	}
-+	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
-+	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
-+	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+ /* regset get/set implementations */
+ 
+-static int gpr_get(struct task_struct *target,
+-		   const struct user_regset *regset,
+-		   unsigned int pos, unsigned int count,
+-		   void *kbuf, void __user *ubuf)
++#if defined(CONFIG_32BIT) || defined(CONFIG_MIPS32_O32)
++
++static int gpr32_get(struct task_struct *target,
++		     const struct user_regset *regset,
++		     unsigned int pos, unsigned int count,
++		     void *kbuf, void __user *ubuf)
+ {
+ 	struct pt_regs *regs = task_pt_regs(target);
++	u32 uregs[ELF_NGREG] = {};
++	unsigned i;
++
++	for (i = MIPS32_EF_R1; i <= MIPS32_EF_R31; i++) {
++		/* k0/k1 are copied as zero. */
++		if (i == MIPS32_EF_R26 || i == MIPS32_EF_R27)
++			continue;
+ 
+-	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+-				   regs, 0, sizeof(*regs));
++		uregs[i] = regs->regs[i - MIPS32_EF_R0];
++	}
++
++	uregs[MIPS32_EF_LO] = regs->lo;
++	uregs[MIPS32_EF_HI] = regs->hi;
++	uregs[MIPS32_EF_CP0_EPC] = regs->cp0_epc;
++	uregs[MIPS32_EF_CP0_BADVADDR] = regs->cp0_badvaddr;
++	uregs[MIPS32_EF_CP0_STATUS] = regs->cp0_status;
++	uregs[MIPS32_EF_CP0_CAUSE] = regs->cp0_cause;
++
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				   sizeof(uregs));
+ }
+ 
+-static int gpr_set(struct task_struct *target,
+-		   const struct user_regset *regset,
+-		   unsigned int pos, unsigned int count,
+-		   const void *kbuf, const void __user *ubuf)
++static int gpr32_set(struct task_struct *target,
++		     const struct user_regset *regset,
++		     unsigned int pos, unsigned int count,
++		     const void *kbuf, const void __user *ubuf)
++{
++	struct pt_regs *regs = task_pt_regs(target);
++	u32 uregs[ELF_NGREG];
++	unsigned start, num_regs, i;
++	int err;
++
++	start = pos / sizeof(u32);
++	num_regs = count / sizeof(u32);
++
++	if (start + num_regs > ELF_NGREG)
++		return -EIO;
++
++	err = user_regset_copyin(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				 sizeof(uregs));
++	if (err)
++		return err;
++
++	for (i = start; i < num_regs; i++) {
++		/*
++		 * Cast all values to signed here so that if this is a 64-bit
++		 * kernel, the supplied 32-bit values will be sign extended.
++		 */
++		switch (i) {
++		case MIPS32_EF_R1 ... MIPS32_EF_R25:
++			/* k0/k1 are ignored. */
++		case MIPS32_EF_R28 ... MIPS32_EF_R31:
++			regs->regs[i - MIPS32_EF_R0] = (s32)uregs[i];
++			break;
++		case MIPS32_EF_LO:
++			regs->lo = (s32)uregs[i];
++			break;
++		case MIPS32_EF_HI:
++			regs->hi = (s32)uregs[i];
++			break;
++		case MIPS32_EF_CP0_EPC:
++			regs->cp0_epc = (s32)uregs[i];
++			break;
++		}
++	}
++
++	return 0;
++}
++
++#endif /* CONFIG_32BIT || CONFIG_MIPS32_O32 */
++
++#ifdef CONFIG_64BIT
++
++static int gpr64_get(struct task_struct *target,
++		     const struct user_regset *regset,
++		     unsigned int pos, unsigned int count,
++		     void *kbuf, void __user *ubuf)
+ {
+-	struct pt_regs newregs;
+-	int ret;
++	struct pt_regs *regs = task_pt_regs(target);
++	u64 uregs[ELF_NGREG] = {};
++	unsigned i;
+ 
+-	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+-				 &newregs,
+-				 0, sizeof(newregs));
+-	if (ret)
+-		return ret;
++	for (i = MIPS64_EF_R1; i <= MIPS64_EF_R31; i++) {
++		/* k0/k1 are copied as zero. */
++		if (i == MIPS64_EF_R26 || i == MIPS64_EF_R27)
++			continue;
++
++		uregs[i] = regs->regs[i - MIPS64_EF_R0];
++	}
+ 
+-	*task_pt_regs(target) = newregs;
++	uregs[MIPS64_EF_LO] = regs->lo;
++	uregs[MIPS64_EF_HI] = regs->hi;
++	uregs[MIPS64_EF_CP0_EPC] = regs->cp0_epc;
++	uregs[MIPS64_EF_CP0_BADVADDR] = regs->cp0_badvaddr;
++	uregs[MIPS64_EF_CP0_STATUS] = regs->cp0_status;
++	uregs[MIPS64_EF_CP0_CAUSE] = regs->cp0_cause;
++
++	return user_regset_copyout(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				   sizeof(uregs));
++}
++
++static int gpr64_set(struct task_struct *target,
++		     const struct user_regset *regset,
++		     unsigned int pos, unsigned int count,
++		     const void *kbuf, const void __user *ubuf)
++{
++	struct pt_regs *regs = task_pt_regs(target);
++	u64 uregs[ELF_NGREG];
++	unsigned start, num_regs, i;
++	int err;
++
++	start = pos / sizeof(u64);
++	num_regs = count / sizeof(u64);
++
++	if (start + num_regs > ELF_NGREG)
++		return -EIO;
++
++	err = user_regset_copyin(&pos, &count, &kbuf, &ubuf, uregs, 0,
++				 sizeof(uregs));
++	if (err)
++		return err;
++
++	for (i = start; i < num_regs; i++) {
++		switch (i) {
++		case MIPS64_EF_R1 ... MIPS64_EF_R25:
++			/* k0/k1 are ignored. */
++		case MIPS64_EF_R28 ... MIPS64_EF_R31:
++			regs->regs[i - MIPS64_EF_R0] = uregs[i];
++			break;
++		case MIPS64_EF_LO:
++			regs->lo = uregs[i];
++			break;
++		case MIPS64_EF_HI:
++			regs->hi = uregs[i];
++			break;
++		case MIPS64_EF_CP0_EPC:
++			regs->cp0_epc = uregs[i];
++			break;
++		}
++	}
  
  	return 0;
  }
-@@ -933,11 +931,9 @@ static int i2s_resume(struct snd_soc_dai
+ 
++#endif /* CONFIG_64BIT */
++
+ static int fpr_get(struct task_struct *target,
+ 		   const struct user_regset *regset,
+ 		   unsigned int pos, unsigned int count,
+@@ -337,14 +461,16 @@ enum mips_regset {
+ 	REGSET_FPR,
+ };
+ 
++#if defined(CONFIG_32BIT) || defined(CONFIG_MIPS32_O32)
++
+ static const struct user_regset mips_regsets[] = {
+ 	[REGSET_GPR] = {
+ 		.core_note_type	= NT_PRSTATUS,
+ 		.n		= ELF_NGREG,
+ 		.size		= sizeof(unsigned int),
+ 		.align		= sizeof(unsigned int),
+-		.get		= gpr_get,
+-		.set		= gpr_set,
++		.get		= gpr32_get,
++		.set		= gpr32_set,
+ 	},
+ 	[REGSET_FPR] = {
+ 		.core_note_type	= NT_PRFPREG,
+@@ -364,14 +490,18 @@ static const struct user_regset_view use
+ 	.n		= ARRAY_SIZE(mips_regsets),
+ };
+ 
++#endif /* CONFIG_32BIT || CONFIG_MIPS32_O32 */
++
++#ifdef CONFIG_64BIT
++
+ static const struct user_regset mips64_regsets[] = {
+ 	[REGSET_GPR] = {
+ 		.core_note_type	= NT_PRSTATUS,
+ 		.n		= ELF_NGREG,
+ 		.size		= sizeof(unsigned long),
+ 		.align		= sizeof(unsigned long),
+-		.get		= gpr_get,
+-		.set		= gpr_set,
++		.get		= gpr64_get,
++		.set		= gpr64_set,
+ 	},
+ 	[REGSET_FPR] = {
+ 		.core_note_type	= NT_PRFPREG,
+@@ -384,25 +514,26 @@ static const struct user_regset mips64_r
+ };
+ 
+ static const struct user_regset_view user_mips64_view = {
+-	.name		= "mips",
++	.name		= "mips64",
+ 	.e_machine	= ELF_ARCH,
+ 	.ei_osabi	= ELF_OSABI,
+ 	.regsets	= mips64_regsets,
+-	.n		= ARRAY_SIZE(mips_regsets),
++	.n		= ARRAY_SIZE(mips64_regsets),
+ };
+ 
++#endif /* CONFIG_64BIT */
++
+ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
  {
- 	struct i2s_dai *i2s = to_info(dai);
- 
--	if (dai->active) {
--		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
--		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
--		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
--	}
-+	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
-+	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
-+	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
- 
- 	return 0;
+ #ifdef CONFIG_32BIT
+ 	return &user_mips_view;
+-#endif
+-
++#else
+ #ifdef CONFIG_MIPS32_O32
+-		if (test_tsk_thread_flag(task, TIF_32BIT_REGS))
+-			return &user_mips_view;
++	if (test_tsk_thread_flag(task, TIF_32BIT_REGS))
++		return &user_mips_view;
+ #endif
+-
+ 	return &user_mips64_view;
++#endif
  }
+ 
+ long arch_ptrace(struct task_struct *child, long request,
 
 
