@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010AbaIOUDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:03:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55788 "EHLO
+	id S1757000AbaIOUDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:03:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233AbaIOTrO (ORCPT
+	with ESMTP id S1756239AbaIOTrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Block <bebl@mageta.org>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        Lan Tianyu <tianyu.lan@intel.com>,
+        Jiri Kosina <jkosina@suse.cz>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 36/71] ACPI: Run fixed event device notifications in process context
-Date: Mon, 15 Sep 2014 12:26:34 -0700
-Message-Id: <20140915192639.902614783@linuxfoundation.org>
+Subject: [PATCH 3.10 37/71] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+Date: Mon, 15 Sep 2014 12:26:35 -0700
+Message-Id: <20140915192639.934310639@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -31,85 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 236105db632c6279a020f78c83e22eaef746006b upstream.
+commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
 
-Currently, notify callbacks for fixed button events are run from
-interrupt context.  That is not necessary and after commit 0bf6368ee8f2
-(ACPI / button: Add ACPI Button event via netlink routine) it causes
-netlink routines to be called from interrupt context which is not
-correct.
+There is a following AB-BA dependency between cpu_hotplug.lock and
+cpuidle_lock:
 
-Also, that is different from non-fixed device events (including
-non-fixed button events) whose notify callbacks are all executed from
-process context.
+1) cpu_hotplug.lock -> cpuidle_lock
+enable_nonboot_cpus()
+ _cpu_up()
+  cpu_hotplug_begin()
+   LOCK(cpu_hotplug.lock)
+ cpu_notify()
+  ...
+  acpi_processor_hotplug()
+   cpuidle_pause_and_lock()
+    LOCK(cpuidle_lock)
 
-For the above reasons, make fixed button device notify callbacks run
-in process context which will avoid the deadlock when using netlink
-to report button events to user space.
+2) cpuidle_lock -> cpu_hotplug.lock
+acpi_os_execute_deferred() workqueue
+ ...
+ acpi_processor_cst_has_changed()
+  cpuidle_pause_and_lock()
+   LOCK(cpuidle_lock)
+  get_online_cpus()
+   LOCK(cpu_hotplug.lock)
 
-Fixes: 0bf6368ee8f2 (ACPI / button: Add ACPI Button event via netlink routine)
-Link: https://lkml.org/lkml/2014/8/21/606
-Reported-by: Benjamin Block <bebl@mageta.org>
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-[rjw: Function names, subject and changelog.]
+Fix this by reversing the order acpi_processor_cst_has_changed() does
+thigs -- let it first execute the protection against CPU hotplug by
+calling get_online_cpus() and obtain the cpuidle lock only after that (and
+perform the symmentric change when allowing CPUs hotplug again and
+dropping cpuidle lock).
+
+Spotted by lockdep.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/acpi/processor_idle.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -769,12 +769,17 @@ static void acpi_device_notify(acpi_hand
- 	device->driver->ops.notify(device, event);
- }
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1101,9 +1101,9 @@ int acpi_processor_cst_has_changed(struc
  
--static acpi_status acpi_device_notify_fixed(void *data)
-+static void acpi_device_notify_fixed(void *data)
- {
- 	struct acpi_device *device = data;
+ 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
  
- 	/* Fixed hardware devices have no handles */
- 	acpi_device_notify(NULL, ACPI_FIXED_HARDWARE_EVENT, device);
-+}
-+
-+static acpi_status acpi_device_fixed_event(void *data)
-+{
-+	acpi_os_execute(OSL_NOTIFY_HANDLER, acpi_device_notify_fixed, data);
- 	return AE_OK;
- }
+-		cpuidle_pause_and_lock();
+ 		/* Protect against cpu-hotplug */
+ 		get_online_cpus();
++		cpuidle_pause_and_lock();
  
-@@ -785,12 +790,12 @@ static int acpi_device_install_notify_ha
- 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
- 		status =
- 		    acpi_install_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
--						     acpi_device_notify_fixed,
-+						     acpi_device_fixed_event,
- 						     device);
- 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
- 		status =
- 		    acpi_install_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
--						     acpi_device_notify_fixed,
-+						     acpi_device_fixed_event,
- 						     device);
- 	else
- 		status = acpi_install_notify_handler(device->handle,
-@@ -807,10 +812,10 @@ static void acpi_device_remove_notify_ha
- {
- 	if (device->device_type == ACPI_BUS_TYPE_POWER_BUTTON)
- 		acpi_remove_fixed_event_handler(ACPI_EVENT_POWER_BUTTON,
--						acpi_device_notify_fixed);
-+						acpi_device_fixed_event);
- 	else if (device->device_type == ACPI_BUS_TYPE_SLEEP_BUTTON)
- 		acpi_remove_fixed_event_handler(ACPI_EVENT_SLEEP_BUTTON,
--						acpi_device_notify_fixed);
-+						acpi_device_fixed_event);
- 	else
- 		acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
- 					   acpi_device_notify);
+ 		/* Disable all cpuidle devices */
+ 		for_each_online_cpu(cpu) {
+@@ -1130,8 +1130,8 @@ int acpi_processor_cst_has_changed(struc
+ 				cpuidle_enable_device(dev);
+ 			}
+ 		}
+-		put_online_cpus();
+ 		cpuidle_resume_and_unlock();
++		put_online_cpus();
+ 	}
+ 
+ 	return 0;
 
 
