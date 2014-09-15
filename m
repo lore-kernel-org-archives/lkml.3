@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887AbaIOUbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:31:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
+	id S1757944AbaIOUcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:32:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143AbaIOThD (ORCPT
+	with ESMTP id S1755661AbaIOThA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:03 -0400
+	Mon, 15 Sep 2014 15:37:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 035/114] Drivers: scsi: storvsc: Fix a bug in handling VMBUS protocol version
-Date: Mon, 15 Sep 2014 12:25:35 -0700
-Message-Id: <20140915192642.541706977@linuxfoundation.org>
+        Takanari Hayama <taki@igel.co.jp>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 006/114] media: v4l: vsp1: Remove the unneeded vsp1_video_buffer video field
+Date: Mon, 15 Sep 2014 12:25:06 -0700
+Message-Id: <20140915192641.624248133@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,55 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit adb6f9e1a8c6af1037232b59edb11277471537ea upstream.
+commit e51daefc228aa164adcc17fe8fce0f856ad0a1cc upstream.
 
-Based on the negotiated VMBUS protocol version, we adjust the size of the storage
-protocol messages. The two sizes we currently handle are pre-win8 and post-win8.
-In WS2012 R2, we are negotiating higher VMBUS protocol version than the win8
-version. Make adjustments to correctly handle this.
+The field is assigned but never read, remove it.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This fixes a bug caused by the struct vb2_buffer field not being be the
+very first field of the vsp1_video_buffer buffer structure as required
+by videobuf2.
+
+Reported-by: Takanari Hayama <taki@igel.co.jp>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/media/platform/vsp1/vsp1_video.c |    2 --
+ drivers/media/platform/vsp1/vsp1_video.h |    1 -
+ 2 files changed, 3 deletions(-)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1764,19 +1764,22 @@ static int storvsc_probe(struct hv_devic
- 	 * set state to properly communicate with the host.
- 	 */
+--- a/drivers/media/platform/vsp1/vsp1_video.c
++++ b/drivers/media/platform/vsp1/vsp1_video.c
+@@ -635,8 +635,6 @@ static int vsp1_video_buffer_prepare(str
+ 	if (vb->num_planes < format->num_planes)
+ 		return -EINVAL;
  
--	if (vmbus_proto_version == VERSION_WIN8) {
--		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
--		vmscsi_size_delta = 0;
--		vmstor_current_major = VMSTOR_WIN8_MAJOR;
--		vmstor_current_minor = VMSTOR_WIN8_MINOR;
--	} else {
-+	switch (vmbus_proto_version) {
-+	case VERSION_WS2008:
-+	case VERSION_WIN7:
- 		sense_buffer_size = PRE_WIN8_STORVSC_SENSE_BUFFER_SIZE;
- 		vmscsi_size_delta = sizeof(struct vmscsi_win8_extension);
- 		vmstor_current_major = VMSTOR_WIN7_MAJOR;
- 		vmstor_current_minor = VMSTOR_WIN7_MINOR;
-+		break;
-+	default:
-+		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
-+		vmscsi_size_delta = 0;
-+		vmstor_current_major = VMSTOR_WIN8_MAJOR;
-+		vmstor_current_minor = VMSTOR_WIN8_MINOR;
-+		break;
- 	}
- 
+-	buf->video = video;
 -
- 	if (dev_id->driver_data == SFC_GUID)
- 		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
- 					 STORVSC_FC_MAX_TARGETS);
+ 	for (i = 0; i < vb->num_planes; ++i) {
+ 		buf->addr[i] = vb2_dma_contig_plane_dma_addr(vb, i);
+ 		buf->length[i] = vb2_plane_size(vb, i);
+--- a/drivers/media/platform/vsp1/vsp1_video.h
++++ b/drivers/media/platform/vsp1/vsp1_video.h
+@@ -89,7 +89,6 @@ static inline struct vsp1_pipeline *to_v
+ }
+ 
+ struct vsp1_video_buffer {
+-	struct vsp1_video *video;
+ 	struct vb2_buffer buf;
+ 	struct list_head queue;
+ 
 
 
