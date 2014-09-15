@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758721AbaIOU5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:57:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54594 "EHLO
+	id S1758706AbaIOU5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:57:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030AbaIOT1H (ORCPT
+	with ESMTP id S1755031AbaIOT1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:07 -0400
+	Mon, 15 Sep 2014 15:27:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 084/158] ASoC: tlv320aic31xx: Do not ignore errors in aic31xx_device_init()
-Date: Mon, 15 Sep 2014 12:25:23 -0700
-Message-Id: <20140915192545.409641989@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 093/158] ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
+Date: Mon, 15 Sep 2014 12:25:32 -0700
+Message-Id: <20140915192545.677697974@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,62 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-commit a72d2abbe5752f3a773c4d8b7b41ae41f617f772 upstream.
+commit 8aa5e56eeb61a099ea6519eb30ee399e1bc043ce upstream.
 
-We need to return the error codes from aic31xx_device_init() and return
-from the i2c_probe with the error code.
-We will have kernel panic (NULL pointer dereference) in
-regulator_register_notifier() in case the devm_regulator_bulk_get() fails
-(with -EPROBE_DEFER for example).
+Adds return status check on copy routines to delete the allocated destination
+object if either copy fails. Reported by Colin Ian King on bugs.acpica.org,
+Bug 1087.
+The last applicable commit:
+ Commit: 3371c19c294a4cb3649aa4e84606be8a1d999e61
+ Subject: ACPICA: Remove ACPI_GET_OBJECT_TYPE macro
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Link: https://bugs.acpica.org/show_bug.cgi?id=1087
+Reported-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/tlv320aic31xx.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/acpi/acpica/utcopy.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/soc/codecs/tlv320aic31xx.c
-+++ b/sound/soc/codecs/tlv320aic31xx.c
-@@ -1178,7 +1178,7 @@ static void aic31xx_pdata_from_of(struct
- }
- #endif /* CONFIG_OF */
- 
--static void aic31xx_device_init(struct aic31xx_priv *aic31xx)
-+static int aic31xx_device_init(struct aic31xx_priv *aic31xx)
- {
- 	int ret, i;
- 
-@@ -1197,7 +1197,7 @@ static void aic31xx_device_init(struct a
- 					    "aic31xx-reset-pin");
- 		if (ret < 0) {
- 			dev_err(aic31xx->dev, "not able to acquire gpio\n");
--			return;
-+			return ret;
- 		}
+--- a/drivers/acpi/acpica/utcopy.c
++++ b/drivers/acpi/acpica/utcopy.c
+@@ -1001,5 +1001,11 @@ acpi_ut_copy_iobject_to_iobject(union ac
+ 		status = acpi_ut_copy_simple_object(source_desc, *dest_desc);
  	}
  
-@@ -1210,6 +1210,7 @@ static void aic31xx_device_init(struct a
- 	if (ret != 0)
- 		dev_err(aic31xx->dev, "Failed to request supplies: %d\n", ret);
- 
-+	return ret;
++	/* Delete the allocated object if copy failed */
++
++	if (ACPI_FAILURE(status)) {
++		acpi_ut_remove_reference(*dest_desc);
++	}
++
+ 	return_ACPI_STATUS(status);
  }
- 
- static int aic31xx_i2c_probe(struct i2c_client *i2c,
-@@ -1239,7 +1240,9 @@ static int aic31xx_i2c_probe(struct i2c_
- 
- 	aic31xx->pdata.codec_type = id->driver_data;
- 
--	aic31xx_device_init(aic31xx);
-+	ret = aic31xx_device_init(aic31xx);
-+	if (ret)
-+		return ret;
- 
- 	return snd_soc_register_codec(&i2c->dev, &soc_codec_driver_aic31xx,
- 				     aic31xx_dai_driver,
 
 
