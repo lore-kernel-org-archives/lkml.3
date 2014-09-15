@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804AbaIOP6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:58:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40988 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753113AbaIOP57 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:57:59 -0400
-Date: Mon, 15 Sep 2014 16:56:56 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Joe Perches <joe@perches.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
-Message-ID: <20140915155656.GA29744@arm.com>
-References: <cover.1410632834.git.joe@perches.com>
- <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+	id S1753919AbaIOP6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:58:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3053 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714AbaIOP6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 11:58:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,529,1406617200"; 
+   d="scan'208";a="603101070"
+Date: Mon, 15 Sep 2014 08:58:37 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        kan.liang@intel.com
+Subject: Re: [PATCH] perf/x86/uncore: update support for client uncore IMC PMU
+Message-ID: <20140915155837.GR5387@tassilo.jf.intel.com>
+References: <20140915143832.GA3264@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+In-Reply-To: <20140915143832.GA3264@quad>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 07:31:12PM +0100, Joe Perches wrote:
-> Use the more common pr_warn.
+On Mon, Sep 15, 2014 at 04:38:32PM +0200, Stephane Eranian wrote:
 > 
-> Other miscellanea:
+> This patch restructures the memory controller (IMC) uncore
+> PMU support for client SNB/IVB/HSW processors. The main change
+> is that it can now cope with more than one PCI device ID per
+> processor model. There are many flavors of memory controllers
+> for each processor. They have different PCI device ID, yet
+> they behave the same w.r.t. the memory controller PMU that
+> we are interested in.
 > 
-> o Coalesce formats
-> o Realign arguments
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  arch/arm/include/asm/syscall.h   |  8 ++++----
->  arch/arm/kernel/atags_parse.c    |  2 +-
->  arch/arm/kernel/hw_breakpoint.c  | 18 +++++++++---------
->  arch/arm/kernel/irq.c            |  4 ++--
->  arch/arm/kernel/perf_event_cpu.c |  4 ++--
->  arch/arm/kernel/smp.c            |  2 +-
->  arch/arm/kernel/unwind.c         | 24 ++++++++++++------------
->  arch/arm/mm/idmap.c              |  2 +-
->  arch/arm/mm/mmu.c                |  4 ++--
->  9 files changed, 34 insertions(+), 34 deletions(-)
+> The patch now supports two distinct memory controllers for IVB
+> processors: one for mobile, one for desktop.
 
-It's Russell's call on this, but it really looks like more trouble than it's
-worth imo. Having git blame identify the person who wrote the original code
-is considerably more useful than being pointed at somebody making cosmetic
-changes.
+I haven't investigated yet, but on my Lenovo ULT Haswell laptop
+the IMC PCI-ID doesn't exist, so the driver doesn't initialize.
 
-Will
+So either it's the BIOS disabling it, or it's a different ID there
+too.
+
+BTW any reason you didn't enable the CBOX/ARB PMUs originally for HSW?
+At least ARB events are useful for some things.
+
+-Andi
