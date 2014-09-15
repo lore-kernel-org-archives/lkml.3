@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbaIOLfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 07:35:22 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55734 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaIOLfR (ORCPT
+	id S1753918AbaIOLhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 07:37:53 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36026 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558AbaIOLhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 07:35:17 -0400
-Date: Mon, 15 Sep 2014 19:35:06 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.17
-Message-ID: <20140915113506.GA4736@gondor.apana.org.au>
-References: <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
- <20131203124129.GA12067@gondor.apana.org.au>
- <20131209115705.GA1361@gondor.apana.org.au>
- <20140101061016.GA22579@gondor.apana.org.au>
- <20140203125944.GA31446@gondor.apana.org.au>
- <20140710090314.GA15729@gondor.apana.org.au>
+	Mon, 15 Sep 2014 07:37:52 -0400
+Date: Mon, 15 Sep 2014 13:37:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Preeti Murthy <preeti.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <tkhai@yandex.ru>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH] sched: Do not stop cpu in set_cpus_allowed_ptr() if task
+ is not running
+Message-ID: <20140915113747.GC2840@worktop.localdomain>
+References: <1410519814.3569.7.camel@tkhai>
+ <CAM4v1pPWKpoRjGqms8wXhMs0B1iLeVnUJRZu3iOW9Dy_44dCKQ@mail.gmail.com>
+ <1410775350.3569.51.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140710090314.GA15729@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410775350.3569.51.camel@tkhai>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Mon, Sep 15, 2014 at 02:02:30PM +0400, Kirill Tkhai wrote:
+> Hi, Preeti,
+> 
+> В Пн, 15/09/2014 в 15:18 +0530, Preeti Murthy пишет:
+> > Hi Kirill,
+> > 
+> > Which tree is this patch based on? __migrate_task() does a
+> > double_rq_lock/unlock() today in mainline, doesn't it? I don't
+> > however see that in your patch.
+> 
+> it's based on recent tip tree:
+> https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/
+> 
+> Also, once I received a build-robot message about my patch
+> makes warning on allyesconfig, and since that time I learned
+> about Peter's tree :) 
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/peterz/queue.git
+> 
+> (This is for info, I don't know if it is right to make patches
+> based on in. But really good if you was away for some time
+> and you're interested in recent news without lkml archive reading.
+> I use it :)
 
-This push fixes the newly added drbg generator so that it actually
-works on 32-bit machines.  Previously the code was only tested on
-64-bit and on 32-bit it overflowed and simply doesn't work.
+Its mostly a scratch tree to get some build coverage and to show people
+what all is queued up in my quilt tree. The tree is fully recreated
+every time I export my queue and at times I forget to export.
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Herbert Xu (1):
-      crypto: drbg - backport "fix maximum value checks on 32 bit systems"
-
-Stephan Mueller (1):
-      crypto: drbg - remove check for uninitialized DRBG handle
-
- crypto/drbg.c         |    3 ---
- include/crypto/drbg.h |   13 +++++++++++++
- 2 files changed, 13 insertions(+), 3 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+So feel free to look at, but basing work on it might not be the bestest
+idea. Ideally things should find their way into -tip fairly quickly (or
+get dropped on the ground if they come apart, but that usually goes
+paired with an email telling you about the borkage).
