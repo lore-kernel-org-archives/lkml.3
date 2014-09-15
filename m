@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaIOVr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:47:59 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:34932 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117AbaIOVry (ORCPT
+	id S1756880AbaIOVtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:49:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44139 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757AbaIOVtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:47:54 -0400
+	Mon, 15 Sep 2014 17:49:10 -0400
+Date: Mon, 15 Sep 2014 14:49:02 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 10/13] eeepc-laptop: compare proper return values in
+ get_cpufv
+Message-ID: <20140915214902.GB64909@vmdeb7>
+References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
+ <1410563212-31565-11-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
-References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <063D6719AE5E284EB5DD2968C1650D6D17491F2B@AcuExch.aculab.com>
- <5416A65D.6010500@pengutronix.de> <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Mon, 15 Sep 2014 23:47:33 +0200
-Message-ID: <CAFo99gb9Rqnc7HrPbN7UVyQwPv_a=fxAbe+FTtm+9GgsjG7StA@mail.gmail.com>
-Subject: Re: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c: Cleaning up
- missing null-terminate in conjunction with strncpy
-To: David Laight <David.Laight@aculab.com>
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410563212-31565-11-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-15 10:47 GMT+02:00 David Laight <David.Laight@aculab.com>:
-> From: Marc Kleine-Budde [
->> On 09/15/2014 10:28 AM, David Laight wrote:
->> > From: Rickard Strandqvist
->> > ...
->> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->> > ...
->> >> diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
->> >> b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
->> >> index 644e6ab..d4fe8ac 100644
->> >> --- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
->> >> +++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
->> >> @@ -830,7 +830,7 @@ static void peak_usb_disconnect(struct usb_interface *intf)
->> >>            char name[IFNAMSIZ];
->> >>
->> >>            dev->state &= ~PCAN_USB_STATE_CONNECTED;
->> >> -          strncpy(name, netdev->name, IFNAMSIZ);
->> >> +          strlcpy(name, netdev->name, IFNAMSIZ);
->> >>
->> >>            unregister_netdev(netdev);
->> >>            free_candev(netdev);
->> >
->> > Or:
->> >     char name[sizeof netdev->name];
->> >     memcpy(name, netdev->name, sizeof netdev->name);
->>
->> I would be "sizeof(foo)" in kernel coding style,
-> But not in mine :-)
-> sizeof is an operator, not a function, it's argument can be (type).
->
->> but let's have a look at the original code:
->>
->>                 struct net_device *netdev = dev->netdev;
->>                 char name[IFNAMSIZ];
->>
->>                 dev->state &= ~PCAN_USB_STATE_CONNECTED;
->>                 strncpy(name, netdev->name, IFNAMSIZ);
->>
->>                 unregister_netdev(netdev);
->>                 free_candev(netdev);
->>
->>                 kfree(dev->cmd_buf);
->>                 dev->next_siblings = NULL;
->>                 if (dev->adapter->dev_free)
->>                         dev->adapter->dev_free(dev);
->>
->>                 dev_info(&intf->dev, "%s removed\n", name);
->>
->> I think it's save to use:
->>
->>     dev_info(&intf->dev, "%s removed\n", netdev_name(dev->netdev));
->>
->> instead of doing the str?cpy() in the first place. But why not use:
->>
->>     netdev_info(dev->netdev, "removed\n");
->>
->> Is the USB device information lost when using netdev_info()?
->
-> My guess is it avoids a 'use after free' - but I'm not going to
-> dig that far.
->
-> Another issue with blindly replacing strncpy() with strlcpy()
-> (which doesn't affect the above) is when copying status to userspace.
->
->         David
+On Sat, Sep 13, 2014 at 01:06:49AM +0200, Frans Klaver wrote:
+> In get_cpufv the return value of get_acpi is stored in the cpufv struct.
+> Right before this value is checked for errors, it is and'ed with 0xff.
+> This means c->cur can never be less than zero. Besides that, the actual
+> error value is ignored.
+> 
+> c->num is also and'ed with 0xff, which means we can ignore values below
+> zero.
+> 
+> Check the result of get_acpi() right away. While at it, propagate the
+> error if we got one.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 47488d3..828db56 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -332,9 +332,12 @@ struct eeepc_cpufv {
+>  static int get_cpufv(struct eeepc_laptop *eeepc, struct eeepc_cpufv *c)
+>  {
+>  	c->cur = get_acpi(eeepc, CM_ASL_CPUFV);
+> +	if (c->cur < 0)
+> +		return c->cur;
+> +
+>  	c->num = (c->cur >> 8) & 0xff;
+>  	c->cur &= 0xff;
+> -	if (c->cur < 0 || c->num <= 0 || c->num > 12)
+> +	if (c->num == 0 || c->num > 12)
+>  		return -ENODEV;
+>  	return 0;
 
+This patch is fine as is. However, Greg has supported propogating the error code
+through to the sysfs interface (if I understand him correctly on an earlier post
+to this list). This would require an addition change to this patch would
+propogated the get_cpufv error code in show_available_cpuv(), show_cpuv(), and
+store_cpuv(). As it is, we return -ENODEV on any failure, where an ACPI call
+error should probably return -ENXIO as I understand it.
 
-Hi all
+However, there was a rather famous change in error code handling in which pulse
+audio broke and Linus was very upset with one of his maintainers.
 
-I have been more and more careful so I did not introduce the type of
-error that can arise by blindly replacing strncpy to strlcpy.
-But this is one of the most apparent where there will not be a problem.
+How do we know when it is acceptable to change which error code is returned?
 
-I liked the variant:
-char name[sizeof(netdev->name)];
-
-But dislike and do not understand what the point would be with memcpy variant.
-
-
-Kind regards
-Rickard Strandqvist
+-- 
+Darren Hart
+Intel Open Source Technology Center
