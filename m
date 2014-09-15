@@ -1,155 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759554AbaIPANo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:13:44 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:60936 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555AbaIPANm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:13:42 -0400
-Date: Mon, 15 Sep 2014 17:13:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Luiz Capitulino <lcapitulino@redhat.com>
-cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
-        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND] x86: numa: setup_node_data(): drop dead code and rename
- function
-In-Reply-To: <20140915142540.0a24c887@redhat.com>
-Message-ID: <alpine.DEB.2.02.1409151711060.6549@chino.kir.corp.google.com>
-References: <20140915142540.0a24c887@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1760622AbaIPAPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:15:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48904 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757097AbaIPAPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:15:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,531,1406617200"; 
+   d="scan'208";a="603291269"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, namhyung@kernel.org, acme@kernel.org,
+        mingo@kernel.org, peterz@infradead.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Add PERF_PID
+Date: Mon, 15 Sep 2014 16:17:13 -0700
+Message-Id: <1410823033-2119-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014, Luiz Capitulino wrote:
+From: Andi Kleen <ak@linux.intel.com>
 
-> The setup_node_data() function allocates a pg_data_t object, inserts it
-> into the node_data[] array and initializes the following fields: node_id,
-> node_start_pfn and node_spanned_pages.
-> 
-> However, a few function calls later during the kernel boot,
-> free_area_init_node() re-initializes those fields, possibly with
-> setup_node_data() is not used.
-> 
-> This causes a small glitch when running Linux as a hyperv numa guest:
-> 
-> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-> [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-> [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-> [    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000]   NODE_DATA [mem 0x7ffdc000-0x7ffeffff]
-> [    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
-> [    0.000000]   NODE_DATA [mem 0x1081ea000-0x1081fdfff]
-> [    0.000000] crashkernel: memory value expected
-> [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-> [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-> [    0.000000] Zone ranges:
-> [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-> [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-> [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-> [    0.000000] Movable zone start for each node
-> [    0.000000] Early memory node ranges
-> [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-> [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-> [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-> [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-> [    0.000000] On node 0 totalpages: 524174
-> [    0.000000]   DMA zone: 64 pages used for memmap
-> [    0.000000]   DMA zone: 21 pages reserved
-> [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-> [    0.000000]   DMA32 zone: 8128 pages used for memmap
-> [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-> [    0.000000] On node 1 totalpages: 524288
-> [    0.000000]   DMA32 zone: 7672 pages used for memmap
-> [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-> [    0.000000]   Normal zone: 520 pages used for memmap
-> [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-> 
-> In this dmesg, the SRAT table reports that the memory range for node 1
-> starts at 0x80200000.  However, the line starting with "Initmem" reports
-> that node 1 memory range starts at 0x80800000.  The "Initmem" line is
-> reported by setup_node_data() and is wrong, because the kernel ends up
-> using the range as reported in the SRAT table.
-> 
-> This commit drops all that dead code from setup_node_data(), renames it to
-> alloc_node_data() and adds a printk() to free_area_init_node() so that we
-> report a node's memory range accurately.
-> 
-> Here's the same dmesg section with this patch applied:
-> 
-> [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
-> [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
-> [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
-> [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
-> [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
-> [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
-> [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
-> [    0.000000] NODE_DATA(0) allocated [mem 0x7ffdc000-0x7ffeffff]
-> [    0.000000] NODE_DATA(1) allocated [mem 0x1081ea000-0x1081fdfff]
-> [    0.000000] crashkernel: memory value expected
-> [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
-> [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
-> [    0.000000] Zone ranges:
-> [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
-> [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
-> [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
-> [    0.000000] Movable zone start for each node
-> [    0.000000] Early memory node ranges
-> [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
-> [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
-> [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
-> [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
-> [    0.000000] Initmem setup node 0 [mem 0x00001000-0x7ffeffff]
-> [    0.000000] On node 0 totalpages: 524174
-> [    0.000000]   DMA zone: 64 pages used for memmap
-> [    0.000000]   DMA zone: 21 pages reserved
-> [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
-> [    0.000000]   DMA32 zone: 8128 pages used for memmap
-> [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
-> [    0.000000] Initmem setup node 1 [mem 0x80200000-0x1081fffff]
-> [    0.000000] On node 1 totalpages: 524288
-> [    0.000000]   DMA32 zone: 7672 pages used for memmap
-> [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
-> [    0.000000]   Normal zone: 520 pages used for memmap
-> [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
-> 
-> This commit was tested on a two node bare-metal NUMA machine and Linux as
-> a numa guest on hyperv and qemu/kvm.
-> 
-> PS: The wrong memory range reported by setup_node_data() seems to be
->     harmless in the current kernel because it's just not used.  However,
->     that bad range is used in kernel 2.6.32 to initialize the old boot
->     memory allocator, which causes a crash during boot.
-> 
-> Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
-> I posted this patch more than two months ago. Andrew picked it up and it
-> rested in the -mm tree for a couple of weeks. Andrew dropped it from -mm
-> to move it forward, but looks like it hasn't been picked by anyone else
-> since then. Resending...
-> 
+It's currently difficult to filter out perf itself using a filter.
+This can give cascading effects during IO tracing when the IO
+perf does itself causes more trace output.
 
-This is still in linux-next-20140915 and I doubt it's 3.17 material so I'd 
-wait for Andrew to take care of it.
+The best way to filter is to use the pid. But it's difficult to get the pid
+of perf without using hacks.
+
+Add a PERF_PID meta variable to the perf filter that contains the current pid.
+
+With this patch the following works
+
+% perf record -e syscalls:sys_enter_write -a --filter 'common_pid != PERF_PID' ...
+
+This won't work for more complex perf pipe lines with multiple processes,
+but at least solves the problem nicely for a single perf.
+
+v2: Remove debug code. Don't use zero padding (Namhyung)
+v3: Correct patch.
+v4: Handle arbitary pid length.
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-record.txt |  2 +-
+ tools/perf/util/parse-events.c           | 20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index d460049..b6c5e51 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -41,7 +41,7 @@ OPTIONS
+           'mem:0x1000:rw'.
+ 
+ --filter=<filter>::
+-        Event filter.
++        Event filter. PERF_PID represents the perf pid.
+ 
+ -a::
+ --all-cpus::
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 1e15df1..f974941 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -967,6 +967,8 @@ int parse_filter(const struct option *opt, const char *str,
+ {
+ 	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+ 	struct perf_evsel *last = NULL;
++	char *pid, buf[30], *p, *o;
++	int len, plen;
+ 
+ 	if (evlist->nr_entries > 0)
+ 		last = perf_evlist__last(evlist);
+@@ -977,12 +979,28 @@ int parse_filter(const struct option *opt, const char *str,
+ 		return -1;
+ 	}
+ 
+-	last->filter = strdup(str);
++	plen = sprintf(buf, "%d", getpid());
++	len = strlen(str) + 1;
++	for (pid = strstr(str, "PERF_PID"); pid;
++	     pid = strstr(pid + 1, "PERF_PID")) {
++		len += plen - 8;
++	}
++
++	last->filter = malloc(len);
+ 	if (last->filter == NULL) {
+ 		fprintf(stderr, "not enough memory to hold filter string\n");
+ 		return -1;
+ 	}
+ 
++	o = last->filter;
++	for (p = str; *p; ) {
++		if (*p == 'P' && !strncmp(p, "PERF_PID", 8)) {
++			strcpy(o, buf);
++			o += plen;
++			p += sizeof("PERF_PID") - 1;
++		} else
++			*o++ = *p++;
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.9.3
+
