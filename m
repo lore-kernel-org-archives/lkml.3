@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaIORcq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59749 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957AbaIORco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:32:44 -0400
-Date: Mon, 15 Sep 2014 19:29:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [RFC PATCH v2 5/5] mm, shmem: Show location of non-resident
-	shmem pages in smaps
-Message-ID: <20140915172923.GA26275@redhat.com>
-References: <1410791077-5300-1-git-send-email-jmarchan@redhat.com> <1410791077-5300-6-git-send-email-jmarchan@redhat.com> <20140915162131.GA22768@redhat.com> <54171829.3090108@redhat.com>
+	id S1754052AbaIORjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:39:23 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:53572
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753137AbaIORjV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 13:39:21 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] staging: comedi: remove comedi_board()
+Thread-Topic: [PATCH] staging: comedi: remove comedi_board()
+Thread-Index: AQHPzmmMRx8cTot7ZUqgBjQPHlwJF5wCeoxQ
+Date: Mon, 15 Sep 2014 17:39:19 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FA19D9@P3PWEX4MB008.ex4.secureserver.net>
+References: <1410513080-29968-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1410513080-29968-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54171829.3090108@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15, Jerome Marchand wrote:
+On Friday, September 12, 2014 2:11 AM, Ian Abbott wrote:
+> All calls to the inline function `comedi_board()` in "comedidev.h" have
+> been removed, so remove the function.
 >
-> On 09/15/2014 06:21 PM, Oleg Nesterov wrote:
-> > Hi Jerome,
-> >
-> > Not sure I understand this patch correctly, will try to read it later.
-> > But a couple of nits/questions anyway,
-> >
-> > On 09/15, Jerome Marchand wrote:
-> >>
-> >> +The ShmXXX lines only appears for shmem mapping. They show the amount of memory
-> >> +from the mapping that is currently:
-> >> + - resident in RAM but not mapped into any process (ShmNotMapped)
-> >
-> > But how can we know that it is not mapped by another process?
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/comedidev.h | 5 -----
+>  1 file changed, 5 deletions(-)
 >
-> Its mapcount is zero.
+> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> index bda5304..7f4d7e5 100644
+> --- a/drivers/staging/comedi/comedidev.h
+> +++ b/drivers/staging/comedi/comedidev.h
+> @@ -269,11 +269,6 @@ struct comedi_device {
+>  	void (*close)(struct comedi_device *dev);
+>  };
+>  
+> -static inline const void *comedi_board(const struct comedi_device *dev)
+> -{
+> -	return dev->board_ptr;
+> -}
+> -
+>  /*
+>   * function prototypes
+>   */
 
-Ah, yes, I missed the "!count" check. Thanks!
-
-> > And in fact "not mapped" looks confusing (at least to me).
->
-> "Not mapped" as "not present in a page table". It does belong to a
-> userspace mapping though. I wonder if there is a less ambiguous terminology.
-
-To me "not present in page tables" looks more understandable, but I won't
-insist.
-
-> > IIUC it is actually
-> > mapped even by this process, just it never tried to fault these (resident or
-> > swapped) pages in. Right?
->
-> No these pages are in the page cache. This can happen when the only
-> process which have accessed these exits or munmap() the mapping.
-
-Yes, yes, I meant that this process didn't touch these pages and thus
-pte_none() == T.
-
-> > And I am not sure why we ignore SHMEM_SWAPCACHE...
->
-> Hugh didn't like it as it is a small and transient value.
-
-OK, but perhaps update_shmem_stats() should treat it as SHMEM_SWAP.
-Nevermind, I leave this to you and Hugh.
-
-Oleg.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
