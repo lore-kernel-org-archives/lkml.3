@@ -1,272 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738AbaIOKgR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:36:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36850 "EHLO
+	id S1753932AbaIOKgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:36:24 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36891 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753460AbaIOKfU (ORCPT
+	with ESMTP id S1753750AbaIOKgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:35:20 -0400
+	Mon, 15 Sep 2014 06:36:21 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
+To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
+        p.zabel@pengutronix.de
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sergei.shtylyov@cogentembedded.com, yoshihiro.shimoda.uh@renesas.com,
         alexandre.belloni@free-electrons.com,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 9/9] usb: chipidea: add support to the generic PHY framework in ChipIdea
-Date: Mon, 15 Sep 2014 12:35:09 +0200
-Message-Id: <1410777309-12552-10-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v5 00/12] ARM: berlin: USB support
+Date: Mon, 15 Sep 2014 12:36:06 +0200
+Message-Id: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support of the PHY framework for ChipIdea drivers.
-Changes are done in both the ChipIdea common code and in the drivers
-accessing the PHY. This is done by adding a new PHY member in
-ChipIdea's structures and by taking care of it in the code.
+This series adds the support for ChipIdea USB2 (ci13xxx) controllers,
+the USB PHYs of the Marvell Berlin SoCs and also adds a reset
+controller for these SoCs.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
----
- drivers/usb/chipidea/ci.h      |  5 ++-
- drivers/usb/chipidea/core.c    | 83 +++++++++++++++++++++++++++++++++---------
- drivers/usb/chipidea/debug.c   |  2 +-
- drivers/usb/chipidea/host.c    |  5 ++-
- drivers/usb/chipidea/otg_fsm.c |  6 ++-
- include/linux/usb/chipidea.h   |  2 +
- 6 files changed, 81 insertions(+), 22 deletions(-)
+The reset controller is used by the PHY driver and shares the
+existing chip controller node with the clocks and one pin controller.
 
-diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index dac5ab6adfa2..7e9e8223672a 100644
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -161,7 +161,8 @@ struct hw_bank {
-  * @test_mode: the selected test mode
-  * @platdata: platform specific information supplied by parent device
-  * @vbus_active: is VBUS active
-- * @usb_phy: pointer to USB PHY, if any
-+ * @phy: pointer to PHY, if any
-+ * @usb_phy: pointer to USB PHY, if any and if using the USB PHY framework
-  * @hcd: pointer to usb_hcd for ehci host driver
-  * @debugfs: root dentry for this controller in debugfs
-  * @id_event: indicates there is an id event, and handled at ci_otg_work
-@@ -202,6 +203,8 @@ struct ci_hdrc {
- 
- 	struct ci_hdrc_platform_data	*platdata;
- 	int				vbus_active;
-+	struct phy			*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy			*usb_phy;
- 	struct usb_hcd			*hcd;
- 	struct dentry			*debugfs;
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index ee96b0696a7b..e1d3d3f44075 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -47,6 +47,7 @@
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/dma-mapping.h>
-+#include <linux/phy/phy.h>
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/idr.h>
-@@ -293,6 +294,49 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
- }
- 
- /**
-+ * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ *
-+ * This function returns an error code if the phy failed to init
-+ */
-+static int _ci_usb_phy_init(struct ci_hdrc *ci)
-+{
-+	int ret;
-+
-+	if (ci->phy) {
-+		ret = phy_init(ci->phy);
-+		if (ret)
-+			return ret;
-+
-+		ret = phy_power_on(ci->phy);
-+		if (ret) {
-+			phy_exit(ci->phy);
-+			return ret;
-+		}
-+	} else {
-+		ret = usb_phy_init(ci->usb_phy);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ */
-+static void ci_usb_phy_exit(struct ci_hdrc *ci)
-+{
-+	if (ci->phy) {
-+		phy_power_off(ci->phy);
-+		phy_exit(ci->phy);
-+	} else {
-+		usb_phy_shutdown(ci->usb_phy);
-+	}
-+}
-+
-+/**
-  * ci_usb_phy_init: initialize phy according to different phy type
-  * @ci: the controller
-   *
-@@ -306,7 +350,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_UTMI:
- 	case USBPHY_INTERFACE_MODE_UTMIW:
- 	case USBPHY_INTERFACE_MODE_HSIC:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 		if (ret)
- 			return ret;
- 		hw_phymode_configure(ci);
-@@ -314,12 +358,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_ULPI:
- 	case USBPHY_INTERFACE_MODE_SERIAL:
- 		hw_phymode_configure(ci);
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 		if (ret)
- 			return ret;
- 		break;
- 	default:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 	}
- 
- 	return ret;
-@@ -595,23 +639,26 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	if (ci->platdata->usb_phy)
-+	if (ci->platdata->phy) {
-+		ci->phy = ci->platdata->phy;
-+	} else if (ci->platdata->usb_phy) {
- 		ci->usb_phy = ci->platdata->usb_phy;
--	else
-+	} else {
-+		ci->phy = devm_phy_get(dev, "usb-phy");
- 		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 
--	if (IS_ERR(ci->usb_phy)) {
--		ret = PTR_ERR(ci->usb_phy);
--		/*
--		 * if -ENXIO is returned, it means PHY layer wasn't
--		 * enabled, so it makes no sense to return -EPROBE_DEFER
--		 * in that case, since no PHY driver will ever probe.
--		 */
--		if (ret == -ENXIO)
--			return ret;
-+		/* if both generic PHY and USB PHY layers aren't enabled */
-+		if (PTR_ERR(ci->phy) == -ENOSYS &&
-+				PTR_ERR(ci->usb_phy) == -ENXIO)
-+			return -ENXIO;
-+
-+		if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
-+			return -EPROBE_DEFER;
- 
--		dev_err(dev, "no usb2 phy configured\n");
--		return -EPROBE_DEFER;
-+		if (IS_ERR(ci->phy))
-+			ci->phy = NULL;
-+		else if (IS_ERR(ci->usb_phy))
-+			ci->usb_phy = NULL;
- 	}
- 
- 	ret = ci_usb_phy_init(ci);
-@@ -718,7 +765,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- stop:
- 	ci_role_destroy(ci);
- deinit_phy:
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
- 
- 	return ret;
- }
-@@ -731,7 +778,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
- 	free_irq(ci->irq, ci);
- 	ci_role_destroy(ci);
- 	ci_hdrc_enter_lpm(ci, true);
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
- 	kfree(ci->hw_bank.regmap);
- 
- 	return 0;
-diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-index 8f437e1512fa..999e9d683d7a 100644
---- a/drivers/usb/chipidea/debug.c
-+++ b/drivers/usb/chipidea/debug.c
-@@ -220,7 +220,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
- 
- 	/* ------ State ----- */
- 	seq_printf(s, "OTG state: %s\n\n",
--		usb_otg_state_string(ci->usb_phy->otg.state));
-+		   usb_otg_state_string(ci->otg.state));
- 
- 	/* ------ State Machine Variables ----- */
- 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
-diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index 4fcebb6a6d14..e9a872ac355d 100644
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -59,7 +59,10 @@ static int host_start(struct ci_hdrc *ci)
- 	hcd->has_tt = 1;
- 
- 	hcd->power_budget = ci->platdata->power_budget;
--	hcd->usb_phy = ci->usb_phy;
-+	if (ci->phy)
-+		hcd->phy = ci->phy;
-+	else
-+		hcd->usb_phy = ci->usb_phy;
- 
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = ci->hw_bank.cap;
-diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index 862d7cb01b92..3c2ab1ae00fc 100644
---- a/drivers/usb/chipidea/otg_fsm.c
-+++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -779,7 +779,11 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
- {
- 	int retval = 0;
- 
--	ci->otg.usb_phy = ci->usb_phy;
-+	if (ci->phy)
-+		ci->otg.phy = ci->phy;
-+	else
-+		ci->otg.usb_phy = ci->usb_phy;
-+
- 	ci->otg.gadget = &ci->gadget;
- 	ci->fsm.otg = &ci->otg;
- 	ci->fsm.power_up = 1;
-diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-index 57d757a1aa83..a0285623b9c1 100644
---- a/include/linux/usb/chipidea.h
-+++ b/include/linux/usb/chipidea.h
-@@ -13,6 +13,8 @@ struct ci_hdrc_platform_data {
- 	/* offset of the capability registers */
- 	uintptr_t	 capoffset;
- 	unsigned	 power_budget;
-+	struct phy	*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy	*usb_phy;
- 	enum usb_phy_interface phy_mode;
- 	unsigned long	 flags;
+The Marvell Berlin USB controllers are host only on the BG2Q and are
+compatible with USB ChipIdea. We here add a glue to use the available
+common functions for this kind of controllers, and add a generic USB2
+ChipIdea driver. A PHY driver is also added to control the USB PHY.
+
+This series applies on top of the generic PHY support in the USB
+framework[1].
+
+Patches 1-4 have already been taken by Sebastian.
+
+Changes since v4:
+	- fixed the error handling of ci_hdrc_usb2_probe()
+
+Changes since v3:
+        - removed the DMA mask property
+        - moved the clock handling in the common probe function
+        - fixed the documentation for the USB2 ChipIdea USB PHY binding
+        - made sure the reset bit is 0-31 in the reset driver
+
+Changes since v2:
+        - moved the PHY driver to the generic PHY framework
+        - changed the compatible to 'chipidea,usb2'
+        - added a property to set the DMA mask in the USB2 CI driver
+        - separated dt specific calls in the CI probing function
+        - rebased on top of the generic PHY support for CI[1]
+
+Changes since v1:
+        - made the Berlin CI USB driver a generic one
+        - added support to custom offset for the reset register
+        - added fixed regulators to support supply the VBUS
+        - modified the PHY driver to support the one one the BG2CD as
+          well
+        - documented the reset properties
+        - added bindings for the BG2CD
+        - cosmetic fixes
+
+[1] git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
+
+Antoine Tenart (10):
+  reset: add the Berlin reset controller driver
+  Documentation: bindings: add reset bindings docs for Marvell Berlin
+    SoCs
+  ARM: Berlin: select the reset controller
+  ARM: dts: berlin: add a required reset property in the chip controller
+    node
+  phy: add the Berlin USB PHY driver
+  Documentation: bindings: add doc for the Berlin USB PHY
+  usb: chipidea: add a usb2 driver for ci13xxx
+  Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+  ARM: dts: berlin: add BG2Q nodes for USB support
+  ARM: dts: Berlin: enable USB on the BG2Q DMP
+
+Sebastian Hesselbarth (2):
+  ARM: dts: berlin: add BG2CD nodes for USB support
+  ARM: dts: berlin: enable USB on the Google Chromecast
+
+ .../devicetree/bindings/arm/marvell,berlin.txt     |  10 +
+ .../devicetree/bindings/phy/berlin-usb-phy.txt     |  16 ++
+ .../devicetree/bindings/usb/ci-hdrc-usb2.txt       |  22 ++
+ arch/arm/boot/dts/berlin2.dtsi                     |   1 +
+ arch/arm/boot/dts/berlin2cd-google-chromecast.dts  |   4 +
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  35 ++++
+ arch/arm/boot/dts/berlin2q-marvell-dmp.dts         |  53 +++++
+ arch/arm/boot/dts/berlin2q.dtsi                    |  53 +++++
+ arch/arm/mach-berlin/Kconfig                       |   2 +
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-berlin-usb.c                       | 224 +++++++++++++++++++++
+ drivers/reset/Makefile                             |   1 +
+ drivers/reset/reset-berlin.c                       | 131 ++++++++++++
+ drivers/usb/chipidea/Makefile                      |   1 +
+ drivers/usb/chipidea/ci_hdrc_usb2.c                | 137 +++++++++++++
+ 16 files changed, 698 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/berlin-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+ create mode 100644 drivers/phy/phy-berlin-usb.c
+ create mode 100644 drivers/reset/reset-berlin.c
+ create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+
 -- 
 1.9.1
 
