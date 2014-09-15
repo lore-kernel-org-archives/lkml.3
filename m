@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234AbaIOUJe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:09:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
+	id S1756341AbaIOUJd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:09:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189AbaIOTrG (ORCPT
+	with ESMTP id S1756190AbaIOTrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 13/71] regulator: arizona-ldo1: remove bypass functionality
-Date: Mon, 15 Sep 2014 12:26:11 -0700
-Message-Id: <20140915192639.157365285@linuxfoundation.org>
+        David Binderman <dcb314@hotmail.com>,
+        Andrey Utkin <andrey.krieger.utkin@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 14/71] powerpc/mm/numa: Fix break placement
+Date: Mon, 15 Sep 2014 12:26:12 -0700
+Message-Id: <20140915192639.190077450@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,31 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
 
-commit 5b919f3ebb533cbe400664837e24f66a0836b907 upstream.
+commit b00fc6ec1f24f9d7af9b8988b6a198186eb3408c upstream.
 
-WM5110/8280 devices do not support bypass mode for LDO1 so remove
-the bypass callbacks registered with regulator core.
-
-Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81631
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/arizona-ldo1.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -141,8 +141,6 @@ static struct regulator_ops arizona_ldo1
- 	.map_voltage = regulator_map_voltage_linear,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
--	.get_bypass = regulator_get_bypass_regmap,
--	.set_bypass = regulator_set_bypass_regmap,
- };
- 
- static const struct regulator_desc arizona_ldo1 = {
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -586,8 +586,8 @@ static int __cpuinit cpu_numa_callback(s
+ 	case CPU_UP_CANCELED:
+ 	case CPU_UP_CANCELED_FROZEN:
+ 		unmap_cpu_from_node(lcpu);
+-		break;
+ 		ret = NOTIFY_OK;
++		break;
+ #endif
+ 	}
+ 	return ret;
 
 
