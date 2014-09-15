@@ -1,148 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaIOHdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:33:49 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62773 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445AbaIOHbr (ORCPT
+	id S1753684AbaIOHeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:34:12 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56858 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628AbaIOHeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:31:47 -0400
-From: behanw@converseincode.com
-To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
-        fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
-        snitzer@redhat.com, tadeusz.struk@intel.com
-Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, john.griffin@intel.com,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
-        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>, pageexec@freemail.hu,
-        gmazyland@gmail.com
-Subject: [PATCH v3 08/12] crypto, dm: LLVMLinux: Remove VLAIS usage from dm-crypt
-Date: Mon, 15 Sep 2014 00:30:30 -0700
-Message-Id: <1410766234-1634-9-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
-References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
+	Mon, 15 Sep 2014 03:34:09 -0400
+Date: Sun, 14 Sep 2014 23:38:08 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 09/18] ARM64 / ACPI: Parse FADT table to get PSCI
+ flags for PSCI init
+Message-ID: <20140915063808.GC26649@localhost>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-10-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410530416-30200-10-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On Fri, Sep 12, 2014 at 10:00:07PM +0800, Hanjun Guo wrote:
+> diff --git a/arch/arm64/include/asm/psci.h b/arch/arm64/include/asm/psci.h
+> index e5312ea..2454bc5 100644
+> --- a/arch/arm64/include/asm/psci.h
+> +++ b/arch/arm64/include/asm/psci.h
+> @@ -14,6 +14,7 @@
+>  #ifndef __ASM_PSCI_H
+>  #define __ASM_PSCI_H
+>  
+> -int psci_init(void);
+> +int psci_dt_init(void);
+> +int psci_acpi_init(void);
+>  
+>  #endif /* __ASM_PSCI_H */
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index 693da7f..9e1ae37 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -13,6 +13,8 @@
+>   *  published by the Free Software Foundation.
+>   */
+>  
+> +#define pr_fmt(fmt) "ACPI: " fmt
+> +
+>  #include <linux/init.h>
+>  #include <linux/acpi.h>
+>  #include <linux/cpumask.h>
+> @@ -49,10 +51,32 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>  	early_memunmap(map, size);
+>  }
+>  
+> +static int __init acpi_parse_fadt(struct acpi_table_header *table)
+> +{
+> +	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+> +
+> +	/*
+> +	 * Revision in table header is the FADT Major revision,
+> +	 * and there is a minor revision of FADT which was introduced
+> +	 * by ACPI 5.1, we only deal with ACPI 5.1 or higher revision
+> +	 * to get arm boot flags, or we will disable ACPI.
+> +	 */
+> +	if (table->revision > 5 ||
+> +	    (table->revision == 5 && fadt->minor_revision >= 1))
+> +		return 0;
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This patch allocates the appropriate amount of memory
-using a char array using the SHASH_DESC_ON_STACK macro.
+The commend and code disagree. The code says 5.1 or newer, while the comment say
+_only_ 5.1. One or the other needs to change.
 
-The new code can be compiled with both gcc and clang.
+[...]
 
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Cc: pageexec@freemail.hu
-Cc: gmazyland@gmail.com
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
----
- drivers/md/dm-crypt.c | 34 ++++++++++++++--------------------
- 1 file changed, 14 insertions(+), 20 deletions(-)
+> diff --git a/arch/arm64/kernel/psci.c b/arch/arm64/kernel/psci.c
+> index 5539547..15ba470 100644
+> --- a/arch/arm64/kernel/psci.c
+> +++ b/arch/arm64/kernel/psci.c
+> @@ -15,6 +15,7 @@
+>  
+>  #define pr_fmt(fmt) "psci: " fmt
+>  
+> +#include <linux/acpi.h>
+>  #include <linux/init.h>
+>  #include <linux/of.h>
+>  #include <linux/smp.h>
+> @@ -23,6 +24,7 @@
+>  #include <linux/delay.h>
+>  #include <uapi/linux/psci.h>
+>  
+> +#include <asm/acpi.h>
+>  #include <asm/compiler.h>
+>  #include <asm/cpu_ops.h>
+>  #include <asm/errno.h>
+> @@ -231,6 +233,33 @@ static void psci_sys_poweroff(void)
+>  	invoke_psci_fn(PSCI_0_2_FN_SYSTEM_OFF, 0, 0, 0);
+>  }
+>  
+> +static void psci_0_2_set_functions(void)
+> +{
+> +	pr_info("Using standard PSCI v0.2 function IDs\n");
+> +	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+> +	psci_ops.cpu_suspend = psci_cpu_suspend;
+> +
+> +	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+> +	psci_ops.cpu_off = psci_cpu_off;
+> +
+> +	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+> +	psci_ops.cpu_on = psci_cpu_on;
+> +
+> +	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+> +	psci_ops.migrate = psci_migrate;
+> +
+> +	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+> +	psci_ops.affinity_info = psci_affinity_info;
+> +
+> +	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+> +		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+> +	psci_ops.migrate_info_type = psci_migrate_info_type;
+> +
+> +	arm_pm_restart = psci_sys_reset;
+> +
+> +	pm_power_off = psci_sys_poweroff;
+> +}
+> +
+>  /*
+>   * PSCI Function IDs for v0.2+ are well defined so use
+>   * standard values.
+> @@ -264,29 +293,7 @@ static int __init psci_0_2_init(struct device_node *np)
+>  		}
+>  	}
+>  
+> -	pr_info("Using standard PSCI v0.2 function IDs\n");
+> -	psci_function_id[PSCI_FN_CPU_SUSPEND] = PSCI_0_2_FN64_CPU_SUSPEND;
+> -	psci_ops.cpu_suspend = psci_cpu_suspend;
+> -
+> -	psci_function_id[PSCI_FN_CPU_OFF] = PSCI_0_2_FN_CPU_OFF;
+> -	psci_ops.cpu_off = psci_cpu_off;
+> -
+> -	psci_function_id[PSCI_FN_CPU_ON] = PSCI_0_2_FN64_CPU_ON;
+> -	psci_ops.cpu_on = psci_cpu_on;
+> -
+> -	psci_function_id[PSCI_FN_MIGRATE] = PSCI_0_2_FN64_MIGRATE;
+> -	psci_ops.migrate = psci_migrate;
+> -
+> -	psci_function_id[PSCI_FN_AFFINITY_INFO] = PSCI_0_2_FN64_AFFINITY_INFO;
+> -	psci_ops.affinity_info = psci_affinity_info;
+> -
+> -	psci_function_id[PSCI_FN_MIGRATE_INFO_TYPE] =
+> -		PSCI_0_2_FN_MIGRATE_INFO_TYPE;
+> -	psci_ops.migrate_info_type = psci_migrate_info_type;
+> -
+> -	arm_pm_restart = psci_sys_reset;
+> -
+> -	pm_power_off = psci_sys_poweroff;
+> +	psci_0_2_set_functions();
+>  
+>  out_put_node:
+>  	of_node_put(np);
+> @@ -339,7 +346,7 @@ static const struct of_device_id psci_of_match[] __initconst = {
+>  	{},
+>  };
+>  
+> -int __init psci_init(void)
+> +int __init psci_dt_init(void)
+>  {
+>  	struct device_node *np;
+>  	const struct of_device_id *matched_np;
+> @@ -354,6 +361,29 @@ int __init psci_init(void)
+>  	return init_fn(np);
+>  }
+>  
+> +/*
+> + * We use PSCI 0.2+ when ACPI is deployed on ARM64 and it's
+> + * explicitly clarified in SBBR
+> + */
+> +int __init psci_acpi_init(void)
+> +{
+> +	if (!acpi_psci_present()) {
+> +		pr_info("is not implemented in ACPI.\n");
+> +		return -EOPNOTSUPP;
+> +	}
+> +
+> +	pr_info("probing for conduit method from ACPI.\n");
+> +
+> +	if (acpi_psci_use_hvc())
+> +		invoke_psci_fn = __invoke_psci_fn_hvc;
+> +	else
+> +		invoke_psci_fn = __invoke_psci_fn_smc;
+> +
+> +	psci_0_2_set_functions();
+> +
+> +	return 0;
+> +}
+> +
+>  #ifdef CONFIG_SMP
+>  
+>  static int __init cpu_psci_cpu_init(struct device_node *dn, unsigned int cpu)
+> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> index 5796734..7ba20d4 100644
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -398,10 +398,12 @@ void __init setup_arch(char **cmdline_p)
+>  	efi_idmap_init();
+>  
+>  	cpu_logical_map(0) = read_cpuid_mpidr() & MPIDR_HWID_BITMASK;
+> -	if (acpi_disabled)
+> +	if (acpi_disabled) {
+>  		unflatten_device_tree();
+> -
+> -	psci_init();
+> +		psci_dt_init();
+> +	} else {
+> +		psci_acpi_init();
+> +	}
 
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index cd15e08..fc93b93 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -526,29 +526,26 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
- 			    u8 *data)
- {
- 	struct iv_lmk_private *lmk = &cc->iv_gen_private.lmk;
--	struct {
--		struct shash_desc desc;
--		char ctx[crypto_shash_descsize(lmk->hash_tfm)];
--	} sdesc;
-+	SHASH_DESC_ON_STACK(desc, lmk->hash_tfm);
- 	struct md5_state md5state;
- 	__le32 buf[4];
- 	int i, r;
- 
--	sdesc.desc.tfm = lmk->hash_tfm;
--	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+	desc->tfm = lmk->hash_tfm;
-+	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 
--	r = crypto_shash_init(&sdesc.desc);
-+	r = crypto_shash_init(desc);
- 	if (r)
- 		return r;
- 
- 	if (lmk->seed) {
--		r = crypto_shash_update(&sdesc.desc, lmk->seed, LMK_SEED_SIZE);
-+		r = crypto_shash_update(desc, lmk->seed, LMK_SEED_SIZE);
- 		if (r)
- 			return r;
- 	}
- 
- 	/* Sector is always 512B, block size 16, add data of blocks 1-31 */
--	r = crypto_shash_update(&sdesc.desc, data + 16, 16 * 31);
-+	r = crypto_shash_update(desc, data + 16, 16 * 31);
- 	if (r)
- 		return r;
- 
-@@ -557,12 +554,12 @@ static int crypt_iv_lmk_one(struct crypt_config *cc, u8 *iv,
- 	buf[1] = cpu_to_le32((((u64)dmreq->iv_sector >> 32) & 0x00FFFFFF) | 0x80000000);
- 	buf[2] = cpu_to_le32(4024);
- 	buf[3] = 0;
--	r = crypto_shash_update(&sdesc.desc, (u8 *)buf, sizeof(buf));
-+	r = crypto_shash_update(desc, (u8 *)buf, sizeof(buf));
- 	if (r)
- 		return r;
- 
- 	/* No MD5 padding here */
--	r = crypto_shash_export(&sdesc.desc, &md5state);
-+	r = crypto_shash_export(desc, &md5state);
- 	if (r)
- 		return r;
- 
-@@ -679,10 +676,7 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
- 	struct iv_tcw_private *tcw = &cc->iv_gen_private.tcw;
- 	u64 sector = cpu_to_le64((u64)dmreq->iv_sector);
- 	u8 buf[TCW_WHITENING_SIZE];
--	struct {
--		struct shash_desc desc;
--		char ctx[crypto_shash_descsize(tcw->crc32_tfm)];
--	} sdesc;
-+	SHASH_DESC_ON_STACK(desc, tcw->crc32_tfm);
- 	int i, r;
- 
- 	/* xor whitening with sector number */
-@@ -691,16 +685,16 @@ static int crypt_iv_tcw_whitening(struct crypt_config *cc,
- 	crypto_xor(&buf[8], (u8 *)&sector, 8);
- 
- 	/* calculate crc32 for every 32bit part and xor it */
--	sdesc.desc.tfm = tcw->crc32_tfm;
--	sdesc.desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+	desc->tfm = tcw->crc32_tfm;
-+	desc->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 	for (i = 0; i < 4; i++) {
--		r = crypto_shash_init(&sdesc.desc);
-+		r = crypto_shash_init(desc);
- 		if (r)
- 			goto out;
--		r = crypto_shash_update(&sdesc.desc, &buf[i * 4], 4);
-+		r = crypto_shash_update(desc, &buf[i * 4], 4);
- 		if (r)
- 			goto out;
--		r = crypto_shash_final(&sdesc.desc, &buf[i * 4]);
-+		r = crypto_shash_final(desc, &buf[i * 4]);
- 		if (r)
- 			goto out;
- 	}
--- 
-1.9.1
+This is slightly nitty now, but I think it'd be slightly easier to follow
+boot path if the switch for acpi disabled/enabled was in psci.c. It'd also allow
+psci_dt_init() and psci_acpi_init() to be static.
 
+I.e. keep a psci_init() and just make it call one or the other.
+
+
+-Olof
