@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaIOVTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:19:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
+	id S1754861AbaIOVTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:19:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54580 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665AbaIOT0o (ORCPT
+	with ESMTP id S1754678AbaIOT0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marti Raudsepp <marti@juffo.org>, Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 3.16 014/158] iommu/amd: Fix cleanup_domain for mass device removal
-Date: Mon, 15 Sep 2014 12:24:13 -0700
-Message-Id: <20140915192543.309501953@linuxfoundation.org>
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.16 007/158] media: mt9v032: fix hblank calculation
+Date: Mon, 15 Sep 2014 12:24:06 -0700
+Message-Id: <20140915192543.099621639@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,47 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <jroedel@suse.de>
+From: Philipp Zabel <p.zabel@pengutronix.de>
 
-commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
+commit f17bc3f4707eb87bdb80b895911c551cdd606fbd upstream.
 
-When multiple devices are detached in __detach_device, they
-are also removed from the domains dev_list. This makes it
-unsafe to use list_for_each_entry_safe, as the next pointer
-might also not be in the list anymore after __detach_device
-returns. So just repeatedly remove the first element of the
-list until it is empty.
+Since (min_row_time - crop->width) can be negative, we have to do a signed
+comparison here. Otherwise max_t casts the negative value to unsigned int
+and sets min_hblank to that invalid value.
 
-Tested-by: Marti Raudsepp <marti@juffo.org>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/media/i2c/mt9v032.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3227,14 +3227,16 @@ free_domains:
+--- a/drivers/media/i2c/mt9v032.c
++++ b/drivers/media/i2c/mt9v032.c
+@@ -305,8 +305,8 @@ mt9v032_update_hblank(struct mt9v032 *mt
  
- static void cleanup_domain(struct protection_domain *domain)
- {
--	struct iommu_dev_data *dev_data, *next;
-+	struct iommu_dev_data *entry;
- 	unsigned long flags;
+ 	if (mt9v032->version->version == MT9V034_CHIP_ID_REV1)
+ 		min_hblank += (mt9v032->hratio - 1) * 10;
+-	min_hblank = max_t(unsigned int, (int)mt9v032->model->data->min_row_time - crop->width,
+-			   (int)min_hblank);
++	min_hblank = max_t(int, mt9v032->model->data->min_row_time - crop->width,
++			   min_hblank);
+ 	hblank = max_t(unsigned int, mt9v032->hblank, min_hblank);
  
- 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
- 
--	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
--		__detach_device(dev_data);
--		atomic_set(&dev_data->bind, 0);
-+	while (!list_empty(&domain->dev_list)) {
-+		entry = list_first_entry(&domain->dev_list,
-+					 struct iommu_dev_data, list);
-+		__detach_device(entry);
-+		atomic_set(&entry->bind, 0);
- 	}
- 
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
+ 	return mt9v032_write(client, MT9V032_HORIZONTAL_BLANKING, hblank);
 
 
