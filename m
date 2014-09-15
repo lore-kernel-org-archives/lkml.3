@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737AbaIONPU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 09:15:20 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:32931 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700AbaIONPS (ORCPT
+	id S1752706AbaIONXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 09:23:46 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63983 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151AbaIONXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 09:15:18 -0400
-Date: Mon, 15 Sep 2014 14:15:06 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC Resend] arm:extend __init_end to a page align address
-Message-ID: <20140915131505.GB5415@arm.com>
-References: <35FD53F367049845BC99AC72306C23D103CDBFBFB028@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103D6DB4915FB@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103D6DB491607@CNBJMBX05.corpusers.net>
- <20140915105525.GC12361@n2100.arm.linux.org.uk>
+	Mon, 15 Sep 2014 09:23:44 -0400
+Message-ID: <5416E80C.7010705@gmail.com>
+Date: Mon, 15 Sep 2014 21:22:20 +0800
+From: "eagle.rtlinux" <eagle.rtlinux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140915105525.GC12361@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
+        eagle.rtlinux@gmail.com
+Subject: [PATCH] Infiniband coding mistake fixed.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 11:55:25AM +0100, Russell King - ARM Linux wrote:
-> On Mon, Sep 15, 2014 at 06:26:43PM +0800, Wang, Yalin wrote:
-> > this patch change the __init_end address to a page align address, so that free_initmem()
-> > can free the whole .init section, because if the end address is not page aligned,
-> > it will round down to a page align address, then the tail unligned page will not be freed.
-> 
-> Please wrap commit messages at or before column 72 - this makes "git log"
-> much easier to read once the change has been committed.
-> 
-> I have no objection to the arch/arm part of this patch.  However, since
-> different people deal with arch/arm and arch/arm64, this patch needs to
-> be split.
+hello,
 
-I don't mind how it goes in. If Russell is ok to take the whole patch:
+The last parameter of get_user_pages should be a array of pointers to 
+vmas corresponding to each page. Through this coding mistake can not 
+cause some problem now, it is a potential time bomb.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Yang Honggang <eagle.rtlinux@gmail.com>
+---
+  drivers/infiniband/hw/qib/qib_user_pages.c |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/hw/qib/qib_user_pages.c 
+b/drivers/infiniband/hw/qib/qib_user_pages.c
+index 2bc1d2b..e93d459 100644
+--- a/drivers/infiniband/hw/qib/qib_user_pages.c
++++ b/drivers/infiniband/hw/qib/qib_user_pages.c
+@@ -69,7 +69,7 @@ static int __qib_get_user_pages(unsigned long 
+start_page, size_t num_pages,
+          ret = get_user_pages(current, current->mm,
+                       start_page + got * PAGE_SIZE,
+                       num_pages - got, 1, 1,
+-                     p + got, vma);
++                     p + got, vma + got);
+          if (ret < 0)
+              goto bail_release;
+      }
+-- 
+1.7.10.4
+
