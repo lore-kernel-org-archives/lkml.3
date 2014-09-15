@@ -1,121 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaIOEOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 00:14:10 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48614 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaIOEOH (ORCPT
+	id S1752289AbaIOEQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 00:16:58 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:59009 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaIOEQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 00:14:07 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH for Juno 1/2] net: smsc911x add support for probing
- from ACPI
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-In-Reply-To: <21764799.KDNDm9XRax@wuerfel>
-References: <1409583961-7466-1-git-send-email-hanjun.guo@linaro.org>
-	<1409583961-7466-2-git-send-email-hanjun.guo@linaro.org>
-	<20140901170447.GF608@arm.com> <21764799.KDNDm9XRax@wuerfel>
-Date: Sun, 14 Sep 2014 21:14:04 -0700
-Message-Id: <20140915041404.A72CCC40A02@trevor.secretlab.ca>
+	Mon, 15 Sep 2014 00:16:57 -0400
+Message-ID: <5416682F.6020304@linux.vnet.ibm.com>
+Date: Mon, 15 Sep 2014 09:46:47 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Vincent Guittot <vincent.guittot@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [QUERY] Confusing usage of rq->nr_running in load balancing
+References: <540707D9.4040208@linux.vnet.ibm.com> <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
+In-Reply-To: <CAKfTPtD7rzOONDeBL7ZBXQMkX_fh2wwOeLt6bA7rTQVzUVwjKw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091504-3532-0000-0000-0000049FC578
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 01 Sep 2014 19:11:44 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 01 September 2014 18:04:47 Catalin Marinas wrote:
-> > On Mon, Sep 01, 2014 at 04:06:00PM +0100, Hanjun Guo wrote:
-> > > +#ifdef CONFIG_ACPI
-> > > +/* Configure some sensible defaults for ACPI mode */
-> > > +static int smsc911x_probe_config_acpi(struct smsc911x_platform_config *config,
-> > > +                                 acpi_handle *ahandle)
-> > > +{
-> > > +     if (!ahandle)
-> > > +             return -ENOSYS;
-> > > +
-> > > +     config->phy_interface = PHY_INTERFACE_MODE_MII;
-> > > +
-> > > +     config->flags |= SMSC911X_USE_32BIT;
-> > > +
-> > > +     config->irq_polarity = SMSC911X_IRQ_POLARITY_ACTIVE_HIGH;
-> > > +
-> > > +     config->irq_type = SMSC911X_IRQ_TYPE_PUSH_PULL;
-> > > +
-> > > +     return 0;
-> > > +}
-> > > +#else
-> > 
-> > I don't like this and it shows issues we have with ACPI on certain ARM
-> > platforms. You hard-code these values to match the Juno platform. What
-> > if we get another SoC which has different configuration here? For DT, we
-> > have the smsc911x_probe_config_dt() which reads the relevant information
-> > from DT. I think this kind of configuration would be more suitable as
-> > _DSD properties and sharing the similar names with DT (but we go back to
-> > the question about who's in charge of the _DSD properties).
-> 
-> Good point, I totally missed that.
-> 
-> There is of course the possibility to set those values based on the
-> acpi_device_id, but that is exactly the part that _DSD is trying to
-> avoid.
+Hi Peter, Vincent,
 
-These are merely defaults. DSD parsing, when implemented, would be
-override these default values.
-
+On 09/03/2014 10:28 PM, Vincent Guittot wrote:
+> On 3 September 2014 14:21, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> Hi,
 > 
-> > >  static int smsc911x_drv_probe(struct platform_device *pdev)
-> > >  {
-> > >       struct device_node *np = pdev->dev.of_node;
-> > > +     acpi_handle *ahandle = ACPI_HANDLE(&pdev->dev);
-> > >       struct net_device *dev;
-> > >       struct smsc911x_data *pdata;
-> > >       struct smsc911x_platform_config *config = dev_get_platdata(&pdev->dev);
-> > > @@ -2436,6 +2464,9 @@ static int smsc911x_drv_probe(struct platform_device *pdev)
-> > >       }
-> > >  
-> > >       retval = smsc911x_probe_config_dt(&pdata->config, np);
-> > > +     if (retval)
-> > > +             retval = smsc911x_probe_config_acpi(&pdata->config, ahandle);
-> > > +
-> > 
-> > In most of the ACPI patches so far we check for ACPI first with DT as a
-> > fall-back if ACPI is not enabled. This changes here.
+> Hi Preeti,
 > 
-> Does this really make a difference?
-
-Nope. Only one of DT or ACPI will be matched.
-
+>>
+>> There are places in kernel/sched/fair.c in the load balancing part where
+>> rq->nr_running is used as against cfs_rq->nr_running. At least I could
+>> not make out why the former was used in the following scenarios.
+>> It looks to me that it can very well lead to incorrect load balancing.
+>> Also I did not pay attention to the numa balancing part of the code
+>> while skimming through this file to catch this scenario. There are a
+>> couple of places there too which need to be scrutinized.
+>>
+>> 1. load_balance(): The check (busiest->nr_running > 1)
+>> The load balancing would be futile if there are tasks of other
+>> scheduling classes, wouldn't it?
 > 
-> > I would prefer
-> > something which probes only ACPI if the ACPI is enabled (run-time, not
-> > config) otherwise DT only. E.g.
+> agree with you
 > 
-> (example missing?)
+>>
+>> 2. active_load_balance_cpu_stop(): A similar check and a similar
+>> consequence as 1 here.
 > 
-> I think we should have the equivalent of of_have_populated_dt(), to
-> check whether acpi is being used to boot, and have that new function
-> be hardcoded to zero in case of !IS_ENABLED(CONFIG_ACPI).
+> agree with you
+> 
+>>
+>> 3. nohz_kick_needed() : We check for more than one task on the runqueue
+>> and hence trigger load balancing even if there are rt-tasks.
+> 
+> I can see one potentiel reason why rq->nr_running is interesting that
+> is the group capacity might have changed because of non cfs tasks
+> since last load balance. So we need to monitor the change of the
+> groups' capacity to ensure that the average load of each group is
+> still in the same level
 
-The code already accounts for it. If ACPI isn't enabled, or isn't
-populated, then the ACPI_HANDLE macro will return NULL and the
-smsc911x_probe_config_acpi() function will fail.
+I tried a patch which changes nr_running to cfs.h_nr_running in the
+above three scenarios and found that the performance of the workload
+*drops significantly*. The workload that I ran was ebizzy with a few
+threads running at rt priority and few running at normal priority and
+running in parallel. This was tried on a 16 core SMT-8 machine. The drop
+in the performance was around 18% with the patch across different number
+of threads.
 
-g.
+I figured that it was because if we consider only cfs.h_nr_running in
+the above cases, we reduce load balancing attempts even when the
+capacity of the cpus to run fair tasks is significantly reduced. For
+example if the cpu is running two rt tasks and one fair task, we skip
+load balancing altogether with the patch. Besides this, we may end up
+doing active load balancing too often.
+
+So I think we are good with nr_running although that may mean
+unnecessary load balancing attempts when only rt tasks are running on
+the cpus. But evaluating on nr_running in the above three scenarios
+when there is a mix of rt and fair tasks is better so as to see if the
+cpus have enough capacity to handle the one fair task that they can
+possibly be running (If there are more fair tasks, we load balance anyway).
+
+As for the usage of nr_running in find_busiest_queue(), we are good
+there as Vincent pointed out as below.
+
+"
+>
+> 8. find_busiest_queue(): This anomaly shows up when we filter against
+> rq->nr_running == 1 and imbalance cannot be taken care of by the
+> existing task on this rq.
+
+agree with you even if the test with wl should prevent wrong decision
+as a wl will be null if no cfs task are present
+
+"
+
+So the only changes we require around this is the change of nr_running
+to cfs.h_nr_running in update_sg_lb_stats() and cpu_avg_load_per_task()
+which is being done by Vincent already in the consolidation of
+cpu_capacity patches and I did not see regressions there during my tests.
+
+Thanks
+
+Regards
+Preeti U Murthy
+
