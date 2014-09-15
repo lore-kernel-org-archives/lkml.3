@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028AbaIOKHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:07:47 -0400
-Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:57329 "EHLO
-	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753721AbaIOKHp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:07:45 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -0.001
-X-Spam-Languages: en
-Message-ID: <5416BA6E.4080507@topic.nl>
-Date: Mon, 15 Sep 2014 12:07:42 +0200
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754032AbaIOKJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:09:09 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:51459 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbaIOKJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 06:09:08 -0400
 MIME-Version: 1.0
-To: <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Mike Looijmans <mike.looijmans@topic.nl>
-Subject: Re: [PATCH v3] net/phy: micrel: Disable asymmetric pause for KSZ9031
-References: <20140912.181820.1440041146938289489.davem@davemloft.net> <1410775594-3129-1-git-send-email-mike.looijmans@topic.nl>
-In-Reply-To: <1410775594-3129-1-git-send-email-mike.looijmans@topic.nl>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+In-Reply-To: <54110B29.7030303@samsung.com>
+References: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <54110B29.7030303@samsung.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Mon, 15 Sep 2014 12:08:47 +0200
+X-Google-Sender-Auth: tLssO6nlTWvmC-e_KqkoLM8N88c
+Message-ID: <CAL8zT=iezoevh_12GAZyDOdRy1dAS876RZDUJGVTZyY4zYZbaQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Add delay between CMD6 and CMD13 for Sandisk eMMC cards
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿I based this patch on the 3.17rc5 state. Hope this applies cleanly now?
+Hi Jaehoon,
 
-
-On 09/15/2014 12:06 PM, Mike Looijmans wrote:
-> The KSZ9031 appears to suffer from the same hardware bug as described
-> for the KSZ9021 in commit 32fcafbcd1c9f6c7013016a22a5369b4acb93577
-> ("net/phy: micrel: Disable asymmetric pause for KSZ9021")
-> you have to unplug the cable and plug it back to get it to work.
+> On 09/09/2014 09:26 PM, Jean-Michel Hautbois wrote:
+>> Tested on a i.MX6 board, with Sandisk SDIN5D1-2G.
+>> Without this patch, I/O errors occur.
+>> This eMMC seems to have a different Manufacturer ID as it reads 0x45
+>> and not 0x2 as specified in datasheet.
 >
-> Remove the SUPPORTED_Asym_Pause flag for the KSZ9031 to fix this.
+> I think this patch don't merge into mainline.
+> This is not solution for problem.
+> you mentioned the below comment, this is workaround.
+
+Yes
+
+>>
+>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>> ---
+>>  drivers/mmc/core/mmc_ops.c | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>>
+>> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+>> index f51b5ba..91babaa 100644
+>> --- a/drivers/mmc/core/mmc_ops.c
+>> +++ b/drivers/mmc/core/mmc_ops.c
+>> @@ -458,6 +458,15 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+>>       if (!use_busy_signal)
+>>               return 0;
+>>
+>> +     /* WORKAROUND: for Sandisk eMMC cards, it might need certain delay
+>> +      * before sending CMD13 after CMD6
+>> +      * On SDIN5D1-2G MANFID is 0x45 and not 0x2 as specified in datasheet
+>> +      */
+>> +     if (card->cid.manfid == CID_MANFID_SANDISK ||
+>> +             card->cid.manfid == 0x45) {
+>> +             msleep(1);
+>> +     }
 >
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
-> ---
->   drivers/net/phy/micrel.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-> index fd0ea7c..011dbda 100644
-> --- a/drivers/net/phy/micrel.c
-> +++ b/drivers/net/phy/micrel.c
-> @@ -592,8 +592,7 @@ static struct phy_driver ksphy_driver[] = {
->   	.phy_id		= PHY_ID_KSZ9031,
->   	.phy_id_mask	= 0x00fffff0,
->   	.name		= "Micrel KSZ9031 Gigabit PHY",
-> -	.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause
-> -				| SUPPORTED_Asym_Pause),
-> +	.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause),
->   	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
->   	.config_init	= ksz9031_config_init,
->   	.config_aneg	= genphy_config_aneg,
->
+> If it's a general problem of Sandisk SDIN5D1-2G,
+> I think you need to verify this problem. And can you use the MMC_FIXUP() and QUIRK?
 
+Well, this is difficult to verify, I know that on all my SDIN5D1-2G I
+have this MANFID different from what is defined by CID_MANFID_SANDISK.
+How should I use MMC_FIXUP ? Like this ?
+MMC_FIXUP("SEM02G", 0x45, CID_OEMID_ANY, add_quirk, MMC_QUIRK_INAND_CMD13) ?
 
+If so, can I use :
+if (card->quirks & MMC_QUIRK_INAND_CMD38)
+    msleep(1);
 
-Met vriendelijke groet / kind regards,
+In drivers/mmc/core/mmc_ops.c ?
+Is this the good way ?
 
-Mike Looijmans
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
-Topic zoekt gedreven (embedded) software specialisten!
-http://topic.nl/vacatures/topic-zoekt-software-engineers/
-
+Thanks,
+JM
