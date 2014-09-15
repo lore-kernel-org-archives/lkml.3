@@ -1,260 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaIOAaK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 20:30:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52784 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907AbaIOAaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 20:30:08 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Mon, 15 Sep 2014 09:30:15 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [RFC 2/3] mm: add swap_get_free hint for zram
-Message-ID: <20140915003015.GF2160@bbox>
-References: <1409794786-10951-1-git-send-email-minchan@kernel.org>
- <1409794786-10951-3-git-send-email-minchan@kernel.org>
- <CALZtONCortZodFfVU5-oXUdGShhjFOg+FesxMFCdsyhsnnkmZw@mail.gmail.com>
+	id S1753026AbaIOAvm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 20:51:42 -0400
+Received: from ozlabs.org ([103.22.144.67]:35350 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957AbaIOAvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 20:51:40 -0400
+Date: Mon, 15 Sep 2014 10:51:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: submit the uml tree?
+Message-ID: <20140915105130.5afc2844@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALZtONCortZodFfVU5-oXUdGShhjFOg+FesxMFCdsyhsnnkmZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/mSNBH3tOE8pASWG4KdX0yRE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 03:01:47PM -0400, Dan Streetman wrote:
-> On Wed, Sep 3, 2014 at 9:39 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > VM uses nr_swap_pages as one of information when it does
-> > anonymous reclaim so that VM is able to throttle amount of swap.
-> >
-> > Normally, the nr_swap_pages is equal to freeable space of swap disk
-> > but for zram, it doesn't match because zram can limit memory usage
-> > by knob(ie, mem_limit) so although VM can see lots of free space
-> > from zram disk, zram can make fail intentionally once the allocated
-> > space is over to limit. If it happens, VM should notice it and
-> > stop reclaimaing until zram can obtain more free space but there
-> > is a good way to do at the moment.
-> >
-> > This patch adds new hint SWAP_GET_FREE which zram can return how
-> > many of freeable space it has. With using that, this patch adds
-> > __swap_full which returns true if the zram is full and substract
-> > remained freeable space of the zram-swap from nr_swap_pages.
-> > IOW, VM sees there is no more swap space of zram so that it stops
-> > anonymous reclaiming until swap_entry_free free a page and increase
-> > nr_swap_pages again.
-> >
-> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> > ---
-> >  include/linux/blkdev.h |  1 +
-> >  mm/swapfile.c          | 45 +++++++++++++++++++++++++++++++++++++++++++--
-> >  2 files changed, 44 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 17437b2c18e4..c1199806e0f1 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
-> >
-> >  enum swap_blk_hint {
-> >         SWAP_SLOT_FREE,
-> > +       SWAP_GET_FREE,
-> >  };
-> >
-> >  struct block_device_operations {
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index 4bff521e649a..72737e6dd5e5 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -484,6 +484,22 @@ new_cluster:
-> >         *scan_base = tmp;
-> >  }
-> >
-> > +static bool __swap_full(struct swap_info_struct *si)
-> > +{
-> > +       if (si->flags & SWP_BLKDEV) {
-> > +               long free;
-> > +               struct gendisk *disk = si->bdev->bd_disk;
-> > +
-> > +               if (disk->fops->swap_hint)
-> > +                       if (!disk->fops->swap_hint(si->bdev,
-> > +                                               SWAP_GET_FREE,
-> > +                                               &free))
-> > +                               return free <= 0;
-> > +       }
-> > +
-> > +       return si->inuse_pages == si->pages;
-> > +}
-> > +
-> >  static unsigned long scan_swap_map(struct swap_info_struct *si,
-> >                                    unsigned char usage)
-> >  {
-> > @@ -583,11 +599,21 @@ checks:
-> >         if (offset == si->highest_bit)
-> >                 si->highest_bit--;
-> >         si->inuse_pages++;
-> > -       if (si->inuse_pages == si->pages) {
-> > +       if (__swap_full(si)) {
-> 
-> This check is done after an available offset has already been
-> selected.  So if the variable-size blkdev is full at this point, then
-> this is incorrect, as swap will try to store a page at the current
-> selected offset.
+--Sig_/mSNBH3tOE8pASWG4KdX0yRE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-So the result is just fail of a write then what happens?
-Page become redirty and keep it in memory so there is no harm.
+Hi Richard,
 
-> 
-> > +               struct gendisk *disk = si->bdev->bd_disk;
-> > +
-> >                 si->lowest_bit = si->max;
-> >                 si->highest_bit = 0;
-> >                 spin_lock(&swap_avail_lock);
-> >                 plist_del(&si->avail_list, &swap_avail_head);
-> > +               /*
-> > +                * If zram is full, it decreases nr_swap_pages
-> > +                * for stopping anonymous page reclaim until
-> > +                * zram has free space. Look at swap_entry_free
-> > +                */
-> > +               if (disk->fops->swap_hint)
-> 
-> Simply checking for the existence of swap_hint isn't enough to know
-> we're using zram...
+I have noticed that the top commit in the uml tree
+(git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git#next) dates
+from January.  I was just wondering if this is ever going to make it
+into Linus' tree.  It has only one minor conflict as far as I can see.
 
-Yes but acutally the hint have been used for only zram for several years.
-If other user is coming in future, we would add more checks if we really
-need it at that time.
-Do you have another idea?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> > +                       atomic_long_sub(si->pages - si->inuse_pages,
-> > +                               &nr_swap_pages);
-> >                 spin_unlock(&swap_avail_lock);
-> >         }
-> >         si->swap_map[offset] = usage;
-> > @@ -796,6 +822,7 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
-> >
-> >         /* free if no reference */
-> >         if (!usage) {
-> > +               struct gendisk *disk = p->bdev->bd_disk;
-> >                 dec_cluster_info_page(p, p->cluster_info, offset);
-> >                 if (offset < p->lowest_bit)
-> >                         p->lowest_bit = offset;
-> > @@ -808,6 +835,21 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
-> >                                 if (plist_node_empty(&p->avail_list))
-> >                                         plist_add(&p->avail_list,
-> >                                                   &swap_avail_head);
-> > +                               if ((p->flags & SWP_BLKDEV) &&
-> > +                                       disk->fops->swap_hint) {
-> 
-> freeing an entry from a full variable-size blkdev doesn't mean it's
-> not still full.  In this case with zsmalloc, freeing one handle
-> doesn't actually free any memory unless it was the only handle left in
-> its containing zspage, and therefore it's possible that it is still
-> full at this point.
+--Sig_/mSNBH3tOE8pASWG4KdX0yRE
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-No need to free a zspage in zsmalloc.
-If we free a page in zspage, it means we have free space in zspage
-so user can give a chance to user for writing out new page.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> 
-> > +                                       atomic_long_add(p->pages -
-> > +                                                       p->inuse_pages,
-> > +                                                       &nr_swap_pages);
-> > +                                       /*
-> > +                                        * reset [highest|lowest]_bit to avoid
-> > +                                        * scan_swap_map infinite looping if
-> > +                                        * cached free cluster's index by
-> > +                                        * scan_swap_map_try_ssd_cluster is
-> > +                                        * above p->highest_bit.
-> > +                                        */
-> > +                                       p->highest_bit = p->max - 1;
-> > +                                       p->lowest_bit = 1;
-> 
-> lowest_bit and highest_bit are likely to remain at those extremes for
-> a long time, until 1 or max-1 is freed and re-allocated.
-> 
-> 
-> By adding variable-size blkdev support to swap, I don't think
-> highest_bit can be re-used as a "full" flag anymore.
-> 
-> Instead, I suggest that you add a "full" flag to struct
-> swap_info_struct.  Then put a swap_hint GET_FREE check at the top of
-> scan_swap_map(), and if full simply turn "full" on, remove the
-> swap_info_struct from the avail list, reduce nr_swap_pages
-> appropriately, and return failure.  Don't mess with lowest_bit or
-> highest_bit at all.
+iQIcBAEBCAAGBQJUFjgYAAoJEMDTa8Ir7ZwV/lAP/jx3rjARU72XT2b5jbbIhdf5
+RrpFRbINl0P4965RWWWWaI4CWDK5Th+fSLWbFg+msrveqcXhUFMf+DKI7uPQJ5NR
+ysqsr1LQuLQ3xnOKpsjCe9ZCWANnZQE/SACsw74HJdjjwZRXPvlEYc1ZA9Jrs8s/
+bOfsLui13WIBgRaYiMT3zZH9Nrns5hiTA7qJ9VG/FQy0GzU4mmJ2Ti7EH/fzt/iT
+qX6FnRa8ITHoW2x8DuyonYo1tZ7oVkDIadJFbp4Y/EL48EB90KRyCKrCfqxF9isR
+WmVmGYdI7h9Rsl1/ie/mwBLwn57KVEHG+2Sj1ieexFUR/729jytNl8vwGCX6nLRI
+DrNyKv0TyGX3Ri/UZ+Tu4komwXiJ8Nf0IwicpVvuxtidOL/RgDEH0/YXuJEOx9lj
+mr+rD/+P8iM6NHxYSMjx4MQb2lvfjujVij5Y8AtI5+ZF68BpU0ooWTvOOTIyS/4M
+JKkF3fYcb0EX5SoqkjPpWzYEyeXg15sPiyq+1E4YK8gje8toOistFJfDQyJgJfrd
+whl1VY0Z6p+VQK6LEucjXoxAevPLhVoLdE+0R3kKMJ22aGJWQAGNyAB89d/7U1/3
+FjqVi1JgFq/593a0kksh+yMbtFco+drSFZceZS9em2fqZPRUMVBev+1jh+YBw+ud
+MfHeomNRKolzL/G4j0Z7
+=GS9k
+-----END PGP SIGNATURE-----
 
-Could you explain what logic in your suggestion prevent the problem
-I mentioned(ie, scan_swap_map infinite looping)?
-
-> 
-> Then in swap_entry_free(), do something like:
-> 
->     dec_cluster_info_page(p, p->cluster_info, offset);
->     if (offset < p->lowest_bit)
->       p->lowest_bit = offset;
-> -   if (offset > p->highest_bit) {
-> -     bool was_full = !p->highest_bit;
-> +   if (offset > p->highest_bit)
->       p->highest_bit = offset;
-> -     if (was_full && (p->flags & SWP_WRITEOK)) {
-> +   if (p->full && p->flags & SWP_WRITEOK) {
-> +     bool is_var_size_blkdev = is_variable_size_blkdev(p);
-> +     bool blkdev_full = is_variable_size_blkdev_full(p);
-> +
-> +     if (!is_var_size_blkdev || !blkdev_full) {
-> +       if (is_var_size_blkdev)
-> +         atomic_long_add(p->pages - p->inuse_pages, &nr_swap_pages);
-> +       p->full = false;
->         spin_lock(&swap_avail_lock);
->         WARN_ON(!plist_node_empty(&p->avail_list));
->         if (plist_node_empty(&p->avail_list))
->           plist_add(&p->avail_list,
->              &swap_avail_head);
->         spin_unlock(&swap_avail_lock);
-> +     } else if (blkdev_full) {
-> +       /* still full, so this page isn't actually
-> +        * available yet to use; once non-full,
-> +        * pages-inuse_pages will be the correct
-> +        * number to add (above) since below will
-> +        * inuse_pages--
-> +        */
-> +       atomic_long_dec(&nr_swap_pages);
->       }
->     }
->     atomic_long_inc(&nr_swap_pages);
-> 
-> 
-> 
-> > @@ -815,7 +857,6 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
-> >                 p->inuse_pages--;
-> >                 frontswap_invalidate_page(p->type, offset);
-> >                 if (p->flags & SWP_BLKDEV) {
-> > -                       struct gendisk *disk = p->bdev->bd_disk;
-> >                         if (disk->fops->swap_hint)
-> >                                 disk->fops->swap_hint(p->bdev,
-> >                                                 SWAP_SLOT_FREE,
-> > --
-> > 2.0.0
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+--Sig_/mSNBH3tOE8pASWG4KdX0yRE--
