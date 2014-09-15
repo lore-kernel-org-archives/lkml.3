@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470AbaIOVPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:15:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
+	id S1759455AbaIOVPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675AbaIOT0q (ORCPT
+	with ESMTP id S1754768AbaIOT0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 016/158] spi: omap2-mcspi: Configure hardware when slave driver changes mode
-Date: Mon, 15 Sep 2014 12:24:15 -0700
-Message-Id: <20140915192543.366959957@linuxfoundation.org>
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.16 018/158] powerpc/cpufreq: Add pr_warn() on OPAL firmware failures
+Date: Mon, 15 Sep 2014 12:24:17 -0700
+Message-Id: <20140915192543.425059094@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,79 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mark A. Greer" <mgreer@animalcreek.com>
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
 
-commit 97ca0d6cc118716840ea443e010cb3d5f2d25eaf upstream.
+commit 6174bac8c7ff73a86ae9a967d1c9cadc478023ae upstream.
 
-Commit id 2bd16e3e23d9df41592c6b257c59b6860a9cc3ea
-(spi: omap2-mcspi: Do not configure the controller
-on each transfer unless needed) does its job too
-well so omap2_mcspi_setup_transfer() isn't called
-even when an SPI slave driver changes 'spi->mode'.
-The result is that the mode requested by the SPI
-slave driver never takes effect.
+Cpufreq depends on platform firmware to implement PStates.  In case of
+platform firmware failure, cpufreq should not panic host kernel with
+BUG_ON().  Less severe pr_warn() will suffice.
 
-Fix this by adding the 'mode' member to the
-omap2_mcspi_cs structure which holds the mode
-value that the hardware is configured for.
-When the SPI slave driver changes 'spi->mode'
-it will be different than the value of this new
-member and the SPI master driver will know that
-the hardware must be reconfigured (by calling
-omap2_mcspi_setup_transfer()).
+Add firmware_has_feature(FW_FEATURE_OPALv3) check to
+skip probing for device-tree on non-powernv platforms.
 
-Fixes: 2bd16e3e23 (spi: omap2-mcspi: Do not configure the controller on each transfer unless needed)
-Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Acked-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-omap2-mcspi.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/cpufreq/powernv-cpufreq.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -149,6 +149,7 @@ struct omap2_mcspi_cs {
- 	void __iomem		*base;
- 	unsigned long		phys;
- 	int			word_len;
-+	u16			mode;
- 	struct list_head	node;
- 	/* Context save and restore shadow register */
- 	u32			chconf0, chctrl0;
-@@ -926,6 +927,8 @@ static int omap2_mcspi_setup_transfer(st
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -28,6 +28,7 @@
+ #include <linux/of.h>
  
- 	mcspi_write_chconf0(spi, l);
+ #include <asm/cputhreads.h>
++#include <asm/firmware.h>
+ #include <asm/reg.h>
+ #include <asm/smp.h> /* Required for cpu_sibling_mask() in UP configs */
  
-+	cs->mode = spi->mode;
+@@ -98,7 +99,11 @@ static int init_powernv_pstates(void)
+ 		return -ENODEV;
+ 	}
+ 
+-	WARN_ON(len_ids != len_freqs);
++	if (len_ids != len_freqs) {
++		pr_warn("Entries in ibm,pstate-ids and "
++			"ibm,pstate-frequencies-mhz does not match\n");
++	}
 +
- 	dev_dbg(&spi->dev, "setup: speed %d, sample %s edge, clk %s\n",
- 			speed_hz,
- 			(spi->mode & SPI_CPHA) ? "trailing" : "leading",
-@@ -998,6 +1001,7 @@ static int omap2_mcspi_setup(struct spi_
- 			return -ENOMEM;
- 		cs->base = mcspi->base + spi->chip_select * 0x14;
- 		cs->phys = mcspi->phys + spi->chip_select * 0x14;
-+		cs->mode = 0;
- 		cs->chconf0 = 0;
- 		cs->chctrl0 = 0;
- 		spi->controller_state = cs;
-@@ -1079,6 +1083,16 @@ static void omap2_mcspi_work(struct omap
- 	cs = spi->controller_state;
- 	cd = spi->controller_data;
+ 	nr_pstates = min(len_ids, len_freqs) / sizeof(u32);
+ 	if (!nr_pstates) {
+ 		pr_warn("No PStates found\n");
+@@ -131,7 +136,12 @@ static unsigned int pstate_id_to_freq(in
+ 	int i;
  
-+	/*
-+	 * The slave driver could have changed spi->mode in which case
-+	 * it will be different from cs->mode (the current hardware setup).
-+	 * If so, set par_override (even though its not a parity issue) so
-+	 * omap2_mcspi_setup_transfer will be called to configure the hardware
-+	 * with the correct mode on the first iteration of the loop below.
-+	 */
-+	if (spi->mode != cs->mode)
-+		par_override = 1;
+ 	i = powernv_pstate_info.max - pstate_id;
+-	BUG_ON(i >= powernv_pstate_info.nr_pstates || i < 0);
++	if (i >= powernv_pstate_info.nr_pstates || i < 0) {
++		pr_warn("PState id %d outside of PState table, "
++			"reporting nominal id %d instead\n",
++			pstate_id, powernv_pstate_info.nominal);
++		i = powernv_pstate_info.max - powernv_pstate_info.nominal;
++	}
+ 
+ 	return powernv_freqs[i].frequency;
+ }
+@@ -321,6 +331,10 @@ static int __init powernv_cpufreq_init(v
+ {
+ 	int rc = 0;
+ 
++	/* Don't probe on pseries (guest) platforms */
++	if (!firmware_has_feature(FW_FEATURE_OPALv3))
++		return -ENODEV;
 +
- 	omap2_mcspi_set_enable(spi, 0);
- 	list_for_each_entry(t, &m->transfers, transfer_list) {
- 		if (t->tx_buf == NULL && t->rx_buf == NULL && t->len) {
+ 	/* Discover pstates from device tree and init */
+ 	rc = init_powernv_pstates();
+ 	if (rc) {
 
 
