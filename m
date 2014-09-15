@@ -1,90 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689AbaIOVgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:36:47 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:57820 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755226AbaIOVgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:36:44 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Kevin Baradon <kevin.baradon@gmail.com>, Sean Young <sean@mess.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] [media] imon: fix usbdev leaks
-Date: Tue, 16 Sep 2014 01:36:15 +0400
-Message-Id: <1410816975-5334-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <54106920.7000103@ispras.ru>
-References: <54106920.7000103@ispras.ru>
+	id S1756715AbaIOVhZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:37:25 -0400
+Received: from smarthost2.wvnet.at ([62.212.174.131]:30586 "EHLO
+	smarthost1.wvnet.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753541AbaIOVhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 17:37:22 -0400
+X-FEAS-AUTH-USER: 
+From: Bernhard Thaler <bernhard.thaler@wvnet.at>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, stephen@networkplumber.org
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Bernhard Thaler <bernhard.thaler@wvnet.at>
+Subject: [PATCH 1/1] bridge: Fix NAT66ed IPv6 packets not being bridged correctly
+Date: Mon, 15 Sep 2014 23:27:28 +0200
+Message-Id: <1410816448-4401-1-git-send-email-bernhard.thaler@wvnet.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-imon_probe() does three usb_get_dev(), but there is no any
-usb_put_dev() in the driver.
+Ethernet frames are not bridged to correct interface when packets have
+been NAT66ed; compared to IPv4 logic in code, IPv6 code does not store
+original address (before NAT) on transmit to determine if packet was
+NAT66ed on receive to swap addresses back.
 
-The patch adds usb_put_dev() to error paths, to imon_disconnect()
-and to imon_probe() as far as usbdev is not saved anywhere.
+Changes added in br_netfilter.c to store original address, compare
+against it and determine correct output interface. Changes needed in
+netfilter_bridge.h to store IPv6 address in pre-existing union.
+Export of ip6_route_input needed to use it in br_netfilter.c.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Problem may only affect systems doing NAT66 and ethernet bridging at
+the same time. Tested in NAT66 setup on base of an ethernet bridge.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Bernhard Thaler <bernhard.thaler@wvnet.at>
 ---
- drivers/media/rc/imon.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/netfilter_bridge.h |    2 +
+ net/bridge/br_netfilter.c        |  136 ++++++++++++++++++++++++++++----------
+ net/ipv6/route.c                 |    1 +
+ 3 files changed, 105 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
-index 7115e68ba697..06ff61ec3e1e 100644
---- a/drivers/media/rc/imon.c
-+++ b/drivers/media/rc/imon.c
-@@ -2181,6 +2181,7 @@ idev_setup_failed:
- 	usb_kill_urb(ictx->rx_urb_intf0);
- urb_submit_failed:
- find_endpoint_failed:
-+	usb_put_dev(ictx->usbdev_intf0);
- 	mutex_unlock(&ictx->lock);
- 	usb_free_urb(tx_urb);
- tx_urb_alloc_failed:
-@@ -2253,6 +2254,7 @@ urb_submit_failed:
- 		input_unregister_device(ictx->touch);
- touch_setup_failed:
- find_endpoint_failed:
-+	usb_put_dev(ictx->usbdev_intf1);
- 	mutex_unlock(&ictx->lock);
- 	usb_free_urb(rx_urb);
- rx_urb_alloc_failed:
-@@ -2366,11 +2368,13 @@ static int imon_probe(struct usb_interface *interface,
- 		 usbdev->bus->busnum, usbdev->devnum);
+diff --git a/include/linux/netfilter_bridge.h b/include/linux/netfilter_bridge.h
+index 8ab1c27..3a9cdcd 100644
+--- a/include/linux/netfilter_bridge.h
++++ b/include/linux/netfilter_bridge.h
+@@ -2,6 +2,7 @@
+ #define __LINUX_BRIDGE_NETFILTER_H
  
- 	mutex_unlock(&driver_lock);
-+	usb_put_dev(usbdev);
+ #include <uapi/linux/netfilter_bridge.h>
++#include <uapi/linux/in6.h>
  
+ 
+ enum nf_br_hook_priorities {
+@@ -79,6 +80,7 @@ static inline unsigned int nf_bridge_pad(const struct sk_buff *skb)
+ struct bridge_skb_cb {
+ 	union {
+ 		__be32 ipv4;
++		struct in6_addr ipv6;
+ 	} daddr;
+ };
+ 
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index a615264..2ae3888 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -35,6 +35,9 @@
+ #include <net/ip.h>
+ #include <net/ipv6.h>
+ #include <net/route.h>
++#include <net/ip6_route.h>
++#include <net/flow.h>
++#include <net/dst.h>
+ 
+ #include <asm/uaccess.h>
+ #include "br_private.h"
+@@ -42,10 +45,18 @@
+ #include <linux/sysctl.h>
+ #endif
+ 
+-#define skb_origaddr(skb)	 (((struct bridge_skb_cb *) \
+-				 (skb->nf_bridge->data))->daddr.ipv4)
+-#define store_orig_dstaddr(skb)	 (skb_origaddr(skb) = ip_hdr(skb)->daddr)
+-#define dnat_took_place(skb)	 (skb_origaddr(skb) != ip_hdr(skb)->daddr)
++#define skb_origaddr(skb)		(((struct bridge_skb_cb *)\
++					(skb->nf_bridge->data))->daddr.ipv4)
++#define skb_origaddr_ipv6(skb)		(((struct bridge_skb_cb *)\
++					(skb->nf_bridge->data))->daddr.ipv6)
++#define store_orig_dstaddr(skb)		(skb_origaddr(skb) = ip_hdr(skb)->daddr)
++#define store_orig_dstaddr_ipv6(skb)	(skb_origaddr_ipv6(skb) = \
++					ipv6_hdr(skb)->daddr)
++#define dnat_took_place(skb)		(skb_origaddr(skb) != \
++					ip_hdr(skb)->daddr)
++#define dnat_took_place_ipv6(skb)	(memcmp(&skb_origaddr_ipv6(skb), \
++					&(ipv6_hdr(skb)->daddr), \
++					sizeof(struct in6_addr)) != 0)
+ 
+ #ifdef CONFIG_SYSCTL
+ static struct ctl_table_header *brnf_sysctl_header;
+@@ -340,36 +351,6 @@ int nf_bridge_copy_header(struct sk_buff *skb)
  	return 0;
+ }
  
- fail:
- 	mutex_unlock(&driver_lock);
-+	usb_put_dev(usbdev);
- 	dev_err(dev, "unable to register, err %d\n", ret);
+-/* PF_BRIDGE/PRE_ROUTING *********************************************/
+-/* Undo the changes made for ip6tables PREROUTING and continue the
+- * bridge PRE_ROUTING hook. */
+-static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
+-{
+-	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
+-	struct rtable *rt;
+-
+-	if (nf_bridge->mask & BRNF_PKT_TYPE) {
+-		skb->pkt_type = PACKET_OTHERHOST;
+-		nf_bridge->mask ^= BRNF_PKT_TYPE;
+-	}
+-	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
+-
+-	rt = bridge_parent_rtable(nf_bridge->physindev);
+-	if (!rt) {
+-		kfree_skb(skb);
+-		return 0;
+-	}
+-	skb_dst_set_noref(skb, &rt->dst);
+-
+-	skb->dev = nf_bridge->physindev;
+-	nf_bridge_update_protocol(skb);
+-	nf_bridge_push_encap_header(skb);
+-	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
+-		       br_handle_frame_finish, 1);
+-
+-	return 0;
+-}
+-
+ /* Obtain the correct destination MAC address, while preserving the original
+  * source MAC address. If we already know this address, we just copy it. If we
+  * don't, we use the neighbour framework to find out. In both cases, we make
+@@ -527,6 +508,92 @@ bridged_dnat:
+ 	return 0;
+ }
  
- 	return ret;
-@@ -2410,6 +2414,7 @@ static void imon_disconnect(struct usb_interface *interface)
- 	if (ifnum == 0) {
- 		ictx->dev_present_intf0 = false;
- 		usb_kill_urb(ictx->rx_urb_intf0);
-+		usb_put_dev(ictx->usbdev_intf0);
- 		input_unregister_device(ictx->idev);
- 		rc_unregister_device(ictx->rdev);
- 		if (ictx->display_supported) {
-@@ -2421,6 +2426,7 @@ static void imon_disconnect(struct usb_interface *interface)
- 	} else {
- 		ictx->dev_present_intf1 = false;
- 		usb_kill_urb(ictx->rx_urb_intf1);
-+		usb_put_dev(ictx->usbdev_intf1);
- 		if (ictx->display_type == IMON_DISPLAY_TYPE_VGA) {
- 			input_unregister_device(ictx->touch);
- 			del_timer_sync(&ictx->ttimer);
++/* PF_BRIDGE/PRE_ROUTING *********************************************
++ * Undo the changes made for ip6tables PREROUTING and continue the
++ * bridge PRE_ROUTING hook.
++ */
++static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
++{
++	struct net_device *dev = skb->dev;
++	struct ipv6hdr *iph = ipv6_hdr(skb);
++	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
++	struct rtable *rt;
++	struct dst_entry *dst;
++	struct flowi6 fl6 = {
++		.flowi6_iif = skb->dev->ifindex,
++		.daddr = iph->daddr,
++		.saddr = iph->saddr,
++		.flowlabel = ip6_flowinfo(iph),
++		.flowi6_mark = skb->mark,
++		.flowi6_proto = iph->nexthdr,
++	};
++
++	if (nf_bridge->mask & BRNF_PKT_TYPE) {
++		skb->pkt_type = PACKET_OTHERHOST;
++		nf_bridge->mask ^= BRNF_PKT_TYPE;
++	}
++	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
++
++	if (dnat_took_place_ipv6(skb)) {
++		ip6_route_input(skb);
++		/* ip6_route_input is void function,
++		 * no int returned as in ip4_route_input
++		 * changes value of skb->_skb_refdst) on success
++		 */
++		if (skb->_skb_refdst == 0) {
++			struct in_device *in_dev = __in_dev_get_rcu(dev);
++
++			if (!in_dev || IN_DEV_FORWARD(in_dev))
++				goto free_skb;
++
++			dst = ip6_route_output(dev_net(dev), skb->sk, &fl6);
++			if (!IS_ERR(dst)) {
++				/* - Bridged-and-DNAT'ed traffic doesn't
++				 *   require ip_forwarding.
++				 */
++				if (dst->dev == dev) {
++					skb_dst_set(skb, dst);
++					goto bridged_dnat;
++				}
++				dst_release(dst);
++			}
++free_skb:
++			kfree_skb(skb);
++			return 0;
++		} else {
++			if (skb_dst(skb)->dev == dev) {
++bridged_dnat:
++				skb->dev = nf_bridge->physindev;
++				nf_bridge_update_protocol(skb);
++				nf_bridge_push_encap_header(skb);
++				NF_HOOK_THRESH(NFPROTO_BRIDGE,
++					       NF_BR_PRE_ROUTING,
++					       skb, skb->dev, NULL,
++					       br_nf_pre_routing_finish_bridge,
++					       1);
++				return 0;
++			}
++			memcpy(eth_hdr(skb)->h_dest, dev->dev_addr, ETH_ALEN);
++			skb->pkt_type = PACKET_HOST;
++		}
++	} else {
++		rt = bridge_parent_rtable(nf_bridge->physindev);
++		if (!rt) {
++			kfree_skb(skb);
++			return 0;
++		}
++		skb_dst_set_noref(skb, &rt->dst);
++	}
++
++	skb->dev = nf_bridge->physindev;
++	nf_bridge_update_protocol(skb);
++	nf_bridge_push_encap_header(skb);
++	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
++		       br_handle_frame_finish, 1);
++
++	return 0;
++}
++
+ static struct net_device *brnf_get_logical_dev(struct sk_buff *skb, const struct net_device *dev)
+ {
+ 	struct net_device *vlan, *br;
+@@ -658,6 +725,7 @@ static unsigned int br_nf_pre_routing_ipv6(const struct nf_hook_ops *ops,
+ 	if (!setup_pre_routing(skb))
+ 		return NF_DROP;
+ 
++	store_orig_dstaddr_ipv6(skb);
+ 	skb->protocol = htons(ETH_P_IPV6);
+ 	NF_HOOK(NFPROTO_IPV6, NF_INET_PRE_ROUTING, skb, skb->dev, NULL,
+ 		br_nf_pre_routing_finish_ipv6);
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index f23fbd2..e328905 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1017,6 +1017,7 @@ void ip6_route_input(struct sk_buff *skb)
+ 
+ 	skb_dst_set(skb, ip6_route_input_lookup(net, skb->dev, &fl6, flags));
+ }
++EXPORT_SYMBOL(ip6_route_input);
+ 
+ static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
+ 					     struct flowi6 *fl6, int flags)
 -- 
-1.9.1
+1.7.10.4
 
