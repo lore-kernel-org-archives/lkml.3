@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357AbaIOUKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:10:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55604 "EHLO
+	id S1756680AbaIOULf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:11:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756186AbaIOTrF (ORCPT
+	with ESMTP id S1756178AbaIOTrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:05 -0400
+	Mon, 15 Sep 2014 15:47:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Steve Grubb <sgrubb@redhat.com>, Dan Walsh <dwalsh@redhat.com>,
+        David Howells <dhowells@redhat.com>, Don Zickus <dzickus@redhat.com>,
         James Morris <james.l.morris@oracle.com>
-Subject: [PATCH 3.10 10/71] CAPABILITIES: remove undefined caps from all processes
-Date: Mon, 15 Sep 2014 12:26:08 -0700
-Message-Id: <20140915192639.058129269@linuxfoundation.org>
+Subject: [PATCH 3.14 114/114] KEYS: Fix termination condition in assoc array garbage collection
+Date: Mon, 15 Sep 2014 12:26:54 -0700
+Message-Id: <20140915192644.969618553@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,182 +25,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
+commit 95389b08d93d5c06ec63ab49bd732b0069b7c35e upstream.
 
-This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
-plus fixing it a different way...
+This fixes CVE-2014-3631.
 
-We found, when trying to run an application from an application which
-had dropped privs that the kernel does security checks on undefined
-capability bits.  This was ESPECIALLY difficult to debug as those
-undefined bits are hidden from /proc/$PID/status.
+It is possible for an associative array to end up with a shortcut node at the
+root of the tree if there are more than fan-out leaves in the tree, but they
+all crowd into the same slot in the lowest level (ie. they all have the same
+first nibble of their index keys).
 
-Consider a root application which drops all capabilities from ALL 4
-capability sets.  We assume, since the application is going to set
-eff/perm/inh from an array that it will clear not only the defined caps
-less than CAP_LAST_CAP, but also the higher 28ish bits which are
-undefined future capabilities.
+When assoc_array_gc() returns back up the tree after scanning some leaves, it
+can fall off of the root and crash because it assumes that the back pointer
+from a shortcut (after label ascend_old_tree) must point to a normal node -
+which isn't true of a shortcut node at the root.
 
-The BSET gets cleared differently.  Instead it is cleared one bit at a
-time.  The problem here is that in security/commoncap.c::cap_task_prctl()
-we actually check the validity of a capability being read.  So any task
-which attempts to 'read all things set in bset' followed by 'unset all
-things set in bset' will not even attempt to unset the undefined bits
-higher than CAP_LAST_CAP.
+Should we find we're ascending rootwards over a shortcut, we should check to
+see if the backpointer is zero - and if it is, we have completed the scan.
 
-So the 'parent' will look something like:
-CapInh:	0000000000000000
-CapPrm:	0000000000000000
-CapEff:	0000000000000000
-CapBnd:	ffffffc000000000
+This particular bug cannot occur if the root node is not a shortcut - ie. if
+you have fewer than 17 keys in a keyring or if you have at least two keys that
+sit into separate slots (eg. a keyring and a non keyring).
 
-All of this 'should' be fine.  Given that these are undefined bits that
-aren't supposed to have anything to do with permissions.  But they do...
+This can be reproduced by:
 
-So lets now consider a task which cleared the eff/perm/inh completely
-and cleared all of the valid caps in the bset (but not the invalid caps
-it couldn't read out of the kernel).  We know that this is exactly what
-the libcap-ng library does and what the go capabilities library does.
-They both leave you in that above situation if you try to clear all of
-you capapabilities from all 4 sets.  If that root task calls execve()
-the child task will pick up all caps not blocked by the bset.  The bset
-however does not block bits higher than CAP_LAST_CAP.  So now the child
-task has bits in eff which are not in the parent.  These are
-'meaningless' undefined bits, but still bits which the parent doesn't
-have.
+	ring=`keyctl newring bar @s`
+	for ((i=1; i<=18; i++)); do last_key=`keyctl newring foo$i $ring`; done
+	keyctl timeout $last_key 2
 
-The problem is now in cred_cap_issubset() (or any operation which does a
-subset test) as the child, while a subset for valid cap bits, is not a
-subset for invalid cap bits!  So now we set durring commit creds that
-the child is not dumpable.  Given it is 'more priv' than its parent.  It
-also means the parent cannot ptrace the child and other stupidity.
+Doing this:
 
-The solution here:
-1) stop hiding capability bits in status
-	This makes debugging easier!
+	echo 3 >/proc/sys/kernel/keys/gc_delay
 
-2) stop giving any task undefined capability bits.  it's simple, it you
-don't put those invalid bits in CAP_FULL_SET you won't get them in init
-and you won't get them in any other task either.
-	This fixes the cap_issubset() tests and resulting fallout (which
-	made the init task in a docker container untraceable among other
-	things)
+first will speed things up.
 
-3) mask out undefined bits when sys_capset() is called as it might use
-~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
-	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
+If we do fall off of the top of the tree, we get the following oops:
 
-4) mask out undefined bit when we read a file capability off of disk as
-again likely all bits are set in the xattr for forward/backward
-compatibility.
-	This lets 'setcap all+pe /bin/bash; /bin/bash' run
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+IP: [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
+PGD dae15067 PUD cfc24067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: xt_nat xt_mark nf_conntrack_netbios_ns nf_conntrack_broadcast ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_ni
+CPU: 0 PID: 26011 Comm: kworker/0:1 Not tainted 3.14.9-200.fc20.x86_64 #1
+Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+Workqueue: events key_garbage_collector
+task: ffff8800918bd580 ti: ffff8800aac14000 task.ti: ffff8800aac14000
+RIP: 0010:[<ffffffff8136cea7>] [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
+RSP: 0018:ffff8800aac15d40  EFLAGS: 00010206
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff8800aaecacc0
+RDX: ffff8800daecf440 RSI: 0000000000000001 RDI: ffff8800aadc2bc0
+RBP: ffff8800aac15da8 R08: 0000000000000001 R09: 0000000000000003
+R10: ffffffff8136ccc7 R11: 0000000000000000 R12: 0000000000000000
+R13: 0000000000000000 R14: 0000000000000070 R15: 0000000000000001
+FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000018 CR3: 00000000db10d000 CR4: 00000000000006f0
+Stack:
+ ffff8800aac15d50 0000000000000011 ffff8800aac15db8 ffffffff812e2a70
+ ffff880091a00600 0000000000000000 ffff8800aadc2bc3 00000000cd42c987
+ ffff88003702df20 ffff88003702dfa0 0000000053b65c09 ffff8800aac15fd8
+Call Trace:
+ [<ffffffff812e2a70>] ? keyring_detect_cycle_iterator+0x30/0x30
+ [<ffffffff812e3e75>] keyring_gc+0x75/0x80
+ [<ffffffff812e1424>] key_garbage_collector+0x154/0x3c0
+ [<ffffffff810a67b6>] process_one_work+0x176/0x430
+ [<ffffffff810a744b>] worker_thread+0x11b/0x3a0
+ [<ffffffff810a7330>] ? rescuer_thread+0x3b0/0x3b0
+ [<ffffffff810ae1a8>] kthread+0xd8/0xf0
+ [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
+ [<ffffffff816ffb7c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
+Code: 08 4c 8b 22 0f 84 bf 00 00 00 41 83 c7 01 49 83 e4 fc 41 83 ff 0f 4c 89 65 c0 0f 8f 5a fe ff ff 48 8b 45 c0 4d 63 cf 49 83 c1 02 <4e> 8b 34 c8 4d 85 f6 0f 84 be 00 00 00 41 f6 c6 01 0f 84 92
+RIP  [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
+ RSP <ffff8800aac15d40>
+CR2: 0000000000000018
+---[ end trace 1129028a088c0cbd ]---
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Andrew G. Morgan <morgan@kernel.org>
-Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Dan Walsh <dwalsh@redhat.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/array.c            |   11 +----------
- include/linux/capability.h |    5 ++++-
- kernel/audit.c             |    2 +-
- kernel/capability.c        |    4 ++++
- security/commoncap.c       |    3 +++
- 5 files changed, 13 insertions(+), 12 deletions(-)
+ lib/assoc_array.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -304,15 +304,11 @@ static void render_cap_t(struct seq_file
- 	seq_puts(m, header);
- 	CAP_FOR_EACH_U32(__capi) {
- 		seq_printf(m, "%08x",
--			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
-+			   a->cap[CAP_LAST_U32 - __capi]);
+--- a/lib/assoc_array.c
++++ b/lib/assoc_array.c
+@@ -1723,11 +1723,13 @@ ascend_old_tree:
+ 		shortcut = assoc_array_ptr_to_shortcut(ptr);
+ 		slot = shortcut->parent_slot;
+ 		cursor = shortcut->back_pointer;
++		if (!cursor)
++			goto gc_complete;
+ 	} else {
+ 		slot = node->parent_slot;
+ 		cursor = ptr;
  	}
- 	seq_putc(m, '\n');
- }
- 
--/* Remove non-existent capabilities */
--#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
--				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
--
- static inline void task_cap(struct seq_file *m, struct task_struct *p)
- {
- 	const struct cred *cred;
-@@ -326,11 +322,6 @@ static inline void task_cap(struct seq_f
- 	cap_bset	= cred->cap_bset;
- 	rcu_read_unlock();
- 
--	NORM_CAPS(cap_inheritable);
--	NORM_CAPS(cap_permitted);
--	NORM_CAPS(cap_effective);
--	NORM_CAPS(cap_bset);
--
- 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
- 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
- 	render_cap_t(m, "CapEff:\t", &cap_effective);
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff
- # error Fix up hand-coded capability macro initializers
- #else /* HAND-CODED capability initializers */
- 
-+#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
-+#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
-+
- # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
--# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-+# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
- # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
- 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
- 				    CAP_FS_MASK_B1 } })
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1412,7 +1412,7 @@ void audit_log_cap(struct audit_buffer *
- 	audit_log_format(ab, " %s=", prefix);
- 	CAP_FOR_EACH_U32(i) {
- 		audit_log_format(ab, "%08x",
--				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
-+				 cap->cap[CAP_LAST_U32 - i]);
- 	}
- }
- 
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -268,6 +268,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_
- 		i++;
- 	}
- 
-+	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	new = prepare_creds();
- 	if (!new)
- 		return -ENOMEM;
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct
- 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
- 	}
- 
-+	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	return 0;
- }
- 
+-	BUG_ON(!ptr);
++	BUG_ON(!cursor);
+ 	node = assoc_array_ptr_to_node(cursor);
+ 	slot++;
+ 	goto continue_node;
 
 
