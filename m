@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757947AbaIOUdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:33:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55133 "EHLO
+	id S1757956AbaIOUdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:33:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659AbaIOThA (ORCPT
+	with ESMTP id S1755649AbaIOThA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 005/114] media: mt9v032: fix hblank calculation
-Date: Mon, 15 Sep 2014 12:25:05 -0700
-Message-Id: <20140915192641.595452873@linuxfoundation.org>
+Subject: [PATCH 3.14 003/114] media: au0828: Only alt setting logic when needed
+Date: Mon, 15 Sep 2014 12:25:03 -0700
+Message-Id: <20140915192641.533724075@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -30,35 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Zabel <p.zabel@pengutronix.de>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit f17bc3f4707eb87bdb80b895911c551cdd606fbd upstream.
+commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
 
-Since (min_row_time - crop->width) can be negative, we have to do a signed
-comparison here. Otherwise max_t casts the negative value to unsigned int
-and sets min_hblank to that invalid value.
+It seems that there's a bug at au0828 hardware/firmware
+related to alternate setting: when the device is already at
+alt 5, a further call causes the URBs to receive -ESHUTDOWN.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+I found two different encarnations of this issue:
+
+1) at qv4l2, it fails the second time we try to open the
+video screen;
+2) at xawtv, when audio underrun occurs, with is very
+frequent, at least on my test machine.
+
+The fix is simple: just check if alt=5 before calling
+set_usb_interface().
+
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/mt9v032.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/usb/au0828/au0828-video.c |   34 ++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/media/i2c/mt9v032.c
-+++ b/drivers/media/i2c/mt9v032.c
-@@ -305,8 +305,8 @@ mt9v032_update_hblank(struct mt9v032 *mt
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -787,11 +787,27 @@ static int au0828_i2s_init(struct au0828
  
- 	if (mt9v032->version->version == MT9V034_CHIP_ID_REV1)
- 		min_hblank += (mt9v032->hratio - 1) * 10;
--	min_hblank = max_t(unsigned int, (int)mt9v032->model->data->min_row_time - crop->width,
--			   (int)min_hblank);
-+	min_hblank = max_t(int, mt9v032->model->data->min_row_time - crop->width,
-+			   min_hblank);
- 	hblank = max_t(unsigned int, mt9v032->hblank, min_hblank);
+ /*
+  * Auvitek au0828 analog stream enable
+- * Please set interface0 to AS5 before enable the stream
+  */
+ static int au0828_analog_stream_enable(struct au0828_dev *d)
+ {
++	struct usb_interface *iface;
++	int ret;
++
+ 	dprintk(1, "au0828_analog_stream_enable called\n");
++
++	iface = usb_ifnum_to_if(d->usbdev, 0);
++	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
++		dprintk(1, "Changing intf#0 to alt 5\n");
++		/* set au0828 interface0 to AS5 here again */
++		ret = usb_set_interface(d->usbdev, 0, 5);
++		if (ret < 0) {
++			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
++			return -EBUSY;
++		}
++	}
++
++	/* FIXME: size should be calculated using d->width, d->height */
++
+ 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
+ 	au0828_writereg(d, 0x106, 0x00);
+ 	/* set x position */
+@@ -1002,15 +1018,6 @@ static int au0828_v4l2_open(struct file
+ 		return -ERESTARTSYS;
+ 	}
+ 	if (dev->users == 0) {
+-		/* set au0828 interface0 to AS5 here again */
+-		ret = usb_set_interface(dev->usbdev, 0, 5);
+-		if (ret < 0) {
+-			mutex_unlock(&dev->lock);
+-			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
+-			kfree(fh);
+-			return -EBUSY;
+-		}
+-
+ 		au0828_analog_stream_enable(dev);
+ 		au0828_analog_stream_reset(dev);
  
- 	return mt9v032_write(client, MT9V032_HORIZONTAL_BLANKING, hblank);
+@@ -1252,13 +1259,6 @@ static int au0828_set_format(struct au08
+ 		}
+ 	}
+ 
+-	/* set au0828 interface0 to AS5 here again */
+-	ret = usb_set_interface(dev->usbdev, 0, 5);
+-	if (ret < 0) {
+-		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
+-		return -EBUSY;
+-	}
+-
+ 	au0828_analog_stream_enable(dev);
+ 
+ 	return 0;
 
 
