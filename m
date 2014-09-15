@@ -1,370 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbaIPBUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:20:50 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60528 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755176AbaIPBUs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:20:48 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 16 Sep 2014 10:21:00 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Heesub Shin <heesub.shin@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>
-Subject: Re: [RFC 3/3] zram: add swap_get_free hint
-Message-ID: <20140916012100.GE10912@bbox>
-References: <1409794786-10951-1-git-send-email-minchan@kernel.org>
- <1409794786-10951-4-git-send-email-minchan@kernel.org>
- <54080606.3050106@samsung.com>
- <20140904235952.GA32561@bbox>
- <CALZtONB=YCWiWQNPjrfr6W4gPNNj10tH-d_sWV916sBwHefPPQ@mail.gmail.com>
- <20140915005704.GG2160@bbox>
- <CALZtONCb=gT27qhXz3qu=OEzA=djvFvoT_=x=X1bZmtpMzYjhA@mail.gmail.com>
+	id S1756185AbaIPBWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:22:47 -0400
+Received: from mail-bn1on0144.outbound.protection.outlook.com ([157.56.110.144]:61061
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754111AbaIPBWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 21:22:43 -0400
+X-Greylist: delayed 5586 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 21:22:43 EDT
+Date: Mon, 15 Sep 2014 18:44:51 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: "J. German Rivera" <German.Rivera@freescale.com>
+CC: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
+        <Kim.Phillips@freescale.com>, <scottwood@freescale.com>,
+        <agraf@suse.de>, <linuxppc-release@linux.freescale.net>
+Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex
+ APIs
+Message-ID: <20140915184451.962a3a19c4940792d182f10a@freescale.com>
+In-Reply-To: <1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
+References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
+	<1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALZtONCb=gT27qhXz3qu=OEzA=djvFvoT_=x=X1bZmtpMzYjhA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(164054003)(24454002)(51704005)(189002)(83322001)(19580395003)(87936001)(19580405001)(68736004)(23726002)(44976005)(79102001)(26826002)(102836001)(92566001)(97736003)(81342001)(107046002)(62966002)(99396002)(31966008)(50466002)(104016003)(33646002)(74662001)(74502001)(6806004)(95666004)(100306002)(81542001)(4396001)(77156001)(50226001)(90102001)(21056001)(77982001)(89996001)(36756003)(76176999)(50986999)(104166001)(106466001)(46102001)(105606002)(93916002)(88136002)(86362001)(64706001)(87286001)(47776003)(84676001)(92726001)(80022001)(20776003)(76482001)(85852003)(83072002)(46406003)(110136001)(85306004)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0725;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
+X-Forefront-PRVS: 03355EE97E
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:00:33PM -0400, Dan Streetman wrote:
-> On Sun, Sep 14, 2014 at 8:57 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > On Sat, Sep 13, 2014 at 03:39:13PM -0400, Dan Streetman wrote:
-> >> On Thu, Sep 4, 2014 at 7:59 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >> > Hi Heesub,
-> >> >
-> >> > On Thu, Sep 04, 2014 at 03:26:14PM +0900, Heesub Shin wrote:
-> >> >> Hello Minchan,
-> >> >>
-> >> >> First of all, I agree with the overall purpose of your patch set.
-> >> >
-> >> > Thank you.
-> >> >
-> >> >>
-> >> >> On 09/04/2014 10:39 AM, Minchan Kim wrote:
-> >> >> >This patch implement SWAP_GET_FREE handler in zram so that VM can
-> >> >> >know how many zram has freeable space.
-> >> >> >VM can use it to stop anonymous reclaiming once zram is full.
-> >> >> >
-> >> >> >Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> >> >---
-> >> >> >  drivers/block/zram/zram_drv.c | 18 ++++++++++++++++++
-> >> >> >  1 file changed, 18 insertions(+)
-> >> >> >
-> >> >> >diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> >> >index 88661d62e46a..8e22b20aa2db 100644
-> >> >> >--- a/drivers/block/zram/zram_drv.c
-> >> >> >+++ b/drivers/block/zram/zram_drv.c
-> >> >> >@@ -951,6 +951,22 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> >> >> >     return 0;
-> >> >> >  }
-> >> >> >
-> >> >> >+static int zram_get_free_pages(struct block_device *bdev, long *free)
-> >> >> >+{
-> >> >> >+    struct zram *zram;
-> >> >> >+    struct zram_meta *meta;
-> >> >> >+
-> >> >> >+    zram = bdev->bd_disk->private_data;
-> >> >> >+    meta = zram->meta;
-> >> >> >+
-> >> >> >+    if (!zram->limit_pages)
-> >> >> >+            return 1;
-> >> >> >+
-> >> >> >+    *free = zram->limit_pages - zs_get_total_pages(meta->mem_pool);
-> >> >>
-> >> >> Even if 'free' is zero here, there may be free spaces available to
-> >> >> store more compressed pages into the zs_pool. I mean calculation
-> >> >> above is not quite accurate and wastes memory, but have no better
-> >> >> idea for now.
-> >> >
-> >> > Yeb, good point.
-> >> >
-> >> > Actually, I thought about that but in this patchset, I wanted to
-> >> > go with conservative approach which is a safe guard to prevent
-> >> > system hang which is terrible than early OOM kill.
-> >> >
-> >> > Whole point of this patchset is to add a facility to VM and VM
-> >> > collaborates with zram via the interface to avoid worst case
-> >> > (ie, system hang) and logic to throttle could be enhanced by
-> >> > several approaches in future but I agree my logic was too simple
-> >> > and conservative.
-> >> >
-> >> > We could improve it with [anti|de]fragmentation in future but
-> >> > at the moment, below simple heuristic is not too bad for first
-> >> > step. :)
-> >> >
-> >> >
-> >> > ---
-> >> >  drivers/block/zram/zram_drv.c | 15 ++++++++++-----
-> >> >  drivers/block/zram/zram_drv.h |  1 +
-> >> >  2 files changed, 11 insertions(+), 5 deletions(-)
-> >> >
-> >> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> > index 8e22b20aa2db..af9dfe6a7d2b 100644
-> >> > --- a/drivers/block/zram/zram_drv.c
-> >> > +++ b/drivers/block/zram/zram_drv.c
-> >> > @@ -410,6 +410,7 @@ static bool zram_free_page(struct zram *zram, size_t index)
-> >> >         atomic64_sub(zram_get_obj_size(meta, index),
-> >> >                         &zram->stats.compr_data_size);
-> >> >         atomic64_dec(&zram->stats.pages_stored);
-> >> > +       atomic_set(&zram->alloc_fail, 0);
-> >> >
-> >> >         meta->table[index].handle = 0;
-> >> >         zram_set_obj_size(meta, index, 0);
-> >> > @@ -600,10 +601,12 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >> >         alloced_pages = zs_get_total_pages(meta->mem_pool);
-> >> >         if (zram->limit_pages && alloced_pages > zram->limit_pages) {
-> >> >                 zs_free(meta->mem_pool, handle);
-> >> > +               atomic_inc(&zram->alloc_fail);
-> >> >                 ret = -ENOMEM;
-> >> >                 goto out;
-> >> >         }
-> >>
-> >> This isn't going to work well at all with swap.  There will be,
-> >> minimum, 32 failures to write a swap page before GET_FREE finally
-> >> indicates it's full, and even then a single free during those 32
-> >> failures will restart the counter, so it could be dozens or hundreds
-> >> (or more) swap write failures before the zram device is marked as
-> >> full.  And then, a single zram free will move it back to non-full and
-> >> start the write failures over again.
-> >>
-> >> I think it would be better to just check for actual fullness (i.e.
-> >> alloced_pages > limit_pages) at the start of write, and fail if so.
-> >> That will allow a single write to succeed when it crosses into
-> >> fullness, and the if GET_FREE is changed to a simple IS_FULL and uses
-> >> the same check (alloced_pages > limit_pages), then swap shouldn't see
-> >> any write failures (or very few), and zram will stay full until enough
-> >> pages are freed that it really does move under limit_pages.
-> >
-> > The alloced_pages > limit_pages doesn't mean zram is full so with your
-> > approach, it could kick OOM earlier which is not what we want.
-> > Because our product uses zram to delay app killing by low memory killer.
-> 
-> With zram, the meaning of "full" isn't as obvious as other fixed-size
-> storage devices.  Obviously, "full" usually means "no more room to
-> store anything", while "not full" means "there is room to store
-> anything, up to the remaining free size".  With zram, its zsmalloc
-> pool size might be over the specified limit, but there will still be
-> room to store *some* things - but not *anything*.  Only compressed
-> pages that happen to fit inside a class with at least one zspage that
-> isn't full.
-> 
-> Clearly, we shouldn't wait to declare zram "full" only once zsmalloc
-> is 100% full in all its classes.
-> 
-> What about waiting until there is N number of write failures, like
-> this patch?  That doesn't seem very fair to the writer, since each
-> write failure will cause them to do extra work (first, in selecting
-> what to write, and then in recovering from the failed write).
-> However, it will probably squeeze some writes into some of those empty
-> spaces in already-allocated zspages.
-> 
-> And declaring zram "full" immediately once the zsmalloc pool size
-> increases past the specified limit?  Since zsmalloc's classes almost
-> certainly contain some fragmentation, that will waste all the empty
-> spaces that could still store more compressed pages.  But, this is the
-> limit at which you cannot guarantee all writes to be able to store a
-> compressed page - any zsmalloc classes without a partially empty
-> zspage will have to increase zsmalloc's size, therefore failing the
-> write.
-> 
-> Neither definition of "full" is optimal.  Since in this case we're
-> talking about swap, I think forcing swap write failures to happen,
-> which with direct reclaim could (I believe) stop everything while the
-> write failures continue, should be avoided as much as possible.  Even
-> when zram fullness is delayed by N write failures, to try to squeeze
-> out as much storage from zsmalloc as possible, when it does eventually
-> fill if zram is the only swap device the system will OOM anyway.  And
-> if zram isn't the only swap device, but just the first (highest
-> priority), then delaying things with unneeded write failures is
-> certainly not better than just filling up so swap can move on to the
-> next swap device.  The only case where write failures delaying marking
-> zram as full will help is if the system stopped right at this point,
-> and then started decreasing how much memory was needed.  That seems
-> like a very unlikely coincidence, but maybe some testing would help
-> determine how bad the write failures affect system
-> performance/responsiveness and how long they delay OOM.
+On Thu, 11 Sep 2014 12:34:21 -0500
+"J. German Rivera" <German.Rivera@freescale.com> wrote:
 
-Please, keep in mind that swap is alreay really slow operation but
-we want to use it to avoid OOM if possible so I can't buy your early
-kill suggestion. If a user feel it's really slow for his product,
-it means his admin was fail. He should increase the limit of zram
-dynamically or statically(zram already support that ways).
-
-The thing I'd like to solve in this patchset is to avoid system hang
-where admin cannot do anyting, even ctrl+c, which is thing should
-support in OS level.
-
+> From: "J. German Rivera" <German.Rivera@freescale.com>
 > 
-> Since there may be different use cases that desire different things,
-> maybe there should be a zram runtime (or buildtime) config to choose
-> exactly how it decides it's full?  Either full after N write failures,
-> or full when alloced>limit?  That would allow the user to either defer
-> getting full as long as possible (at the possible cost of system
-> unresponsiveness during those write failures), or to just move
-> immediately to zram being full as soon as it can't guarantee that each
-> write will succeed.
+> APIs to access the Management Complex (MC) hardware
+> module of Freescale LS2 SoCs. This patch includes
+> APIs to check the MC firmware version and to manipulate
+> DPRC objects in the MC.
+> 
+> Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
+> Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
+> ---
+>  drivers/bus/fsl-mc/dpmng.c         |   93 +++++
+>  drivers/bus/fsl-mc/dprc.c          |  504 +++++++++++++++++++++++
+>  drivers/bus/fsl-mc/fsl_dpmng_cmd.h |   83 ++++
+>  drivers/bus/fsl-mc/fsl_dprc_cmd.h  |  545 +++++++++++++++++++++++++
+>  drivers/bus/fsl-mc/fsl_mc_sys.c    |  237 +++++++++++
+>  include/linux/fsl_dpmng.h          |  120 ++++++
+>  include/linux/fsl_dprc.h           |  790 ++++++++++++++++++++++++++++++++++++
+>  include/linux/fsl_mc_cmd.h         |  182 +++++++++
+>  include/linux/fsl_mc_sys.h         |   81 ++++
+>  9 files changed, 2635 insertions(+)
+>  create mode 100644 drivers/bus/fsl-mc/dpmng.c
+>  create mode 100644 drivers/bus/fsl-mc/dprc.c
+>  create mode 100644 drivers/bus/fsl-mc/fsl_dpmng_cmd.h
+>  create mode 100644 drivers/bus/fsl-mc/fsl_dprc_cmd.h
+>  create mode 100644 drivers/bus/fsl-mc/fsl_mc_sys.c
+>  create mode 100644 include/linux/fsl_dpmng.h
+>  create mode 100644 include/linux/fsl_dprc.h
+>  create mode 100644 include/linux/fsl_mc_cmd.h
+>  create mode 100644 include/linux/fsl_mc_sys.h
 
-Hmm, I thought it and was going to post it when I send v1.
-My idea was this.
+the fsl prefix in the filename fsl_dpmng_cmd.h is redundant with
+its directory name fsl-mc/.  Note that I find dashes ('-') in
+filenames make them easier to type: is there a reason we're using
+underscores here?
 
-int zram_get_free_pages(...)
-{
-        if (zram->limit_pages &&
-                zram->alloc_fail > FULL_THRESH_HOLD &&
-                (100 * compr_data_size >> PAGE_SHIFT /
-                        zs_get_total_pages(zram)) > FRAG_THRESH_HOLD) {
-                        *free = 0;
-                        return 0;
-        }
-        ..
+Also, any reason why these and future include files aren't being put
+in include/linux/fsl/, so as to not pollute the top level
+include/linux/?  That way, we can also remove the fsl- prefix from
+those filenames, too..
+
+> diff --git a/drivers/bus/fsl-mc/dpmng.c b/drivers/bus/fsl-mc/dpmng.c
+> new file mode 100644
+> index 0000000..c6ed27c
+> --- /dev/null
+> +++ b/drivers/bus/fsl-mc/dpmng.c
+> @@ -0,0 +1,93 @@
+> +/* Copyright 2013-2014 Freescale Semiconductor Inc.
+> + *
+> + * Redistribution and use in source and binary forms, with or without
+> + * modification, are permitted provided that the following conditions are met:
+> + *     * Redistributions of source code must retain the above copyright
+> + *       notice, this list of conditions and the following disclaimer.
+> + *     * Redistributions in binary form must reproduce the above copyright
+> + *       notice, this list of conditions and the following disclaimer in the
+> + *       documentation and/or other materials provided with the distribution.
+> + *     * Neither the name of Freescale Semiconductor nor the
+> + *       names of its contributors may be used to endorse or promote products
+> + *       derived from this software without specific prior written permission.
+> + *
+> + *
+> + * ALTERNATIVELY, this software may be distributed under the terms of the
+> + * GNU General Public License ("GPL") as published by the Free Software
+> + * Foundation, either version 2 of that License or (at your option) any
+> + * later version.
+> + *
+> + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
+
+interesting, normally this text reads:
+
+"THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS"
+
+...does that mean we're excluding non-Freescale copyright holders
+and contributors from this warranty statement?  That doesn't seem
+appropriate for an upstream kernel submission.
+
+> + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+> + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+> + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
+> + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+> + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+> + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+> + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+> + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+> + */
+
+This dual BSD-3-clause/GPL license doesn't match that of patch 2's
+drivers/bus/fsl-mc/fsl_mc_bus.c, GPLv2:
+
++/*
++ * Freescale Management Complex (MC) bus driver
++ *
++ * Copyright (C) 2014 Freescale Semiconductor, Inc.
++ * Author: German Rivera <German.Rivera@freescale.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
+
+any reason the licenses are different?
+
+> +int mc_get_version(struct fsl_mc_io *mc_io, struct mc_version *mc_ver_info)
+> +{
+> +	struct mc_command cmd = { 0 };
+
+we can save some cycles if this initialization is not absolutely
+necessary: is it?  i.e., does the h/w actually look at the params
+section when doing a get_version?  not sure to what other commands
+this comment would apply to...at least get_container_id, but maybe
+more - all of them?
+
+> diff --git a/drivers/bus/fsl-mc/fsl_mc_sys.c b/drivers/bus/fsl-mc/fsl_mc_sys.c
+
+> +/**
+> + * Map an MC portal in the kernel virtual address space
+> + */
+> +static int map_mc_portal(phys_addr_t mc_portal_phys_addr,
+> +			 uint32_t mc_portal_size,
+> +			 void __iomem **new_mc_portal_virt_addr)
+> +{
+> +	void __iomem *mc_portal_virt_addr = NULL;
+> +	struct resource *res = NULL;
+> +	int error = -EINVAL;
+> +
+> +	res =
+> +	    request_mem_region(mc_portal_phys_addr, mc_portal_size,
+> +			       "mc_portal");
+> +	if (res == NULL) {
+> +		pr_err("request_mem_region() failed for MC portal %#llx\n",
+> +		       mc_portal_phys_addr);
+> +		error = -EBUSY;
+> +		goto error;
+> +	}
+> +
+> +	mc_portal_virt_addr = ioremap_nocache(mc_portal_phys_addr,
+> +					      mc_portal_size);
+> +	if (mc_portal_virt_addr == NULL) {
+> +		pr_err("ioremap_nocache() failed for MC portal %#llx\n",
+> +		       mc_portal_phys_addr);
+> +		error = -EFAULT;
+> +		goto error;
+> +	}
+> +
+> +	*new_mc_portal_virt_addr = mc_portal_virt_addr;
+> +	return 0;
+> +error:
+> +	if (mc_portal_virt_addr != NULL)
+> +		iounmap(mc_portal_virt_addr);
+> +
+> +	if (res != NULL)
+> +		release_mem_region(mc_portal_phys_addr, mc_portal_size);
+> +
+> +	return error;
+> +}
+
+unnecessary initializations, bad error codes (both should be
+-ENOMEM), unnecessarily complicated error path, plus a simpler
+implementation can be made if fn can return the mapped address, like
+so:
+
+static void __iomem *map_mc_portal(phys_addr_t mc_portal_phys_addr,
+                                   uint32_t mc_portal_size)
+{ 
+        struct resource *res;
+        void __iomem *mapped_addr;
+
+        res = request_mem_region(mc_portal_phys_addr, mc_portal_size, 
+                                 "mc_portal");
+        if (!res) 
+                return NULL;
+
+        mapped_addr = ioremap_nocache(mc_portal_phys_addr,
+                                      mc_portal_size);
+        if (!mapped_addr)
+                release_mem_region(mc_portal_phys_addr, mc_portal_size);
+
+        return mapped_addr;
 }
 
-Maybe we could export FRAG_THRESHOLD.
+the callsite can return -ENOMEM to its caller if returned NULL.  This
+can be improved even further if devm_ functions are used:  this is
+just an example of how to simplify the code using early returns
+instead of goto error.
 
-> 
-> 
-> 
-> >
-> >>
-> >>
-> >>
-> >> >
-> >> > +       atomic_set(&zram->alloc_fail, 0);
-> >> >         update_used_max(zram, alloced_pages);
-> >> >
-> >> >         cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_WO);
-> >> > @@ -951,6 +954,7 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> >> >         return 0;
-> >> >  }
-> >> >
-> >> > +#define FULL_THRESH_HOLD 32
-> >> >  static int zram_get_free_pages(struct block_device *bdev, long *free)
-> >> >  {
-> >> >         struct zram *zram;
-> >> > @@ -959,12 +963,13 @@ static int zram_get_free_pages(struct block_device *bdev, long *free)
-> >> >         zram = bdev->bd_disk->private_data;
-> >> >         meta = zram->meta;
-> >> >
-> >> > -       if (!zram->limit_pages)
-> >> > -               return 1;
-> >> > -
-> >> > -       *free = zram->limit_pages - zs_get_total_pages(meta->mem_pool);
-> >> > +       if (zram->limit_pages &&
-> >> > +               (atomic_read(&zram->alloc_fail) > FULL_THRESH_HOLD)) {
-> >> > +               *free = 0;
-> >> > +               return 0;
-> >> > +       }
-> >> >
-> >> > -       return 0;
-> >> > +       return 1;
-> >>
-> >> There's no way that zram can even provide a accurate number of free
-> >> pages, since it can't know how compressible future stored pages will
-> >> be.  It would be better to simply change this swap_hint from GET_FREE
-> >> to IS_FULL, and return either true or false.
-> >
-> > My plan is that we can give an approximation based on
-> > orig_data_size/compr_data_size with tweaking zero page and vmscan can use
-> > the hint from get_nr_swap_pages to throttle file/anon balance but I want to do
-> > step by step so I didn't include the hint.
-> > If you are strong against with that in this stage, I can change it and
-> > try it later with the number.
-> > Please, say again if you want.
-> 
-> since as you said zram is the only user of swap_hint, changing it
-> later shouldn't be a big deal.  And you could have both, IS_FULL and
-> GET_FREE; since the check in scan_swap_map() really only is checking
-> for IS_FULL, if you update vmscan later to adjust its file/anon
-> balance based on GET_FREE, that can be added then with no trouble,
-> right?
+> +int __must_check fsl_create_mc_io(phys_addr_t mc_portal_phys_addr,
+> +				  uint32_t mc_portal_size,
+> +				  uint32_t flags, struct fsl_mc_io **new_mc_io)
+> +{
+> +	int error = -EINVAL;
+> +	struct fsl_mc_io *mc_io = NULL;
+> +
+> +	mc_io = kzalloc(sizeof(*mc_io), GFP_KERNEL);
+> +	if (mc_io == NULL) {
+> +		error = -ENOMEM;
+> +		pr_err("No memory to allocate mc_io\n");
+> +		goto error;
+> +	}
+> +
+> +	mc_io->magic = FSL_MC_IO_MAGIC;
+> +	mc_io->flags = flags;
+> +	mc_io->portal_phys_addr = mc_portal_phys_addr;
+> +	mc_io->portal_size = mc_portal_size;
+> +	spin_lock_init(&mc_io->spinlock);
+> +	error = map_mc_portal(mc_portal_phys_addr,
+> +			      mc_portal_size, &mc_io->portal_virt_addr);
+> +	if (error < 0)
+> +		goto error;
+> +
+> +	*new_mc_io = mc_io;
+> +	return 0;
 
-Yeb, No problem.
+if a fn only returns an address or error, it can return ERR_PTR
+(e.g., -ENOMEM), and the callsite use IS_ERR() to determine whether
+there was an error or address returned.  This makes code much
+simpler instead of passing address values back by reference.
 
-> 
-> 
-> >
-> > Thanks for the review!
-> >
-> >
-> >>
-> >>
-> >> >  }
-> >> >
-> >> >  static int zram_swap_hint(struct block_device *bdev,
-> >> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> >> > index 779d03fa4360..182a2544751b 100644
-> >> > --- a/drivers/block/zram/zram_drv.h
-> >> > +++ b/drivers/block/zram/zram_drv.h
-> >> > @@ -115,6 +115,7 @@ struct zram {
-> >> >         u64 disksize;   /* bytes */
-> >> >         int max_comp_streams;
-> >> >         struct zram_stats stats;
-> >> > +       atomic_t alloc_fail;
-> >> >         /*
-> >> >          * the number of pages zram can consume for storing compressed data
-> >> >          */
-> >> > --
-> >> > 2.0.0
-> >> >
-> >> >>
-> >> >> heesub
-> >> >>
-> >> >> >+
-> >> >> >+    return 0;
-> >> >> >+}
-> >> >> >+
-> >> >> >  static int zram_swap_hint(struct block_device *bdev,
-> >> >> >                             unsigned int hint, void *arg)
-> >> >> >  {
-> >> >> >@@ -958,6 +974,8 @@ static int zram_swap_hint(struct block_device *bdev,
-> >> >> >
-> >> >> >     if (hint == SWAP_SLOT_FREE)
-> >> >> >             ret = zram_slot_free_notify(bdev, (unsigned long)arg);
-> >> >> >+    else if (hint == SWAP_GET_FREE)
-> >> >> >+            ret = zram_get_free_pages(bdev, arg);
-> >> >> >
-> >> >> >     return ret;
-> >> >> >  }
-> >> >> >
-> >> >>
-> >> >> --
-> >> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> >> see: http://www.linux-mm.org/ .
-> >> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >> >
-> >> > --
-> >> > Kind regards,
-> >> > Minchan Kim
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> +error:
+> +	if (mc_io != NULL) {
+> +		if (mc_io->portal_virt_addr != NULL) {
+> +			unmap_mc_portal(mc_portal_phys_addr,
+> +					mc_portal_size,
+> +					mc_io->portal_virt_addr);
+> +		}
+> +
+> +		kfree(mc_io);
 
--- 
-Kind regards,
-Minchan Kim
+kfree can handle being passed NULL, but again, might want to
+consider using devm_ functions instead.
+
+> +	}
+> +
+> +	return error;
+> +}
+> +EXPORT_SYMBOL_GPL(fsl_create_mc_io);
+> +
+> +void fsl_destroy_mc_io(struct fsl_mc_io *mc_io)
+> +{
+> +	if (WARN_ON(mc_io->magic != FSL_MC_IO_MAGIC))
+> +		return;
+> +
+> +	if (mc_io->portal_virt_addr != NULL) {
+> +		unmap_mc_portal(mc_io->portal_phys_addr,
+> +				mc_io->portal_size, mc_io->portal_virt_addr);
+
+unmap_mc_portal already checks for virt_addr, this is another
+example where the code goes too far checking for NULL.
+
+> +		mc_io->portal_virt_addr = NULL;
+> +	}
+> +
+> +	mc_io->magic = 0x0;
+> +	kfree(mc_io);
+> +}
+> +EXPORT_SYMBOL_GPL(fsl_destroy_mc_io);
+> +
+> +static int mc_status_to_error(enum mc_cmd_status status)
+> +{
+> +	switch (status) {
+> +	case MC_CMD_STATUS_OK:
+> +		return 0;
+> +	case MC_CMD_STATUS_AUTH_ERR:
+> +		return -EACCES;
+> +	case MC_CMD_STATUS_NO_PRIVILEGE:
+> +		return -EPERM;
+> +	case MC_CMD_STATUS_DMA_ERR:
+> +		return -EIO;
+> +	case MC_CMD_STATUS_CONFIG_ERR:
+> +		return -EINVAL;
+> +	case MC_CMD_STATUS_TIMEOUT:
+> +		return -ETIMEDOUT;
+> +	case MC_CMD_STATUS_NO_RESOURCE:
+> +		return -ENAVAIL;
+> +	case MC_CMD_STATUS_NO_MEMORY:
+> +		return -ENOMEM;
+> +	case MC_CMD_STATUS_BUSY:
+> +		return -EBUSY;
+> +	case MC_CMD_STATUS_UNSUPPORTED_OP:
+> +		return -ENOTSUP;
+> +	case MC_CMD_STATUS_INVALID_STATE:
+> +		return -ENODEV;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	/* Not expected to reach here */
+> +	return -EINVAL;
+
+but if it does, callsite can't disambiguate between that and e.g.,
+MC_CMD_STATUS_CONFIG_ERR.  Also, this would be more readable as a
+static const lookup table.
+
+> +}
+> +
+> +int mc_send_command(struct fsl_mc_io *mc_io, struct mc_command *cmd)
+> +{
+> +	enum mc_cmd_status status;
+> +	unsigned long irqsave_flags = 0;
+> +	int error = -EINVAL;
+> +	bool lock_acquired = false;
+> +	unsigned long jiffies_until_timeout =
+> +	    jiffies + MC_CMD_COMPLETION_TIMEOUT;
+> +
+> +	if (WARN_ON(mc_io->magic != FSL_MC_IO_MAGIC))
+> +		goto out;
+
+if the h/w signals an error on the bad magic condition, s/w doesn't
+need to check it in its fast path.
+
+> +	if (mc_io->flags & FSL_MC_IO_PORTAL_SHARED) {
+> +		spin_lock_irqsave(&mc_io->spinlock, irqsave_flags);
+> +		lock_acquired = true;
+> +	}
+> +
+> +	mc_write_command(mc_io->portal_virt_addr, cmd);
+> +
+> +	for (;;) {
+> +		status = mc_read_response(mc_io->portal_virt_addr, cmd);
+> +		if (status != MC_CMD_STATUS_READY)
+> +			break;
+> +
+> +		/*
+> +		 * TODO: When MC command completion interrupts are supported
+> +		 * call wait function here instead of udelay()
+> +		 */
+> +		udelay(MC_CMD_COMPLETION_POLLING_INTERVAL);
+> +		if (time_after_eq(jiffies, jiffies_until_timeout)) {
+> +			error = -ETIMEDOUT;
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	error = mc_status_to_error(status);
+> +out:
+> +	if (lock_acquired)
+> +		spin_unlock_irqrestore(&mc_io->spinlock, irqsave_flags);
+
+so if the portal is shared, we take a lock, disable interrupts, and
+then potentially udelay for a whopping 500usec, then check to see if
+_100_usec have passed, and thus _always_ issue a timeout error, even
+if the device took < 100usec to consume the command???
+
+Not to mention this code will spin perpetually with IRQs disabled if
+the read_response never returns ready.  I also don't see a reason
+why IRQs are being disabled in the first place - it's not being used
+in an IRQ handler...perhaps we need to wait until command completion
+IRQs are supported :)
+
+> +/**
+> + * @brief	Management Complex firmware version information
+> + */
+> +#define MC_VER_MAJOR 2
+> +#define MC_VER_MINOR 0
+
+code should be adjusted to run on all *compatible* versions of h/w,
+not strictly the one set in these defines.
+
+> +/**
+> + * @brief	Disconnects one endpoint to remove its network link
+> + *
+> + * @param[in]   mc_io		Pointer to opaque I/O object
+> + * @param[in]	dprc_handle	Handle to the DPRC object
+> + * @param[in]   endpoint	Endpoint configuration parameters.
+> + *
+> + * @returns	'0' on Success; Error code otherwise.
+> + * */
+> +int dprc_disconnect(struct fsl_mc_io *mc_io, uint16_t dprc_handle,
+> +		    struct dprc_endpoint *endpoint);
+> +
+> +/*! @} */
+
+this entire file is riddled with non-kernel-doc comment markers:  see
+Documentation/kernel-doc-nano-HOWTO.txt on how to write function and
+other types of comments in a kernel-doc compliant format.
+
+> +#ifdef FSL_MC_FIRMWARE
+> +/*
+> + * MC firmware decodes MC command parameters and encodes MC response parameters
+> + */
+> +
+> +#define MC_CMD_PARAM_OP(_cmd, _param, _offset, _width, _type, _arg) \
+> +	((_arg) = (_type)u64_dec((_cmd).params[_param], (_offset), (_width)))
+> +
+> +#define MC_RSP_PARAM_OP(_cmd, _param, _offset, _width, _type, _arg) \
+> +	((_cmd).params[_param] |= u64_enc((_offset), (_width), (_type)(_arg)))
+> +
+> +#else
+> +/*
+> + * MC clients (GPP side) encode MC command parameters and decode MC response
+> + * parameters
+> + */
+> +
+> +#define MC_CMD_PARAM_OP(_cmd, _param, _offset, _width, _type, _arg) \
+> +	((_cmd).params[_param] |= u64_enc((_offset), (_width), (_type)(_arg)))
+> +
+> +#define MC_RSP_PARAM_OP(_cmd, _param, _offset, _width, _type, _arg) \
+> +	((_arg) = (_type)u64_dec((_cmd).params[_param], (_offset), (_width)))
+> +
+> +#endif /* FSL_MC_FIRMWARE */
+
+FSL_MC_FIRMWARE isn't being defined anywhere; remove.
+
+> diff --git a/include/linux/fsl_mc_sys.h b/include/linux/fsl_mc_sys.h
+...
+> +#ifndef ENOTSUP
+> +#define ENOTSUP		95
+> +#endif
+
+This is already being defined as EOPNOTSUPP: either use that,
+ENOTSUPP, or, if you can justify it, patch a more generic errno.h
+as a separate patch, earlier in the patchseries.
+
+> +#define ioread64(_p)	    readq(_p)
+> +#define iowrite64(_v, _p)   writeq(_v, _p)
+
+these definitions have names that are too generic to belong in a FSL
+h/w header: conflicts will be introduced once the existing
+io{read,write}32 functions get promoted.  Either use readq/writeq
+directly, or, if you can justify it, patch a more generic io.h.
+
+Also, is there a reason the 'relaxed' versions of the i/o accessors
+aren't being used?
+
+I'm stopping my review here, since I expect numerous changes in the
+subsequent patches as a result of changes to this one in the next
+version of the series.
+
+Thanks,
+
+Kim
