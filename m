@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329AbaIOUNR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:13:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
+	id S1757349AbaIOUN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:13:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165AbaIOTrD (ORCPT
+	with ESMTP id S1755986AbaIOTrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:03 -0400
+	Mon, 15 Sep 2014 15:47:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, Chris Mason <clm@fb.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 111/114] vfs: fix bad hashing of dentries
-Date: Mon, 15 Sep 2014 12:26:51 -0700
-Message-Id: <20140915192644.882764318@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.14 083/114] fix copy_tree() regression
+Date: Mon, 15 Sep 2014 12:26:23 -0700
+Message-Id: <20140915192644.024432405@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -31,108 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 99d263d4c5b2f541dfacb5391e22e8c91ea982a6 upstream.
+commit 12a5b5294cb1896e9a3c9fca8ff5a7e3def4e8c6 upstream.
 
-Josef Bacik found a performance regression between 3.2 and 3.10 and
-narrowed it down to commit bfcfaa77bdf0 ("vfs: use 'unsigned long'
-accesses for dcache name comparison and hashing"). He reports:
+Since 3.14 we had copy_tree() get the shadowing wrong - if we had one
+vfsmount shadowing another (i.e. if A is a slave of B, C is mounted
+on A/foo, then D got mounted on B/foo creating D' on A/foo shadowed
+by C), copy_tree() of A would make a copy of D' shadow the the copy of
+C, not the other way around.
 
- "The test case is essentially
+It's easy to fix, fortunately - just make sure that mount follows
+the one that shadows it in mnt_child as well as in mnt_hash, and when
+copy_tree() decides to attach a new mount, check if the last child
+it has added to the same parent should be shadowing the new one.
+And if it should, just use the same logics commit_tree() has - put the
+new mount into the hash and children lists right after the one that
+should shadow it.
 
-      for (i = 0; i < 1000000; i++)
-              mkdir("a$i");
-
-  On xfs on a fio card this goes at about 20k dir/sec with 3.2, and 12k
-  dir/sec with 3.10.  This is because we spend waaaaay more time in
-  __d_lookup on 3.10 than in 3.2.
-
-  The new hashing function for strings is suboptimal for <
-  sizeof(unsigned long) string names (and hell even > sizeof(unsigned
-  long) string names that I've tested).  I broke out the old hashing
-  function and the new one into a userspace helper to get real numbers
-  and this is what I'm getting:
-
-      Old hash table had 1000000 entries, 0 dupes, 0 max dupes
-      New hash table had 12628 entries, 987372 dupes, 900 max dupes
-      We had 11400 buckets with a p50 of 30 dupes, p90 of 240 dupes, p99 of 567 dupes for the new hash
-
-  My test does the hash, and then does the d_hash into a integer pointer
-  array the same size as the dentry hash table on my system, and then
-  just increments the value at the address we got to see how many
-  entries we overlap with.
-
-  As you can see the old hash function ended up with all 1 million
-  entries in their own bucket, whereas the new one they are only
-  distributed among ~12.5k buckets, which is why we're using so much
-  more CPU in __d_lookup".
-
-The reason for this hash regression is two-fold:
-
- - On 64-bit architectures the down-mixing of the original 64-bit
-   word-at-a-time hash into the final 32-bit hash value is very
-   simplistic and suboptimal, and just adds the two 32-bit parts
-   together.
-
-   In particular, because there is no bit shuffling and the mixing
-   boundary is also a byte boundary, similar character patterns in the
-   low and high word easily end up just canceling each other out.
-
- - the old byte-at-a-time hash mixed each byte into the final hash as it
-   hashed the path component name, resulting in the low bits of the hash
-   generally being a good source of hash data.  That is not true for the
-   word-at-a-time case, and the hash data is distributed among all the
-   bits.
-
-The fix is the same in both cases: do a better job of mixing the bits up
-and using as much of the hash data as possible.  We already have the
-"hash_32|64()" functions to do that.
-
-Reported-by: Josef Bacik <jbacik@fb.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Chris Mason <clm@fb.com>
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    3 +--
- fs/namei.c  |    4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ fs/namespace.c |   31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -106,8 +106,7 @@ static inline struct hlist_bl_head *d_ha
- 					unsigned int hash)
- {
- 	hash += (unsigned long) parent / L1_CACHE_BYTES;
--	hash = hash + (hash >> d_hash_shift);
--	return dentry_hashtable + (hash & d_hash_mask);
-+	return dentry_hashtable + hash_32(hash, d_hash_shift);
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -777,6 +777,20 @@ static void attach_mnt(struct mount *mnt
+ 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
  }
  
- /* Statistics gathering. */
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -34,6 +34,7 @@
- #include <linux/device_cgroup.h>
- #include <linux/fs_struct.h>
- #include <linux/posix_acl.h>
-+#include <linux/hash.h>
- #include <asm/uaccess.h>
++static void attach_shadowed(struct mount *mnt,
++			struct mount *parent,
++			struct mount *shadows)
++{
++	if (shadows) {
++		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
++		list_add(&mnt->mnt_child, &shadows->mnt_child);
++	} else {
++		hlist_add_head_rcu(&mnt->mnt_hash,
++				m_hash(&parent->mnt, mnt->mnt_mountpoint));
++		list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
++	}
++}
++
+ /*
+  * vfsmount lock must be held for write
+  */
+@@ -795,12 +809,7 @@ static void commit_tree(struct mount *mn
  
- #include "internal.h"
-@@ -1624,8 +1625,7 @@ static inline int nested_symlink(struct
+ 	list_splice(&head, n->list.prev);
  
- static inline unsigned int fold_hash(unsigned long hash)
- {
--	hash += hash >> (8*sizeof(int));
--	return hash;
-+	return hash_64(hash, 32);
+-	if (shadows)
+-		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
+-	else
+-		hlist_add_head_rcu(&mnt->mnt_hash,
+-				m_hash(&parent->mnt, mnt->mnt_mountpoint));
+-	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
++	attach_shadowed(mnt, parent, shadows);
+ 	touch_mnt_namespace(n);
  }
  
- #else	/* 32-bit case */
+@@ -1504,6 +1513,7 @@ struct mount *copy_tree(struct mount *mn
+ 			continue;
+ 
+ 		for (s = r; s; s = next_mnt(s, r)) {
++			struct mount *t = NULL;
+ 			if (!(flag & CL_COPY_UNBINDABLE) &&
+ 			    IS_MNT_UNBINDABLE(s)) {
+ 				s = skip_mnt_tree(s);
+@@ -1525,7 +1535,14 @@ struct mount *copy_tree(struct mount *mn
+ 				goto out;
+ 			lock_mount_hash();
+ 			list_add_tail(&q->mnt_list, &res->mnt_list);
+-			attach_mnt(q, parent, p->mnt_mp);
++			mnt_set_mountpoint(parent, p->mnt_mp, q);
++			if (!list_empty(&parent->mnt_mounts)) {
++				t = list_last_entry(&parent->mnt_mounts,
++					struct mount, mnt_child);
++				if (t->mnt_mp != p->mnt_mp)
++					t = NULL;
++			}
++			attach_shadowed(q, parent, t);
+ 			unlock_mount_hash();
+ 		}
+ 	}
 
 
