@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169AbaIOUH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:07:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55684 "EHLO
+	id S1757229AbaIOUIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:08:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55653 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756200AbaIOTrI (ORCPT
+	with ESMTP id S1756191AbaIOTrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:08 -0400
+	Mon, 15 Sep 2014 15:47:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 03/71] media: au0828: Only alt setting logic when needed
-Date: Mon, 15 Sep 2014 12:26:01 -0700
-Message-Id: <20140915192638.824264570@linuxfoundation.org>
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 15/71] powerpc/mm: Use read barrier when creating real_pte
+Date: Mon, 15 Sep 2014 12:26:13 -0700
+Message-Id: <20140915192639.221711452@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -28,91 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
+commit 85c1fafd7262e68ad821ee1808686b1392b1167d upstream.
 
-It seems that there's a bug at au0828 hardware/firmware
-related to alternate setting: when the device is already at
-alt 5, a further call causes the URBs to receive -ESHUTDOWN.
+On ppc64 we support 4K hash pte with 64K page size. That requires
+us to track the hash pte slot information on a per 4k basis. We do that
+by storing the slot details in the second half of pte page. The pte bit
+_PAGE_COMBO is used to indicate whether the second half need to be
+looked while building real_pte. We need to use read memory barrier while
+doing that so that load of hidx is not reordered w.r.t _PAGE_COMBO
+check. On the store side we already do a lwsync in __hash_page_4K
 
-I found two different encarnations of this issue:
-
-1) at qv4l2, it fails the second time we try to open the
-video screen;
-2) at xawtv, when audio underrun occurs, with is very
-frequent, at least on my test machine.
-
-The fix is simple: just check if alt=5 before calling
-set_usb_interface().
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/au0828/au0828-video.c |   34 ++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ arch/powerpc/include/asm/pte-hash64-64k.h |   32 +++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -788,11 +788,27 @@ static int au0828_i2s_init(struct au0828
+--- a/arch/powerpc/include/asm/pte-hash64-64k.h
++++ b/arch/powerpc/include/asm/pte-hash64-64k.h
+@@ -40,17 +40,39 @@
  
+ #ifndef __ASSEMBLY__
+ 
++#include <asm/barrier.h>	/* for smp_rmb() */
++
  /*
-  * Auvitek au0828 analog stream enable
-- * Please set interface0 to AS5 before enable the stream
+  * With 64K pages on hash table, we have a special PTE format that
+  * uses a second "half" of the page table to encode sub-page information
+  * in order to deal with 64K made of 4K HW pages. Thus we override the
+  * generic accessors and iterators here
   */
- static int au0828_analog_stream_enable(struct au0828_dev *d)
- {
-+	struct usb_interface *iface;
-+	int ret;
+-#define __real_pte(e,p) 	((real_pte_t) { \
+-			(e), (pte_val(e) & _PAGE_COMBO) ? \
+-				(pte_val(*((p) + PTRS_PER_PTE))) : 0 })
+-#define __rpte_to_hidx(r,index)	((pte_val((r).pte) & _PAGE_COMBO) ? \
+-        (((r).hidx >> ((index)<<2)) & 0xf) : ((pte_val((r).pte) >> 12) & 0xf))
++#define __real_pte __real_pte
++static inline real_pte_t __real_pte(pte_t pte, pte_t *ptep)
++{
++	real_pte_t rpte;
 +
- 	dprintk(1, "au0828_analog_stream_enable called\n");
-+
-+	iface = usb_ifnum_to_if(d->usbdev, 0);
-+	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
-+		dprintk(1, "Changing intf#0 to alt 5\n");
-+		/* set au0828 interface0 to AS5 here again */
-+		ret = usb_set_interface(d->usbdev, 0, 5);
-+		if (ret < 0) {
-+			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
-+			return -EBUSY;
-+		}
++	rpte.pte = pte;
++	rpte.hidx = 0;
++	if (pte_val(pte) & _PAGE_COMBO) {
++		/*
++		 * Make sure we order the hidx load against the _PAGE_COMBO
++		 * check. The store side ordering is done in __hash_page_4K
++		 */
++		smp_rmb();
++		rpte.hidx = pte_val(*((ptep) + PTRS_PER_PTE));
 +	}
++	return rpte;
++}
 +
-+	/* FIXME: size should be calculated using d->width, d->height */
++static inline unsigned long __rpte_to_hidx(real_pte_t rpte, unsigned long index)
++{
++	if ((pte_val(rpte.pte) & _PAGE_COMBO))
++		return (rpte.hidx >> (index<<2)) & 0xf;
++	return (pte_val(rpte.pte) >> 12) & 0xf;
++}
 +
- 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
- 	au0828_writereg(d, 0x106, 0x00);
- 	/* set x position */
-@@ -1003,15 +1019,6 @@ static int au0828_v4l2_open(struct file
- 		return -ERESTARTSYS;
- 	}
- 	if (dev->users == 0) {
--		/* set au0828 interface0 to AS5 here again */
--		ret = usb_set_interface(dev->usbdev, 0, 5);
--		if (ret < 0) {
--			mutex_unlock(&dev->lock);
--			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
--			kfree(fh);
--			return -EBUSY;
--		}
--
- 		au0828_analog_stream_enable(dev);
- 		au0828_analog_stream_reset(dev);
- 
-@@ -1253,13 +1260,6 @@ static int au0828_set_format(struct au08
- 		}
- 	}
- 
--	/* set au0828 interface0 to AS5 here again */
--	ret = usb_set_interface(dev->usbdev, 0, 5);
--	if (ret < 0) {
--		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
--		return -EBUSY;
--	}
--
- 	au0828_analog_stream_enable(dev);
- 
- 	return 0;
+ #define __rpte_to_pte(r)	((r).pte)
+ #define __rpte_sub_valid(rpte, index) \
+ 	(pte_val(rpte.pte) & (_PAGE_HPTE_SUB0 >> (index)))
 
 
