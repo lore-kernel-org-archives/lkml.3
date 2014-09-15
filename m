@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902AbaIOUbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:31:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1757887AbaIOUbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:31:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672AbaIOThD (ORCPT
+	with ESMTP id S1755143AbaIOThD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
         Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 034/114] Drivers: scsi: storvsc: Set cmd_per_lun to reflect value supported by the Host
-Date: Mon, 15 Sep 2014 12:25:34 -0700
-Message-Id: <20140915192642.511447778@linuxfoundation.org>
+Subject: [PATCH 3.14 035/114] Drivers: scsi: storvsc: Fix a bug in handling VMBUS protocol version
+Date: Mon, 15 Sep 2014 12:25:35 -0700
+Message-Id: <20140915192642.541706977@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -31,9 +31,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 52f9614dd8294e95d2c0929c2d4f64b077ae486f upstream.
+commit adb6f9e1a8c6af1037232b59edb11277471537ea upstream.
 
-Set cmd_per_lun to reflect value supported by the Host.
+Based on the negotiated VMBUS protocol version, we adjust the size of the storage
+protocol messages. The two sizes we currently handle are pre-win8 and post-win8.
+In WS2012 R2, we are negotiating higher VMBUS protocol version than the win8
+version. Make adjustments to correctly handle this.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
@@ -41,19 +44,40 @@ Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/storvsc_drv.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
 --- a/drivers/scsi/storvsc_drv.c
 +++ b/drivers/scsi/storvsc_drv.c
-@@ -1712,7 +1712,7 @@ static struct scsi_host_template scsi_dr
- 	.slave_alloc =		storvsc_device_alloc,
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
--	.cmd_per_lun =		1,
-+	.cmd_per_lun =		255,
- 	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
- 	.this_id =		-1,
- 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
+@@ -1764,19 +1764,22 @@ static int storvsc_probe(struct hv_devic
+ 	 * set state to properly communicate with the host.
+ 	 */
+ 
+-	if (vmbus_proto_version == VERSION_WIN8) {
+-		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
+-		vmscsi_size_delta = 0;
+-		vmstor_current_major = VMSTOR_WIN8_MAJOR;
+-		vmstor_current_minor = VMSTOR_WIN8_MINOR;
+-	} else {
++	switch (vmbus_proto_version) {
++	case VERSION_WS2008:
++	case VERSION_WIN7:
+ 		sense_buffer_size = PRE_WIN8_STORVSC_SENSE_BUFFER_SIZE;
+ 		vmscsi_size_delta = sizeof(struct vmscsi_win8_extension);
+ 		vmstor_current_major = VMSTOR_WIN7_MAJOR;
+ 		vmstor_current_minor = VMSTOR_WIN7_MINOR;
++		break;
++	default:
++		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
++		vmscsi_size_delta = 0;
++		vmstor_current_major = VMSTOR_WIN8_MAJOR;
++		vmstor_current_minor = VMSTOR_WIN8_MINOR;
++		break;
+ 	}
+ 
+-
+ 	if (dev_id->driver_data == SFC_GUID)
+ 		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
+ 					 STORVSC_FC_MAX_TARGETS);
 
 
