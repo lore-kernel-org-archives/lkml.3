@@ -1,73 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847AbaIOWkb (ORCPT <rfc822;w@1wt.eu>);
+	id S1759300AbaIOWkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:40:43 -0400
+Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:37291
+	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932118AbaIOWkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 18:40:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759255AbaIOWkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:40:25 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 0/5] hugepage migration fixes (v4)
-Date: Mon, 15 Sep 2014 18:39:54 -0400
-Message-Id: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        felipensp@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 6/7] selftests/ptrace: change ptrace test to use kselftest exit codes
+Date: Mon, 15 Sep 2014 16:34:01 -0600
+Message-Id: <1410820442-8774-7-git-send-email-shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
+References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the ver.4 of hugepage migration fix patchset.
+Change ptrace test to use kselftest exit codes in kselftest.h
+to report test results.
 
-Major changes from ver.3 are:
-- to drop locking from follow_huge_pud() and follow_huge_addr() in patch 2,
-  which was buggy and is not necessary now because they don't support FOLL_GET,
-- follow_huge_pmd(FOLL_GET) can pin and return tail pages,
-- and I fixed bugs accidentally introduced in patch 3 and 5.
-Others are code improvements and comment/description fixes.
-
-Two related topics (not included in this series but to be discussed/done)
-- follow_huge_pmd() explicitly uses pmd_lockptr() instead of huge_pte_lock().
-  This point shed light on the subtlety in huge_page_size == PMD_HUGE check
-  in huge_pte_lockptr(). This seems to make no runtime problem now, but might
-  look fragile for example when pmd is folded (where PUD_SIZE == PMD_SIZE)
-  or when hugepage in your architecture is not bound by page table (where
-  hugepage size happens to equal with PMD_SIZE.)
-- code around is_hugetlb_entry_migration() and is_hugetlb_entry_hwpoisoned()
-  is not beautiful or optimized. Cleanup is necessary.
-
-This patchset is based on mmotm-2014-09-09-14-42 and shows no regression
-in libhugetlbfs test.
-
-Tree: git@github.com:Naoya-Horiguchi/linux.git
-Branch: mmotm-2014-09-09-14-42/fix_follow_huge_pmd.v4
-
-v2: http://thread.gmane.org/gmane.linux.kernel/1761065
-v3: http://thread.gmane.org/gmane.linux.kernel/1776585
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
 ---
-Summary:
+ tools/testing/selftests/ptrace/peeksiginfo.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-Naoya Horiguchi (5):
-      mm/hugetlb: reduce arch dependent code around follow_huge_*
-      mm/hugetlb: take page table lock in follow_huge_pmd()
-      mm/hugetlb: fix getting refcount 0 page in hugetlb_fault()
-      mm/hugetlb: add migration/hwpoisoned entry check in hugetlb_change_protection
-      mm/hugetlb: add migration entry check in __unmap_hugepage_range
+diff --git a/tools/testing/selftests/ptrace/peeksiginfo.c b/tools/testing/selftests/ptrace/peeksiginfo.c
+index c34cd8a..4d18964 100644
+--- a/tools/testing/selftests/ptrace/peeksiginfo.c
++++ b/tools/testing/selftests/ptrace/peeksiginfo.c
+@@ -10,6 +10,7 @@
+ #include <sys/mman.h>
+ 
+ #include "linux/ptrace.h"
++#include "../kselftest.h"
+ 
+ static int sys_rt_sigqueueinfo(pid_t tgid, int sig, siginfo_t *uinfo)
+ {
+@@ -43,7 +44,7 @@ static int sys_ptrace(int request, pid_t pid, void *addr, void *data)
+ static int check_error_paths(pid_t child)
+ {
+ 	struct ptrace_peeksiginfo_args arg;
+-	int ret, exit_code = -1;
++	int ret, exit_code = EXIT_FAIL;
+ 	void *addr_rw, *addr_ro;
+ 
+ 	/*
+@@ -95,7 +96,7 @@ static int check_error_paths(pid_t child)
+ 		goto out;
+ 	}
+ 
+-	exit_code = 0;
++	exit_code = EXIT_PASS;
+ out:
+ 	munmap(addr_rw, 2 * PAGE_SIZE);
+ 	return exit_code;
+@@ -104,7 +105,7 @@ out:
+ int check_direct_path(pid_t child, int shared, int nr)
+ {
+ 	struct ptrace_peeksiginfo_args arg = {.flags = 0, .nr = nr, .off = 0};
+-	int i, j, ret, exit_code = -1;
++	int i, j, ret, exit_code = EXIT_FAIL;
+ 	siginfo_t siginfo[SIGNR];
+ 	int si_code;
+ 
+@@ -143,7 +144,7 @@ int check_direct_path(pid_t child, int shared, int nr)
+ 		goto out;
+ 	}
+ 
+-	exit_code = 0;
++	exit_code = EXIT_PASS;
+ out:
+ 	return exit_code;
+ }
+@@ -151,7 +152,7 @@ out:
+ int main(int argc, char *argv[])
+ {
+ 	siginfo_t siginfo[SIGNR];
+-	int i, exit_code = 1;
++	int i, exit_code = EXIT_FAIL;
+ 	sigset_t blockmask;
+ 	pid_t child;
+ 
+@@ -162,7 +163,7 @@ int main(int argc, char *argv[])
+ 	child = fork();
+ 	if (child == -1) {
+ 		err("fork() failed: %m");
+-		return 1;
++		return exit_code;
+ 	} else if (child == 0) {
+ 		pid_t ppid = getppid();
+ 		while (1) {
+@@ -170,7 +171,7 @@ int main(int argc, char *argv[])
+ 				break;
+ 			sleep(1);
+ 		}
+-		return 1;
++		return exit_code;
+ 	}
+ 
+ 	/* Send signals in process-wide and per-thread queues */
+@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
+ 	}
+ 
+ 	if (sys_ptrace(PTRACE_ATTACH, child, NULL, NULL) == -1)
+-		return 1;
++		return exit_code;
+ 
+ 	waitpid(child, NULL, 0);
+ 
+@@ -207,10 +208,10 @@ int main(int argc, char *argv[])
+ 		goto out;
+ 
+ 	printf("PASS\n");
+-	exit_code = 0;
++	exit_code = EXIT_PASS;
+ out:
+ 	if (sys_ptrace(PTRACE_KILL, child, NULL, NULL) == -1)
+-		return 1;
++		return exit_code;
+ 
+ 	waitpid(child, NULL, 0);
+ 
+-- 
+1.9.1
 
- arch/arm/mm/hugetlbpage.c     |   6 --
- arch/arm64/mm/hugetlbpage.c   |   6 --
- arch/ia64/mm/hugetlbpage.c    |   6 --
- arch/metag/mm/hugetlbpage.c   |   6 --
- arch/mips/mm/hugetlbpage.c    |  18 ------
- arch/powerpc/mm/hugetlbpage.c |   8 +++
- arch/s390/mm/hugetlbpage.c    |  20 -------
- arch/sh/mm/hugetlbpage.c      |  12 ----
- arch/sparc/mm/hugetlbpage.c   |  12 ----
- arch/tile/mm/hugetlbpage.c    |  28 ----------
- arch/x86/mm/hugetlbpage.c     |  12 ----
- include/linux/hugetlb.h       |   8 +--
- mm/gup.c                      |  25 ++-------
- mm/hugetlb.c                  | 124 ++++++++++++++++++++++++++++--------------
- mm/migrate.c                  |   3 +-
- 15 files changed, 101 insertions(+), 193 deletions(-)
