@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472AbaIOUT7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:19:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
+	id S1756879AbaIOUXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:23:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757AbaIOThM (ORCPT
+	with ESMTP id S1755673AbaIOThL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:12 -0400
+	Mon, 15 Sep 2014 15:37:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Johannes Stezenbach <js@sig21.net>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 059/114] ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
-Date: Mon, 15 Sep 2014 12:25:59 -0700
-Message-Id: <20140915192643.286644849@linuxfoundation.org>
+Subject: [PATCH 3.14 057/114] ASoC: max98090: Fix missing free_irq
+Date: Mon, 15 Sep 2014 12:25:57 -0700
+Message-Id: <20140915192643.220958505@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,34 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit 9301503af016eb537ccce76adec0c1bb5c84871e upstream.
+commit 4adeb0ccf86a5af1825bbfe290dee9e60a5ab870 upstream.
 
-This mode is unsupported, as the DMA controller can't do zero-padding
-of samples.
+max98090.c doesn't free the threaded interrupt it requests. This causes
+an oops when doing "cat /proc/interrupts" after snd-soc-max98090.ko is
+unloaded.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Johannes Stezenbach <js@sig21.net>
+Fix this by requesting the interrupt by using devm_request_threaded_irq().
+
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/pxa/pxa-ssp.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ sound/soc/codecs/max98090.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/pxa/pxa-ssp.c
-+++ b/sound/soc/pxa/pxa-ssp.c
-@@ -767,9 +767,7 @@ static int pxa_ssp_remove(struct snd_soc
- 			  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_64000 |	\
- 			  SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000)
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -2250,7 +2250,7 @@ static int max98090_probe(struct snd_soc
+ 	/* Register for interrupts */
+ 	dev_dbg(codec->dev, "irq = %d\n", max98090->irq);
  
--#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
--			    SNDRV_PCM_FMTBIT_S24_LE |	\
--			    SNDRV_PCM_FMTBIT_S32_LE)
-+#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
- 
- static const struct snd_soc_dai_ops pxa_ssp_dai_ops = {
- 	.startup	= pxa_ssp_startup,
+-	ret = request_threaded_irq(max98090->irq, NULL,
++	ret = devm_request_threaded_irq(codec->dev, max98090->irq, NULL,
+ 		max98090_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 		"max98090_interrupt", codec);
+ 	if (ret < 0) {
 
 
