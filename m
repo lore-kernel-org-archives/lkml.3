@@ -1,74 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaIOMf0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 08:35:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56569 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279AbaIOMfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 08:35:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,527,1406617200"; 
-   d="scan'208";a="603009329"
-Date: Mon, 15 Sep 2014 15:35:08 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/6] phy: improved lookup method
-Message-ID: <20140915123508.GA16653@xps8300>
-References: <1408620803-10464-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1408620803-10464-3-git-send-email-heikki.krogerus@linux.intel.com>
- <5411C0B2.3060505@ti.com>
- <20140912140720.GC30816@xps8300>
- <54130729.5010206@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54130729.5010206@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752696AbaIOMfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 08:35:38 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37145 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaIOMfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 08:35:36 -0400
+Message-ID: <1410784535.7106.164.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 1/5] rhashtable: Remove gfp_flags from insert and remove
+ functions
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Graf <tgraf@suug.ch>
+Cc: davem@davemloft.net, paulmck@linux.vnet.ibm.com,
+        john.r.fastabend@intel.com, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 15 Sep 2014 05:35:35 -0700
+In-Reply-To: <bd3aa4282e89b022620225101ab491e344852f5f.1410782841.git.tgraf@suug.ch>
+References: <cover.1410782841.git.tgraf@suug.ch>
+	 <bd3aa4282e89b022620225101ab491e344852f5f.1410782841.git.tgraf@suug.ch>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 08:16:01PM +0530, Kishon Vijay Abraham I wrote:
-> Assume you have 2 phys in your system..
-> static struct phy_lookup usb_lookup = {
-> 	.phy_name	= "phy-usb.0",
-> 	.dev_id		= "usb.0",
-> 	.con_id		= "usb",
-> };
+On Mon, 2014-09-15 at 14:18 +0200, Thomas Graf wrote:
+> As the expansion/shrinking is moved to a worker thread, no allocations
+> will be performed anymore.
 > 
-> static struct phy_lookup sata_lookup = {
-> 	.phy_name	= "sata-usb.1",
-> 	.dev_id		= "sata.0",
-> 	.con_id		= "sata",
-> };
+
+You meant : no GFP_ATOMIC allocations ?
+
+I would rephrase using something like :
+
+Because hash resizes are potentially time consuming, they'll be
+performed in process context where GFP_KERNEL allocations are preferred.
+
+> Signed-off-by: Thomas Graf <tgraf@suug.ch>
+> ---
+>  include/linux/rhashtable.h | 10 +++++-----
+>  lib/rhashtable.c           | 41 +++++++++++++++++------------------------
+>  net/netfilter/nft_hash.c   |  4 ++--
+>  net/netlink/af_netlink.c   |  4 ++--
+>  4 files changed, 26 insertions(+), 33 deletions(-)
 > 
-> First you do modprobe phy-usb, the probe of USB PHY driver gets invoked and it
-> creates the PHY. The phy-core will find a free id (now it will be 0) and then
-> name the phy as phy-usb.0.
-> Then with modprobe phy-sata, the phy-core will create phy-sata.1.
-> 
-> This is an ideal case where the .phy_name in phy_lookup matches.
-> 
-> Consider if the order is flipped and the user does modprobe phy-sata first. The
-> phy_names won't match anymore (the sata phy device name would be "sata-usb.0").
+> diff --git a/include/linux/rhashtable.h b/include/linux/rhashtable.h
+> index fb298e9d..942fa44 100644
+> --- a/include/linux/rhashtable.h
+> +++ b/include/linux/rhashtable.h
+> @@ -96,16 +96,16 @@ int rhashtable_init(struct rhashtable *ht, struct rhashtable_params *params);
+>  u32 rhashtable_hashfn(const struct rhashtable *ht, const void *key, u32 len);
+>  u32 rhashtable_obj_hashfn(const struct rhashtable *ht, void *ptr);
+>  
+> -void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node, gfp_t);
+> -bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node, gfp_t);
+> +void rhashtable_insert(struct rhashtable *ht, struct rhash_head *node);
+> +bool rhashtable_remove(struct rhashtable *ht, struct rhash_head *node);
+>  void rhashtable_remove_pprev(struct rhashtable *ht, struct rhash_head *obj,
+> -			     struct rhash_head __rcu **pprev, gfp_t flags);
+> +			     struct rhash_head __rcu **pprev);
+>  
+>  bool rht_grow_above_75(const struct rhashtable *ht, size_t new_size);
+>  bool rht_shrink_below_30(const struct rhashtable *ht, size_t new_size);
+>  
+> -int rhashtable_expand(struct rhashtable *ht, gfp_t flags);
+> -int rhashtable_shrink(struct rhashtable *ht, gfp_t flags);
+> +int rhashtable_expand(struct rhashtable *ht);
+> +int rhashtable_shrink(struct rhashtable *ht);
+>  
+>  void *rhashtable_lookup(const struct rhashtable *ht, const void *key);
+>  void *rhashtable_lookup_compare(const struct rhashtable *ht, u32 hash,
+> diff --git a/lib/rhashtable.c b/lib/rhashtable.c
+> index 8dfec3f..c133d82 100644
+> --- a/lib/rhashtable.c
+> +++ b/lib/rhashtable.c
+> @@ -108,13 +108,13 @@ static u32 head_hashfn(const struct rhashtable *ht,
+>  	return obj_hashfn(ht, rht_obj(ht, he), hsize);
+>  }
+>  
+> -static struct bucket_table *bucket_table_alloc(size_t nbuckets, gfp_t flags)
+> +static struct bucket_table *bucket_table_alloc(size_t nbuckets)
+>  {
+>  	struct bucket_table *tbl;
+>  	size_t size;
+>  
+>  	size = sizeof(*tbl) + nbuckets * sizeof(tbl->buckets[0]);
+> -	tbl = kzalloc(size, flags);
+> +	tbl = kzalloc(size, GFP_KERNEL);
 
-True!
+Add __GFP_NOWARN, as you fallback to vzalloc ?
 
-So we can't accept statically created lookups. Which is probable the
-best thing to do in any case even if there wasn't this issue.
+>  	if (tbl == NULL)
+>  		tbl = vzalloc(size);
 
-I think we already talked about this. I know I was going to create the
-lookup for twl4030 in twl-core.c instead of the board file at one
-point, but forgot about it. I need to do that now.
+btw, inet hash table uses alloc_large_system_hash() which spreads the
+pages on all available NUMA nodes :
 
-In any case, I'll fix this by dropping the possibility of creating the
-lookups statically. I'll prepare new version of the whole set.
+# dmesg | grep "TCP established"
+[    1.223046] TCP established hash table entries: 524288 (order: 10, 4194304 bytes)
+# grep alloc_large_system_hash /proc/vmallocinfo | grep pages=1024
+0xffffc900181d6000-0xffffc900185d7000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
+0xffffc900185d7000-0xffffc900189d8000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
+0xffffc90028a01000-0xffffc90028e02000 4198400 alloc_large_system_hash+0x177/0x237 pages=1024 vmalloc vpages N0=512 N1=512
+
+So we might keep in mind to keep this numa policy.
+
+Rest of the patch looks fine to me, thanks.
 
 
-Thanks,
-
--- 
-heikki
