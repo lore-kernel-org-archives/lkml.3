@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758553AbaIOUtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:49:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55119 "EHLO
+	id S1756734AbaIOUtj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:49:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532AbaIOTgq (ORCPT
+	with ESMTP id S1755535AbaIOTgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.16 117/158] Bluetooth: Fix merge of advertising data and scan response data
-Date: Mon, 15 Sep 2014 12:25:56 -0700
-Message-Id: <20140915192546.388527573@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Szymon Janc <szymon.janc@tieto.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.16 118/158] Bluetooth: Fix tracking local SSP authentication requirement
+Date: Mon, 15 Sep 2014 12:25:57 -0700
+Message-Id: <20140915192546.424410627@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,34 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 42bd6a56ed1ab4b2cb50f4d4e674874da9b47f46 upstream.
+commit 6c53823ae0e10e723131055e1e65dd6a328a228e upstream.
 
-The advertising data and scan response data are merged in the wrong
-order. It should be advertsing data first and then scan response data
-and not the other way around.
+When we need to make the decision whether to perform just-works or real
+user confirmation we need to know the exact local authentication
+requirement that was passed to the controller. So far conn->auth_type
+(the local requirement) wasn't in one case updated appropriately in fear
+of the user confirmation being rejected later.
 
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+The real problem however was not really that conn->auth_type couldn't
+represent the true value but that we were checking the local MITM
+requirement in an incorrect way. It's perfectly fine to let auth_type
+follow what we tell the controller since we're still tracking the target
+security level with conn->pending_sec_level.
+
+This patch updates the check for local MITM requirement in the
+hci_user_confirm_request_evt function to use the locally requested
+security level and ensures that auth_type always represents what we tell
+the controller. All other code in hci_user_confirm_request_evt still
+uses the auth_type instead of pending_sec_level for determining whether
+to do just-works or not, since that's the only value that's in sync with
+what the remote device knows.
+
 Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Tested-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/bluetooth/hci_event.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
 --- a/net/bluetooth/hci_event.c
 +++ b/net/bluetooth/hci_event.c
-@@ -4177,8 +4177,8 @@ static void process_adv_report(struct hc
- 	 * sending a merged device found event.
- 	 */
- 	mgmt_device_found(hdev, &d->last_adv_addr, LE_LINK,
--			  d->last_adv_addr_type, NULL, rssi, 0, 1, data, len,
--			  d->last_adv_data, d->last_adv_data_len);
-+			  d->last_adv_addr_type, NULL, rssi, 0, 1,
-+			  d->last_adv_data, d->last_adv_data_len, data, len);
- 	clear_pending_adv_report(hdev);
- }
+@@ -3538,18 +3538,14 @@ static void hci_io_capa_request_evt(stru
  
+ 		/* If we are initiators, there is no remote information yet */
+ 		if (conn->remote_auth == 0xff) {
+-			cp.authentication = conn->auth_type;
+-
+ 			/* Request MITM protection if our IO caps allow it
+ 			 * except for the no-bonding case.
+-			 * conn->auth_type is not updated here since
+-			 * that might cause the user confirmation to be
+-			 * rejected in case the remote doesn't have the
+-			 * IO capabilities for MITM.
+ 			 */
+ 			if (conn->io_capability != HCI_IO_NO_INPUT_OUTPUT &&
+ 			    cp.authentication != HCI_AT_NO_BONDING)
+-				cp.authentication |= 0x01;
++				conn->auth_type |= 0x01;
++
++			cp.authentication = conn->auth_type;
+ 		} else {
+ 			conn->auth_type = hci_get_auth_req(conn);
+ 			cp.authentication = conn->auth_type;
+@@ -3621,9 +3617,12 @@ static void hci_user_confirm_request_evt
+ 	rem_mitm = (conn->remote_auth & 0x01);
+ 
+ 	/* If we require MITM but the remote device can't provide that
+-	 * (it has NoInputNoOutput) then reject the confirmation request
++	 * (it has NoInputNoOutput) then reject the confirmation
++	 * request. We check the security level here since it doesn't
++	 * necessarily match conn->auth_type.
+ 	 */
+-	if (loc_mitm && conn->remote_cap == HCI_IO_NO_INPUT_OUTPUT) {
++	if (conn->pending_sec_level > BT_SECURITY_MEDIUM &&
++	    conn->remote_cap == HCI_IO_NO_INPUT_OUTPUT) {
+ 		BT_DBG("Rejecting request: remote device can't provide MITM");
+ 		hci_send_cmd(hdev, HCI_OP_USER_CONFIRM_NEG_REPLY,
+ 			     sizeof(ev->bdaddr), &ev->bdaddr);
 
 
