@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700AbaIOWYC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:24:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51353 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109AbaIOWUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933112AbaIOWUe (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Sep 2014 18:20:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51324 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758494AbaIOWU0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:20:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wen Xiong <wenxiong@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Whitcroft <apw@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/187] bnx2x: Adapter not recovery from EEH error injection
-Date: Mon, 15 Sep 2014 15:07:36 -0700
-Message-Id: <1410818997-9432-47-git-send-email-kamal@canonical.com>
+Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 127/187] netlabel: fix a problem when setting bits below the previously lowest bit
+Date: Mon, 15 Sep 2014 15:08:57 -0700
+Message-Id: <1410818997-9432-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,36 +26,190 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "wenxiong@linux.vnet.ibm.com" <wenxiong@linux.vnet.ibm.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 0c0e63410a393aae4b615849625f539db775d586 upstream.
+commit 41c3bd2039e0d7b3dc32313141773f20716ec524 upstream.
 
-When injecting EEH error to bnx2x adapter, adapter couldn't be recovery
-and caused recursive EEH errors. The patch fixes the issue.
+The NetLabel category (catmap) functions have a problem in that they
+assume categories will be set in an increasing manner, e.g. the next
+category set will always be larger than the last.  Unfortunately, this
+is not a valid assumption and could result in problems when attempting
+to set categories less than the startbit in the lowest catmap node.
+In some cases kernel panics and other nasties can result.
 
-Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Andy Whitcroft <apw@canonical.com>
+This patch corrects the problem by checking for this and allocating a
+new catmap node instance and placing it at the front of the list.
+
+Reported-by: Christian Evans <frodox@zoho.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Tested-by: Casey Schaufler <casey@schaufler-ca.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/netlabel.h        |  8 ++++----
+ net/ipv4/cipso_ipv4.c         |  6 +++---
+ net/netlabel/netlabel_kapi.c  | 26 ++++++++++++++++++--------
+ security/smack/smack_access.c |  2 +-
+ 4 files changed, 26 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-index 0067b97..71d3f0c 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -12998,8 +12998,8 @@ static int bnx2x_eeh_nic_unload(struct bnx2x *bp)
- 	netdev_reset_tc(bp->dev);
+diff --git a/include/net/netlabel.h b/include/net/netlabel.h
+index 2c95d55..28400bd 100644
+--- a/include/net/netlabel.h
++++ b/include/net/netlabel.h
+@@ -395,10 +395,10 @@ int netlbl_secattr_catmap_walk(struct netlbl_lsm_secattr_catmap *catmap,
+ 			       u32 offset);
+ int netlbl_secattr_catmap_walk_rng(struct netlbl_lsm_secattr_catmap *catmap,
+ 				   u32 offset);
+-int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap *catmap,
++int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 bit,
+ 				 gfp_t flags);
+-int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap *catmap,
++int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 start,
+ 				 u32 end,
+ 				 gfp_t flags);
+@@ -506,14 +506,14 @@ static inline int netlbl_secattr_catmap_walk_rng(
+ 	return -ENOENT;
+ }
+ static inline int netlbl_secattr_catmap_setbit(
+-	                              struct netlbl_lsm_secattr_catmap *catmap,
++				      struct netlbl_lsm_secattr_catmap **catmap,
+ 				      u32 bit,
+ 				      gfp_t flags)
+ {
+ 	return 0;
+ }
+ static inline int netlbl_secattr_catmap_setrng(
+-	                              struct netlbl_lsm_secattr_catmap *catmap,
++				      struct netlbl_lsm_secattr_catmap **catmap,
+ 				      u32 start,
+ 				      u32 end,
+ 				      gfp_t flags)
+diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
+index 667c1d4..78856ca 100644
+--- a/net/ipv4/cipso_ipv4.c
++++ b/net/ipv4/cipso_ipv4.c
+@@ -974,7 +974,7 @@ static int cipso_v4_map_cat_rbm_ntoh(const struct cipso_v4_doi *doi_def,
+ 				return -EPERM;
+ 			break;
+ 		}
+-		ret_val = netlbl_secattr_catmap_setbit(secattr->attr.mls.cat,
++		ret_val = netlbl_secattr_catmap_setbit(&secattr->attr.mls.cat,
+ 						       host_spot,
+ 						       GFP_ATOMIC);
+ 		if (ret_val != 0)
+@@ -1076,7 +1076,7 @@ static int cipso_v4_map_cat_enum_ntoh(const struct cipso_v4_doi *doi_def,
+ 	u32 iter;
  
- 	del_timer_sync(&bp->timer);
--	cancel_delayed_work(&bp->sp_task);
--	cancel_delayed_work(&bp->period_task);
-+	cancel_delayed_work_sync(&bp->sp_task);
-+	cancel_delayed_work_sync(&bp->period_task);
+ 	for (iter = 0; iter < net_cat_len; iter += 2) {
+-		ret_val = netlbl_secattr_catmap_setbit(secattr->attr.mls.cat,
++		ret_val = netlbl_secattr_catmap_setbit(&secattr->attr.mls.cat,
+ 				get_unaligned_be16(&net_cat[iter]),
+ 				GFP_ATOMIC);
+ 		if (ret_val != 0)
+@@ -1218,7 +1218,7 @@ static int cipso_v4_map_cat_rng_ntoh(const struct cipso_v4_doi *doi_def,
+ 		else
+ 			cat_low = 0;
  
- 	spin_lock_bh(&bp->stats_lock);
- 	bp->stats_state = STATS_STATE_DISABLED;
+-		ret_val = netlbl_secattr_catmap_setrng(secattr->attr.mls.cat,
++		ret_val = netlbl_secattr_catmap_setrng(&secattr->attr.mls.cat,
+ 						       cat_low,
+ 						       cat_high,
+ 						       GFP_ATOMIC);
+diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+index dce1beb..82c7fca 100644
+--- a/net/netlabel/netlabel_kapi.c
++++ b/net/netlabel/netlabel_kapi.c
+@@ -523,7 +523,7 @@ int netlbl_secattr_catmap_walk_rng(struct netlbl_lsm_secattr_catmap *catmap,
+ 
+ /**
+  * netlbl_secattr_catmap_setbit - Set a bit in a LSM secattr catmap
+- * @catmap: the category bitmap
++ * @catmap: pointer to the category bitmap
+  * @bit: the bit to set
+  * @flags: memory allocation flags
+  *
+@@ -532,18 +532,25 @@ int netlbl_secattr_catmap_walk_rng(struct netlbl_lsm_secattr_catmap *catmap,
+  * negative values on failure.
+  *
+  */
+-int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap *catmap,
++int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 bit,
+ 				 gfp_t flags)
+ {
+-	struct netlbl_lsm_secattr_catmap *iter = catmap;
++	struct netlbl_lsm_secattr_catmap *iter = *catmap;
+ 	u32 node_bit;
+ 	u32 node_idx;
+ 
+ 	while (iter->next != NULL &&
+ 	       bit >= (iter->startbit + NETLBL_CATMAP_SIZE))
+ 		iter = iter->next;
+-	if (bit >= (iter->startbit + NETLBL_CATMAP_SIZE)) {
++	if (bit < iter->startbit) {
++		iter = netlbl_secattr_catmap_alloc(flags);
++		if (iter == NULL)
++			return -ENOMEM;
++		iter->next = *catmap;
++		iter->startbit = bit & ~(NETLBL_CATMAP_SIZE - 1);
++		*catmap = iter;
++	} else if (bit >= (iter->startbit + NETLBL_CATMAP_SIZE)) {
+ 		iter->next = netlbl_secattr_catmap_alloc(flags);
+ 		if (iter->next == NULL)
+ 			return -ENOMEM;
+@@ -561,7 +568,7 @@ int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap *catmap,
+ 
+ /**
+  * netlbl_secattr_catmap_setrng - Set a range of bits in a LSM secattr catmap
+- * @catmap: the category bitmap
++ * @catmap: pointer to the category bitmap
+  * @start: the starting bit
+  * @end: the last bit in the string
+  * @flags: memory allocation flags
+@@ -571,15 +578,16 @@ int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap *catmap,
+  * on success, negative values on failure.
+  *
+  */
+-int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap *catmap,
++int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 start,
+ 				 u32 end,
+ 				 gfp_t flags)
+ {
+ 	int ret_val = 0;
+-	struct netlbl_lsm_secattr_catmap *iter = catmap;
++	struct netlbl_lsm_secattr_catmap *iter = *catmap;
+ 	u32 iter_max_spot;
+ 	u32 spot;
++	u32 orig_spot = iter->startbit;
+ 
+ 	/* XXX - This could probably be made a bit faster by combining writes
+ 	 * to the catmap instead of setting a single bit each time, but for
+@@ -597,7 +605,9 @@ int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap *catmap,
+ 			iter = iter->next;
+ 			iter_max_spot = iter->startbit + NETLBL_CATMAP_SIZE;
+ 		}
+-		ret_val = netlbl_secattr_catmap_setbit(iter, spot, flags);
++		ret_val = netlbl_secattr_catmap_setbit(&iter, spot, flags);
++		if (iter->startbit < orig_spot)
++			*catmap = iter;
+ 	}
+ 
+ 	return ret_val;
+diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+index 14293cd..9ecf4f4 100644
+--- a/security/smack/smack_access.c
++++ b/security/smack/smack_access.c
+@@ -444,7 +444,7 @@ int smk_netlbl_mls(int level, char *catset, struct netlbl_lsm_secattr *sap,
+ 		for (m = 0x80; m != 0; m >>= 1, cat++) {
+ 			if ((m & *cp) == 0)
+ 				continue;
+-			rc = netlbl_secattr_catmap_setbit(sap->attr.mls.cat,
++			rc = netlbl_secattr_catmap_setbit(&sap->attr.mls.cat,
+ 							  cat, GFP_ATOMIC);
+ 			if (rc < 0) {
+ 				netlbl_secattr_catmap_free(sap->attr.mls.cat);
 -- 
 1.9.1
 
