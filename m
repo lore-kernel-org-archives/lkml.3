@@ -1,237 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057AbaIOUUy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:20:54 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:52725 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755070AbaIOUUu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:20:50 -0400
-Date: Mon, 15 Sep 2014 16:20:37 -0400
-From: Milosz Tanski <milosz@adfin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 2/7] Define new syscalls readv2,preadv2,writev2,pwritev2
-Message-ID: <057d758976db2fcce58e394abaa0d55e48cdeec1.1410810247.git.milosz@adfin.com>
-References: <cover.1410810247.git.milosz@adfin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1410810247.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932150AbaIOUVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:21:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3853 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756106AbaIOUVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 16:21:01 -0400
+From: Daniel Borkmann <dborkman@redhat.com>
+To: catalin.marinas@arm.com
+Cc: will.deacon@arm.com, davem@davemloft.net, dborkman@redhat.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Zi Shen Lim <zlim.lnx@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>
+Subject: [PATCH arm64-next v3] net: bpf: arm64: address randomize and write protect JIT code
+Date: Mon, 15 Sep 2014 22:20:23 +0200
+Message-Id: <1410812423-11818-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New syscalls with an extra flag argument. For now all flags except for 0 are
-not supported.
+This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
+jit against spraying attacks").
 
-Signed-off-by: Milosz Tanski <milosz@adfin.com>
+Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
+support") which added necessary infrastructure, we can now implement
+RO marking of eBPF generated JIT image pages and randomize start offset
+for the JIT code, so that it does not reside directly on a page boundary
+anymore. Likewise, the holes are filled with illegal instructions: here
+we use BRK #0x100 (opcode 0xd4202000) to trigger a fault in the kernel
+(unallocated BRKs would trigger a fault through do_debug_exception). This
+seems more reliable as we don't have a guaranteed undefined instruction
+space on ARM64.
+
+This is basically the ARM64 variant of what we already have in ARM via
+commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
+JIT code"). Moreover, this commit also presents a merge resolution due to
+conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
+read-only") as we don't use kfree() in bpf_jit_free() anymore to release
+the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
+a different allocator.
+
+JIT tested on aarch64 with BPF test suite.
+
+Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alexei Starovoitov <ast@plumgrid.com>
 ---
- fs/read_write.c                   |  100 +++++++++++++++++++++++++++++++++++++
- include/linux/syscalls.h          |   12 +++++
- include/uapi/asm-generic/unistd.h |   10 +++-
- 3 files changed, 121 insertions(+), 1 deletion(-)
+ v2->v3:
+  - Use cpu_to_le32() as suggested by Zi/Will
+ v1->v2:
+  - Use brk insn as suggested by Catalin
+ Note:
+  - This patch depends on net-next being merged to mainline due
+    to the mentioned merge conflict.
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 4747247..6c5030a 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -902,6 +902,29 @@ SYSCALL_DEFINE3(readv, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
+ arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
+ 1 file changed, 29 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
+index 7ae3354..4b71779 100644
+--- a/arch/arm64/net/bpf_jit_comp.c
++++ b/arch/arm64/net/bpf_jit_comp.c
+@@ -19,7 +19,6 @@
+ #define pr_fmt(fmt) "bpf_jit: " fmt
+ 
+ #include <linux/filter.h>
+-#include <linux/moduleloader.h>
+ #include <linux/printk.h>
+ #include <linux/skbuff.h>
+ #include <linux/slab.h>
+@@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
+ 	return to - from;
  }
  
-+SYSCALL_DEFINE4(readv2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, int, flags)
++static void jit_fill_hole(void *area, unsigned int size)
 +{
-+	struct fd f = fdget_pos(fd);
-+	ssize_t ret = -EBADF;
-+
-+	if (flags & ~0)
-+		return -EINVAL;
-+
-+	if (f.file) {
-+		loff_t pos = file_pos_read(f.file);
-+		ret = vfs_readv(f.file, vec, vlen, &pos, flags);
-+		if (ret >= 0)
-+			file_pos_write(f.file, pos);
-+		fdput_pos(f);
-+	}
-+
-+	if (ret > 0)
-+		add_rchar(current, ret);
-+	inc_syscr(current);
-+	return ret;
++	/* We use brk #0x100 to trigger a fault. */
++	u32 *ptr;
++	/* We are guaranteed to have aligned memory. */
++	for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
++		*ptr++ = cpu_to_le32(0xd4202000);
 +}
 +
- SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
- 		unsigned long, vlen)
+ static inline int epilogue_offset(const struct jit_ctx *ctx)
  {
-@@ -922,6 +945,29 @@ SYSCALL_DEFINE3(writev, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
- }
+ 	int to = ctx->offset[ctx->prog->len - 1];
+@@ -613,8 +621,10 @@ void bpf_jit_compile(struct bpf_prog *prog)
  
-+SYSCALL_DEFINE4(writev2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, int, flags)
-+{
-+	struct fd f = fdget_pos(fd);
-+	ssize_t ret = -EBADF;
-+
-+	if (flags & ~0)
-+		return -EINVAL;
-+
-+	if (f.file) {
-+		loff_t pos = file_pos_read(f.file);
-+		ret = vfs_writev(f.file, vec, vlen, &pos, flags);
-+		if (ret >= 0)
-+			file_pos_write(f.file, pos);
-+		fdput_pos(f);
-+	}
-+
-+	if (ret > 0)
-+		add_wchar(current, ret);
-+	inc_syscw(current);
-+	return ret;
-+}
-+
- static inline loff_t pos_from_hilo(unsigned long high, unsigned long low)
+ void bpf_int_jit_compile(struct bpf_prog *prog)
  {
- #define HALF_LONG_BITS (BITS_PER_LONG / 2)
-@@ -952,6 +998,33 @@ SYSCALL_DEFINE5(preadv, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
++	struct bpf_binary_header *header;
+ 	struct jit_ctx ctx;
+ 	int image_size;
++	u8 *image_ptr;
+ 
+ 	if (!bpf_jit_enable)
+ 		return;
+@@ -636,23 +646,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
+ 		goto out;
+ 
+ 	build_prologue(&ctx);
+-
+ 	build_epilogue(&ctx);
+ 
+ 	/* Now we know the actual image size. */
+ 	image_size = sizeof(u32) * ctx.idx;
+-	ctx.image = module_alloc(image_size);
+-	if (unlikely(ctx.image == NULL))
++	header = bpf_jit_binary_alloc(image_size, &image_ptr,
++				      sizeof(u32), jit_fill_hole);
++	if (header == NULL)
+ 		goto out;
+ 
+ 	/* 2. Now, the actual pass. */
+ 
++	ctx.image = (u32 *)image_ptr;
+ 	ctx.idx = 0;
++
+ 	build_prologue(&ctx);
+ 
+ 	ctx.body_offset = ctx.idx;
+ 	if (build_body(&ctx)) {
+-		module_free(NULL, ctx.image);
++		bpf_jit_binary_free(header);
+ 		goto out;
+ 	}
+ 
+@@ -663,17 +675,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
+ 		bpf_jit_dump(prog->len, image_size, 2, ctx.image);
+ 
+ 	bpf_flush_icache(ctx.image, ctx.image + ctx.idx);
++
++	set_memory_ro((unsigned long)header, header->pages);
+ 	prog->bpf_func = (void *)ctx.image;
+ 	prog->jited = 1;
+-
+ out:
+ 	kfree(ctx.offset);
  }
  
-+SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+	struct fd f;
-+	ssize_t ret = -EBADF;
-+
-+	if (flags & ~0)
-+		return -EINVAL;
-+	if (pos < 0)
-+		return -EINVAL;
-+
-+	f = fdget(fd);
-+	if (f.file) {
-+		ret = -ESPIPE;
-+		if (f.file->f_mode & FMODE_PREAD)
-+			ret = vfs_readv(f.file, vec, vlen, &pos, flags);
-+		fdput(f);
-+	}
-+
-+	if (ret > 0)
-+		add_rchar(current, ret);
-+	inc_syscr(current);
-+	return ret;
-+}
-+
- SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
- 		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h)
+ void bpf_jit_free(struct bpf_prog *prog)
  {
-@@ -976,6 +1049,33 @@ SYSCALL_DEFINE5(pwritev, unsigned long, fd, const struct iovec __user *, vec,
- 	return ret;
+-	if (prog->jited)
+-		module_free(NULL, prog->bpf_func);
++	unsigned long addr = (unsigned long)prog->bpf_func & PAGE_MASK;
++	struct bpf_binary_header *header = (void *)addr;
++
++	if (!prog->jited)
++		goto free_filter;
++
++	set_memory_rw(addr, header->pages);
++	bpf_jit_binary_free(header);
+ 
+-	kfree(prog);
++free_filter:
++	bpf_prog_unlock_free(prog);
  }
- 
-+SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
-+		unsigned long, vlen, unsigned long, pos_l, unsigned long, pos_h,
-+		int, flags)
-+{
-+	loff_t pos = pos_from_hilo(pos_h, pos_l);
-+	struct fd f;
-+	ssize_t ret = -EBADF;
-+
-+	if (flags & ~0)
-+		return -EINVAL;
-+	if (pos < 0)
-+		return -EINVAL;
-+
-+	f = fdget(fd);
-+	if (f.file) {
-+		ret = -ESPIPE;
-+		if (f.file->f_mode & FMODE_PWRITE)
-+			ret = vfs_writev(f.file, vec, vlen, &pos, flags);
-+		fdput(f);
-+	}
-+
-+	if (ret > 0)
-+		add_wchar(current, ret);
-+	inc_syscw(current);
-+	return ret;
-+}
-+
- #ifdef CONFIG_COMPAT
- 
- static ssize_t compat_do_readv_writev(int type, struct file *file,
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 0f86d85..0c49ae4 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -559,19 +559,31 @@ asmlinkage long sys_readahead(int fd, loff_t offset, size_t count);
- asmlinkage long sys_readv(unsigned long fd,
- 			  const struct iovec __user *vec,
- 			  unsigned long vlen);
-+asmlinkage long sys_readv2(unsigned long fd,
-+			  const struct iovec __user *vec,
-+			  unsigned long vlen, int flags);
- asmlinkage long sys_write(unsigned int fd, const char __user *buf,
- 			  size_t count);
- asmlinkage long sys_writev(unsigned long fd,
- 			   const struct iovec __user *vec,
- 			   unsigned long vlen);
-+asmlinkage long sys_writev2(unsigned long fd,
-+			    const struct iovec __user *vec,
-+			    unsigned long vlen, int flags);
- asmlinkage long sys_pread64(unsigned int fd, char __user *buf,
- 			    size_t count, loff_t pos);
- asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
- 			     size_t count, loff_t pos);
- asmlinkage long sys_preadv(unsigned long fd, const struct iovec __user *vec,
- 			   unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-+asmlinkage long sys_preadv2(unsigned long fd, const struct iovec __user *vec,
-+			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-+			    int flags);
- asmlinkage long sys_pwritev(unsigned long fd, const struct iovec __user *vec,
- 			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h);
-+asmlinkage long sys_pwritev2(unsigned long fd, const struct iovec __user *vec,
-+			    unsigned long vlen, unsigned long pos_l, unsigned long pos_h,
-+			    int flags);
- asmlinkage long sys_getcwd(char __user *buf, unsigned long size);
- asmlinkage long sys_mkdir(const char __user *pathname, umode_t mode);
- asmlinkage long sys_chdir(const char __user *filename);
-diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-index 11d11bc..75ad687 100644
---- a/include/uapi/asm-generic/unistd.h
-+++ b/include/uapi/asm-generic/unistd.h
-@@ -213,6 +213,14 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
- __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
- #define __NR_pwritev 70
- __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
-+#define __NR_readv2 280
-+__SC_COMP(__NR_readv2, sys_readv2)
-+#define __NR_writev2 281
-+__SC_COMP(__NR_writev2, sys_writev2)
-+#define __NR_preadv2 282
-+__SC_COMP(__NR_preadv2, sys_preadv2)
-+#define __NR_pwritev2 283
-+__SC_COMP(__NR_pwritev2, sys_pwritev2)
- 
- /* fs/sendfile.c */
- #define __NR3264_sendfile 71
-@@ -707,7 +715,7 @@ __SYSCALL(__NR_getrandom, sys_getrandom)
- __SYSCALL(__NR_memfd_create, sys_memfd_create)
- 
- #undef __NR_syscalls
--#define __NR_syscalls 280
-+#define __NR_syscalls 284
- 
- /*
-  * All syscalls below here should go away really,
 -- 
-1.7.9.5
+1.9.3
 
