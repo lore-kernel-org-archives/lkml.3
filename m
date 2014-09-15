@@ -1,200 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbaIOLvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 07:51:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096AbaIOLvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 07:51:04 -0400
-Message-ID: <5416D287.6020108@redhat.com>
-Date: Mon, 15 Sep 2014 13:50:31 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753973AbaIOL7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 07:59:22 -0400
+Received: from mail-bn1bn0107.outbound.protection.outlook.com ([157.56.110.107]:41472
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753705AbaIOL7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 07:59:21 -0400
+Date: Mon, 15 Sep 2014 19:58:56 +0800
+From: Shengjiu Wang <shengjiu.wang@freescale.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: Shawn Guo <shawn.guo@freescale.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V1 1/3] ARM: clk-imx6sl: refine clock tree for SSI
+Message-ID: <20140915115855.GC23877@audiosh1>
+References: <cover.1410253534.git.shengjiu.wang@freescale.com>
+ <7ed21195ebff8b3ccbecaeb492504edd28deea2d.1410253534.git.shengjiu.wang@freescale.com>
+ <CAOMZO5A4FLbA_+u4oMTqgAY69DaF93V=oLiy+op=tEHbagF1pg@mail.gmail.com>
+ <CAOMZO5DJZHKAV4Y9aUwMNWZqhoLrKrsZdYnKqPem2ZSy=-oAYw@mail.gmail.com>
 MIME-Version: 1.0
-To: Ching Huang <ching2048@areca.com.tw>
-CC: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 1/2] arcmsr: simplify ioctl data read/write
-References: <1410506960.5045.250.camel@Centos6.3-64>	 <5412F680.2070702@redhat.com> <1410749808.4764.5.camel@Centos6.3-64>	 <5416BE99.3000409@redhat.com> <1410777415.4774.3.camel@Centos6.3-64>
-In-Reply-To: <1410777415.4774.3.camel@Centos6.3-64>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5DJZHKAV4Y9aUwMNWZqhoLrKrsZdYnKqPem2ZSy=-oAYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(377454003)(189002)(199003)(110136001)(90102001)(47776003)(85306004)(26826002)(50466002)(33716001)(20776003)(92726001)(105606002)(64706001)(85852003)(80022001)(46406003)(97756001)(102836001)(19580405001)(81342001)(33656002)(84676001)(107046002)(23726002)(86362001)(68736004)(44976005)(97736003)(83322001)(83506001)(106466001)(21056001)(1411001)(6806004)(79102001)(104016003)(77982001)(19580395003)(4396001)(46102001)(74662001)(95666004)(92566001)(93886004)(31966008)(99396002)(50986999)(54356999)(83072002)(76482001)(81542001)(87936001)(74502001)(76176999);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB339;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB339;
+X-Forefront-PRVS: 03355EE97E
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=shengjiu.wang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 12:36 PM, Ching Huang wrote:
-> On Mon, 2014-09-15 at 12:25 +0200, Tomas Henzl wrote:
->> On 09/15/2014 04:56 AM, Ching Huang wrote:
->>> On Fri, 2014-09-12 at 15:34 +0200, Tomas Henzl wrote:
->>>> On 09/12/2014 09:29 AM, Ching Huang wrote:
->>>>> From: Ching Huang <ching2048@areca.com.tw>
->>>>>
->>>>> This patch is to modify previous patch 13/17 and it is relative to
->>>>> http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
->>>>>
->>>>> change in v4:
->>>>> 1. for readability, rename firstindex to getIndex, rename lastindex to putIndex
->>>> For some reason, the names head+tail areusual for a circular buffer.
->>>> But let us ignore the names, I don't care.
->>>>> 2. define ARCMSR_API_DATA_BUFLEN as 1032
->>>>> 3. simplify ioctl data read by macro CIRC_CNT_TO_END and CIRC_CNT
->>>> It's definitely better when you post renames and other non-functional changes in separate
->>>> patches, it's easier for the reviewer. 
->>>>> Signed-off-by: Ching Huang <ching2048@areca.com.tw>
->>>>> ---
->>>>>
->>>>> diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
->>>>> --- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-08-21 12:14:27.000000000 +0800
->>>>> +++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-09-12 15:18:46.659125000 +0800
->>>>> @@ -50,6 +50,7 @@
->>>>>  #include <linux/errno.h>
->>>>>  #include <linux/delay.h>
->>>>>  #include <linux/pci.h>
->>>>> +#include <linux/circ_buf.h>
->>>>>  
->>>>>  #include <scsi/scsi_cmnd.h>
->>>>>  #include <scsi/scsi_device.h>
->>>>> @@ -68,7 +69,7 @@ static ssize_t arcmsr_sysfs_iop_message_
->>>>>  	struct device *dev = container_of(kobj,struct device,kobj);
->>>>>  	struct Scsi_Host *host = class_to_shost(dev);
->>>>>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
->>>>> -	uint8_t *pQbuffer,*ptmpQbuffer;
->>>>> +	uint8_t *ptmpQbuffer;
->>>>>  	int32_t allxfer_len = 0;
->>>>>  	unsigned long flags;
->>>>>  
->>>>> @@ -78,57 +79,22 @@ static ssize_t arcmsr_sysfs_iop_message_
->>>>>  	/* do message unit read. */
->>>>>  	ptmpQbuffer = (uint8_t *)buf;
->>>>>  	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
->>>>> -	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
->>>>> -		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
->>>>> -		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
->>>>> -			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
->>>>> -				memcpy(ptmpQbuffer, pQbuffer, 1032);
->>>>> -				acb->rqbuf_firstindex += 1032;
->>>>> -				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
->>>>> -				allxfer_len = 1032;
->>>>> -			} else {
->>>>> -				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
->>>>> -					+ acb->rqbuf_lastindex) > 1032) {
->>>>> -					memcpy(ptmpQbuffer, pQbuffer,
->>>>> -						ARCMSR_MAX_QBUFFER
->>>>> -						- acb->rqbuf_firstindex);
->>>>> -					ptmpQbuffer += ARCMSR_MAX_QBUFFER
->>>>> -						- acb->rqbuf_firstindex;
->>>>> -					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
->>>>> -						- (ARCMSR_MAX_QBUFFER -
->>>>> -						acb->rqbuf_firstindex));
->>>>> -					acb->rqbuf_firstindex = 1032 -
->>>>> -						(ARCMSR_MAX_QBUFFER -
->>>>> -						acb->rqbuf_firstindex);
->>>>> -					allxfer_len = 1032;
->>>>> -				} else {
->>>>> -					memcpy(ptmpQbuffer, pQbuffer,
->>>>> -						ARCMSR_MAX_QBUFFER -
->>>>> -						acb->rqbuf_firstindex);
->>>>> -					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
->>>>> -						acb->rqbuf_firstindex;
->>>>> -					memcpy(ptmpQbuffer, acb->rqbuffer,
->>>>> -						acb->rqbuf_lastindex);
->>>>> -					allxfer_len = ARCMSR_MAX_QBUFFER -
->>>>> -						acb->rqbuf_firstindex +
->>>>> -						acb->rqbuf_lastindex;
->>>>> -					acb->rqbuf_firstindex =
->>>>> -						acb->rqbuf_lastindex;
->>>>> -				}
->>>>> -			}
->>>>> -		} else {
->>>>> -			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
->>>>> -				memcpy(ptmpQbuffer, pQbuffer, 1032);
->>>>> -				acb->rqbuf_firstindex += 1032;
->>>>> -				allxfer_len = 1032;
->>>>> -			} else {
->>>>> -				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
->>>>> -					- acb->rqbuf_firstindex);
->>>>> -				allxfer_len = acb->rqbuf_lastindex -
->>>>> -					acb->rqbuf_firstindex;
->>>>> -				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
->>>>> -			}
->>>>> +	if (acb->rqbuf_getIndex != acb->rqbuf_putIndex) {
->>>>> +		unsigned int tail = acb->rqbuf_getIndex;
->>>>> +		unsigned int head = acb->rqbuf_putIndex;
->>>>> +		unsigned int cnt_to_end = CIRC_CNT_TO_END(head, tail, ARCMSR_MAX_QBUFFER);
->>>>> +
->>>>> +		allxfer_len = CIRC_CNT(head, tail, ARCMSR_MAX_QBUFFER);
->>>>> +		if (allxfer_len > ARCMSR_API_DATA_BUFLEN)
->>>>> +			allxfer_len = ARCMSR_API_DATA_BUFLEN;
->>>>> +
->>>>> +		if (allxfer_len <= cnt_to_end)
->>>>> +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, allxfer_len);
->>>>> +		else {
->>>>> +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, cnt_to_end);
->>>>> +			memcpy(ptmpQbuffer + cnt_to_end, acb->rqbuffer, allxfer_len - cnt_to_end);
->>>>>  		}
->>>>> +		acb->rqbuf_getIndex = (acb->rqbuf_getIndex + allxfer_len) % ARCMSR_MAX_QBUFFER;
->>>>>  	}
->>>>>  	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
->>>>>  		struct QBUFFER __iomem *prbuffer;
->>>>> @@ -150,33 +116,32 @@ static ssize_t arcmsr_sysfs_iop_message_
->>>>>  	struct device *dev = container_of(kobj,struct device,kobj);
->>>>>  	struct Scsi_Host *host = class_to_shost(dev);
->>>>>  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
->>>>> -	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
->>>>> +	int32_t my_empty_len, user_len, wqbuf_getIndex, wqbuf_putIndex;
->>>>>  	uint8_t *pQbuffer, *ptmpuserbuffer;
->>>>>  	unsigned long flags;
->>>>>  
->>>>>  	if (!capable(CAP_SYS_ADMIN))
->>>>>  		return -EACCES;
->>>>> -	if (count > 1032)
->>>>> +	if (count > ARCMSR_API_DATA_BUFLEN)
->>>>>  		return -EINVAL;
->>>>>  	/* do message unit write. */
->>>>>  	ptmpuserbuffer = (uint8_t *)buf;
->>>>>  	user_len = (int32_t)count;
->>>>>  	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
->>>>> -	wqbuf_lastindex = acb->wqbuf_lastindex;
->>>>> -	wqbuf_firstindex = acb->wqbuf_firstindex;
->>>>> -	if (wqbuf_lastindex != wqbuf_firstindex) {
->>>>> +	wqbuf_putIndex = acb->wqbuf_putIndex;
->>>>> +	wqbuf_getIndex = acb->wqbuf_getIndex;
->>>>> +	if (wqbuf_putIndex != wqbuf_getIndex) {
->>>>>  		arcmsr_write_ioctldata2iop(acb);
->>>>>  		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
->>>>>  		return 0;	/*need retry*/
->>>>>  	} else {
->>>>> -		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
->>>>> -			&(ARCMSR_MAX_QBUFFER - 1);
->>>>> +		my_empty_len = ARCMSR_MAX_QBUFFER - 1;
->>>> This^ doesn't look like like an rename can you explain?
->>> It is just a code simplification.
->> Yes it is of some kind. But I think it's also a bug, because you have replaced
->> 'firstindex - lastindex' with nothing.
-> It will be not a bug. At here, firstindex == lastindex, so firstindex-lastindex is 0
+Hi fabio, shawn.
 
-Thanks, I haven't seen it before. In that case because user_len is max 1032 and  ARCMSR_MAX_QBUFFER is 4k
-the next if statement '(my_empty_len >= user_len)' will be true for any user_len (<1032),
-and it looks like you could remove my_empty_len completely. 
+On Fri, Sep 12, 2014 at 01:43:39PM -0300, Fabio Estevam wrote:
+> On Fri, Sep 12, 2014 at 1:35 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> > On Tue, Sep 9, 2014 at 6:13 AM, Shengjiu Wang
+> > <shengjiu.wang@freescale.com> wrote:
+> >> Each SSI has "ssi", "ssi_ipg" clocks, and they share same gate bits.
+> >>
+> >> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
+> >
+> > This patch breaks audio playback on imx6q-sabresd:
+> >
+> > root@freescale /$ aplay /home/clarinet.wav
+> > Playing WAVE '/home/clarinet.wav' : Signed 16 bit Little Endian, Rate 44100 Hz,
+> > Mono
+> > underrun!!! (at least -1585992.581 ms long)
+> > underrun!!! (at least -1585992.585 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> > underrun!!! (at least -1585992.586 ms long)
+> >
+> > If I revert this commit, then I am able to play it well again.
+> 
+> Ops, I replied in the wrong patch.
+> 
+> The one that breaks imx6q-sabresd is:
+> 
+>    commit 48e1c2255 "ARM: clk-imx6q: refine clock tree for SSI"
 
->>>> Let us stop here, or we end in an endless loop of corrections. The original 13/17
->>>> you are trying to improve here was at least without bugs (better said I haven't noticed) so
->>>> improving it now only complicates the process.
->>>> My suggestion is -let us skip this patch and focus only on fixing the spinlock problem found in 16/17.
->>>> OKay?
->>> Agree.
->>>> Cheers,
->>>> Tomas
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I add IMX6QDL_CLK_SSIx in this patch, which use share count with 
+IMX6QDL_CLK_SSIx_IPG. The SSI driver sound/soc/fsl/fsl_ssi.c will enable
+IMX6QDL_CLK_SSIx_IPG clock in probe, but don't disable it. In the end of kernel
+boot up, some one(it is not ssi driver, maybe is the clock tree) will disable
+the IMX6QDL_CLK_SSIx clock, which is not enabled. IMX6QDL_CLK_SSIx_IPG share
+the enable/disable bit with IMX6QDL_CLK_SSIx, So IMX6QDL_CLK_SSIx_IPG is 
+disabled, the aplay will fail.
 
+Is this the issue of imx_clk_gate2_shared()? When we want to disable IMX6QDL_CLK_SSIx,
+but IMX6QDL_CLK_SSIx_IPG is enabled, can IMX6QDL_CLK_SSIx be disabled?
+
+
+Shawn
+
+   How do you think about this?
+
+best regards
+wang shengjiu
