@@ -1,124 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbaIOWJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:09:40 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:47154 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaIOWJh (ORCPT
+	id S1755762AbaIOWJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:09:57 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37965 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755248AbaIOWJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:09:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com>
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
- <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com>
- <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
- <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
- <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org>
- <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org>
- <20140915111055.GD1577@arm.com> <54174CFF.7050504@codeaurora.org>
- <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com>
- <54175EFE.6010509@codeaurora.org> <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Mon, 15 Sep 2014 15:04:03 -0700
-X-Google-Sender-Auth: CvTPW8tQv_JvwLm4mp_W03qt1Ao
-Message-ID: <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 18:09:55 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH] arm: Remove redundant config value DEBUG_UART_NETX
+Date: Mon, 15 Sep 2014 23:09:46 +0100
+Message-Id: <1410818986-13273-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 2:52 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> On Mon, Sep 15, 2014 at 2:49 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 09/15/14 14:47, Sonny Rao wrote:
->>> On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>>> On 09/15/14 04:10, Catalin Marinas wrote:
->>>>> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
->>>>>> On 09/12/14 05:14, Marc Zyngier wrote:
->>>>>>> We surely can handle the UNDEF and do something there. We just can't do
->>>>>>> it the way Doug described it above.
->>>>>> I suggested doing that for something else a while ago and Will and Dave
->>>>>> we're not thrilled[1]. The suggestion back then was to use DT to
->>>>>> indicate what mode the kernel is running in.
->>>>>>
->>>>>> [1]
->>>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
->>>>> I think the context was slightly different. As I re-read the thread, it
->>>>> seems that the discussion was around whether to use some SMC interface
->>>>> or not based on whether the kernel is running secure or non-secure. The
->>>>> argument made by Will was to actually specify the type of the firmware
->>>>> SMC interface in the DT and use it in the kernel (and probably assume
->>>>> the kernel is running in secure mode if no smc interface is specified in
->>>>> the DT; you could have both though, running in secure mode and also
->>>>> having firmware).
->>>>>
->>>>> In this arch timer case, we need to work around a firmware bug (or
->>>>> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
->>>>> firmware, no matter how small such firmware is). We don't expect a
->>>>> specific SMC call to initialise CNTVOFF, so we can't describe it in the
->>>>> DT.
->>>> Agreed, we can't described SMC calls that don't exist. From my
->>>> perspective it's just another part of the cpu boot sequence that needs
->>>> to be handled in the kernel, so describing the requirement via the
->>>> cpu-boot method seems appropriate. It seems like we're making it harder
->>>> than it should be by handling the undef when we could have slightly
->>>> different SMP boot code (and suspend/resume code) depending on the boot
->>>> method property.
->>>
->>> +heiko
->>>
->>> So, for the case of rk3288, based on this discussion what I'm going to
->>> propose is to add code to rockchip.c which looks for a particular SMP
->>> enable method -- say something like "rockchip,rk3288-smp-secure-svc"
->>> which will then assume we have been booted in secure SVC mode and do
->>> the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
->>> as well, so I think it will need to scan the DT fairly early on the
->>> boot CPU and also perform the function there.
->>>
->>> I'll look into implementing this and post code.  Comments and
->>> suggestions appreciated, thanks.
->>
->> What goes wrong if we read the cntvoff from the boot CPU during
->> smp_prepare_cpus() phase and use that to set the cntvoff on the other
->> CPUs? That avoids needing to do anything very early by making the value
->> the same. It does mean that cntvoff is some random out of reset value
->> for CPU0, but at least it's consistent.
->
-> I think we cannot read the value if we're not in hyp mode.
+Commit 880fa9b6fd73 ("ARM: 8144/1: netx: Migrate DEBUG_LL macros to
+shared directory") spuriously introduces an unused config variable,
+DEBUG_UART_NETX. Let's remove it.
 
-Well, thinking about it a little more, I think you still have a good point.
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/Kconfig.debug | 1 -
+ 1 file changed, 1 deletion(-)
 
-We don't need to do this early on, as long as we haven't started using
-the arch timers yet.  If we are still able to do this at the point
-where we're executing the code in arch/arm/mach-rockchip/platsmp.c
-that finds the enable method then we can just handle it there.
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 537dd04..b6ec25a 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -450,7 +450,6 @@ choice
+ 	config DEBUG_NETX_UART
+ 		bool "Kernel low-level debugging messages via NetX UART"
+ 		depends on ARCH_NETX
+-		select DEBUG_UART_NETX
+ 		help
+ 		  Say Y here if you want kernel low-level debugging support
+ 		  on Hilscher NetX based platforms.
+-- 
+1.9.3
 
->
->
->>
->> --
->> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
->> hosted by The Linux Foundation
->>
