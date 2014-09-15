@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464AbaIOWLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50531 "EHLO
+	id S1757447AbaIOWLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:11:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50536 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360AbaIOWLF (ORCPT
+	with ESMTP id S1754640AbaIOWLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:05 -0400
+	Mon, 15 Sep 2014 18:11:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 100/187] drivers: scsi: storvsc: Set srb_flags in all cases
-Date: Mon, 15 Sep 2014 15:08:30 -0700
-Message-Id: <1410818997-9432-101-git-send-email-kamal@canonical.com>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 108/187] tpm: missing tpm_chip_put in tpm_get_random()
+Date: Mon, 15 Sep 2014 15:08:38 -0700
+Message-Id: <1410818997-9432-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,58 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
-commit f885fb73f64154690c2158e813de56363389ffec upstream.
+commit 3e14d83ef94a5806a865b85b513b4e891923c19b upstream.
 
-Correctly set SRB flags for all valid I/O directions. Some IHV drivers on the
-Windows host require this. The host validates the command and SRB flags
-prior to passing the command down to native driver stack.
+Regression in 41ab999c. Call to tpm_chip_put is missing. This
+will cause TPM device driver not to unload if tmp_get_random()
+is called.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/storvsc_drv.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/char/tpm/tpm-interface.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 2b8595b..b529ae8 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1601,26 +1601,24 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 	vm_srb = &cmd_request->vstor_packet.vm_srb;
- 	vm_srb->win8_extension.time_out_value = 60;
+diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
+index 6ae41d3..901b370 100644
+--- a/drivers/char/tpm/tpm-interface.c
++++ b/drivers/char/tpm/tpm-interface.c
+@@ -1400,13 +1400,13 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
+ 	int err, total = 0, retries = 5;
+ 	u8 *dest = out;
  
-+	vm_srb->win8_extension.srb_flags |=
-+		(SRB_FLAGS_QUEUE_ACTION_ENABLE |
-+		SRB_FLAGS_DISABLE_SYNCH_TRANSFER);
++	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
++		return -EINVAL;
++
+ 	chip = tpm_chip_find_get(chip_num);
+ 	if (chip == NULL)
+ 		return -ENODEV;
  
- 	/* Build the SRB */
- 	switch (scmnd->sc_data_direction) {
- 	case DMA_TO_DEVICE:
- 		vm_srb->data_in = WRITE_TYPE;
- 		vm_srb->win8_extension.srb_flags |= SRB_FLAGS_DATA_OUT;
--		vm_srb->win8_extension.srb_flags |=
--			(SRB_FLAGS_QUEUE_ACTION_ENABLE |
--			SRB_FLAGS_DISABLE_SYNCH_TRANSFER);
- 		break;
- 	case DMA_FROM_DEVICE:
- 		vm_srb->data_in = READ_TYPE;
- 		vm_srb->win8_extension.srb_flags |= SRB_FLAGS_DATA_IN;
--		vm_srb->win8_extension.srb_flags |=
--			(SRB_FLAGS_QUEUE_ACTION_ENABLE |
--			SRB_FLAGS_DISABLE_SYNCH_TRANSFER);
- 		break;
- 	default:
- 		vm_srb->data_in = UNKNOWN_TYPE;
--		vm_srb->win8_extension.srb_flags = 0;
-+		vm_srb->win8_extension.srb_flags |= (SRB_FLAGS_DATA_IN |
-+						     SRB_FLAGS_DATA_OUT);
- 		break;
- 	}
+-	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
+-		return -EINVAL;
+-
+ 	do {
+ 		tpm_cmd.header.in = tpm_getrandom_header;
+ 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
+@@ -1425,6 +1425,7 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
+ 		num_bytes -= recd;
+ 	} while (retries-- && total < max);
  
++	tpm_chip_put(chip);
+ 	return total ? total : -EIO;
+ }
+ EXPORT_SYMBOL_GPL(tpm_get_random);
 -- 
 1.9.1
 
