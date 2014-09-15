@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634AbaIOWOZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:14:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50858 "EHLO
+	id S1757689AbaIOWOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:14:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50863 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755614AbaIOWOV (ORCPT
+	with ESMTP id S1757652AbaIOWOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:14:21 -0400
+	Mon, 15 Sep 2014 18:14:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        Andreas Boll <andreas.boll.dev@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 166/187] s390/locking: Reenable optimistic spinning
-Date: Mon, 15 Sep 2014 15:09:36 -0700
-Message-Id: <1410818997-9432-167-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 158/187] drm/radeon: use packet2 for nop on hawaii with old firmware
+Date: Mon, 15 Sep 2014 15:09:28 -0700
+Message-Id: <1410818997-9432-159-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,39 +31,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 36e7fdaa1a04fcf65b864232e1af56a51c7814d6 upstream.
+commit 0e16e4cfde70e1cf00f9fe3a8f601d10e73e0ec6 upstream.
 
-commit 4badad352a6bb202ec68afa7a574c0bb961e5ebc (locking/mutex: Disable
-optimistic spinning on some architectures) fenced spinning for
-architectures without proper cmpxchg.
-There is no need to disable mutex spinning on s390, though:
-The instructions CS,CSG and friends provide the proper guarantees.
-(We dont implement cmpxchg with locks).
+Older firmware didn't support the new nop packet.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+v2 (Andreas Boll):
+ - Drop usage of packet3 for new firmware
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com> (v1)
+Signed-off-by: Andreas Boll <andreas.boll.dev@gmail.com>
+[ kamal: backport to 3.13: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/radeon/cik.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index c8d8283..8993c96 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -93,6 +93,7 @@ config S390
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQ
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
- 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
-+	select ARCH_SUPPORTS_ATOMIC_RMW
- 	select ARCH_USE_CMPXCHG_LOCKREF
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select BUILDTIME_EXTABLE_SORT
+diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
+index f605f6e..1523902 100644
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -7576,6 +7576,7 @@ restart_ih:
+ static int cik_startup(struct radeon_device *rdev)
+ {
+ 	struct radeon_ring *ring;
++	u32 nop;
+ 	int r;
+ 
+ 	/* enable pcie gen2/3 link */
+@@ -7693,10 +7694,16 @@ static int cik_startup(struct radeon_device *rdev)
+ 	}
+ 	cik_irq_set(rdev);
+ 
++	if (rdev->family == CHIP_HAWAII) {
++		nop = RADEON_CP_PACKET2;
++	} else {
++		nop = PACKET3(PACKET3_NOP, 0x3FFF);
++	}
++
+ 	ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+ 	r = radeon_ring_init(rdev, ring, ring->ring_size, RADEON_WB_CP_RPTR_OFFSET,
+ 			     CP_RB0_RPTR, CP_RB0_WPTR,
+-			     PACKET3(PACKET3_NOP, 0x3FFF));
++			     nop);
+ 	if (r)
+ 		return r;
+ 
+@@ -7705,7 +7712,7 @@ static int cik_startup(struct radeon_device *rdev)
+ 	ring = &rdev->ring[CAYMAN_RING_TYPE_CP1_INDEX];
+ 	r = radeon_ring_init(rdev, ring, ring->ring_size, RADEON_WB_CP1_RPTR_OFFSET,
+ 			     CP_HQD_PQ_RPTR, CP_HQD_PQ_WPTR,
+-			     PACKET3(PACKET3_NOP, 0x3FFF));
++			     nop);
+ 	if (r)
+ 		return r;
+ 	ring->me = 1; /* first MEC */
+@@ -7717,7 +7724,7 @@ static int cik_startup(struct radeon_device *rdev)
+ 	ring = &rdev->ring[CAYMAN_RING_TYPE_CP2_INDEX];
+ 	r = radeon_ring_init(rdev, ring, ring->ring_size, RADEON_WB_CP2_RPTR_OFFSET,
+ 			     CP_HQD_PQ_RPTR, CP_HQD_PQ_WPTR,
+-			     PACKET3(PACKET3_NOP, 0x3FFF));
++			     nop);
+ 	if (r)
+ 		return r;
+ 	/* dGPU only have 1 MEC */
 -- 
 1.9.1
 
