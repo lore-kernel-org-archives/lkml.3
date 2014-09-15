@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671AbaIOTxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:53:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55848 "EHLO
+	id S1756684AbaIOTxu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:53:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054AbaIOTrY (ORCPT
+	with ESMTP id S1756293AbaIOTrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:24 -0400
+	Mon, 15 Sep 2014 15:47:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        mdraid.pkoch@dfgh.net (Peter Koch), NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.10 48/71] md/raid10: fix memory leak when reshaping a RAID10.
-Date: Mon, 15 Sep 2014 12:26:46 -0700
-Message-Id: <20140915192640.284392833@linuxfoundation.org>
+        Yuri Tikhonov <yur@emcraft.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "Manibalan P" <pmanibalan@amiindia.co.in>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 47/71] md/raid6: avoid data corruption during recovery of double-degraded RAID6
+Date: Mon, 15 Sep 2014 12:26:45 -0700
+Message-Id: <20140915192640.253029480@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -30,38 +32,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit ce0b0a46955d1bb389684a2605dbcaa990ba0154 upstream.
+commit 9c4bdf697c39805078392d5ddbbba5ae5680e0dd upstream.
 
-raid10 reshape clears unwanted bits from a bio->bi_flags using
-a method which, while clumsy, worked until 3.10 when BIO_OWNS_VEC
-was added.
-Since then it clears that bit but shouldn't.  This results in a
-memory leak.
+During recovery of a double-degraded RAID6 it is possible for
+some blocks not to be recovered properly, leading to corruption.
 
-So change to used the approved method of clearing unwanted bits.
+If a write happens to one block in a stripe that would be written to a
+missing device, and at the same time that stripe is recovering data
+to the other missing device, then that recovered data may not be written.
 
-As this causes a memory leak which can consume all of memory
-the fix is suitable for -stable.
+This patch skips, in the double-degraded case, an optimisation that is
+only safe for single-degraded arrays.
 
-Fixes: a38352e0ac02dbbd4fa464dc22d1352b5fbd06fd
-Reported-by: mdraid.pkoch@dfgh.net (Peter Koch)
+Bug was introduced in 2.6.32 and fix is suitable for any kernel since
+then.  In an older kernel with separate handle_stripe5() and
+handle_stripe6() functions the patch must change handle_stripe6().
+
+Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+Cc: Yuri Tikhonov <yur@emcraft.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Tested-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
 Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid5.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -4398,7 +4398,7 @@ read_more:
- 	read_bio->bi_private = r10_bio;
- 	read_bio->bi_end_io = end_sync_read;
- 	read_bio->bi_rw = READ;
--	read_bio->bi_flags &= ~(BIO_POOL_MASK - 1);
-+	read_bio->bi_flags &= (~0UL << BIO_RESET_BITS);
- 	read_bio->bi_flags |= 1 << BIO_UPTODATE;
- 	read_bio->bi_vcnt = 0;
- 	read_bio->bi_size = 0;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3561,6 +3561,8 @@ static void handle_stripe(struct stripe_
+ 				set_bit(R5_Wantwrite, &dev->flags);
+ 				if (prexor)
+ 					continue;
++				if (s.failed > 1)
++					continue;
+ 				if (!test_bit(R5_Insync, &dev->flags) ||
+ 				    ((i == sh->pd_idx || i == sh->qd_idx)  &&
+ 				     s.failed == 0))
 
 
