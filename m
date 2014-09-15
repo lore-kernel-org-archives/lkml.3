@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758380AbaIOUqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:46:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58401 "EHLO mx1.redhat.com"
+	id S1758414AbaIOUqr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:46:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50154 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756156AbaIOUpz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:45:55 -0400
+	id S1757366AbaIOUpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 16:45:39 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 10/10] PKCS#7: Handle PKCS#7 messages that contain no X.509
- certs [ver #2]
+Subject: [PATCH 07/10] KEYS: Implement binary asymmetric key ID handling
+ [ver #2]
 From: David Howells <dhowells@redhat.com>
 To: vgoyal@redhat.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Sep 2014 21:45:50 +0100
-Message-ID: <20140915204550.27499.44701.stgit@warthog.procyon.org.uk>
+Date: Mon, 15 Sep 2014 21:45:33 +0100
+Message-ID: <20140915204533.27499.32101.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 References: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -27,138 +27,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The X.509 certificate list in a PKCS#7 message is optional.  To save space, we
-can omit the inclusion of any X.509 certificates if we are sure that we can
-look the relevant public key up by the serial number and issuer given in a
-signed info block.
+Implement the first step in using binary key IDs for asymmetric keys rather
+than hex string keys.
 
-This also supports use of a signed info block for which we can't find a
-matching X.509 cert in the certificate list, though it be populated.
+The previously added match data preparsing will be able to convert hex
+criterion strings into binary which can then be compared more rapidly.
+
+Further, we actually want more then one ID string per public key.  The problem
+is that X.509 certs refer to other X.509 certs by matching Issuer + AuthKeyId
+to Subject + SubjKeyId, but PKCS#7 messages match against X.509 Issuer +
+SerialNumber.
+
+This patch just provides facilities for a later patch to make use of.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/pkcs7_trust.c  |   48 +++++++++++++++++++++++++--------
- crypto/asymmetric_keys/pkcs7_verify.c |   16 ++++++++---
- 2 files changed, 47 insertions(+), 17 deletions(-)
+ crypto/asymmetric_keys/asymmetric_keys.h |    4 +
+ crypto/asymmetric_keys/asymmetric_type.c |   89 ++++++++++++++++++++++++++++++
+ include/keys/asymmetric-type.h           |   38 +++++++++++++
+ 3 files changed, 131 insertions(+)
 
-diff --git a/crypto/asymmetric_keys/pkcs7_trust.c b/crypto/asymmetric_keys/pkcs7_trust.c
-index 2f953158a1a4..6fdbc3a33d66 100644
---- a/crypto/asymmetric_keys/pkcs7_trust.c
-+++ b/crypto/asymmetric_keys/pkcs7_trust.c
-@@ -55,13 +55,16 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 		 * keys.
- 		 */
- 		key = x509_request_asymmetric_key(trust_keyring, x509->id);
--		if (!IS_ERR(key))
-+		if (!IS_ERR(key)) {
- 			/* One of the X.509 certificates in the PKCS#7 message
- 			 * is apparently the same as one we already trust.
- 			 * Verify that the trusted variant can also validate
- 			 * the signature on the descendant.
- 			 */
-+			pr_devel("sinfo %u: Cert %u as key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
- 			goto matched;
-+		}
- 		if (key == ERR_PTR(-ENOMEM))
- 			return -ENOMEM;
+diff --git a/crypto/asymmetric_keys/asymmetric_keys.h b/crypto/asymmetric_keys/asymmetric_keys.h
+index a63c551c6557..917be6b985e7 100644
+--- a/crypto/asymmetric_keys/asymmetric_keys.h
++++ b/crypto/asymmetric_keys/asymmetric_keys.h
+@@ -10,6 +10,10 @@
+  */
  
-@@ -81,15 +84,34 @@ static int pkcs7_validate_trust_one(struct pkcs7_message *pkcs7,
- 	/* No match - see if the root certificate has a signer amongst the
- 	 * trusted keys.
- 	 */
--	if (!last || !last->issuer || !last->authority) {
--		kleave(" = -ENOKEY [no backref]");
--		return -ENOKEY;
-+	if (last && last->authority) {
-+		key = x509_request_asymmetric_key(trust_keyring, last->authority);
-+		if (!IS_ERR(key)) {
-+			x509 = last;
-+			pr_devel("sinfo %u: Root cert %u signer is key %x\n",
-+				 sinfo->index, x509->index, key_serial(key));
-+			goto matched;
-+		}
-+		if (PTR_ERR(key) != -ENOKEY)
-+			return PTR_ERR(key);
- 	}
- 
--	key = x509_request_asymmetric_key(trust_keyring, last->authority);
--	if (IS_ERR(key))
--		return PTR_ERR(key) == -ENOMEM ? -ENOMEM : -ENOKEY;
--	x509 = last;
-+	/* As a last resort, see if we have a trusted public key that matches
-+	 * the signed info directly.
-+	 */
-+	key = x509_request_asymmetric_key(trust_keyring,
-+					  sinfo->signing_cert_id);
-+	if (!IS_ERR(key)) {
-+		pr_devel("sinfo %u: Direct signer is key %x\n",
-+			 sinfo->index, key_serial(key));
-+		x509 = NULL;
-+		goto matched;
-+	}
-+	if (PTR_ERR(key) != -ENOKEY)
-+		return PTR_ERR(key);
+ int asymmetric_keyid_match(const char *kid, const char *id);
++extern bool asymmetric_match_key_ids(const struct asymmetric_key_ids *kids,
++				     const struct asymmetric_key_id *match_id);
 +
-+	kleave(" = -ENOKEY [no backref]");
-+	return -ENOKEY;
++extern struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id);
  
- matched:
- 	ret = verify_signature(key, sig);
-@@ -103,10 +125,12 @@ matched:
- 	}
+ static inline const char *asymmetric_key_id(const struct key *key)
+ {
+diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+index 7755f918e8d9..92bfc438dd1d 100644
+--- a/crypto/asymmetric_keys/asymmetric_type.c
++++ b/crypto/asymmetric_keys/asymmetric_type.c
+@@ -15,6 +15,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/ctype.h>
+ #include "asymmetric_keys.h"
  
- verified:
--	x509->verified = true;
--	for (p = sinfo->signer; p != x509; p = p->signer) {
--		p->verified = true;
--		p->trusted = trusted;
-+	if (x509) {
-+		x509->verified = true;
-+		for (p = sinfo->signer; p != x509; p = p->signer) {
-+			p->verified = true;
-+			p->trusted = trusted;
-+		}
- 	}
- 	sinfo->trusted = trusted;
- 	kleave(" = 0");
-diff --git a/crypto/asymmetric_keys/pkcs7_verify.c b/crypto/asymmetric_keys/pkcs7_verify.c
-index bd264052f751..cd455450b069 100644
---- a/crypto/asymmetric_keys/pkcs7_verify.c
-+++ b/crypto/asymmetric_keys/pkcs7_verify.c
-@@ -154,10 +154,13 @@ static int pkcs7_find_key(struct pkcs7_message *pkcs7,
- 		return 0;
- 	}
+ MODULE_LICENSE("GPL");
+@@ -22,6 +23,94 @@ MODULE_LICENSE("GPL");
+ static LIST_HEAD(asymmetric_key_parsers);
+ static DECLARE_RWSEM(asymmetric_key_parsers_sem);
  
--	pr_warn("Sig %u: Issuing X.509 cert not found (#%*ph)\n",
--		sinfo->index,
--		sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
--	return -ENOKEY;
-+	/* The relevant X.509 cert isn't found here, but it might be found in
-+	 * the trust keyring.
-+	 */
-+	pr_debug("Sig %u: Issuing X.509 cert not found (#%*phN)\n",
-+		 sinfo->index,
-+		 sinfo->signing_cert_id->len, sinfo->signing_cert_id->data);
-+	return 0;
- }
++/**
++ * asymmetric_key_generate_id: Construct an asymmetric key ID
++ * @val_1: First binary blob
++ * @len_1: Length of first binary blob
++ * @val_2: Second binary blob
++ * @len_2: Length of second binary blob
++ *
++ * Construct an asymmetric key ID from a pair of binary blobs.
++ */
++struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
++						     size_t len_1,
++						     const void *val_2,
++						     size_t len_2)
++{
++	struct asymmetric_key_id *kid;
++
++	kid = kmalloc(sizeof(struct asymmetric_key_id) + len_1 + len_2,
++		      GFP_KERNEL);
++	if (!kid)
++		return ERR_PTR(-ENOMEM);
++	kid->len = len_1 + len_2;
++	memcpy(kid->data, val_1, len_1);
++	memcpy(kid->data + len_1, val_2, len_2);
++	return kid;
++}
++EXPORT_SYMBOL_GPL(asymmetric_key_generate_id);
++
++/**
++ * asymmetric_key_id_same - Return true if two asymmetric keys IDs are the same.
++ * @kid_1, @kid_2: The key IDs to compare
++ */
++bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
++			    const struct asymmetric_key_id *kid2)
++{
++	if (!kid1 || !kid2)
++		return false;
++	if (kid1->len != kid2->len)
++		return false;
++	return memcmp(kid1->data, kid2->data, kid1->len) == 0;
++}
++EXPORT_SYMBOL_GPL(asymmetric_key_id_same);
++
++/**
++ * asymmetric_match_key_ids - Search asymmetric key IDs
++ * @kids: The list of key IDs to check
++ * @match_id: The key ID we're looking for
++ */
++bool asymmetric_match_key_ids(const struct asymmetric_key_ids *kids,
++			      const struct asymmetric_key_id *match_id)
++{
++	if (!kids || !match_id)
++		return false;
++	if (asymmetric_key_id_same(kids->id[0], match_id))
++		return true;
++	if (asymmetric_key_id_same(kids->id[1], match_id))
++		return true;
++	return false;
++}
++EXPORT_SYMBOL_GPL(asymmetric_match_key_ids);
++
++/**
++ * asymmetric_key_hex_to_key_id - Convert a hex string into a key ID.
++ * @id: The ID as a hex string.
++ */
++struct asymmetric_key_id *asymmetric_key_hex_to_key_id(const char *id)
++{
++	struct asymmetric_key_id *match_id;
++	const char *p;
++	ptrdiff_t hexlen;
++
++	if (!*id)
++		return ERR_PTR(-EINVAL);
++	for (p = id; *p; p++)
++		if (!isxdigit(*p))
++			return ERR_PTR(-EINVAL);
++	hexlen = p - id;
++	if (hexlen & 1)
++		return ERR_PTR(-EINVAL);
++
++	match_id = kmalloc(sizeof(struct asymmetric_key_id) + hexlen / 2,
++			   GFP_KERNEL);
++	if (!match_id)
++		return ERR_PTR(-ENOMEM);
++	match_id->len = hexlen / 2;
++	(void)hex2bin(match_id->data, id, hexlen / 2);
++	return match_id;
++}
++
+ /*
+  * Match asymmetric key id with partial match
+  * @id:		key id to match in a form "id:<id>"
+diff --git a/include/keys/asymmetric-type.h b/include/keys/asymmetric-type.h
+index 7dd473496180..044ab0d3aa45 100644
+--- a/include/keys/asymmetric-type.h
++++ b/include/keys/asymmetric-type.h
+@@ -19,6 +19,44 @@
+ extern struct key_type key_type_asymmetric;
  
  /*
-@@ -275,11 +278,14 @@ static int pkcs7_verify_one(struct pkcs7_message *pkcs7,
- 	if (ret < 0)
- 		return ret;
- 
--	/* Find the key for the signature */
-+	/* Find the key for the signature if there is one */
- 	ret = pkcs7_find_key(pkcs7, sinfo);
- 	if (ret < 0)
- 		return ret;
- 
-+	if (!sinfo->signer)
-+		return 0;
++ * Identifiers for an asymmetric key ID.  We have three ways of looking up a
++ * key derived from an X.509 certificate:
++ *
++ * (1) Serial Number & Issuer.  Non-optional.  This is the only valid way to
++ *     map a PKCS#7 signature to an X.509 certificate.
++ *
++ * (2) Issuer & Subject Unique IDs.  Optional.  These were the original way to
++ *     match X.509 certificates, but have fallen into disuse in favour of (3).
++ *
++ * (3) Auth & Subject Key Identifiers.  Optional.  SKIDs are only provided on
++ *     CA keys that are intended to sign other keys, so don't appear in end
++ *     user certificates unless forced.
++ *
++ * We could also support an PGP key identifier, which is just a SHA1 sum of the
++ * public key and certain parameters, but since we don't support PGP keys at
++ * the moment, we shall ignore those.
++ *
++ * What we actually do is provide a place where binary identifiers can be
++ * stashed and then compare against them when checking for an id match.
++ */
++struct asymmetric_key_id {
++	unsigned short	len;
++	unsigned char	data[];
++};
 +
- 	pr_devel("Using X.509[%u] for sig %u\n",
- 		 sinfo->signer->index, sinfo->index);
++struct asymmetric_key_ids {
++	void		*id[2];
++};
++
++extern bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
++				   const struct asymmetric_key_id *kid2);
++
++extern struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
++							    size_t len_1,
++							    const void *val_2,
++							    size_t len_2);
++
++/*
+  * The payload is at the discretion of the subtype.
+  */
  
 
