@@ -1,165 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaIOUVF (ORCPT <rfc822;w@1wt.eu>);
+	id S1757528AbaIOUVL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:21:11 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:41902 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872AbaIOUVF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 16:21:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756106AbaIOUVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:21:01 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: catalin.marinas@arm.com
-Cc: will.deacon@arm.com, davem@davemloft.net, dborkman@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Zi Shen Lim <zlim.lnx@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Subject: [PATCH arm64-next v3] net: bpf: arm64: address randomize and write protect JIT code
-Date: Mon, 15 Sep 2014 22:20:23 +0200
-Message-Id: <1410812423-11818-1-git-send-email-dborkman@redhat.com>
+Date: Mon, 15 Sep 2014 16:20:56 -0400
+From: Milosz Tanski <milosz@adfin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: [PATCH 3/7] Export new vector IO (with flags) to userland
+Message-ID: <6aa450782e69f27fc988b5bc45dfaab78f32cbbf.1410810247.git.milosz@adfin.com>
+References: <cover.1410810247.git.milosz@adfin.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1410810247.git.milosz@adfin.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
-jit against spraying attacks").
+This is only for x86_64 and x86. Will add other arch later.
 
-Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
-support") which added necessary infrastructure, we can now implement
-RO marking of eBPF generated JIT image pages and randomize start offset
-for the JIT code, so that it does not reside directly on a page boundary
-anymore. Likewise, the holes are filled with illegal instructions: here
-we use BRK #0x100 (opcode 0xd4202000) to trigger a fault in the kernel
-(unallocated BRKs would trigger a fault through do_debug_exception). This
-seems more reliable as we don't have a guaranteed undefined instruction
-space on ARM64.
-
-This is basically the ARM64 variant of what we already have in ARM via
-commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
-JIT code"). Moreover, this commit also presents a merge resolution due to
-conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
-read-only") as we don't use kfree() in bpf_jit_free() anymore to release
-the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
-a different allocator.
-
-JIT tested on aarch64 with BPF test suite.
-
-Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Milosz Tanski <milosz@adfin.com>
 ---
- v2->v3:
-  - Use cpu_to_le32() as suggested by Zi/Will
- v1->v2:
-  - Use brk insn as suggested by Catalin
- Note:
-  - This patch depends on net-next being merged to mainline due
-    to the mentioned merge conflict.
+ arch/x86/syscalls/syscall_32.tbl |    4 ++++
+ arch/x86/syscalls/syscall_64.tbl |    4 ++++
+ 2 files changed, 8 insertions(+)
 
- arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
-index 7ae3354..4b71779 100644
---- a/arch/arm64/net/bpf_jit_comp.c
-+++ b/arch/arm64/net/bpf_jit_comp.c
-@@ -19,7 +19,6 @@
- #define pr_fmt(fmt) "bpf_jit: " fmt
+diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
+index 028b781..ed85dca 100644
+--- a/arch/x86/syscalls/syscall_32.tbl
++++ b/arch/x86/syscalls/syscall_32.tbl
+@@ -363,3 +363,7 @@
+ 354	i386	seccomp			sys_seccomp
+ 355	i386	getrandom		sys_getrandom
+ 356	i386	memfd_create		sys_memfd_create
++357	i386	readv2			sys_readv2
++358	i386	writev2			sys_writev2
++359	i386	preadv2			sys_preadv2
++360	i386	pwritev2		sys_pwritev2
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index 35dd922..76d9f60 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -327,6 +327,10 @@
+ 318	common	getrandom		sys_getrandom
+ 319	common	memfd_create		sys_memfd_create
+ 320	common	kexec_file_load		sys_kexec_file_load
++321	64	readv2			sys_readv2
++322	64	writev2			sys_writev2
++323	64	preadv2			sys_preadv2
++324	64	pwritev2		sys_pwritev2
  
- #include <linux/filter.h>
--#include <linux/moduleloader.h>
- #include <linux/printk.h>
- #include <linux/skbuff.h>
- #include <linux/slab.h>
-@@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
- 	return to - from;
- }
- 
-+static void jit_fill_hole(void *area, unsigned int size)
-+{
-+	/* We use brk #0x100 to trigger a fault. */
-+	u32 *ptr;
-+	/* We are guaranteed to have aligned memory. */
-+	for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
-+		*ptr++ = cpu_to_le32(0xd4202000);
-+}
-+
- static inline int epilogue_offset(const struct jit_ctx *ctx)
- {
- 	int to = ctx->offset[ctx->prog->len - 1];
-@@ -613,8 +621,10 @@ void bpf_jit_compile(struct bpf_prog *prog)
- 
- void bpf_int_jit_compile(struct bpf_prog *prog)
- {
-+	struct bpf_binary_header *header;
- 	struct jit_ctx ctx;
- 	int image_size;
-+	u8 *image_ptr;
- 
- 	if (!bpf_jit_enable)
- 		return;
-@@ -636,23 +646,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
- 		goto out;
- 
- 	build_prologue(&ctx);
--
- 	build_epilogue(&ctx);
- 
- 	/* Now we know the actual image size. */
- 	image_size = sizeof(u32) * ctx.idx;
--	ctx.image = module_alloc(image_size);
--	if (unlikely(ctx.image == NULL))
-+	header = bpf_jit_binary_alloc(image_size, &image_ptr,
-+				      sizeof(u32), jit_fill_hole);
-+	if (header == NULL)
- 		goto out;
- 
- 	/* 2. Now, the actual pass. */
- 
-+	ctx.image = (u32 *)image_ptr;
- 	ctx.idx = 0;
-+
- 	build_prologue(&ctx);
- 
- 	ctx.body_offset = ctx.idx;
- 	if (build_body(&ctx)) {
--		module_free(NULL, ctx.image);
-+		bpf_jit_binary_free(header);
- 		goto out;
- 	}
- 
-@@ -663,17 +675,25 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
- 		bpf_jit_dump(prog->len, image_size, 2, ctx.image);
- 
- 	bpf_flush_icache(ctx.image, ctx.image + ctx.idx);
-+
-+	set_memory_ro((unsigned long)header, header->pages);
- 	prog->bpf_func = (void *)ctx.image;
- 	prog->jited = 1;
--
- out:
- 	kfree(ctx.offset);
- }
- 
- void bpf_jit_free(struct bpf_prog *prog)
- {
--	if (prog->jited)
--		module_free(NULL, prog->bpf_func);
-+	unsigned long addr = (unsigned long)prog->bpf_func & PAGE_MASK;
-+	struct bpf_binary_header *header = (void *)addr;
-+
-+	if (!prog->jited)
-+		goto free_filter;
-+
-+	set_memory_rw(addr, header->pages);
-+	bpf_jit_binary_free(header);
- 
--	kfree(prog);
-+free_filter:
-+	bpf_prog_unlock_free(prog);
- }
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
 -- 
-1.9.3
+1.7.9.5
 
