@@ -1,118 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523AbaIOVUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:20:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54524 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646AbaIOT0k (ORCPT
+	id S1756180AbaIOVWg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:22:36 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:35545 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293AbaIOVWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 005/158] media: au0828: Only alt setting logic when needed
-Date: Mon, 15 Sep 2014 12:24:04 -0700
-Message-Id: <20140915192543.041279591@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 17:22:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.11.1409111455320.16533@knanqh.ubzr>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-7-git-send-email-vincent.guittot@linaro.org> <alpine.LFD.2.11.1409111455320.16533@knanqh.ubzr>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 15 Sep 2014 23:22:14 +0200
+Message-ID: <CAKfTPtA7AwMS5VcbM_CUCMq2N+zE0teaxkpYvoRhbQzgdK8J-Q@mail.gmail.com>
+Subject: Re: [PATCH v5 06/12] sched: add per rq cpu_capacity_orig
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On 11 September 2014 21:02, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
+> On Tue, 26 Aug 2014, Vincent Guittot wrote:
+>
+>> This new field cpu_capacity_orig reflects the available capacity of a CPUs
+>
+> s/a CPUs/a CPU/
 
-------------------
+good catch
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+>
+>> unlike the cpu_capacity which reflects the current capacity that can be altered
+>> by frequency and rt tasks.
+>
+> Shouldn't this be described as the "highest possible capacity" instead
+> of only "available capacity" to make it clearer?  In which case,
+> shouldn't it be called capacity_max instead of capacity_orig?  With
+> "orig" we may think "origin" as the capacity that was available at boot
+> time or the like.  If for example the CPU was booted with a low P-state
+> then its max capacity is different from the original one.
 
-commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
+I have use the orig suffix to be aligned with the capacity_orig which
+is a sum of cpu_capacity_orig.
+I agree that orig is standing for original in the sense that it's the
+original capacity befor being altered by scale_freq and scale_rt
 
-It seems that there's a bug at au0828 hardware/firmware
-related to alternate setting: when the device is already at
-alt 5, a further call causes the URBs to receive -ESHUTDOWN.
-
-I found two different encarnations of this issue:
-
-1) at qv4l2, it fails the second time we try to open the
-video screen;
-2) at xawtv, when audio underrun occurs, with is very
-frequent, at least on my test machine.
-
-The fix is simple: just check if alt=5 before calling
-set_usb_interface().
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/media/usb/au0828/au0828-video.c |   34 ++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
-
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -787,11 +787,27 @@ static int au0828_i2s_init(struct au0828
- 
- /*
-  * Auvitek au0828 analog stream enable
-- * Please set interface0 to AS5 before enable the stream
-  */
- static int au0828_analog_stream_enable(struct au0828_dev *d)
- {
-+	struct usb_interface *iface;
-+	int ret;
-+
- 	dprintk(1, "au0828_analog_stream_enable called\n");
-+
-+	iface = usb_ifnum_to_if(d->usbdev, 0);
-+	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
-+		dprintk(1, "Changing intf#0 to alt 5\n");
-+		/* set au0828 interface0 to AS5 here again */
-+		ret = usb_set_interface(d->usbdev, 0, 5);
-+		if (ret < 0) {
-+			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
-+			return -EBUSY;
-+		}
-+	}
-+
-+	/* FIXME: size should be calculated using d->width, d->height */
-+
- 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
- 	au0828_writereg(d, 0x106, 0x00);
- 	/* set x position */
-@@ -1002,15 +1018,6 @@ static int au0828_v4l2_open(struct file
- 		return -ERESTARTSYS;
- 	}
- 	if (dev->users == 0) {
--		/* set au0828 interface0 to AS5 here again */
--		ret = usb_set_interface(dev->usbdev, 0, 5);
--		if (ret < 0) {
--			mutex_unlock(&dev->lock);
--			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
--			kfree(fh);
--			return -EBUSY;
--		}
--
- 		au0828_analog_stream_enable(dev);
- 		au0828_analog_stream_reset(dev);
- 
-@@ -1252,13 +1259,6 @@ static int au0828_set_format(struct au08
- 		}
- 	}
- 
--	/* set au0828 interface0 to AS5 here again */
--	ret = usb_set_interface(dev->usbdev, 0, 5);
--	if (ret < 0) {
--		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
--		return -EBUSY;
--	}
--
- 	au0828_analog_stream_enable(dev);
- 
- 	return 0;
-
-
+Vincent
+>
+>
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  kernel/sched/core.c  | 2 +-
+>>  kernel/sched/fair.c  | 1 +
+>>  kernel/sched/sched.h | 1 +
+>>  3 files changed, 3 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>> index a394f99..7c3b237 100644
+>> --- a/kernel/sched/core.c
+>> +++ b/kernel/sched/core.c
+>> @@ -7003,7 +7003,7 @@ void __init sched_init(void)
+>>  #ifdef CONFIG_SMP
+>>               rq->sd = NULL;
+>>               rq->rd = NULL;
+>> -             rq->cpu_capacity = SCHED_CAPACITY_SCALE;
+>> +             rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
+>>               rq->post_schedule = 0;
+>>               rq->active_balance = 0;
+>>               rq->next_balance = jiffies;
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 8176bda..17c16cc 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -5756,6 +5756,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
+>>
+>>       capacity >>= SCHED_CAPACITY_SHIFT;
+>>
+>> +     cpu_rq(cpu)->cpu_capacity_orig = capacity;
+>>       sdg->sgc->capacity_orig = capacity;
+>>
+>>       if (sched_feat(ARCH_CAPACITY))
+>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+>> index aa0f73b..7c0a74e 100644
+>> --- a/kernel/sched/sched.h
+>> +++ b/kernel/sched/sched.h
+>> @@ -575,6 +575,7 @@ struct rq {
+>>       struct sched_domain *sd;
+>>
+>>       unsigned long cpu_capacity;
+>> +     unsigned long cpu_capacity_orig;
+>>
+>>       unsigned char idle_balance;
+>>       /* For active balancing */
+>> --
+>> 1.9.1
+>>
+>>
