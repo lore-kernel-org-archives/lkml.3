@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbaIOJdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 05:33:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10069 "EHLO mx1.redhat.com"
+	id S1753875AbaIOJdT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 05:33:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60650 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774AbaIOJdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 05:33:08 -0400
+	id S1753823AbaIOJdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 05:33:15 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Bob Peterson <rpeterso@redhat.com>,
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, stable@vger.kernel.org.#.v3.14+,
+        Al Viro <viro@ZenIV.linux.org.uk>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 2/6] GFS2: Change maxlen variables to size_t
-Date: Mon, 15 Sep 2014 10:32:44 +0100
-Message-Id: <1410773568-1573-3-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 6/6] GFS2: fix d_splice_alias() misuses
+Date: Mon, 15 Sep 2014 10:32:48 +0100
+Message-Id: <1410773568-1573-7-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1410773568-1573-1-git-send-email-swhiteho@redhat.com>
 References: <1410773568-1573-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-This patch changes some variables (especially maxlen in function
-gfs2_block_map) from unsigned int to size_t. We need 64-bit arithmetic
-for very large files (e.g. 1PB) where the variables otherwise get
-shifted to all 0's.
+Callers of d_splice_alias(dentry, inode) don't need iput(), neither
+on success nor on failure.  Either the reference to inode is stored
+in a previously negative dentry, or it's dropped.  In either case
+inode reference the caller used to hold is consumed.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+__gfs2_lookup() does iput() in case when d_splice_alias() has failed.
+Double iput() if we ever hit that.  And gfs2_create_inode() ends up
+not only with double iput(), but with link count dropped to zero - on
+an inode it has just found in directory.
+
+Cc: stable@vger.kernel.org # v3.14+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-index e6ee5b6..f0b945a 100644
---- a/fs/gfs2/bmap.c
-+++ b/fs/gfs2/bmap.c
-@@ -359,7 +359,7 @@ static inline void release_metapath(struct metapath *mp)
-  * Returns: The length of the extent (minimum of one block)
-  */
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index 9317ddc..fc8ac2e 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -626,8 +626,10 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
+ 	if (!IS_ERR(inode)) {
+ 		d = d_splice_alias(inode, dentry);
+ 		error = PTR_ERR(d);
+-		if (IS_ERR(d))
++		if (IS_ERR(d)) {
++			inode = ERR_CAST(d);
+ 			goto fail_gunlock;
++		}
+ 		error = 0;
+ 		if (file) {
+ 			if (S_ISREG(inode->i_mode)) {
+@@ -856,7 +858,6 @@ static struct dentry *__gfs2_lookup(struct inode *dir, struct dentry *dentry,
  
--static inline unsigned int gfs2_extent_length(void *start, unsigned int len, __be64 *ptr, unsigned limit, int *eob)
-+static inline unsigned int gfs2_extent_length(void *start, unsigned int len, __be64 *ptr, size_t limit, int *eob)
- {
- 	const __be64 *end = (start + len);
- 	const __be64 *first = ptr;
-@@ -449,7 +449,7 @@ static int gfs2_bmap_alloc(struct inode *inode, const sector_t lblock,
- 			   struct buffer_head *bh_map, struct metapath *mp,
- 			   const unsigned int sheight,
- 			   const unsigned int height,
--			   const unsigned int maxlen)
-+			   const size_t maxlen)
- {
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_sbd *sdp = GFS2_SB(inode);
-@@ -483,7 +483,8 @@ static int gfs2_bmap_alloc(struct inode *inode, const sector_t lblock,
- 	} else {
- 		/* Need to allocate indirect blocks */
- 		ptrs_per_blk = height > 1 ? sdp->sd_inptrs : sdp->sd_diptrs;
--		dblks = min(maxlen, ptrs_per_blk - mp->mp_list[end_of_metadata]);
-+		dblks = min(maxlen, (size_t)(ptrs_per_blk -
-+					     mp->mp_list[end_of_metadata]));
- 		if (height == ip->i_height) {
- 			/* Writing into existing tree, extend tree down */
- 			iblks = height - sheight;
-@@ -605,7 +606,7 @@ int gfs2_block_map(struct inode *inode, sector_t lblock,
- 	struct gfs2_inode *ip = GFS2_I(inode);
- 	struct gfs2_sbd *sdp = GFS2_SB(inode);
- 	unsigned int bsize = sdp->sd_sb.sb_bsize;
--	const unsigned int maxlen = bh_map->b_size >> inode->i_blkbits;
-+	const size_t maxlen = bh_map->b_size >> inode->i_blkbits;
- 	const u64 *arr = sdp->sd_heightsize;
- 	__be64 *ptr;
- 	u64 size;
+ 	d = d_splice_alias(inode, dentry);
+ 	if (IS_ERR(d)) {
+-		iput(inode);
+ 		gfs2_glock_dq_uninit(&gh);
+ 		return d;
+ 	}
 -- 
 1.8.3.1
 
