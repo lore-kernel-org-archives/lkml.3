@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811AbaIOVUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:20:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54521 "EHLO
+	id S1755523AbaIOVUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:20:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754644AbaIOT0j (ORCPT
+	with ESMTP id S1754646AbaIOT0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:39 -0400
+	Mon, 15 Sep 2014 15:26:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 003/158] media: xc5000: Fix get_frequency()
-Date: Mon, 15 Sep 2014 12:24:02 -0700
-Message-Id: <20140915192542.977247788@linuxfoundation.org>
+Subject: [PATCH 3.16 005/158] media: au0828: Only alt setting logic when needed
+Date: Mon, 15 Sep 2014 12:24:04 -0700
+Message-Id: <20140915192543.041279591@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,101 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit a3eec916cbc17dc1aaa3ddf120836cd5200eb4ef upstream.
+commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
 
-The programmed frequency on xc5000 is not the middle
-frequency, but the initial frequency on the bandwidth range.
-However, the DVB API works with the middle frequency.
+It seems that there's a bug at au0828 hardware/firmware
+related to alternate setting: when the device is already at
+alt 5, a further call causes the URBs to receive -ESHUTDOWN.
+
+I found two different encarnations of this issue:
+
+1) at qv4l2, it fails the second time we try to open the
+video screen;
+2) at xawtv, when audio underrun occurs, with is very
+frequent, at least on my test machine.
+
+The fix is simple: just check if alt=5 before calling
+set_usb_interface().
 
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/tuners/xc5000.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ drivers/media/usb/au0828/au0828-video.c |   34 ++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
---- a/drivers/media/tuners/xc5000.c
-+++ b/drivers/media/tuners/xc5000.c
-@@ -56,7 +56,7 @@ struct xc5000_priv {
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -787,11 +787,27 @@ static int au0828_i2s_init(struct au0828
  
- 	u32 if_khz;
- 	u16 xtal_khz;
--	u32 freq_hz;
-+	u32 freq_hz, freq_offset;
- 	u32 bandwidth;
- 	u8  video_standard;
- 	u8  rf_mode;
-@@ -749,13 +749,13 @@ static int xc5000_set_params(struct dvb_
- 	case SYS_ATSC:
- 		dprintk(1, "%s() VSB modulation\n", __func__);
- 		priv->rf_mode = XC_RF_MODE_AIR;
--		priv->freq_hz = freq - 1750000;
-+		priv->freq_offset = 1750000;
- 		priv->video_standard = DTV6;
- 		break;
- 	case SYS_DVBC_ANNEX_B:
- 		dprintk(1, "%s() QAM modulation\n", __func__);
- 		priv->rf_mode = XC_RF_MODE_CABLE;
--		priv->freq_hz = freq - 1750000;
-+		priv->freq_offset = 1750000;
- 		priv->video_standard = DTV6;
- 		break;
- 	case SYS_ISDBT:
-@@ -770,15 +770,15 @@ static int xc5000_set_params(struct dvb_
- 		switch (bw) {
- 		case 6000000:
- 			priv->video_standard = DTV6;
--			priv->freq_hz = freq - 1750000;
-+			priv->freq_offset = 1750000;
- 			break;
- 		case 7000000:
- 			priv->video_standard = DTV7;
--			priv->freq_hz = freq - 2250000;
-+			priv->freq_offset = 2250000;
- 			break;
- 		case 8000000:
- 			priv->video_standard = DTV8;
--			priv->freq_hz = freq - 2750000;
-+			priv->freq_offset = 2750000;
- 			break;
- 		default:
- 			printk(KERN_ERR "xc5000 bandwidth not set!\n");
-@@ -792,15 +792,15 @@ static int xc5000_set_params(struct dvb_
- 		priv->rf_mode = XC_RF_MODE_CABLE;
- 		if (bw <= 6000000) {
- 			priv->video_standard = DTV6;
--			priv->freq_hz = freq - 1750000;
-+			priv->freq_offset = 1750000;
- 			b = 6;
- 		} else if (bw <= 7000000) {
- 			priv->video_standard = DTV7;
--			priv->freq_hz = freq - 2250000;
-+			priv->freq_offset = 2250000;
- 			b = 7;
- 		} else {
- 			priv->video_standard = DTV7_8;
--			priv->freq_hz = freq - 2750000;
-+			priv->freq_offset = 2750000;
- 			b = 8;
+ /*
+  * Auvitek au0828 analog stream enable
+- * Please set interface0 to AS5 before enable the stream
+  */
+ static int au0828_analog_stream_enable(struct au0828_dev *d)
+ {
++	struct usb_interface *iface;
++	int ret;
++
+ 	dprintk(1, "au0828_analog_stream_enable called\n");
++
++	iface = usb_ifnum_to_if(d->usbdev, 0);
++	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
++		dprintk(1, "Changing intf#0 to alt 5\n");
++		/* set au0828 interface0 to AS5 here again */
++		ret = usb_set_interface(d->usbdev, 0, 5);
++		if (ret < 0) {
++			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
++			return -EBUSY;
++		}
++	}
++
++	/* FIXME: size should be calculated using d->width, d->height */
++
+ 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
+ 	au0828_writereg(d, 0x106, 0x00);
+ 	/* set x position */
+@@ -1002,15 +1018,6 @@ static int au0828_v4l2_open(struct file
+ 		return -ERESTARTSYS;
+ 	}
+ 	if (dev->users == 0) {
+-		/* set au0828 interface0 to AS5 here again */
+-		ret = usb_set_interface(dev->usbdev, 0, 5);
+-		if (ret < 0) {
+-			mutex_unlock(&dev->lock);
+-			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
+-			kfree(fh);
+-			return -EBUSY;
+-		}
+-
+ 		au0828_analog_stream_enable(dev);
+ 		au0828_analog_stream_reset(dev);
+ 
+@@ -1252,13 +1259,6 @@ static int au0828_set_format(struct au08
  		}
- 		dprintk(1, "%s() Bandwidth %dMHz (%d)\n", __func__,
-@@ -811,6 +811,8 @@ static int xc5000_set_params(struct dvb_
- 		return -EINVAL;
  	}
  
-+	priv->freq_hz = freq - priv->freq_offset;
-+
- 	dprintk(1, "%s() frequency=%d (compensated to %d)\n",
- 		__func__, freq, priv->freq_hz);
+-	/* set au0828 interface0 to AS5 here again */
+-	ret = usb_set_interface(dev->usbdev, 0, 5);
+-	if (ret < 0) {
+-		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
+-		return -EBUSY;
+-	}
+-
+ 	au0828_analog_stream_enable(dev);
  
-@@ -1061,7 +1063,7 @@ static int xc5000_get_frequency(struct d
- {
- 	struct xc5000_priv *priv = fe->tuner_priv;
- 	dprintk(1, "%s()\n", __func__);
--	*freq = priv->freq_hz;
-+	*freq = priv->freq_hz + priv->freq_offset;
  	return 0;
- }
- 
 
 
