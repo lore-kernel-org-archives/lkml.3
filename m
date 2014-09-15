@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557AbaIOUFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:05:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55604 "EHLO
+	id S1757197AbaIOUHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:07:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217AbaIOTrL (ORCPT
+	with ESMTP id S1756194AbaIOTrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:11 -0400
+	Mon, 15 Sep 2014 15:47:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Praveen Diwakar <praveen.diwakar@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 30/71] ASoC: wm_adsp: Add missing MODULE_LICENSE
-Date: Mon, 15 Sep 2014 12:26:28 -0700
-Message-Id: <20140915192639.713990357@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 18/71] drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
+Date: Mon, 15 Sep 2014 12:26:16 -0700
+Message-Id: <20140915192639.319155779@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -31,30 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Praveen Diwakar <praveen.diwakar@intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 0a37c6efec4a2fdc2563c5a8faa472b814deee80 upstream.
+commit 3533f8603d28b77c62d75ec899449a99bc6b77a1 upstream.
 
-Since MODULE_LICENSE is missing the module load fails,
-so add this for module.
+On some Windows hosts on FC SANs, TEST_UNIT_READY can return SRB_STATUS_ERROR.
+Correctly handle this. Note that there is sufficient sense information to
+support scsi error handling even in this case.
 
-Signed-off-by: Praveen Diwakar <praveen.diwakar@intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/wm_adsp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/storvsc_drv.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/soc/codecs/wm_adsp.c
-+++ b/sound/soc/codecs/wm_adsp.c
-@@ -1284,3 +1284,5 @@ int wm_adsp2_init(struct wm_adsp *adsp,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(wm_adsp2_init);
-+
-+MODULE_LICENSE("GPL v2");
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -804,6 +804,13 @@ static void storvsc_handle_error(struct
+ 		case ATA_12:
+ 			set_host_byte(scmnd, DID_PASSTHROUGH);
+ 			break;
++		/*
++		 * On Some Windows hosts TEST_UNIT_READY command can return
++		 * SRB_STATUS_ERROR, let the upper level code deal with it
++		 * based on the sense information.
++		 */
++		case TEST_UNIT_READY:
++			break;
+ 		default:
+ 			set_host_byte(scmnd, DID_TARGET_FAILURE);
+ 		}
 
 
