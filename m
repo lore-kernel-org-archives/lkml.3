@@ -1,114 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaIOQhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:37:00 -0400
-Received: from bues.ch ([80.190.117.144]:42395 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975AbaIOQg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:36:58 -0400
-Date: Mon, 15 Sep 2014 18:13:20 +0200
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Amos Kong <akong@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        herbert@gondor.apana.org.au, mpm@selenic.com, rusty@rustcorp.com.au,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] virtio-rng cleanup: move some code out of mutex
- protection
-Message-ID: <20140915181320.28f642d6@wiggum>
-In-Reply-To: <1410796949-2221-2-git-send-email-akong@redhat.com>
-References: <1410796949-2221-1-git-send-email-akong@redhat.com>
- <1410796949-2221-2-git-send-email-akong@redhat.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754156AbaIOQhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:37:45 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:36120 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206AbaIOQhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 12:37:43 -0400
+Date: Mon, 15 Sep 2014 18:37:40 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Weird character in kernel message
+Message-ID: <20140915163740.GA12408@x4>
+References: <20140914050905.GA296@x4>
+ <20140914055450.GB296@x4>
+ <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/b+3DAsvP3MC=drvS1CjQUv1"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/b+3DAsvP3MC=drvS1CjQUv1
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 2014.09.14 at 11:13 +0200, Geert Uytterhoeven wrote:
+> On Sun, Sep 14, 2014 at 7:54 AM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> > On 2014.09.14 at 07:09 +0200, Markus Trippelsdorf wrote:
+> >> Just noticed this today:
+> >>
+> >> Sep 14 06:51:57 x4 kernel: [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
+> >>
+> >> in hex:
+> >> 20 01 34 43 45 3A 20
+> >>
+> >> Must be a recent regression.
+> >
+> > It looks like a combination of commit 504d58745c9ca and commit
+> > 458df9fd4815b causes the issue.
+> > 458df9fd4815b changed the loglevel of printk_deferred to a hardcoded
+> > KERN_WARNING. And 504d58745c9ca changed the printk in
+> > kernel/time/clockevents.c to printk_deferred.
+> > But now the KERN_WARNING loglevel of printk_deferred in
+> > kernel/time/clockevents.c is redundant and responsible for the weird
+> > 01 34 character combination (KERN_SOH "4").
+> 
+> vprintk_emit() has:
+> 
+>         if (in_sched)
+>                 text_len = scnprintf(text, sizeof(textbuf),
+>                                      KERN_WARNING "[sched_delayed] ");
+> 
+>         text_len += vscnprintf(text + text_len,
+>                                sizeof(textbuf) - text_len, fmt, args);
+> 
+> Hence if in_sched, "[sched_delayed] " is inserted before the printed
+> message. As most printed messages have a KERN_* prefix, this
+> prefix now ends up in the middle of the message, causing the issue.
+> 
+> A simple solution is to print a newline after the "[sched_delayed]", but
+> this will break the line.
+> 
+> Better, but more complicated, would be to remove the KERN_* prefix
+> (if it exists) from the next message if in_sched is set.
 
-On Tue, 16 Sep 2014 00:02:27 +0800
-Amos Kong <akong@redhat.com> wrote:
+Or just get rid of the "[sched_delayed] " thing. Does it really convey
+useful information to the user?
 
-> It doesn't save too much cpu time as expected, just a cleanup.
->=20
-> Signed-off-by: Amos Kong <akong@redhat.com>
-> ---
->  drivers/char/hw_random/core.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/char/hw_random/core.c b/drivers/char/hw_random/core.c
-> index aa30a25..c591d7e 100644
-> --- a/drivers/char/hw_random/core.c
-> +++ b/drivers/char/hw_random/core.c
-> @@ -270,8 +270,8 @@ static ssize_t hwrng_attr_current_show(struct device =
-*dev,
->  		return -ERESTARTSYS;
->  	if (current_rng)
->  		name =3D current_rng->name;
-> -	ret =3D snprintf(buf, PAGE_SIZE, "%s\n", name);
->  	mutex_unlock(&rng_mutex);
-> +	ret =3D snprintf(buf, PAGE_SIZE, "%s\n", name);
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce770687ea8..b13c8650a751 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1680,12 +1680,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * The printf needs to come first; we need the syslog
+ 	 * prefix which might be passed-in as a parameter.
+ 	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+ 
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
++	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+ 
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
 
-I'm not sure this is safe.
-Name is just a pointer.
-What if the hwrng gets unregistered after unlock and just before the snprin=
-tf?
-
->  	return ret;
->  }
-> @@ -284,19 +284,19 @@ static ssize_t hwrng_attr_available_show(struct dev=
-ice *dev,
->  	ssize_t ret =3D 0;
->  	struct hwrng *rng;
-> =20
-> +	buf[0] =3D '\0';
->  	err =3D mutex_lock_interruptible(&rng_mutex);
->  	if (err)
->  		return -ERESTARTSYS;
-> -	buf[0] =3D '\0';
->  	list_for_each_entry(rng, &rng_list, list) {
->  		strncat(buf, rng->name, PAGE_SIZE - ret - 1);
->  		ret +=3D strlen(rng->name);
->  		strncat(buf, " ", PAGE_SIZE - ret - 1);
->  		ret++;
->  	}
-> +	mutex_unlock(&rng_mutex);
->  	strncat(buf, "\n", PAGE_SIZE - ret - 1);
->  	ret++;
-> -	mutex_unlock(&rng_mutex);
-> =20
->  	return ret;
->  }
-
-This looks ok.
-
---=20
-Michael
-
---Sig_/b+3DAsvP3MC=drvS1CjQUv1
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUFxAgAAoJEPUyvh2QjYsOlD0QAJ7vPppiW/SwP6O8Wa5lLNy2
-bHLVCvuJO5C4zbmPK0xyLiROu1MAuWZu7+9JD+LMRXSiUjhkb1K96rZ4DAP5HRJG
-xh6Qv77AEVD7P4usmjQsyiMBi5mzFImXoEjfTM2+6IbIf3p14hTeIIqw+qDYk027
-d7I19H8u8N6wRWqdgeZ6Y4X5MgUFF/y2QZ9tugLanv+ASJT4f8AMbewV3HXuXixu
-rJbJ59EO5/uyhFxEqBgZNo93Df+43zGKYmsdSBvzFvdWchfdSXcVyWwxOy3T1KeL
-t9XaYRAF5OBKY4/L+jjn0csuVz2k4FIvHRsTBxtyNKjWRSL/rekes17CpmwPYYk5
-ku8ACnodSGde6B/qCFwMMgqGdqVeENlS0AxE69Ic1+YFOs4o6B2FddSpk/s3i2XQ
-wdcxele3BteLtXKRvo0omrKKkQI8satdDDmW/k2dGjnWehBRH7cGXtf+R+OaPPRf
-8rHpoR8S+QuyJIoqBODxCOZ+8HLmHHI8BX26Bd1oIRogYboB+ReVzGQoFtTg2+c2
-ozywJt89kOThCOv/+iKoE0I77twJmz3VHuo9x8/WQKukc8sBG92fnrzEnvqlg0B9
-o6scMaoZPN7hOI1MoxVCKcmw+0U7XtwIhsCXP9s5z4QpqcjcNzMs1sKB6ff4Dh1N
-QJkWhKeM13qp8JaBA1B0
-=DfGc
------END PGP SIGNATURE-----
-
---Sig_/b+3DAsvP3MC=drvS1CjQUv1--
+-- 
+Markus
