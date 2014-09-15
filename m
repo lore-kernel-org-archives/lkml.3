@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaIOTO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:14:59 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:57298 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaIOTO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:14:57 -0400
-Date: Mon, 15 Sep 2014 12:14:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-metag@vger.kernel.org
-Subject: Re: [PATCH] tty/metag_da: Add console_poll module parameter
-Message-ID: <20140915191452.GA18175@roeck-us.net>
-References: <1410560122-12362-1-git-send-email-james.hogan@imgtec.com>
+	id S1754631AbaIOTPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:15:22 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:40707 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754529AbaIOTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:15:20 -0400
+Date: Mon, 15 Sep 2014 15:14:35 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+Message-ID: <20140915191435.GA8950@cmpxchg.org>
+References: <20140904143055.GA20099@esperanza>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410560122-12362-1-git-send-email-james.hogan@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140904143055.GA20099@esperanza>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 11:15:22PM +0100, James Hogan wrote:
-> Currently the metag_da console channel is write only, it doesn't get
-> polled for incoming data. This is for performance & latency reasons as
-> polling blocks the processor for a significant amount of time waiting
-> for the JTAG probe to respond to the request and restart the thread.
-> This means that the console channel cannot be used for a login prompt,
-> so ttyDA2 is usually used instead.
-> 
-> In a virtual environment with a virtual DA such as QEMU however the
-> polling is much cheaper as the request can be handled immediately. It is
-> useful to be able to enable polling in such an environment in order to
-> get both the kernel log and a usable login prompt on the same DA
-> channel.
-> 
-> Add a console_poll module parameter which allows polling to be enabled
-> for the console channel. It defaults to off as that is the current
-> behaviour for good reason on real hardware.
-> 
-> It can be enabled by appending metag_da.console_poll to the kernel
-> command line.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Guenter Roeck <linux@roeck-us.net>
+Hi Vladimir,
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+On Thu, Sep 04, 2014 at 06:30:55PM +0400, Vladimir Davydov wrote:
+> To sum it up, the current mem + memsw configuration scheme doesn't allow
+> us to limit swap usage if we want to partition the system dynamically
+> using soft limits. Actually, it also looks rather confusing to me. We
+> have mem limit and mem+swap limit. I bet that from the first glance, an
+> average admin will think it's possible to limit swap usage by setting
+> the limits so that the difference between memory.memsw.limit and
+> memory.limit equals the maximal swap usage, but (surprise!) it isn't
+> really so. It holds if there's no global memory pressure, but otherwise
+> swap usage is only limited by memory.memsw.limit! IMHO, it isn't
+> something obvious.
 
-Thanks a lot!
+Agreed, memory+swap accounting & limiting is broken.
 
-Guenter
+>  - Anon memory is handled by the user application, while file caches are
+>    all on the kernel. That means the application will *definitely* die
+>    w/o anon memory. W/o file caches it usually can survive, but the more
+>    caches it has the better it feels.
+> 
+>  - Anon memory is not that easy to reclaim. Swap out is a really slow
+>    process, because data are usually read/written w/o any specific
+>    order. Dropping file caches is much easier. Typically we have lots of
+>    clean pages there.
+> 
+>  - Swap space is limited. And today, it's OK to have TBs of RAM and only
+>    several GBs of swap. Customers simply don't want to waste their disk
+>    space on that.
+
+> Finally, my understanding (may be crazy!) how the things should be
+> configured. Just like now, there should be mem_cgroup->res accounting
+> and limiting total user memory (cache+anon) usage for processes inside
+> cgroups. This is where there's nothing to do. However, mem_cgroup->memsw
+> should be reworked to account *only* memory that may be swapped out plus
+> memory that has been swapped out (i.e. swap usage).
+
+But anon pages are not a resource, they are a swap space liability.
+Think of virtual memory vs. physical pages - the use of one does not
+necessarily result in the use of the other.  Without memory pressure,
+anonymous pages do not consume swap space.
+
+What we *should* be accounting and limiting here is the actual finite
+resource: swap space.  Whenever we try to swap a page, its owner
+should be charged for the swap space - or the swapout be rejected.
+
+For hard limit reclaim, the semantics of a swap space limit would be
+fairly obvious, because it's clear who the offender is.
+
+However, in an overcommitted machine, the amount of swap space used by
+a particular group depends just as much on the behavior of the other
+groups in the system, so the per-group swap limit should be enforced
+even during global reclaim to feed back pressure on whoever is causing
+the swapout.  If reclaim fails, the global OOM killer triggers, which
+should then off the group with the biggest soft limit excess.
+
+As far as implementation goes, it should be doable to try-charge from
+add_to_swap() and keep the uncharging in swap_entry_free().
+
+We'll also have to extend the global OOM killer to be memcg-aware, but
+we've been meaning to do that anyway.
