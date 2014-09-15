@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaIOQZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:25:20 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41793 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319AbaIOQZT (ORCPT
+	id S1754077AbaIOQ0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:26:38 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33030 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaIOQ0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:25:19 -0400
-Message-ID: <541712C9.5020509@infradead.org>
-Date: Mon, 15 Sep 2014 09:24:41 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 15 Sep 2014 12:26:37 -0400
+Date: Mon, 15 Sep 2014 17:26:25 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "behanw@converseincode.com" <behanw@converseincode.com>,
+        "anderson@redhat.com" <anderson@redhat.com>,
+        "jays.lee@samsung.com" <jays.lee@samsung.com>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH] arm64: LLVMLinux: Fix inline arm64 assembly for use with
+ clang
+Message-ID: <20140915162624.GH5415@arm.com>
+References: <20140909101515.GB1754@arm.com>
+ <1410759015-15642-1-git-send-email-behanw@converseincode.com>
+ <20140915160240.GC29744@arm.com>
 MIME-Version: 1.0
-To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
-CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
-        Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC/PATCH v2 01/10] Add kernel address sanitizer infrastructure.
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-2-git-send-email-a.ryabinin@samsung.com> <5414F0F3.4000001@infradead.org> <5417058E.1010206@samsung.com>
-In-Reply-To: <5417058E.1010206@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915160240.GC29744@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/14 08:28, Andrey Ryabinin wrote:
-> On 09/14/2014 05:35 AM, Randy Dunlap wrote:
->> Following sentence is confusing.  I'm not sure how to fix it.
->>
+On Mon, Sep 15, 2014 at 05:02:41PM +0100, Will Deacon wrote:
+> On Mon, Sep 15, 2014 at 06:30:15AM +0100, behanw@converseincode.com wrote:
+> > From: Mark Charlebois <charlebm@gmail.com>
+> > 
+> > Remove '#' from immediate parameter in AARCH64 inline assembly in mmu.
+> > 
+> > This code now works with both gcc and clang.
+> > 
+> > Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> > Signed-off-by: Behan Webster <behanw@converseincode.com>
+> > ---
+> >  arch/arm64/mm/mmu.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
+> Acked-by: Will Deacon <will.deacon@arm.com>
 > 
-> Perhaps rephrase is like this:
+> Thanks, Behan!
 > 
-> Do not use slub poisoning with KASan if user tracking enabled (iow slub_debug=PU).
+> Catalin: please can you pick this up for 3.18? It's probably not worth me
+> merging it as a fix, since there are other patches needed to get us building
+> under clang anyway.
 
-                                       if user tracking is enabled
-
-> User tracking info (allocation/free stacktraces) are stored inside slub object's metadata.
-> Slub poisoning overwrites slub object and it's metadata with poison value on freeing.
-
-                                            its
-
-> So if KASan will detect use after free, allocation/free stacktraces will be overwritten
-
-  So if KASan detects a use after free, allocation/free stacktraces are overwritten
-
-> and KASan won't be able to print them.
-
-
-Thanks.
+I agree, it will go in for 3.18 rather than 3.17.
 
 -- 
-~Randy
+Catalin
