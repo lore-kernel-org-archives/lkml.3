@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759573AbaIOWvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:51:25 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37666 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758352AbaIOWvT (ORCPT
+	id S1759584AbaIOWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:51:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51011 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757975AbaIOWRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:51:19 -0400
-Message-ID: <54176D62.9010600@codeaurora.org>
-Date: Mon, 15 Sep 2014 18:51:14 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Sonny Rao <sonnyrao@chromium.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com> <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org> <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org> <20140915111055.GD1577@arm.com> <54174CFF.7050504@codeaurora.org> <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com> <54175EFE.6010509@codeaurora.org> <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com> <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
-In-Reply-To: <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Sep 2014 18:17:13 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 072/187] selinux: fix the default socket labeling in sock_graft()
+Date: Mon, 15 Sep 2014 15:08:02 -0700
+Message-Id: <1410818997-9432-73-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sonny,
+3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-On 09/15/2014 06:04 PM, Sonny Rao wrote:
-> On Mon, Sep 15, 2014 at 2:52 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
->> On Mon, Sep 15, 2014 at 2:49 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>> On 09/15/14 14:47, Sonny Rao wrote:
->>>> On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>>>> On 09/15/14 04:10, Catalin Marinas wrote:
->>>>>> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
->>>>>>> On 09/12/14 05:14, Marc Zyngier wrote:
->>>>>>>> We surely can handle the UNDEF and do something there. We just can't do
->>>>>>>> it the way Doug described it above.
->>>>>>> I suggested doing that for something else a while ago and Will and Dave
->>>>>>> we're not thrilled[1]. The suggestion back then was to use DT to
->>>>>>> indicate what mode the kernel is running in.
->>>>>>>
->>>>>>> [1]
->>>>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
->>>>>> I think the context was slightly different. As I re-read the thread, it
->>>>>> seems that the discussion was around whether to use some SMC interface
->>>>>> or not based on whether the kernel is running secure or non-secure. The
->>>>>> argument made by Will was to actually specify the type of the firmware
->>>>>> SMC interface in the DT and use it in the kernel (and probably assume
->>>>>> the kernel is running in secure mode if no smc interface is specified in
->>>>>> the DT; you could have both though, running in secure mode and also
->>>>>> having firmware).
->>>>>>
->>>>>> In this arch timer case, we need to work around a firmware bug (or
->>>>>> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
->>>>>> firmware, no matter how small such firmware is). We don't expect a
->>>>>> specific SMC call to initialise CNTVOFF, so we can't describe it in the
->>>>>> DT.
->>>>> Agreed, we can't described SMC calls that don't exist. From my
->>>>> perspective it's just another part of the cpu boot sequence that needs
->>>>> to be handled in the kernel, so describing the requirement via the
->>>>> cpu-boot method seems appropriate. It seems like we're making it harder
->>>>> than it should be by handling the undef when we could have slightly
->>>>> different SMP boot code (and suspend/resume code) depending on the boot
->>>>> method property.
->>>>
->>>> +heiko
->>>>
->>>> So, for the case of rk3288, based on this discussion what I'm going to
->>>> propose is to add code to rockchip.c which looks for a particular SMP
->>>> enable method -- say something like "rockchip,rk3288-smp-secure-svc"
->>>> which will then assume we have been booted in secure SVC mode and do
->>>> the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
->>>> as well, so I think it will need to scan the DT fairly early on the
->>>> boot CPU and also perform the function there.
->>>>
->>>> I'll look into implementing this and post code.  Comments and
->>>> suggestions appreciated, thanks.
->>>
->>> What goes wrong if we read the cntvoff from the boot CPU during
->>> smp_prepare_cpus() phase and use that to set the cntvoff on the other
->>> CPUs? That avoids needing to do anything very early by making the value
->>> the same. It does mean that cntvoff is some random out of reset value
->>> for CPU0, but at least it's consistent.
->>
->> I think we cannot read the value if we're not in hyp mode.
-> 
-> Well, thinking about it a little more, I think you still have a good point.
-> 
-> We don't need to do this early on, as long as we haven't started using
-> the arch timers yet.  If we are still able to do this at the point
-> where we're executing the code in arch/arm/mach-rockchip/platsmp.c
-> that finds the enable method then we can just handle it there.
+------------------
 
-I've been playing around with the probe-based approach and while I need to do
-a lot more testing, it seems to be working for the first tens of instructions.
-I hope to be able to share a draft of that soon. Basically, I just read the
-current NSACR value and write it back (although maybe in the long term we
-would want to make sure a few of those bits are set or cleared). If that
-succeeds, we know we're in secure SVC and can proceed to set up MON and HYP.
+From: Paul Moore <pmoore@redhat.com>
 
-Christopher
+commit 4da6daf4d3df5a977e4623963f141a627fd2efce upstream.
 
+The sock_graft() hook has special handling for AF_INET, AF_INET, and
+AF_UNIX sockets as those address families have special hooks which
+label the sock before it is attached its associated socket.
+Unfortunately, the sock_graft() hook was missing a default approach
+to labeling sockets which meant that any other address family which
+made use of connections or the accept() syscall would find the
+returned socket to be in an "unlabeled" state.  This was recently
+demonstrated by the kcrypto/AF_ALG subsystem and the newly released
+cryptsetup package (cryptsetup v1.6.5 and later).
+
+This patch preserves the special handling in selinux_sock_graft(),
+but adds a default behavior - setting the sock's label equal to the
+associated socket - which resolves the problem with AF_ALG and
+presumably any other address family which makes use of accept().
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Tested-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ include/linux/security.h |  5 ++++-
+ security/selinux/hooks.c | 13 +++++++++++--
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 5623a7f..e42af21 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -987,7 +987,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	Retrieve the LSM-specific secid for the sock to enable caching of network
+  *	authorizations.
+  * @sock_graft:
+- *	Sets the socket's isec sid to the sock's sid.
++ *	This hook is called in response to a newly created sock struct being
++ *	grafted onto an existing socket and allows the security module to
++ *	perform whatever security attribute management is necessary for both
++ *	the sock and socket.
+  * @inet_conn_request:
+  *	Sets the openreq's sid to socket's sid with MLS portion taken from peer sid.
+  * @inet_csk_clone:
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 019749c..f66143d 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -4497,9 +4497,18 @@ static void selinux_sock_graft(struct sock *sk, struct socket *parent)
+ 	struct inode_security_struct *isec = SOCK_INODE(parent)->i_security;
+ 	struct sk_security_struct *sksec = sk->sk_security;
+ 
+-	if (sk->sk_family == PF_INET || sk->sk_family == PF_INET6 ||
+-	    sk->sk_family == PF_UNIX)
++	switch (sk->sk_family) {
++	case PF_INET:
++	case PF_INET6:
++	case PF_UNIX:
+ 		isec->sid = sksec->sid;
++		break;
++	default:
++		/* by default there is no special labeling mechanism for the
++		 * sksec label so inherit the label from the parent socket */
++		BUG_ON(sksec->sid != SECINITSID_UNLABELED);
++		sksec->sid = isec->sid;
++	}
+ 	sksec->sclass = isec->sclass;
+ }
+ 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+1.9.1
+
