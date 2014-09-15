@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaIOCKr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:10:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45086 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001AbaIOCKq (ORCPT
+	id S1753239AbaIOCLr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:11:47 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49162 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944AbaIOCLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:10:46 -0400
-Date: Sun, 14 Sep 2014 19:09:57 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Mark S <mstanovich15@gmail.com>, linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Jun Tian <jun.j.tian@intel.com>, Alan Cox <alan@linux.intel.com>
-Subject: Re: 3.15 Regression Due to goldfish bus Commit
-Message-ID: <20140915020957.GA8203@kroah.com>
-References: <CAPC5HRoW4pdMhBrJfQ40ZnJoon+zCRtAnZzzgEExw4ks=Trr2g@mail.gmail.com>
- <20140914215737.GA945@kroah.com>
- <20140915001219.63fb91dd@alan.etchedpixels.co.uk>
+	Sun, 14 Sep 2014 22:11:46 -0400
+X-Original-SENDERIP: 10.177.220.159
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 15 Sep 2014 11:11:34 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        kkolasa@winsoft.pl, dm-devel@redhat.com
+Subject: Re: [PATCH] slab: implement kmalloc guard
+Message-ID: <20140915021133.GC2676@js1304-P5Q-DELUXE>
+References: <alpine.LRH.2.02.1409051833510.9790@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.DEB.2.11.1409080932490.20388@gentwo.org>
+ <alpine.LRH.2.02.1409081041160.29432@file01.intranet.prod.int.rdu2.redhat.com>
+ <alpine.DEB.2.11.1409081108190.20388@gentwo.org>
+ <alpine.LRH.2.02.1409112211060.30537@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140915001219.63fb91dd@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LRH.2.02.1409112211060.30537@file01.intranet.prod.int.rdu2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:12:19AM +0100, One Thousand Gnomes wrote:
-> On Sun, 14 Sep 2014 14:57:37 -0700
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Thu, Sep 11, 2014 at 10:32:52PM -0400, Mikulas Patocka wrote:
 > 
-> > On Sun, Sep 14, 2014 at 05:38:55PM -0400, Mark S wrote:
-> > > Commit c1bc97f8f498a2bfab63ceef761fb0e88ef7c065 causes a gateway x86 laptop,
-> > > booting from a usb device, to hang before the kernel completes booting. The
-> > > offending commit was found using git bisect. Reverting the commit fixes the
-> > > problem on 3.16.2.
-> > > 
-> > > The error resulting in the hang may not be a concern since the goldfish option
-> > > is not needed and should probably not be selected. I'm mentioning this problem
-> > > just in case it is unexpected behavior and it is worth fixing. Maybe the
-> > > goldfish option should not be selectable for a similar configuration as mine?
+> 
+> On Mon, 8 Sep 2014, Christoph Lameter wrote:
+> 
+> > On Mon, 8 Sep 2014, Mikulas Patocka wrote:
 > > 
-> > There should be some other type of run-time option to not have this code
-> > run if it is found to not be running on the goldfish virtual machine.
+> > > I don't know what you mean. If someone allocates 10000 objects with sizes
+> > > from 1 to 10000, you can't have 10000 slab caches - you can't have a slab
+> > > cache for each used size. Also - you can't create a slab cache in
+> > > interrupt context.
 > > 
-> > Anyone know how to do that?
+> > Oh you can create them up front on bootup. And I think only the small
+> > sizes matter. Allocations >=8K are pushed to the page allocator anyways.
 > 
-> I asked last time it was reported and the time before (it comes up every
-> year or two). There is no sane documented way to detect the Goldfish
-> virtual machine as distinct from anything else.
+> Only for SLUB. For SLAB, large allocations are still use SLAB caches up to 
+> 4M. But anyway - having 8K preallocated slab caches is too much.
 > 
-> We could hide Goldfish under expert ?
+> If you want to integrate this patch into the slab/slub subsystem, a better 
+> solution would be to store the exact size requested with kmalloc along the 
+> slab/slub object itself (before the preceding redzone). But it would 
+> result in duplicating the work - you'd have to repeat the logic in this 
+> patch three times - once for slab, once for slub and once for 
+> kmalloc_large/kmalloc_large_node.
+> 
+> I don't know if it would be better than this patch.
 
-No, that would be a mess.  Just put a big warning on the option, no one
-should be enabling it if they don't want it, the config option text
-should say this.
+Hello,
 
-thanks,
+Out of bound write could be detected by kernel address asanitizer(KASan).
+See following link.
 
-greg k-h
+https://lkml.org/lkml/2014/9/10/441
+
+Although this patch also looks good to me, I think that KASan is
+better than this, because it could detect out of bound write and
+has more features for debugging.
+
+Thanks.
