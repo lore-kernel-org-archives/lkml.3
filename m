@@ -1,111 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629AbaIOU4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:56:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54669 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038AbaIOT1J (ORCPT
+	id S1758636AbaIOU42 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:56:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39081 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaIOU4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 099/158] ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isnt set
-Date: Mon, 15 Sep 2014 12:25:38 -0700
-Message-Id: <20140915192545.857120129@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 16:56:25 -0400
+Date: Mon, 15 Sep 2014 16:56:20 -0400 (EDT)
+Message-Id: <20140915.165620.1169777676117933052.davem@davemloft.net>
+To: stephen@networkplumber.org
+Cc: rickard_strandqvist@spectrumdigital.se, mlindner@marvell.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: ethernet: marvell: sky2.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140915135339.0659f618@urahara>
+References: <20140914190557.690183d2@urahara>
+	<20140915.130721.589682835868904320.davem@davemloft.net>
+	<20140915135339.0659f618@urahara>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 13:56:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: Stephen Hemminger <stephen@networkplumber.org>
+Date: Mon, 15 Sep 2014 13:53:39 -0700
 
-------------------
+> On Mon, 15 Sep 2014 13:07:21 -0400 (EDT)
+> David Miller <davem@davemloft.net> wrote:
+> 
+>> From: Stephen Hemminger <stephen@networkplumber.org>
+>> Date: Sun, 14 Sep 2014 19:05:57 -0700
+>> 
+>> > On Sun, 14 Sep 2014 19:33:43 +0200
+>> > Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+>> > 
+>> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>> >> 
+>> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> >> ---
+>> >>  drivers/net/ethernet/marvell/sky2.c |    2 +-
+>> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> >> 
+>> >> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+>> >> index dba48a5c..7053d38 100644
+>> >> --- a/drivers/net/ethernet/marvell/sky2.c
+>> >> +++ b/drivers/net/ethernet/marvell/sky2.c
+>> >> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
+>> >>  	};
+>> >>  
+>> >>  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+>> >> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>> >> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>> >>  	else
+>> >>  		snprintf(buf, sz, "(chip %#x)", chipid);
+>> >>  	return buf;
+>> > 
+>> > Useless and unnecessary since the list of names is right there.
+>> > Why not avoid the copy all together?
+>> > 
+>> > Subject: sky2: avoid strncpy
+>> > 
+>> > Don't use strncpy() since security thought police think it is bad.
+>> > 
+>> > Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+>> 
+>> I think providing the buffer on the stack of the thread executing the
+>> probe is superior because it will allow enabling parallel probing
+>> in the future.
+>> 
+>> I don't think you have to change that aspect to achieve your goal
+>> of returning the const char * string when possible.
+> 
+> What is benefit of s/strncpy/strlcpy/ for known safe code?
+> Seems like more of the checkpatch police state.
+> 
 
-From: Lv Zheng <lv.zheng@intel.com>
+Stephen, read my reply again.
 
-commit 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08 upstream.
+I didn't say to go back to the strlcpy change.
 
-There is a platform refusing to respond QR_EC when SCI_EVT isn't set
-(Acer Aspire V5-573G).
+I said to use your patch, but keep the buf[] parameter allocated on
+the caller's stack.
 
-Currently, we rely on the behaviour that the EC firmware can respond
-something (for example, 0x00 to indicate "no outstanding events") to
-QR_EC even when SCI_EVT is not set, but the reporter has complained
-about AC/battery pluging/unpluging and video brightness change delay
-on that platform.
-
-This is because the work item that has issued QR_EC has to wait until
-timeout in this case, and the _Qxx method evaluation work item queued
-after QR_EC one is delayed.
-
-It sounds reasonable to fix this issue by:
- 1. Implementing SCI_EVT sanity check before issuing QR_EC in the EC
-    driver's main state machine.
- 2. Moving QR_EC issuing out of the work queue used by _Qxx evaluation
-    to a seperate IRQ handling thread.
-
-This patch fixes this issue using solution 1.
-
-By disallowing QR_EC to be issued when SCI_EVT isn't set, we are able to
-handle such platform in the EC driver's main state machine. This patch
-enhances the state machine in this way to survive with such malfunctioning
-EC firmware.
-
-Note that this patch can also fix CLEAR_ON_RESUME quirk which also relies
-on the assumption that the platforms are able to respond even when SCI_EVT
-isn't set.
-
-Fixes: c0d653412fc8 ACPI / EC: Fix race condition in ec_transaction_completed()
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
-Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/acpi/ec.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -197,6 +197,8 @@ static bool advance_transaction(struct a
- 				t->rdata[t->ri++] = acpi_ec_read_data(ec);
- 				if (t->rlen == t->ri) {
- 					t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+					if (t->command == ACPI_EC_COMMAND_QUERY)
-+						pr_debug("hardware QR_EC completion\n");
- 					wakeup = true;
- 				}
- 			} else
-@@ -208,7 +210,20 @@ static bool advance_transaction(struct a
- 		}
- 		return wakeup;
- 	} else {
--		if ((status & ACPI_EC_FLAG_IBF) == 0) {
-+		/*
-+		 * There is firmware refusing to respond QR_EC when SCI_EVT
-+		 * is not set, for which case, we complete the QR_EC
-+		 * without issuing it to the firmware.
-+		 * https://bugzilla.kernel.org/show_bug.cgi?id=86211
-+		 */
-+		if (!(status & ACPI_EC_FLAG_SCI) &&
-+		    (t->command == ACPI_EC_COMMAND_QUERY)) {
-+			t->flags |= ACPI_EC_COMMAND_POLL;
-+			t->rdata[t->ri++] = 0x00;
-+			t->flags |= ACPI_EC_COMMAND_COMPLETE;
-+			pr_debug("software QR_EC completion\n");
-+			wakeup = true;
-+		} else if ((status & ACPI_EC_FLAG_IBF) == 0) {
- 			acpi_ec_write_cmd(ec, t->command);
- 			t->flags |= ACPI_EC_COMMAND_POLL;
- 		} else
-
-
+Thanks.
