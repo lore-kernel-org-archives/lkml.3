@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066AbaIOWge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:36:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51165 "EHLO
+	id S1759106AbaIOWgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:36:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51159 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083AbaIOWTU (ORCPT
+	with ESMTP id S933071AbaIOWTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:20 -0400
+	Mon, 15 Sep 2014 18:19:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 178/187] powerpc/pseries: Failure on removing device node
-Date: Mon, 15 Sep 2014 15:09:48 -0700
-Message-Id: <1410818997-9432-179-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 170/187] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
+Date: Mon, 15 Sep 2014 15:09:40 -0700
+Message-Id: <1410818997-9432-171-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,53 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit f1b3929c232784580e5d8ee324b6bc634e709575 upstream.
+commit ece4a17d237a79f63fbfaf3f724a12b6d500555c upstream.
 
-While running command "drmgr -c phb -r -s 'PHB 528'", following
-backtrace jumped out because the target device node isn't marked
-with OF_DETACHED by of_detach_node(), which caused by error
-returned from memory hotplug related reconfig notifier when
-disabling CONFIG_MEMORY_HOTREMOVE. The patch fixes it.
+Withtout this, ring initialization fails reliabily during resume with
 
-ERROR: Bad of_node_put() on /pci@800000020000210/ethernet@0
-CPU: 14 PID: 2252 Comm: drmgr Tainted: G        W     3.16.0+ #427
-Call Trace:
-[c000000012a776a0] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
-[c000000012a77750] [c00000000083cd34] .dump_stack+0x7c/0x9c
-[c000000012a777d0] [c0000000006807c4] .of_node_release+0x58/0xe0
-[c000000012a77860] [c00000000038a7d0] .kobject_release+0x174/0x1b8
-[c000000012a77900] [c00000000038a884] .kobject_put+0x70/0x78
-[c000000012a77980] [c000000000681680] .of_node_put+0x28/0x34
-[c000000012a77a00] [c000000000681ea8] .__of_get_next_child+0x64/0x70
-[c000000012a77a90] [c000000000682138] .of_find_node_by_path+0x1b8/0x20c
-[c000000012a77b40] [c000000000051840] .ofdt_write+0x308/0x688
-[c000000012a77c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
-[c000000012a77cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
-[c000000012a77d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
-[c000000012a77e30] [c00000000000a064] syscall_exit+0x0/0x98
+	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
 
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+This is not a complete fix, but it is verified to make the ring
+initialization failures during resume much less likely.
+
+We were not able to root-cause this bug (likely HW-specific to Gen4 chips)
+yet. This is therefore used as a ducttape before problem is fully
+understood and proper fix created, so that people don't suffer from
+completely unusable systems in the meantime.
+
+The discussion and debugging is happening at
+
+	https://bugs.freedesktop.org/show_bug.cgi?id=76554
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-index 9590dbb..b97b895 100644
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -164,7 +164,7 @@ static inline int pseries_remove_memblock(unsigned long base,
- }
- static inline int pseries_remove_memory(struct device_node *np)
- {
--	return -EOPNOTSUPP;
-+	return 0;
- }
- #endif /* CONFIG_MEMORY_HOTREMOVE */
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index 53f5458..dfb8546 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -473,6 +473,9 @@ static int init_ring_common(struct intel_ring_buffer *ring)
+ 		}
+ 	}
  
++	/* Enforce ordering by reading HEAD register back */
++	I915_READ_HEAD(ring);
++
+ 	/* Initialize the ring. This must happen _after_ we've cleared the ring
+ 	 * registers with the above sequence (the readback of the HEAD registers
+ 	 * also enforces ordering), otherwise the hw might lose the new ring
 -- 
 1.9.1
 
