@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838AbaIOWXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:23:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51375 "EHLO
+	id S1756025AbaIOWXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:23:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51364 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755858AbaIOWUq (ORCPT
+	with ESMTP id S1758566AbaIOWUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:46 -0400
+	Mon, 15 Sep 2014 18:20:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 044/187] x86_64/entry/xen: Do not invoke espfix64 on Xen
-Date: Mon, 15 Sep 2014 15:07:34 -0700
-Message-Id: <1410818997-9432-45-git-send-email-kamal@canonical.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 038/187] Revert "x86-64, modify_ldt: Make support for 16-bit segments a runtime option"
+Date: Mon, 15 Sep 2014 15:07:28 -0700
+Message-Id: <1410818997-9432-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,136 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 7209a75d2009dbf7745e2fd354abf25c3deb3ca3 upstream.
+commit 7ed6fb9b5a5510e4ef78ab27419184741169978a upstream.
 
-This moves the espfix64 logic into native_iret.  To make this work,
-it gets rid of the native patch for INTERRUPT_RETURN:
-INTERRUPT_RETURN on native kernels is now 'jmp native_iret'.
+This reverts commit fa81511bb0bbb2b1aace3695ce869da9762624ff in
+preparation of merging in the proper fix (espfix64).
 
-This changes the 16-bit SS behavior on Xen from OOPSing to leaking
-some bits of the Xen hypervisor's RSP (I think).
-
-[ hpa: this is a nonzero cost on native, but probably not enough to
-  measure. Xen needs to fix this in their own code, probably doing
-  something equivalent to espfix64. ]
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/7b8f1d8ef6597cb16ae004a43c56980a7de3cf94.1406129132.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/irqflags.h     |  2 +-
- arch/x86/kernel/entry_64.S          | 28 ++++++++++------------------
- arch/x86/kernel/paravirt_patch_64.c |  2 --
- 3 files changed, 11 insertions(+), 21 deletions(-)
+ arch/x86/kernel/ldt.c        | 4 +---
+ arch/x86/vdso/vdso32-setup.c | 8 --------
+ 2 files changed, 1 insertion(+), 11 deletions(-)
 
-diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
-index bba3cf8..0a8b519 100644
---- a/arch/x86/include/asm/irqflags.h
-+++ b/arch/x86/include/asm/irqflags.h
-@@ -129,7 +129,7 @@ static inline notrace unsigned long arch_local_irq_save(void)
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index dcbbaa1..af1d14a 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -20,8 +20,6 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
  
- #define PARAVIRT_ADJUST_EXCEPTION_FRAME	/*  */
- 
--#define INTERRUPT_RETURN	iretq
-+#define INTERRUPT_RETURN	jmp native_iret
- #define USERGS_SYSRET64				\
- 	swapgs;					\
- 	sysretq;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index da0b9bd..03cd2a8 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1041,27 +1041,24 @@ restore_args:
- 	RESTORE_ARGS 1,8,1
- 
- irq_return:
-+	INTERRUPT_RETURN
-+
-+ENTRY(native_iret)
- 	/*
- 	 * Are we returning to a stack segment from the LDT?  Note: in
- 	 * 64-bit mode SS:RSP on the exception stack is always valid.
- 	 */
- #ifdef CONFIG_X86_ESPFIX64
- 	testb $4,(SS-RIP)(%rsp)
--	jnz irq_return_ldt
-+	jnz native_irq_return_ldt
- #endif
- 
--irq_return_iret:
--	INTERRUPT_RETURN
--	_ASM_EXTABLE(irq_return_iret, bad_iret)
+-int sysctl_ldt16 = 0;
 -
--#ifdef CONFIG_PARAVIRT
--ENTRY(native_iret)
-+native_irq_return_iret:
- 	iretq
--	_ASM_EXTABLE(native_iret, bad_iret)
--#endif
-+	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
--irq_return_ldt:
-+native_irq_return_ldt:
- 	pushq_cfi %rax
- 	pushq_cfi %rdi
- 	SWAPGS
-@@ -1083,7 +1080,7 @@ irq_return_ldt:
- 	SWAPGS
- 	movq %rax,%rsp
- 	popq_cfi %rax
--	jmp irq_return_iret
-+	jmp native_irq_return_iret
+ #ifdef CONFIG_SMP
+ static void flush_ldt(void *current_mm)
+ {
+@@ -236,7 +234,7 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 	 * IRET leaking the high bits of the kernel stack address.
+ 	 */
+ #ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit && !sysctl_ldt16) {
++	if (!ldt_info.seg_32bit) {
+ 		error = -EINVAL;
+ 		goto out_unlock;
+ 	}
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index f1d633a..d6bfb87 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -41,7 +41,6 @@ enum {
+ #ifdef CONFIG_X86_64
+ #define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+-extern int sysctl_ldt16;
  #endif
  
- 	.section .fixup,"ax"
-@@ -1167,13 +1164,8 @@ __do_double_fault:
- 	cmpl $__KERNEL_CS,CS(%rdi)
- 	jne do_double_fault
- 	movq RIP(%rdi),%rax
--	cmpq $irq_return_iret,%rax
--#ifdef CONFIG_PARAVIRT
--	je 1f
--	cmpq $native_iret,%rax
--#endif
-+	cmpq $native_irq_return_iret,%rax
- 	jne do_double_fault		/* This shouldn't happen... */
--1:
- 	movq PER_CPU_VAR(kernel_stack),%rax
- 	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
- 	movq %rax,RSP(%rdi)
-@@ -1674,7 +1666,7 @@ error_sti:
-  */
- error_kernelspace:
- 	incl %ebx
--	leaq irq_return_iret(%rip),%rcx
-+	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
- 	je error_swapgs
- 	movl %ecx,%eax	/* zero extend */
-diff --git a/arch/x86/kernel/paravirt_patch_64.c b/arch/x86/kernel/paravirt_patch_64.c
-index 3f08f34..a1da673 100644
---- a/arch/x86/kernel/paravirt_patch_64.c
-+++ b/arch/x86/kernel/paravirt_patch_64.c
-@@ -6,7 +6,6 @@ DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
--DEF_NATIVE(pv_cpu_ops, iret, "iretq");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -50,7 +49,6 @@ unsigned native_patch(u8 type, u16 clobbers, void *ibuf,
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
--		PATCH_SITE(pv_cpu_ops, iret);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
+ /*
+@@ -381,13 +380,6 @@ static struct ctl_table abi_table2[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
+-	{
+-		.procname	= "ldt16",
+-		.data		= &sysctl_ldt16,
+-		.maxlen		= sizeof(int),
+-		.mode		= 0644,
+-		.proc_handler	= proc_dointvec
+-	},
+ 	{}
+ };
+ 
 -- 
 1.9.1
 
