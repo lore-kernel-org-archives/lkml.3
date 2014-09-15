@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269AbaIOUoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:44:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55096 "EHLO
+	id S1758253AbaIOUog (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:44:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731AbaIOTgs (ORCPT
+	with ESMTP id S1755551AbaIOTgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>,
-        Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.16 137/158] libceph: set last_piece in ceph_msg_data_pages_cursor_init() correctly
-Date: Mon, 15 Sep 2014 12:26:16 -0700
-Message-Id: <20140915192546.985023487@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.16 146/158] CIFS: Fix wrong filename length for SMB2
+Date: Mon, 15 Sep 2014 12:26:25 -0700
+Message-Id: <20140915192547.248860482@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,54 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 5f740d7e1531099b888410e6bab13f68da9b1a4d upstream.
+commit 1bbe4997b13de903c421c1cc78440e544b5f9064 upstream.
 
-Determining ->last_piece based on the value of ->page_offset + length
-is incorrect because length here is the length of the entire message.
-->last_piece set to false even if page array data item length is <=
-PAGE_SIZE, which results in invalid length passed to
-ceph_tcp_{send,recv}page() and causes various asserts to fire.
+The existing code uses the old MAX_NAME constant. This causes
+XFS test generic/013 to fail. Fix it by replacing MAX_NAME with
+PATH_MAX that SMB1 uses. Also remove an unused MAX_NAME constant
+definition.
 
-    # cat pages-cursor-init.sh
-    #!/bin/bash
-    rbd create --size 10 --image-format 2 foo
-    FOO_DEV=$(rbd map foo)
-    dd if=/dev/urandom of=$FOO_DEV bs=1M &>/dev/null
-    rbd snap create foo@snap
-    rbd snap protect foo@snap
-    rbd clone foo@snap bar
-    # rbd_resize calls librbd rbd_resize(), size is in bytes
-    ./rbd_resize bar $(((4 << 20) + 512))
-    rbd resize --size 10 bar
-    BAR_DEV=$(rbd map bar)
-    # trigger a 512-byte copyup -- 512-byte page array data item
-    dd if=/dev/urandom of=$BAR_DEV bs=1M count=1 seek=5
-
-The problem exists only in ceph_msg_data_pages_cursor_init(),
-ceph_msg_data_pages_advance() does the right thing.  The size_t cast is
-unnecessary.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/messenger.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifsglob.h  |    5 -----
+ fs/cifs/smb2file.c  |    2 +-
+ fs/cifs/smb2inode.c |    2 +-
+ fs/cifs/smb2ops.c   |    2 +-
+ fs/cifs/smb2pdu.c   |    2 +-
+ 5 files changed, 4 insertions(+), 9 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -900,7 +900,7 @@ static void ceph_msg_data_pages_cursor_i
- 	BUG_ON(page_count > (int)USHRT_MAX);
- 	cursor->page_count = (unsigned short)page_count;
- 	BUG_ON(length > SIZE_MAX - cursor->page_offset);
--	cursor->last_piece = (size_t)cursor->page_offset + length <= PAGE_SIZE;
-+	cursor->last_piece = cursor->page_offset + cursor->resid <= PAGE_SIZE;
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -70,11 +70,6 @@
+ #define SERVER_NAME_LENGTH 40
+ #define SERVER_NAME_LEN_WITH_NULL     (SERVER_NAME_LENGTH + 1)
+ 
+-/* used to define string lengths for reversing unicode strings */
+-/*         (256+1)*2 = 514                                     */
+-/*           (max path length + 1 for null) * 2 for unicode    */
+-#define MAX_NAME 514
+-
+ /* SMB echo "timeout" -- FIXME: tunable? */
+ #define SMB_ECHO_INTERVAL (60 * HZ)
+ 
+--- a/fs/cifs/smb2file.c
++++ b/fs/cifs/smb2file.c
+@@ -50,7 +50,7 @@ smb2_open_file(const unsigned int xid, s
+ 		goto out;
+ 	}
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL) {
+ 		rc = -ENOMEM;
+--- a/fs/cifs/smb2inode.c
++++ b/fs/cifs/smb2inode.c
+@@ -131,7 +131,7 @@ smb2_query_path_info(const unsigned int
+ 	*adjust_tz = false;
+ 	*symlink = false;
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL)
+ 		return -ENOMEM;
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -339,7 +339,7 @@ smb2_query_file_info(const unsigned int
+ 	int rc;
+ 	struct smb2_file_all_info *smb2_data;
+ 
+-	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++	smb2_data = kzalloc(sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			    GFP_KERNEL);
+ 	if (smb2_data == NULL)
+ 		return -ENOMEM;
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -1546,7 +1546,7 @@ SMB2_query_info(const unsigned int xid,
+ {
+ 	return query_info(xid, tcon, persistent_fid, volatile_fid,
+ 			  FILE_ALL_INFORMATION,
+-			  sizeof(struct smb2_file_all_info) + MAX_NAME * 2,
++			  sizeof(struct smb2_file_all_info) + PATH_MAX * 2,
+ 			  sizeof(struct smb2_file_all_info), data);
  }
  
- static struct page *
 
 
