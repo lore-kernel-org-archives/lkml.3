@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaIOTgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:36:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54846 "EHLO
+	id S1755514AbaIOTgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:36:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54594 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063AbaIOT1M (ORCPT
+	with ESMTP id S1755066AbaIOT1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:27:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.16 108/158] ring-buffer: Up rb_iter_peek() loop count to 3
-Date: Mon, 15 Sep 2014 12:25:47 -0700
-Message-Id: <20140915192546.124570545@linuxfoundation.org>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.16 109/158] mnt: Only change user settable mount flags in remount
+Date: Mon, 15 Sep 2014 12:25:48 -0700
+Message-Id: <20140915192546.152998089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,100 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 021de3d904b88b1771a3a2cfc5b75023c391e646 upstream.
+commit a6138db815df5ee542d848318e5dae681590fccd upstream.
 
-After writting a test to try to trigger the bug that caused the
-ring buffer iterator to become corrupted, I hit another bug:
+Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
+read-only bind mount read-only in a user namespace the
+MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
+to the remount a read-only mount read-write.
 
- WARNING: CPU: 1 PID: 5281 at kernel/trace/ring_buffer.c:3766 rb_iter_peek+0x113/0x238()
- Modules linked in: ipt_MASQUERADE sunrpc [...]
- CPU: 1 PID: 5281 Comm: grep Tainted: G        W     3.16.0-rc3-test+ #143
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-  0000000000000000 ffffffff81809a80 ffffffff81503fb0 0000000000000000
-  ffffffff81040ca1 ffff8800796d6010 ffffffff810c138d ffff8800796d6010
-  ffff880077438c80 ffff8800796d6010 ffff88007abbe600 0000000000000003
- Call Trace:
-  [<ffffffff81503fb0>] ? dump_stack+0x4a/0x75
-  [<ffffffff81040ca1>] ? warn_slowpath_common+0x7e/0x97
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c14df>] ? ring_buffer_iter_peek+0x2d/0x5c
-  [<ffffffff810c6f73>] ? tracing_iter_reset+0x6e/0x96
-  [<ffffffff810c74a3>] ? s_start+0xd7/0x17b
-  [<ffffffff8112b13e>] ? kmem_cache_alloc_trace+0xda/0xea
-  [<ffffffff8114cf94>] ? seq_read+0x148/0x361
-  [<ffffffff81132d98>] ? vfs_read+0x93/0xf1
-  [<ffffffff81132f1b>] ? SyS_read+0x60/0x8e
-  [<ffffffff8150bf9f>] ? tracesys+0xdd/0xe2
+Correct this by replacing the mask of mount flags to preserve
+with a mask of mount flags that may be changed, and preserve
+all others.   This ensures that any future bugs with this mask and
+remount will fail in an easy to detect way where new mount flags
+simply won't change.
 
-Debugging this bug, which triggers when the rb_iter_peek() loops too
-many times (more than 2 times), I discovered there's a case that can
-cause that function to legitimately loop 3 times!
-
-rb_iter_peek() is different than rb_buffer_peek() as the rb_buffer_peek()
-only deals with the reader page (it's for consuming reads). The
-rb_iter_peek() is for traversing the buffer without consuming it, and as
-such, it can loop for one more reason. That is, if we hit the end of
-the reader page or any page, it will go to the next page and try again.
-
-That is, we have this:
-
- 1. iter->head > iter->head_page->page->commit
-    (rb_inc_iter() which moves the iter to the next page)
-    try again
-
- 2. event = rb_iter_head_event()
-    event->type_len == RINGBUF_TYPE_TIME_EXTEND
-    rb_advance_iter()
-    try again
-
- 3. read the event.
-
-But we never get to 3, because the count is greater than 2 and we
-cause the WARNING and return NULL.
-
-Up the counter to 3.
-
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ fs/namespace.c        |    2 +-
+ include/linux/mount.h |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1984,7 +1984,7 @@ rb_add_time_stamp(struct ring_buffer_eve
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1937,7 +1937,7 @@ static int do_remount(struct path *path,
+ 		err = do_remount_sb(sb, flags, data, 0);
+ 	if (!err) {
+ 		lock_mount_hash();
+-		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
++		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
+ 		mnt->mnt.mnt_flags = mnt_flags;
+ 		touch_mnt_namespace(mnt->mnt_ns);
+ 		unlock_mount_hash();
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -42,7 +42,9 @@ struct mnt_namespace;
+  * flag, consider how it interacts with shared mounts.
+  */
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+-#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
++#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
++				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
++				 | MNT_READONLY)
  
- /**
-  * rb_update_event - update event type and data
-- * @event: the even to update
-+ * @event: the event to update
-  * @type: the type of event
-  * @length: the size of the event field in the ring buffer
-  *
-@@ -3759,12 +3759,14 @@ rb_iter_peek(struct ring_buffer_iter *it
- 		return NULL;
- 
- 	/*
--	 * We repeat when a time extend is encountered.
--	 * Since the time extend is always attached to a data event,
--	 * we should never loop more than once.
--	 * (We never hit the following condition more than twice).
-+	 * We repeat when a time extend is encountered or we hit
-+	 * the end of the page. Since the time extend is always attached
-+	 * to a data event, we should never loop more than three times.
-+	 * Once for going to next page, once on time extend, and
-+	 * finally once to get the event.
-+	 * (We never hit the following condition more than thrice).
- 	 */
--	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 2))
-+	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 3))
- 		return NULL;
- 
- 	if (rb_per_cpu_empty(cpu_buffer))
+ #define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
+ 			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
 
 
