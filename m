@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaIOVTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:19:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
+	id S1755162AbaIOVTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:19:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662AbaIOT0o (ORCPT
+	with ESMTP id S1754665AbaIOT0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 015/158] spi: orion: fix incorrect handling of cell-index DT property
-Date: Mon, 15 Sep 2014 12:24:14 -0700
-Message-Id: <20140915192543.338094394@linuxfoundation.org>
+        Marti Raudsepp <marti@juffo.org>, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.16 014/158] iommu/amd: Fix cleanup_domain for mass device removal
+Date: Mon, 15 Sep 2014 12:24:13 -0700
+Message-Id: <20140915192543.309501953@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,61 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Joerg Roedel <jroedel@suse.de>
 
-commit e06871cd2c92e5c65d7ca1d32866b4ca5dd4ac30 upstream.
+commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
 
-In commit f814f9ac5a81 ("spi/orion: add device tree binding"), Device
-Tree support was added to the spi-orion driver. However, this commit
-reads the "cell-index" property, without taking into account the fact
-that DT properties are big-endian encoded.
+When multiple devices are detached in __detach_device, they
+are also removed from the domains dev_list. This makes it
+unsafe to use list_for_each_entry_safe, as the next pointer
+might also not be in the list anymore after __detach_device
+returns. So just repeatedly remove the first element of the
+list until it is empty.
 
-Since most of the platforms using spi-orion with DT have apparently
-not used anything but cell-index = <0>, the problem was not
-visible. But as soon as one starts using cell-index = <1>, the problem
-becomes clearly visible, as the master->bus_num gets a wrong value
-(actually it gets the value 0, which conflicts with the first bus that
-has cell-index = <0>).
-
-This commit fixes that by using of_property_read_u32() to read the
-property value, which does the appropriate endianness conversion when
-needed.
-
-Fixes: f814f9ac5a81 ("spi/orion: add device tree binding")
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Tested-by: Marti Raudsepp <marti@juffo.org>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-orion.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/iommu/amd_iommu.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/spi/spi-orion.c
-+++ b/drivers/spi/spi-orion.c
-@@ -346,8 +346,6 @@ static int orion_spi_probe(struct platfo
- 	struct resource *r;
- 	unsigned long tclk_hz;
- 	int status = 0;
--	const u32 *iprop;
--	int size;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3227,14 +3227,16 @@ free_domains:
  
- 	master = spi_alloc_master(&pdev->dev, sizeof(*spi));
- 	if (master == NULL) {
-@@ -358,10 +356,10 @@ static int orion_spi_probe(struct platfo
- 	if (pdev->id != -1)
- 		master->bus_num = pdev->id;
- 	if (pdev->dev.of_node) {
--		iprop = of_get_property(pdev->dev.of_node, "cell-index",
--					&size);
--		if (iprop && size == sizeof(*iprop))
--			master->bus_num = *iprop;
-+		u32 cell_index;
-+		if (!of_property_read_u32(pdev->dev.of_node, "cell-index",
-+					  &cell_index))
-+			master->bus_num = cell_index;
+ static void cleanup_domain(struct protection_domain *domain)
+ {
+-	struct iommu_dev_data *dev_data, *next;
++	struct iommu_dev_data *entry;
+ 	unsigned long flags;
+ 
+ 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
+ 
+-	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
+-		__detach_device(dev_data);
+-		atomic_set(&dev_data->bind, 0);
++	while (!list_empty(&domain->dev_list)) {
++		entry = list_first_entry(&domain->dev_list,
++					 struct iommu_dev_data, list);
++		__detach_device(entry);
++		atomic_set(&entry->bind, 0);
  	}
  
- 	/* we support only mode 0, and no options */
+ 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
 
 
