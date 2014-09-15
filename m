@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaIOR24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:28:56 -0400
-Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:41192
-	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753342AbaIOR2z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:28:55 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/3] staging: comedi: adl_pci9118: redo DMA buffer
- allocation
-Thread-Topic: [PATCH 0/3] staging: comedi: adl_pci9118: redo DMA buffer
- allocation
-Thread-Index: AQHPzmig8+EuAL3YEkW6/xzsYQv5N5wCaWeQ
-Date: Mon, 15 Sep 2014 17:28:52 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FA1985@P3PWEX4MB008.ex4.secureserver.net>
-References: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
-In-Reply-To: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754153AbaIORab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:30:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56020 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753223AbaIORa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 13:30:29 -0400
+Message-ID: <5417222E.30201@ti.com>
+Date: Mon, 15 Sep 2014 12:30:22 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-input@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140915, in drivers/input/misc/palmas-pwrbutton.c
+References: <CA+r1ZhjG4oSVSWnO4SXomJArxJdnUpdSHeGxV41Z4Hw1B8eEaQ@mail.gmail.com>
+In-Reply-To: <CA+r1ZhjG4oSVSWnO4SXomJArxJdnUpdSHeGxV41Z4Hw1B8eEaQ@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, September 12, 2014 2:05 AM, Ian Abbott wrote:
-> "adl_pci9118" allocates more pages of DMA buffer than it uses, may
-> allocate half a double-buffer it does not use because it's the "wrong"
-> half that it managed to allocate (unlikely), and relies on virt_to_bus()
-> to treat generic kernel memory from get_free_pages() as coherent DMA
-> memory.  Correct the issues, using dma_alloc_coherent() to allocate the
-> DMA buffers.
->
-> 1) staging: comedi: adl_pci9118: don't allocate 2nd DMA buffer on failure
-> 2) staging: comedi: adl_pci9118: don't overallocate DMA buffer
-> 3) staging: comedi: adl_pci9118: use dma_alloc_coherent()
->
->  drivers/staging/comedi/Kconfig               |  2 +-
->  drivers/staging/comedi/drivers/adl_pci9118.c | 40 ++++++++++++++--------------
->  2 files changed, 21 insertions(+), 21 deletions(-)
+On 09/15/2014 09:40 AM, Jim Davis wrote:
+> Building with the attached random configuration file,
+> 
+> FATAL: modpost: GPL-incompatible module palmas-pwrbutton.ko uses GPL-only symbol
+>  'platform_driver_unregister'
+> make[1]: *** [__modpost] Error 1
+> 
+For some reason, I was unable to reproduce this in my build with ARM
+OMAP5 configuration... but with the x86 configuration, I was.
 
-Thanks. Know I don't need to look into how to remove the
-virt_to_bus()... ;-)
+https://git.kernel.org/cgit/linux/kernel/git/dtor/input.git/commit/?h=next&id=adff5962fdd2f29bac943bc014ebd529444b2153
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/include/linux/module.h#n101
 
+I used MODULE_LICENSE("GPL V2")
+
+Looks like a typo crept in. And s/V/v seems to squelch the warning(at
+least in the x86 build) for the randconfig. I will post a patch
+accordingly. Thanks for catching the same.
+
+ diff --git a/drivers/input/misc/palmas-pwrbutton.c
+b/drivers/input/misc/palmas-pwrbutton.c
+ index 3f90211..06ffe04 100644
+ --- a/drivers/input/misc/palmas-pwrbutton.c
+ +++ b/drivers/input/misc/palmas-pwrbutton.c
+ @@ -326,5 +326,5 @@ module_platform_driver(palmas_pwron_driver);
+
+  MODULE_ALIAS("platform:palmas-pwrbutton");
+  MODULE_DESCRIPTION("Palmas Power Button");
+ -MODULE_LICENSE("GPL V2");
+ +MODULE_LICENSE("GPL v2");
+  MODULE_AUTHOR("Texas Instruments Inc.");
+
+-- 
+Regards,
+Nishanth Menon
