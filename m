@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaIOPbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:31:21 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:54972 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaIOPbT (ORCPT
+	id S1753905AbaIOPcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:32:06 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:59740 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752717AbaIOPcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:31:19 -0400
-X-IronPort-AV: E=Sophos;i="5.04,529,1406592000"; 
-   d="scan'208";a="172430830"
-Message-ID: <5417063C.9070204@citrix.com>
-Date: Mon, 15 Sep 2014 16:31:08 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Mon, 15 Sep 2014 11:32:04 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ODpTA1HGONVmtdUXGREQH
+Date: Mon, 15 Sep 2014 08:31:46 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        bcousson@baylibre.com, linux@arm.linux.org.uk,
+        khilman@deeprootsystems.com, tglx@linutronix.de,
+        devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/35] arm: omap: move intc to drivers/irqchip/
+Message-ID: <20140915153145.GC2762@atomide.com>
+References: <1406582183-696-1-git-send-email-balbi@ti.com>
+ <20140914051858.GF21986@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen.5i5j@gmail.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>, David Vrabel <david.vrabel@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <mukesh.rathor@oracle.com>
-CC: <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 0/4] drivers/xen/xenbus/xenbus_client.c: Several
- improvements for it
-References: <54157282.40402@gmail.com>
-In-Reply-To: <54157282.40402@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140914051858.GF21986@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/09/14 11:48, Chen Gang wrote:
-> They are all for 'xenbus_client.c', please help check when you have time,
-> thanks.
+* Jason Cooper <jason@lakedaemon.net> [140913 22:19]:
+> On Mon, Jul 28, 2014 at 04:15:48PM -0500, Felipe Balbi wrote:
 > 
-> Chen Gang (4):
->   drivers/xen/xenbus/xenbus_client.c: Remove redundancy assignment to 'addr'
->   drivers/xen/xenbus/xenbus_client.c: Correct the comments for xenbus_grant_ring()
->   drivers/xen/xenbus/xenbus_client.c: Remove BUG_ON() when error string trucated
->   drivers/xen/xenbus/xenbus_client.c: Improve the failure processing for __xenbus_switch_state()
+> For patches 32-35, please fix the subject line to:
+> 
+>   irqchip: omap-intc: C...
+> 
+> With that changed, patches 30-35 are:
+> 
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-The prefix should be the subsystem not the file (files move around).
-i.e., xen/xenbus.
+Great, thanks Jason for looking through them.
 
-David
+Felipe, can you please repost the missing patches with Jason's
+changes and leaving out patch 30/35 to avoid board-*.c file
+churn?
+
+The branch to use for rebasing is omap-for-v3.18/intc-v2
+that already contains the arch/arm/mach-omap2 related changes.
+
+Regards,
+
+Tony
