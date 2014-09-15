@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500AbaIOWMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:12:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50672 "EHLO
+	id S932527AbaIOWNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:13:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50693 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932482AbaIOWMn (ORCPT
+	with ESMTP id S1756516AbaIOWM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:12:43 -0400
+	Mon, 15 Sep 2014 18:12:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Stephen Warren <swarren@nvidia.com>, Thierry Reding <treding@nvidia.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 136/187] USB: devio: fix issue with log flooding
-Date: Mon, 15 Sep 2014 15:09:06 -0700
-Message-Id: <1410818997-9432-137-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 140/187] drm/tegra: add MODULE_DEVICE_TABLEs
+Date: Mon, 15 Sep 2014 15:09:10 -0700
+Message-Id: <1410818997-9432-141-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit d310d05f1225d1f6f2bf505255fdf593bfbb3051 upstream.
+commit ef70728c7a6571a1a7115031e932b811f1740b2e upstream.
 
-usbfs allows user space to pass down an URB which sets URB_SHORT_NOT_OK
-for output URBs. That causes usbcore to log messages without limit
-for a nonsensical disallowed combination. The fix is to silently drop
-the attribute in usbfs.
-The problem is reported to exist since 3.14
-https://www.virtualbox.org/ticket/13085
+When tegra-drm.ko is built as a module, these MODULE_DEVICE_TABLEs allow
+the module to be auto-loaded since the module will match the devices
+instantiated from device tree.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(Notes for stable: in 3.14+, just git rm any conflicting file, since they
+are added in later kernels. For 3.13 and below, manual merging will be
+needed)
+
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+[ kamal: backport to 3.13: context; skip modules added later ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/devio.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/tegra/dc.c   | 1 +
+ drivers/gpu/drm/tegra/gr2d.c | 1 +
+ drivers/gpu/drm/tegra/gr3d.c | 1 +
+ drivers/gpu/drm/tegra/hdmi.c | 1 +
+ 4 files changed, 4 insertions(+)
 
-diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
-index 967152a..74185cc 100644
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1411,7 +1411,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
- 	u = (is_in ? URB_DIR_IN : URB_DIR_OUT);
- 	if (uurb->flags & USBDEVFS_URB_ISO_ASAP)
- 		u |= URB_ISO_ASAP;
--	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK)
-+	if (uurb->flags & USBDEVFS_URB_SHORT_NOT_OK && is_in)
- 		u |= URB_SHORT_NOT_OK;
- 	if (uurb->flags & USBDEVFS_URB_NO_FSBR)
- 		u |= URB_NO_FSBR;
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index ae1cb31..614e8ef 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -1252,6 +1252,7 @@ static struct of_device_id tegra_dc_of_match[] = {
+ 	{ .compatible = "nvidia,tegra20-dc", },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_dc_of_match);
+ 
+ struct platform_driver tegra_dc_driver = {
+ 	.driver = {
+diff --git a/drivers/gpu/drm/tegra/gr2d.c b/drivers/gpu/drm/tegra/gr2d.c
+index 7ec4259..684ad13 100644
+--- a/drivers/gpu/drm/tegra/gr2d.c
++++ b/drivers/gpu/drm/tegra/gr2d.c
+@@ -129,6 +129,7 @@ static const struct of_device_id gr2d_match[] = {
+ 	{ .compatible = "nvidia,tegra20-gr2d" },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, gr2d_match);
+ 
+ static const u32 gr2d_addr_regs[] = {
+ 	GR2D_UA_BASE_ADDR,
+diff --git a/drivers/gpu/drm/tegra/gr3d.c b/drivers/gpu/drm/tegra/gr3d.c
+index 4cec8f5..b8503b2 100644
+--- a/drivers/gpu/drm/tegra/gr3d.c
++++ b/drivers/gpu/drm/tegra/gr3d.c
+@@ -127,6 +127,7 @@ static const struct of_device_id tegra_gr3d_match[] = {
+ 	{ .compatible = "nvidia,tegra20-gr3d" },
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(of, tegra_gr3d_match);
+ 
+ static const u32 gr3d_addr_regs[] = {
+ 	GR3D_IDX_ATTRIBUTE( 0),
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index 0cd9bc2..a2eb3c0 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -1309,6 +1309,7 @@ static const struct of_device_id tegra_hdmi_of_match[] = {
+ 	{ .compatible = "nvidia,tegra20-hdmi", .data = &tegra20_hdmi_config },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_hdmi_of_match);
+ 
+ static int tegra_hdmi_probe(struct platform_device *pdev)
+ {
 -- 
 1.9.1
 
