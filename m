@@ -1,145 +1,438 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759563AbaIPAPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:15:12 -0400
+	id S1760642AbaIPAPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:15:36 -0400
 Received: from mga09.intel.com ([134.134.136.24]:48904 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343AbaIPAPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:15:10 -0400
+	id S1758162AbaIPAPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:15:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,531,1406617200"; 
-   d="scan'208";a="573543143"
-Subject: [PATCH] x86: Consider multiple nodes in a single socket to be "sane"
-To: linux-kernel@vger.kernel.org
-Cc: Dave Hansen <dave@sr71.net>, borislav.petkov@amd.com,
-        andreas.herrmann3@amd.com, a.p.zijlstra@chello.nl, mingo@kernel.org,
-        hpa@linux.intel.com, ak@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 15 Sep 2014 15:26:41 -0700
-Message-Id: <20140915222641.D640BD8A@viggo.jf.intel.com>
+   d="scan'208";a="477731866"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/8] perf, tools: Support handling complete branch stacks as histograms
+Date: Mon, 15 Sep 2014 16:54:26 -0700
+Message-Id: <1410825273-7054-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410825273-7054-1-git-send-email-andi@firstfloor.org>
+References: <1410825273-7054-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andi Kleen <ak@linux.intel.com>
 
-I'm getting the spew below when booting with Haswell (Xeon
-E5-2699) CPUs and the "Cluster-on-Die" (CoD) feature enabled in
-the BIOS.  It seems similar to the issue that some folks from
-AMD ran in to on their systems and addressed in this commit:
+Currently branch stacks can be only shown as edge histograms for
+individual branches. I never found this display particularly useful.
 
-	http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=161270fc1f9ddfc17154e0d49291472a9cdef7db
+This implements an alternative mode that creates histograms over complete
+branch traces, instead of individual branches, similar to how normal
+callgraphs are handled. This is done by putting it in
+front of the normal callgraph and then using the normal callgraph
+histogram infrastructure to unify them.
 
-Both these Intel and AMD systems break an assumption which is
-being enforced by "topology_sane()": a socket may not contain
-more than one NUMA node.
+This way in complex functions we can understand the control flow
+that lead to a particular sample, and may even see some control
+flow in the caller for short functions.
 
-AMD special-cased their system by looking for a cpuid flag.  The
-Intel mode is dependent on BIOS options and I do not know of a
-way which it is enumerated other than the tables being parsed
-during the CPU bringup process.
+Example (simplified, of course for such simple code this
+is usually not needed):
 
-One system that does this is a weirdo that can be special-cased,
-but two makes for an industry trend.  This patch removes the
-sanity check completely.
+tcall.c:
 
-This also fixes sysfs because CPUs with the same 'physical_package_id'
-in /sys/devices/system/cpu/cpu*/topology/ are not listed together
-in the same 'core_siblings_list'.  This violates a statement from
-Documentation/ABI/testing/sysfs-devices-system-cpu:
+volatile a = 10000, b = 100000, c;
 
-	core_siblings: internal kernel map of cpu#'s hardware threads
-	within the same physical_package_id.
+__attribute__((noinline)) f2()
+{
+	c = a / b;
+}
 
-	core_siblings_list: human-readable list of the logical CPU
-	numbers within the same physical_package_id as cpu#.
+__attribute__((noinline)) f1()
+{
+	f2();
+	f2();
+}
+main()
+{
+	int i;
+	for (i = 0; i < 1000000; i++)
+		f1();
+}
 
-The sysfs effects here cause an issue with the hwloc tool where
-it gets confused and thinks there are more sockets than are
-physically present.
-
-Before this patch, there are two packages:
-
-# cd /sys/devices/system/cpu/
-# cat cpu*/topology/physical_package_id | sort | uniq -c
-     18 0
-     18 1
-
-But 4 _sets_ of core siblings:
-
-# cat cpu*/topology/core_siblings_list | sort | uniq -c
-      9 0-8
-      9 18-26
-      9 27-35
-      9 9-17
-
-After this patch, there are only 2 sets of core siblings, which
-is what we expect for a 2-socket system.
-
-# cat cpu*/topology/physical_package_id | sort | uniq -c
-     18 0
-     18 1
-# cat cpu*/topology/core_siblings_list | sort | uniq -c
-     18 0-17
-     18 18-35
-
-
-Example spew:
+% perf record -b -g ./tsrc/tcall
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
+% perf report --branch-history
 ...
-	NMI watchdog: enabled on all CPUs, permanently consumes one hw-PMU counter.
-	 #2  #3  #4  #5  #6  #7  #8
-	.... node  #1, CPUs:    #9
-	------------[ cut here ]------------
-	WARNING: CPU: 9 PID: 0 at /home/ak/hle/linux-hle-2.6/arch/x86/kernel/smpboot.c:306 topology_sane.isra.2+0x74/0x90()
-	sched: CPU #9's mc-sibling CPU #0 is not on the same node! [node: 1 != 0]. Ignoring dependency.
-	Modules linked in:
-	CPU: 9 PID: 0 Comm: swapper/9 Not tainted 3.17.0-rc1-00293-g8e01c4d-dirty #631
-	Hardware name: Intel Corporation S2600WTT/S2600WTT, BIOS GRNDSDP1.86B.0036.R05.1407140519 07/14/2014
-	0000000000000009 ffff88046ddabe00 ffffffff8172e485 ffff88046ddabe48
-	ffff88046ddabe38 ffffffff8109691d 000000000000b001 0000000000000009
-	ffff88086fc12580 000000000000b020 0000000000000009 ffff88046ddabe98
-	Call Trace:
-	[<ffffffff8172e485>] dump_stack+0x45/0x56
-	[<ffffffff8109691d>] warn_slowpath_common+0x7d/0xa0
-	[<ffffffff8109698c>] warn_slowpath_fmt+0x4c/0x50
-	[<ffffffff81074f94>] topology_sane.isra.2+0x74/0x90
-	[<ffffffff8107530e>] set_cpu_sibling_map+0x31e/0x4f0
-	[<ffffffff8107568d>] start_secondary+0x1ad/0x240
-	---[ end trace 3fe5f587a9fcde61 ]---
-	#10 #11 #12 #13 #14 #15 #16 #17
-	.... node  #2, CPUs:   #18 #19 #20 #21 #22 #23 #24 #25 #26
-	.... node  #3, CPUs:   #27 #28 #29 #30 #31 #32 #33 #34 #35
+    54.91%  tcall.c:6  [.] f2                      tcall
+            |
+            |--65.53%-- f2 tcall.c:5
+            |          |
+            |          |--70.83%-- f1 tcall.c:11
+            |          |          f1 tcall.c:10
+            |          |          main tcall.c:18
+            |          |          main tcall.c:18
+            |          |          main tcall.c:17
+            |          |          main tcall.c:17
+            |          |          f1 tcall.c:13
+            |          |          f1 tcall.c:13
+            |          |          f2 tcall.c:7
+            |          |          f2 tcall.c:5
+            |          |          f1 tcall.c:12
+            |          |          f1 tcall.c:12
+            |          |          f2 tcall.c:7
+            |          |          f2 tcall.c:5
+            |          |          f1 tcall.c:11
+            |          |
+            |           --29.17%-- f1 tcall.c:12
+            |                     f1 tcall.c:12
+            |                     f2 tcall.c:7
+            |                     f2 tcall.c:5
+            |                     f1 tcall.c:11
+            |                     f1 tcall.c:10
+            |                     main tcall.c:18
+            |                     main tcall.c:18
+            |                     main tcall.c:17
+            |                     main tcall.c:17
+            |                     f1 tcall.c:13
+            |                     f1 tcall.c:13
+            |                     f2 tcall.c:7
+            |                     f2 tcall.c:5
+            |                     f1 tcall.c:12
 
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: ak@linux.intel.com
+The default output is unchanged.
 
+This is only implemented in perf report, no change to record
+or anywhere else.
+
+This adds the basic code to report:
+- add a new "branch" option to the -g option parser to enable this mode
+- when the flag is set include the LBR into the callstack in machine.c.
+The rest of the history code is unchanged and doesn't know the difference
+between LBR entry and normal call entry.
+- detect overlaps with the callchain
+- remove small loop duplicates in the LBR
+
+Current limitations:
+- The LBR flags (mispredict etc.) are not shown in the history
+and LBR entries have no special marker.
+- It would be nice if annotate marked the LBR entries somehow
+(e.g. with arrows)
+
+v2: Various fixes.
+v3: Merge further patches into this one. Fix white space.
+v4: Improve manpage. Address review feedback.
+v5: Rename functions. Better error message without -g. Fix crash without
+    -b.
+v6: Rebase
+v7: Rebase. Use NO_ENTRY in memset.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ tools/perf/Documentation/perf-report.txt |   7 +-
+ tools/perf/builtin-report.c              |   4 +-
+ tools/perf/util/callchain.c              |   2 +
+ tools/perf/util/callchain.h              |   1 +
+ tools/perf/util/machine.c                | 162 +++++++++++++++++++++++++++----
+ tools/perf/util/symbol.h                 |   3 +-
+ 6 files changed, 154 insertions(+), 25 deletions(-)
 
- b/arch/x86/kernel/smpboot.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff -puN arch/x86/kernel/smpboot.c~hsw-cod-is-sane arch/x86/kernel/smpboot.c
---- a/arch/x86/kernel/smpboot.c~hsw-cod-is-sane	2014-09-15 14:56:20.012314468 -0700
-+++ b/arch/x86/kernel/smpboot.c	2014-09-15 14:58:58.837506644 -0700
-@@ -344,10 +344,13 @@ static bool match_llc(struct cpuinfo_x86
- static bool match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index d561e02..3e3801c 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -159,7 +159,7 @@ OPTIONS
+ --dump-raw-trace::
+         Dump raw trace in ASCII.
+ 
+--g [type,min[,limit],order[,key]]::
++-g [type,min[,limit],order[,key][,branch]]::
+ --call-graph::
+         Display call chains using type, min percent threshold, optional print
+ 	limit and order.
+@@ -177,6 +177,11 @@ OPTIONS
+ 	- function: compare on functions
+ 	- address: compare on individual code addresses
+ 
++	branch can be:
++	- branch: include last branch information in callgraph
++	when available. Usually more convenient to use --branch-history
++	for this.
++
+ 	Default: fractal,0.5,callee,function.
+ 
+ --children::
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3da59a8..fd6b019 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -628,8 +628,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "regex filter to identify parent, see: '--sort parent'"),
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+ 		    "Only display entries with parent-match"),
+-	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+-		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order[,branch]",
++		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address), add branches. "
+ 		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
+ 		    "Accumulate callchains of children and show total overhead as well"),
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 08f0fbf..265457c 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -61,6 +61,8 @@ parse_callchain_report_opt(const char *arg)
+ 			callchain_param.key = CCKEY_FUNCTION;
+ 		else if (!strncmp(tok, "address", strlen(tok)))
+ 			callchain_param.key = CCKEY_ADDRESS;
++		else if (!strncmp(tok, "branch", strlen(tok)))
++			callchain_param.branch_callstack = 1;
+ 		/* try to get the min percent */
+ 		else if (!minpcnt_set) {
+ 			callchain_param.min_percent = strtod(tok, &endptr);
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index da43619..7a1788a 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -60,6 +60,7 @@ struct callchain_param {
+ 	sort_chain_func_t	sort;
+ 	enum chain_order	order;
+ 	enum chain_key		key;
++	bool			branch_callstack;
+ };
+ 
+ struct callchain_list {
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index b2ec38b..8ba32ce 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -12,6 +12,7 @@
+ #include <stdbool.h>
+ #include <symbol/kallsyms.h>
+ #include "unwind.h"
++#include "linux/hash.h"
+ 
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
  {
- 	if (c->phys_proc_id == o->phys_proc_id) {
--		if (cpu_has(c, X86_FEATURE_AMD_DCM))
--			return true;
--
--		return topology_sane(c, o, "mc");
-+		/*
-+		 * We used to enforce that 'c' and 'o' be on the
-+		 * same node, but AMD's DCM and Intel's Cluster-
-+		 * on-Die (CoD) support both have physical
-+		 * processors that span NUMA nodes.
-+		 */
-+		return true;
- 	}
- 	return false;
+@@ -1364,9 +1365,84 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
+ 	return bi;
  }
-_
+ 
++static int add_callchain_ip(struct machine *machine,
++			    struct thread *thread,
++			    struct symbol **parent,
++			    struct addr_location *root_al,
++			    int cpumode,
++			    u64 ip)
++{
++	struct addr_location al;
++
++	al.filtered = 0;
++	al.sym = NULL;
++	if (cpumode == -1)
++		thread__find_cpumode_addr_location(thread, machine, MAP__FUNCTION, ip, &al);
++	else
++		thread__find_addr_location(thread, machine, cpumode, MAP__FUNCTION,
++				   ip, &al);
++	if (al.sym != NULL) {
++		if (sort__has_parent && !*parent &&
++		    symbol__match_regex(al.sym, &parent_regex))
++			*parent = al.sym;
++		else if (have_ignore_callees && root_al &&
++		  symbol__match_regex(al.sym, &ignore_callees_regex)) {
++			/* Treat this symbol as the root,
++			   forgetting its callees. */
++			*root_al = al;
++			callchain_cursor_reset(&callchain_cursor);
++		}
++		if (!symbol_conf.use_callchain)
++			return -EINVAL;
++	}
++
++	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
++}
++
++#define CHASHSZ 127
++#define CHASHBITS 7
++#define NO_ENTRY 0xff
++
++#define PERF_MAX_BRANCH_DEPTH 127
++
++/* Remove loops. */
++static int remove_loops(struct branch_entry *l, int nr)
++{
++	int i, j, off;
++	unsigned char chash[CHASHSZ];
++	memset(chash, NO_ENTRY, sizeof(chash));
++
++	BUG_ON(nr >= 256);
++	for (i = 0; i < nr; i++) {
++		int h = hash_64(l[i].from, CHASHBITS) % CHASHSZ;
++
++		/* no collision handling for now */
++		if (chash[h] == NO_ENTRY) {
++			chash[h] = i;
++		} else if (l[chash[h]].from == l[i].from) {
++			bool is_loop = true;
++			/* check if it is a real loop */
++			off = 0;
++			for (j = chash[h]; j < i && i + off < nr; j++, off++)
++				if (l[j].from != l[i + off].from) {
++					is_loop = false;
++					break;
++				}
++			if (is_loop) {
++				memmove(l + i, l + i + off,
++					(nr - (i + off))
++					* sizeof(struct branch_entry));
++				nr -= off;
++			}
++		}
++	}
++	return nr;
++}
++
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
++					     struct branch_stack *branch,
+ 					     struct symbol **parent,
+ 					     struct addr_location *root_al,
+ 					     int max_stack)
+@@ -1377,9 +1453,66 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	int j;
+ 	int err;
+ 	int skip_idx __maybe_unused;
++	int first_call = 0;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
++	/*
++	 * Add branches to call stack for easier browsing. This gives
++	 * more context for a sample than just the callers.
++	 *
++	 * This uses individual histograms of paths compared to the
++	 * aggregated histograms the normal LBR mode uses.
++	 *
++	 * Limitations for now:
++	 * - No extra filters
++	 * - No annotations (should annotate somehow)
++	 */
++
++	if (branch && callchain_param.branch_callstack) {
++		int nr = min(max_stack, (int)branch->nr);
++		struct branch_entry be[nr];
++
++		if (branch->nr > PERF_MAX_BRANCH_DEPTH) {
++			pr_warning("corrupted branch chain. skipping...\n");
++			return 0;
++		}
++
++		for (i = 0; i < nr; i++) {
++			if (callchain_param.order == ORDER_CALLEE) {
++				be[i] = branch->entries[i];
++				/*
++				 * Check for overlap into the callchain.
++				 * The return address is one off compared to
++				 * the branch entry. To adjust for this
++				 * assume the calling instruction is not longer
++				 * than 8 bytes.
++				 */
++				if (be[i].from < chain->ips[first_call] &&
++				    be[i].from >= chain->ips[first_call] - 8)
++					first_call++;
++			} else
++				be[i] = branch->entries[branch->nr - i - 1];
++		}
++
++		nr = remove_loops(be, nr);
++
++		for (i = 0; i < nr; i++) {
++			err = add_callchain_ip(machine, thread, parent,
++					       root_al,
++					       -1, be[i].to);
++			if (!err)
++				err = add_callchain_ip(machine, thread,
++						       parent, root_al,
++						       -1, be[i].from);
++			if (err == -EINVAL)
++				break;
++			if (err)
++				return err;
++		}
++		chain_nr -= nr;
++	}
++
+ 	if (chain->nr > PERF_MAX_STACK_DEPTH) {
+ 		pr_warning("corrupted callchain. skipping...\n");
+ 		return 0;
+@@ -1391,9 +1524,8 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 	 */
+ 	skip_idx = arch_skip_callchain_idx(machine, thread, chain);
+ 
+-	for (i = 0; i < chain_nr; i++) {
++	for (i = first_call; i < chain_nr; i++) {
+ 		u64 ip;
+-		struct addr_location al;
+ 
+ 		if (callchain_param.order == ORDER_CALLEE)
+ 			j = i;
+@@ -1430,24 +1562,10 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 			continue;
+ 		}
+ 
+-		al.filtered = 0;
+-		thread__find_addr_location(thread, machine, cpumode,
+-					   MAP__FUNCTION, ip, &al);
+-		if (al.sym != NULL) {
+-			if (sort__has_parent && !*parent &&
+-			    symbol__match_regex(al.sym, &parent_regex))
+-				*parent = al.sym;
+-			else if (have_ignore_callees && root_al &&
+-			  symbol__match_regex(al.sym, &ignore_callees_regex)) {
+-				/* Treat this symbol as the root,
+-				   forgetting its callees. */
+-				*root_al = al;
+-				callchain_cursor_reset(&callchain_cursor);
+-			}
+-		}
+-
+-		err = callchain_cursor_append(&callchain_cursor,
+-					      ip, al.map, al.sym);
++		err = add_callchain_ip(machine, thread, parent, root_al,
++				       cpumode, ip);
++		if (err == -EINVAL)
++			break;
+ 		if (err)
+ 			return err;
+ 	}
+@@ -1473,7 +1591,9 @@ int machine__resolve_callchain(struct machine *machine,
+ 	int ret;
+ 
+ 	ret = machine__resolve_callchain_sample(machine, thread,
+-						sample->callchain, parent,
++						sample->callchain,
++						sample->branch_stack,
++						parent,
+ 						root_al, max_stack);
+ 	if (ret)
+ 		return ret;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 3f95ea0..d28b94c 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -121,7 +121,8 @@ struct symbol_conf {
+ 			event_group,
+ 			demangle,
+ 			filter_relative,
+-			show_hist_headers;
++			show_hist_headers,
++			branch_callstack;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
+-- 
+1.9.3
+
