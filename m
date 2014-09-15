@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103AbaIOUED (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:04:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	id S1757017AbaIOUD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:03:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225AbaIOTrN (ORCPT
+	with ESMTP id S1756229AbaIOTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Johannes Stezenbach <js@sig21.net>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 33/71] ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
-Date: Mon, 15 Sep 2014 12:26:31 -0700
-Message-Id: <20140915192639.811115584@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 35/71] ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
+Date: Mon, 15 Sep 2014 12:26:33 -0700
+Message-Id: <20140915192639.871164579@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,34 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-commit 9301503af016eb537ccce76adec0c1bb5c84871e upstream.
+commit 8aa5e56eeb61a099ea6519eb30ee399e1bc043ce upstream.
 
-This mode is unsupported, as the DMA controller can't do zero-padding
-of samples.
+Adds return status check on copy routines to delete the allocated destination
+object if either copy fails. Reported by Colin Ian King on bugs.acpica.org,
+Bug 1087.
+The last applicable commit:
+ Commit: 3371c19c294a4cb3649aa4e84606be8a1d999e61
+ Subject: ACPICA: Remove ACPI_GET_OBJECT_TYPE macro
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Reported-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Link: https://bugs.acpica.org/show_bug.cgi?id=1087
+Reported-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/pxa/pxa-ssp.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/acpi/acpica/utcopy.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/sound/soc/pxa/pxa-ssp.c
-+++ b/sound/soc/pxa/pxa-ssp.c
-@@ -757,9 +757,7 @@ static int pxa_ssp_remove(struct snd_soc
- 			  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_64000 |	\
- 			  SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000)
+--- a/drivers/acpi/acpica/utcopy.c
++++ b/drivers/acpi/acpica/utcopy.c
+@@ -998,5 +998,11 @@ acpi_ut_copy_iobject_to_iobject(union ac
+ 		status = acpi_ut_copy_simple_object(source_desc, *dest_desc);
+ 	}
  
--#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
--			    SNDRV_PCM_FMTBIT_S24_LE |	\
--			    SNDRV_PCM_FMTBIT_S32_LE)
-+#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
- 
- static const struct snd_soc_dai_ops pxa_ssp_dai_ops = {
- 	.startup	= pxa_ssp_startup,
++	/* Delete the allocated object if copy failed */
++
++	if (ACPI_FAILURE(status)) {
++		acpi_ut_remove_reference(*dest_desc);
++	}
++
+ 	return_ACPI_STATUS(status);
+ }
 
 
