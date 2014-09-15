@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877AbaIOVEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:04:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54683 "EHLO
+	id S1758928AbaIOVFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:05:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54580 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970AbaIOT07 (ORCPT
+	with ESMTP id S1754708AbaIOT06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:59 -0400
+	Mon, 15 Sep 2014 15:26:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Binbin Zhou <zhoubb@lemote.com>,
-        John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.16 067/158] MIPS: tlbex: Fix a missing statement for HUGETLB
-Date: Mon, 15 Sep 2014 12:25:06 -0700
-Message-Id: <20140915192544.910327407@linuxfoundation.org>
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.16 038/158] powerpc/pseries: Failure on removing device node
+Date: Mon, 15 Sep 2014 12:24:37 -0700
+Message-Id: <20140915192544.033740794@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -32,40 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit 8393c524a25609a30129e4a8975cf3b91f6c16a5 upstream.
+commit f1b3929c232784580e5d8ee324b6bc634e709575 upstream.
 
-In commit 2c8c53e28f1 (MIPS: Optimize TLB handlers for Octeon CPUs)
-build_r4000_tlb_refill_handler() is modified. But it doesn't compatible
-with the original code in HUGETLB case. Because there is a copy & paste
-error and one line of code is missing. It is very easy to produce a bug
-with LTP's hugemmap05 test.
+While running command "drmgr -c phb -r -s 'PHB 528'", following
+backtrace jumped out because the target device node isn't marked
+with OF_DETACHED by of_detach_node(), which caused by error
+returned from memory hotplug related reconfig notifier when
+disabling CONFIG_MEMORY_HOTREMOVE. The patch fixes it.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Binbin Zhou <zhoubb@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/7496/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+ERROR: Bad of_node_put() on /pci@800000020000210/ethernet@0
+CPU: 14 PID: 2252 Comm: drmgr Tainted: G        W     3.16.0+ #427
+Call Trace:
+[c000000012a776a0] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
+[c000000012a77750] [c00000000083cd34] .dump_stack+0x7c/0x9c
+[c000000012a777d0] [c0000000006807c4] .of_node_release+0x58/0xe0
+[c000000012a77860] [c00000000038a7d0] .kobject_release+0x174/0x1b8
+[c000000012a77900] [c00000000038a884] .kobject_put+0x70/0x78
+[c000000012a77980] [c000000000681680] .of_node_put+0x28/0x34
+[c000000012a77a00] [c000000000681ea8] .__of_get_next_child+0x64/0x70
+[c000000012a77a90] [c000000000682138] .of_find_node_by_path+0x1b8/0x20c
+[c000000012a77b40] [c000000000051840] .ofdt_write+0x308/0x688
+[c000000012a77c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
+[c000000012a77cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
+[c000000012a77d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
+[c000000012a77e30] [c00000000000a064] syscall_exit+0x0/0x98
+
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/mm/tlbex.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/platforms/pseries/hotplug-memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -1299,6 +1299,7 @@ static void build_r4000_tlb_refill_handl
- 	}
- #ifdef CONFIG_MIPS_HUGE_TLB_SUPPORT
- 	uasm_l_tlb_huge_update(&l, p);
-+	UASM_i_LW(&p, K0, 0, K1);
- 	build_huge_update_entries(&p, htlb_info.huge_pte, K1);
- 	build_huge_tlb_write_entry(&p, &l, &r, K0, tlb_random,
- 				   htlb_info.restore_scratch);
+--- a/arch/powerpc/platforms/pseries/hotplug-memory.c
++++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
+@@ -146,7 +146,7 @@ static inline int pseries_remove_membloc
+ }
+ static inline int pseries_remove_mem_node(struct device_node *np)
+ {
+-	return -EOPNOTSUPP;
++	return 0;
+ }
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
 
 
