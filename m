@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188AbaIOVKT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:10:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54700 "EHLO
+	id S1759229AbaIOVK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:10:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754924AbaIOT0y (ORCPT
+	with ESMTP id S1754717AbaIOT0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:54 -0400
+	Mon, 15 Sep 2014 15:26:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 033/158] regulator: arizona-ldo1: remove bypass functionality
-Date: Mon, 15 Sep 2014 12:24:32 -0700
-Message-Id: <20140915192543.874703946@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.16 048/158] Drivers: scsi: storvsc: Filter commands based on the storage protocol version
+Date: Mon, 15 Sep 2014 12:24:47 -0700
+Message-Id: <20140915192544.339663052@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,31 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 5b919f3ebb533cbe400664837e24f66a0836b907 upstream.
+commit 8caf92d80526f3d7cc96831ec18b384ebcaccdf0 upstream.
 
-WM5110/8280 devices do not support bypass mode for LDO1 so remove
-the bypass callbacks registered with regulator core.
+Going forward it is possible that some of the commands that are not currently
+implemented will be implemented on future Windows hosts. Even if they are not
+implemented, we are told the host will corrrectly handle unsupported
+commands (by returning appropriate return code and sense information).
+Make command filtering depend on the host version.
 
-Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/arizona-ldo1.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/scsi/storvsc_drv.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -143,8 +143,6 @@ static struct regulator_ops arizona_ldo1
- 	.map_voltage = regulator_map_voltage_linear,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
--	.get_bypass = regulator_get_bypass_regmap,
--	.set_bypass = regulator_set_bypass_regmap,
- };
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1564,9 +1564,19 @@ static int storvsc_queuecommand(struct S
+ 	struct vmscsi_request *vm_srb;
+ 	struct stor_mem_pools *memp = scmnd->device->hostdata;
  
- static const struct regulator_desc arizona_ldo1 = {
+-	if (!storvsc_scsi_cmd_ok(scmnd)) {
+-		scmnd->scsi_done(scmnd);
+-		return 0;
++	if (vmstor_current_major <= VMSTOR_WIN8_MAJOR) {
++		/*
++		 * On legacy hosts filter unimplemented commands.
++		 * Future hosts are expected to correctly handle
++		 * unsupported commands. Furthermore, it is
++		 * possible that some of the currently
++		 * unsupported commands maybe supported in
++		 * future versions of the host.
++		 */
++		if (!storvsc_scsi_cmd_ok(scmnd)) {
++			scmnd->scsi_done(scmnd);
++			return 0;
++		}
+ 	}
+ 
+ 	request_size = sizeof(struct storvsc_cmd_request);
 
 
