@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576AbaIOTuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:50:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
+	id S1756605AbaIOTvP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:51:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353AbaIOTr1 (ORCPT
+	with ESMTP id S1756348AbaIOTr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:27 -0400
+	Mon, 15 Sep 2014 15:47:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Shirish Pargaonkar <spargaonkar@suse.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jet Chen <jet.chen@intel.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 67/71] blkcg: dont call into policy draining if root_blkg is already gone
-Date: Mon, 15 Sep 2014 12:27:05 -0700
-Message-Id: <20140915192640.937559780@linuxfoundation.org>
+        Kevin Hao <haokexin@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.10 65/71] mtd/ftl: fix the double free of the buffers allocated in build_maps()
+Date: Mon, 15 Sep 2014 12:27:03 -0700
+Message-Id: <20140915192640.864803257@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -30,101 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Kevin Hao <haokexin@gmail.com>
 
-commit 2a1b4cf2331d92bc009bf94fa02a24604cdaf24c upstream.
+commit a152056c912db82860a8b4c23d0bd3a5aa89e363 upstream.
 
-While a queue is being destroyed, all the blkgs are destroyed and its
-->root_blkg pointer is set to NULL.  If someone else starts to drain
-while the queue is in this state, the following oops happens.
+I got the following panic on my fsl p5020ds board.
 
-  NULL pointer dereference at 0000000000000028
-  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  PGD e4a1067 PUD b773067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
-  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
-  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
-  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
-  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
-  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
-  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
-  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
-  Stack:
-   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
-   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
-   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
+  Unable to handle kernel paging request for data at address 0x7375627379737465
+  Faulting instruction address: 0xc000000000100778
+  Oops: Kernel access of bad area, sig: 11 [#1]
+  SMP NR_CPUS=24 CoreNet Generic
+  Modules linked in:
+  CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.15.0-next-20140613 #145
+  task: c0000000fe080000 ti: c0000000fe088000 task.ti: c0000000fe088000
+  NIP: c000000000100778 LR: c00000000010073c CTR: 0000000000000000
+  REGS: c0000000fe08aa00 TRAP: 0300   Not tainted  (3.15.0-next-20140613)
+  MSR: 0000000080029000 <CE,EE,ME>  CR: 24ad2e24  XER: 00000000
+  DEAR: 7375627379737465 ESR: 0000000000000000 SOFTE: 1
+  GPR00: c0000000000c99b0 c0000000fe08ac80 c0000000009598e0 c0000000fe001d80
+  GPR04: 00000000000000d0 0000000000000913 c000000007902b20 0000000000000000
+  GPR08: c0000000feaae888 0000000000000000 0000000007091000 0000000000200200
+  GPR12: 0000000028ad2e28 c00000000fff4000 c0000000007abe08 0000000000000000
+  GPR16: c0000000007ab160 c0000000007aaf98 c00000000060ba68 c0000000007abda8
+  GPR20: c0000000007abde8 c0000000feaea6f8 c0000000feaea708 c0000000007abd10
+  GPR24: c000000000989370 c0000000008c6228 00000000000041ed c0000000fe00a400
+  GPR28: c00000000017c1cc 00000000000000d0 7375627379737465 c0000000fe001d80
+  NIP [c000000000100778] .__kmalloc_track_caller+0x70/0x168
+  LR [c00000000010073c] .__kmalloc_track_caller+0x34/0x168
   Call Trace:
-   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
-   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
-   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
-   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
-   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
-   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
-   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff81427505>] blk_put_queue+0x15/0x20
-   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
-   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
-   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
-   [<ffffffff817930e2>] device_release+0x32/0xa0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff817934d7>] put_device+0x17/0x20
-   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
-   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
-   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
-   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
-   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
-   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
-   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
-   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
-   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
+  [c0000000fe08ac80] [c00000000087e6b8] uevent_sock_list+0x0/0x10 (unreliable)
+  [c0000000fe08ad20] [c0000000000c99b0] .kstrdup+0x44/0x90
+  [c0000000fe08adc0] [c00000000017c1cc] .__kernfs_new_node+0x4c/0x130
+  [c0000000fe08ae70] [c00000000017d7e4] .kernfs_new_node+0x2c/0x64
+  [c0000000fe08aef0] [c00000000017db00] .kernfs_create_dir_ns+0x34/0xc8
+  [c0000000fe08af80] [c00000000018067c] .sysfs_create_dir_ns+0x58/0xcc
+  [c0000000fe08b010] [c0000000002c711c] .kobject_add_internal+0xc8/0x384
+  [c0000000fe08b0b0] [c0000000002c7644] .kobject_add+0x64/0xc8
+  [c0000000fe08b140] [c000000000355ebc] .device_add+0x11c/0x654
+  [c0000000fe08b200] [c0000000002b5988] .add_disk+0x20c/0x4b4
+  [c0000000fe08b2c0] [c0000000003a21d4] .add_mtd_blktrans_dev+0x340/0x514
+  [c0000000fe08b350] [c0000000003a3410] .mtdblock_add_mtd+0x74/0xb4
+  [c0000000fe08b3e0] [c0000000003a32cc] .blktrans_notify_add+0x64/0x94
+  [c0000000fe08b470] [c00000000039b5b4] .add_mtd_device+0x1d4/0x368
+  [c0000000fe08b520] [c00000000039b830] .mtd_device_parse_register+0xe8/0x104
+  [c0000000fe08b5c0] [c0000000003b8408] .of_flash_probe+0x72c/0x734
+  [c0000000fe08b750] [c00000000035ba40] .platform_drv_probe+0x38/0x84
+  [c0000000fe08b7d0] [c0000000003599a4] .really_probe+0xa4/0x29c
+  [c0000000fe08b870] [c000000000359d3c] .__driver_attach+0x100/0x104
+  [c0000000fe08b900] [c00000000035746c] .bus_for_each_dev+0x84/0xe4
+  [c0000000fe08b9a0] [c0000000003593c0] .driver_attach+0x24/0x38
+  [c0000000fe08ba10] [c000000000358f24] .bus_add_driver+0x1c8/0x2ac
+  [c0000000fe08bab0] [c00000000035a3a4] .driver_register+0x8c/0x158
+  [c0000000fe08bb30] [c00000000035b9f4] .__platform_driver_register+0x6c/0x80
+  [c0000000fe08bba0] [c00000000084e080] .of_flash_driver_init+0x1c/0x30
+  [c0000000fe08bc10] [c000000000001864] .do_one_initcall+0xbc/0x238
+  [c0000000fe08bd00] [c00000000082cdc0] .kernel_init_freeable+0x188/0x268
+  [c0000000fe08bdb0] [c0000000000020a0] .kernel_init+0x1c/0xf7c
+  [c0000000fe08be30] [c000000000000884] .ret_from_kernel_thread+0x58/0xd4
+  Instruction dump:
+  41bd0010 480000c8 4bf04eb5 60000000 e94d0028 e93f0000 7cc95214 e8a60008
+  7fc9502a 2fbe0000 419e00c8 e93f0022 <7f7e482a> 39200000 88ed06b2 992d06b2
+  ---[ end trace b4c9a94804a42d40 ]---
 
-776687bce42b ("block, blk-mq: draining can't be skipped even if
-bypass_depth was non-zero") made it easier to trigger this bug by
-making blk_queue_bypass_start() drain even when it loses the first
-bypass test to blk_cleanup_queue(); however, the bug has always been
-there even before the commit as blk_queue_bypass_start() could race
-against queue destruction, win the initial bypass test but perform the
-actual draining after blk_cleanup_queue() already destroyed all blkgs.
+It seems that the corrupted partition header on my mtd device triggers
+a bug in the ftl. In function build_maps() it will allocate the buffers
+needed by the mtd partition, but if something goes wrong such as kmalloc
+failure, mtd read error or invalid partition header parameter, it will
+free all allocated buffers and then return non-zero. In my case, it
+seems that partition header parameter 'NumTransferUnits' is invalid.
 
-Fix it by skippping calling into policy draining if all the blkgs are
-already gone.
+And the ftl_freepart() is a function which free all the partition
+buffers allocated by build_maps(). Given the build_maps() is a self
+cleaning function, so there is no need to invoke this function even
+if build_maps() return with error. Otherwise it will causes the
+buffers to be freed twice and then weird things would happen.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Jet Chen <jet.chen@intel.com>
-Tested-by: Shirish Pargaonkar <spargaonkar@suse.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Kevin Hao <haokexin@gmail.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-cgroup.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/mtd/ftl.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -883,6 +883,13 @@ void blkcg_drain_queue(struct request_qu
- 	if (!q->root_blkg)
- 		return;
+--- a/drivers/mtd/ftl.c
++++ b/drivers/mtd/ftl.c
+@@ -1075,7 +1075,6 @@ static void ftl_add_mtd(struct mtd_blktr
+ 			return;
+ 	}
  
-+	/*
-+	 * @q could be exiting and already have destroyed all blkgs as
-+	 * indicated by NULL root_blkg.  If so, don't confuse policies.
-+	 */
-+	if (!q->root_blkg)
-+		return;
-+
- 	blk_throtl_drain(q);
+-	ftl_freepart(partition);
+ 	kfree(partition);
  }
  
 
