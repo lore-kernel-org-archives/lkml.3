@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532AbaIOUVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:21:43 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:37748 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaIOUVj (ORCPT
+	id S1757546AbaIOUV7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:21:59 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:60416 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756854AbaIOUV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:21:39 -0400
+	Mon, 15 Sep 2014 16:21:56 -0400
 From: Christoph Hellwig <milosz@adfin.com>
 X-Google-Original-From: Christoph Hellwig <hch@lst.de>
-Date: Mon, 15 Sep 2014 16:21:32 -0400
+Date: Mon, 15 Sep 2014 16:21:51 -0400
 To: linux-kernel@vger.kernel.org
 Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
         Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
         Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH 5/7] documentation updates
-Message-ID: <2758f631ed6d0b2f4e27fc8dd810962357c49653.1410810247.git.milosz@adfin.com>
+Subject: [PATCH 6/7] move flags enforcement to vfs_preadv/vfs_pwritev
+Message-ID: <b7faca081076f52327690ebb7fecd1f1bf05a07c.1410810247.git.milosz@adfin.com>
 References: <cover.1410810247.git.milosz@adfin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,40 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Acked-by: Milosz Tanski <milosz@adfin.com>
 ---
- Documentation/filesystems/Locking |    4 ++--
- Documentation/filesystems/vfs.txt |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ fs/read_write.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index f1997e9..08f8fdd 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -434,8 +434,8 @@ prototypes:
- 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
- 	ssize_t (*aio_read) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
--	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
--	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
-+	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *, int);
-+	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *, int);
- 	int (*iterate) (struct file *, struct dir_context *);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 61d65cc..c86f5f8 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -806,8 +806,8 @@ struct file_operations {
- 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
- 	ssize_t (*aio_read) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
- 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
--	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *);
--	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *);
-+	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *, int);
-+	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *, int);
- 	int (*iterate) (struct file *, struct dir_context *);
- 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
- 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 87a6034..233ea98 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -863,6 +863,8 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_READ))
+ 		return -EINVAL;
++	if (flags & ~O_NONBLOCK)
++		return -EINVAL;
+ 
+ 	return do_readv_writev(READ, file, vec, vlen, pos, flags);
+ }
+@@ -876,6 +878,8 @@ ssize_t vfs_writev(struct file *file, const struct iovec __user *vec,
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_WRITE))
+ 		return -EINVAL;
++	if (flags & ~0)
++		return -EINVAL;
+ 
+ 	return do_readv_writev(WRITE, file, vec, vlen, pos, flags);
+ }
+@@ -908,9 +912,6 @@ SYSCALL_DEFINE4(readv2, unsigned long, fd, const struct iovec __user *, vec,
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
+ 
+-	if (flags & ~O_NONBLOCK)
+-		return -EINVAL;
+-
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+ 		ret = vfs_readv(f.file, vec, vlen, &pos, flags);
+@@ -951,9 +952,6 @@ SYSCALL_DEFINE4(writev2, unsigned long, fd, const struct iovec __user *, vec,
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
+ 
+-	if (flags & ~0)
+-		return -EINVAL;
+-
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+ 		ret = vfs_writev(f.file, vec, vlen, &pos, flags);
+@@ -1006,8 +1004,6 @@ SYSCALL_DEFINE6(preadv2, unsigned long, fd, const struct iovec __user *, vec,
+ 	struct fd f;
+ 	ssize_t ret = -EBADF;
+ 
+-	if (flags & ~O_NONBLOCK)
+-		return -EINVAL;
+ 	if (pos < 0)
+ 		return -EINVAL;
+ 
+@@ -1057,8 +1053,6 @@ SYSCALL_DEFINE6(pwritev2, unsigned long, fd, const struct iovec __user *, vec,
+ 	struct fd f;
+ 	ssize_t ret = -EBADF;
+ 
+-	if (flags & ~0)
+-		return -EINVAL;
+ 	if (pos < 0)
+ 		return -EINVAL;
+ 
 -- 
 1.7.9.5
 
