@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133AbaIOWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:21:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51406 "EHLO
+	id S933146AbaIOWVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:21:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51421 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755294AbaIOWU5 (ORCPT
+	with ESMTP id S1754159AbaIOWVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:57 -0400
+	Mon, 15 Sep 2014 18:21:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 035/187] sunrpc: create a new dummy pipe for gssd to hold open
-Date: Mon, 15 Sep 2014 15:07:25 -0700
-Message-Id: <1410818997-9432-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 039/187] x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+Date: Mon, 15 Sep 2014 15:07:29 -0700
+Message-Id: <1410818997-9432-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,247 +36,617 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6 upstream.
+commit 3891a04aafd668686239349ea58f3314ea2af86b upstream.
 
-rpc.gssd will naturally hold open any pipe named */clnt*/gssd that shows
-up under rpc_pipefs. That behavior gives us a reliable mechanism to tell
-whether it's actually running or not.
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  This
+causes some 16-bit software to break, but it also leaks kernel state
+to user space.  We have a software workaround for that ("espfix") for
+the 32-bit kernel, but it relies on a nonzero stack segment base which
+is not available in 64-bit mode.
 
-Create a new toplevel "gssd" directory in rpc_pipefs when it's mounted.
-Under that directory create another directory called "clntXX", and then
-within that a pipe called "gssd".
+In checkin:
 
-We'll never send an upcall along that pipe, and any downcall written to
-it will just return -EINVAL.
+    b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ kamal: 3.13-stable prereq for 6aa23d76 "nfs: check if gssd is running
-  before attempting to use krb5i auth in SETCLIENTID call" ]
-Cc: Stefan Bader <stefan.bader@canonical.com>
+we "solved" this by forbidding 16-bit segments on 64-bit kernels, with
+the logic that 16-bit support is crippled on 64-bit kernels anyway (no
+V86 support), but it turns out that people are doing stuff like
+running old Win16 binaries under Wine and expect it to work.
+
+This works around this by creating percpu "ministacks", each of which
+is mapped 2^16 times 64K apart.  When we detect that the return SS is
+on the LDT, we copy the IRET frame to the ministack and use the
+relevant alias to return to userspace.  The ministacks are mapped
+readonly, so if IRET faults we promote #GP to #DF which is an IST
+vector and thus has its own stack; we then do the fixup in the #DF
+handler.
+
+(Making #GP an IST exception would make the msr_safe functions unsafe
+in NMI/MC context, and quite possibly have other effects.)
+
+Special thanks to:
+
+- Andy Lutomirski, for the suggestion of using very small stack slots
+  and copy (as opposed to map) the IRET frame there, and for the
+  suggestion to mark them readonly and let the fault promote to #DF.
+- Konrad Wilk for paravirt fixup and testing.
+- Borislav Petkov for testing help and useful comments.
+
+Reported-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Lutomriski <amluto@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dirk Hohndel <dirk@hohndel.org>
+Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
+Cc: comex <comexk@gmail.com>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sunrpc/rpc_pipe_fs.h |  3 +-
- net/sunrpc/netns.h                 |  1 +
- net/sunrpc/rpc_pipe.c              | 93 ++++++++++++++++++++++++++++++++++++--
- net/sunrpc/sunrpc_syms.c           |  8 +++-
- 4 files changed, 100 insertions(+), 5 deletions(-)
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   3 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_64.S              |  73 ++++++++++-
+ arch/x86/kernel/espfix_64.c             | 208 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  11 --
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  40 ++++--
+ init/main.c                             |   4 +
+ 10 files changed, 325 insertions(+), 26 deletions(-)
+ create mode 100644 arch/x86/kernel/espfix_64.c
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index a353e03..85f1342 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -84,7 +84,8 @@ enum {
+diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
+index 881582f..bd43704 100644
+--- a/Documentation/x86/x86_64/mm.txt
++++ b/Documentation/x86/x86_64/mm.txt
+@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+ ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
+ ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+ ... unused hole ...
++ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
++... unused hole ...
+ ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+ ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
+ ffffffffff600000 - ffffffffffdfffff (=8 MB) vsyscalls
+diff --git a/arch/x86/include/asm/pgtable_64_types.h b/arch/x86/include/asm/pgtable_64_types.h
+index 2d88344..b1609f2 100644
+--- a/arch/x86/include/asm/pgtable_64_types.h
++++ b/arch/x86/include/asm/pgtable_64_types.h
+@@ -61,6 +61,8 @@ typedef struct { pteval_t pte; } pte_t;
+ #define MODULES_VADDR    _AC(0xffffffffa0000000, UL)
+ #define MODULES_END      _AC(0xffffffffff000000, UL)
+ #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
++#define ESPFIX_PGD_ENTRY _AC(-2, UL)
++#define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
  
- extern struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
- 				      const unsigned char *dir_name);
--extern void rpc_pipefs_init_net(struct net *net);
-+extern int rpc_pipefs_init_net(struct net *net);
-+extern void rpc_pipefs_exit_net(struct net *net);
- extern struct super_block *rpc_get_sb_net(const struct net *net);
- extern void rpc_put_sb_net(const struct net *net);
+ #define EARLY_DYNAMIC_PAGE_TABLES	64
  
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index 3a260e4..c804ed4 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -14,6 +14,7 @@ struct sunrpc_net {
- 	struct cache_detail *rsi_cache;
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 59bcf4e..edfaf6a 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -62,6 +62,9 @@ extern void x86_ce4100_early_setup(void);
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
  
- 	struct super_block *pipefs_sb;
-+	struct rpc_pipe *gssd_dummy;
- 	struct mutex pipefs_sb_lock;
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
+ #ifndef _SETUP
  
- 	struct list_head all_clients;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index bf04b30..c23458b 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -38,7 +38,7 @@
- #define NET_NAME(net)	((net == &init_net) ? " (init_net)" : "")
+ /*
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 9b0a34e..92450ee 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
++obj-$(CONFIG_X86_64)	+= espfix_64.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+ obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..bffaa98 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -58,6 +58,7 @@
+ #include <asm/asm.h>
+ #include <asm/context_tracking.h>
+ #include <asm/smap.h>
++#include <asm/pgtable_types.h>
+ #include <linux/err.h>
  
- static struct file_system_type rpc_pipe_fs_type;
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+@@ -1040,8 +1041,16 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	/*
++	 * Are we returning to a stack segment from the LDT?  Note: in
++	 * 64-bit mode SS:RSP on the exception stack is always valid.
++	 */
++	testb $4,(SS-RIP)(%rsp)
++	jnz irq_return_ldt
++
++irq_return_iret:
+ 	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return, bad_iret)
++	_ASM_EXTABLE(irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_PARAVIRT
+ ENTRY(native_iret)
+@@ -1049,6 +1058,30 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
+ #endif
+ 
++irq_return_ldt:
++	pushq_cfi %rax
++	pushq_cfi %rdi
++	SWAPGS
++	movq PER_CPU_VAR(espfix_waddr),%rdi
++	movq %rax,(0*8)(%rdi)	/* RAX */
++	movq (2*8)(%rsp),%rax	/* RIP */
++	movq %rax,(1*8)(%rdi)
++	movq (3*8)(%rsp),%rax	/* CS */
++	movq %rax,(2*8)(%rdi)
++	movq (4*8)(%rsp),%rax	/* RFLAGS */
++	movq %rax,(3*8)(%rdi)
++	movq (6*8)(%rsp),%rax	/* SS */
++	movq %rax,(5*8)(%rdi)
++	movq (5*8)(%rsp),%rax	/* RSP */
++	movq %rax,(4*8)(%rdi)
++	andl $0xffff0000,%eax
++	popq_cfi %rdi
++	orq PER_CPU_VAR(espfix_stack),%rax
++	SWAPGS
++	movq %rax,%rsp
++	popq_cfi %rax
++	jmp irq_return_iret
++
+ 	.section .fixup,"ax"
+ bad_iret:
+ 	/*
+@@ -1110,9 +1143,41 @@ ENTRY(retint_kernel)
+ 	call preempt_schedule_irq
+ 	jmp exit_intr
+ #endif
 -
-+static const struct rpc_pipe_ops gssd_dummy_pipe_ops;
- 
- static struct kmem_cache *rpc_inode_cachep __read_mostly;
- 
-@@ -1159,6 +1159,7 @@ enum {
- 	RPCAUTH_nfsd4_cb,
- 	RPCAUTH_cache,
- 	RPCAUTH_nfsd,
-+	RPCAUTH_gssd,
- 	RPCAUTH_RootEOF
- };
- 
-@@ -1195,6 +1196,10 @@ static const struct rpc_filelist files[] = {
- 		.name = "nfsd",
- 		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
- 	},
-+	[RPCAUTH_gssd] = {
-+		.name = "gssd",
-+		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
-+	},
- };
- 
+ 	CFI_ENDPROC
+ END(common_interrupt)
++
++	/*
++	 * If IRET takes a fault on the espfix stack, then we
++	 * end up promoting it to a doublefault.  In that case,
++	 * modify the stack to make it look like we just entered
++	 * the #GP handler from user space, similar to bad_iret.
++	 */
++	ALIGN
++__do_double_fault:
++	XCPT_FRAME 1 RDI+8
++	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
++	sarq $PGDIR_SHIFT,%rax
++	cmpl $ESPFIX_PGD_ENTRY,%eax
++	jne do_double_fault		/* No, just deliver the fault */
++	cmpl $__KERNEL_CS,CS(%rdi)
++	jne do_double_fault
++	movq RIP(%rdi),%rax
++	cmpq $irq_return_iret,%rax
++#ifdef CONFIG_PARAVIRT
++	je 1f
++	cmpq $native_iret,%rax
++#endif
++	jne do_double_fault		/* This shouldn't happen... */
++1:
++	movq PER_CPU_VAR(kernel_stack),%rax
++	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
++	movq %rax,RSP(%rdi)
++	movq $0,(%rax)			/* Missing (lost) #GP error code */
++	movq $general_protection,RIP(%rdi)
++	retq
++	CFI_ENDPROC
++END(__do_double_fault)
++
  /*
-@@ -1208,13 +1213,25 @@ struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
- }
- EXPORT_SYMBOL_GPL(rpc_d_lookup_sb);
- 
--void rpc_pipefs_init_net(struct net *net)
-+int rpc_pipefs_init_net(struct net *net)
- {
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 
-+	sn->gssd_dummy = rpc_mkpipe_data(&gssd_dummy_pipe_ops, 0);
-+	if (IS_ERR(sn->gssd_dummy))
-+		return PTR_ERR(sn->gssd_dummy);
-+
- 	mutex_init(&sn->pipefs_sb_lock);
- 	sn->gssd_running = 1;
- 	sn->pipe_version = -1;
-+	return 0;
-+}
-+
-+void rpc_pipefs_exit_net(struct net *net)
-+{
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-+
-+	rpc_destroy_pipe_data(sn->gssd_dummy);
- }
- 
- /*
-@@ -1244,11 +1261,73 @@ void rpc_put_sb_net(const struct net *net)
- }
- EXPORT_SYMBOL_GPL(rpc_put_sb_net);
- 
-+static const struct rpc_filelist gssd_dummy_clnt_dir[] = {
-+	[0] = {
-+		.name = "clntXX",
-+		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
-+	},
-+};
-+
-+static ssize_t
-+dummy_downcall(struct file *filp, const char __user *src, size_t len)
-+{
-+	return -EINVAL;
-+}
-+
-+static const struct rpc_pipe_ops gssd_dummy_pipe_ops = {
-+	.upcall		= rpc_pipe_generic_upcall,
-+	.downcall	= dummy_downcall,
-+};
-+
-+/**
-+ * rpc_gssd_dummy_populate - create a dummy gssd pipe
-+ * @root:	root of the rpc_pipefs filesystem
-+ * @pipe_data:	pipe data created when netns is initialized
+  * End of kprobes section
+  */
+@@ -1314,7 +1379,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault do_double_fault
++paranoiderrorentry double_fault __do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+@@ -1601,7 +1666,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return(%rip),%rcx
++	leaq irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+new file mode 100644
+index 0000000..8a64da3
+--- /dev/null
++++ b/arch/x86/kernel/espfix_64.c
+@@ -0,0 +1,208 @@
++/* ----------------------------------------------------------------------- *
 + *
-+ * Create a dummy set of directories and a pipe that gssd can hold open to
-+ * indicate that it is up and running.
++ *   Copyright 2014 Intel Corporation; author: H. Peter Anvin
++ *
++ *   This program is free software; you can redistribute it and/or modify it
++ *   under the terms and conditions of the GNU General Public License,
++ *   version 2, as published by the Free Software Foundation.
++ *
++ *   This program is distributed in the hope it will be useful, but WITHOUT
++ *   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ *   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ *   more details.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * The IRET instruction, when returning to a 16-bit segment, only
++ * restores the bottom 16 bits of the user space stack pointer.  This
++ * causes some 16-bit software to break, but it also leaks kernel state
++ * to user space.
++ *
++ * This works around this by creating percpu "ministacks", each of which
++ * is mapped 2^16 times 64K apart.  When we detect that the return SS is
++ * on the LDT, we copy the IRET frame to the ministack and use the
++ * relevant alias to return to userspace.  The ministacks are mapped
++ * readonly, so if the IRET fault we promote #GP to #DF which is an IST
++ * vector and thus has its own stack; we then do the fixup in the #DF
++ * handler.
++ *
++ * This file sets up the ministacks and the related page tables.  The
++ * actual ministack invocation is in entry_64.S.
 + */
-+static struct dentry *
-+rpc_gssd_dummy_populate(struct dentry *root, struct rpc_pipe *pipe_data)
++
++#include <linux/init.h>
++#include <linux/init_task.h>
++#include <linux/kernel.h>
++#include <linux/percpu.h>
++#include <linux/gfp.h>
++#include <linux/random.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/setup.h>
++
++/*
++ * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
++ * it up to a cache line to avoid unnecessary sharing.
++ */
++#define ESPFIX_STACK_SIZE	(8*8UL)
++#define ESPFIX_STACKS_PER_PAGE	(PAGE_SIZE/ESPFIX_STACK_SIZE)
++
++/* There is address space for how many espfix pages? */
++#define ESPFIX_PAGE_SPACE	(1UL << (PGDIR_SHIFT-PAGE_SHIFT-16))
++
++#define ESPFIX_MAX_CPUS		(ESPFIX_STACKS_PER_PAGE * ESPFIX_PAGE_SPACE)
++#if CONFIG_NR_CPUS > ESPFIX_MAX_CPUS
++# error "Need more than one PGD for the ESPFIX hack"
++#endif
++
++#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
++
++/* This contains the *bottom* address of the espfix stack */
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++/* Initialization mutex - should this be a spinlock? */
++static DEFINE_MUTEX(espfix_init_mutex);
++
++/* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
++#define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
++static void *espfix_pages[ESPFIX_MAX_PAGES];
++
++static __page_aligned_bss pud_t espfix_pud_page[PTRS_PER_PUD]
++	__aligned(PAGE_SIZE);
++
++static unsigned int page_random, slot_random;
++
++/*
++ * This returns the bottom address of the espfix stack for a specific CPU.
++ * The math allows for a non-power-of-two ESPFIX_STACK_SIZE, in which case
++ * we have to account for some amount of padding at the end of each page.
++ */
++static inline unsigned long espfix_base_addr(unsigned int cpu)
 +{
-+	int ret = 0;
-+	struct dentry *gssd_dentry;
-+	struct dentry *clnt_dentry = NULL;
-+	struct dentry *pipe_dentry = NULL;
-+	struct qstr q = QSTR_INIT(files[RPCAUTH_gssd].name,
-+				  strlen(files[RPCAUTH_gssd].name));
++	unsigned long page, slot;
++	unsigned long addr;
 +
-+	/* We should never get this far if "gssd" doesn't exist */
-+	gssd_dentry = d_hash_and_lookup(root, &q);
-+	if (!gssd_dentry)
-+		return ERR_PTR(-ENOENT);
-+
-+	ret = rpc_populate(gssd_dentry, gssd_dummy_clnt_dir, 0, 1, NULL);
-+	if (ret) {
-+		pipe_dentry = ERR_PTR(ret);
-+		goto out;
-+	}
-+
-+	q.name = gssd_dummy_clnt_dir[0].name;
-+	q.len = strlen(gssd_dummy_clnt_dir[0].name);
-+	clnt_dentry = d_hash_and_lookup(gssd_dentry, &q);
-+	if (!clnt_dentry) {
-+		pipe_dentry = ERR_PTR(-ENOENT);
-+		goto out;
-+	}
-+
-+	pipe_dentry = rpc_mkpipe_dentry(clnt_dentry, "gssd", NULL, pipe_data);
-+out:
-+	dput(clnt_dentry);
-+	dput(gssd_dentry);
-+	return pipe_dentry;
++	page = (cpu / ESPFIX_STACKS_PER_PAGE) ^ page_random;
++	slot = (cpu + slot_random) % ESPFIX_STACKS_PER_PAGE;
++	addr = (page << PAGE_SHIFT) + (slot * ESPFIX_STACK_SIZE);
++	addr = (addr & 0xffffUL) | ((addr & ~0xffffUL) << 16);
++	addr += ESPFIX_BASE_ADDR;
++	return addr;
 +}
 +
- static int
- rpc_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	struct inode *inode;
--	struct dentry *root;
-+	struct dentry *root, *gssd_dentry;
- 	struct net *net = data;
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	int err;
-@@ -1266,6 +1345,13 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 		return -ENOMEM;
- 	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
- 		return -ENOMEM;
++#define PTE_STRIDE        (65536/PAGE_SIZE)
++#define ESPFIX_PTE_CLONES (PTRS_PER_PTE/PTE_STRIDE)
++#define ESPFIX_PMD_CLONES PTRS_PER_PMD
++#define ESPFIX_PUD_CLONES (65536/(ESPFIX_PTE_CLONES*ESPFIX_PMD_CLONES))
 +
-+	gssd_dentry = rpc_gssd_dummy_populate(root, sn->gssd_dummy);
-+	if (IS_ERR(gssd_dentry)) {
-+		__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
-+		return PTR_ERR(gssd_dentry);
++#define PGTABLE_PROT	  ((_KERNPG_TABLE & ~_PAGE_RW) | _PAGE_NX)
++
++static void init_espfix_random(void)
++{
++	unsigned long rand;
++
++	/*
++	 * This is run before the entropy pools are initialized,
++	 * but this is hopefully better than nothing.
++	 */
++	if (!arch_get_random_long(&rand)) {
++		/* The constant is an arbitrary large prime */
++		rdtscll(rand);
++		rand *= 0xc345c6b72fd16123UL;
 +	}
 +
- 	dprintk("RPC:       sending pipefs MOUNT notification for net %p%s\n",
- 		net, NET_NAME(net));
- 	mutex_lock(&sn->pipefs_sb_lock);
-@@ -1280,6 +1366,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	return 0;
- 
- err_depopulate:
-+	dput(gssd_dentry);
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
- 					   sb);
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 3d6498a..cd30120 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -44,12 +44,17 @@ static __net_init int sunrpc_init_net(struct net *net)
- 	if (err)
- 		goto err_unixgid;
- 
--	rpc_pipefs_init_net(net);
-+	err = rpc_pipefs_init_net(net);
-+	if (err)
-+		goto err_pipefs;
++	slot_random = rand % ESPFIX_STACKS_PER_PAGE;
++	page_random = (rand / ESPFIX_STACKS_PER_PAGE)
++		& (ESPFIX_PAGE_SPACE - 1);
++}
 +
- 	INIT_LIST_HEAD(&sn->all_clients);
- 	spin_lock_init(&sn->rpc_client_lock);
- 	spin_lock_init(&sn->rpcb_clnt_lock);
- 	return 0;
++void __init init_espfix_bsp(void)
++{
++	pgd_t *pgd_p;
++	pteval_t ptemask;
++
++	ptemask = __supported_pte_mask;
++
++	/* Install the espfix pud into the kernel page directory */
++	pgd_p = &init_level4_pgt[pgd_index(ESPFIX_BASE_ADDR)];
++	pgd_populate(&init_mm, pgd_p, (pud_t *)espfix_pud_page);
++
++	/* Randomize the locations */
++	init_espfix_random();
++
++	/* The rest is the same as for any other processor */
++	init_espfix_ap();
++}
++
++void init_espfix_ap(void)
++{
++	unsigned int cpu, page;
++	unsigned long addr;
++	pud_t pud, *pud_p;
++	pmd_t pmd, *pmd_p;
++	pte_t pte, *pte_p;
++	int n;
++	void *stack_page;
++	pteval_t ptemask;
++
++	/* We only have to do this once... */
++	if (likely(this_cpu_read(espfix_stack)))
++		return;		/* Already initialized */
++
++	cpu = smp_processor_id();
++	addr = espfix_base_addr(cpu);
++	page = cpu/ESPFIX_STACKS_PER_PAGE;
++
++	/* Did another CPU already set this up? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (likely(stack_page))
++		goto done;
++
++	mutex_lock(&espfix_init_mutex);
++
++	/* Did we race on the lock? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (stack_page)
++		goto unlock_done;
++
++	ptemask = __supported_pte_mask;
++
++	pud_p = &espfix_pud_page[pud_index(addr)];
++	pud = *pud_p;
++	if (!pud_present(pud)) {
++		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
++		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
++			set_pud(&pud_p[n], pud);
++	}
++
++	pmd_p = pmd_offset(&pud, addr);
++	pmd = *pmd_p;
++	if (!pmd_present(pmd)) {
++		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
++		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
++			set_pmd(&pmd_p[n], pmd);
++	}
++
++	pte_p = pte_offset_kernel(&pmd, addr);
++	stack_page = (void *)__get_free_page(GFP_KERNEL);
++	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
++	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
++	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
++		set_pte(&pte_p[n*PTE_STRIDE], pte);
++
++	/* Job is done for this CPU and any CPU which shares this page */
++	ACCESS_ONCE(espfix_pages[page]) = stack_page;
++
++unlock_done:
++	mutex_unlock(&espfix_init_mutex);
++done:
++	this_cpu_write(espfix_stack, addr);
++	this_cpu_write(espfix_waddr, (unsigned long)stack_page
++		       + (addr & ~PAGE_MASK));
++}
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a..ebc9873 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,17 +229,6 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
  
-+err_pipefs:
-+	unix_gid_cache_destroy(net);
- err_unixgid:
- 	ip_map_cache_destroy(net);
- err_ipmap:
-@@ -60,6 +65,7 @@ err_proc:
+-	/*
+-	 * On x86-64 we do not support 16-bit segments due to
+-	 * IRET leaking the high bits of the kernel stack address.
+-	 */
+-#ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
+-		error = -EINVAL;
+-		goto out_unlock;
+-	}
+-#endif
+-
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 85dc05a..b5c176a 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -243,6 +243,13 @@ static void notrace start_secondary(void *unused)
+ 	check_tsc_sync_target();
  
- static __net_exit void sunrpc_exit_net(struct net *net)
+ 	/*
++	 * Enable the espfix hack for this CPU
++	 */
++#ifdef CONFIG_X86_64
++	init_espfix_ap();
++#endif
++
++	/*
+ 	 * We need to hold vector_lock so there the set of online cpus
+ 	 * does not change while we are assigning vectors to cpus.  Holding
+ 	 * this lock ensures we don't half assign or remove an irq from a cpu.
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 0002a3a..8f556f7 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -30,11 +30,13 @@ struct pg_state {
+ 	unsigned long start_address;
+ 	unsigned long current_address;
+ 	const struct addr_marker *marker;
++	unsigned long lines;
+ };
+ 
+ struct addr_marker {
+ 	unsigned long start_address;
+ 	const char *name;
++	unsigned long max_lines;
+ };
+ 
+ /* indices for address_markers; keep sync'd w/ address_markers below */
+@@ -45,6 +47,7 @@ enum address_markers_idx {
+ 	LOW_KERNEL_NR,
+ 	VMALLOC_START_NR,
+ 	VMEMMAP_START_NR,
++	ESPFIX_START_NR,
+ 	HIGH_KERNEL_NR,
+ 	MODULES_VADDR_NR,
+ 	MODULES_END_NR,
+@@ -67,6 +70,7 @@ static struct addr_marker address_markers[] = {
+ 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
+ 	{ VMALLOC_START,        "vmalloc() Area" },
+ 	{ VMEMMAP_START,        "Vmemmap" },
++	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
+ 	{ __START_KERNEL_map,   "High Kernel Mapping" },
+ 	{ MODULES_VADDR,        "Modules" },
+ 	{ MODULES_END,          "End Modules" },
+@@ -163,7 +167,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		      pgprot_t new_prot, int level)
  {
-+	rpc_pipefs_exit_net(net);
- 	unix_gid_cache_destroy(net);
- 	ip_map_cache_destroy(net);
- 	rpc_proc_exit(net);
+ 	pgprotval_t prot, cur;
+-	static const char units[] = "KMGTPE";
++	static const char units[] = "BKMGTPE";
+ 
+ 	/*
+ 	 * If we have a "break" in the series, we need to flush the state that
+@@ -178,6 +182,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
++		st->lines = 0;
+ 		seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+ 		   st->current_address >= st->marker[1].start_address) {
+@@ -188,17 +193,21 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		seq_printf(m, "0x%0*lx-0x%0*lx   ",
+-			   width, st->start_address,
+-			   width, st->current_address);
+-
+-		delta = (st->current_address - st->start_address) >> 10;
+-		while (!(delta & 1023) && unit[1]) {
+-			delta >>= 10;
+-			unit++;
++		if (!st->marker->max_lines ||
++		    st->lines < st->marker->max_lines) {
++			seq_printf(m, "0x%0*lx-0x%0*lx   ",
++				   width, st->start_address,
++				   width, st->current_address);
++
++			delta = st->current_address - st->start_address;
++			while (!(delta & 1023) && unit[1]) {
++				delta >>= 10;
++				unit++;
++			}
++			seq_printf(m, "%9lu%c ", delta, *unit);
++			printk_prot(m, st->current_prot, st->level);
+ 		}
+-		seq_printf(m, "%9lu%c ", delta, *unit);
+-		printk_prot(m, st->current_prot, st->level);
++		st->lines++;
+ 
+ 		/*
+ 		 * We print markers for special areas of address space,
+@@ -206,7 +215,16 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		 * This helps in the interpretation.
+ 		 */
+ 		if (st->current_address >= st->marker[1].start_address) {
++			if (st->marker->max_lines &&
++			    st->lines > st->marker->max_lines) {
++				unsigned long nskip =
++					st->lines - st->marker->max_lines;
++				seq_printf(m, "... %lu entr%s skipped ... \n",
++					   nskip,
++					   nskip == 1 ? "y" : "ies");
++			}
+ 			st->marker++;
++			st->lines = 0;
+ 			seq_printf(m, "---[ %s ]---\n", st->marker->name);
+ 		}
+ 
+diff --git a/init/main.c b/init/main.c
+index febc511..da5d829 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -619,6 +619,10 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
++#ifdef CONFIG_X86_64
++	/* Should be run before the first non-init thread is created */
++	init_espfix_bsp();
++#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
 -- 
 1.9.1
 
