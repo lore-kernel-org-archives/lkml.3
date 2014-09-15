@@ -1,115 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800AbaIOVrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:47:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24132 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754380AbaIOVrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:47:33 -0400
-Message-ID: <54175E4F.2030200@redhat.com>
-Date: Mon, 15 Sep 2014 23:46:55 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932112AbaIOVry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:47:54 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35095 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756805AbaIOVru (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 17:47:50 -0400
+Message-ID: <54175E87.2070509@linaro.org>
+Date: Mon, 15 Sep 2014 22:47:51 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zi Shen Lim <zlim.lnx@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Subject: Re: [PATCH arm64-next v3] net: bpf: arm64: address randomize and
- write protect JIT code
-References: <1410812423-11818-1-git-send-email-dborkman@redhat.com> <20140915213004.GA31150@arm.com>
-In-Reply-To: <20140915213004.GA31150@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH v8 6/9] arm: netx: Migrate DEBUG_LL macros to shared directory
+References: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-7-git-send-email-daniel.thompson@linaro.org> <1410798874.31130.57.camel@x220>
+In-Reply-To: <1410798874.31130.57.camel@x220>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 11:30 PM, Will Deacon wrote:
-> Hi Daniel,
->
-> One small comment than I forgot to mention before (see below).
->
-> On Mon, Sep 15, 2014 at 09:20:23PM +0100, Daniel Borkmann wrote:
->> This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
->> jit against spraying attacks").
+On 15/09/14 17:34, Paul Bolle wrote:
+> On Tue, 2014-08-19 at 15:48 +0100, Daniel Thompson wrote:
+>> As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
+>> which default to UART1 but allow a user to configure UART2 or UART3.
+>> We also introduce symbolic names for the registers and flags.
 >>
->> Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
->> support") which added necessary infrastructure, we can now implement
->> RO marking of eBPF generated JIT image pages and randomize start offset
->> for the JIT code, so that it does not reside directly on a page boundary
->> anymore. Likewise, the holes are filled with illegal instructions: here
->> we use BRK #0x100 (opcode 0xd4202000) to trigger a fault in the kernel
->> (unallocated BRKs would trigger a fault through do_debug_exception). This
->> seems more reliable as we don't have a guaranteed undefined instruction
->> space on ARM64.
->>
->> This is basically the ARM64 variant of what we already have in ARM via
->> commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
->> JIT code"). Moreover, this commit also presents a merge resolution due to
->> conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
->> read-only") as we don't use kfree() in bpf_jit_free() anymore to release
->> the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
->> a different allocator.
->>
->> JIT tested on aarch64 with BPF test suite.
->>
->> Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: David S. Miller <davem@davemloft.net>
->> Cc: Alexei Starovoitov <ast@plumgrid.com>
->> ---
->>   v2->v3:
->>    - Use cpu_to_le32() as suggested by Zi/Will
->>   v1->v2:
->>    - Use brk insn as suggested by Catalin
->>   Note:
->>    - This patch depends on net-next being merged to mainline due
->>      to the mentioned merge conflict.
->>
->>   arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
->>   1 file changed, 29 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
->> index 7ae3354..4b71779 100644
->> --- a/arch/arm64/net/bpf_jit_comp.c
->> +++ b/arch/arm64/net/bpf_jit_comp.c
->> @@ -19,7 +19,6 @@
->>   #define pr_fmt(fmt) "bpf_jit: " fmt
->>
->>   #include <linux/filter.h>
->> -#include <linux/moduleloader.h>
->>   #include <linux/printk.h>
->>   #include <linux/skbuff.h>
->>   #include <linux/slab.h>
->> @@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
->>   	return to - from;
->>   }
->>
->> +static void jit_fill_hole(void *area, unsigned int size)
->> +{
->> +	/* We use brk #0x100 to trigger a fault. */
->> +	u32 *ptr;
->> +	/* We are guaranteed to have aligned memory. */
->> +	for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
->> +		*ptr++ = cpu_to_le32(0xd4202000);
->> +}
->
-> Please can you use the existing macros in debug-monitors.h for constructing
-> this value? We have AARCH64_BREAK_MON to get the BRK encoding, then you can
-> add an immediate to that file to reserve something for bpf. That way, we
-> make sure that other parts of the kernel don't accidentally repurpose your
-> fault code.
+>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
+>> Cc: linux-arm-kernel@lists.infradead.org
+> 
+> This patch landed in today's linux-next, as 880fa9b6fd73 ("ARM: 8144/1:
+> netx: Migrate DEBUG_LL macros to shared directory").
+> 
+>> [...]
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -447,6 +447,14 @@ choice
+>>  		  Say Y here if you want kernel low-level debugging support
+>>  		  on Vybrid based platforms.
+>>  
+>> +	config DEBUG_NETX_UART
+>> +		bool "Kernel low-level debugging messages via NetX UART"
+>> +		depends on ARCH_NETX
+>> +		select DEBUG_UART_NETX
+> 
+> There's no Kconfig symbol DEBUG_UART_NETX in next-20140915. So in
+> linux-next this is currently a nop. Is this symbol queued somewhere?
 
-Okay, no problem, I'll do that and respin tomorrow.
+No. The symbol isn't queued anywhere.
 
-Thanks,
+DEBUG_UART_NETX is a config value that existed transiently when I wrote
+the patch and I didn't clean it up properly. I suspect its visual
+similarity to DEBUG_NETX_UART means it didn't jump out when I self reviewed.
 
-Daniel
+Thanks for raising this. I will share a patch to remove this.
+
+
