@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647AbaIOTwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:52:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
+	id S1756657AbaIOTw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:52:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756339AbaIOTrZ (ORCPT
+	with ESMTP id S1756334AbaIOTrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:25 -0400
+	Mon, 15 Sep 2014 15:47:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.10 62/71] CIFS: Fix wrong directory attributes after rename
-Date: Mon, 15 Sep 2014 12:27:00 -0700
-Message-Id: <20140915192640.765802025@linuxfoundation.org>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.10 40/71] mnt: Only change user settable mount flags in remount
+Date: Mon, 15 Sep 2014 12:26:38 -0700
+Message-Id: <20140915192640.031763304@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,37 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit b46799a8f28c43c5264ac8d8ffa28b311b557e03 upstream.
+commit a6138db815df5ee542d848318e5dae681590fccd upstream.
 
-When we requests rename we also need to update attributes
-of both source and target parent directories. Not doing it
-causes generic/309 xfstest to fail on SMB2 mounts. Fix this
-by marking these directories for force revalidating.
+Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
+read-only bind mount read-only in a user namespace the
+MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
+to the remount a read-only mount read-write.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Correct this by replacing the mask of mount flags to preserve
+with a mask of mount flags that may be changed, and preserve
+all others.   This ensures that any future bugs with this mask and
+remount will fail in an easy to detect way where new mount flags
+simply won't change.
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/inode.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/namespace.c        |    2 +-
+ include/linux/mount.h |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -1647,6 +1647,12 @@ unlink_target:
- 				    target_dentry, to_name);
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1805,7 +1805,7 @@ static int do_remount(struct path *path,
+ 		err = do_remount_sb(sb, flags, data, 0);
+ 	if (!err) {
+ 		br_write_lock(&vfsmount_lock);
+-		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
++		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
+ 		mnt->mnt.mnt_flags = mnt_flags;
+ 		br_write_unlock(&vfsmount_lock);
  	}
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -42,7 +42,9 @@ struct mnt_namespace;
+  * flag, consider how it interacts with shared mounts.
+  */
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+-#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
++#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
++				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
++				 | MNT_READONLY)
  
-+	/* force revalidate to go get info when needed */
-+	CIFS_I(source_dir)->time = CIFS_I(target_dir)->time = 0;
-+
-+	source_dir->i_ctime = source_dir->i_mtime = target_dir->i_ctime =
-+		target_dir->i_mtime = current_fs_time(source_dir->i_sb);
-+
- cifs_rename_exit:
- 	kfree(info_buf_source);
- 	kfree(from_name);
+ 
+ #define MNT_INTERNAL	0x4000
 
 
