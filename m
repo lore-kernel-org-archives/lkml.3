@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154AbaIOUkL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:40:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55096 "EHLO
+	id S1758141AbaIOUkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:40:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55145 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755586AbaIOTgw (ORCPT
+	with ESMTP id S1755592AbaIOTgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [PATCH 3.16 158/158] KEYS: Fix termination condition in assoc array garbage collection
-Date: Mon, 15 Sep 2014 12:26:37 -0700
-Message-Id: <20140915192547.618951610@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>
+Subject: [PATCH 3.16 139/158] libceph: add process_one_ticket() helper
+Date: Mon, 15 Sep 2014 12:26:18 -0700
+Message-Id: <20140915192547.042422533@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,108 +28,278 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 95389b08d93d5c06ec63ab49bd732b0069b7c35e upstream.
+commit 597cda357716a3cf8d994cb11927af917c8d71fa upstream.
 
-This fixes CVE-2014-3631.
+Add a helper for processing individual cephx auth tickets.  Needed for
+the next commit, which deals with allocating ticket buffers.  (Most of
+the diff here is whitespace - view with git diff -b).
 
-It is possible for an associative array to end up with a shortcut node at the
-root of the tree if there are more than fan-out leaves in the tree, but they
-all crowd into the same slot in the lowest level (ie. they all have the same
-first nibble of their index keys).
-
-When assoc_array_gc() returns back up the tree after scanning some leaves, it
-can fall off of the root and crash because it assumes that the back pointer
-from a shortcut (after label ascend_old_tree) must point to a normal node -
-which isn't true of a shortcut node at the root.
-
-Should we find we're ascending rootwards over a shortcut, we should check to
-see if the backpointer is zero - and if it is, we have completed the scan.
-
-This particular bug cannot occur if the root node is not a shortcut - ie. if
-you have fewer than 17 keys in a keyring or if you have at least two keys that
-sit into separate slots (eg. a keyring and a non keyring).
-
-This can be reproduced by:
-
-	ring=`keyctl newring bar @s`
-	for ((i=1; i<=18; i++)); do last_key=`keyctl newring foo$i $ring`; done
-	keyctl timeout $last_key 2
-
-Doing this:
-
-	echo 3 >/proc/sys/kernel/keys/gc_delay
-
-first will speed things up.
-
-If we do fall off of the top of the tree, we get the following oops:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-IP: [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-PGD dae15067 PUD cfc24067 PMD 0
-Oops: 0000 [#1] SMP
-Modules linked in: xt_nat xt_mark nf_conntrack_netbios_ns nf_conntrack_broadcast ip6t_rpfilter ip6t_REJECT xt_conntrack ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables ip6table_ni
-CPU: 0 PID: 26011 Comm: kworker/0:1 Not tainted 3.14.9-200.fc20.x86_64 #1
-Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-Workqueue: events key_garbage_collector
-task: ffff8800918bd580 ti: ffff8800aac14000 task.ti: ffff8800aac14000
-RIP: 0010:[<ffffffff8136cea7>] [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
-RSP: 0018:ffff8800aac15d40  EFLAGS: 00010206
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff8800aaecacc0
-RDX: ffff8800daecf440 RSI: 0000000000000001 RDI: ffff8800aadc2bc0
-RBP: ffff8800aac15da8 R08: 0000000000000001 R09: 0000000000000003
-R10: ffffffff8136ccc7 R11: 0000000000000000 R12: 0000000000000000
-R13: 0000000000000000 R14: 0000000000000070 R15: 0000000000000001
-FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000018 CR3: 00000000db10d000 CR4: 00000000000006f0
-Stack:
- ffff8800aac15d50 0000000000000011 ffff8800aac15db8 ffffffff812e2a70
- ffff880091a00600 0000000000000000 ffff8800aadc2bc3 00000000cd42c987
- ffff88003702df20 ffff88003702dfa0 0000000053b65c09 ffff8800aac15fd8
-Call Trace:
- [<ffffffff812e2a70>] ? keyring_detect_cycle_iterator+0x30/0x30
- [<ffffffff812e3e75>] keyring_gc+0x75/0x80
- [<ffffffff812e1424>] key_garbage_collector+0x154/0x3c0
- [<ffffffff810a67b6>] process_one_work+0x176/0x430
- [<ffffffff810a744b>] worker_thread+0x11b/0x3a0
- [<ffffffff810a7330>] ? rescuer_thread+0x3b0/0x3b0
- [<ffffffff810ae1a8>] kthread+0xd8/0xf0
- [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
- [<ffffffff816ffb7c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810ae0d0>] ? insert_kthread_work+0x40/0x40
-Code: 08 4c 8b 22 0f 84 bf 00 00 00 41 83 c7 01 49 83 e4 fc 41 83 ff 0f 4c 89 65 c0 0f 8f 5a fe ff ff 48 8b 45 c0 4d 63 cf 49 83 c1 02 <4e> 8b 34 c8 4d 85 f6 0f 84 be 00 00 00 41 f6 c6 01 0f 84 92
-RIP  [<ffffffff8136cea7>] assoc_array_gc+0x2f7/0x540
- RSP <ffff8800aac15d40>
-CR2: 0000000000000018
----[ end trace 1129028a088c0cbd ]---
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/assoc_array.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ceph/auth_x.c |  228 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 124 insertions(+), 104 deletions(-)
 
---- a/lib/assoc_array.c
-+++ b/lib/assoc_array.c
-@@ -1723,11 +1723,13 @@ ascend_old_tree:
- 		shortcut = assoc_array_ptr_to_shortcut(ptr);
- 		slot = shortcut->parent_slot;
- 		cursor = shortcut->back_pointer;
-+		if (!cursor)
-+			goto gc_complete;
- 	} else {
- 		slot = node->parent_slot;
- 		cursor = ptr;
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -129,17 +129,131 @@ static void remove_ticket_handler(struct
+ 	kfree(th);
+ }
+ 
++static int process_one_ticket(struct ceph_auth_client *ac,
++			      struct ceph_crypto_key *secret,
++			      void **p, void *end,
++			      void *dbuf, void *ticket_buf)
++{
++	struct ceph_x_info *xi = ac->private;
++	int type;
++	u8 tkt_struct_v, blob_struct_v;
++	struct ceph_x_ticket_handler *th;
++	void *dp, *dend;
++	int dlen;
++	char is_enc;
++	struct timespec validity;
++	struct ceph_crypto_key old_key;
++	void *tp, *tpend;
++	struct ceph_timespec new_validity;
++	struct ceph_crypto_key new_session_key;
++	struct ceph_buffer *new_ticket_blob;
++	unsigned long new_expires, new_renew_after;
++	u64 new_secret_id;
++	int ret;
++
++	ceph_decode_need(p, end, sizeof(u32) + 1, bad);
++
++	type = ceph_decode_32(p);
++	dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
++
++	tkt_struct_v = ceph_decode_8(p);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	th = get_ticket_handler(ac, type);
++	if (IS_ERR(th)) {
++		ret = PTR_ERR(th);
++		goto out;
++	}
++
++	/* blob for me */
++	dlen = ceph_x_decrypt(secret, p, end, dbuf,
++			      TEMP_TICKET_BUF_LEN);
++	if (dlen <= 0) {
++		ret = dlen;
++		goto out;
++	}
++	dout(" decrypted %d bytes\n", dlen);
++	dp = dbuf;
++	dend = dp + dlen;
++
++	tkt_struct_v = ceph_decode_8(&dp);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	memcpy(&old_key, &th->session_key, sizeof(old_key));
++	ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
++	if (ret)
++		goto out;
++
++	ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
++	ceph_decode_timespec(&validity, &new_validity);
++	new_expires = get_seconds() + validity.tv_sec;
++	new_renew_after = new_expires - (validity.tv_sec / 4);
++	dout(" expires=%lu renew_after=%lu\n", new_expires,
++	     new_renew_after);
++
++	/* ticket blob for service */
++	ceph_decode_8_safe(p, end, is_enc, bad);
++	tp = ticket_buf;
++	if (is_enc) {
++		/* encrypted */
++		dout(" encrypted ticket\n");
++		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
++				      TEMP_TICKET_BUF_LEN);
++		if (dlen < 0) {
++			ret = dlen;
++			goto out;
++		}
++		dlen = ceph_decode_32(&tp);
++	} else {
++		/* unencrypted */
++		ceph_decode_32_safe(p, end, dlen, bad);
++		ceph_decode_need(p, end, dlen, bad);
++		ceph_decode_copy(p, ticket_buf, dlen);
++	}
++	tpend = tp + dlen;
++	dout(" ticket blob is %d bytes\n", dlen);
++	ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
++	blob_struct_v = ceph_decode_8(&tp);
++	new_secret_id = ceph_decode_64(&tp);
++	ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	if (ret)
++		goto out;
++
++	/* all is well, update our ticket */
++	ceph_crypto_key_destroy(&th->session_key);
++	if (th->ticket_blob)
++		ceph_buffer_put(th->ticket_blob);
++	th->session_key = new_session_key;
++	th->ticket_blob = new_ticket_blob;
++	th->validity = new_validity;
++	th->secret_id = new_secret_id;
++	th->expires = new_expires;
++	th->renew_after = new_renew_after;
++	dout(" got ticket service %d (%s) secret_id %lld len %d\n",
++	     type, ceph_entity_type_name(type), th->secret_id,
++	     (int)th->ticket_blob->vec.iov_len);
++	xi->have_keys |= th->service;
++
++out:
++	return ret;
++
++bad:
++	ret = -EINVAL;
++	goto out;
++}
++
+ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    struct ceph_crypto_key *secret,
+ 				    void *buf, void *end)
+ {
+-	struct ceph_x_info *xi = ac->private;
+-	int num;
+ 	void *p = buf;
+-	int ret;
+ 	char *dbuf;
+ 	char *ticket_buf;
+ 	u8 reply_struct_v;
++	u32 num;
++	int ret;
+ 
+ 	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+ 	if (!dbuf)
+@@ -150,112 +264,18 @@ static int ceph_x_proc_ticket_reply(stru
+ 	if (!ticket_buf)
+ 		goto out_dbuf;
+ 
+-	ceph_decode_need(&p, end, 1 + sizeof(u32), bad);
+-	reply_struct_v = ceph_decode_8(&p);
++	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+-		goto bad;
+-	num = ceph_decode_32(&p);
+-	dout("%d tickets\n", num);
+-	while (num--) {
+-		int type;
+-		u8 tkt_struct_v, blob_struct_v;
+-		struct ceph_x_ticket_handler *th;
+-		void *dp, *dend;
+-		int dlen;
+-		char is_enc;
+-		struct timespec validity;
+-		struct ceph_crypto_key old_key;
+-		void *tp, *tpend;
+-		struct ceph_timespec new_validity;
+-		struct ceph_crypto_key new_session_key;
+-		struct ceph_buffer *new_ticket_blob;
+-		unsigned long new_expires, new_renew_after;
+-		u64 new_secret_id;
+-
+-		ceph_decode_need(&p, end, sizeof(u32) + 1, bad);
+-
+-		type = ceph_decode_32(&p);
+-		dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
+-
+-		tkt_struct_v = ceph_decode_8(&p);
+-		if (tkt_struct_v != 1)
+-			goto bad;
+-
+-		th = get_ticket_handler(ac, type);
+-		if (IS_ERR(th)) {
+-			ret = PTR_ERR(th);
+-			goto out;
+-		}
+-
+-		/* blob for me */
+-		dlen = ceph_x_decrypt(secret, &p, end, dbuf,
+-				      TEMP_TICKET_BUF_LEN);
+-		if (dlen <= 0) {
+-			ret = dlen;
+-			goto out;
+-		}
+-		dout(" decrypted %d bytes\n", dlen);
+-		dend = dbuf + dlen;
+-		dp = dbuf;
+-
+-		tkt_struct_v = ceph_decode_8(&dp);
+-		if (tkt_struct_v != 1)
+-			goto bad;
++		return -EINVAL;
+ 
+-		memcpy(&old_key, &th->session_key, sizeof(old_key));
+-		ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
+-		if (ret)
+-			goto out;
++	ceph_decode_32_safe(&p, end, num, bad);
++	dout("%d tickets\n", num);
+ 
+-		ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
+-		ceph_decode_timespec(&validity, &new_validity);
+-		new_expires = get_seconds() + validity.tv_sec;
+-		new_renew_after = new_expires - (validity.tv_sec / 4);
+-		dout(" expires=%lu renew_after=%lu\n", new_expires,
+-		     new_renew_after);
+-
+-		/* ticket blob for service */
+-		ceph_decode_8_safe(&p, end, is_enc, bad);
+-		tp = ticket_buf;
+-		if (is_enc) {
+-			/* encrypted */
+-			dout(" encrypted ticket\n");
+-			dlen = ceph_x_decrypt(&old_key, &p, end, ticket_buf,
+-					      TEMP_TICKET_BUF_LEN);
+-			if (dlen < 0) {
+-				ret = dlen;
+-				goto out;
+-			}
+-			dlen = ceph_decode_32(&tp);
+-		} else {
+-			/* unencrypted */
+-			ceph_decode_32_safe(&p, end, dlen, bad);
+-			ceph_decode_need(&p, end, dlen, bad);
+-			ceph_decode_copy(&p, ticket_buf, dlen);
+-		}
+-		tpend = tp + dlen;
+-		dout(" ticket blob is %d bytes\n", dlen);
+-		ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
+-		blob_struct_v = ceph_decode_8(&tp);
+-		new_secret_id = ceph_decode_64(&tp);
+-		ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	while (num--) {
++		ret = process_one_ticket(ac, secret, &p, end,
++					 dbuf, ticket_buf);
+ 		if (ret)
+ 			goto out;
+-
+-		/* all is well, update our ticket */
+-		ceph_crypto_key_destroy(&th->session_key);
+-		if (th->ticket_blob)
+-			ceph_buffer_put(th->ticket_blob);
+-		th->session_key = new_session_key;
+-		th->ticket_blob = new_ticket_blob;
+-		th->validity = new_validity;
+-		th->secret_id = new_secret_id;
+-		th->expires = new_expires;
+-		th->renew_after = new_renew_after;
+-		dout(" got ticket service %d (%s) secret_id %lld len %d\n",
+-		     type, ceph_entity_type_name(type), th->secret_id,
+-		     (int)th->ticket_blob->vec.iov_len);
+-		xi->have_keys |= th->service;
  	}
--	BUG_ON(!ptr);
-+	BUG_ON(!cursor);
- 	node = assoc_array_ptr_to_node(cursor);
- 	slot++;
- 	goto continue_node;
+ 
+ 	ret = 0;
 
 
