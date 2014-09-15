@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084AbaIOUgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:36:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55114 "EHLO
+	id S1758070AbaIOUge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:36:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624AbaIOTgz (ORCPT
+	with ESMTP id S1755629AbaIOTg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:55 -0400
+	Mon, 15 Sep 2014 15:36:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 010/114] spi: omap2-mcspi: Configure hardware when slave driver changes mode
-Date: Mon, 15 Sep 2014 12:25:10 -0700
-Message-Id: <20140915192641.750071602@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.14 013/114] firmware: Do not use WARN_ON(!spin_is_locked())
+Date: Mon, 15 Sep 2014 12:25:13 -0700
+Message-Id: <20140915192641.840505724@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,79 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mark A. Greer" <mgreer@animalcreek.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 97ca0d6cc118716840ea443e010cb3d5f2d25eaf upstream.
+commit aee530cfecf4f3ec83b78406bac618cec35853f8 upstream.
 
-Commit id 2bd16e3e23d9df41592c6b257c59b6860a9cc3ea
-(spi: omap2-mcspi: Do not configure the controller
-on each transfer unless needed) does its job too
-well so omap2_mcspi_setup_transfer() isn't called
-even when an SPI slave driver changes 'spi->mode'.
-The result is that the mode requested by the SPI
-slave driver never takes effect.
+spin_is_locked() always returns false for uniprocessor configurations
+in several architectures, so do not use WARN_ON with it.
+Use lockdep_assert_held() instead to also reduce overhead in
+non-debug kernels.
 
-Fix this by adding the 'mode' member to the
-omap2_mcspi_cs structure which holds the mode
-value that the hardware is configured for.
-When the SPI slave driver changes 'spi->mode'
-it will be different than the value of this new
-member and the SPI master driver will know that
-the hardware must be reconfigured (by calling
-omap2_mcspi_setup_transfer()).
-
-Fixes: 2bd16e3e23 (spi: omap2-mcspi: Do not configure the controller on each transfer unless needed)
-Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-omap2-mcspi.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/firmware/efi/vars.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -147,6 +147,7 @@ struct omap2_mcspi_cs {
- 	void __iomem		*base;
- 	unsigned long		phys;
- 	int			word_len;
-+	u16			mode;
- 	struct list_head	node;
- 	/* Context save and restore shadow register */
- 	u32			chconf0;
-@@ -899,6 +900,8 @@ static int omap2_mcspi_setup_transfer(st
+--- a/drivers/firmware/efi/vars.c
++++ b/drivers/firmware/efi/vars.c
+@@ -481,7 +481,7 @@ EXPORT_SYMBOL_GPL(efivar_entry_remove);
+  */
+ static void efivar_entry_list_del_unlock(struct efivar_entry *entry)
+ {
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
  
- 	mcspi_write_chconf0(spi, l);
+ 	list_del(&entry->list);
+ 	spin_unlock_irq(&__efivars->lock);
+@@ -507,7 +507,7 @@ int __efivar_entry_delete(struct efivar_
+ 	const struct efivar_operations *ops = __efivars->ops;
+ 	efi_status_t status;
  
-+	cs->mode = spi->mode;
-+
- 	dev_dbg(&spi->dev, "setup: speed %d, sample %s edge, clk %s\n",
- 			OMAP2_MCSPI_MAX_FREQ >> div,
- 			(spi->mode & SPI_CPHA) ? "trailing" : "leading",
-@@ -971,6 +974,7 @@ static int omap2_mcspi_setup(struct spi_
- 			return -ENOMEM;
- 		cs->base = mcspi->base + spi->chip_select * 0x14;
- 		cs->phys = mcspi->phys + spi->chip_select * 0x14;
-+		cs->mode = 0;
- 		cs->chconf0 = 0;
- 		spi->controller_state = cs;
- 		/* Link this to context save list */
-@@ -1051,6 +1055,16 @@ static void omap2_mcspi_work(struct omap
- 	cs = spi->controller_state;
- 	cd = spi->controller_data;
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
  
-+	/*
-+	 * The slave driver could have changed spi->mode in which case
-+	 * it will be different from cs->mode (the current hardware setup).
-+	 * If so, set par_override (even though its not a parity issue) so
-+	 * omap2_mcspi_setup_transfer will be called to configure the hardware
-+	 * with the correct mode on the first iteration of the loop below.
-+	 */
-+	if (spi->mode != cs->mode)
-+		par_override = 1;
-+
- 	omap2_mcspi_set_enable(spi, 0);
- 	list_for_each_entry(t, &m->transfers, transfer_list) {
- 		if (t->tx_buf == NULL && t->rx_buf == NULL && t->len) {
+ 	status = ops->set_variable(entry->var.VariableName,
+ 				   &entry->var.VendorGuid,
+@@ -667,7 +667,7 @@ struct efivar_entry *efivar_entry_find(e
+ 	int strsize1, strsize2;
+ 	bool found = false;
+ 
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	list_for_each_entry_safe(entry, n, head, list) {
+ 		strsize1 = ucs2_strsize(name, 1024);
+@@ -739,7 +739,7 @@ int __efivar_entry_get(struct efivar_ent
+ 	const struct efivar_operations *ops = __efivars->ops;
+ 	efi_status_t status;
+ 
+-	WARN_ON(!spin_is_locked(&__efivars->lock));
++	lockdep_assert_held(&__efivars->lock);
+ 
+ 	status = ops->get_variable(entry->var.VariableName,
+ 				   &entry->var.VendorGuid,
 
 
