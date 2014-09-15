@@ -1,186 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaIOC5B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:57:01 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:43118 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaIOC46 (ORCPT
+	id S1753385AbaIOC5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:57:45 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:59460 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273AbaIOC5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:56:58 -0400
-Subject: Re: [PATCH v4 1/2] arcmsr: simplify ioctl data read/write
-From: Ching Huang <ching2048@areca.com.tw>
-To: Tomas Henzl <thenzl@redhat.com>
-Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
-        agordeev@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <5412F680.2070702@redhat.com>
-References: <1410506960.5045.250.camel@Centos6.3-64>
-	 <5412F680.2070702@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Sep 2014 10:56:48 +0800
-Message-ID: <1410749808.4764.5.camel@Centos6.3-64>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Sep 2014 22:57:43 -0400
+Date: Mon, 15 Sep 2014 10:57:29 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-gpio@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Lejun Zhu <lejun.zhu@intel.com>,
+        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
+        Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
+        linux-acpi@vger.kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH 0/2] Support CrystalCove PMIC ACPI operation region
+Message-ID: <20140915025727.GA14730@aaronlu.sh.intel.com>
+References: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 15:34 +0200, Tomas Henzl wrote:
-> On 09/12/2014 09:29 AM, Ching Huang wrote:
-> > From: Ching Huang <ching2048@areca.com.tw>
-> >
-> > This patch is to modify previous patch 13/17 and it is relative to
-> > http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
-> >
-> > change in v4:
-> > 1. for readability, rename firstindex to getIndex, rename lastindex to putIndex
-> For some reason, the names head+tail areusual for a circular buffer.
-> But let us ignore the names, I don't care.
-> > 2. define ARCMSR_API_DATA_BUFLEN as 1032
-> > 3. simplify ioctl data read by macro CIRC_CNT_TO_END and CIRC_CNT
-> It's definitely better when you post renames and other non-functional changes in separate
-> patches, it's easier for the reviewer. 
-> >
-> > Signed-off-by: Ching Huang <ching2048@areca.com.tw>
-> > ---
-> >
-> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
-> > --- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-08-21 12:14:27.000000000 +0800
-> > +++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-09-12 15:18:46.659125000 +0800
-> > @@ -50,6 +50,7 @@
-> >  #include <linux/errno.h>
-> >  #include <linux/delay.h>
-> >  #include <linux/pci.h>
-> > +#include <linux/circ_buf.h>
-> >  
-> >  #include <scsi/scsi_cmnd.h>
-> >  #include <scsi/scsi_device.h>
-> > @@ -68,7 +69,7 @@ static ssize_t arcmsr_sysfs_iop_message_
-> >  	struct device *dev = container_of(kobj,struct device,kobj);
-> >  	struct Scsi_Host *host = class_to_shost(dev);
-> >  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
-> > -	uint8_t *pQbuffer,*ptmpQbuffer;
-> > +	uint8_t *ptmpQbuffer;
-> >  	int32_t allxfer_len = 0;
-> >  	unsigned long flags;
-> >  
-> > @@ -78,57 +79,22 @@ static ssize_t arcmsr_sysfs_iop_message_
-> >  	/* do message unit read. */
-> >  	ptmpQbuffer = (uint8_t *)buf;
-> >  	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
-> > -	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
-> > -		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
-> > -		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
-> > -			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
-> > -				memcpy(ptmpQbuffer, pQbuffer, 1032);
-> > -				acb->rqbuf_firstindex += 1032;
-> > -				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
-> > -				allxfer_len = 1032;
-> > -			} else {
-> > -				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
-> > -					+ acb->rqbuf_lastindex) > 1032) {
-> > -					memcpy(ptmpQbuffer, pQbuffer,
-> > -						ARCMSR_MAX_QBUFFER
-> > -						- acb->rqbuf_firstindex);
-> > -					ptmpQbuffer += ARCMSR_MAX_QBUFFER
-> > -						- acb->rqbuf_firstindex;
-> > -					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
-> > -						- (ARCMSR_MAX_QBUFFER -
-> > -						acb->rqbuf_firstindex));
-> > -					acb->rqbuf_firstindex = 1032 -
-> > -						(ARCMSR_MAX_QBUFFER -
-> > -						acb->rqbuf_firstindex);
-> > -					allxfer_len = 1032;
-> > -				} else {
-> > -					memcpy(ptmpQbuffer, pQbuffer,
-> > -						ARCMSR_MAX_QBUFFER -
-> > -						acb->rqbuf_firstindex);
-> > -					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
-> > -						acb->rqbuf_firstindex;
-> > -					memcpy(ptmpQbuffer, acb->rqbuffer,
-> > -						acb->rqbuf_lastindex);
-> > -					allxfer_len = ARCMSR_MAX_QBUFFER -
-> > -						acb->rqbuf_firstindex +
-> > -						acb->rqbuf_lastindex;
-> > -					acb->rqbuf_firstindex =
-> > -						acb->rqbuf_lastindex;
-> > -				}
-> > -			}
-> > -		} else {
-> > -			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
-> > -				memcpy(ptmpQbuffer, pQbuffer, 1032);
-> > -				acb->rqbuf_firstindex += 1032;
-> > -				allxfer_len = 1032;
-> > -			} else {
-> > -				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
-> > -					- acb->rqbuf_firstindex);
-> > -				allxfer_len = acb->rqbuf_lastindex -
-> > -					acb->rqbuf_firstindex;
-> > -				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
-> > -			}
-> > +	if (acb->rqbuf_getIndex != acb->rqbuf_putIndex) {
-> > +		unsigned int tail = acb->rqbuf_getIndex;
-> > +		unsigned int head = acb->rqbuf_putIndex;
-> > +		unsigned int cnt_to_end = CIRC_CNT_TO_END(head, tail, ARCMSR_MAX_QBUFFER);
-> > +
-> > +		allxfer_len = CIRC_CNT(head, tail, ARCMSR_MAX_QBUFFER);
-> > +		if (allxfer_len > ARCMSR_API_DATA_BUFLEN)
-> > +			allxfer_len = ARCMSR_API_DATA_BUFLEN;
-> > +
-> > +		if (allxfer_len <= cnt_to_end)
-> > +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, allxfer_len);
-> > +		else {
-> > +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, cnt_to_end);
-> > +			memcpy(ptmpQbuffer + cnt_to_end, acb->rqbuffer, allxfer_len - cnt_to_end);
-> >  		}
-> > +		acb->rqbuf_getIndex = (acb->rqbuf_getIndex + allxfer_len) % ARCMSR_MAX_QBUFFER;
-> >  	}
-> >  	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
-> >  		struct QBUFFER __iomem *prbuffer;
-> > @@ -150,33 +116,32 @@ static ssize_t arcmsr_sysfs_iop_message_
-> >  	struct device *dev = container_of(kobj,struct device,kobj);
-> >  	struct Scsi_Host *host = class_to_shost(dev);
-> >  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
-> > -	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
-> > +	int32_t my_empty_len, user_len, wqbuf_getIndex, wqbuf_putIndex;
-> >  	uint8_t *pQbuffer, *ptmpuserbuffer;
-> >  	unsigned long flags;
-> >  
-> >  	if (!capable(CAP_SYS_ADMIN))
-> >  		return -EACCES;
-> > -	if (count > 1032)
-> > +	if (count > ARCMSR_API_DATA_BUFLEN)
-> >  		return -EINVAL;
-> >  	/* do message unit write. */
-> >  	ptmpuserbuffer = (uint8_t *)buf;
-> >  	user_len = (int32_t)count;
-> >  	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
-> > -	wqbuf_lastindex = acb->wqbuf_lastindex;
-> > -	wqbuf_firstindex = acb->wqbuf_firstindex;
-> > -	if (wqbuf_lastindex != wqbuf_firstindex) {
-> > +	wqbuf_putIndex = acb->wqbuf_putIndex;
-> > +	wqbuf_getIndex = acb->wqbuf_getIndex;
-> > +	if (wqbuf_putIndex != wqbuf_getIndex) {
-> >  		arcmsr_write_ioctldata2iop(acb);
-> >  		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
-> >  		return 0;	/*need retry*/
-> >  	} else {
-> > -		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
-> > -			&(ARCMSR_MAX_QBUFFER - 1);
-> > +		my_empty_len = ARCMSR_MAX_QBUFFER - 1;
-> This^ doesn't look like like an rename can you explain?
-It is just a code simplification.
-> 
-> Let us stop here, or we end in an endless loop of corrections. The original 13/17
-> you are trying to improve here was at least without bugs (better said I haven't noticed) so
-> improving it now only complicates the process.
-> My suggestion is -let us skip this patch and focus only on fixing the spinlock problem found in 16/17.
-> OKay?
-Agree.
-> 
-> Cheers,
-> Tomas
-> 
+I wonder if anyone has looked at this?
 
+Note that this is for CrystalCove PMIC operation region support and the
+CrystalCove driver is already in mainline, not for the DollarCove PMIC
+driver that Jacob is currently upstreaming, so the patch doesn't have
+any dependency.
 
+Regards,
+Aaron
+
+On Tue, Sep 09, 2014 at 10:32:46AM +0800, Aaron Lu wrote:
+> The two patches add support for CrystalCove PMIC ACPI operation region.
+> The PMIC chip has two customized operation regions: one for power rail
+> manipulation and one for thermal purpose: sensor temperature reading
+> and trip point value reading/setting.
+> 
+> For an example ASL code on ASUS T100 with CrystalCove PMIC, see here:
+> https://gist.github.com/aaronlu/f5f65771a6c3251fae5d
+> 
+> Aaron Lu (2):
+>   gpio / CrystalCove: support virtual GPIO
+>   PMIC / opregion: support PMIC customized operation region for
+>     CrystalCove
+> 
+>  drivers/gpio/gpio-crystalcove.c           |  19 +-
+>  drivers/mfd/Kconfig                       |  11 +
+>  drivers/mfd/Makefile                      |   1 +
+>  drivers/mfd/intel_soc_pmic_crc.c          |   3 +
+>  drivers/mfd/intel_soc_pmic_crc_opregion.c | 229 +++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_opregion.c     | 350 ++++++++++++++++++++++++++++++
+>  drivers/mfd/intel_soc_pmic_opregion.h     |  35 +++
+>  include/asm-generic/gpio.h                |   2 +-
+>  8 files changed, 646 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/mfd/intel_soc_pmic_crc_opregion.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_opregion.c
+>  create mode 100644 drivers/mfd/intel_soc_pmic_opregion.h
+> 
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
