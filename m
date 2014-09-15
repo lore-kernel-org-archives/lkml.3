@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaIOQYv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:24:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753051AbaIOQYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:24:49 -0400
-Date: Mon, 15 Sep 2014 18:21:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@infradead.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [RFC PATCH v2 5/5] mm, shmem: Show location of non-resident
-	shmem pages in smaps
-Message-ID: <20140915162131.GA22768@redhat.com>
-References: <1410791077-5300-1-git-send-email-jmarchan@redhat.com> <1410791077-5300-6-git-send-email-jmarchan@redhat.com>
+	id S1754066AbaIOQZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:25:20 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41793 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaIOQZT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 12:25:19 -0400
+Message-ID: <541712C9.5020509@infradead.org>
+Date: Mon, 15 Sep 2014 09:24:41 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410791077-5300-6-git-send-email-jmarchan@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andrey Ryabinin <a.ryabinin@samsung.com>, linux-kernel@vger.kernel.org
+CC: Dmitry Vyukov <dvyukov@google.com>, Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, linux-mm@kvack.org,
+        Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC/PATCH v2 01/10] Add kernel address sanitizer infrastructure.
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-1-git-send-email-a.ryabinin@samsung.com> <1410359487-31938-2-git-send-email-a.ryabinin@samsung.com> <5414F0F3.4000001@infradead.org> <5417058E.1010206@samsung.com>
+In-Reply-To: <5417058E.1010206@samsung.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jerome,
+On 09/15/14 08:28, Andrey Ryabinin wrote:
+> On 09/14/2014 05:35 AM, Randy Dunlap wrote:
+>> Following sentence is confusing.  I'm not sure how to fix it.
+>>
+> 
+> 
+> Perhaps rephrase is like this:
+> 
+> Do not use slub poisoning with KASan if user tracking enabled (iow slub_debug=PU).
 
-Not sure I understand this patch correctly, will try to read it later.
-But a couple of nits/questions anyway,
+                                       if user tracking is enabled
 
-On 09/15, Jerome Marchand wrote:
->
-> +The ShmXXX lines only appears for shmem mapping. They show the amount of memory
-> +from the mapping that is currently:
-> + - resident in RAM but not mapped into any process (ShmNotMapped)
+> User tracking info (allocation/free stacktraces) are stored inside slub object's metadata.
+> Slub poisoning overwrites slub object and it's metadata with poison value on freeing.
 
-But how can we know that it is not mapped by another process?
+                                            its
 
-And in fact "not mapped" looks confusing (at least to me). IIUC it is actually
-mapped even by this process, just it never tried to fault these (resident or
-swapped) pages in. Right?
+> So if KASan will detect use after free, allocation/free stacktraces will be overwritten
 
-> +void update_shmem_stats(struct mem_size_stats *mss, struct vm_area_struct *vma,
-> +			pgoff_t pgoff, unsigned long size)
+  So if KASan detects a use after free, allocation/free stacktraces are overwritten
 
-static?
+> and KASan won't be able to print them.
 
-> +{
-> +	int count = 0;
-> +
-> +	switch (shmem_locate(vma, pgoff, &count)) {
-> +	case SHMEM_RESIDENT:
-> +		if (!count)
-> +			mss->shmem_notmapped += size;
-> +		break;
-> +	case SHMEM_SWAP:
-> +		mss->shmem_swap += size;
-> +		break;
-> +	}
-> +}
 
-It seems that shmem_locate() and shmem_vma() are only defined if CONFIG_SHMEM,
-probably this series needs more ifdef's.
+Thanks.
 
-And I am not sure why we ignore SHMEM_SWAPCACHE...
-
-Oleg.
-
+-- 
+~Randy
