@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaIOSjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 14:39:15 -0400
-Received: from mail-by2on0126.outbound.protection.outlook.com ([207.46.100.126]:2848
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753089AbaIOSjN convert rfc822-to-8bit (ORCPT
+	id S1754453AbaIOSke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 14:40:34 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57831 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754096AbaIOSkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 14:39:13 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        Dexuan Cui <decui@microsoft.com>
-Subject: RE: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
-Thread-Topic: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
-Thread-Index: AQHPw1r3Zanm1nEhm0a/E/TjkVvBiZwCoZ8Q
-Date: Mon, 15 Sep 2014 18:39:11 +0000
-Message-ID: <d03e1a5aff0a4b28a447b3db3bf54f78@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1409181905-23254-1-git-send-email-kys@microsoft.com>
- <20140829072918.GA842@sucs.org>
-In-Reply-To: <20140829072918.GA842@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [2001:4898:80e0:ee43::5]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 03355EE97E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(377454003)(13464003)(51704005)(164054003)(199003)(189002)(76176999)(110136001)(80022001)(79102001)(19580395003)(85306004)(20776003)(107046002)(99396002)(46102001)(76482001)(64706001)(105586002)(50986999)(106116001)(77096002)(21056001)(81542001)(4396001)(15975445006)(108616004)(81342001)(85852003)(77982001)(86612001)(74502001)(97736003)(90102001)(101416001)(74662001)(19580405001)(54356999)(99286002)(86362001)(83322001)(74316001)(106356001)(87936001)(15202345003)(76576001)(33646002)(83072002)(15395725005)(2656002)(95666004)(3826002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Sep 2014 14:40:32 -0400
+Date: Mon, 15 Sep 2014 19:40:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "Wang, Yalin" <Yalin.Wang@sonymobile.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>
+Subject: Re: [PATCH] arm64:free_initrd_mem should also free the memblock
+Message-ID: <20140915184023.GF12361@n2100.arm.linux.org.uk>
+References: <35FD53F367049845BC99AC72306C23D103CDBFBFB029@CNBJMBX05.corpusers.net> <20140915183334.GA30737@arm.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915183334.GA30737@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Friday, August 29, 2014 12:29 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; Dexuan Cui
-> Subject: Re: [PATCH V2 0/5] Drivers: hv: vmbus: Eliminate calls to BUG_ON()
+On Mon, Sep 15, 2014 at 07:33:34PM +0100, Will Deacon wrote:
+> On Fri, Sep 12, 2014 at 11:17:18AM +0100, Wang, Yalin wrote:
+> > this patch fix the memblock statics for memblock
+> > in file /sys/kernel/debug/memblock/reserved
+> > if we don't call memblock_free the initrd will still
+> > be marked as reserved, even they are freed.
+> > 
+> > Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> > ---
+> >  arch/arm64/mm/init.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+> > index 5472c24..34605c8 100644
+> > --- a/arch/arm64/mm/init.c
+> > +++ b/arch/arm64/mm/init.c
+> > @@ -334,8 +334,10 @@ static int keep_initrd;
+> >  
+> >  void free_initrd_mem(unsigned long start, unsigned long end)
+> >  {
+> > -	if (!keep_initrd)
+> > +	if (!keep_initrd) {
+> >  		free_reserved_area((void *)start, (void *)end, 0, "initrd");
+> > +		memblock_free(__pa(start), end - start);
+> > +	}
 > 
-> On Wed, Aug 27, 2014 at 04:25:05PM -0700, K. Y. Srinivasan wrote:
-> > Cleanup the channel management code and eliminate calls to BUG_ON().
-> > Also fix an error propagation bug in vmbus_open().
-> >
-> > In this version of the patch-set, I have addressed comments from Dan
-> > Carpenter.
-> >
-> > K. Y. Srinivasan (5):
-> >   Drivers: hv: vmbus: Cleanup vmbus_post_msg()
-> >   Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
-> >   Drivers: hv: vmbus: Cleanup vmbus_close_internal()
-> >   Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
-> >   Drivers: hv: vmbus: Fix a bug in vmbus_open()
-> 
-> This patch set resolves a number of BUG_ON crashes I was hitting on Hyper-
-> V while booting a kernel with verification options on. With these I can
-> complete a 3.17.0-rc2 boot on an SMP setup although patches from
-> "Drivers: hv: vmbus: Miscellaneous cleanup" are needed to resolve other
-> non-crash issues.
-> 
-> Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+> I don't think it makes any technical difference, but doing the memblock_free
+> before the free_reserved_area makes more sense to me.
 
-Greg,
+A better question is... should we even be doing this.  The memblock
+information is used as a method to bring up the kernel and provide
+early allocation.  Once the memory is handed over from memblock to
+the normal kernel page allocators, we no longer care what happens to
+memblock.
 
-Just checking if I should resend this patch-set. I have also sent a few patches after this.
-Please let me know.
+There is no need to free the initrd memory back into memblock.  In
+fact, seeing the initrd location in /sys/kernel/debug/memblock/reserved
+can be useful debug information in itself.
 
-Thanks,
-
-K. Y
-> 
-> --
-> Sitsofe | http://sucs.org/~sits/
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
