@@ -1,56 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869AbaIOT7P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:59:15 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:51512 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818AbaIOT6n (ORCPT
+	id S1756831AbaIOT6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:58:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756272AbaIOTrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:58:43 -0400
-Date: Mon, 15 Sep 2014 21:58:37 +0200
-From: Frans Klaver <fransklaver@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/13] eeepc-laptop: coding style: add curly braces
- around else compound
-Message-ID: <20140915195836.GA7867@gmail.com>
-References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
- <1410563212-31565-4-git-send-email-fransklaver@gmail.com>
- <20140915194141.GA62440@vmdeb7>
+	Mon, 15 Sep 2014 15:47:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.10 50/71] RDMA/iwcm: Use a default listen backlog if needed
+Date: Mon, 15 Sep 2014 12:26:48 -0700
+Message-Id: <20140915192640.365603644@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140915194141.GA62440@vmdeb7>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:41:41PM -0700, Darren Hart wrote:
-> On Sat, Sep 13, 2014 at 01:06:42AM +0200, Frans Klaver wrote:
-> > Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> 
-> Hi Frans,
-> 
-> Please merge the 3 coding style fixes into one patch. There is no functional
-> change here, and each of the 3 is obvious. Please include a simple commit
-> message to the effect of:
-> 
-> "
-> eeepc-laptop: Coding style cleanup
-> 
-> Correct white space and brace usage per Documentation/CodingStyle.
-> "
-> 
-> As a point of policy, I will not merge commits without a message, no matter how
-> trivial.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-That's fair enough. I'll do some sanity testing today or tomorrow and
-roll v2, unless some other remarks come up in the mean time.
+------------------
 
-Thanks,
-Frans
+From: Steve Wise <swise@opengridcomputing.com>
+
+commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
+
+If the user creates a listening cm_id with backlog of 0 the IWCM ends
+up not allowing any connection requests at all.  The correct behavior
+is for the IWCM to pick a default value if the user backlog parameter
+is zero.
+
+Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
+iwarp support without this fix.
+
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/infiniband/core/iwcm.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+--- a/drivers/infiniband/core/iwcm.c
++++ b/drivers/infiniband/core/iwcm.c
+@@ -46,6 +46,7 @@
+ #include <linux/completion.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/sysctl.h>
+ 
+ #include <rdma/iw_cm.h>
+ #include <rdma/ib_addr.h>
+@@ -65,6 +66,20 @@ struct iwcm_work {
+ 	struct list_head free_list;
+ };
+ 
++static unsigned int default_backlog = 256;
++
++static struct ctl_table_header *iwcm_ctl_table_hdr;
++static struct ctl_table iwcm_ctl_table[] = {
++	{
++		.procname	= "default_backlog",
++		.data		= &default_backlog,
++		.maxlen		= sizeof(default_backlog),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{ }
++};
++
+ /*
+  * The following services provide a mechanism for pre-allocating iwcm_work
+  * elements.  The design pre-allocates them  based on the cm_id type:
+@@ -419,6 +434,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
+ 
+ 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
+ 
++	if (!backlog)
++		backlog = default_backlog;
++
+ 	ret = alloc_work_entries(cm_id_priv, backlog);
+ 	if (ret)
+ 		return ret;
+@@ -1024,11 +1042,20 @@ static int __init iw_cm_init(void)
+ 	if (!iwcm_wq)
+ 		return -ENOMEM;
+ 
++	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
++						 iwcm_ctl_table);
++	if (!iwcm_ctl_table_hdr) {
++		pr_err("iw_cm: couldn't register sysctl paths\n");
++		destroy_workqueue(iwcm_wq);
++		return -ENOMEM;
++	}
++
+ 	return 0;
+ }
+ 
+ static void __exit iw_cm_cleanup(void)
+ {
++	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
+ 	destroy_workqueue(iwcm_wq);
+ }
+ 
+
+
