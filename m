@@ -1,170 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285AbaIOWki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:40:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15674 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034AbaIOWkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:40:35 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>, <stable@vger.kernel.org>
-Subject: [PATCH v3 3/5] mm/hugetlb: fix getting refcount 0 page in hugetlb_fault()
-Date: Mon, 15 Sep 2014 18:39:57 -0400
-Message-Id: <1410820799-27278-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1756690AbaIOWl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:41:28 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38199 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304AbaIOWlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:41:24 -0400
+Message-ID: <54176B0E.7080208@gmail.com>
+Date: Tue, 16 Sep 2014 06:41:18 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, eparis@redhat.com,
+        paulmck@linux.vnet.ibm.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        zhenglong.cai@cs2c.com.cn, khilman@linaro.org, ak@linux.intel.com,
+        mcgrof@suse.com, fabf@skynet.be,
+        "dhowells@redhat.com" <dhowells@redhat.com>, pefoley2@pefoley.com,
+        mgorman@suse.de, biederm@xmission.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <jdelvare@suse.de>
+Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures
+ using
+References: <540494D6.40701@gmail.com> <5406FFBD.8010207@gmail.com> <54155B14.9060809@gmail.com> <201409151555.03997.arnd@arndb.de>
+In-Reply-To: <201409151555.03997.arnd@arndb.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running the test which causes the race as shown in the previous patch,
-we can hit the BUG "get_page() on refcount 0 page" in hugetlb_fault().
+On 09/15/2014 09:55 PM, Arnd Bergmann wrote:
+> On Sunday 14 September 2014, Chen Gang wrote:
+>> Hello Maintainers:
+>>
+>> Is this patch worthy enough to be applied?
+>>
+>> Welcome any ideas, suggestions or completions.
+> 
+> I find it hard to judge whether it's worth it or not. You gave one example
+> for a driver that needs this, but what would be your estimate on how
+> many other drivers have the same problem, either producing a #warning
+> or misbehaving if neither symbol is set?
+> 
 
-This race happens when pte turns into migration entry just after the first
-check of is_hugetlb_entry_migration() in hugetlb_fault() passed with false.
-To fix this, we need to check pte_present() again after huge_ptep_get().
+For me, it is also hard to judge, so at present, we can assume it is not
+worthy enough for other individual modules.
 
-This patch also reorders taking ptl and doing pte_page(), because pte_page()
-should be done in ptl. Due to this reordering, we need use trylock_page()
-in page != pagecache_page case to respect locking order.
+> Having all architectures consistently report the endianess would be nice,
+> but we have to weigh the advantages (currently broken code, potential
+> simplifications) against the regression risk.
+> 
 
-Fixes: 66aebce747ea ("hugetlb: fix race condition in hugetlb_fault()")
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: <stable@vger.kernel.org>  # [3.2+]
----
-ChangeLog v4:
-- move !pte_present(entry) (i.e. migration/hwpoison) check before
-  taking page table lock
-- call wait_on_page_locked() if trylock_page() returns false
-- remove unused label out_unlock_page
-- fix the order of put_page() and unlock_page() after out_put_page label
-- move changelog under '---'
+Yeah, so our 'goal' is OK, but we need focus on 'how'.
 
-Hugh advised me for ver.3 that we can call migration_entry_wait_huge()
-when the !pte_present(entry) check returns true to avoid busy faulting.
-But it seems that in that case only one additional page fault happens
-instead of busy faulting, because is_hugetlb_entry_migration() in the
-second call of hugetlb_fault() should return true and then
-migration_entry_wait_huge() is called. We could avoid this additional
-page fault by adding another migration_entry_wait_huge(), but then
-we should separate pte_present() check into is_hugetlb_entry_migration()
-path and is_hugetlb_entry_hwpoisoned() path, which makes code complicated.
-So let me take the simpler approach for sending stable tree.
-And it's also advised that we can clean up is_hugetlb_entry_migration()
-and is_hugetlb_entry_hwpoisoned() things. This will be done in another
-work, and the above migration_entry_wait_huge problem will be revisited
-there.
+At present, firstly need modify 'init/Kconfig', and then scan all
+architectures one by one, let each related patch pass checking by the
+related maintainers (which can avoid the risk).
 
-ChangeLog v3:
-- doing pte_page() and taking refcount under page table lock
-- check pte_present after taking ptl, which makes it unnecessary to use
-  get_page_unless_zero()
-- use trylock_page in page != pagecache_page case
-- fixed target stable version
----
- mm/hugetlb.c | 42 ++++++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 14 deletions(-)
 
-diff --git mmotm-2014-09-09-14-42.orig/mm/hugetlb.c mmotm-2014-09-09-14-42/mm/hugetlb.c
-index 941832ee3d5a..52f001943169 100644
---- mmotm-2014-09-09-14-42.orig/mm/hugetlb.c
-+++ mmotm-2014-09-09-14-42/mm/hugetlb.c
-@@ -3128,6 +3128,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct page *pagecache_page = NULL;
- 	struct hstate *h = hstate_vma(vma);
- 	struct address_space *mapping;
-+	int need_wait_lock = 0;
- 
- 	address &= huge_page_mask(h);
- 
-@@ -3164,6 +3165,15 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	}
- 
- 	ret = 0;
-+	/*
-+	 * entry could be a migration/hwpoison entry at this point, so this
-+	 * check prevents the kernel from going below assuming that we have
-+	 * a active hugepage in pagecache. This goto expects the 2nd page fault,
-+	 * and is_hugetlb_entry_(migration|hwpoisoned) check will properly
-+	 * handle it.
-+	 */
-+	if (!pte_present(entry))
-+		goto out_mutex;
- 
- 	/*
- 	 * If we are going to COW the mapping later, we examine the pending
-@@ -3184,6 +3194,12 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 								vma, address);
- 	}
- 
-+	ptl = huge_pte_lock(h, mm, ptep);
-+
-+	/* Check for a racing update before calling hugetlb_cow */
-+	if (unlikely(!pte_same(entry, huge_ptep_get(ptep))))
-+		goto out_ptl;
-+
- 	/*
- 	 * hugetlb_cow() requires page locks of pte_page(entry) and
- 	 * pagecache_page, so here we need take the former one
-@@ -3192,22 +3208,19 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * so no worry about deadlock.
- 	 */
- 	page = pte_page(entry);
--	get_page(page);
- 	if (page != pagecache_page)
--		lock_page(page);
--
--	ptl = huge_pte_lockptr(h, mm, ptep);
--	spin_lock(ptl);
--	/* Check for a racing update before calling hugetlb_cow */
--	if (unlikely(!pte_same(entry, huge_ptep_get(ptep))))
--		goto out_ptl;
-+		if (!trylock_page(page)) {
-+			need_wait_lock = 1;
-+			goto out_ptl;
-+		}
- 
-+	get_page(page);
- 
- 	if (flags & FAULT_FLAG_WRITE) {
- 		if (!huge_pte_write(entry)) {
- 			ret = hugetlb_cow(mm, vma, address, ptep, entry,
- 					pagecache_page, ptl);
--			goto out_ptl;
-+			goto out_put_page;
- 		}
- 		entry = huge_pte_mkdirty(entry);
- 	}
-@@ -3215,7 +3228,10 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (huge_ptep_set_access_flags(vma, address, ptep, entry,
- 						flags & FAULT_FLAG_WRITE))
- 		update_mmu_cache(vma, address, ptep);
--
-+out_put_page:
-+	if (page != pagecache_page)
-+		unlock_page(page);
-+	put_page(page);
- out_ptl:
- 	spin_unlock(ptl);
- 
-@@ -3223,12 +3239,10 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		unlock_page(pagecache_page);
- 		put_page(pagecache_page);
- 	}
--	if (page != pagecache_page)
--		unlock_page(page);
--	put_page(page);
--
- out_mutex:
- 	mutex_unlock(&htlb_fault_mutex_table[hash]);
-+	if (need_wait_lock)
-+		wait_on_page_locked(page);
- 	return ret;
- }
- 
+Thanks.
 -- 
-1.9.3
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
