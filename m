@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889AbaIOT7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:59:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
+	id S1756874AbaIOT7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:59:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756261AbaIOTrR (ORCPT
+	with ESMTP id S1756264AbaIOTrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.10 27/71] MIPS: Fix accessing to per-cpu data when flushing the cache
-Date: Mon, 15 Sep 2014 12:26:25 -0700
-Message-Id: <20140915192639.609542164@linuxfoundation.org>
+        Anders Nystrom <anders@southpole.se>, Jonas Bonn <jonas@southpole.se>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.10 28/71] openrisc: Rework signal handling
+Date: Mon, 15 Sep 2014 12:26:26 -0700
+Message-Id: <20140915192639.646600827@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -30,89 +29,406 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ralf Baechle <ralf@linux-mips.org>
+From: Jonas Bonn <jonas@southpole.se>
 
-commit ff522058bd717506b2fa066fa564657f2b86477e upstream.
+commit 10f67dbf6add97751050f294d4c8e0cc1e5c2c23 upstream.
 
-This fixes the following issue
+The mainline signal handling code for OpenRISC has been buggy since day
+one with respect to syscall restart.  This patch significantly reworks
+the signal handling code:
 
-BUG: using smp_processor_id() in preemptible [00000000] code: kjournald/1761
-caller is blast_dcache32+0x30/0x254
-Call Trace:
-[<8047f02c>] dump_stack+0x8/0x34
-[<802e7e40>] debug_smp_processor_id+0xe0/0xf0
-[<80114d94>] blast_dcache32+0x30/0x254
-[<80118484>] r4k_dma_cache_wback_inv+0x200/0x288
-[<80110ff0>] mips_dma_map_sg+0x108/0x180
-[<80355098>] ide_dma_prepare+0xf0/0x1b8
-[<8034eaa4>] do_rw_taskfile+0x1e8/0x33c
-[<8035951c>] ide_do_rw_disk+0x298/0x3e4
-[<8034a3c4>] do_ide_request+0x2e0/0x704
-[<802bb0dc>] __blk_run_queue+0x44/0x64
-[<802be000>] queue_unplugged.isra.36+0x1c/0x54
-[<802beb94>] blk_flush_plug_list+0x18c/0x24c
-[<802bec6c>] blk_finish_plug+0x18/0x48
-[<8026554c>] journal_commit_transaction+0x3b8/0x151c
-[<80269648>] kjournald+0xec/0x238
-[<8014ac00>] kthread+0xb8/0xc0
-[<8010268c>] ret_from_kernel_thread+0x14/0x1c
+i)   Move the "work pending" loop to C code (borrowed from ARM arch)
 
-Caches in most systems are identical - but not always, so we can't avoid
-the use of smp_call_function() by just looking at the boot CPU's data,
-have to fiddle with preemption instead.
+ii)  Allow a tracer to muck about with the IP and skip syscall restart
+     in that case (again, borrowed from ARM)
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Cc: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/5835
+iii) Make signal handling WRT syscall restart actually work
+
+v)   Make the signal handling code look more like that of other
+     architectures so that it's easier for others to follow
+
+Reported-by: Anders Nystrom <anders@southpole.se>
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
 Cc: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/mips/mm/c-r4k.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/arch/mips/mm/c-r4k.c
-+++ b/arch/mips/mm/c-r4k.c
-@@ -12,6 +12,7 @@
- #include <linux/highmem.h>
- #include <linux/kernel.h>
- #include <linux/linkage.h>
-+#include <linux/preempt.h>
- #include <linux/sched.h>
- #include <linux/smp.h>
- #include <linux/mm.h>
-@@ -601,6 +602,7 @@ static void r4k_dma_cache_wback_inv(unsi
- 	/* Catch bad driver code */
- 	BUG_ON(size == 0);
+---
+ arch/openrisc/kernel/entry.S  |   59 +++++++-----
+ arch/openrisc/kernel/signal.c |  198 ++++++++++++++++++++++--------------------
+ 2 files changed, 139 insertions(+), 118 deletions(-)
+
+--- a/arch/openrisc/kernel/entry.S
++++ b/arch/openrisc/kernel/entry.S
+@@ -853,37 +853,44 @@ UNHANDLED_EXCEPTION(_vector_0x1f00,0x1f0
  
-+	preempt_disable();
- 	if (cpu_has_inclusive_pcaches) {
- 		if (size >= scache_size)
- 			r4k_blast_scache();
-@@ -621,6 +623,7 @@ static void r4k_dma_cache_wback_inv(unsi
- 		R4600_HIT_CACHEOP_WAR_IMPL;
- 		blast_dcache_range(addr, addr + size);
+ /* ========================================================[ return ] === */
+ 
++_resume_userspace:
++	DISABLE_INTERRUPTS(r3,r4)
++	l.lwz	r4,TI_FLAGS(r10)
++	l.andi	r13,r4,_TIF_WORK_MASK
++	l.sfeqi	r13,0
++	l.bf	_restore_all
++	 l.nop
++
+ _work_pending:
+-	/*
+-	 * if (current_thread_info->flags & _TIF_NEED_RESCHED)
+-	 *     schedule();
+-	 */
+-	l.lwz   r5,TI_FLAGS(r10)
+-	l.andi	r3,r5,_TIF_NEED_RESCHED
+-	l.sfnei r3,0
+-	l.bnf   _work_notifysig
++	l.lwz	r5,PT_ORIG_GPR11(r1)
++	l.sfltsi r5,0
++	l.bnf	1f
+ 	 l.nop
+-	l.jal   schedule
++	l.andi	r5,r5,0
++1:
++	l.jal	do_work_pending
++	 l.ori	r3,r1,0			/* pt_regs */
++
++	l.sfeqi	r11,0
++	l.bf	_restore_all
+ 	 l.nop
+-	l.j	_resume_userspace
++	l.sfltsi r11,0
++	l.bnf	1f
+ 	 l.nop
+-
+-/* Handle pending signals and notify-resume requests.
+- * do_notify_resume must be passed the latest pushed pt_regs, not
+- * necessarily the "userspace" ones.  Also, pt_regs->syscallno
+- * must be set so that the syscall restart functionality works.
+- */
+-_work_notifysig:
+-	l.jal	do_notify_resume
+-	 l.ori	r3,r1,0		  /* pt_regs */
+-
+-_resume_userspace:
+-	DISABLE_INTERRUPTS(r3,r4)
+-	l.lwz	r3,TI_FLAGS(r10)
+-	l.andi	r3,r3,_TIF_WORK_MASK
+-	l.sfnei	r3,0
+-	l.bf	_work_pending
++	l.and	r11,r11,r0
++	l.ori	r11,r11,__NR_restart_syscall
++	l.j	_syscall_check_trace_enter
+ 	 l.nop
++1:
++	l.lwz	r11,PT_ORIG_GPR11(r1)
++	/* Restore arg registers */
++	l.lwz	r3,PT_GPR3(r1)
++	l.lwz	r4,PT_GPR4(r1)
++	l.lwz	r5,PT_GPR5(r1)
++	l.lwz	r6,PT_GPR6(r1)
++	l.lwz	r7,PT_GPR7(r1)
++	l.j	_syscall_check_trace_enter
++	 l.lwz	r8,PT_GPR8(r1)
+ 
+ _restore_all:
+ 	RESTORE_ALL
+--- a/arch/openrisc/kernel/signal.c
++++ b/arch/openrisc/kernel/signal.c
+@@ -28,24 +28,24 @@
+ #include <linux/tracehook.h>
+ 
+ #include <asm/processor.h>
++#include <asm/syscall.h>
+ #include <asm/ucontext.h>
+ #include <asm/uaccess.h>
+ 
+ #define DEBUG_SIG 0
+ 
+ struct rt_sigframe {
+-	struct siginfo *pinfo;
+-	void *puc;
+ 	struct siginfo info;
+ 	struct ucontext uc;
+ 	unsigned char retcode[16];	/* trampoline code */
+ };
+ 
+-static int restore_sigcontext(struct pt_regs *regs, struct sigcontext *sc)
++static int restore_sigcontext(struct pt_regs *regs,
++			      struct sigcontext __user *sc)
+ {
+-	unsigned int err = 0;
++	int err = 0;
+ 
+-	/* Alwys make any pending restarted system call return -EINTR */
++	/* Always make any pending restarted system calls return -EINTR */
+ 	current_thread_info()->restart_block.fn = do_no_restart_syscall;
+ 
+ 	/*
+@@ -53,25 +53,21 @@ static int restore_sigcontext(struct pt_
+ 	 * (sc is already checked for VERIFY_READ since the sigframe was
+ 	 *  checked in sys_sigreturn previously)
+ 	 */
+-	if (__copy_from_user(regs, sc->regs.gpr, 32 * sizeof(unsigned long)))
+-		goto badframe;
+-	if (__copy_from_user(&regs->pc, &sc->regs.pc, sizeof(unsigned long)))
+-		goto badframe;
+-	if (__copy_from_user(&regs->sr, &sc->regs.sr, sizeof(unsigned long)))
+-		goto badframe;
++	err |= __copy_from_user(regs, sc->regs.gpr, 32 * sizeof(unsigned long));
++	err |= __copy_from_user(&regs->pc, &sc->regs.pc, sizeof(unsigned long));
++	err |= __copy_from_user(&regs->sr, &sc->regs.sr, sizeof(unsigned long));
+ 
+ 	/* make sure the SM-bit is cleared so user-mode cannot fool us */
+ 	regs->sr &= ~SPR_SR_SM;
+ 
++	regs->orig_gpr11 = -1;	/* Avoid syscall restart checks */
++
+ 	/* TODO: the other ports use regs->orig_XX to disable syscall checks
+ 	 * after this completes, but we don't use that mechanism. maybe we can
+ 	 * use it now ?
+ 	 */
+ 
+ 	return err;
+-
+-badframe:
+-	return 1;
+ }
+ 
+ asmlinkage long _sys_rt_sigreturn(struct pt_regs *regs)
+@@ -111,21 +107,18 @@ badframe:
+  * Set up a signal frame.
+  */
+ 
+-static int setup_sigcontext(struct sigcontext *sc, struct pt_regs *regs,
+-			    unsigned long mask)
++static int setup_sigcontext(struct pt_regs *regs, struct sigcontext __user *sc)
+ {
+ 	int err = 0;
+ 
+ 	/* copy the regs */
+-
++	/* There should be no need to save callee-saved registers here...
++	 * ...but we save them anyway.  Revisit this
++	 */
+ 	err |= __copy_to_user(sc->regs.gpr, regs, 32 * sizeof(unsigned long));
+ 	err |= __copy_to_user(&sc->regs.pc, &regs->pc, sizeof(unsigned long));
+ 	err |= __copy_to_user(&sc->regs.sr, &regs->sr, sizeof(unsigned long));
+ 
+-	/* then some other stuff */
+-
+-	err |= __put_user(mask, &sc->oldmask);
+-
+ 	return err;
+ }
+ 
+@@ -181,24 +174,18 @@ static int setup_rt_frame(int sig, struc
+ 	int err = 0;
+ 
+ 	frame = get_sigframe(ka, regs, sizeof(*frame));
+-
+ 	if (!access_ok(VERIFY_WRITE, frame, sizeof(*frame)))
+ 		goto give_sigsegv;
+ 
+-	err |= __put_user(&frame->info, &frame->pinfo);
+-	err |= __put_user(&frame->uc, &frame->puc);
+-
++	/* Create siginfo.  */
+ 	if (ka->sa.sa_flags & SA_SIGINFO)
+ 		err |= copy_siginfo_to_user(&frame->info, info);
+-	if (err)
+-		goto give_sigsegv;
+ 
+-	/* Clear all the bits of the ucontext we don't use.  */
+-	err |= __clear_user(&frame->uc, offsetof(struct ucontext, uc_mcontext));
++	/* Create the ucontext.  */
+ 	err |= __put_user(0, &frame->uc.uc_flags);
+ 	err |= __put_user(NULL, &frame->uc.uc_link);
+ 	err |= __save_altstack(&frame->uc.uc_stack, regs->sp);
+-	err |= setup_sigcontext(&frame->uc.uc_mcontext, regs, set->sig[0]);
++	err |= setup_sigcontext(regs, &frame->uc.uc_mcontext);
+ 
+ 	err |= __copy_to_user(&frame->uc.uc_sigmask, set, sizeof(*set));
+ 
+@@ -207,9 +194,12 @@ static int setup_rt_frame(int sig, struc
+ 
+ 	/* trampoline - the desired return ip is the retcode itself */
+ 	return_ip = (unsigned long)&frame->retcode;
+-	/* This is l.ori r11,r0,__NR_sigreturn, l.sys 1 */
+-	err |= __put_user(0xa960, (short *)(frame->retcode + 0));
+-	err |= __put_user(__NR_rt_sigreturn, (short *)(frame->retcode + 2));
++	/* This is:
++		l.ori r11,r0,__NR_sigreturn
++		l.sys 1
++	 */
++	err |= __put_user(0xa960,             (short *)(frame->retcode + 0));
++	err |= __put_user(__NR_rt_sigreturn,  (short *)(frame->retcode + 2));
+ 	err |= __put_user(0x20000001, (unsigned long *)(frame->retcode + 4));
+ 	err |= __put_user(0x15000000, (unsigned long *)(frame->retcode + 8));
+ 
+@@ -262,82 +252,106 @@ handle_signal(unsigned long sig,
+  * mode below.
+  */
+ 
+-void do_signal(struct pt_regs *regs)
++int do_signal(struct pt_regs *regs, int syscall)
+ {
+ 	siginfo_t info;
+ 	int signr;
+ 	struct k_sigaction ka;
+-
+-	/*
+-	 * We want the common case to go fast, which
+-	 * is why we may in certain cases get here from
+-	 * kernel mode. Just return without doing anything
+-	 * if so.
+-	 */
+-	if (!user_mode(regs))
+-		return;
+-
+-	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+-
+-	/* If we are coming out of a syscall then we need
+-	 * to check if the syscall was interrupted and wants to be
+-	 * restarted after handling the signal.  If so, the original
+-	 * syscall number is put back into r11 and the PC rewound to
+-	 * point at the l.sys instruction that resulted in the
+-	 * original syscall.  Syscall results other than the four
+-	 * below mean that the syscall executed to completion and no
+-	 * restart is necessary.
+-	 */
+-	if (regs->orig_gpr11) {
+-		int restart = 0;
+-
+-		switch (regs->gpr[11]) {
++	unsigned long continue_addr = 0;
++	unsigned long restart_addr = 0;
++	unsigned long retval = 0;
++	int restart = 0;
++
++	if (syscall) {
++		continue_addr = regs->pc;
++		restart_addr = continue_addr - 4;
++		retval = regs->gpr[11];
++
++		/*
++		 * Setup syscall restart here so that a debugger will
++		 * see the already changed PC.
++		 */
++		switch (retval) {
+ 		case -ERESTART_RESTARTBLOCK:
++			restart = -2;
++			/* Fall through */
+ 		case -ERESTARTNOHAND:
+-			/* Restart if there is no signal handler */
+-			restart = (signr <= 0);
+-			break;
+ 		case -ERESTARTSYS:
+-			/* Restart if there no signal handler or
+-			 * SA_RESTART flag is set */
+-			restart = (signr <= 0 || (ka.sa.sa_flags & SA_RESTART));
+-			break;
+ 		case -ERESTARTNOINTR:
+-			/* Always restart */
+-			restart = 1;
++			restart++;
++			regs->gpr[11] = regs->orig_gpr11;
++			regs->pc = restart_addr;
+ 			break;
+ 		}
++	}
+ 
+-		if (restart) {
+-			if (regs->gpr[11] == -ERESTART_RESTARTBLOCK)
+-				regs->gpr[11] = __NR_restart_syscall;
+-			else
+-				regs->gpr[11] = regs->orig_gpr11;
+-			regs->pc -= 4;
+-		} else {
+-			regs->gpr[11] = -EINTR;
++	/*
++	 * Get the signal to deliver.  When running under ptrace, at this
++	 * point the debugger may change all our registers ...
++	 */
++	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
++	/*
++	 * Depending on the signal settings we may need to revert the
++	 * decision to restart the system call.  But skip this if a
++	 * debugger has chosen to restart at a different PC.
++	 */
++	if (signr > 0) {
++		if (unlikely(restart) && regs->pc == restart_addr) {
++			if (retval == -ERESTARTNOHAND ||
++			    retval == -ERESTART_RESTARTBLOCK
++			    || (retval == -ERESTARTSYS
++			        && !(ka.sa.sa_flags & SA_RESTART))) {
++				/* No automatic restart */
++				regs->gpr[11] = -EINTR;
++				regs->pc = continue_addr;
++			}
+ 		}
+-	}
+ 
+-	if (signr <= 0) {
+-		/* no signal to deliver so we just put the saved sigmask
+-		 * back */
+-		restore_saved_sigmask();
+-	} else {		/* signr > 0 */
+-		/* Whee!  Actually deliver the signal.  */
+ 		handle_signal(signr, &info, &ka, regs);
++	} else {
++		/* no handler */
++		restore_saved_sigmask();
++		/*
++		 * Restore pt_regs PC as syscall restart will be handled by
++		 * kernel without return to userspace
++		 */
++		if (unlikely(restart) && regs->pc == restart_addr) {
++			regs->pc = continue_addr;
++			return restart;
++		}
  	}
-+	preempt_enable();
  
- 	bc_wback_inv(addr, size);
- 	__sync();
-@@ -631,6 +634,7 @@ static void r4k_dma_cache_inv(unsigned l
- 	/* Catch bad driver code */
- 	BUG_ON(size == 0);
+-	return;
++	return 0;
+ }
  
-+	preempt_disable();
- 	if (cpu_has_inclusive_pcaches) {
- 		if (size >= scache_size)
- 			r4k_blast_scache();
-@@ -655,6 +659,7 @@ static void r4k_dma_cache_inv(unsigned l
- 		R4600_HIT_CACHEOP_WAR_IMPL;
- 		blast_inv_dcache_range(addr, addr + size);
- 	}
-+	preempt_enable();
- 
- 	bc_inv(addr, size);
- 	__sync();
+-asmlinkage void do_notify_resume(struct pt_regs *regs)
++asmlinkage int
++do_work_pending(struct pt_regs *regs, unsigned int thread_flags, int syscall)
+ {
+-	if (current_thread_info()->flags & _TIF_SIGPENDING)
+-		do_signal(regs);
+-
+-	if (current_thread_info()->flags & _TIF_NOTIFY_RESUME) {
+-		clear_thread_flag(TIF_NOTIFY_RESUME);
+-		tracehook_notify_resume(regs);
+-	}
++	do {
++		if (likely(thread_flags & _TIF_NEED_RESCHED)) {
++			schedule();
++		} else {
++			if (unlikely(!user_mode(regs)))
++				return 0;
++			local_irq_enable();
++			if (thread_flags & _TIF_SIGPENDING) {
++				int restart = do_signal(regs, syscall);
++				if (unlikely(restart)) {
++					/*
++					 * Restart without handlers.
++					 * Deal with it without leaving
++					 * the kernel space.
++					 */
++					return restart;
++				}
++				syscall = 0;
++			} else {
++				clear_thread_flag(TIF_NOTIFY_RESUME);
++				tracehook_notify_resume(regs);
++			}
++		}
++		local_irq_disable();
++		thread_flags = current_thread_info()->flags;
++	} while (thread_flags & _TIF_WORK_MASK);
++	return 0;
+ }
 
 
