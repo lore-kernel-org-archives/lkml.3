@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180AbaIOUmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:42:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55124 "EHLO
+	id S1755575AbaIOTgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:36:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55074 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576AbaIOTgv (ORCPT
+	with ESMTP id S1754640AbaIOTgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:51 -0400
+	Mon, 15 Sep 2014 15:36:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, Chris Mason <clm@fb.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 155/158] vfs: fix bad hashing of dentries
-Date: Mon, 15 Sep 2014 12:26:34 -0700
-Message-Id: <20140915192547.518695194@linuxfoundation.org>
+        Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.16 130/158] RDMA/iwcm: Use a default listen backlog if needed
+Date: Mon, 15 Sep 2014 12:26:09 -0700
+Message-Id: <20140915192546.782704793@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -31,108 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Steve Wise <swise@opengridcomputing.com>
 
-commit 99d263d4c5b2f541dfacb5391e22e8c91ea982a6 upstream.
+commit 2f0304d21867476394cd51a54e97f7273d112261 upstream.
 
-Josef Bacik found a performance regression between 3.2 and 3.10 and
-narrowed it down to commit bfcfaa77bdf0 ("vfs: use 'unsigned long'
-accesses for dcache name comparison and hashing"). He reports:
+If the user creates a listening cm_id with backlog of 0 the IWCM ends
+up not allowing any connection requests at all.  The correct behavior
+is for the IWCM to pick a default value if the user backlog parameter
+is zero.
 
- "The test case is essentially
+Lustre from version 1.8.8 onward uses a backlog of 0, which breaks
+iwarp support without this fix.
 
-      for (i = 0; i < 1000000; i++)
-              mkdir("a$i");
-
-  On xfs on a fio card this goes at about 20k dir/sec with 3.2, and 12k
-  dir/sec with 3.10.  This is because we spend waaaaay more time in
-  __d_lookup on 3.10 than in 3.2.
-
-  The new hashing function for strings is suboptimal for <
-  sizeof(unsigned long) string names (and hell even > sizeof(unsigned
-  long) string names that I've tested).  I broke out the old hashing
-  function and the new one into a userspace helper to get real numbers
-  and this is what I'm getting:
-
-      Old hash table had 1000000 entries, 0 dupes, 0 max dupes
-      New hash table had 12628 entries, 987372 dupes, 900 max dupes
-      We had 11400 buckets with a p50 of 30 dupes, p90 of 240 dupes, p99 of 567 dupes for the new hash
-
-  My test does the hash, and then does the d_hash into a integer pointer
-  array the same size as the dentry hash table on my system, and then
-  just increments the value at the address we got to see how many
-  entries we overlap with.
-
-  As you can see the old hash function ended up with all 1 million
-  entries in their own bucket, whereas the new one they are only
-  distributed among ~12.5k buckets, which is why we're using so much
-  more CPU in __d_lookup".
-
-The reason for this hash regression is two-fold:
-
- - On 64-bit architectures the down-mixing of the original 64-bit
-   word-at-a-time hash into the final 32-bit hash value is very
-   simplistic and suboptimal, and just adds the two 32-bit parts
-   together.
-
-   In particular, because there is no bit shuffling and the mixing
-   boundary is also a byte boundary, similar character patterns in the
-   low and high word easily end up just canceling each other out.
-
- - the old byte-at-a-time hash mixed each byte into the final hash as it
-   hashed the path component name, resulting in the low bits of the hash
-   generally being a good source of hash data.  That is not true for the
-   word-at-a-time case, and the hash data is distributed among all the
-   bits.
-
-The fix is the same in both cases: do a better job of mixing the bits up
-and using as much of the hash data as possible.  We already have the
-"hash_32|64()" functions to do that.
-
-Reported-by: Josef Bacik <jbacik@fb.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Chris Mason <clm@fb.com>
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |    3 +--
- fs/namei.c  |    4 ++--
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/infiniband/core/iwcm.c |   27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -106,8 +106,7 @@ static inline struct hlist_bl_head *d_ha
- 					unsigned int hash)
- {
- 	hash += (unsigned long) parent / L1_CACHE_BYTES;
--	hash = hash + (hash >> d_hash_shift);
--	return dentry_hashtable + (hash & d_hash_mask);
-+	return dentry_hashtable + hash_32(hash, d_hash_shift);
+--- a/drivers/infiniband/core/iwcm.c
++++ b/drivers/infiniband/core/iwcm.c
+@@ -46,6 +46,7 @@
+ #include <linux/completion.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/sysctl.h>
+ 
+ #include <rdma/iw_cm.h>
+ #include <rdma/ib_addr.h>
+@@ -65,6 +66,20 @@ struct iwcm_work {
+ 	struct list_head free_list;
+ };
+ 
++static unsigned int default_backlog = 256;
++
++static struct ctl_table_header *iwcm_ctl_table_hdr;
++static struct ctl_table iwcm_ctl_table[] = {
++	{
++		.procname	= "default_backlog",
++		.data		= &default_backlog,
++		.maxlen		= sizeof(default_backlog),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{ }
++};
++
+ /*
+  * The following services provide a mechanism for pre-allocating iwcm_work
+  * elements.  The design pre-allocates them  based on the cm_id type:
+@@ -425,6 +440,9 @@ int iw_cm_listen(struct iw_cm_id *cm_id,
+ 
+ 	cm_id_priv = container_of(cm_id, struct iwcm_id_private, id);
+ 
++	if (!backlog)
++		backlog = default_backlog;
++
+ 	ret = alloc_work_entries(cm_id_priv, backlog);
+ 	if (ret)
+ 		return ret;
+@@ -1030,11 +1048,20 @@ static int __init iw_cm_init(void)
+ 	if (!iwcm_wq)
+ 		return -ENOMEM;
+ 
++	iwcm_ctl_table_hdr = register_net_sysctl(&init_net, "net/iw_cm",
++						 iwcm_ctl_table);
++	if (!iwcm_ctl_table_hdr) {
++		pr_err("iw_cm: couldn't register sysctl paths\n");
++		destroy_workqueue(iwcm_wq);
++		return -ENOMEM;
++	}
++
+ 	return 0;
  }
  
- /* Statistics gathering. */
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -34,6 +34,7 @@
- #include <linux/device_cgroup.h>
- #include <linux/fs_struct.h>
- #include <linux/posix_acl.h>
-+#include <linux/hash.h>
- #include <asm/uaccess.h>
- 
- #include "internal.h"
-@@ -1629,8 +1630,7 @@ static inline int nested_symlink(struct
- 
- static inline unsigned int fold_hash(unsigned long hash)
+ static void __exit iw_cm_cleanup(void)
  {
--	hash += hash >> (8*sizeof(int));
--	return hash;
-+	return hash_64(hash, 32);
++	unregister_net_sysctl_table(iwcm_ctl_table_hdr);
+ 	destroy_workqueue(iwcm_wq);
  }
  
- #else	/* 32-bit case */
 
 
