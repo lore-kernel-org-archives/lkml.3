@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaIONxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 09:53:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986AbaIONxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 09:53:23 -0400
-Message-ID: <5416EF28.8020900@redhat.com>
-Date: Mon, 15 Sep 2014 15:52:40 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752806AbaIONzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 09:55:36 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:61315 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaIONzf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 09:55:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Subject: Re: [PATCH] init/Kconfig: Add ENDIAN attributes for all architectures using
+Date: Mon, 15 Sep 2014 15:55:03 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, eparis@redhat.com,
+        paulmck@linux.vnet.ibm.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        zhenglong.cai@cs2c.com.cn, khilman@linaro.org, ak@linux.intel.com,
+        mcgrof@suse.com, fabf@skynet.be,
+        "dhowells@redhat.com" <dhowells@redhat.com>, pefoley2@pefoley.com,
+        mgorman@suse.de, biederm@xmission.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <jdelvare@suse.de>
+References: <540494D6.40701@gmail.com> <5406FFBD.8010207@gmail.com> <54155B14.9060809@gmail.com>
+In-Reply-To: <54155B14.9060809@gmail.com>
 MIME-Version: 1.0
-To: Z Lim <zlim.lnx@gmail.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH arm64-next v2] net: bpf: arm64: address randomize and
- write protect JIT code
-References: <1410543308-27449-1-git-send-email-dborkman@redhat.com> <CABg9mcv6cSXZLPNH3Dvhr6XatA33VAPwgHyKgQ35f0DSmsObRQ@mail.gmail.com>
-In-Reply-To: <CABg9mcv6cSXZLPNH3Dvhr6XatA33VAPwgHyKgQ35f0DSmsObRQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201409151555.03997.arnd@arndb.de>
+X-Provags-ID: V02:K0:JZPpyAGN76J37BIG6PXM4/tLbPs1HAmUiMWNIcIoEA9
+ zBAbvvR28JafTxjDiLNA68YXhS3WzMBA5HHAtGe1nL4wAGeLQv
+ 31ej2y81grADRqUwMDUjuF9rWc4ypP3dmKEeUXuqW3rtjud36j
+ WF9rcOAVKNQBwfIY3pgMEj7JfRbRvcuF7Kg28LX+QZE63ZPB0W
+ BlTmNWhBoDALsl0KZd0yUoES5zWJQRxJS/YKvmJkTzIqADlV3N
+ SJILEVzFbN/prZuKKrPTE4wLfxUtGXL6i1zqrr8zmqN25QUcUW
+ a1DPtkt5/AC2+ctvmsajzE/1ti+6vj4d6SG4tCb9Yil7NOcywx
+ 34JCJ+Kwf7tRE4xoCaHgLJnNYiVQGnvVOjhlCmw6c
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/13/2014 06:32 AM, Z Lim wrote:
-> On Fri, Sep 12, 2014 at 10:35 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->> This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
->> jit against spraying attacks").
->>
->> Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
->> support") which added necessary infrastructure, we can now implement
->> RO marking of eBPF generated JIT image pages and randomize start offset
->> for the JIT code, so that it does not reside directly on a page boundary
->> anymore. Likewise, the holes are filled with illegal instructions.
->>
->> This is basically the ARM64 variant of what we already have in ARM via
->> commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
->> JIT code"). Moreover, this commit also presents a merge resolution due to
->> conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
->> read-only") as we don't use kfree() in bpf_jit_free() anymore to release
->> the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
->> a different allocator.
->>
->> JIT tested on aarch64 with BPF test suite.
->>
->> Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: David S. Miller <davem@davemloft.net>
->> Cc: Alexei Starovoitov <ast@plumgrid.com>
->> ---
->>   v1 -> v2:
->>    - Use brk insn as suggested by Catalin, thanks a lot for
->>      your feedback! Rest unchanged.
->>   Note:
->>    - This patch depends on net-next being merged to mainline due
->>      to the mentioned merge conflict.
->>
->>   arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
->>   1 file changed, 29 insertions(+), 9 deletions(-)
->>
->> diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
->> index 7ae3354..4b71779 100644
->> --- a/arch/arm64/net/bpf_jit_comp.c
->> +++ b/arch/arm64/net/bpf_jit_comp.c
->> @@ -19,7 +19,6 @@
->>   #define pr_fmt(fmt) "bpf_jit: " fmt
->>
->>   #include <linux/filter.h>
->> -#include <linux/moduleloader.h>
->>   #include <linux/printk.h>
->>   #include <linux/skbuff.h>
->>   #include <linux/slab.h>
->> @@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
->>          return to - from;
->>   }
->>
->> +static void jit_fill_hole(void *area, unsigned int size)
->> +{
->> +       /* We use brk #0x100 to trigger a fault. */
->> +       u32 *ptr, fill_ins = 0xd4202000;
->
-> Missed this on first round of review, I think we also need
-> cpu_to_le32(...) here.
+On Sunday 14 September 2014, Chen Gang wrote:
+> Hello Maintainers:
+> 
+> Is this patch worthy enough to be applied?
+> 
+> Welcome any ideas, suggestions or completions.
 
-Just wondering ... so that would also hold true in case I build/run my
-kernel in big-endian (CPU_BIG_ENDIAN)?
+I find it hard to judge whether it's worth it or not. You gave one example
+for a driver that needs this, but what would be your estimate on how
+many other drivers have the same problem, either producing a #warning
+or misbehaving if neither symbol is set?
 
->> +       /* We are guaranteed to have aligned memory. */
->> +       for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
->> +               *ptr++ = fill_ins;
->> +}
->> +
-> [...]
->
-> Thanks Daniel.
+Having all architectures consistently report the endianess would be nice,
+but we have to weigh the advantages (currently broken code, potential
+simplifications) against the regression risk.
+
+	Arnd
