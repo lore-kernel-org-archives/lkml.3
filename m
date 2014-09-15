@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088AbaIOUAQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:00:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43399 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157AbaIOUAM (ORCPT
+	id S1756267AbaIOTrR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958AbaIOTrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:00:12 -0400
-Date: Mon, 15 Sep 2014 13:00:07 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/13] eeepc-laptop: make disp attribute really write-only
-Message-ID: <20140915200007.GB62440@vmdeb7>
-References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
- <1410563212-31565-8-git-send-email-fransklaver@gmail.com>
+	Mon, 15 Sep 2014 15:47:10 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH 3.10 09/71] tpm: missing tpm_chip_put in tpm_get_random()
+Date: Mon, 15 Sep 2014 12:26:07 -0700
+Message-Id: <20140915192639.024684137@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410563212-31565-8-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 13, 2014 at 01:06:46AM +0200, Frans Klaver wrote:
-> The disp attribute is write-only, but sysfs doesn't know this. Currently
-> show_sys_acpi() is mimicking sysfs behavior, if the underlying acpi call
-> should fail. This is not ideal; behaving like sysfs is better left to
-> sysfs.
-> 
-> Introduce EEEPC_CREATE_DEVICE_ATTR_WO() to instantiate a write-only
-> attribute, and declare the disp attribute with it. Sysfs makes sure
-> userspace can only write to disp at all times. This also means we can
-> back to propagating any errors from get_acpi().
-> 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> ---
->  drivers/platform/x86/eeepc-laptop.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index 3c04b77..4f6490d 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -291,7 +291,7 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
->  	int value = get_acpi(eeepc, cm);
->  
->  	if (value < 0)
-> -		return -EIO;
-> +		return value;
->  	return sprintf(buf, "%d\n", value);
->  }
->  
-> @@ -316,9 +316,13 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
->  	EEEPC_ACPI_STORE_FUNC(_name, _cm)				\
->  	static DEVICE_ATTR(_name, _mode, show_##_name, store_##_name)
->  
-> +#define EEEPC_CREATE_DEVICE_ATTR_WO(_name, _mode, _cm)			\
-> +	EEEPC_ACPI_STORE_FUNC(_name, _cm)				\
-> +	static DEVICE_ATTR(_name, _mode, NULL, store_##_name)
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Per Greg's previous reply, I presume DEVICE_ATTR_WO here?
+------------------
 
-> +
->  EEEPC_CREATE_DEVICE_ATTR(camera, S_IWUSR | S_IRUGO, CM_ASL_CAMERA);
->  EEEPC_CREATE_DEVICE_ATTR(cardr, S_IWUSR | S_IRUGO, CM_ASL_CARDREADER);
-> -EEEPC_CREATE_DEVICE_ATTR(disp, S_IWUSR, CM_ASL_DISPLAYSWITCH);
-> +EEEPC_CREATE_DEVICE_ATTR_WO(disp, S_IWUSR, CM_ASL_DISPLAYSWITCH);
->  
->  struct eeepc_cpufv {
->  	int num;
-> -- 
-> 2.1.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+commit 3e14d83ef94a5806a865b85b513b4e891923c19b upstream.
+
+Regression in 41ab999c. Call to tpm_chip_put is missing. This
+will cause TPM device driver not to unload if tmp_get_random()
+is called.
+
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/char/tpm/tpm.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1423,13 +1423,13 @@ int tpm_get_random(u32 chip_num, u8 *out
+ 	int err, total = 0, retries = 5;
+ 	u8 *dest = out;
+ 
++	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
++		return -EINVAL;
++
+ 	chip = tpm_chip_find_get(chip_num);
+ 	if (chip == NULL)
+ 		return -ENODEV;
+ 
+-	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
+-		return -EINVAL;
+-
+ 	do {
+ 		tpm_cmd.header.in = tpm_getrandom_header;
+ 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
+@@ -1448,6 +1448,7 @@ int tpm_get_random(u32 chip_num, u8 *out
+ 		num_bytes -= recd;
+ 	} while (retries-- && total < max);
+ 
++	tpm_chip_put(chip);
+ 	return total ? total : -EIO;
+ }
+ EXPORT_SYMBOL_GPL(tpm_get_random);
+
+
