@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405AbaIOWUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:20:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51272 "EHLO
+	id S1758882AbaIOWbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:31:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51267 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540AbaIOWUH (ORCPT
+	with ESMTP id S1758361AbaIOWUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:07 -0400
+	Mon, 15 Sep 2014 18:20:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeremy Vial <jvial@adeneo-embedded.com>, Tony Lindgren <tony@atomide.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 126/187] ARM: OMAP3: Fix choice of omap3_restore_es function in OMAP34XX rev3.1.2 case.
-Date: Mon, 15 Sep 2014 15:08:56 -0700
-Message-Id: <1410818997-9432-127-git-send-email-kamal@canonical.com>
+Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 128/187] netlabel: fix the horribly broken catmap functions
+Date: Mon, 15 Sep 2014 15:08:58 -0700
+Message-Id: <1410818997-9432-129-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,35 +26,576 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Vial <jvial@adeneo-embedded.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit 9b5f7428f8b16bd8980213f2b70baf1dd0b9e36c upstream.
+commit 4b8feff251da3d7058b5779e21b33a85c686b974 upstream.
 
-According to the comment “restore_es3: applies to 34xx >= ES3.0" in
-"arch/arm/mach-omap2/sleep34xx.S”, omap3_restore_es3 should be used
-if the revision of an OMAP34xx is ES3.1.2.
+The NetLabel secattr catmap functions, and the SELinux import/export
+glue routines, were broken in many horrible ways and the SELinux glue
+code fiddled with the NetLabel catmap structures in ways that we
+probably shouldn't allow.  At some point this "worked", but that was
+likely due to a bit of dumb luck and sub-par testing (both inflicted
+by yours truly).  This patch corrects these problems by basically
+gutting the code in favor of something less obtuse and restoring the
+NetLabel abstractions in the SELinux catmap glue code.
 
-Signed-off-by: Jeremy Vial <jvial@adeneo-embedded.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Everything is working now, and if it decides to break itself in the
+future this code will be much easier to debug than the code it
+replaces.
+
+One noteworthy side effect of the changes is that it is no longer
+necessary to allocate a NetLabel catmap before calling one of the
+NetLabel APIs to set a bit in the catmap.  NetLabel will automatically
+allocate the catmap nodes when needed, resulting in less allocations
+when the lowest bit is greater than 255 and less code in the LSMs.
+
+Reported-by: Christian Evans <frodox@zoho.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Tested-by: Casey Schaufler <casey@schaufler-ca.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-omap2/control.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ include/net/netlabel.h        |  26 ++++-
+ net/ipv4/cipso_ipv4.c         |  15 ---
+ net/netlabel/netlabel_kapi.c  | 216 ++++++++++++++++++++++++++++++++----------
+ security/selinux/ss/ebitmap.c | 127 ++++++++++---------------
+ security/smack/smack_access.c |   5 +-
+ 5 files changed, 240 insertions(+), 149 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/control.c b/arch/arm/mach-omap2/control.c
-index 44bb4d5..89cde07 100644
---- a/arch/arm/mach-omap2/control.c
-+++ b/arch/arm/mach-omap2/control.c
-@@ -314,7 +314,8 @@ void omap3_save_scratchpad_contents(void)
- 		scratchpad_contents.public_restore_ptr =
- 			virt_to_phys(omap3_restore_3630);
- 	else if (omap_rev() != OMAP3430_REV_ES3_0 &&
--					omap_rev() != OMAP3430_REV_ES3_1)
-+					omap_rev() != OMAP3430_REV_ES3_1 &&
-+					omap_rev() != OMAP3430_REV_ES3_1_2)
- 		scratchpad_contents.public_restore_ptr =
- 			virt_to_phys(omap3_restore);
- 	else
+diff --git a/include/net/netlabel.h b/include/net/netlabel.h
+index 28400bd..e84d71b 100644
+--- a/include/net/netlabel.h
++++ b/include/net/netlabel.h
+@@ -286,11 +286,11 @@ static inline void netlbl_secattr_catmap_free(
+ {
+ 	struct netlbl_lsm_secattr_catmap *iter;
+ 
+-	do {
++	while (catmap) {
+ 		iter = catmap;
+ 		catmap = catmap->next;
+ 		kfree(iter);
+-	} while (catmap);
++	}
+ }
+ 
+ /**
+@@ -395,6 +395,9 @@ int netlbl_secattr_catmap_walk(struct netlbl_lsm_secattr_catmap *catmap,
+ 			       u32 offset);
+ int netlbl_secattr_catmap_walk_rng(struct netlbl_lsm_secattr_catmap *catmap,
+ 				   u32 offset);
++int netlbl_secattr_catmap_getlong(struct netlbl_lsm_secattr_catmap *catmap,
++				  u32 *offset,
++				  unsigned long *bitmap);
+ int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 bit,
+ 				 gfp_t flags);
+@@ -402,6 +405,10 @@ int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 start,
+ 				 u32 end,
+ 				 gfp_t flags);
++int netlbl_secattr_catmap_setlong(struct netlbl_lsm_secattr_catmap **catmap,
++				  u32 offset,
++				  unsigned long bitmap,
++				  gfp_t flags);
+ 
+ /*
+  * LSM protocol operations (NetLabel LSM/kernel API)
+@@ -505,6 +512,13 @@ static inline int netlbl_secattr_catmap_walk_rng(
+ {
+ 	return -ENOENT;
+ }
++static inline int netlbl_secattr_catmap_getlong(
++				      struct netlbl_lsm_secattr_catmap *catmap,
++				      u32 *offset,
++				      unsigned long *bitmap)
++{
++	return 0;
++}
+ static inline int netlbl_secattr_catmap_setbit(
+ 				      struct netlbl_lsm_secattr_catmap **catmap,
+ 				      u32 bit,
+@@ -520,6 +534,14 @@ static inline int netlbl_secattr_catmap_setrng(
+ {
+ 	return 0;
+ }
++static int netlbl_secattr_catmap_setlong(
++				      struct netlbl_lsm_secattr_catmap **catmap,
++				      u32 offset,
++				      unsigned long bitmap,
++				      gfp_t flags)
++{
++	return 0;
++}
+ static inline int netlbl_enabled(void)
+ {
+ 	return 0;
+diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
+index 78856ca..d335b667 100644
+--- a/net/ipv4/cipso_ipv4.c
++++ b/net/ipv4/cipso_ipv4.c
+@@ -1336,11 +1336,6 @@ static int cipso_v4_parsetag_rbm(const struct cipso_v4_doi *doi_def,
+ 	secattr->flags |= NETLBL_SECATTR_MLS_LVL;
+ 
+ 	if (tag_len > 4) {
+-		secattr->attr.mls.cat =
+-		                       netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-		if (secattr->attr.mls.cat == NULL)
+-			return -ENOMEM;
+-
+ 		ret_val = cipso_v4_map_cat_rbm_ntoh(doi_def,
+ 						    &tag[4],
+ 						    tag_len - 4,
+@@ -1432,11 +1427,6 @@ static int cipso_v4_parsetag_enum(const struct cipso_v4_doi *doi_def,
+ 	secattr->flags |= NETLBL_SECATTR_MLS_LVL;
+ 
+ 	if (tag_len > 4) {
+-		secattr->attr.mls.cat =
+-			               netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-		if (secattr->attr.mls.cat == NULL)
+-			return -ENOMEM;
+-
+ 		ret_val = cipso_v4_map_cat_enum_ntoh(doi_def,
+ 						     &tag[4],
+ 						     tag_len - 4,
+@@ -1527,11 +1517,6 @@ static int cipso_v4_parsetag_rng(const struct cipso_v4_doi *doi_def,
+ 	secattr->flags |= NETLBL_SECATTR_MLS_LVL;
+ 
+ 	if (tag_len > 4) {
+-		secattr->attr.mls.cat =
+-			               netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-		if (secattr->attr.mls.cat == NULL)
+-			return -ENOMEM;
+-
+ 		ret_val = cipso_v4_map_cat_rng_ntoh(doi_def,
+ 						    &tag[4],
+ 						    tag_len - 4,
+diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+index 82c7fca..21af4b9 100644
+--- a/net/netlabel/netlabel_kapi.c
++++ b/net/netlabel/netlabel_kapi.c
+@@ -406,6 +406,63 @@ out_entry:
+  * Security Attribute Functions
+  */
+ 
++#define _CM_F_NONE	0x00000000
++#define _CM_F_ALLOC	0x00000001
++
++/**
++ * _netlbl_secattr_catmap_getnode - Get a individual node from a catmap
++ * @catmap: pointer to the category bitmap
++ * @offset: the requested offset
++ * @cm_flags: catmap flags, see _CM_F_*
++ * @gfp_flags: memory allocation flags
++ *
++ * Description:
++ * Iterate through the catmap looking for the node associated with @offset; if
++ * the _CM_F_ALLOC flag is set in @cm_flags and there is no associated node,
++ * one will be created and inserted into the catmap.  Returns a pointer to the
++ * node on success, NULL on failure.
++ *
++ */
++static struct netlbl_lsm_secattr_catmap *_netlbl_secattr_catmap_getnode(
++				struct netlbl_lsm_secattr_catmap **catmap,
++				u32 offset,
++				unsigned int cm_flags,
++				gfp_t gfp_flags)
++{
++	struct netlbl_lsm_secattr_catmap *iter = *catmap;
++	struct netlbl_lsm_secattr_catmap *prev = NULL;
++
++	if (iter == NULL || offset < iter->startbit)
++		goto secattr_catmap_getnode_alloc;
++	while (iter && offset >= (iter->startbit + NETLBL_CATMAP_SIZE)) {
++		prev = iter;
++		iter = iter->next;
++	}
++	if (iter == NULL || offset < iter->startbit)
++		goto secattr_catmap_getnode_alloc;
++
++	return iter;
++
++secattr_catmap_getnode_alloc:
++	if (!(cm_flags & _CM_F_ALLOC))
++		return NULL;
++
++	iter = netlbl_secattr_catmap_alloc(gfp_flags);
++	if (iter == NULL)
++		return NULL;
++	iter->startbit = offset & ~(NETLBL_CATMAP_SIZE - 1);
++
++	if (prev == NULL) {
++		iter->next = *catmap;
++		*catmap = iter;
++	} else {
++		iter->next = prev->next;
++		prev->next = iter;
++	}
++
++	return iter;
++}
++
+ /**
+  * netlbl_secattr_catmap_walk - Walk a LSM secattr catmap looking for a bit
+  * @catmap: the category bitmap
+@@ -522,6 +579,54 @@ int netlbl_secattr_catmap_walk_rng(struct netlbl_lsm_secattr_catmap *catmap,
+ }
+ 
+ /**
++ * netlbl_secattr_catmap_getlong - Export an unsigned long bitmap
++ * @catmap: pointer to the category bitmap
++ * @offset: pointer to the requested offset
++ * @bitmap: the exported bitmap
++ *
++ * Description:
++ * Export a bitmap with an offset greater than or equal to @offset and return
++ * it in @bitmap.  The @offset must be aligned to an unsigned long and will be
++ * updated on return if different from what was requested; if the catmap is
++ * empty at the requested offset and beyond, the @offset is set to (u32)-1.
++ * Returns zero on sucess, negative values on failure.
++ *
++ */
++int netlbl_secattr_catmap_getlong(struct netlbl_lsm_secattr_catmap *catmap,
++				  u32 *offset,
++				  unsigned long *bitmap)
++{
++	struct netlbl_lsm_secattr_catmap *iter;
++	u32 off = *offset;
++	u32 idx;
++
++	/* only allow aligned offsets */
++	if ((off & (BITS_PER_LONG - 1)) != 0)
++		return -EINVAL;
++
++	if (off < catmap->startbit) {
++		off = catmap->startbit;
++		*offset = off;
++	}
++	iter = _netlbl_secattr_catmap_getnode(&catmap, off, _CM_F_NONE, 0);
++	if (iter == NULL) {
++		*offset = (u32)-1;
++		return 0;
++	}
++
++	if (off < iter->startbit) {
++		off = iter->startbit;
++		*offset = off;
++	} else
++		off -= iter->startbit;
++
++	idx = off / NETLBL_CATMAP_MAPSIZE;
++	*bitmap = iter->bitmap[idx] >> (off % NETLBL_CATMAP_SIZE);
++
++	return 0;
++}
++
++/**
+  * netlbl_secattr_catmap_setbit - Set a bit in a LSM secattr catmap
+  * @catmap: pointer to the category bitmap
+  * @bit: the bit to set
+@@ -536,32 +641,16 @@ int netlbl_secattr_catmap_setbit(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 bit,
+ 				 gfp_t flags)
+ {
+-	struct netlbl_lsm_secattr_catmap *iter = *catmap;
+-	u32 node_bit;
+-	u32 node_idx;
++	struct netlbl_lsm_secattr_catmap *iter;
++	u32 idx;
+ 
+-	while (iter->next != NULL &&
+-	       bit >= (iter->startbit + NETLBL_CATMAP_SIZE))
+-		iter = iter->next;
+-	if (bit < iter->startbit) {
+-		iter = netlbl_secattr_catmap_alloc(flags);
+-		if (iter == NULL)
+-			return -ENOMEM;
+-		iter->next = *catmap;
+-		iter->startbit = bit & ~(NETLBL_CATMAP_SIZE - 1);
+-		*catmap = iter;
+-	} else if (bit >= (iter->startbit + NETLBL_CATMAP_SIZE)) {
+-		iter->next = netlbl_secattr_catmap_alloc(flags);
+-		if (iter->next == NULL)
+-			return -ENOMEM;
+-		iter = iter->next;
+-		iter->startbit = bit & ~(NETLBL_CATMAP_SIZE - 1);
+-	}
++	iter = _netlbl_secattr_catmap_getnode(catmap, bit, _CM_F_ALLOC, flags);
++	if (iter == NULL)
++		return -ENOMEM;
+ 
+-	/* gcc always rounds to zero when doing integer division */
+-	node_idx = (bit - iter->startbit) / NETLBL_CATMAP_MAPSIZE;
+-	node_bit = bit - iter->startbit - (NETLBL_CATMAP_MAPSIZE * node_idx);
+-	iter->bitmap[node_idx] |= NETLBL_CATMAP_BIT << node_bit;
++	bit -= iter->startbit;
++	idx = bit / NETLBL_CATMAP_MAPSIZE;
++	iter->bitmap[idx] |= NETLBL_CATMAP_BIT << (bit % NETLBL_CATMAP_MAPSIZE);
+ 
+ 	return 0;
+ }
+@@ -583,34 +672,61 @@ int netlbl_secattr_catmap_setrng(struct netlbl_lsm_secattr_catmap **catmap,
+ 				 u32 end,
+ 				 gfp_t flags)
+ {
+-	int ret_val = 0;
+-	struct netlbl_lsm_secattr_catmap *iter = *catmap;
+-	u32 iter_max_spot;
+-	u32 spot;
+-	u32 orig_spot = iter->startbit;
+-
+-	/* XXX - This could probably be made a bit faster by combining writes
+-	 * to the catmap instead of setting a single bit each time, but for
+-	 * right now skipping to the start of the range in the catmap should
+-	 * be a nice improvement over calling the individual setbit function
+-	 * repeatedly from a loop. */
+-
+-	while (iter->next != NULL &&
+-	       start >= (iter->startbit + NETLBL_CATMAP_SIZE))
+-		iter = iter->next;
+-	iter_max_spot = iter->startbit + NETLBL_CATMAP_SIZE;
+-
+-	for (spot = start; spot <= end && ret_val == 0; spot++) {
+-		if (spot >= iter_max_spot && iter->next != NULL) {
+-			iter = iter->next;
+-			iter_max_spot = iter->startbit + NETLBL_CATMAP_SIZE;
+-		}
+-		ret_val = netlbl_secattr_catmap_setbit(&iter, spot, flags);
+-		if (iter->startbit < orig_spot)
+-			*catmap = iter;
++	int rc = 0;
++	u32 spot = start;
++
++	while (rc == 0 && spot <= end) {
++		if (((spot & (BITS_PER_LONG - 1)) != 0) &&
++		    ((end - spot) > BITS_PER_LONG)) {
++			rc = netlbl_secattr_catmap_setlong(catmap,
++							   spot,
++							   (unsigned long)-1,
++							   flags);
++			spot += BITS_PER_LONG;
++		} else
++			rc = netlbl_secattr_catmap_setbit(catmap,
++							  spot++,
++							  flags);
+ 	}
+ 
+-	return ret_val;
++	return rc;
++}
++
++/**
++ * netlbl_secattr_catmap_setlong - Import an unsigned long bitmap
++ * @catmap: pointer to the category bitmap
++ * @offset: offset to the start of the imported bitmap
++ * @bitmap: the bitmap to import
++ * @flags: memory allocation flags
++ *
++ * Description:
++ * Import the bitmap specified in @bitmap into @catmap, using the offset
++ * in @offset.  The offset must be aligned to an unsigned long.  Returns zero
++ * on success, negative values on failure.
++ *
++ */
++int netlbl_secattr_catmap_setlong(struct netlbl_lsm_secattr_catmap **catmap,
++				  u32 offset,
++				  unsigned long bitmap,
++				  gfp_t flags)
++{
++	struct netlbl_lsm_secattr_catmap *iter;
++	u32 idx;
++
++	/* only allow aligned offsets */
++	if ((offset & (BITS_PER_LONG - 1)) != 0)
++		return -EINVAL;
++
++	iter = _netlbl_secattr_catmap_getnode(catmap,
++					      offset, _CM_F_ALLOC, flags);
++	if (iter == NULL)
++		return -ENOMEM;
++
++	offset -= iter->startbit;
++	idx = offset / NETLBL_CATMAP_MAPSIZE;
++	iter->bitmap[idx] |= bitmap << (offset % NETLBL_CATMAP_MAPSIZE);
++
++	return 0;
+ }
+ 
+ /*
+diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
+index 820313a..842deca 100644
+--- a/security/selinux/ss/ebitmap.c
++++ b/security/selinux/ss/ebitmap.c
+@@ -89,48 +89,33 @@ int ebitmap_netlbl_export(struct ebitmap *ebmap,
+ 			  struct netlbl_lsm_secattr_catmap **catmap)
+ {
+ 	struct ebitmap_node *e_iter = ebmap->node;
+-	struct netlbl_lsm_secattr_catmap *c_iter;
+-	u32 cmap_idx, cmap_sft;
+-	int i;
+-
+-	/* NetLabel's NETLBL_CATMAP_MAPTYPE is defined as an array of u64,
+-	 * however, it is not always compatible with an array of unsigned long
+-	 * in ebitmap_node.
+-	 * In addition, you should pay attention the following implementation
+-	 * assumes unsigned long has a width equal with or less than 64-bit.
+-	 */
++	unsigned long e_map;
++	u32 offset;
++	unsigned int iter;
++	int rc;
+ 
+ 	if (e_iter == NULL) {
+ 		*catmap = NULL;
+ 		return 0;
+ 	}
+ 
+-	c_iter = netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-	if (c_iter == NULL)
+-		return -ENOMEM;
+-	*catmap = c_iter;
+-	c_iter->startbit = e_iter->startbit & ~(NETLBL_CATMAP_SIZE - 1);
++	if (*catmap != NULL)
++		netlbl_secattr_catmap_free(*catmap);
++	*catmap = NULL;
+ 
+ 	while (e_iter) {
+-		for (i = 0; i < EBITMAP_UNIT_NUMS; i++) {
+-			unsigned int delta, e_startbit, c_endbit;
+-
+-			e_startbit = e_iter->startbit + i * EBITMAP_UNIT_SIZE;
+-			c_endbit = c_iter->startbit + NETLBL_CATMAP_SIZE;
+-			if (e_startbit >= c_endbit) {
+-				c_iter->next
+-				  = netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-				if (c_iter->next == NULL)
++		offset = e_iter->startbit;
++		for (iter = 0; iter < EBITMAP_UNIT_NUMS; iter++) {
++			e_map = e_iter->maps[iter];
++			if (e_map != 0) {
++				rc = netlbl_secattr_catmap_setlong(catmap,
++								   offset,
++								   e_map,
++								   GFP_ATOMIC);
++				if (rc != 0)
+ 					goto netlbl_export_failure;
+-				c_iter = c_iter->next;
+-				c_iter->startbit
+-				  = e_startbit & ~(NETLBL_CATMAP_SIZE - 1);
+ 			}
+-			delta = e_startbit - c_iter->startbit;
+-			cmap_idx = delta / NETLBL_CATMAP_MAPSIZE;
+-			cmap_sft = delta % NETLBL_CATMAP_MAPSIZE;
+-			c_iter->bitmap[cmap_idx]
+-				|= e_iter->maps[i] << cmap_sft;
++			offset += EBITMAP_UNIT_SIZE;
+ 		}
+ 		e_iter = e_iter->next;
+ 	}
+@@ -155,56 +140,42 @@ netlbl_export_failure:
+ int ebitmap_netlbl_import(struct ebitmap *ebmap,
+ 			  struct netlbl_lsm_secattr_catmap *catmap)
+ {
++	int rc;
+ 	struct ebitmap_node *e_iter = NULL;
+-	struct ebitmap_node *emap_prev = NULL;
+-	struct netlbl_lsm_secattr_catmap *c_iter = catmap;
+-	u32 c_idx, c_pos, e_idx, e_sft;
+-
+-	/* NetLabel's NETLBL_CATMAP_MAPTYPE is defined as an array of u64,
+-	 * however, it is not always compatible with an array of unsigned long
+-	 * in ebitmap_node.
+-	 * In addition, you should pay attention the following implementation
+-	 * assumes unsigned long has a width equal with or less than 64-bit.
+-	 */
+-
+-	do {
+-		for (c_idx = 0; c_idx < NETLBL_CATMAP_MAPCNT; c_idx++) {
+-			unsigned int delta;
+-			u64 map = c_iter->bitmap[c_idx];
+-
+-			if (!map)
+-				continue;
++	struct ebitmap_node *e_prev = NULL;
++	u32 offset = 0, idx;
++	unsigned long bitmap;
++
++	for (;;) {
++		rc = netlbl_secattr_catmap_getlong(catmap, &offset, &bitmap);
++		if (rc < 0)
++			goto netlbl_import_failure;
++		if (offset == (u32)-1)
++			return 0;
+ 
+-			c_pos = c_iter->startbit
+-				+ c_idx * NETLBL_CATMAP_MAPSIZE;
+-			if (!e_iter
+-			    || c_pos >= e_iter->startbit + EBITMAP_SIZE) {
+-				e_iter = kzalloc(sizeof(*e_iter), GFP_ATOMIC);
+-				if (!e_iter)
+-					goto netlbl_import_failure;
+-				e_iter->startbit
+-					= c_pos - (c_pos % EBITMAP_SIZE);
+-				if (emap_prev == NULL)
+-					ebmap->node = e_iter;
+-				else
+-					emap_prev->next = e_iter;
+-				emap_prev = e_iter;
+-			}
+-			delta = c_pos - e_iter->startbit;
+-			e_idx = delta / EBITMAP_UNIT_SIZE;
+-			e_sft = delta % EBITMAP_UNIT_SIZE;
+-			while (map) {
+-				e_iter->maps[e_idx++] |= map & (-1UL);
+-				map = EBITMAP_SHIFT_UNIT_SIZE(map);
+-			}
++		if (e_iter == NULL ||
++		    offset >= e_iter->startbit + EBITMAP_SIZE) {
++			e_prev = e_iter;
++			e_iter = kzalloc(sizeof(*e_iter), GFP_ATOMIC);
++			if (e_iter == NULL)
++				goto netlbl_import_failure;
++			e_iter->startbit = offset & ~(EBITMAP_SIZE - 1);
++			if (e_prev == NULL)
++				ebmap->node = e_iter;
++			else
++				e_prev->next = e_iter;
++			ebmap->highbit = e_iter->startbit + EBITMAP_SIZE;
+ 		}
+-		c_iter = c_iter->next;
+-	} while (c_iter);
+-	if (e_iter != NULL)
+-		ebmap->highbit = e_iter->startbit + EBITMAP_SIZE;
+-	else
+-		ebitmap_destroy(ebmap);
+ 
++		/* offset will always be aligned to an unsigned long */
++		idx = EBITMAP_NODE_INDEX(e_iter, offset);
++		e_iter->maps[idx] = bitmap;
++
++		/* next */
++		offset += EBITMAP_UNIT_SIZE;
++	}
++
++	/* NOTE: we should never reach this return */
+ 	return 0;
+ 
+ netlbl_import_failure:
+diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
+index 9ecf4f4..ea1bc50 100644
+--- a/security/smack/smack_access.c
++++ b/security/smack/smack_access.c
+@@ -435,10 +435,7 @@ int smk_netlbl_mls(int level, char *catset, struct netlbl_lsm_secattr *sap,
+ 
+ 	sap->flags |= NETLBL_SECATTR_MLS_CAT;
+ 	sap->attr.mls.lvl = level;
+-	sap->attr.mls.cat = netlbl_secattr_catmap_alloc(GFP_ATOMIC);
+-	if (!sap->attr.mls.cat)
+-		return -ENOMEM;
+-	sap->attr.mls.cat->startbit = 0;
++	sap->attr.mls.cat = NULL;
+ 
+ 	for (cat = 1, cp = catset, byte = 0; byte < len; cp++, byte++)
+ 		for (m = 0x80; m != 0; m >>= 1, cat++) {
 -- 
 1.9.1
 
