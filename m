@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaIOTgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:36:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54900 "EHLO
+	id S1755486AbaIOTgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:36:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071AbaIOT1M (ORCPT
+	with ESMTP id S1755072AbaIOT1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:27:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        Daniel Mack <zonque@gmail.com>, Johannes Stezenbach <js@sig21.net>,
         Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 086/158] ASoC: pxa: pxa-ssp: small leak in probe()
-Date: Mon, 15 Sep 2014 12:25:25 -0700
-Message-Id: <20140915192545.467294480@linuxfoundation.org>
+Subject: [PATCH 3.16 087/158] ASoC: pxa-ssp: drop SNDRV_PCM_FMTBIT_S24_LE
+Date: Mon, 15 Sep 2014 12:25:26 -0700
+Message-Id: <20140915192545.496240877@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,32 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Daniel Mack <zonque@gmail.com>
 
-commit 4548728981de259d7d37d0ae968a777b09794168 upstream.
+commit 9301503af016eb537ccce76adec0c1bb5c84871e upstream.
 
-There is a small memory leak if probe() fails.
+This mode is unsupported, as the DMA controller can't do zero-padding
+of samples.
 
-Fixes: 2023c90c3a2c ('ASoC: pxa: pxa-ssp: add DT bindings')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Daniel Mack <zonque@gmail.com>
+Reported-by: Johannes Stezenbach <js@sig21.net>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/pxa/pxa-ssp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/soc/pxa/pxa-ssp.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 --- a/sound/soc/pxa/pxa-ssp.c
 +++ b/sound/soc/pxa/pxa-ssp.c
-@@ -723,7 +723,8 @@ static int pxa_ssp_probe(struct snd_soc_
- 		ssp_handle = of_parse_phandle(dev->of_node, "port", 0);
- 		if (!ssp_handle) {
- 			dev_err(dev, "unable to get 'port' phandle\n");
--			return -ENODEV;
-+			ret = -ENODEV;
-+			goto err_priv;
- 		}
+@@ -765,9 +765,7 @@ static int pxa_ssp_remove(struct snd_soc
+ 			  SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_64000 |	\
+ 			  SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000)
  
- 		priv->ssp = pxa_ssp_request_of(ssp_handle, "SoC audio");
+-#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
+-			    SNDRV_PCM_FMTBIT_S24_LE |	\
+-			    SNDRV_PCM_FMTBIT_S32_LE)
++#define PXA_SSP_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
+ 
+ static const struct snd_soc_dai_ops pxa_ssp_dai_ops = {
+ 	.startup	= pxa_ssp_startup,
 
 
