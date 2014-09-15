@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaIORCj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:02:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43175 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987AbaIORCg (ORCPT
+	id S1754104AbaIORF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:05:27 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52873 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaIORF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:02:36 -0400
-Date: Mon, 15 Sep 2014 09:54:36 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Jianqun <xjq@rock-chips.com>
-Cc: Jianqun <jay.xu@rock-chips.com>, heiko@sntech.de, lgirdwood@gmail.com,
-        perex@perex.cz, tiwai@suse.de, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, huangtao@rock-chips.com,
-        cf@rock-chips.com
-Message-ID: <20140915165436.GW7960@sirena.org.uk>
-References: <1410568723-21559-1-git-send-email-jay.xu@rock-chips.com>
- <1410568993-21874-1-git-send-email-jay.xu@rock-chips.com>
- <20140913163749.GK7960@sirena.org.uk>
- <5414FD1F.6020603@rock-chips.com>
+	Mon, 15 Sep 2014 13:05:26 -0400
+Date: Mon, 15 Sep 2014 10:05:19 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Ching Huang <ching2048@areca.com.tw>, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
+Message-ID: <20140915170519.GB31009@infradead.org>
+References: <1408433122.4748.73.camel@Centos6.3-64>
+ <53FDE490.1070201@redhat.com>
+ <1409240809.4762.259.camel@Centos6.3-64>
+ <53FF2544.8020601@redhat.com>
+ <20140909163057.GA25745@infradead.org>
+ <541020CB.8010302@redhat.com>
+ <5416E858.7010709@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UY7nlVifw84slYwb"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5414FD1F.6020603@rock-chips.com>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <5416E858.7010709@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/5] ASoC: rockchip-i2s: enable "hclk" for rockchip I2S
- controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 15, 2014 at 03:23:36PM +0200, Tomas Henzl wrote:
+> Christoph,
+> 
+> you may add my 'reviewed-by' to the arcmsr series
+> http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
+> with the '[PATCH v5 2/2] arcmsr: simplify of updating doneq_index and postq_index'
+> ( https://lkml.org/lkml/2014/9/15/177 ) on top of the series
+> that last patch fixes the 16/17 from your git.
+> I hope the series is an iteration in the right direction.
+> Skip the the '[PATCH v4 1/2] arcmsr: simplify ioctl data read/write', Ching will repost it later.
 
---UY7nlVifw84slYwb
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Sep 14, 2014 at 10:27:43AM +0800, Jianqun wrote:
-> =E5=9C=A8 09/14/2014 12:37 AM, Mark Brown =E5=86=99=E9=81=93:
-
-> >> +	ret =3D clk_prepare_enable(i2s->hclk);
-> >> +	if (ret) {
-> >> +		dev_err(i2s->dev, "hclock enable failed %d\n", ret);
-> >> +		return ret;
-> >> +	}
-
-> > BTW: you're also missing a clk_disable_unprepare() in the remove path
-> > here, please send a followup fixing that.
-> remove function has done the clk_disable_unprepare for "hclk".
-
-> One more thing, since "i2s_clk" is enabled at runtime_resume, and is disa=
-bled in runtime_suspend,
-> hasn't enable in probe, so do the "i2s_clk" to be disabled in remove ?
-> The current driver has disable in remove.
-
-Again, please try to write clear changelogs which describe what the goal
-of the patch is and cover obvious questions like this which a reviewer
-might ask.
-
-This is all extremely unclear - you're adding an enable here with no
-matching disable.  It seems that what you saying that there was
-previously a bug where the clock was disabled without being enabled?
-I had to look at the code to work that out...
-
---UY7nlVifw84slYwb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUFxnLAAoJECTWi3JdVIfQ2goH/iV5NaXpjtKs+PwEz4xS+1K1
-7HHS0xID6tyQp+jIHakSg633s88uH7YN8slrwvdpSwOcqDXC73eiHP1UzQ3sgZai
-hAu0NulcrC8t2RyJ/l2PXbpFZ19Z+MlREJxVBL/F0QthvcfVtpY0Ah9IqFxq3Up1
-8v63pzxQof3Qfj1USUf+6u62Q/i0SmUFe1HAfkC0N3nSPlf9vZPtMip021/MhfFv
-xQc/ngaL7YgHlUMh8vsQGdU+bWfz7f9eHROjDxPbipl0YRe4cbzsRMHmk8ZlVYFM
-kmcklgCly+juio5dMJtVhon4yrcmjulnRLFHh9Wf1Ogm56EMKnwcylxCAKlX+JE=
-=OH8N
------END PGP SIGNATURE-----
-
---UY7nlVifw84slYwb--
+Thanks a lot Tomas for all the review, and thanks Ching for the patches
+and updates.  I'll merge the branch and the additional patch today.
