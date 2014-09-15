@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaIOV2C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:28:02 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:50336 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015AbaIOV17 (ORCPT
+	id S1756233AbaIOV3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:29:52 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:43000 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330AbaIOV3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:27:59 -0400
-Message-ID: <541759DB.8090408@gmail.com>
-Date: Mon, 15 Sep 2014 23:27:55 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomasz Figa <t.figa@samsung.com>
-CC: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        lauraa@codeaurora.org, linux-omap@vger.kernel.org,
-        linus.walleij@linaro.org, santosh.shilimkar@ti.com, tony@atomide.com,
-        drake@endlessm.com, Marek Szyprowski <m.szyprowski@samsung.com>,
-        loeliger@gmail.com
-Subject: Re: [PATCH v4 5/7] ARM: EXYNOS: Add .write_sec outer cache callback
- for L2C-310
-References: <1409062680-15906-1-git-send-email-t.figa@samsung.com> <1409062680-15906-6-git-send-email-t.figa@samsung.com> <20140915085845.GC12379@n2100.arm.linux.org.uk>
-In-Reply-To: <20140915085845.GC12379@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Mon, 15 Sep 2014 17:29:51 -0400
+Message-ID: <1410815951.28990.384.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 6/6] x86, pat: Update documentation for WT changes
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Yigal Korman <yigal@plexistor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 15 Sep 2014 15:19:11 -0600
+In-Reply-To: <1410384895.28990.312.camel@misato.fc.hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+	 <1410367910-6026-7-git-send-email-toshi.kani@hp.com>
+	 <CALCETrVnHg0X=R23qyiPtxYs3knHaXq65L0Jw_1oY4=gX5kpXQ@mail.gmail.com>
+	 <1410379933.28990.287.camel@misato.fc.hp.com>
+	 <CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+	 <1410384895.28990.312.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +static void exynos_l2_write_sec(unsigned long val, unsigned reg)
->> +{
->> +	switch (reg) {
->> +	case L2X0_CTRL:
->> +		if (val & L2X0_CTRL_EN)
->> +			exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
+On Wed, 2014-09-10 at 15:34 -0600, Toshi Kani wrote:
+> On Wed, 2014-09-10 at 13:29 -0700, Andy Lutomirski wrote:
+> > On Wed, Sep 10, 2014 at 1:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > > On Wed, 2014-09-10 at 11:30 -0700, Andy Lutomirski wrote:
+> > >> On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> > >> > +Drivers may map the entire NV-DIMM range with ioremap_cache and then change
+> > >> > +a specific range to wt with set_memory_wt.
+> > >>
+> > >> That's mighty specific :)
+> > >
+> > > How about below?
+> > >
+> > > Drivers may use set_memory_wt to set WT type for cached reserve ranges.
+> > 
+> > Do they have to be cached?
 > 
-> If we're calling this with the cache already enabled, presumably you're
-> doing this to cover the case where we're disabling the cache.
-
-Can we ever call this with L2X0_CTRL_EN set in val, while the cache is
-already enabled?
-
-Anyway, calling of this firmware operation is necessary before enabling
-the cache and this code is here to cover this requirement. Whether this
-function simply invalidates the cache or does something else is unknown
-to me, as all the information I got is that this needs to be done.
-
+> Yes, set_memory_xyz only supports WB->type->WB transition.
 > 
-> 1. Do you really want to *invalidate* the L2 cache, discarding its
->    contents?
-> 2. Don't you think that... if you needed something like this here, then
->    it could be a defficiency in the common code?
+> > How about:
+> > 
+> > Drivers may call set_memory_wt on ioremapped ranges.  In this case,
+> > there is no need to change the memory type back before calling
+> > iounmap.
+> > 
+> > (Or only on cached ioremapped ranges if that is, in fact, the case.)
 > 
-> If (2) doesn't apply, then should be a comment here why this is needed.
-> 
+> Sounds good.  Yes, I will use cashed ioremapped ranges.
 
-This is a quirk specific to Exynos firmware and I suspect it doesn't
-even have anything to do with cache invalidation, but rather some
-internal logic inside the firmware.
+Well, testing "no need to change the memory type back before calling
+iounmap" turns out to be a good test case.  I realized that
+set_memory_xyz only works properly for RAM.  There are two problems for
+using this interface for ioremapped ranges.
 
-I agree, though, that a comment might be useful here.
+1) set_memory_xyz calls reserve_memtype() with __pa(addr).  However,
+__pa() translates the addr into a fake physical address when it is an
+ioremapped address.
 
-Best regards,
-Tomasz
+2) reserve_memtype() does not work for set_memory_xyz.  For RAM, the WB
+state is managed untracked.  Hence, WB->new->WB is not considered as a
+conflict.  For ioremapped ranges, WB is tracked in the same way as other
+cache types.  Hence, WB->new is considered as a conflict.
+
+In my previous testing, 2) was undetected since 1) led using a fake
+physical address which was not tracked for WB.  This made ioremapped
+ranges worked just like RAM. :-( 
+
+Anyway, 1) can be fixed by using slow_virt_to_phys() instead of __pa().
+set_memory_xyz is already slow, but this makes it even slower, though.
+
+For 2), WB has to be continuously tracked in order to detect aliasing,
+ex. ioremap_cache and ioremap to a same address.  So, I think
+reserve_memtype() needs the following changes:
+ - Add a new arg to see if an operation is to create a new mapping or to
+change cache attribute.
+ - Track overlapping maps so that cache type change to an overlapping
+range can be detected and failed.
+
+This level of changes requires a separate set of patches if we pursue to
+support ioremapped ranges.  So, I am considering to take one of the two
+options below.
+
+A) Drop the patch for set_memory_wt.
+
+B) Keep the patch for set_memory_wt, but document that it fails with
+-EINVAL and its use is for RAM only.
+
+Any suggestion?
+Thanks,
+-Toshi
+
