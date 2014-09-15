@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549AbaIOTgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:36:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55079 "EHLO
+	id S1758545AbaIOUs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:48:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731AbaIOTgn (ORCPT
+	with ESMTP id S1755542AbaIOTgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:43 -0400
+	Mon, 15 Sep 2014 15:36:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Doug Ledford <dledford@redhat.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.16 131/158] RDMA/uapi: Include socket.h in rdma_user_cm.h
-Date: Mon, 15 Sep 2014 12:26:10 -0700
-Message-Id: <20140915192546.811006460@linuxfoundation.org>
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.16 119/158] Bluetooth: never linger on process exit
+Date: Mon, 15 Sep 2014 12:25:58 -0700
+Message-Id: <20140915192546.453308382@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,34 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Doug Ledford <dledford@redhat.com>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit db1044d458a287c18c4d413adc4ad12e92e253b5 upstream.
+commit 093facf3634da1b0c2cc7ed106f1983da901bbab upstream.
 
-added struct sockaddr_storage to rdma_user_cm.h without also adding an
-include for linux/socket.h to make sure it is defined.  Systemtap
-needs the header files to build standalone and cannot rely on other
-files to pre-include other headers, so add linux/socket.h to the list
-of includes in this file.
+If the current process is exiting, lingering on socket close will make
+it unkillable, so we should avoid it.
 
-Fixes: ee7aed4528f ("RDMA/ucma: Support querying for AF_IB addresses")
-Signed-off-by: Doug Ledford <dledford@redhat.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reproducer:
+
+  #include <sys/types.h>
+  #include <sys/socket.h>
+
+  #define BTPROTO_L2CAP   0
+  #define BTPROTO_SCO     2
+  #define BTPROTO_RFCOMM  3
+
+  int main()
+  {
+          int fd;
+          struct linger ling;
+
+          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
+
+          ling.l_onoff = 1;
+          ling.l_linger = 1000000000;
+          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
+
+          return 0;
+  }
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/uapi/rdma/rdma_user_cm.h |    1 +
- 1 file changed, 1 insertion(+)
+ net/bluetooth/l2cap_sock.c  |    3 ++-
+ net/bluetooth/rfcomm/sock.c |    3 ++-
+ net/bluetooth/sco.c         |    6 ++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
---- a/include/uapi/rdma/rdma_user_cm.h
-+++ b/include/uapi/rdma/rdma_user_cm.h
-@@ -34,6 +34,7 @@
- #define RDMA_USER_CM_H
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -1111,7 +1111,8 @@ static int l2cap_sock_shutdown(struct so
+ 		l2cap_chan_close(chan, 0);
+ 		lock_sock(sk);
  
- #include <linux/types.h>
-+#include <linux/socket.h>
- #include <linux/in6.h>
- #include <rdma/ib_user_verbs.h>
- #include <rdma/ib_user_sa.h>
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
+ 	}
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -918,7 +918,8 @@ static int rfcomm_sock_shutdown(struct s
+ 		sk->sk_shutdown = SHUTDOWN_MASK;
+ 		__rfcomm_sock_close(sk);
+ 
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 	}
+ 	release_sock(sk);
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -909,7 +909,8 @@ static int sco_sock_shutdown(struct sock
+ 		sco_sock_clear_timer(sk);
+ 		__sco_sock_close(sk);
+ 
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
+ 	}
+@@ -929,7 +930,8 @@ static int sco_sock_release(struct socke
+ 
+ 	sco_sock_close(sk);
+ 
+-	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime) {
++	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++	    !(current->flags & PF_EXITING)) {
+ 		lock_sock(sk);
+ 		err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 		release_sock(sk);
 
 
