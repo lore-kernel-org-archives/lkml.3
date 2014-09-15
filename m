@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311AbaIOUNz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:13:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55637 "EHLO
+	id S1757370AbaIOUPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:15:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55604 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756161AbaIOTrC (ORCPT
+	with ESMTP id S1756148AbaIOTrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:02 -0400
+	Mon, 15 Sep 2014 15:47:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 107/114] mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
-Date: Mon, 15 Sep 2014 12:26:47 -0700
-Message-Id: <20140915192644.766988172@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Fanael Linithien <fanael4@gmail.com>,
+        Grozdan <neutrino8@gmail.com>, Dave Chinner <dchinner@redhat.com>,
+        Brian Foster <bfoster@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 090/114] xfs: ensure verifiers are attached to recovered buffers
+Date: Mon, 15 Sep 2014 12:26:30 -0700
+Message-Id: <20140915192644.234975530@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,45 +31,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 40ddbf5069bd4e11447c0088fc75318e0aac53f0 upstream.
+commit 67dc288c21064b31a98a53dc64f6b9714b819fd6 upstream.
 
-commit 65b97cf6b8de introduced in v3.7 caused a regression
-by using a reversed CS_MASK thus causing omap_calculate_ecc to
-always fail. As the NAND base driver never checks for .calculate()'s
-return value, the zeroed ECC values are used as is without showing
-any error to the user. However, this won't work and the NAND device
-won't be guarded by any error code.
+Crash testing of CRC enabled filesystems has resulted in a number of
+reports of bad CRCs being detected after the filesystem was mounted.
+Errors such as the following were being seen:
 
-Fix the issue by using the correct mask.
+XFS (sdb3): Mounting V5 Filesystem
+XFS (sdb3): Starting recovery (logdev: internal)
+XFS (sdb3): Metadata CRC error detected at xfs_agf_read_verify+0x5a/0x100 [xfs], block 0x1
+XFS (sdb3): Unmount and run xfs_repair
+XFS (sdb3): First 64 bytes of corrupted metadata buffer:
+ffff880136ffd600: 58 41 47 46 00 00 00 01 00 00 00 00 00 0f aa 40  XAGF...........@
+ffff880136ffd610: 00 02 6d 53 00 02 77 f8 00 00 00 00 00 00 00 01  ..mS..w.........
+ffff880136ffd620: 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 03  ................
+ffff880136ffd630: 00 00 00 04 00 08 81 d0 00 08 81 a7 00 00 00 00  ................
+XFS (sdb3): metadata I/O error: block 0x1 ("xfs_trans_read_buf_map") error 74 numblks 1
 
-Code was tested on omap3beagle using the following procedure
-- flash the primary bootloader (MLO) from the kernel to the first
-NAND partition using nandwrite.
-- boot the board from NAND. This utilizes OMAP ROM loader that
-relies on 1-bit Hamming code ECC.
+The errors were typically being seen in AGF, AGI and their related
+btree block buffers some time after log recovery had run. Often it
+wasn't until later subsequent mounts that the problem was
+discovered. The common symptom was a buffer with the correct
+contents, but a CRC and an LSN that matched an older version of the
+contents.
 
-Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
+Some debug added to _xfs_buf_ioapply() indicated that buffers were
+being written without verifiers attached to them from log recovery,
+and Jan Kara isolated the cause to log recovery readahead an dit's
+interactions with buffers that had a more recent LSN on disk than
+the transaction being recovered. In this case, the buffer did not
+get a verifier attached, and os when the second phase of log
+recovery ran and recovered EFIs and unlinked inodes, the buffers
+were modified and written without the verifier running. Hence they
+had up to date contents, but stale LSNs and CRCs.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Fix it by attaching verifiers to buffers we skip due to future LSN
+values so they don't escape into the buffer cache without the
+correct verifier attached.
+
+This patch is based on analysis and a patch from Jan Kara.
+
+Reported-by: Jan Kara <jack@suse.cz>
+Reported-by: Fanael Linithien <fanael4@gmail.com>
+Reported-by: Grozdan <neutrino8@gmail.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/nand/omap2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/xfs_log_recover.c |   51 ++++++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 20 deletions(-)
 
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -933,7 +933,7 @@ static int omap_calculate_ecc(struct mtd
- 	u32 val;
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -2125,6 +2125,17 @@ xlog_recover_validate_buf_type(
+ 	__uint16_t		magic16;
+ 	__uint16_t		magicda;
  
- 	val = readl(info->reg.gpmc_ecc_config);
--	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
-+	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
- 		return -EINVAL;
++	/*
++	 * We can only do post recovery validation on items on CRC enabled
++	 * fielsystems as we need to know when the buffer was written to be able
++	 * to determine if we should have replayed the item. If we replay old
++	 * metadata over a newer buffer, then it will enter a temporarily
++	 * inconsistent state resulting in verification failures. Hence for now
++	 * just avoid the verification stage for non-crc filesystems
++	 */
++	if (!xfs_sb_version_hascrc(&mp->m_sb))
++		return;
++
+ 	magic32 = be32_to_cpu(*(__be32 *)bp->b_addr);
+ 	magic16 = be16_to_cpu(*(__be16*)bp->b_addr);
+ 	magicda = be16_to_cpu(info->magic);
+@@ -2160,8 +2171,6 @@ xlog_recover_validate_buf_type(
+ 		bp->b_ops = &xfs_agf_buf_ops;
+ 		break;
+ 	case XFS_BLFT_AGFL_BUF:
+-		if (!xfs_sb_version_hascrc(&mp->m_sb))
+-			break;
+ 		if (magic32 != XFS_AGFL_MAGIC) {
+ 			xfs_warn(mp, "Bad AGFL block magic!");
+ 			ASSERT(0);
+@@ -2194,10 +2203,6 @@ xlog_recover_validate_buf_type(
+ #endif
+ 		break;
+ 	case XFS_BLFT_DINO_BUF:
+-		/*
+-		 * we get here with inode allocation buffers, not buffers that
+-		 * track unlinked list changes.
+-		 */
+ 		if (magic16 != XFS_DINODE_MAGIC) {
+ 			xfs_warn(mp, "Bad INODE block magic!");
+ 			ASSERT(0);
+@@ -2277,8 +2282,6 @@ xlog_recover_validate_buf_type(
+ 		bp->b_ops = &xfs_attr3_leaf_buf_ops;
+ 		break;
+ 	case XFS_BLFT_ATTR_RMT_BUF:
+-		if (!xfs_sb_version_hascrc(&mp->m_sb))
+-			break;
+ 		if (magic32 != XFS_ATTR3_RMT_MAGIC) {
+ 			xfs_warn(mp, "Bad attr remote magic!");
+ 			ASSERT(0);
+@@ -2385,16 +2388,7 @@ xlog_recover_do_reg_buffer(
+ 	/* Shouldn't be any more regions */
+ 	ASSERT(i == item->ri_total);
  
- 	/* read ecc result */
+-	/*
+-	 * We can only do post recovery validation on items on CRC enabled
+-	 * fielsystems as we need to know when the buffer was written to be able
+-	 * to determine if we should have replayed the item. If we replay old
+-	 * metadata over a newer buffer, then it will enter a temporarily
+-	 * inconsistent state resulting in verification failures. Hence for now
+-	 * just avoid the verification stage for non-crc filesystems
+-	 */
+-	if (xfs_sb_version_hascrc(&mp->m_sb))
+-		xlog_recover_validate_buf_type(mp, bp, buf_f);
++	xlog_recover_validate_buf_type(mp, bp, buf_f);
+ }
+ 
+ /*
+@@ -2502,12 +2496,29 @@ xlog_recover_buffer_pass2(
+ 	}
+ 
+ 	/*
+-	 * recover the buffer only if we get an LSN from it and it's less than
++	 * Recover the buffer only if we get an LSN from it and it's less than
+ 	 * the lsn of the transaction we are replaying.
++	 *
++	 * Note that we have to be extremely careful of readahead here.
++	 * Readahead does not attach verfiers to the buffers so if we don't
++	 * actually do any replay after readahead because of the LSN we found
++	 * in the buffer if more recent than that current transaction then we
++	 * need to attach the verifier directly. Failure to do so can lead to
++	 * future recovery actions (e.g. EFI and unlinked list recovery) can
++	 * operate on the buffers and they won't get the verifier attached. This
++	 * can lead to blocks on disk having the correct content but a stale
++	 * CRC.
++	 *
++	 * It is safe to assume these clean buffers are currently up to date.
++	 * If the buffer is dirtied by a later transaction being replayed, then
++	 * the verifier will be reset to match whatever recover turns that
++	 * buffer into.
+ 	 */
+ 	lsn = xlog_recover_get_buf_lsn(mp, bp);
+-	if (lsn && lsn != -1 && XFS_LSN_CMP(lsn, current_lsn) >= 0)
++	if (lsn && lsn != -1 && XFS_LSN_CMP(lsn, current_lsn) >= 0) {
++		xlog_recover_validate_buf_type(mp, bp, buf_f);
+ 		goto out_release;
++	}
+ 
+ 	if (buf_f->blf_flags & XFS_BLF_INODE_BUF) {
+ 		error = xlog_recover_do_inode_buffer(mp, item, bp, buf_f);
 
 
