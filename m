@@ -1,79 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbaIOOXZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:23:25 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:44881 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaIOOXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:23:24 -0400
-Message-ID: <5416F658.5090105@gmail.com>
-Date: Mon, 15 Sep 2014 08:23:20 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752777AbaIOOY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:24:57 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:11172 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979AbaIOOYz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 10:24:55 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "'Will Deacon'" <will.deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>
+Date: Mon, 15 Sep 2014 22:20:14 +0800
+Subject: RE: [RFC v2] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Thread-Topic: [RFC v2] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Thread-Index: AQHP0PC/xx1/1wWeLUCt9w3JpxCTeg==
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB4D6F19@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>,<20140915113325.GD12361@n2100.arm.linux.org.uk>
+In-Reply-To: <20140915113325.GD12361@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH RFC] perf kvm stat live: cache mmap()ed events
-References: <1410539263-25857-1-git-send-email-yarygin@linux.vnet.ibm.com>	<5415B6B9.2040607@gmail.com> <874mw9vy69.fsf@linux.vnet.ibm.com>
-In-Reply-To: <874mw9vy69.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/15/14, 6:57 AM, Alexander Yarygin wrote:
-> David Ahern <dsahern@gmail.com> writes:
+Great!
+yeah, you are right,
+just keep the change in free_initrd_mem( ) is ok.
+we don't need keep reserved memory to be aligned ,
+
+Thanks!
+
+________________________________________
+From: Russell King - ARM Linux [linux@arm.linux.org.uk]
+Sent: Monday, September 15, 2014 7:33 PM
+To: Wang, Yalin
+Cc: 'Will Deacon'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-mm@kvack.org'; 'linux-arm-msm@vger.kernel.org'
+Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page      aligned
+
+On Mon, Sep 15, 2014 at 07:07:20PM +0800, Wang, Yalin wrote:
+> this patch extend the start and end address of initrd to be page aligned,
+> so that we can free all memory including the un-page aligned head or tail
+> page of initrd, if the start or end address of initrd are not page
+> aligned, the page can't be freed by free_initrd_mem() function.
+
+Better, but I think it's more complicated than it needs to be:
+
+> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+> ---
+>  arch/arm/mm/init.c   | 19 +++++++++++++++++--
+>  arch/arm64/mm/init.c | 37 +++++++++++++++++++++++++++++++++----
+>  2 files changed, 50 insertions(+), 6 deletions(-)
 >
->> On 9/12/14, 10:27 AM, Alexander Yarygin wrote:
->>> During mmap() process 'perf kvm stat live' gets a pointer to events and
->>> passes them to the session queue. Events are stored in shared memory and
->>> eventually they will be overwritten by the kernel. The problem is, that
->>> when events come too fast, old events can be overwritten before they
->>> have been processed that can lead to perf crash.
->>>
->>> To prevent that happening, we can copy upcoming events and pass a copy
->>> to the session queue. There is a safe place to copy event: before
->>> perf_evlist__mmap_consume() is executed. There are 3 places to free it:
->>> when event is processed, when it's lost and on exit, if it's turned out
->>> unprocessed.
->>
->> Did you see what I proposed a year ago:
->> https://lkml.org/lkml/2013/9/6/388
->>
->> The intent is to keep the copy generic and not local a command since
->> conceptually other live commands need the same.
->>
->> David
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 659c75d..8490b70 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -277,6 +277,8 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
+>  void __init arm_memblock_init(const struct machine_desc *mdesc)
+>  {
+>       /* Register the kernel text, kernel data and initrd with memblock. */
+> +     phys_addr_t phys_initrd_start_orig __maybe_unused;
+> +     phys_addr_t phys_initrd_size_orig __maybe_unused;
+>  #ifdef CONFIG_XIP_KERNEL
+>       memblock_reserve(__pa(_sdata), _end - _sdata);
+>  #else
+> @@ -289,6 +291,13 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
+>               phys_initrd_size = initrd_end - initrd_start;
+>       }
+>       initrd_start = initrd_end = 0;
+> +     phys_initrd_start_orig = phys_initrd_start;
+> +     phys_initrd_size_orig = phys_initrd_size;
+> +     /* make sure the start and end address are page aligned */
+> +     phys_initrd_size = round_up(phys_initrd_start + phys_initrd_size, PAGE_SIZE);
+> +     phys_initrd_start = round_down(phys_initrd_start, PAGE_SIZE);
+> +     phys_initrd_size -= phys_initrd_start;
+> +
+>       if (phys_initrd_size &&
+>           !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+>               pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
+> @@ -305,9 +314,10 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
+>               memblock_reserve(phys_initrd_start, phys_initrd_size);
 >
-> Hello,
->
-> Yes, your patch works fine. But as far as I understand, right now only
-> the 'perf kvm stat live' is infected: other 'live' tools were fixed by
-> the patch "PERF: The tail position of the event buffer should only be modified
-> after actually use that event." and since they don't use ordered queue
-> they don't need a copying. That's why I came up with 'perf kvm stat
-> live' specific approach. Maybe I missed something...
+>               /* Now convert initrd to virtual addresses */
+> -             initrd_start = __phys_to_virt(phys_initrd_start);
+> -             initrd_end = initrd_start + phys_initrd_size;
+> +             initrd_start = __phys_to_virt(phys_initrd_start_orig);
+> +             initrd_end = initrd_start + phys_initrd_size_orig;
+>       }
+> +
 
-No, you understand the problem. My point is that the key issue with the 
-code (overwriting events in the mmap'ed buffers) really has nothing to 
-do with perf-kvm. It might be the only command in-tree today but others 
-could come along, so might as well fix the issue in the event processing 
-code.
+I think all the above is entirely unnecessary.  The memblock APIs
+(especially memblock_reserve()) will mark the overlapped pages as reserved
+- they round down the starting address, and round up the end address
+(calculated from start + size).
 
->
-> Anyhow, having >30K events is a quite usual situation on s390 and the
-> 'perf kvm stat live' command hardly works there, so it would be good to
-> have at least some working solution. Any ideas? :)
+Hence, this:
 
-Sure. With nested VMs on x86 I see 100,000's of events per second. That 
-use case is what drove me to look at copying events. I just have not had 
-time to come back to that one.
+> @@ -636,6 +646,11 @@ static int keep_initrd;
+>  void free_initrd_mem(unsigned long start, unsigned long end)
+>  {
+>       if (!keep_initrd) {
+> +             if (start == initrd_start)
+> +                     start = round_down(start, PAGE_SIZE);
+> +             if (end == initrd_end)
+> +                     end = round_up(end, PAGE_SIZE);
+> +
+>               poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+>               free_reserved_area((void *)start, (void *)end, -1, "initrd");
+>       }
 
-David
+is the only bit of code you likely need to achieve your goal.
 
+Thinking about this, I think that you are quite right to align these.
+The memory around the initrd is defined to be system memory, and we
+already free the pages around it, so it *is* wrong not to free the
+partial initrd pages.
+
+Good catch.
+
+--
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
