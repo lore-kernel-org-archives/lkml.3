@@ -1,176 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652AbaIOWzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:55:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50923 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbaIOWQL (ORCPT
+	id S932911AbaIOW4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:56:05 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:60545 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823AbaIOW4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:16:11 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 160/187] KVM: nVMX: fix "acknowledge interrupt on exit" when APICv is in use
-Date: Mon, 15 Sep 2014 15:09:30 -0700
-Message-Id: <1410818997-9432-161-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:56:01 -0400
+Message-ID: <54176E75.1000803@linaro.org>
+Date: Tue, 16 Sep 2014 06:55:49 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Al Stone <al.stone@linaro.org>
+Subject: Re: [PATCH v4 06/18] ARM64 / ACPI: Introduce early_param for "acpi"
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-7-git-send-email-hanjun.guo@linaro.org> <20140915062824.GB26649@localhost>
+In-Reply-To: <20140915062824.GB26649@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On 2014年09月15日 14:28, Olof Johansson wrote:
+> On Fri, Sep 12, 2014 at 10:00:04PM +0800, Hanjun Guo wrote:
+>> From: Al Stone <al.stone@linaro.org>
+>>
+>> Introduce one early parameters "off" for "acpi" to disable ACPI on
+>> ARM64.
+>>
+>> This ensures the kernel uses the DT on a platform that provides both
+>> ACPI tables and DT.
+>>
+>> Signed-off-by: Al Stone <al.stone@linaro.org>
+>> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> ---
+>>  Documentation/kernel-parameters.txt |    3 ++-
+>>  arch/arm64/kernel/acpi.c            |   15 +++++++++++++++
+>>  2 files changed, 17 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 5ae8608..9dfb1d8 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -165,7 +165,7 @@ multipliers 'Kilo', 'Mega', and 'Giga', equalling 2^10, 2^20, and 2^30
+>>  bytes respectively. Such letter suffixes can also be entirely omitted.
+>>  
+>>  
+>> -	acpi=		[HW,ACPI,X86]
+>> +	acpi=		[HW,ACPI,X86,ARM]
+> ARM64, not ARM.
 
-------------------
+I will update it.
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-
-commit 56cc2406d68c0f09505c389e276f27a99f495cbd upstream.
-
-After commit 77b0f5d (KVM: nVMX: Ack and write vector info to intr_info
-if L1 asks us to), "Acknowledge interrupt on exit" behavior can be
-emulated. To do so, KVM will ask the APIC for the interrupt vector if
-during a nested vmexit if VM_EXIT_ACK_INTR_ON_EXIT is set.  With APICv,
-kvm_get_apic_interrupt would return -1 and give the following WARNING:
-
-Call Trace:
- [<ffffffff81493563>] dump_stack+0x49/0x5e
- [<ffffffff8103f0eb>] warn_slowpath_common+0x7c/0x96
- [<ffffffffa059709a>] ? nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
- [<ffffffff8103f11a>] warn_slowpath_null+0x15/0x17
- [<ffffffffa059709a>] nested_vmx_vmexit+0xa4/0x233 [kvm_intel]
- [<ffffffffa0594295>] ? nested_vmx_exit_handled+0x6a/0x39e [kvm_intel]
- [<ffffffffa0537931>] ? kvm_apic_has_interrupt+0x80/0xd5 [kvm]
- [<ffffffffa05972ec>] vmx_check_nested_events+0xc3/0xd3 [kvm_intel]
- [<ffffffffa051ebe9>] inject_pending_event+0xd0/0x16e [kvm]
- [<ffffffffa051efa0>] vcpu_enter_guest+0x319/0x704 [kvm]
-
-To fix this, we cannot rely on the processor's virtual interrupt delivery,
-because "acknowledge interrupt on exit" must only update the virtual
-ISR/PPR/IRR registers (and SVI, which is just a cache of the virtual ISR)
-but it should not deliver the interrupt through the IDT.  Thus, KVM has
-to deliver the interrupt "by hand", similar to the treatment of EOI in
-commit fc57ac2c9ca8 (KVM: lapic: sync highest ISR to hardware apic on
-EOI, 2014-05-14).
-
-The patch modifies kvm_cpu_get_interrupt to always acknowledge an
-interrupt; there are only two callers, and the other is not affected
-because it is never reached with kvm_apic_vid_enabled() == true.  Then it
-modifies apic_set_isr and apic_clear_irr to update SVI and RVI in addition
-to the registers.
-
-Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
-Suggested-by: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Tested-by: Liu, RongrongX <rongrongx.liu@intel.com>
-Tested-by: Felipe Reyes <freyes@suse.com>
-Fixes: 77b0f5d67ff2781f36831cba79674c3e97bd7acf
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kvm/irq.c   |  2 +-
- arch/x86/kvm/lapic.c | 52 +++++++++++++++++++++++++++++++++++++++-------------
- 2 files changed, 40 insertions(+), 14 deletions(-)
-
-diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
-index 484bc87..3ec38cb 100644
---- a/arch/x86/kvm/irq.c
-+++ b/arch/x86/kvm/irq.c
-@@ -108,7 +108,7 @@ int kvm_cpu_get_interrupt(struct kvm_vcpu *v)
- 
- 	vector = kvm_cpu_get_extint(v);
- 
--	if (kvm_apic_vid_enabled(v->kvm) || vector != -1)
-+	if (vector != -1)
- 		return vector;			/* PIC */
- 
- 	return kvm_get_apic_interrupt(v);	/* APIC */
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 92bbb39..f52e300 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -352,25 +352,46 @@ static inline int apic_find_highest_irr(struct kvm_lapic *apic)
- 
- static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
- {
--	apic->irr_pending = false;
-+	struct kvm_vcpu *vcpu;
-+
-+	vcpu = apic->vcpu;
-+
- 	apic_clear_vector(vec, apic->regs + APIC_IRR);
--	if (apic_search_irr(apic) != -1)
--		apic->irr_pending = true;
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		/* try to update RVI */
-+		kvm_make_request(KVM_REQ_EVENT, vcpu);
-+	else {
-+		vec = apic_search_irr(apic);
-+		apic->irr_pending = (vec != -1);
-+	}
- }
- 
- static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
- {
--	/* Note that we never get here with APIC virtualization enabled.  */
-+	struct kvm_vcpu *vcpu;
-+
-+	if (__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-+		return;
-+
-+	vcpu = apic->vcpu;
- 
--	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
--		++apic->isr_count;
--	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
- 	/*
--	 * ISR (in service register) bit is set when injecting an interrupt.
--	 * The highest vector is injected. Thus the latest bit set matches
--	 * the highest bit in ISR.
-+	 * With APIC virtualization enabled, all caching is disabled
-+	 * because the processor can modify ISR under the hood.  Instead
-+	 * just set SVI.
- 	 */
--	apic->highest_isr_cache = vec;
-+	if (unlikely(kvm_apic_vid_enabled(vcpu->kvm)))
-+		kvm_x86_ops->hwapic_isr_update(vcpu->kvm, vec);
-+	else {
-+		++apic->isr_count;
-+		BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-+		/*
-+		 * ISR (in service register) bit is set when injecting an interrupt.
-+		 * The highest vector is injected. Thus the latest bit set matches
-+		 * the highest bit in ISR.
-+		 */
-+		apic->highest_isr_cache = vec;
-+	}
- }
- 
- static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-@@ -1627,11 +1648,16 @@ int kvm_get_apic_interrupt(struct kvm_vcpu *vcpu)
- 	int vector = kvm_apic_has_interrupt(vcpu);
- 	struct kvm_lapic *apic = vcpu->arch.apic;
- 
--	/* Note that we never get here with APIC virtualization enabled.  */
--
- 	if (vector == -1)
- 		return -1;
- 
-+	/*
-+	 * We get here even with APIC virtualization enabled, if doing
-+	 * nested virtualization and L1 runs with the "acknowledge interrupt
-+	 * on exit" mode.  Then we cannot inject the interrupt via RVI,
-+	 * because the process would deliver it through the IDT.
-+	 */
-+
- 	apic_set_isr(vector, apic);
- 	apic_update_ppr(apic);
- 	apic_clear_irr(vector, apic);
--- 
-1.9.1
-
+Thanks
+Hanjun
