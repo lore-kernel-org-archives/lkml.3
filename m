@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaIOTPW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:15:22 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:40707 "EHLO gum.cmpxchg.org"
+	id S1754668AbaIOTPm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:15:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45327 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529AbaIOTPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:15:20 -0400
-Date: Mon, 15 Sep 2014 15:14:35 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-Message-ID: <20140915191435.GA8950@cmpxchg.org>
-References: <20140904143055.GA20099@esperanza>
+	id S1754633AbaIOTP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:15:29 -0400
+Message-ID: <54173ACA.1010709@ti.com>
+Date: Mon, 15 Sep 2014 14:15:22 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904143055.GA20099@esperanza>
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        <linux-input@vger.kernel.org>
+Subject: Re: randconfig build error with next-20140915, in drivers/input/misc/palmas-pwrbutton.c
+References: <CA+r1ZhjG4oSVSWnO4SXomJArxJdnUpdSHeGxV41Z4Hw1B8eEaQ@mail.gmail.com> <5417222E.30201@ti.com>
+In-Reply-To: <5417222E.30201@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vladimir,
-
-On Thu, Sep 04, 2014 at 06:30:55PM +0400, Vladimir Davydov wrote:
-> To sum it up, the current mem + memsw configuration scheme doesn't allow
-> us to limit swap usage if we want to partition the system dynamically
-> using soft limits. Actually, it also looks rather confusing to me. We
-> have mem limit and mem+swap limit. I bet that from the first glance, an
-> average admin will think it's possible to limit swap usage by setting
-> the limits so that the difference between memory.memsw.limit and
-> memory.limit equals the maximal swap usage, but (surprise!) it isn't
-> really so. It holds if there's no global memory pressure, but otherwise
-> swap usage is only limited by memory.memsw.limit! IMHO, it isn't
-> something obvious.
-
-Agreed, memory+swap accounting & limiting is broken.
-
->  - Anon memory is handled by the user application, while file caches are
->    all on the kernel. That means the application will *definitely* die
->    w/o anon memory. W/o file caches it usually can survive, but the more
->    caches it has the better it feels.
+On 09/15/2014 12:30 PM, Nishanth Menon wrote:
+> On 09/15/2014 09:40 AM, Jim Davis wrote:
+>> Building with the attached random configuration file,
+>>
+>> FATAL: modpost: GPL-incompatible module palmas-pwrbutton.ko uses GPL-only symbol
+>>  'platform_driver_unregister'
+>> make[1]: *** [__modpost] Error 1
+>>
+> For some reason, I was unable to reproduce this in my build with ARM
+> OMAP5 configuration... but with the x86 configuration, I was.
 > 
->  - Anon memory is not that easy to reclaim. Swap out is a really slow
->    process, because data are usually read/written w/o any specific
->    order. Dropping file caches is much easier. Typically we have lots of
->    clean pages there.
+> https://git.kernel.org/cgit/linux/kernel/git/dtor/input.git/commit/?h=next&id=adff5962fdd2f29bac943bc014ebd529444b2153
 > 
->  - Swap space is limited. And today, it's OK to have TBs of RAM and only
->    several GBs of swap. Customers simply don't want to waste their disk
->    space on that.
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/include/linux/module.h#n101
+> 
+> I used MODULE_LICENSE("GPL V2")
+> 
+> Looks like a typo crept in. And s/V/v seems to squelch the warning(at
+> least in the x86 build) for the randconfig. I will post a patch
+> accordingly. Thanks for catching the same.
+> 
+>  diff --git a/drivers/input/misc/palmas-pwrbutton.c
+> b/drivers/input/misc/palmas-pwrbutton.c
+>  index 3f90211..06ffe04 100644
+>  --- a/drivers/input/misc/palmas-pwrbutton.c
+>  +++ b/drivers/input/misc/palmas-pwrbutton.c
+>  @@ -326,5 +326,5 @@ module_platform_driver(palmas_pwron_driver);
+> 
+>   MODULE_ALIAS("platform:palmas-pwrbutton");
+>   MODULE_DESCRIPTION("Palmas Power Button");
+>  -MODULE_LICENSE("GPL V2");
+>  +MODULE_LICENSE("GPL v2");
+>   MODULE_AUTHOR("Texas Instruments Inc.");
+> 
 
-> Finally, my understanding (may be crazy!) how the things should be
-> configured. Just like now, there should be mem_cgroup->res accounting
-> and limiting total user memory (cache+anon) usage for processes inside
-> cgroups. This is where there's nothing to do. However, mem_cgroup->memsw
-> should be reworked to account *only* memory that may be swapped out plus
-> memory that has been swapped out (i.e. swap usage).
+To close this thread, posted:
+https://patchwork.kernel.org/patch/4907121/
 
-But anon pages are not a resource, they are a swap space liability.
-Think of virtual memory vs. physical pages - the use of one does not
-necessarily result in the use of the other.  Without memory pressure,
-anonymous pages do not consume swap space.
 
-What we *should* be accounting and limiting here is the actual finite
-resource: swap space.  Whenever we try to swap a page, its owner
-should be charged for the swap space - or the swapout be rejected.
-
-For hard limit reclaim, the semantics of a swap space limit would be
-fairly obvious, because it's clear who the offender is.
-
-However, in an overcommitted machine, the amount of swap space used by
-a particular group depends just as much on the behavior of the other
-groups in the system, so the per-group swap limit should be enforced
-even during global reclaim to feed back pressure on whoever is causing
-the swapout.  If reclaim fails, the global OOM killer triggers, which
-should then off the group with the biggest soft limit excess.
-
-As far as implementation goes, it should be doable to try-charge from
-add_to_swap() and keep the uncharging in swap_entry_free().
-
-We'll also have to extend the global OOM killer to be memcg-aware, but
-we've been meaning to do that anyway.
+-- 
+Regards,
+Nishanth Menon
