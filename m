@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaIOMgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 08:36:48 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:61560 "EHLO smtp1-g21.free.fr"
+	id S1752456AbaIOMns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 08:43:48 -0400
+Received: from mga14.intel.com ([192.55.52.115]:54866 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704AbaIOMgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 08:36:46 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michal Marek <mmarek@suse.cz>, David Woodhouse <dwmw2@infradead.org>,
-        Rob Landley <rob@landley.net>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCHv2 1/2] Documentation/kbuild/headers_install.txt: remove obsolete instructions
-Date: Sun, 14 Sep 2014 22:27:00 +0200
-Message-Id: <b5181cf7604baa454c11f7aa92d07dd05349ce46.1410712841.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1410712841.git.ydroneaud@opteya.com>
-References: <cover.1410712841.git.ydroneaud@opteya.com>
-In-Reply-To: <cover.1410712841.git.ydroneaud@opteya.com>
-References: <cover.1410712841.git.ydroneaud@opteya.com>
+	id S1750920AbaIOMnr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 08:43:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,527,1406617200"; 
+   d="scan'208";a="477600891"
+From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+To: David Miller <davem@davemloft.net>
+CC: "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
+        "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
+        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
+        "srinivas.kandagatla@st.com" <srinivas.kandagatla@st.com>,
+        "wens@csie.org" <wens@csie.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>
+Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
+Thread-Index: AQHPztbom04Iz4URhUOKiyu70+M/jZwB2NUw
+Date: Mon, 15 Sep 2014 12:42:03 +0000
+Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7E99A7@PGSMSX102.gar.corp.intel.com>
+References: <cover.1410416223.git.hock.leong.kweh@intel.com>
+	<cover.1410416223.git.hock.leong.kweh@intel.com>
+	<07ca9d2c89cf4f01037c98e3314dd035e4d2ee34.1410416224.git.hock.leong.kweh@intel.com>
+ <20140912.181423.1831537443587796533.davem@davemloft.net>
+In-Reply-To: <20140912.181423.1831537443587796533.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As noted by Sam Ravnborg in reply [1] to "[PATCHv1 2/2]
-Documentation/kbuild/headers_install.txt: update documentation" [2],
-all architectures support exporting userspace headers (while 'um'
-being a special case), so there's no need to list them.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Saturday, September 13, 2014 6:14 AM
+> From: Kweh Hock Leong <hock.leong.kweh@intel.com>
+> Date: Thu, 11 Sep 2014 16:38:39 +0800
+> 
+> > +		if ((!strcmp(quark_x1000_phy_info[i].board_name,
+> board_name)) &&
+> > +		    quark_x1000_phy_info[i].pci_func_num == func_num)
+> 
+> It is entirely erroneous to identify a device by it's _PHYSICAL_ geographic
+> location on the PCI bus.
+> 
+> Please get rid of this PCI function number comparison and if necessary find
+> another means of identification.
 
-This patch removes the obsolete shell commands to list
-architectures with a dedicated 'asm' directory.
+Hi David,
 
-[1] http://lkml.kernel.org/r/20140713212608.GB16496@ravnborg.org
-[2] http://lkml.kernel.org/r/3e0d73d0ca3ead75624b552105ce8adf3d63684e.1405246009.git.ydroneaud@opteya.com
+Here is some background of this work. Intel Quark X1000 has 2 stmmac Ethernet IP
+built in the SoC. They both are using the same PCI DEVICE ID number. The only things 
+to differentiate them is PCI BUS DEVICE FUNCTION (Bus:Dev:Func) number which are
+fix numbers 00:20:6 for port 1 and 00:20:7 for port 2 stated in Quark X1000 datasheet.
+(https://communities.intel.com/docs/DOC-23092 page 44 & 97)
 
-Link: http://lkml.kernel.org/r/cover.1410712841.git.ydroneaud@opteya.com
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- Documentation/kbuild/headers_install.txt | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+When I was looking into making the code to upstream, I do think about is there a better
+identification way to do it? But, my mind still brought me back to this PCI FUNC number.
 
-diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
-index 951eb9f1e040..0d8fe5e871c4 100644
---- a/Documentation/kbuild/headers_install.txt
-+++ b/Documentation/kbuild/headers_install.txt
-@@ -28,10 +28,7 @@ optional arguments:
- 
- ARCH indicates which architecture to produce headers for, and defaults to the
- current architecture.  The linux/asm directory of the exported kernel headers
--is platform-specific, to see a complete list of supported architectures use
--the command:
--
--  ls -d include/asm-* | sed 's/.*-//'
-+is platform-specific.
- 
- INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
- "./usr/include".
--- 
-1.9.3
+So, i would like to understand the concern of using PCI FUNC number and also would like
+to see is there any advices, suggestion or pointer to deal with the scenario here.
 
+Appreciate to the comments sharing. Thanks.
+
+
+Regards,
+Wilson
