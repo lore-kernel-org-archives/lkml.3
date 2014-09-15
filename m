@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317AbaIOUiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:38:54 -0400
-Received: from sub5.mail.dreamhost.com ([208.113.200.129]:43081 "EHLO
-	homiemail-a56.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755865AbaIOUiw (ORCPT
+	id S1758115AbaIOUjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:39:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55103 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601AbaIOTgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:38:52 -0400
-Date: Mon, 15 Sep 2014 16:38:44 -0400
-From: Shea Levy <shea@shealevy.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
-Subject: Re: [RFC PATCH 0/2] Loop device psuedo filesystem
-Message-ID: <20140915203844.GA14761@nixos.hsd1.nh.comcast.net>
-References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
+	Mon, 15 Sep 2014 15:36:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.16 141/158] CIFS: Fix STATUS_CANNOT_DELETE error mapping for SMB2
+Date: Mon, 15 Sep 2014 12:26:20 -0700
+Message-Id: <20140915192547.100613627@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
+References: <20140915192542.872134685@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-I wanted to test these patches (to support creating and filling a disk
-image containing a btrfs filesystem and several subvolumes as an
-unprivileged user), but the build fails due to what looks like a missing
-loopfs.c in fs/loopfs (or alternatively an erroneous line in
-fs/loopfs/Makefile). I built based off of 3.17-rc5.
+------------------
 
-~Shea
+From: Pavel Shilovsky <pshilovsky@samba.org>
+
+commit 21496687a79424572f46a84c690d331055f4866f upstream.
+
+The existing mapping causes unlink() call to return error after delete
+operation. Changing the mapping to -EACCES makes the client process
+the call like CIFS protocol does - reset dos attributes with ATTR_READONLY
+flag masked off and retry the operation.
+
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/smb2maperror.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/cifs/smb2maperror.c
++++ b/fs/cifs/smb2maperror.c
+@@ -605,7 +605,7 @@ static const struct status_to_posix_erro
+ 	{STATUS_MAPPED_FILE_SIZE_ZERO, -EIO, "STATUS_MAPPED_FILE_SIZE_ZERO"},
+ 	{STATUS_TOO_MANY_OPENED_FILES, -EMFILE, "STATUS_TOO_MANY_OPENED_FILES"},
+ 	{STATUS_CANCELLED, -EIO, "STATUS_CANCELLED"},
+-	{STATUS_CANNOT_DELETE, -EIO, "STATUS_CANNOT_DELETE"},
++	{STATUS_CANNOT_DELETE, -EACCES, "STATUS_CANNOT_DELETE"},
+ 	{STATUS_INVALID_COMPUTER_NAME, -EIO, "STATUS_INVALID_COMPUTER_NAME"},
+ 	{STATUS_FILE_DELETED, -EIO, "STATUS_FILE_DELETED"},
+ 	{STATUS_SPECIAL_ACCOUNT, -EIO, "STATUS_SPECIAL_ACCOUNT"},
 
 
-On Tue, May 27, 2014 at 11:58:54PM +0200, Seth Forshee wrote:
-> I'm posting these patches in response to the ongoing discussion of loop
-> devices in containers at [1].
-> 
-> The patches implement a psuedo filesystem for loop devices, which will
-> allow use of loop devices in containters using standard utilities. Under
-> normal use a loopfs mount will initially contain a single device node
-> for loop-control which can be used to request and release loop devices.
-> Any devices allocated via this node will automatically appear in that
-> loopfs mount (and in devtmpfs) but not in any other loopfs mounts.
-> CAP_SYS_ADMIN in the userns of the process which performed the mount is
-> allowed to perform privileged loop ioctls on these devices.
-> 
-> Alternately loopfs can be mounted with the hostmount option, intended
-> for mounting /dev/loop in the host. This is the default mount for any
-> devices not created via loop-control in a loopfs mount (e.g. devices
-> created during driver init, devices created via /dev/loop-control, etc).
-> This is only available to system-wide CAP_SYS_ADMIN.
-> 
-> I still have some testing to do on these patches, but they work at
-> minimum for simple use cases. It's possible to use an unmodified losetup
-> if it's new enough to know about loop-control, with a couple of caveats:
-> 
->  * /dev/loop-control must be symlinked to /dev/loop/loop-control
->  * In some cases losetup attempts to use /dev/loopN when the device node
->    is at /dev/loop/N. For example, 'losetup -f disk.img' fails.
-> 
-> Device nodes for loop partitions are not created in loopfs. These
-> devices are created by the generic block layer, and the loop driver has
-> no way of knowing when they are created, so some kind of hook into the
-> driver will be needed to support this.
-> 
-> Thanks,
-> Seth
-> 
-> [1] http://article.gmane.org/gmane.linux.kernel/1703988
-> 
-> Seth Forshee (2):
->   loop: Add loop filesystem
->   loop: Permit priveleged operations within user namespaces
-> 
->  drivers/block/loop.c       | 137 +++++++++++++----
->  drivers/block/loop.h       |   2 +
->  fs/Makefile                |   1 +
->  fs/loopfs/Makefile         |   6 +
->  fs/loopfs/inode.c          | 360 +++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/loopfs.h     |  53 +++++++
->  include/uapi/linux/magic.h |   1 +
->  7 files changed, 535 insertions(+), 25 deletions(-)
->  create mode 100644 fs/loopfs/Makefile
->  create mode 100644 fs/loopfs/inode.c
->  create mode 100644 include/linux/loopfs.h
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
