@@ -1,243 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaIOKGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:06:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55210 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843AbaIOKF6 (ORCPT
+	id S1753997AbaIOKGq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:06:46 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24156 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753772AbaIOKGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:05:58 -0400
-Date: Mon, 15 Sep 2014 12:05:41 +0200
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: timur@tabi.org, nicoleotsuka@gmail.com, Li.Xiubo@freescale.com,
-        lgirdwood@gmail.com, broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] ASoC: fsl_ssi: refine ipg clock usage in this module
-Message-ID: <20140915100541.GD8844@pengutronix.de>
-References: <894383e00876763f22988fc5f3f9f232f939f923.1410517971.git.shengjiu.wang@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tEFtbjk+mNEviIIX"
-Content-Disposition: inline
-In-Reply-To: <894383e00876763f22988fc5f3f9f232f939f923.1410517971.git.shengjiu.wang@freescale.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:48:12 up 5 days,  2:35, 65 users,  load average: 0.21, 0.17, 0.18
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 15 Sep 2014 06:06:45 -0400
+X-AuditID: cbfee61a-f79e46d00000134f-51-5416ba333bea
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 5/5] f2fs: fix to search whole dirty segmap when
+ get_victim
+Date: Mon, 15 Sep 2014 18:05:44 +0800
+Message-id: <003101cfd0cc$c0335890$409a09b0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac/MlBCeO4iJFNh9RA6yU6jv1jkB3A==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jAV3jXWIhBsvXqVtc29fIZPFk/Sxm
+	i0uL3C0u75rD5sDisWlVJ5vH7gWfmTz6tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoEr4926B8wF
+	nzgrtv6cw97A2MfRxcjBISFgInHyTEEXIyeQKSZx4d56NhBbSGARo8TUS5ZdjFxA9g9GiXNv
+	JrKCJNgEVCSWd/xnArFFBLwkJu0/wQJiMwt4SDR2fAerERYIlzi17BbYIBYBVYn5048zg9i8
+	ApYS89avhbIFJX5MvgfVqyWxfudxJghbXmLzmrfMEAcpSOw4+5oRYpeeRNfll2wQNeISG4/c
+	YpnAKDALyahZSEbNQjJqFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCA/qZ1A7G
+	lQ0WhxgFOBiVeHgL+sRChFgTy4orcw8xSnAwK4nwTt0KFOJNSaysSi3Kjy8qzUktPsQozcGi
+	JM57oNU6UEggPbEkNTs1tSC1CCbLxMEp1cCopVC750zs6y8dWvHFX5z6A3MMc/+vfCUqfKk0
+	iv9P2XbGAKHilhfZOX/0dGY+TDo8J573VYWt9XSGc2XsJ//o7+J6fCrj1ay7ib537hbYC5nm
+	v1uYfPLEsvrvW2SCj4oKHwlNezeze2NyuHrp3SOdZu0d7gFOSotq2SWYb5xYYJCWv1beVEyJ
+	pTgj0VCLuag4EQBSgh1sZAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In ->get_victim we get max_search value from dirty_i->nr_dirty without
+protection of seglist_lock, after that, nr_dirty can be increased/decreased
+before we hold seglist_lock lock.
+Then in main loop we attempt to traverse all dirty section one time to find
+victim section, but it's not accurate to use max_search as the total loop count,
+because we might lose checking several sections or check sections redundantly
+for the case of nr_dirty are increased or decreased previously.
 
---tEFtbjk+mNEviIIX
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/gc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-On Fri, Sep 12, 2014 at 06:35:15PM +0800, Shengjiu Wang wrote:
-> Check if ipg clock is in clock-names property, then we can move the
-> ipg clock enable and disable operation to startup and shutdown, that
-> is only enable ipg clock when ssi is working and keep clock is disabled
-> when ssi is in idle.
-> But when the checking is failed, remain the clock control as before.
->=20
-> Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
-> ---
-> V3 change log:
-> update patch according Nicolin and markus's comments
->=20
->=20
->  sound/soc/fsl/fsl_ssi.c |   53 ++++++++++++++++++++++++++++++++++++++++-=
-------
->  1 file changed, 45 insertions(+), 8 deletions(-)
->=20
-> diff --git a/sound/soc/fsl/fsl_ssi.c b/sound/soc/fsl/fsl_ssi.c
-> index 2fc3e66..6d1dfd5 100644
-> --- a/sound/soc/fsl/fsl_ssi.c
-> +++ b/sound/soc/fsl/fsl_ssi.c
-> @@ -169,6 +169,7 @@ struct fsl_ssi_private {
->  	u8 i2s_mode;
->  	bool use_dma;
->  	bool use_dual_fifo;
-> +	bool has_ipg_clk_name;
->  	unsigned int fifo_depth;
->  	struct fsl_ssi_rxtx_reg_val rxtx_reg_val;
-> =20
-> @@ -530,6 +531,11 @@ static int fsl_ssi_startup(struct snd_pcm_substream =
-*substream,
->  	struct snd_soc_pcm_runtime *rtd =3D substream->private_data;
->  	struct fsl_ssi_private *ssi_private =3D
->  		snd_soc_dai_get_drvdata(rtd->cpu_dai);
-> +	int ret;
-> +
-> +	ret =3D clk_prepare_enable(ssi_private->clk);
-> +	if (ret)
-> +		return ret;
-> =20
->  	/* When using dual fifo mode, it is safer to ensure an even period
->  	 * size. If appearing to an odd number while DMA always starts its
-> @@ -544,6 +550,21 @@ static int fsl_ssi_startup(struct snd_pcm_substream =
-*substream,
->  }
-> =20
->  /**
-> + * fsl_ssi_shutdown: shutdown the SSI
-> + *
-> + */
-> +static void fsl_ssi_shutdown(struct snd_pcm_substream *substream,
-> +                             struct snd_soc_dai *dai)
-> +{
-> +	struct snd_soc_pcm_runtime *rtd =3D substream->private_data;
-> +	struct fsl_ssi_private *ssi_private =3D
-> +		snd_soc_dai_get_drvdata(rtd->cpu_dai);
-> +
-> +	clk_disable_unprepare(ssi_private->clk);
-> +
-> +}
-> +
-> +/**
->   * fsl_ssi_set_bclk - configure Digital Audio Interface bit clock
->   *
->   * Note: This function can be only called when using SSI as DAI master
-> @@ -1043,6 +1064,7 @@ static int fsl_ssi_dai_probe(struct snd_soc_dai *da=
-i)
-> =20
->  static const struct snd_soc_dai_ops fsl_ssi_dai_ops =3D {
->  	.startup	=3D fsl_ssi_startup,
-> +	.shutdown       =3D fsl_ssi_shutdown,
->  	.hw_params	=3D fsl_ssi_hw_params,
->  	.hw_free	=3D fsl_ssi_hw_free,
->  	.set_fmt	=3D fsl_ssi_set_dai_fmt,
-> @@ -1168,17 +1190,22 @@ static int fsl_ssi_imx_probe(struct platform_devi=
-ce *pdev,
->  	u32 dmas[4];
->  	int ret;
-> =20
-> -	ssi_private->clk =3D devm_clk_get(&pdev->dev, NULL);
-> +	if (ssi_private->has_ipg_clk_name)
-> +		ssi_private->clk =3D devm_clk_get(&pdev->dev, "ipg");
-> +	else
-> +		ssi_private->clk =3D devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(ssi_private->clk)) {
->  		ret =3D PTR_ERR(ssi_private->clk);
->  		dev_err(&pdev->dev, "could not get clock: %d\n", ret);
->  		return ret;
->  	}
-> =20
-> -	ret =3D clk_prepare_enable(ssi_private->clk);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-> -		return ret;
-> +	if (!ssi_private->has_ipg_clk_name) {
-> +		ret =3D clk_prepare_enable(ssi_private->clk);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "clk_prepare_enable failed: %d\n", ret);
-> +			return ret;
-> +		}
->  	}
-> =20
->  	/* For those SLAVE implementations, we ingore non-baudclk cases
-> @@ -1236,8 +1263,9 @@ static int fsl_ssi_imx_probe(struct platform_device=
- *pdev,
->  	return 0;
-> =20
->  error_pcm:
-> -	clk_disable_unprepare(ssi_private->clk);
-> =20
-> +	if (!ssi_private->has_ipg_clk_name)
-> +		clk_disable_unprepare(ssi_private->clk);
->  	return ret;
->  }
-> =20
-> @@ -1246,7 +1274,8 @@ static void fsl_ssi_imx_clean(struct platform_devic=
-e *pdev,
->  {
->  	if (!ssi_private->use_dma)
->  		imx_pcm_fiq_exit(pdev);
-> -	clk_disable_unprepare(ssi_private->clk);
-> +	if (!ssi_private->has_ipg_clk_name)
-> +		clk_disable_unprepare(ssi_private->clk);
->  }
-> =20
->  static int fsl_ssi_probe(struct platform_device *pdev)
-> @@ -1321,8 +1350,16 @@ static int fsl_ssi_probe(struct platform_device *p=
-dev)
->  		return -ENOMEM;
->  	}
-> =20
-> -	ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
-> +	ret =3D of_property_match_string(np, "clock-names", "ipg");
-> +	if (ret < 0) {
-> +		ssi_private->has_ipg_clk_name =3D false;
-> +		ssi_private->regs =3D devm_regmap_init_mmio(&pdev->dev, iomem,
->  			&fsl_ssi_regconfig);
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 075ea1e..4481edc 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -263,14 +263,14 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
+ 	unsigned int secno, max_cost;
+ 	int nsearched = 0;
+ 
++	mutex_lock(&dirty_i->seglist_lock);
++
+ 	p.alloc_mode = alloc_mode;
+ 	select_policy(sbi, gc_type, type, &p);
+ 
+ 	p.min_segno = NULL_SEGNO;
+ 	p.min_cost = max_cost = get_max_cost(sbi, &p);
+ 
+-	mutex_lock(&dirty_i->seglist_lock);
+-
+ 	if (p.alloc_mode == LFS && gc_type == FG_GC) {
+ 		p.min_segno = check_bg_victims(sbi);
+ 		if (p.min_segno != NULL_SEGNO)
+-- 
+2.0.1.474.g72c7794
 
-Sorry if I was unclear about that. My suggestion was to enable the clock
-right here:
-		clk_prepare_enable(ssi_private->clk);
 
-Then you can remove ssi_private->has_ipg_clk_name and all
-clk_prepare_enable() and clk_disable_unprepare() from above. Also you
-can move the devm_clk_get() into this block.
-
-It seems you really want to implement this for devicetrees where the
-"ipg" clock-name is missing, but I don't understand why? I really can't
-see any benefit of adding all these clk_prepare_enable() calls for all
-cornercases that may occure. For example the clocks for AC97 are still
-missing in this version.
-
-Best regards,
-
-Markus
-
-> +	} else {
-> +		ssi_private->has_ipg_clk_name =3D true;
-> +		ssi_private->regs =3D devm_regmap_init_mmio_clk(&pdev->dev,
-> +			"ipg", iomem, &fsl_ssi_regconfig);
-> +	}
->  	if (IS_ERR(ssi_private->regs)) {
->  		dev_err(&pdev->dev, "Failed to init register map\n");
->  		return PTR_ERR(ssi_private->regs);
-> --=20
-> 1.7.9.5
->=20
->=20
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---tEFtbjk+mNEviIIX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUFrn1AAoJEEpcgKtcEGQQjZ4P/0e55+A9d5Xtc4Bv1sGFbzEB
-ffZOvr1dacuaMaLAn/0CjqSFDac5oiAybY6/Wj02vUZRk5jQWi7a0TzRt6hmAt0Q
-wABeoeD4lStSy1xEkraEo9iTyrrz5ellCZwAZbUEEEDHmFMKKCrdexSXh5Do+XwV
-zLdWs7MJxW7dDZlufYA5AiKlHbJeybP+QNKHoPkoLj0Pa35G1DQdW3RuUUmNC+aR
-xRy2wHLbUQ08eS9GeNXmf//hx/6kdiwrIWqWTKUkwZORpbpEuHt9Pun6J0kKAU/M
-9Mfl1K9ZhI4ui6yDas7BCDF5/6vq1baSujCmtB6moHMOhknxXWnkA2Wxy66evtYM
-cI1XwuVslDNK/5Q2D9irLFPBGDVrQavin+vguPCo3csQ7M2M2cH/6JJ1IEYSpWGr
-QUEd6hLUKxxKfEq+hNxwjJk1QojeW4lDBdcaBOUlmbAOiSsKlB1jx4igJFf9/jBi
-RQHFUCZG0x7kJDaeuYP/gKck4Is9/yI+28iTuRWId2TqFc/IT9wfw5mh6zT/ZvJH
-71cNuvql7YzFEMFrq6cYs4fRwz3uLun+3W+W4cSS2YZcuxrxLuBK1j1Dhd/iXD95
-1x5AJGMrPUrkrzheO4gvDaZVPYInl4tBFvQ2NB2t3UhRj81dQD4UTU1p5bwwNXQG
-h06jfxHBxwJd/+Cz7sNO
-=Z9Ed
------END PGP SIGNATURE-----
-
---tEFtbjk+mNEviIIX--
