@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771AbaIOXJB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:09:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50667 "EHLO
+	id S1760028AbaIOXJc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:09:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50656 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467AbaIOWMl (ORCPT
+	with ESMTP id S932453AbaIOWMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:12:41 -0400
+	Mon, 15 Sep 2014 18:12:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 130/187] drivers/i2c/busses: use correct type for dma_map/unmap
-Date: Mon, 15 Sep 2014 15:09:00 -0700
-Message-Id: <1410818997-9432-131-git-send-email-kamal@canonical.com>
+Cc: Pavel Shilovsky <pshilovsky@samba.org>, Steve French <smfrench@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 137/187] CIFS: Fix async reading on reconnects
+Date: Mon, 15 Sep 2014 15:09:07 -0700
+Message-Id: <1410818997-9432-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -26,41 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 28772ac8711e4d7268c06e765887dd8cb6924f98 upstream.
+commit 038bc961c31b070269ecd07349a7ee2e839d4fec upstream.
 
-dma_{un}map_* uses 'enum dma_data_direction' not 'enum dma_transfer_direction'.
+If we get into read_into_pages() from cifs_readv_receive() and then
+loose a network, we issue cifs_reconnect that moves all mids to
+a private list and issue their callbacks. The callback of the async
+read request sets a mid to retry, frees it and wakes up a process
+that waits on the rdata completion.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+After the connection is established we return from read_into_pages()
+with a short read, use the mid that was freed before and try to read
+the remaining data from the a newly created socket. Both actions are
+not what we want to do. In reconnect cases (-EAGAIN) we should not
+mask off the error with a short read but should return the error
+code instead.
+
+Acked-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-at91.c | 4 ++--
+ fs/cifs/file.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 8edba9d..d13d3bb 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -210,7 +210,7 @@ static void at91_twi_write_data_dma_callback(void *data)
- 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 4911dc8..dd4aaca 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2847,7 +2847,7 @@ cifs_uncached_read_into_pages(struct TCP_Server_Info *server,
+ 		total_read += result;
+ 	}
  
- 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
--			 dev->buf_len, DMA_MEM_TO_DEV);
-+			 dev->buf_len, DMA_TO_DEVICE);
- 
- 	at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
+-	return total_read > 0 ? total_read : result;
++	return total_read > 0 && result != -EAGAIN ? total_read : result;
  }
-@@ -289,7 +289,7 @@ static void at91_twi_read_data_dma_callback(void *data)
- 	struct at91_twi_dev *dev = (struct at91_twi_dev *)data;
  
- 	dma_unmap_single(dev->dev, sg_dma_address(&dev->dma.sg),
--			 dev->buf_len, DMA_DEV_TO_MEM);
-+			 dev->buf_len, DMA_FROM_DEVICE);
+ static ssize_t
+@@ -3270,7 +3270,7 @@ cifs_readpages_read_into_pages(struct TCP_Server_Info *server,
+ 		total_read += result;
+ 	}
  
- 	/* The last two bytes have to be read without using dma */
- 	dev->buf += dev->buf_len - 2;
+-	return total_read > 0 ? total_read : result;
++	return total_read > 0 && result != -EAGAIN ? total_read : result;
+ }
+ 
+ static int cifs_readpages(struct file *file, struct address_space *mapping,
 -- 
 1.9.1
 
