@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910AbaIOTh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
+	id S1755895AbaIOTh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:37:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbaIOThN (ORCPT
+	with ESMTP id S1755778AbaIOThP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:13 -0400
+	Mon, 15 Sep 2014 15:37:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 046/114] MIPS: Prevent user from setting FCSR cause bits
-Date: Mon, 15 Sep 2014 12:25:46 -0700
-Message-Id: <20140915192642.882797404@linuxfoundation.org>
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 051/114] ASoC: wm8994: Prevent double lock of accdet_lock mutex on wm1811
+Date: Mon, 15 Sep 2014 12:25:51 -0700
+Message-Id: <20140915192643.040063705@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,58 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Burton <paul.burton@imgtec.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit b1442d39fac2fcfbe6a4814979020e993ca59c9e upstream.
+commit b38314179c9ccb789e6fe967cff171fa817e8978 upstream.
 
-If one or more matching FCSR cause & enable bits are set in saved thread
-context then when that context is restored the kernel will take an FP
-exception. This is of course undesirable and considered an oops, leading
-to the kernel writing a backtrace to the console and potentially
-rebooting depending upon the configuration. Thus the kernel avoids this
-situation by clearing the cause bits of the FCSR register when handling
-FP exceptions and after emulating FP instructions.
+wm1811_micd_stop takes the accdet_lock mutex, and is called from two
+places, one of which is already holding the accdet_lock. This obviously
+causes a lock up.
 
-However the kernel does not prevent userland from setting arbitrary FCSR
-cause & enable bits via ptrace, using either the PTRACE_POKEUSR or
-PTRACE_SETFPREGS requests. This means userland can trivially cause the
-kernel to oops on any system with an FPU. Prevent this from happening
-by clearing the cause bits when writing to the saved FCSR context via
-ptrace.
+This patch fixes this issue by removing the lock from wm1811_micd_stop
+and ensuring that it is always locked externally.
 
-This problem appears to exist at least back to the beginning of the git
-era in the PTRACE_POKEUSR case.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Paul Burton <paul.burton@imgtec.com>
-Cc: stable@vger.kernel.org
-Patchwork: https://patchwork.linux-mips.org/patch/7438/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/ptrace.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8994.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@ -170,6 +170,7 @@ int ptrace_setfpregs(struct task_struct
- 		__get_user(fregs[i], i + (__u64 __user *) data);
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -3497,6 +3497,7 @@ static irqreturn_t wm8994_mic_irq(int ir
+ 	return IRQ_HANDLED;
+ }
  
- 	__get_user(child->thread.fpu.fcr31, data + 64);
-+	child->thread.fpu.fcr31 &= ~FPU_CSR_ALL_X;
++/* Should be called with accdet_lock held */
+ static void wm1811_micd_stop(struct snd_soc_codec *codec)
+ {
+ 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+@@ -3504,14 +3505,10 @@ static void wm1811_micd_stop(struct snd_
+ 	if (!wm8994->jackdet)
+ 		return;
  
- 	/* FIR may not be written.  */
+-	mutex_lock(&wm8994->accdet_lock);
+-
+ 	snd_soc_update_bits(codec, WM8958_MIC_DETECT_1, WM8958_MICD_ENA, 0);
  
-@@ -724,7 +725,7 @@ long arch_ptrace(struct task_struct *chi
- 			break;
- #endif
- 		case FPC_CSR:
--			child->thread.fpu.fcr31 = data;
-+			child->thread.fpu.fcr31 = data & ~FPU_CSR_ALL_X;
- 			break;
- 		case DSP_BASE ... DSP_BASE + 5: {
- 			dspreg_t *dregs;
+ 	wm1811_jackdet_set_mode(codec, WM1811_JACKDET_MODE_JACK);
+ 
+-	mutex_unlock(&wm8994->accdet_lock);
+-
+ 	if (wm8994->wm8994->pdata.jd_ext_cap)
+ 		snd_soc_dapm_disable_pin(&codec->dapm,
+ 					 "MICBIAS2");
+@@ -3552,10 +3549,10 @@ static void wm8958_open_circuit_work(str
+ 						  open_circuit_work.work);
+ 	struct device *dev = wm8994->wm8994->dev;
+ 
+-	wm1811_micd_stop(wm8994->hubs.codec);
+-
+ 	mutex_lock(&wm8994->accdet_lock);
+ 
++	wm1811_micd_stop(wm8994->hubs.codec);
++
+ 	dev_dbg(dev, "Reporting open circuit\n");
+ 
+ 	wm8994->jack_mic = false;
 
 
