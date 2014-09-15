@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaIOHnS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:43:18 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:35853 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320AbaIOHnQ (ORCPT
+	id S1753134AbaIOHsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:48:45 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43976 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaIOHsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:43:16 -0400
-Date: Mon, 15 Sep 2014 11:42:57 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>,
-        "Pavel Emelianov" <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
-Message-ID: <20140915074257.GB11353@esperanza>
-References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
- <20140912171809.GA24469@dhcp22.suse.cz>
- <20140912175516.GB6298@mtj.dyndns.org>
+	Mon, 15 Sep 2014 03:48:43 -0400
+Message-ID: <541697EA.6040909@suse.cz>
+Date: Mon, 15 Sep 2014 09:40:26 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140912175516.GB6298@mtj.dyndns.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 3.12 40/56] ext4: fix ext4_discard_allocated_blocks()
+ if we can't allocate the pa struct
+References: <b4839e6cd4a236a81725e422b2e05c26fe36048a.1409735865.git.jslaby@suse.cz>	 <9f48c2853290b15ecdcd9ba83b41eaab63f22682.1409735865.git.jslaby@suse.cz> <1410749203.3040.57.camel@decadent.org.uk>
+In-Reply-To: <1410749203.3040.57.camel@decadent.org.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Sat, Sep 13, 2014 at 02:55:16AM +0900, Tejun Heo wrote:
-> Hello, guys.
+On 09/15/2014, 04:46 AM, Ben Hutchings wrote:
+> On Wed, 2014-09-03 at 11:26 +0200, Jiri Slaby wrote:
+>> From: Theodore Ts'o <tytso@mit.edu>
+>> 
+>> 3.12-stable review patch.  If anyone has any objections, please
+>> let me know.
+>> 
+>> ===============
+>> 
+>> commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
+>> 
+>> If there is a failure while allocating the preallocation
+>> structure, a number of blocks can end up getting marked in the
+>> in-memory buddy bitmap, and then not getting released.  This can
+>> result in the following corruption getting reported by the
+>> kernel:
+>> 
+>> EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group
+>> 1126, 12793 clusters in bitmap, 12729 in gd
+>> 
+>> In that case, we need to release the blocks using
+>> mb_free_blocks().
+>> 
+>> Tested: fs smoke test; also demonstrated that with injected
+>> errors, the file system is no longer getting corrupted
+>> 
+>> Google-Bug-Id: 16657874
+>> 
+>> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu> Signed-off-by:
+>> Jiri Slaby <jslaby@suse.cz>
+> [...]
 > 
-> On Fri, Sep 12, 2014 at 07:18:09PM +0200, Michal Hocko wrote:
-> > On Fri 12-09-14 19:26:58, Vladimir Davydov wrote:
-> > > memory.kmem.tcp.limit_in_bytes works as the system-wide tcp_mem sysctl,
-> > > but per memory cgroup. While the existence of the latter is justified
-> > > (it prevents the system from becoming unusable due to uncontrolled tcp
-> > > buffers growth) the reason why we need such a knob in containers isn't
-> > > clear to me.
-> > 
-> > Parallels was the primary driver for this change. I haven't heard of
-> > anybody using the feature other than Parallels. I also remember there
-> > was a strong push for this feature before it was merged besides there
-> > were some complains at the time. I do not remember details (and I am
-> > one half way gone for the weekend now) so I do not have pointers to
-> > discussions.
-> > 
-> > I would love to get rid of the code and I am pretty sure that networking
-> > people would love this go even more. I didn't plan to provide kmem.tcp.*
-> > knobs for the cgroups v2 interface but getting rid of it altogether
-> > sounds even better. I am just not sure whether some additional users
-> > grown over time.
-> > Nevertheless I am really curious. What has changed that Parallels is not
-> > interested in kmem.tcp anymore?
-> 
-> So, I'd love to see this happen too but I don't think we can do this.
-> People use published interface.  The usages might be utterly one-off
-> and mental but let's please not underestimate the sometimes senseless
-> creativity found in the wild.  We simply can't remove a bunch of
-> control knobs like this.
+> It's a bit late now, but Ted said this introduced a regression
+> that's fixed by commit c99d1e6e83b0 ("ext4: fix BUG_ON in
+> mb_free_blocks()").
 
-We definitely can't remove something properly operating and widely used,
-but kmem limits are not working and never worked properly due to lack of
-kmem shrinkers, and furthermore CONFIG_MEMCG_KMEM, which tcp accounting
-is enabled by, is marked as UNDER DEVELOPMENT.
+Oh, now queued for 3.12. Thanks!
 
-Thanks,
-Vladimir
+- -- 
+js
+suse labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUFpfqAAoJEL0lsQQGtHBJOBsP/2sJ9vMgzDwOLpA5VTxJLUUP
+9D4Jn6F4Z2TVR+l0pwaHIKgWjnMA1WEEr/FL5WxOSyGq0Rx10pqeOmI8U6wFq/K8
+dhmFQfV5WZxYzCzB9ozae3fwzt7ap0V7yINXq7AkLIfZA1uhB/L5xuX7ZMuqM7ec
+h4/+ylkLuhQg8LrF43+S8PQNRvgLcn/4XsiCLwR1fvJYFgcz6/i2uiBlG8eS5F0k
+WKL/Rg/B66DrLD+RloJnvpshGJY8XGEqu2wx+a/QNiDV2n9aKWzDNcjX0Y+YEsdd
+8Or9J5h018BgB3ktNJB4sd85mkrjhrzTkCyNQoKBc3NjqeJv2Eei1rB4Ds1oLiaH
+wjgWRXNhYC3h5ifDBazEtAu7fH2fWuMeaAtX+t/4r1DitW9H0FpRNy28lYbYzoV/
+HMKAhUCePdWe96TWcbiL7GovbagdcD8HqOqQpYLX9SWb8uEQFKzYCCFNvgFe489o
+R89uARU49K6EQRFr9rj36YyQm/OkPpiJByrEGcbEMTYiQb6FiNkKsV2iznXHJ75y
+kfTje9K6RpKRl0RSaQUK7F7+rP+IH+ajtJD5Umw1eWQ4y+kGQg9RT9Z12SCBpHjF
+s0hkIZp71loIWqlS45+EPCez/Yr0szmqyvZthz87hGL1BlXmwN8tyzhdSkpe1bFy
+cBVtTov4saNk84Z72Foe
+=egHB
+-----END PGP SIGNATURE-----
