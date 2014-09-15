@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106AbaIOWgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:36:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51159 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071AbaIOWTR (ORCPT
+	id S1759140AbaIOWhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:37:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43849 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624AbaIOWhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:17 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 170/187] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
-Date: Mon, 15 Sep 2014 15:09:40 -0700
-Message-Id: <1410818997-9432-171-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:37:01 -0400
+Date: Mon, 15 Sep 2014 15:36:45 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Message-ID: <20140915223645.GG7960@sirena.org.uk>
+References: <1410722585-13393-1-git-send-email-heiko@sntech.de>
+ <1410722585-13393-3-git-send-email-heiko@sntech.de>
+ <20140915165923.GX7960@sirena.org.uk>
+ <2905334.044J8r4kOu@diego>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AtnpEaT8eVnHe5fr"
+Content-Disposition: inline
+In-Reply-To: <2905334.044J8r4kOu@diego>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] regulator: fan53555: set regulator name from
+ constraints name
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--AtnpEaT8eVnHe5fr
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Jiri Kosina <jkosina@suse.cz>
+On Tue, Sep 16, 2014 at 12:08:12AM +0200, Heiko St=FCbner wrote:
 
-commit ece4a17d237a79f63fbfaf3f724a12b6d500555c upstream.
+> I've just tested, patches 3-5 apply and work correctly without this one, =
+so do=20
+> you want to apply them like this or a resend of last 3?
 
-Withtout this, ring initialization fails reliabily during resume with
+No, please implement the changes I asked for in the DT stuff.
 
-	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
+--AtnpEaT8eVnHe5fr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This is not a complete fix, but it is verified to make the ring
-initialization failures during resume much less likely.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-We were not able to root-cause this bug (likely HW-specific to Gen4 chips)
-yet. This is therefore used as a ducttape before problem is fully
-understood and proper fix created, so that people don't suffer from
-completely unusable systems in the meantime.
+iQEcBAEBAgAGBQJUF2n9AAoJECTWi3JdVIfQb88H/1gDzN8V9Ru9UsqwW0xvFPdF
+tlVq7Ocj7HehPjQcwPcpIWxLmxCCBLBU+PkA6c2++20KbQrz1S8LJ1W+4VfsyT+S
+aE0qgLrCuIjr2r5rze5D139uGw2MeVIanYezJXYSkrRYcUIp3ZMMofBWy4csxaw9
+rfPwoKXbTz5j0jwZKvgNUoU9vTtiD5IibuTLCCamtchz9kCQTEL0krU/yk9YgDRl
+M1KPwcjybDO23glrtKFffcGQgtP4Hu4nAFr4HbBbTv438Yud9GWmgNwOBgtYNNSl
+TXSgZ8PJdgWjJVQeETYKLB8lrpTNU+Trf6AZfJf2I+v4ij0qadXnDxeCmJbvlq0=
+=x2yP
+-----END PGP SIGNATURE-----
 
-The discussion and debugging is happening at
-
-	https://bugs.freedesktop.org/show_bug.cgi?id=76554
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/intel_ringbuffer.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 53f5458..dfb8546 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -473,6 +473,9 @@ static int init_ring_common(struct intel_ring_buffer *ring)
- 		}
- 	}
- 
-+	/* Enforce ordering by reading HEAD register back */
-+	I915_READ_HEAD(ring);
-+
- 	/* Initialize the ring. This must happen _after_ we've cleared the ring
- 	 * registers with the above sequence (the readback of the HEAD registers
- 	 * also enforces ordering), otherwise the hw might lose the new ring
--- 
-1.9.1
-
+--AtnpEaT8eVnHe5fr--
