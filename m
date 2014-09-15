@@ -1,100 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaIOTHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:07:52 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:55886 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754265AbaIOTHu (ORCPT
+	id S1754388AbaIOTNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:13:39 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62302 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaIOTNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:07:50 -0400
-Date: Mon, 15 Sep 2014 15:07:44 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-In-Reply-To: <20140915114229.GB3037@worktop.localdomain>
-Message-ID: <alpine.LFD.2.11.1409151451540.8647@knanqh.ubzr>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org> <20140911161517.GA3190@worktop.ger.corp.intel.com> <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
- <20140914194156.GC2832@worktop.localdomain> <20140915114229.GB3037@worktop.localdomain>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 15 Sep 2014 15:13:36 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140915104437.GA11886@esperanza>
+References: <20140915104437.GA11886@esperanza>
+Date: Mon, 15 Sep 2014 12:13:33 -0700
+Message-ID: <CABCjUKCkgoG07djfLEpqo0sBwgKts0iMepwNsh_RdNVTVtYH3A@mail.gmail.com>
+Subject: Re: [RFC] memory cgroup: weak points of kmem accounting design
+From: Suleiman Souhlal <suleiman@google.com>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Dave Chinner <david@fromorbit.com>, Glauber Costa <glommer@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014, Peter Zijlstra wrote:
+On Mon, Sep 15, 2014 at 3:44 AM, Vladimir Davydov
+<vdavydov@parallels.com> wrote:
+> Hi,
+>
+> I'd like to discuss downsides of the kmem accounting part of the memory
+> cgroup controller and a possible way to fix them. I'd really appreciate
+> if you could share your thoughts on it.
+>
+> The idea lying behind the kmem accounting design is to provide each
+> memory cgroup with its private copy of every kmem_cache and list_lru
+> it's going to use. This is implemented by bundling these structures with
+> arrays storing per-memcg copies. The arrays are referenced by css id.
+> When a process in a cgroup tries to allocate an object from a kmem cache
+> we first find out which cgroup the process resides in, then look up the
+> cache copy corresponding to the cgroup, and finally allocate a new
+> object from the private cache. Similarly, on addition/deletion of an
+> object from a list_lru, we first obtain the kmem cache the object was
+> allocated from, then look up the memory cgroup which the cache belongs
+> to, and finally add/remove the object from the private copy of the
+> list_lru corresponding to the cgroup.
+>
+> Though simple it looks from the first glance, it has a number of serious
+> weaknesses:
+>
+>  - Providing each memory cgroup with its own kmem cache increases
+>    external fragmentation.
 
-> On Sun, Sep 14, 2014 at 09:41:56PM +0200, Peter Zijlstra wrote:
-> > On Thu, Sep 11, 2014 at 07:26:48PM +0200, Vincent Guittot wrote:
-> > > On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > > > I'm confused about the utilization vs capacity_orig. I see how we should
-> > > 
-> > > 1st point is that I should compare utilization vs capacity and not
-> > > capacity_orig.
-> > > I should have replaced capacity_orig by capacity in the functions
-> > > above when i move the utilization statistic from
-> > > rq->avg.runnable_avg_sum to cfs.usage_load_avg.
-> > > rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
-> > > cfs.usage_load_avg integrates only cfs tasks
-> > > 
-> > > With this change, we don't need sgs->group_capacity_orig anymore but
-> > > only sgs->group_capacity. So sgs->group_capacity_orig can be removed
-> > > as it's no more used in the code as sg_capacity_factor has been
-> > > removed
-> > 
-> > Yes, but.. so I suppose we need to add DVFS accounting and remove
-> > cpufreq from the capacity thing. Otherwise I don't see it make sense.
-> 
-> OK, I've reconsidered _again_, I still don't get it.
-> 
-> So fundamentally I think its wrong to scale with the capacity; it just
-> doesn't make any sense. Consider big.little stuff, their CPUs are
-> inherently asymmetric in capacity, but that doesn't matter one whit for
-> utilization numbers. If a core is fully consumed its fully consumed, no
-> matter how much work it can or can not do.
+I haven't seen any evidence of this being a problem (but that doesn't
+mean it doesn't exist).
 
-Let's suppose a task running on a 1GHz CPU producing a load of 100.
+>  - SLAB isn't ready to deal with thousands of caches: its algorithm
+>    walks over all system caches and shrinks them periodically, which may
+>    be really costly if we have thousands active memory cgroups.
 
-The same task on a 100MHz CPU would produce a load of 1000 because that 
-CPU is 10x slower.  So to properly evaluate the load of a task when 
-moving it around, we want to normalize its load based on the CPU 
-performance.  In this case the correction factor would be 0.1.
+This could be throttled.
 
-Given those normalized loads, we need to scale CPU capacity as well.  If 
-the 1GHz CPU can handle 50 of those tasks it has a capacity of 5000.
+>
+>  - Caches may now be created/destroyed frequently and from various
+>    places: on system cache destruction, on cgroup offline, from a work
+>    struct scheduled by kmalloc. Synchronizing them properly is really
+>    difficult. I've fixed some places, but it's still desperately buggy.
 
-In theory the 100MHz CPU could handle only 5 of those tasks, meaning it 
-has a normalized capacity of 500, but only if the load metric is already 
-normalized as well.
+Agreed.
 
-Or am I completely missing the point here?
+>  - It's hard to determine when we should destroy a cache that belongs to
+>    a dead memory cgroup. The point is both SLAB and SLUB implementations
+>    always keep some pages in stock for performance reasons, so just
+>    scheduling cache destruction work from kfree once the last slab page
+>    is freed isn't enough - it will normally never happen for SLUB and
+>    may take really long for SLAB. Of course, we can forbid SL[AU]B
+>    algorithm to stock pages in dead caches, but it looks ugly and has
+>    negative impact on performance (I did this, but finally decided to
+>    revert). Another approach could be scanning dead caches periodically
+>    or on memory pressure, but that would be ugly too.
 
+Not sure about slub, but for SLAB doesn't cache_reap take care of that?
 
-Nicolas
+>
+>  - The arrays for storing per-memcg copies can get really large,
+>    especially if we finally decide to leave dead memory cgroups hanging
+>    until memory pressure reaps objects assigned to them and let them
+>    free. How can we deal with an array of, say, 20K elements? Simply
+>    allocating them with kmal^W vmalloc will result in memory wastes. It
+>    will be particularly funny if the user wants to provide each cgroup
+>    with a separate mount point: each super block will have a list_lru
+>    for every memory cgroup, but only one of them will be really used.
+>    That said we need a kind of dynamic reclaimable arrays. Radix trees
+>    would fit, but they are way slower than plain arrays, which is a
+>    no-go, because we want to look up on each kmalloc, list_lru_add/del,
+>    which are fast paths.
 
+The initial design we had was to have an array indexed by "cache id"
+in struct memcg, instead of the current array indexed by "css id" in
+struct kmem_cache.
+The initial design doesn't have the problem you're describing here, as
+far as I can tell.
 
+> The more I think about these issues the more confident I get that the
+> whole design is screwed up. So I'd like to discuss a possible
+> alternative to it.
+>
+> The alternative is dumb simple. Let's allocate objects of all memory
+> cgroups from the same cache. To determine which memory cgroup the object
+> is accounted to on kfree, a pointer to the owner memory cgroup or its
+> css id is stored with the object. For each kind of shrinkable object
+> (inodes, dentries) a separate list_lru is introduced per each memory
+> cgroup. To store inodes and dentries allocated by a memory cgroup in
+> those lists, we add an additional list_head to them.
+>
+> Obviously such an approach wouldn't be affected by any of the issues of
+> the current implementation I enumerated above, so these are the benefits
+> of it. The downsides would be:
+>
+>  - Memory wastes. Each kmalloc'ed object must have a pointer to the
+>    memory cgroup it's accounted to. Each shrinkable object must have an
+>    extra list_head with it. However, there wouldn't be external
+>    fragmentation like with per-memcg caches, which would probably
+>    compensate for that.
 
+The extra memory overhead seems like it would be really bad for small objects.
 
+>  - Performance. We have to charge on each kmalloc, not on each slab page
+>    allocation as it's the case with per memcg caches. However, I think
+>    per cpu stocks would resolve this problem.
 
-> 
-> 
-> So the only thing that needs correcting is the fact that these
-> statistics are based on clock_task and some of that time can end up in
-> other scheduling classes, at which point we'll never get 100% even
-> though we're 'saturated'. But correcting for that using capacity doesn't
-> 'work'.
-> 
-> 
+Maybe I'm wrong, but it seems like implementing per-memcg per-cpu
+stocks for this will be a non-trivial amount of code that would couple
+memcg and slab/slub pretty tightly.
+
+>  - Inflexibility. It wouldn't be easy to add a new kind of shrinkable
+>    object as it's the case with per memcg lru lists. We have to make the
+>    kmem cache used for the object allocations store list_head with each
+>    object and add yet another list_lru to the mem_cgroup struct. But do
+>    we really need such a level of flexibility? On memcg pressure we only
+>    want to shrink dentries and inodes. Will there be anything else?
+>
+> Any comments, thoughts, proposals are really welcome.
+
+It also seems like with this approach, it would be difficult to have
+something like per-memcg slabinfo, which has been invaluable for
+diagnosing memory issues.
+
+-- Suleiman
