@@ -1,370 +1,700 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729AbaIOTYW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:24:22 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:55306 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185AbaIOTTB (ORCPT
+	id S1754628AbaIOT0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:26:33 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33084 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494AbaIOT0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:19:01 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v12 net-next 01/11] bpf: introduce BPF syscall and maps
-Date: Mon, 15 Sep 2014 12:18:31 -0700
-Message-Id: <1410808721-27493-2-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
-References: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
+	Mon, 15 Sep 2014 15:26:31 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: "suravee.suthikulpanit\@amd.com" <suravee.suthikulpanit@amd.com>
+Cc: Mark Rutland <Mark.Rutland@arm.com>,
+        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "tglx\@linutronix.de" <tglx@linutronix.de>,
+        "Harish.Kasiviswanathan\@amd.com" <Harish.Kasiviswanathan@amd.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V6] irqchip: gic: Add supports for ARM GICv2m MSI(-X)
+In-Reply-To: <1410676216-27953-2-git-send-email-suravee.suthikulpanit@amd.com>
+	(suravee's message of "Sun, 14 Sep 2014 07:30:15 +0100")
+Organization: ARM Ltd
+References: <1410676216-27953-1-git-send-email-suravee.suthikulpanit@amd.com>
+	<1410676216-27953-2-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Mon, 15 Sep 2014 20:26:20 +0100
+Message-ID: <86iokon0rn.fsf@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BPF syscall is a multiplexor for a range of different operations on eBPF.
-This patch introduces syscall with single command to create a map.
-Next patch adds commands to access maps.
+On Sun, Sep 14 2014 at 07:30:15 AM, "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com> wrote:
 
-'maps' is a generic storage of different types for sharing data between kernel
-and userspace.
+Hi Suravee,
 
-Userspace example:
-/* this syscall wrapper creates a map with given type and attributes
- * and returns map_fd on success.
- * use close(map_fd) to delete the map
- */
-int bpf_create_map(enum bpf_map_type map_type, int key_size,
-                   int value_size, int max_entries)
-{
-    union bpf_attr attr = {
-        .map_type = map_type,
-        .key_size = key_size,
-        .value_size = value_size,
-        .max_entries = max_entries
-    };
+> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+>
+> ARM GICv2m specification extends GICv2 to support MSI(-X) with
+> a new set of register frame. This patch introduces support for
+> the non-secure GICv2m register frame. Currently, GICV2m is available
+> in certain version of GIC-400.
+>
+> The patch introduces a new property in ARM gic binding, the v2m subnode.
+> It is optional.
 
-    return bpf(BPF_MAP_CREATE, &attr, sizeof(attr));
-}
+Overall, this looks much better than the previous versions I've
+reviewed. There is still a number of points I'd like to see addressed,
+see below.
 
-syscall is using 'union bpf_attr' to be backwards compatible with future
-extensions. Different syscall commands will use different attributes.
+>
+> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Cc: Mark Rutland <Mark.Rutland@arm.com>
+> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
+> Cc: Will Deacon <Will.Deacon@arm.com>
+> ---
+>  Documentation/devicetree/bindings/arm/gic.txt |  39 ++++
+>  drivers/irqchip/Kconfig                       |   7 +
+>  drivers/irqchip/Makefile                      |   1 +
+>  drivers/irqchip/irq-gic-v2m.c                 | 261 ++++++++++++++++++++++++++
+>  drivers/irqchip/irq-gic.c                     |  88 ++++++---
+>  drivers/irqchip/irq-gic.h                     |  51 +++++
+>  6 files changed, 419 insertions(+), 28 deletions(-)
+>  create mode 100644 drivers/irqchip/irq-gic-v2m.c
+>  create mode 100644 drivers/irqchip/irq-gic.h
+>
+> diff --git a/Documentation/devicetree/bindings/arm/gic.txt b/Documentation/devicetree/bindings/arm/gic.txt
+> index c7d2fa1..a461591 100644
+> --- a/Documentation/devicetree/bindings/arm/gic.txt
+> +++ b/Documentation/devicetree/bindings/arm/gic.txt
+> @@ -96,3 +96,42 @@ Example:
+>                       <0x2c006000 0x2000>;
+>                 interrupts = <1 9 0xf04>;
+>         };
+> +
+> +
+> +* GICv2m extension for MSI/MSI-x support (Optional)
+> +
+> +Certain revision of GIC-400 supports MSI/MSI-x via V2M register frame.
+> +This is enabled by specifying v2m sub-node.
+> +
+> +Required properties:
+> +
+> +- msi-controller : Identifies the node as an MSI controller.
+> +
+> +- reg : GICv2m MSI interface register base and size
+> +
+> +Example:
+> +
+> +       interrupt-controller@e1101000 {
+> +               compatible = "arm,gic-400";
+> +               #interrupt-cells = <3>;
+> +               #address-cells = <2>;
+> +               #size-cells = <2>;
+> +               interrupt-controller;
+> +               interrupts = <1 8 0xf04>;
+> +               ranges = <0 0 0 0xe1100000 0 0x100000>;
+> +               reg = <0x0 0xe1110000 0 0x01000>,
+> +                     <0x0 0xe112f000 0 0x02000>,
+> +                     <0x0 0xe1140000 0 0x10000>,
+> +                     <0x0 0xe1160000 0 0x10000>;
+> +               v2m0 {
 
-More details in Documentation/networking/filter.txt and in manpage
+I believe the convention is to have
+		v2m0 : v2m@0x80000 {
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- Documentation/networking/filter.txt |   39 +++++++++
- include/linux/bpf.h                 |   41 ++++++++++
- include/uapi/linux/bpf.h            |   23 ++++++
- kernel/bpf/Makefile                 |    2 +-
- kernel/bpf/syscall.c                |  151 +++++++++++++++++++++++++++++++++++
- 5 files changed, 255 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/bpf.h
- create mode 100644 kernel/bpf/syscall.c
+> +                       msi-controller;
+> +                       reg = <0x0 0x80000 0 0x1000>;
 
-diff --git a/Documentation/networking/filter.txt b/Documentation/networking/filter.txt
-index 81916ab5d96f..1900d29518f1 100644
---- a/Documentation/networking/filter.txt
-+++ b/Documentation/networking/filter.txt
-@@ -1001,6 +1001,45 @@ instruction that loads 64-bit immediate value into a dst_reg.
- Classic BPF has similar instruction: BPF_LD | BPF_W | BPF_IMM which loads
- 32-bit immediate value into a register.
- 
-+eBPF maps
-+---------
-+'maps' is a generic storage of different types for sharing data between kernel
-+and userspace.
-+
-+The maps are accessed from user space via BPF syscall, which has commands:
-+- create a map with given type and attributes
-+  map_fd = bpf(BPF_MAP_CREATE, union bpf_attr *attr, u32 size)
-+  using attr->map_type, attr->key_size, attr->value_size, attr->max_entries
-+  returns process-local file descriptor or negative error
-+
-+- lookup key in a given map
-+  err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key, attr->value
-+  returns zero and stores found elem into value or negative error
-+
-+- create or update key/value pair in a given map
-+  err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key, attr->value
-+  returns zero or negative error
-+
-+- find and delete element by key in a given map
-+  err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
-+  using attr->map_fd, attr->key
-+
-+- to delete map: close(fd)
-+  Exiting process will delete maps automatically
-+
-+userspace programs use this syscall to create/access maps that eBPF programs
-+are concurrently updating.
-+
-+maps can have different types: hash, array, bloom filter, radix-tree, etc.
-+
-+The map is defined by:
-+  . type
-+  . max number of elements
-+  . key size in bytes
-+  . value size in bytes
-+
- Testing
- -------
- 
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-new file mode 100644
-index 000000000000..48014a71f0fe
---- /dev/null
-+++ b/include/linux/bpf.h
-@@ -0,0 +1,41 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ */
-+#ifndef _LINUX_BPF_H
-+#define _LINUX_BPF_H 1
-+
-+#include <uapi/linux/bpf.h>
-+#include <linux/workqueue.h>
-+
-+struct bpf_map;
-+
-+/* map is generic key/value storage optionally accesible by eBPF programs */
-+struct bpf_map_ops {
-+	/* funcs callable from userspace (via syscall) */
-+	struct bpf_map *(*map_alloc)(union bpf_attr *attr);
-+	void (*map_free)(struct bpf_map *);
-+};
-+
-+struct bpf_map {
-+	atomic_t refcnt;
-+	enum bpf_map_type map_type;
-+	u32 key_size;
-+	u32 value_size;
-+	u32 max_entries;
-+	struct bpf_map_ops *ops;
-+	struct work_struct work;
-+};
-+
-+struct bpf_map_type_list {
-+	struct list_head list_node;
-+	struct bpf_map_ops *ops;
-+	enum bpf_map_type type;
-+};
-+
-+void bpf_register_map_type(struct bpf_map_type_list *tl);
-+void bpf_map_put(struct bpf_map *map);
-+
-+#endif /* _LINUX_BPF_H */
-diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
-index 479ed0b6be16..ecc8fa48a2a4 100644
---- a/include/uapi/linux/bpf.h
-+++ b/include/uapi/linux/bpf.h
-@@ -62,4 +62,27 @@ struct bpf_insn {
- 	__s32	imm;		/* signed immediate constant */
- };
- 
-+/* BPF syscall commands */
-+enum bpf_cmd {
-+	/* create a map with given type and attributes
-+	 * fd = bpf(BPF_MAP_CREATE, union bpf_attr *, u32 size)
-+	 * returns fd or negative error
-+	 * map is deleted when fd is closed
-+	 */
-+	BPF_MAP_CREATE,
-+};
-+
-+enum bpf_map_type {
-+	BPF_MAP_TYPE_UNSPEC,
-+};
-+
-+union bpf_attr {
-+	struct { /* anonymous struct used by BPF_MAP_CREATE command */
-+		__u32	map_type;	/* one of enum bpf_map_type */
-+		__u32	key_size;	/* size of key in bytes */
-+		__u32	value_size;	/* size of value in bytes */
-+		__u32	max_entries;	/* max number of entries in a map */
-+	};
-+};
-+
- #endif /* _UAPI__LINUX_BPF_H__ */
-diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
-index 6a71145e2769..e9f7334ed07a 100644
---- a/kernel/bpf/Makefile
-+++ b/kernel/bpf/Makefile
-@@ -1 +1 @@
--obj-y := core.o
-+obj-y := core.o syscall.o
-diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
-new file mode 100644
-index 000000000000..80082ec5a5fc
---- /dev/null
-+++ b/kernel/bpf/syscall.c
-@@ -0,0 +1,151 @@
-+/* Copyright (c) 2011-2014 PLUMgrid, http://plumgrid.com
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of version 2 of the GNU General Public
-+ * License as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ */
-+#include <linux/bpf.h>
-+#include <linux/syscalls.h>
-+#include <linux/slab.h>
-+#include <linux/anon_inodes.h>
-+
-+static LIST_HEAD(bpf_map_types);
-+
-+static struct bpf_map *find_and_alloc_map(union bpf_attr *attr)
-+{
-+	struct bpf_map_type_list *tl;
-+	struct bpf_map *map;
-+
-+	list_for_each_entry(tl, &bpf_map_types, list_node) {
-+		if (tl->type == attr->map_type) {
-+			map = tl->ops->map_alloc(attr);
-+			if (IS_ERR(map))
-+				return map;
-+			map->ops = tl->ops;
-+			map->map_type = attr->map_type;
-+			return map;
-+		}
-+	}
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+/* boot time registration of different map implementations */
-+void bpf_register_map_type(struct bpf_map_type_list *tl)
-+{
-+	list_add(&tl->list_node, &bpf_map_types);
-+}
-+
-+/* called from workqueue */
-+static void bpf_map_free_deferred(struct work_struct *work)
-+{
-+	struct bpf_map *map = container_of(work, struct bpf_map, work);
-+
-+	/* implementation dependent freeing */
-+	map->ops->map_free(map);
-+}
-+
-+/* decrement map refcnt and schedule it for freeing via workqueue
-+ * (unrelying map implementation ops->map_free() might sleep)
-+ */
-+void bpf_map_put(struct bpf_map *map)
-+{
-+	if (atomic_dec_and_test(&map->refcnt)) {
-+		INIT_WORK(&map->work, bpf_map_free_deferred);
-+		schedule_work(&map->work);
-+	}
-+}
-+
-+static int bpf_map_release(struct inode *inode, struct file *filp)
-+{
-+	struct bpf_map *map = filp->private_data;
-+
-+	bpf_map_put(map);
-+	return 0;
-+}
-+
-+static const struct file_operations bpf_map_fops = {
-+	.release = bpf_map_release,
-+};
-+
-+/* helper macro to check that unused fields 'union bpf_attr' are zero */
-+#define CHECK_ATTR(CMD) \
-+	memchr_inv((void *) &attr->CMD##_LAST_FIELD + \
-+		   sizeof(attr->CMD##_LAST_FIELD), 0, \
-+		   sizeof(*attr) - \
-+		   offsetof(union bpf_attr, CMD##_LAST_FIELD) - \
-+		   sizeof(attr->CMD##_LAST_FIELD)) != NULL
-+
-+#define BPF_MAP_CREATE_LAST_FIELD max_entries
-+/* called via syscall */
-+static int map_create(union bpf_attr *attr)
-+{
-+	struct bpf_map *map;
-+	int err;
-+
-+	err = CHECK_ATTR(BPF_MAP_CREATE);
-+	if (err)
-+		return -EINVAL;
-+
-+	/* find map type and init map: hashtable vs rbtree vs bloom vs ... */
-+	map = find_and_alloc_map(attr);
-+	if (IS_ERR(map))
-+		return PTR_ERR(map);
-+
-+	atomic_set(&map->refcnt, 1);
-+
-+	err = anon_inode_getfd("bpf-map", &bpf_map_fops, map, O_RDWR | O_CLOEXEC);
-+
-+	if (err < 0)
-+		/* failed to allocate fd */
-+		goto free_map;
-+
-+	return err;
-+
-+free_map:
-+	map->ops->map_free(map);
-+	return err;
-+}
-+
-+SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, size)
-+{
-+	union bpf_attr *attr;
-+	int err;
-+
-+	/* the syscall is limited to root temporarily. This restriction will be
-+	 * lifted when security audit is clean. Note that eBPF+tracing must have
-+	 * this restriction, since it may pass kernel data to user space
-+	 */
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	/* newer userspace cannot run with older kernel */
-+	if (size > sizeof(*attr))
-+		return -EINVAL;
-+
-+	attr = kzalloc(sizeof(*attr), GFP_USER);
-+	if (!attr)
-+		return -ENOMEM;
-+
-+	/* copy attributes from user space, may be less than sizeof(bpf_attr) */
-+	err = -EFAULT;
-+	if (copy_from_user(attr, uattr, size) != 0)
-+		goto free_attr;
-+
-+	switch (cmd) {
-+	case BPF_MAP_CREATE:
-+		err = map_create(attr);
-+		break;
-+	default:
-+		err = -EINVAL;
-+		break;
-+	}
-+
-+free_attr:
-+	kfree(attr);
-+	return err;
-+}
+I think having a "compatible" property would be nice, and would help
+handle variants if they ever happen.
+
+> +               };
+> +
+> +               ....
+> +
+> +               v2mN {
+> +                       msi-controller;
+> +                       reg = <0x0 0x90000 0 0x1000>;
+> +               };
+> +       };
+> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> index b8632bf..ddb31ee 100644
+> --- a/drivers/irqchip/Kconfig
+> +++ b/drivers/irqchip/Kconfig
+> @@ -7,6 +7,13 @@ config ARM_GIC
+>         select IRQ_DOMAIN
+>         select MULTI_IRQ_HANDLER
+>
+> +config ARM_GIC_V2M
+> +       bool
+> +       select IRQ_DOMAIN
+> +       select MULTI_IRQ_HANDLER
+> +       depends on ARM_GIC
+> +       depends on PCI && PCI_MSI
+> +
+>  config GIC_NON_BANKED
+>         bool
+>
+> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+> index 73052ba..3bda951 100644
+> --- a/drivers/irqchip/Makefile
+> +++ b/drivers/irqchip/Makefile
+> @@ -17,6 +17,7 @@ obj-$(CONFIG_ARCH_SUNXI)              += irq-sun4i.o
+>  obj-$(CONFIG_ARCH_SUNXI)               += irq-sunxi-nmi.o
+>  obj-$(CONFIG_ARCH_SPEAR3XX)            += spear-shirq.o
+>  obj-$(CONFIG_ARM_GIC)                  += irq-gic.o irq-gic-common.o
+> +obj-$(CONFIG_ARM_GIC_V2M)              += irq-gic-v2m.o
+>  obj-$(CONFIG_ARM_GIC_V3)               += irq-gic-v3.o irq-gic-common.o
+>  obj-$(CONFIG_ARM_NVIC)                 += irq-nvic.o
+>  obj-$(CONFIG_ARM_VIC)                  += irq-vic.o
+> diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
+> new file mode 100644
+> index 0000000..499bfb9
+> --- /dev/null
+> +++ b/drivers/irqchip/irq-gic-v2m.c
+> @@ -0,0 +1,261 @@
+> +/*
+> + * ARM GIC v2m MSI(-X) support
+> + * Support for Message Signaled Interrupts for systems that
+> + * implement ARM Generic Interrupt Controller: GICv2m.
+> + *
+> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
+> + * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> + *          Harish Kasiviswanathan <harish.kasiviswanathan@amd.com>
+> + *          Brandon Anderson <brandon.anderson@amd.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published
+> + * by the Free Software Foundation.
+> + */
+> +
+> +#define pr_fmt(fmt) "GICv2m: " fmt
+> +
+> +#include <linux/bitmap.h>
+> +#include <linux/irq.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_pci.h>
+> +#include <linux/pci.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +
+> +#include "irqchip.h"
+> +#include "irq-gic.h"
+> +
+> +/*
+> +* MSI_TYPER:
+> +*     [31:26] Reserved
+> +*     [25:16] lowest SPI assigned to MSI
+> +*     [15:10] Reserved
+> +*     [9:0]   Numer of SPIs assigned to MSI
+> +*/
+> +#define V2M_MSI_TYPER                  0x008
+> +#define V2M_MSI_TYPER_BASE_SHIFT       16
+> +#define V2M_MSI_TYPER_BASE_MASK                0x3FF
+> +#define V2M_MSI_TYPER_NUM_MASK         0x3FF
+> +#define V2M_MSI_SETSPI_NS              0x040
+> +#define V2M_MIN_SPI                    32
+> +#define V2M_MAX_SPI                    1019
+> +
+> +/*
+> + * alloc_msi_irq - Allocate MSIs from available MSI bitmap.
+> + * @data: Pointer to v2m_data
+> + * @nvec: Number of interrupts to allocate
+> + * @irq: Pointer to the allocated irq
+> + *
+> + * Allocates interrupts only if the contiguous range of MSIs
+> + * with specified nvec are available. Otherwise return the number
+> + * of available interrupts. If none are available, then returns -ENOENT.
+> + */
+> +static int alloc_msi_irq(struct v2m_data *data, int nvec, int *irq)
+> +{
+> +       int size = data->nr_spis;
+> +       int next = size, i = nvec, ret;
+> +
+> +       /* We should never allocate more than available nr_spis */
+> +       if (i >= size)
+> +               i = size;
+> +
+> +       spin_lock(&data->msi_cnt_lock);
+> +
+> +       for (; i > 0; i--) {
+> +               next = bitmap_find_next_zero_area(data->bm,
+> +                                       size, 0, i, 0);
+> +               if (next < size)
+> +                       break;
+> +       }
+> +
+> +       if (i != nvec) {
+> +               ret = i ? : -ENOENT;
+> +       } else {
+> +               bitmap_set(data->bm, next, nvec);
+> +               *irq = data->spi_start + next;
+> +               ret = 0;
+> +       }
+> +
+> +       spin_unlock(&data->msi_cnt_lock);
+> +
+> +       return ret;
+> +}
+> +
+> +static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
+> +{
+> +       int pos;
+> +       struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
+> +
+> +       spin_lock(&data->msi_cnt_lock);
+> +
+> +       pos = irq - data->spi_start;
+> +       if (pos >= 0 && pos < data->nr_spis)
+> +               bitmap_clear(data->bm, pos, 1);
+> +
+> +       spin_unlock(&data->msi_cnt_lock);
+> +}
+> +
+> +static int gicv2m_setup_msi_irq(struct msi_chip *chip,
+> +                               struct pci_dev *pdev,
+> +                               struct msi_desc *desc)
+> +{
+> +       int irq, avail;
+> +       struct msi_msg msg;
+> +       phys_addr_t addr;
+> +       struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
+> +
+> +       if (!desc) {
+> +               dev_err(&pdev->dev,
+> +                       "GICv2m: MSI setup failed. Invalid msi descriptor\n");
+
+Isn't the "GICv2m" header already provided by the pr_fmt at the
+beginning of the file?
+
+> +               return -EINVAL;
+> +       }
+> +
+> +       avail = alloc_msi_irq(data, 1, &irq);
+> +       if (avail != 0) {
+> +               dev_err(&pdev->dev,
+> +                       "GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
+> +               return -ENOSPC;
+> +       }
+> +
+> +       irq_set_chip_data(irq, chip);
+> +       irq_set_msi_desc(irq, desc);
+> +       irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
+> +
+> +       addr = data->res.start + V2M_MSI_SETSPI_NS;
+> +       msg.address_hi = (u32)(addr >> 32);
+> +       msg.address_lo = (u32)(addr);
+> +       msg.data = irq;
+> +       write_msi_msg(irq, &msg);
+> +
+> +       return 0;
+> +}
+> +
+> +static void gicv2m_mask_irq(struct irq_data *d)
+> +{
+> +       gic_mask_irq(d);
+> +       if (d->msi_desc)
+> +               mask_msi_irq(d);
+> +}
+> +
+> +static void gicv2m_unmask_irq(struct irq_data *d)
+> +{
+> +       gic_unmask_irq(d);
+> +       if (d->msi_desc)
+> +               unmask_msi_irq(d);
+> +}
+> +
+> +#ifdef CONFIG_OF
+
+I think you can loose the CONFIG_OF here. There is no valid
+configuration without OF on arm64.
+
+> +
+> +static int __init
+> +v2m_init(struct device_node *node, struct v2m_data *v2m,
+> +                 struct resource *res)
+> +{
+> +       int ret;
+> +       unsigned int typer;
+> +
+> +       v2m->msi_chip.owner = THIS_MODULE;
+> +       v2m->msi_chip.of_node = node;
+> +       v2m->msi_chip.setup_irq = gicv2m_setup_msi_irq;
+> +       v2m->msi_chip.teardown_irq = gicv2m_teardown_msi_irq;
+> +       ret = of_pci_msi_chip_add(&v2m->msi_chip);
+> +       if (ret) {
+> +               pr_info("Failed to add msi_chip.\n");
+> +               return ret;
+> +       }
+> +
+> +       v2m->base = ioremap(res->start, resource_size(res));
+> +       if (!v2m->base) {
+> +               pr_err("Failed to map GICv2m resource\n");
+> +               return -EINVAL;
+
+Beware, you're leaving with a registered msi_chip. You probably want to
+remove it on the error path.
+
+> +       }
+> +
+> +       memcpy(&v2m->res, res, sizeof(struct resource));
+> +
+> +       typer = readl_relaxed(v2m->base + V2M_MSI_TYPER);
+> +       if (!typer) {
+> +               pr_warn("Failed to read V2M_MSI_TYPER register\n");
+> +               return -EINVAL;
+
+And here leaving the v2m widget mapped.
+
+> +       }
+> +
+> +       v2m->spi_start = (typer >> V2M_MSI_TYPER_BASE_SHIFT) &
+> +                               V2M_MSI_TYPER_BASE_MASK;
+> +       v2m->nr_spis = typer & V2M_MSI_TYPER_NUM_MASK;
+> +       if ((v2m->spi_start < V2M_MIN_SPI) || (v2m->nr_spis >= V2M_MAX_SPI)) {
+> +                       pr_err("Invalid MSI_TYPER (%#x)\n", typer);
+> +                       return -EINVAL;
+
+Blah. The whole error handling of this function is b0rked.
+
+> +       }
+> +
+> +       v2m->bm = kzalloc(sizeof(long) * BITS_TO_LONGS(v2m->nr_spis),
+> +                         GFP_KERNEL);
+> +       if (!v2m->bm) {
+> +               pr_err("Failed to allocate MSI bitmap\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       spin_lock_init(&v2m->msi_cnt_lock);
+> +
+> +       pr_info("SPI range [%d:%d]\n",
+> +               v2m->spi_start, (v2m->spi_start + v2m->nr_spis));
+> +
+> +       return 0;
+> +}
+> +
+> +int __init gicv2m_of_init(struct device_node *node,
+> +                         struct gic_chip_data *gic,
+> +                         struct irq_chip *v2m_chip)
+> +{
+> +       int ret = 0;
+> +       struct v2m_data *v2m;
+> +       struct resource res;
+> +       struct device_node *child = NULL;
+> +
+> +       INIT_LIST_HEAD(&gic->v2m_list);
+> +
+> +       for (;;) {
+> +               child = of_get_next_child(node, child);
+
+I don't see any of_node_put() in this function. You'll need to fix
+this...
+
+> +               if (!child)
+> +                       break;
+> +
+> +               if (!of_find_property(child, "msi-controller", NULL))
+> +                       continue;
+> +
+> +               ret = of_address_to_resource(child, 0, &res);
+> +               if (ret) {
+> +                       pr_err("Failed to allocate v2m resource.\n");
+> +                       break;
+> +               }
+> +
+> +               v2m = kzalloc(sizeof(struct v2m_data), GFP_KERNEL);
+> +               if (!v2m) {
+> +                       pr_err("Failed to allocate struct v2m_data.\n");
+> +                       return -ENOMEM;
+> +               }
+> +
+> +               ret = v2m_init(child, v2m, &res);
+> +               if (ret)
+> +                       break;
+> +
+> +               v2m->gic = gic;
+> +
+> +               pr_info(" %s: [%lx : %lx]\n", child->name,
+> +                       (unsigned long)res.start, (unsigned long)res.end);
+> +
+> +               list_add_tail(&v2m->list, &gic->v2m_list);
+> +       }
+> +
+> +       if (ret && list_empty(&gic->v2m_list)) {
+> +               pr_err("MSI resource not found\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       v2m_chip->irq_mask = gicv2m_mask_irq;
+> +       v2m_chip->irq_unmask = gicv2m_unmask_irq;
+> +
+
+Again, the whole error handling is evil. You can end-up allocating a few
+v2m structures, registering them, and yet have kzalloc failing at some
+point. At that stage, you exit early, not setting the mas/unmask
+methods. Boom.
+
+> +       return ret;
+> +}
+> +
+> +#endif /* CONFIG_OF */
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 4b959e6..f490599 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -46,30 +46,9 @@
+>  #include <asm/smp_plat.h>
+>
+>  #include "irq-gic-common.h"
+> +#include "irq-gic.h"
+>  #include "irqchip.h"
+>
+> -union gic_base {
+> -       void __iomem *common_base;
+> -       void __percpu * __iomem *percpu_base;
+> -};
+> -
+> -struct gic_chip_data {
+> -       union gic_base dist_base;
+> -       union gic_base cpu_base;
+> -#ifdef CONFIG_CPU_PM
+> -       u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
+> -       u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
+> -       u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
+> -       u32 __percpu *saved_ppi_enable;
+> -       u32 __percpu *saved_ppi_conf;
+> -#endif
+> -       struct irq_domain *domain;
+> -       unsigned int gic_irqs;
+> -#ifdef CONFIG_GIC_NON_BANKED
+> -       void __iomem *(*get_base)(union gic_base *);
+> -#endif
+> -};
+> -
+>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+>
+>  /*
+> @@ -131,15 +110,36 @@ static inline void gic_set_base_accessor(struct gic_chip_data *data,
+>  #define gic_set_base_accessor(d, f)
+>  #endif
+>
+> +static inline
+> +struct gic_chip_data *irq_data_get_gic_chip_data(struct irq_data *d)
+> +{
+> +       struct gic_chip_data *gic_data;
+> +       struct msi_chip *mchip;
+> +       struct v2m_data *v2mdat;
+> +
+> +       /*
+> +        * For MSI, irq_data.chip_data points to struct msi_chip.
+> +        * For non-MSI, irq_data.chip_data points to struct gic_chip_data.
+> +        */
+> +       if (d->msi_desc) {
+> +               mchip = irq_data_get_irq_chip_data(d);
+> +               v2mdat = container_of(mchip, struct v2m_data, msi_chip);
+> +               gic_data = v2mdat->gic;
+> +       } else {
+> +               gic_data = irq_data_get_irq_chip_data(d);
+> +       }
+> +       return gic_data;
+> +}
+> +
+>  static inline void __iomem *gic_dist_base(struct irq_data *d)
+>  {
+> -       struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
+> +       struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
+>         return gic_data_dist_base(gic_data);
+>  }
+>
+>  static inline void __iomem *gic_cpu_base(struct irq_data *d)
+>  {
+> -       struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
+> +       struct gic_chip_data *gic_data = irq_data_get_gic_chip_data(d);
+>         return gic_data_cpu_base(gic_data);
+>  }
+>
+> @@ -151,7 +151,7 @@ static inline unsigned int gic_irq(struct irq_data *d)
+>  /*
+>   * Routines to acknowledge, disable and enable interrupts
+>   */
+> -static void gic_mask_irq(struct irq_data *d)
+> +void gic_mask_irq(struct irq_data *d)
+
+I'm still very uncomfortable with exporting the mask/unmask methods
+outside of this file... Maybe it is not a big deal, but I see evil
+everywhere.
+
+>  {
+>         u32 mask = 1 << (gic_irq(d) % 32);
+>
+> @@ -162,7 +162,7 @@ static void gic_mask_irq(struct irq_data *d)
+>         raw_spin_unlock(&irq_controller_lock);
+>  }
+>
+> -static void gic_unmask_irq(struct irq_data *d)
+> +void gic_unmask_irq(struct irq_data *d)
+>  {
+>         u32 mask = 1 << (gic_irq(d) % 32);
+>
+> @@ -325,6 +325,15 @@ static struct irq_chip gic_chip = {
+>         .irq_set_wake           = gic_set_wake,
+>  };
+>
+> +static struct irq_chip v2m_chip = {
+> +       .name                   = "GICv2m",
+> +       .irq_eoi                = gic_eoi_irq,
+> +       .irq_set_type           = gic_set_type,
+> +#ifdef CONFIG_SMP
+> +       .irq_set_affinity       = gic_set_affinity,
+> +#endif
+> +};
+> +
+>  void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+>  {
+>         if (gic_nr >= MAX_GIC_NR)
+> @@ -767,6 +776,24 @@ void __init gic_init_physaddr(struct device_node *node)
+>  static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+>                                 irq_hw_number_t hw)
+>  {
+> +       struct gic_chip_data *gic = d->host_data;
+> +       struct v2m_data *v2m;
+> +
+> +       irq_set_chip_data(irq, gic);
+>
+> +#ifdef CONFIG_ARM_GIC_V2M
+> +       list_for_each_entry(v2m, &gic->v2m_list, list) {
+> +               if (hw >= v2m->spi_start &&
+> +                   hw <  v2m->spi_start + v2m->nr_spis) {
+> +
+> +                       irq_set_chip_and_handler(irq, &v2m_chip,
+> +                                        handle_fasteoi_irq);
+> +                       set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+> +                       return 0;
+> +               }
+> +       }
+> +#endif
+> +
+>         if (hw < 32) {
+>                 irq_set_percpu_devid(irq);
+>                 irq_set_chip_and_handler(irq, &gic_chip,
+> @@ -779,7 +806,6 @@ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+>
+>                 gic_routable_irq_domain_ops->map(d, irq, hw);
+>         }
+> -       irq_set_chip_data(irq, d->host_data);
+
+These two hunks make the code a bit hard to read:
+- First, message-based SPIs,
+- Then PPIs
+- and finally the rest of the SPIs.
+
+Can you come up with a construct that keeps everything in a logical
+order (PPIs, and then SPIs)? Not a big deal but it would make the code
+nicer.
+
+>         return 0;
+>  }
+>
+> @@ -996,7 +1022,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+>         void __iomem *cpu_base;
+>         void __iomem *dist_base;
+>         u32 percpu_offset;
+> -       int irq;
+> +       int irq, ret;
+>
+>         if (WARN_ON(!node))
+>                 return -ENODEV;
+> @@ -1010,6 +1036,12 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+>         if (of_property_read_u32(node, "cpu-offset", &percpu_offset))
+>                 percpu_offset = 0;
+>
+> +       if (IS_ENABLED(CONFIG_ARM_GIC_V2M)) {
+> +               ret = gicv2m_of_init(node, &gic_data[gic_cnt], &v2m_chip);
+> +               if (ret)
+> +                       pr_warn("Warning: Failed to enable GICv2m support.\n");
+> +       }
+> +
+>         gic_init_bases(gic_cnt, -1, dist_base, cpu_base, percpu_offset, node);
+>         if (!gic_cnt)
+>                 gic_init_physaddr(node);
+> diff --git a/drivers/irqchip/irq-gic.h b/drivers/irqchip/irq-gic.h
+> new file mode 100644
+> index 0000000..1f4a2b0
+> --- /dev/null
+> +++ b/drivers/irqchip/irq-gic.h
+> @@ -0,0 +1,51 @@
+> +#ifndef _IRQ_GIC_H_
+> +#define _IRQ_GIC_H_
+> +
+> +#include <linux/msi.h>
+> +#include <linux/pci.h>
+> +
+> +union gic_base {
+> +       void __iomem *common_base;
+> +       void __percpu * __iomem *percpu_base;
+> +};
+> +
+> +struct gic_chip_data;
+> +
+> +struct v2m_data {
+> +#ifdef CONFIG_ARM_GIC_V2M
+> +       struct list_head list;
+> +       spinlock_t msi_cnt_lock;
+> +       struct msi_chip msi_chip;
+> +       struct resource res;      /* GICv2m resource */
+> +       void __iomem *base;       /* GICv2m virt address */
+> +       unsigned int spi_start;   /* The SPI number that MSIs start */
+> +       unsigned int nr_spis;     /* The number of SPIs for MSIs */
+> +       unsigned long *bm;        /* MSI vector bitmap */
+> +       struct gic_chip_data *gic;
+> +#endif
+> +};
+> +
+> +struct gic_chip_data {
+> +       union gic_base dist_base;
+> +       union gic_base cpu_base;
+> +#ifdef CONFIG_CPU_PM
+> +       u32 saved_spi_enable[DIV_ROUND_UP(1020, 32)];
+> +       u32 saved_spi_conf[DIV_ROUND_UP(1020, 16)];
+> +       u32 saved_spi_target[DIV_ROUND_UP(1020, 4)];
+> +       u32 __percpu *saved_ppi_enable;
+> +       u32 __percpu *saved_ppi_conf;
+> +#endif
+> +       struct irq_domain *domain;
+> +       unsigned int gic_irqs;
+> +#ifdef CONFIG_GIC_NON_BANKED
+> +       void __iomem *(*get_base)(union gic_base *);
+> +#endif
+> +       struct list_head v2m_list;
+> +};
+
+Maybe wrap this list_head around #ifdef/#endif?
+
+> +
+> +void gic_mask_irq(struct irq_data *d);
+> +void gic_unmask_irq(struct irq_data *d);
+> +int gicv2m_of_init(struct device_node *node, struct gic_chip_data *gic,
+> +                  struct irq_chip *v2m_chip) __init;
+> +
+> +#endif /* _IRQ_GIC_H_ */
+> --
+> 1.9.3
+>
+>
 -- 
-1.7.9.5
-
+Jazz is not dead. It just smells funny.
