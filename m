@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaIOTja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:39:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55522 "EHLO
+	id S1754914AbaIOTj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:39:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55514 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625AbaIOTj2 (ORCPT
+	with ESMTP id S1754602AbaIOTj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:39:28 -0400
+	Mon, 15 Sep 2014 15:39:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 068/114] ACPI / scan: not cache _SUN value in struct acpi_device_pnp
-Date: Mon, 15 Sep 2014 12:26:08 -0700
-Message-Id: <20140915192643.572813775@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 066/114] spi/pxa2xx: Add ACPI ID for Intel Braswell
+Date: Mon, 15 Sep 2014 12:26:06 -0700
+Message-Id: <20140915192643.513025467@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,81 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit a383b68d9fe9864c4d3b86f67ad6488f58136435 upstream.
+commit aca26364689e00e3b2052072424682231bdae6ae upstream.
 
-The _SUN device indentification object is not guaranteed to return
-the same value every time it is executed, so we should not cache its
-return value, but rather execute it every time as needed.  If it is
-cached, an incorrect stale value may be used in some situations.
+The SPI host controller is the same as used in Baytrail, only the ACPI ID
+is different so add this new ID to the list.
 
-This issue was exposed by commit 202317a573b2 (ACPI / scan: Add
-acpi_device objects for all device nodes in the namespace).  Fix it
-by avoiding to cache the return value of _SUN.
-
-Fixes: 202317a573b2 (ACPI / scan: Add acpi_device objects for all device nodes in the namespace)
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-[ rjw: Changelog ]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c     |   15 ++++++++-------
- include/acpi/acpi_bus.h |    1 -
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/spi/spi-pxa2xx.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -661,8 +661,14 @@ static ssize_t
- acpi_device_sun_show(struct device *dev, struct device_attribute *attr,
- 		     char *buf) {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
-+	acpi_status status;
-+	unsigned long long sun;
-+
-+	status = acpi_evaluate_integer(acpi_dev->handle, "_SUN", NULL, &sun);
-+	if (ACPI_FAILURE(status))
-+		return -ENODEV;
- 
--	return sprintf(buf, "%lu\n", acpi_dev->pnp.sun);
-+	return sprintf(buf, "%llu\n", sun);
- }
- static DEVICE_ATTR(sun, 0444, acpi_device_sun_show, NULL);
- 
-@@ -684,7 +690,6 @@ static int acpi_device_setup_files(struc
- {
- 	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
- 	acpi_status status;
--	unsigned long long sun;
- 	int result = 0;
- 
- 	/*
-@@ -725,14 +730,10 @@ static int acpi_device_setup_files(struc
- 	if (dev->pnp.unique_id)
- 		result = device_create_file(&dev->dev, &dev_attr_uid);
- 
--	status = acpi_evaluate_integer(dev->handle, "_SUN", NULL, &sun);
--	if (ACPI_SUCCESS(status)) {
--		dev->pnp.sun = (unsigned long)sun;
-+	if (acpi_has_method(dev->handle, "_SUN")) {
- 		result = device_create_file(&dev->dev, &dev_attr_sun);
- 		if (result)
- 			goto end;
--	} else {
--		dev->pnp.sun = (unsigned long)-1;
- 	}
- 
- 	if (acpi_has_method(dev->handle, "_STA")) {
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -228,7 +228,6 @@ struct acpi_device_pnp {
- 	acpi_device_name device_name;	/* Driver-determined */
- 	acpi_device_class device_class;	/*        "          */
- 	union acpi_object *str_obj;	/* unicode string for _STR method */
--	unsigned long sun;		/* _SUN */
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1078,6 +1078,7 @@ static struct acpi_device_id pxa2xx_spi_
+ 	{ "INT3430", 0 },
+ 	{ "INT3431", 0 },
+ 	{ "80860F0E", 0 },
++	{ "8086228E", 0 },
+ 	{ },
  };
- 
- #define acpi_device_bid(d)	((d)->pnp.bus_id)
+ MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
 
 
