@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbaIOTri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55955 "EHLO
+	id S1756431AbaIOTrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406AbaIOTre (ORCPT
+	with ESMTP id S1754746AbaIOTre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 069/114] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
-Date: Mon, 15 Sep 2014 12:26:09 -0700
-Message-Id: <20140915192643.603266651@linuxfoundation.org>
+Subject: [PATCH 3.14 065/114] ACPI / hotplug: Check scan handlers in acpi_scan_hot_remove()
+Date: Mon, 15 Sep 2014 12:26:05 -0700
+Message-Id: <20140915192643.482716117@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,71 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
+commit dee1592638ab7ea35a32179b73f9284dead49c03 upstream.
 
-There is a following AB-BA dependency between cpu_hotplug.lock and
-cpuidle_lock:
+When ACPI_HOTPLUG_MEMORY is not configured, memory_device_handler.attach
+is not set.  In acpi_scan_attach_handler(), the acpi_device->handler will
+not be initialized.
 
-1) cpu_hotplug.lock -> cpuidle_lock
-enable_nonboot_cpus()
- _cpu_up()
-  cpu_hotplug_begin()
-   LOCK(cpu_hotplug.lock)
- cpu_notify()
-  ...
-  acpi_processor_hotplug()
-   cpuidle_pause_and_lock()
-    LOCK(cpuidle_lock)
+In acpi_scan_hot_remove(), it doesn't check if acpi_device->handler is NULL.
+If we do memory hot-remove without ACPI_HOTPLUG_MEMORY configured, the kernel
+will panic.
 
-2) cpuidle_lock -> cpu_hotplug.lock
-acpi_os_execute_deferred() workqueue
- ...
- acpi_processor_cst_has_changed()
-  cpuidle_pause_and_lock()
-   LOCK(cpuidle_lock)
-  get_online_cpus()
-   LOCK(cpu_hotplug.lock)
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000088
+ IP: [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
+ PGD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in: sd_mod(E) sr_mod(E) cdrom(E) crc_t10dif(E) crct10dif_common(E) ata_piix(E) libata(E)
+ CPU: 0 PID: 41 Comm: kworker/u2:1 Tainted: G            E 3.16.0-rc7--3.16-rc7-tangchen+ #20
+ Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
+ Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+ task: ffff8800182436c0 ti: ffff880018254000 task.ti: ffff880018254000
+ RIP: 0010:[<ffffffff813e318f>]  [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
+ RSP: 0000:ffff880018257da8  EFLAGS: 00000246
+ RAX: 0000000000000000 RBX: ffff88001cd8d800 RCX: 0000000000000000
+ RDX: 0000000000000000 RSI: ffff88001e40e6f8 RDI: 0000000000000246
+ RBP: ffff880018257df0 R08: 0000000000000096 R09: 00000000000011a0
+ R10: 63735f6970636120 R11: 725f746f685f6e61 R12: 0000000000000003
+ R13: ffff88001cc1c400 R14: ffff88001e062028 R15: 0000000000000040
+ FS:  0000000000000000(0000) GS:ffff88001e400000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000088 CR3: 000000001a9a2000 CR4: 00000000000006f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
+ Stack:
+  00000000523cab58 ffff88001cd8d9f8 ffff88001852d480 00000000523cab58
+  ffff88001852d480 ffff880018221e40 ffff88001cc1c400 ffff88001cce2d00
+  0000000000000040 ffff880018257e08 ffffffff813dc31d ffff88001852d480
+ Call Trace:
+  [<ffffffff813dc31d>] acpi_hotplug_work_fn+0x1e/0x29
+  [<ffffffff8108eefb>] process_one_work+0x17b/0x460
+  [<ffffffff8108f69d>] worker_thread+0x11d/0x5b0
+  [<ffffffff8108f580>] ? rescuer_thread+0x3a0/0x3a0
+  [<ffffffff81096811>] kthread+0xe1/0x100
+  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
+  [<ffffffff816cc6bc>] ret_from_fork+0x7c/0xb0
+  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
 
-Fix this by reversing the order acpi_processor_cst_has_changed() does
-thigs -- let it first execute the protection against CPU hotplug by
-calling get_online_cpus() and obtain the cpuidle lock only after that (and
-perform the symmentric change when allowing CPUs hotplug again and
-dropping cpuidle lock).
+This patch fixes this problem by checking if acpi_device->handler is NULL
+in acpi_scan_hot_remove().
 
-Spotted by lockdep.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: d22ddcbc4fb7 (ACPI / hotplug: Add demand_offline hotplug profile flag)
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+[rjw: Subject]
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_idle.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/scan.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struc
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -329,7 +329,8 @@ static int acpi_scan_hot_remove(struct a
+ 	unsigned long long sta;
+ 	acpi_status status;
  
- 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
- 
--		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
- 		get_online_cpus();
-+		cpuidle_pause_and_lock();
- 
- 		/* Disable all cpuidle devices */
- 		for_each_online_cpu(cpu) {
-@@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struc
- 				cpuidle_enable_device(dev);
- 			}
- 		}
--		put_online_cpus();
- 		cpuidle_resume_and_unlock();
-+		put_online_cpus();
- 	}
- 
- 	return 0;
+-	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
++	if (device->handler && device->handler->hotplug.demand_offline
++	    && !acpi_force_hot_remove) {
+ 		if (!acpi_scan_is_offline(device, true))
+ 			return -EBUSY;
+ 	} else {
 
 
