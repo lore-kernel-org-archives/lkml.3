@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254AbaIOUyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:54:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54683 "EHLO
+	id S932239AbaIOUyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:54:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbaIOT1K (ORCPT
+	with ESMTP id S1755045AbaIOT1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:27:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 102/158] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
-Date: Mon, 15 Sep 2014 12:25:41 -0700
-Message-Id: <20140915192545.944266792@linuxfoundation.org>
+        Jie Yang <yang.jie@intel.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 085/158] ASoC: Intel: Cleanup HSW pcm format support
+Date: Mon, 15 Sep 2014 12:25:24 -0700
+Message-Id: <20140915192545.438271070@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,71 +28,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Jie Yang <yang.jie@intel.com>
 
-commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
+commit 8e89761876611f06ef4be865b4780b4361caf4af upstream.
 
-There is a following AB-BA dependency between cpu_hotplug.lock and
-cpuidle_lock:
+This change removes unsupported formats from System,
+Capture and Loopback FE DAIs.
+Also it fixes S24_LE support on all DAIs.
+While at this fix 24 bit flag for BYT as well.
 
-1) cpu_hotplug.lock -> cpuidle_lock
-enable_nonboot_cpus()
- _cpu_up()
-  cpu_hotplug_begin()
-   LOCK(cpu_hotplug.lock)
- cpu_notify()
-  ...
-  acpi_processor_hotplug()
-   cpuidle_pause_and_lock()
-    LOCK(cpuidle_lock)
-
-2) cpuidle_lock -> cpu_hotplug.lock
-acpi_os_execute_deferred() workqueue
- ...
- acpi_processor_cst_has_changed()
-  cpuidle_pause_and_lock()
-   LOCK(cpuidle_lock)
-  get_online_cpus()
-   LOCK(cpu_hotplug.lock)
-
-Fix this by reversing the order acpi_processor_cst_has_changed() does
-thigs -- let it first execute the protection against CPU hotplug by
-calling get_online_cpus() and obtain the cpuidle lock only after that (and
-perform the symmentric change when allowing CPUs hotplug again and
-dropping cpuidle lock).
-
-Spotted by lockdep.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jie Yang <yang.jie@intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/processor_idle.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/intel/sst-baytrail-pcm.c |    2 +-
+ sound/soc/intel/sst-haswell-pcm.c  |   27 ++++++++++++++++++---------
+ 2 files changed, 19 insertions(+), 10 deletions(-)
 
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struc
+--- a/sound/soc/intel/sst-baytrail-pcm.c
++++ b/sound/soc/intel/sst-baytrail-pcm.c
+@@ -32,7 +32,7 @@ static const struct snd_pcm_hardware sst
+ 				  SNDRV_PCM_INFO_PAUSE |
+ 				  SNDRV_PCM_INFO_RESUME,
+ 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
+-				  SNDRV_PCM_FORMAT_S24_LE,
++				  SNDRV_PCM_FMTBIT_S24_LE,
+ 	.period_bytes_min	= 384,
+ 	.period_bytes_max	= 48000,
+ 	.periods_min		= 2,
+--- a/sound/soc/intel/sst-haswell-pcm.c
++++ b/sound/soc/intel/sst-haswell-pcm.c
+@@ -80,7 +80,7 @@ static const struct snd_pcm_hardware hsw
+ 				  SNDRV_PCM_INFO_PAUSE |
+ 				  SNDRV_PCM_INFO_RESUME |
+ 				  SNDRV_PCM_INFO_NO_PERIOD_WAKEUP,
+-	.formats		= SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FORMAT_S24_LE |
++	.formats		= SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE |
+ 				  SNDRV_PCM_FMTBIT_S32_LE,
+ 	.period_bytes_min	= PAGE_SIZE,
+ 	.period_bytes_max	= (HSW_PCM_PERIODS_MAX / HSW_PCM_PERIODS_MIN) * PAGE_SIZE,
+@@ -400,7 +400,15 @@ static int hsw_pcm_hw_params(struct snd_
+ 		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 16);
+ 		break;
+ 	case SNDRV_PCM_FORMAT_S24_LE:
+-		bits = SST_HSW_DEPTH_24BIT;
++		bits = SST_HSW_DEPTH_32BIT;
++		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 24);
++		break;
++	case SNDRV_PCM_FORMAT_S8:
++		bits = SST_HSW_DEPTH_8BIT;
++		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 8);
++		break;
++	case SNDRV_PCM_FORMAT_S32_LE:
++		bits = SST_HSW_DEPTH_32BIT;
+ 		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 32);
+ 		break;
+ 	default:
+@@ -685,8 +693,9 @@ static int hsw_pcm_new(struct snd_soc_pc
+ }
  
- 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
+ #define HSW_FORMATS \
+-	(SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S16_LE |\
+-	 SNDRV_PCM_FMTBIT_S32_LE)
++	(SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_S24_LE | \
++	SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S16_LE |\
++	SNDRV_PCM_FMTBIT_S8)
  
--		cpuidle_pause_and_lock();
- 		/* Protect against cpu-hotplug */
- 		get_online_cpus();
-+		cpuidle_pause_and_lock();
- 
- 		/* Disable all cpuidle devices */
- 		for_each_online_cpu(cpu) {
-@@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struc
- 				cpuidle_enable_device(dev);
- 			}
- 		}
--		put_online_cpus();
- 		cpuidle_resume_and_unlock();
-+		put_online_cpus();
- 	}
- 
- 	return 0;
+ static struct snd_soc_dai_driver hsw_dais[] = {
+ 	{
+@@ -696,7 +705,7 @@ static struct snd_soc_dai_driver hsw_dai
+ 			.channels_min = 2,
+ 			.channels_max = 2,
+ 			.rates = SNDRV_PCM_RATE_48000,
+-			.formats = SNDRV_PCM_FMTBIT_S16_LE,
++			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
+ 		},
+ 	},
+ 	{
+@@ -727,8 +736,8 @@ static struct snd_soc_dai_driver hsw_dai
+ 			.stream_name = "Loopback Capture",
+ 			.channels_min = 2,
+ 			.channels_max = 2,
+-			.rates = SNDRV_PCM_RATE_8000_192000,
+-			.formats = HSW_FORMATS,
++			.rates = SNDRV_PCM_RATE_48000,
++			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
+ 		},
+ 	},
+ 	{
+@@ -737,8 +746,8 @@ static struct snd_soc_dai_driver hsw_dai
+ 			.stream_name = "Analog Capture",
+ 			.channels_min = 2,
+ 			.channels_max = 2,
+-			.rates = SNDRV_PCM_RATE_8000_192000,
+-			.formats = HSW_FORMATS,
++			.rates = SNDRV_PCM_RATE_48000,
++			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
+ 		},
+ 	},
+ };
 
 
