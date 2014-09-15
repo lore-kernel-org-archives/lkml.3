@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333AbaIOUNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:13:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55647 "EHLO
+	id S1756329AbaIOUNR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:13:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163AbaIOTrD (ORCPT
+	with ESMTP id S1756165AbaIOTrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Shirish Pargaonkar <spargaonkar@suse.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jet Chen <jet.chen@intel.com>,
-        Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 108/114] blkcg: dont call into policy draining if root_blkg is already gone
-Date: Mon, 15 Sep 2014 12:26:48 -0700
-Message-Id: <20140915192644.795711233@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, Chris Mason <clm@fb.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 111/114] vfs: fix bad hashing of dentries
+Date: Mon, 15 Sep 2014 12:26:51 -0700
+Message-Id: <20140915192644.882764318@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -30,102 +31,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 2a1b4cf2331d92bc009bf94fa02a24604cdaf24c upstream.
+commit 99d263d4c5b2f541dfacb5391e22e8c91ea982a6 upstream.
 
-While a queue is being destroyed, all the blkgs are destroyed and its
-->root_blkg pointer is set to NULL.  If someone else starts to drain
-while the queue is in this state, the following oops happens.
+Josef Bacik found a performance regression between 3.2 and 3.10 and
+narrowed it down to commit bfcfaa77bdf0 ("vfs: use 'unsigned long'
+accesses for dcache name comparison and hashing"). He reports:
 
-  NULL pointer dereference at 0000000000000028
-  IP: [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  PGD e4a1067 PUD b773067 PMD 0
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in: cfq_iosched(-) [last unloaded: cfq_iosched]
-  CPU: 1 PID: 537 Comm: bash Not tainted 3.16.0-rc3-work+ #2
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  task: ffff88000e222250 ti: ffff88000efd4000 task.ti: ffff88000efd4000
-  RIP: 0010:[<ffffffff8144e944>]  [<ffffffff8144e944>] blk_throtl_drain+0x84/0x230
-  RSP: 0018:ffff88000efd7bf0  EFLAGS: 00010046
-  RAX: 0000000000000000 RBX: ffff880015091450 RCX: 0000000000000001
-  RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-  RBP: ffff88000efd7c10 R08: 0000000000000000 R09: 0000000000000001
-  R10: ffff88000e222250 R11: 0000000000000000 R12: ffff880015091450
-  R13: ffff880015092e00 R14: ffff880015091d70 R15: ffff88001508fc28
-  FS:  00007f1332650740(0000) GS:ffff88001fa80000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 0000000000000028 CR3: 0000000009446000 CR4: 00000000000006e0
-  Stack:
-   ffffffff8144e8f6 ffff880015091450 0000000000000000 ffff880015091d80
-   ffff88000efd7c28 ffffffff8144ae2f ffff880015091450 ffff88000efd7c58
-   ffffffff81427641 ffff880015091450 ffffffff82401f00 ffff880015091450
-  Call Trace:
-   [<ffffffff8144ae2f>] blkcg_drain_queue+0x1f/0x60
-   [<ffffffff81427641>] __blk_drain_queue+0x71/0x180
-   [<ffffffff81429b3e>] blk_queue_bypass_start+0x6e/0xb0
-   [<ffffffff814498b8>] blkcg_deactivate_policy+0x38/0x120
-   [<ffffffff8144ec44>] blk_throtl_exit+0x34/0x50
-   [<ffffffff8144aea5>] blkcg_exit_queue+0x35/0x40
-   [<ffffffff8142d476>] blk_release_queue+0x26/0xd0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff81427505>] blk_put_queue+0x15/0x20
-   [<ffffffff817d07bb>] scsi_device_dev_release_usercontext+0x16b/0x1c0
-   [<ffffffff810bc339>] execute_in_process_context+0x89/0xa0
-   [<ffffffff817d064c>] scsi_device_dev_release+0x1c/0x20
-   [<ffffffff817930e2>] device_release+0x32/0xa0
-   [<ffffffff81454968>] kobject_cleanup+0x38/0x70
-   [<ffffffff81454848>] kobject_put+0x28/0x60
-   [<ffffffff817934d7>] put_device+0x17/0x20
-   [<ffffffff817d11b9>] __scsi_remove_device+0xa9/0xe0
-   [<ffffffff817d121b>] scsi_remove_device+0x2b/0x40
-   [<ffffffff817d1257>] sdev_store_delete+0x27/0x30
-   [<ffffffff81792ca8>] dev_attr_store+0x18/0x30
-   [<ffffffff8126f75e>] sysfs_kf_write+0x3e/0x50
-   [<ffffffff8126ea87>] kernfs_fop_write+0xe7/0x170
-   [<ffffffff811f5e9f>] vfs_write+0xaf/0x1d0
-   [<ffffffff811f69bd>] SyS_write+0x4d/0xc0
-   [<ffffffff81d24692>] system_call_fastpath+0x16/0x1b
+ "The test case is essentially
 
-776687bce42b ("block, blk-mq: draining can't be skipped even if
-bypass_depth was non-zero") made it easier to trigger this bug by
-making blk_queue_bypass_start() drain even when it loses the first
-bypass test to blk_cleanup_queue(); however, the bug has always been
-there even before the commit as blk_queue_bypass_start() could race
-against queue destruction, win the initial bypass test but perform the
-actual draining after blk_cleanup_queue() already destroyed all blkgs.
+      for (i = 0; i < 1000000; i++)
+              mkdir("a$i");
 
-Fix it by skippping calling into policy draining if all the blkgs are
-already gone.
+  On xfs on a fio card this goes at about 20k dir/sec with 3.2, and 12k
+  dir/sec with 3.10.  This is because we spend waaaaay more time in
+  __d_lookup on 3.10 than in 3.2.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Shirish Pargaonkar <spargaonkar@suse.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Reported-by: Jet Chen <jet.chen@intel.com>
-Tested-by: Shirish Pargaonkar <spargaonkar@suse.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+  The new hashing function for strings is suboptimal for <
+  sizeof(unsigned long) string names (and hell even > sizeof(unsigned
+  long) string names that I've tested).  I broke out the old hashing
+  function and the new one into a userspace helper to get real numbers
+  and this is what I'm getting:
+
+      Old hash table had 1000000 entries, 0 dupes, 0 max dupes
+      New hash table had 12628 entries, 987372 dupes, 900 max dupes
+      We had 11400 buckets with a p50 of 30 dupes, p90 of 240 dupes, p99 of 567 dupes for the new hash
+
+  My test does the hash, and then does the d_hash into a integer pointer
+  array the same size as the dentry hash table on my system, and then
+  just increments the value at the address we got to see how many
+  entries we overlap with.
+
+  As you can see the old hash function ended up with all 1 million
+  entries in their own bucket, whereas the new one they are only
+  distributed among ~12.5k buckets, which is why we're using so much
+  more CPU in __d_lookup".
+
+The reason for this hash regression is two-fold:
+
+ - On 64-bit architectures the down-mixing of the original 64-bit
+   word-at-a-time hash into the final 32-bit hash value is very
+   simplistic and suboptimal, and just adds the two 32-bit parts
+   together.
+
+   In particular, because there is no bit shuffling and the mixing
+   boundary is also a byte boundary, similar character patterns in the
+   low and high word easily end up just canceling each other out.
+
+ - the old byte-at-a-time hash mixed each byte into the final hash as it
+   hashed the path component name, resulting in the low bits of the hash
+   generally being a good source of hash data.  That is not true for the
+   word-at-a-time case, and the hash data is distributed among all the
+   bits.
+
+The fix is the same in both cases: do a better job of mixing the bits up
+and using as much of the hash data as possible.  We already have the
+"hash_32|64()" functions to do that.
+
+Reported-by: Josef Bacik <jbacik@fb.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Chris Mason <clm@fb.com>
+Cc: linux-fsdevel@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-cgroup.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/dcache.c |    3 +--
+ fs/namei.c  |    4 ++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -866,6 +866,13 @@ void blkcg_drain_queue(struct request_qu
- 	if (!q->root_blkg)
- 		return;
- 
-+	/*
-+	 * @q could be exiting and already have destroyed all blkgs as
-+	 * indicated by NULL root_blkg.  If so, don't confuse policies.
-+	 */
-+	if (!q->root_blkg)
-+		return;
-+
- 	blk_throtl_drain(q);
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -106,8 +106,7 @@ static inline struct hlist_bl_head *d_ha
+ 					unsigned int hash)
+ {
+ 	hash += (unsigned long) parent / L1_CACHE_BYTES;
+-	hash = hash + (hash >> d_hash_shift);
+-	return dentry_hashtable + (hash & d_hash_mask);
++	return dentry_hashtable + hash_32(hash, d_hash_shift);
  }
  
+ /* Statistics gathering. */
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -34,6 +34,7 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
+ #include <linux/posix_acl.h>
++#include <linux/hash.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -1624,8 +1625,7 @@ static inline int nested_symlink(struct
+ 
+ static inline unsigned int fold_hash(unsigned long hash)
+ {
+-	hash += hash >> (8*sizeof(int));
+-	return hash;
++	return hash_64(hash, 32);
+ }
+ 
+ #else	/* 32-bit case */
 
 
