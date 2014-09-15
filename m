@@ -1,130 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844AbaIOD3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 23:29:20 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:32682 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbaIOD3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 23:29:19 -0400
-Message-ID: <54165CEB.6090903@huawei.com>
-Date: Mon, 15 Sep 2014 11:28:43 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753132AbaIODeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 23:34:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277AbaIODeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Sep 2014 23:34:14 -0400
+Date: Mon, 15 Sep 2014 11:33:55 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@acpica.org, lenb@kernel.org,
+        rafael.j.wysocki@intel.com, robert.moore@intel.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH RFC] x86 early_ioremap: increase FIX_BTMAPS_SLOTS to 8
+Message-ID: <20140915033355.GB2700@darkstar.nay.redhat.com>
+References: <20140826090641.GA16550@darkstar.nay.redhat.com>
+ <20140914141412.GJ18582@console-pimps.org>
+ <20140915023805.GA2700@darkstar.nay.redhat.com>
+ <20140915024205.GA2561@kroah.com>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "Vinod Koul" <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
-        <linux-hotplug@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [Patch Part3 V5 8/8] pci, ACPI, iommu: Enhance pci_root to support
- DMAR device hotplug
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-9-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1410487848-6027-9-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54165D08.0069,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: 1a2c8973a94d121d6ef75c49ec0efb57
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915024205.GA2561@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/12 10:10, Jiang Liu wrote:
-> Finally enhance pci_root driver to support DMAR device hotplug when
-> hot-plugging PCI host bridges.
-
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
-
+On 09/14/14 at 07:42pm, Greg KH wrote:
+> On Mon, Sep 15, 2014 at 10:38:05AM +0800, Dave Young wrote:
+> > On 09/14/14 at 03:14pm, Matt Fleming wrote:
+> > > On Tue, 26 Aug, at 05:06:41PM, Dave Young wrote:
+> > > > 3.16 kernel boot fail with earlyprintk=efi, it keeps scrolling at the
+> > > > bottom line of screen.
+> > > > 
+> > > > Bisected, the first bad commit is below:
+> > > > commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+> > > > Author: Lv Zheng <lv.zheng@intel.com>
+> > > > Date:   Fri Apr 4 12:38:57 2014 +0800
+> > > > 
+> > > >     ACPICA: Tables: Fix table checksums verification before installation.
+> > > 
+> > > [...]
+> > > 
+> > > > Quote reply from Lv.zheng about the early ioremap slot usage in this case:
+> > > > 
+> > > > """
+> > > > In early_efi_scroll_up(), 2 mapping entries will be used for the src/dst screen buffer.
+> > > > In drivers/acpi/acpica/tbutils.c, we've improved the early table loading code in acpi_tb_parse_root_table().
+> > > > We now need 2 mapping entries:
+> > > > 1. One mapping entry is used for RSDT table mapping. Each RSDT entry contains an address for another ACPI table.
+> > > > 2. For each entry in RSDP, we need another mapping entry to map the table to perform necessary check/override before installing it.
+> > > > 
+> > > > When acpi_tb_parse_root_table() prints something through EFI earlyprintk console, we'll have 4 mapping entries used.
+> > > > The current 4 slots setting of early_ioremap() seems to be too small for such a use case.
+> > > > """
+> > > > 
+> > > > Thus increase the slot to 8 in this patch to fix this issue.
+> > > > boot-time mappings become 512 page with this patch.
+> > >  
+> > > This analysis and solution makes sense to me, but I was really hoping
+> > > for one of the x86 maintainers to ACK the below patch. I'm happy to take
+> > > it through the EFI tree if it's not picked up into tip meanwhile.
+> > > 
+> > > Also, Dave, it sounds like this should be tagged for stable if the bug
+> > > has been around since v3.16?
+> > 
+> > Matt, yes, it should be a stable issue, ccing Greg and stable list.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/acpi/pci_root.c |   16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
+> <formletter>
 > 
-> diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-> index e6ae603ed1a1..4e177daa18e3 100644
-> --- a/drivers/acpi/pci_root.c
-> +++ b/drivers/acpi/pci_root.c
-> @@ -33,6 +33,7 @@
->  #include <linux/pci.h>
->  #include <linux/pci-acpi.h>
->  #include <linux/pci-aspm.h>
-> +#include <linux/dmar.h>
->  #include <linux/acpi.h>
->  #include <linux/slab.h>
->  #include <acpi/apei.h>	/* for acpi_hest_init() */
-> @@ -511,6 +512,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	struct acpi_pci_root *root;
->  	acpi_handle handle = device->handle;
->  	int no_aspm = 0, clear_aspm = 0;
-> +	bool hotadd = system_state != SYSTEM_BOOTING;
->  
->  	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
->  	if (!root)
-> @@ -557,6 +559,11 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	strcpy(acpi_device_class(device), ACPI_PCI_ROOT_CLASS);
->  	device->driver_data = root;
->  
-> +	if (hotadd && dmar_device_add(handle)) {
-> +		result = -ENXIO;
-> +		goto end;
-> +	}
-> +
->  	pr_info(PREFIX "%s [%s] (domain %04x %pR)\n",
->  	       acpi_device_name(device), acpi_device_bid(device),
->  	       root->segment, &root->secondary);
-> @@ -583,7 +590,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  			root->segment, (unsigned int)root->secondary.start);
->  		device->driver_data = NULL;
->  		result = -ENODEV;
-> -		goto end;
-> +		goto remove_dmar;
->  	}
->  
->  	if (clear_aspm) {
-> @@ -597,7 +604,7 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	if (device->wakeup.flags.run_wake)
->  		device_set_run_wake(root->bus->bridge, true);
->  
-> -	if (system_state != SYSTEM_BOOTING) {
-> +	if (hotadd) {
->  		pcibios_resource_survey_bus(root->bus);
->  		pci_assign_unassigned_root_bus_resources(root->bus);
->  	}
-> @@ -607,6 +614,9 @@ static int acpi_pci_root_add(struct acpi_device *device,
->  	pci_unlock_rescan_remove();
->  	return 1;
->  
-> +remove_dmar:
-> +	if (hotadd)
-> +		dmar_device_remove(handle);
->  end:
->  	kfree(root);
->  	return result;
-> @@ -625,6 +635,8 @@ static void acpi_pci_root_remove(struct acpi_device *device)
->  
->  	pci_remove_root_bus(root->bus);
->  
-> +	dmar_device_remove(device->handle);
-> +
->  	pci_unlock_rescan_remove();
->  
->  	kfree(root);
+> This is not the correct way to submit patches for inclusion in the
+> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> for how to do this properly.
 > 
+> </formletter>
 
+Frankly I did not know the exact work flow about stable patches. Thanks for
+pointing me the documentation. I was just assuming I should cc your guys 
+about the issues which could be stable candidate even though it has not been
+accepted now, so it can get noticed by stable people.
 
--- 
-Thanks!
-Yijing
-
+Thanks
+Dave
