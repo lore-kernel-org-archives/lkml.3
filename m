@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657AbaIOTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	id S1756666AbaIOTxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:53:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334AbaIOTrY (ORCPT
+	with ESMTP id S1756329AbaIOTrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.10 40/71] mnt: Only change user settable mount flags in remount
-Date: Mon, 15 Sep 2014 12:26:38 -0700
-Message-Id: <20140915192640.031763304@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 49/71] md/raid10: Fix memory leak when raid10 reshape completes.
+Date: Mon, 15 Sep 2014 12:26:47 -0700
+Message-Id: <20140915192640.318180235@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,53 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: NeilBrown <neilb@suse.de>
 
-commit a6138db815df5ee542d848318e5dae681590fccd upstream.
+commit b39685526f46976bcd13aa08c82480092befa46c upstream.
 
-Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
-read-only bind mount read-only in a user namespace the
-MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
-to the remount a read-only mount read-write.
+When a raid10 commences a resync/recovery/reshape it allocates
+some buffer space.
+When a resync/recovery completes the buffer space is freed.  But not
+when the reshape completes.
+This can result in a small memory leak.
 
-Correct this by replacing the mask of mount flags to preserve
-with a mask of mount flags that may be changed, and preserve
-all others.   This ensures that any future bugs with this mask and
-remount will fail in an easy to detect way where new mount flags
-simply won't change.
+There is a subtle side-effect of this bug.  When a RAID10 is reshaped
+to a larger array (more devices), the reshape is immediately followed
+by a "resync" of the new space.  This "resync" will use the buffer
+space which was allocated for "reshape".  This can cause problems
+including a "BUG" in the SCSI layer.  So this is suitable for -stable.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Fixes: 3ea7daa5d7fde47cd41f4d56c2deb949114da9d6
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c        |    2 +-
- include/linux/mount.h |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/raid10.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1805,7 +1805,7 @@ static int do_remount(struct path *path,
- 		err = do_remount_sb(sb, flags, data, 0);
- 	if (!err) {
- 		br_write_lock(&vfsmount_lock);
--		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
- 		mnt->mnt.mnt_flags = mnt_flags;
- 		br_write_unlock(&vfsmount_lock);
- 	}
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -42,7 +42,9 @@ struct mnt_namespace;
-  * flag, consider how it interacts with shared mounts.
-  */
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
--#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
-+#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
-+				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
-+				 | MNT_READONLY)
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2948,6 +2948,7 @@ static sector_t sync_request(struct mdde
+ 		 */
+ 		if (test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery)) {
+ 			end_reshape(conf);
++			close_sync(conf);
+ 			return 0;
+ 		}
  
- 
- #define MNT_INTERNAL	0x4000
 
 
