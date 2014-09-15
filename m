@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933AbaIOWRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:17:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50993 "EHLO
+	id S1757968AbaIOWRK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:17:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50998 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaIOWRD (ORCPT
+	with ESMTP id S1757925AbaIOWRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:03 -0400
+	Mon, 15 Sep 2014 18:17:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 076/187] ext4: Fix block zeroing when punching holes in indirect block files
-Date: Mon, 15 Sep 2014 15:08:06 -0700
-Message-Id: <1410818997-9432-77-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 077/187] ext4: fix punch hole on files with indirect mapping
+Date: Mon, 15 Sep 2014 15:08:07 -0700
+Message-Id: <1410818997-9432-78-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,376 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Lukas Czerner <lczerner@redhat.com>
 
-commit 77ea2a4ba657a1ad4fb7c64bc5cdce84b8a132b6 upstream.
+commit 4f579ae7de560e5f449587a6c3f02594d53d4d51 upstream.
 
-free_holes_block() passed local variable as a block pointer
-to ext4_clear_blocks(). Thus ext4_clear_blocks() zeroed out this local
-variable instead of proper place in inode / indirect block. We later
-zero out proper place in inode / indirect block but don't dirty the
-inode / buffer again which can lead to subtle issues (some changes e.g.
-to inode can be lost).
+Currently punch hole code on files with direct/indirect mapping has some
+problems which may lead to a data loss. For example (from Jan Kara):
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+fallocate -n -p 10240000 4096
+
+will punch the range 10240000 - 12632064 instead of the range 1024000 -
+10244096.
+
+Also the code is a bit weird and it's not using infrastructure provided
+by indirect.c, but rather creating it's own way.
+
+This patch fixes the issues as well as making the operation to run 4
+times faster from my testing (punching out 60GB file). It uses similar
+approach used in ext4_ind_truncate() which takes advantage of
+ext4_free_branches() function.
+
+Also rename the ext4_free_hole_blocks() to something more sensible, like
+the equivalent we have for extent mapped files. Call it
+ext4_ind_remove_space().
+
+This has been tested mostly with fsx and some xfstests which are testing
+punch hole but does not require unwritten extents which are not
+supported with direct/indirect mapping. Not problems showed up even with
+1024k block size.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/indirect.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/ext4.h     |   4 +-
+ fs/ext4/indirect.c | 281 ++++++++++++++++++++++++++++++++++++++---------------
+ fs/ext4/inode.c    |   2 +-
+ 3 files changed, 205 insertions(+), 82 deletions(-)
 
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 62f024c..e531054 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -2151,8 +2151,8 @@ extern ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
+ extern int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock);
+ extern int ext4_ind_trans_blocks(struct inode *inode, int nrblocks);
+ extern void ext4_ind_truncate(handle_t *, struct inode *inode);
+-extern int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
+-				 ext4_lblk_t first, ext4_lblk_t stop);
++extern int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
++				 ext4_lblk_t start, ext4_lblk_t end);
+ 
+ /* ioctl.c */
+ extern long ext4_ioctl(struct file *, unsigned int, unsigned long);
 diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index e6574d7..c30cbe2 100644
+index c30cbe2..4353522 100644
 --- a/fs/ext4/indirect.c
 +++ b/fs/ext4/indirect.c
-@@ -1345,8 +1345,8 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
- 		if (level == 0 ||
- 		    (bh && all_zeroes((__le32 *)bh->b_data,
- 				      (__le32 *)bh->b_data + addr_per_block))) {
--			ext4_free_data(handle, inode, parent_bh, &blk, &blk+1);
--			*i_data = 0;
-+			ext4_free_data(handle, inode, parent_bh,
-+				       i_data, i_data + 1);
+@@ -1297,97 +1297,220 @@ do_indirects:
+ 	}
+ }
+ 
+-static int free_hole_blocks(handle_t *handle, struct inode *inode,
+-			    struct buffer_head *parent_bh, __le32 *i_data,
+-			    int level, ext4_lblk_t first,
+-			    ext4_lblk_t count, int max)
++/**
++ *	ext4_ind_remove_space - remove space from the range
++ *	@handle: JBD handle for this transaction
++ *	@inode:	inode we are dealing with
++ *	@start:	First block to remove
++ *	@end:	One block after the last block to remove (exclusive)
++ *
++ *	Free the blocks in the defined range (end is exclusive endpoint of
++ *	range). This is used by ext4_punch_hole().
++ */
++int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
++			  ext4_lblk_t start, ext4_lblk_t end)
+ {
+-	struct buffer_head *bh = NULL;
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	__le32 *i_data = ei->i_data;
+ 	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+-	int ret = 0;
+-	int i, inc;
+-	ext4_lblk_t offset;
+-	__le32 blk;
+-
+-	inc = 1 << ((EXT4_BLOCK_SIZE_BITS(inode->i_sb) - 2) * level);
+-	for (i = 0, offset = 0; i < max; i++, i_data++, offset += inc) {
+-		if (offset >= count + first)
+-			break;
+-		if (*i_data == 0 || (offset + inc) <= first)
+-			continue;
+-		blk = *i_data;
+-		if (level > 0) {
+-			ext4_lblk_t first2;
+-			ext4_lblk_t count2;
++	ext4_lblk_t offsets[4], offsets2[4];
++	Indirect chain[4], chain2[4];
++	Indirect *partial, *partial2;
++	ext4_lblk_t max_block;
++	__le32 nr = 0, nr2 = 0;
++	int n = 0, n2 = 0;
++	unsigned blocksize = inode->i_sb->s_blocksize;
+ 
+-			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+-			if (!bh) {
+-				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+-						       "Read failure");
+-				return -EIO;
+-			}
+-			if (first > offset) {
+-				first2 = first - offset;
+-				count2 = count;
++	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
++					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
++	if (end >= max_block)
++		end = max_block;
++	if ((start >= end) || (start > max_block))
++		return 0;
++
++	n = ext4_block_to_path(inode, start, offsets, NULL);
++	n2 = ext4_block_to_path(inode, end, offsets2, NULL);
++
++	BUG_ON(n > n2);
++
++	if ((n == 1) && (n == n2)) {
++		/* We're punching only within direct block range */
++		ext4_free_data(handle, inode, NULL, i_data + offsets[0],
++			       i_data + offsets2[0]);
++		return 0;
++	} else if (n2 > n) {
++		/*
++		 * Start and end are on a different levels so we're going to
++		 * free partial block at start, and partial block at end of
++		 * the range. If there are some levels in between then
++		 * do_indirects label will take care of that.
++		 */
++
++		if (n == 1) {
++			/*
++			 * Start is at the direct block level, free
++			 * everything to the end of the level.
++			 */
++			ext4_free_data(handle, inode, NULL, i_data + offsets[0],
++				       i_data + EXT4_NDIR_BLOCKS);
++			goto end_range;
++		}
++
++
++		partial = ext4_find_shared(inode, n, offsets, chain, &nr);
++		if (nr) {
++			if (partial == chain) {
++				/* Shared branch grows from the inode */
++				ext4_free_branches(handle, inode, NULL,
++					   &nr, &nr+1, (chain+n-1) - partial);
++				*partial->p = 0;
+ 			} else {
+-				first2 = 0;
+-				count2 = count - (offset - first);
++				/* Shared branch grows from an indirect block */
++				BUFFER_TRACE(partial->bh, "get_write_access");
++				ext4_free_branches(handle, inode, partial->bh,
++					partial->p,
++					partial->p+1, (chain+n-1) - partial);
+ 			}
+-			ret = free_hole_blocks(handle, inode, bh,
+-					       (__le32 *)bh->b_data, level - 1,
+-					       first2, count2,
+-					       inode->i_sb->s_blocksize >> 2);
+-			if (ret) {
+-				brelse(bh);
+-				goto err;
++		}
++
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the start of the range
++		 */
++		while (partial > chain) {
++			ext4_free_branches(handle, inode, partial->bh,
++				partial->p + 1,
++				(__le32 *)partial->bh->b_data+addr_per_block,
++				(chain+n-1) - partial);
++			BUFFER_TRACE(partial->bh, "call brelse");
++			brelse(partial->bh);
++			partial--;
++		}
++
++end_range:
++		partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
++		if (nr2) {
++			if (partial2 == chain2) {
++				/*
++				 * Remember, end is exclusive so here we're at
++				 * the start of the next level we're not going
++				 * to free. Everything was covered by the start
++				 * of the range.
++				 */
++				return 0;
++			} else {
++				/* Shared branch grows from an indirect block */
++				partial2--;
+ 			}
++		} else {
++			/*
++			 * ext4_find_shared returns Indirect structure which
++			 * points to the last element which should not be
++			 * removed by truncate. But this is end of the range
++			 * in punch_hole so we need to point to the next element
++			 */
++			partial2->p++;
  		}
- 		brelse(bh);
- 		bh = NULL;
+-		if (level == 0 ||
+-		    (bh && all_zeroes((__le32 *)bh->b_data,
+-				      (__le32 *)bh->b_data + addr_per_block))) {
+-			ext4_free_data(handle, inode, parent_bh,
+-				       i_data, i_data + 1);
++
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the end of the range
++		 */
++		while (partial2 > chain2) {
++			ext4_free_branches(handle, inode, partial2->bh,
++					   (__le32 *)partial2->bh->b_data,
++					   partial2->p,
++					   (chain2+n2-1) - partial2);
++			BUFFER_TRACE(partial2->bh, "call brelse");
++			brelse(partial2->bh);
++			partial2--;
+ 		}
+-		brelse(bh);
+-		bh = NULL;
++		goto do_indirects;
+ 	}
+ 
+-err:
+-	return ret;
+-}
+-
+-int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
+-			  ext4_lblk_t first, ext4_lblk_t stop)
+-{
+-	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
+-	int level, ret = 0;
+-	int num = EXT4_NDIR_BLOCKS;
+-	ext4_lblk_t count, max = EXT4_NDIR_BLOCKS;
+-	__le32 *i_data = EXT4_I(inode)->i_data;
+-
+-	count = stop - first;
+-	for (level = 0; level < 4; level++, max *= addr_per_block) {
+-		if (first < max) {
+-			ret = free_hole_blocks(handle, inode, NULL, i_data,
+-					       level, first, count, num);
+-			if (ret)
+-				goto err;
+-			if (count > max - first)
+-				count -= max - first;
+-			else
+-				break;
+-			first = 0;
+-		} else {
+-			first -= max;
++	/* Punch happened within the same level (n == n2) */
++	partial = ext4_find_shared(inode, n, offsets, chain, &nr);
++	partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
++	/*
++	 * ext4_find_shared returns Indirect structure which
++	 * points to the last element which should not be
++	 * removed by truncate. But this is end of the range
++	 * in punch_hole so we need to point to the next element
++	 */
++	partial2->p++;
++	while ((partial > chain) || (partial2 > chain2)) {
++		/* We're at the same block, so we're almost finished */
++		if ((partial->bh && partial2->bh) &&
++		    (partial->bh->b_blocknr == partial2->bh->b_blocknr)) {
++			if ((partial > chain) && (partial2 > chain2)) {
++				ext4_free_branches(handle, inode, partial->bh,
++						   partial->p + 1,
++						   partial2->p,
++						   (chain+n-1) - partial);
++				BUFFER_TRACE(partial->bh, "call brelse");
++				brelse(partial->bh);
++				BUFFER_TRACE(partial2->bh, "call brelse");
++				brelse(partial2->bh);
++			}
++			return 0;
+ 		}
+-		i_data += num;
+-		if (level == 0) {
+-			num = 1;
+-			max = 1;
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the start of the range
++		 */
++		if (partial > chain) {
++			ext4_free_branches(handle, inode, partial->bh,
++				   partial->p + 1,
++				   (__le32 *)partial->bh->b_data+addr_per_block,
++				   (chain+n-1) - partial);
++			BUFFER_TRACE(partial->bh, "call brelse");
++			brelse(partial->bh);
++			partial--;
++		}
++		/*
++		 * Clear the ends of indirect blocks on the shared branch
++		 * at the end of the range
++		 */
++		if (partial2 > chain2) {
++			ext4_free_branches(handle, inode, partial2->bh,
++					   (__le32 *)partial2->bh->b_data,
++					   partial2->p,
++					   (chain2+n-1) - partial2);
++			BUFFER_TRACE(partial2->bh, "call brelse");
++			brelse(partial2->bh);
++			partial2--;
+ 		}
+ 	}
+ 
+-err:
+-	return ret;
++do_indirects:
++	/* Kill the remaining (whole) subtrees */
++	switch (offsets[0]) {
++	default:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_IND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 1);
++			i_data[EXT4_IND_BLOCK] = 0;
++		}
++	case EXT4_IND_BLOCK:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_DIND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 2);
++			i_data[EXT4_DIND_BLOCK] = 0;
++		}
++	case EXT4_DIND_BLOCK:
++		if (++n >= n2)
++			return 0;
++		nr = i_data[EXT4_TIND_BLOCK];
++		if (nr) {
++			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 3);
++			i_data[EXT4_TIND_BLOCK] = 0;
++		}
++	case EXT4_TIND_BLOCK:
++		;
++	}
++	return 0;
+ }
+-
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 0fc189b..23e8c80 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3629,7 +3629,7 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
+ 		ret = ext4_ext_remove_space(inode, first_block,
+ 					    stop_block - 1);
+ 	else
+-		ret = ext4_free_hole_blocks(handle, inode, first_block,
++		ret = ext4_ind_remove_space(handle, inode, first_block,
+ 					    stop_block);
+ 
+ 	ext4_discard_preallocations(inode);
 -- 
 1.9.1
 
