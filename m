@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaIOTfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:35:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54913 "EHLO
+	id S1755255AbaIOTfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:35:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54579 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086AbaIOT1N (ORCPT
+	with ESMTP id S1755088AbaIOT1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:27:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 089/158] ASoC: rt5640: Do not allow regmap to use bulk read-write operations
-Date: Mon, 15 Sep 2014 12:25:28 -0700
-Message-Id: <20140915192545.554099529@linuxfoundation.org>
+        Tony Lindgren <tony@atomide.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mark Brown <broonie+linaro@kernel.org>
+Subject: [PATCH 3.16 090/158] ASoC: omap-twl4030: Fix typo in 2nd dai links platform_name
+Date: Mon, 15 Sep 2014 12:25:29 -0700
+Message-Id: <20140915192545.583583011@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,30 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit f4821e8e8e957fe4c601a49b9a97b7399d5f7ab1 upstream.
+commit fdaf42c0105a24de8aefa60f6f7360842c4e673e upstream.
 
-Debugging showed Realtek RT5642 doesn't support autoincrementing writes so
-driver should set the use_single_rw flag for regmap.
+The platform_name should be omap-mcasp3 for the 2nd link which is used for
+voice connection.
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Mark Brown <broonie+linaro@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/rt5640.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/omap/omap-twl4030.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/rt5640.c
-+++ b/sound/soc/codecs/rt5640.c
-@@ -2059,6 +2059,7 @@ static struct snd_soc_codec_driver soc_c
- static const struct regmap_config rt5640_regmap = {
- 	.reg_bits = 8,
- 	.val_bits = 16,
-+	.use_single_rw = true,
- 
- 	.max_register = RT5640_VENDOR_ID2 + 1 + (ARRAY_SIZE(rt5640_ranges) *
- 					       RT5640_PR_SPACING),
+--- a/sound/soc/omap/omap-twl4030.c
++++ b/sound/soc/omap/omap-twl4030.c
+@@ -260,7 +260,7 @@ static struct snd_soc_dai_link omap_twl4
+ 		.stream_name = "TWL4030 Voice",
+ 		.cpu_dai_name = "omap-mcbsp.3",
+ 		.codec_dai_name = "twl4030-voice",
+-		.platform_name = "omap-mcbsp.2",
++		.platform_name = "omap-mcbsp.3",
+ 		.codec_name = "twl4030-codec",
+ 		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF |
+ 			   SND_SOC_DAIFMT_CBM_CFM,
 
 
