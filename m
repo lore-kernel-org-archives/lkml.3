@@ -1,36 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796AbaIOU2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:28:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39140 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513AbaIOU2b (ORCPT
+	id S1757824AbaIOU2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:28:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755704AbaIOThH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:28:31 -0400
-Date: Mon, 15 Sep 2014 21:28:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH 1/7] Prepare for adding a new readv/writev with user
- flags.
-Message-ID: <20140915202828.GV7996@ZenIV.linux.org.uk>
-References: <cover.1410810247.git.milosz@adfin.com>
- <e434e839351324641e10cc0a309a5c5f86e196c5.1410810247.git.milosz@adfin.com>
+	Mon, 15 Sep 2014 15:37:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.14 026/114] powerpc/thp: Dont recompute vsid and ssize in loop on invalidate
+Date: Mon, 15 Sep 2014 12:25:26 -0700
+Message-Id: <20140915192642.242691110@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <e434e839351324641e10cc0a309a5c5f86e196c5.1410810247.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 04:20:17PM -0400, Milosz Tanski wrote:
-> Plumbing the flags argument through the vfs code so they can be passed down to
-> __generic_file_(read/write)_iter function that do the acctual work.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-NAK.  Put these flags into iocb, it'll be less noisy that way.
+------------------
+
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+
+commit fa1f8ae80f8bb996594167ff4750a0b0a5a5bb5d upstream.
+
+The segment identifier and segment size will remain the same in
+the loop, So we can compute it outside. We also change the
+hugepage_invalidate interface so that we can use it the later patch
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/powerpc/include/asm/machdep.h    |    6 +++---
+ arch/powerpc/mm/hash_native_64.c      |   19 +++++--------------
+ arch/powerpc/mm/pgtable_64.c          |   24 ++++++++++++------------
+ arch/powerpc/platforms/pseries/lpar.c |   20 ++++++--------------
+ 4 files changed, 26 insertions(+), 43 deletions(-)
+
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -57,10 +57,10 @@ struct machdep_calls {
+ 	void            (*hpte_removebolted)(unsigned long ea,
+ 					     int psize, int ssize);
+ 	void		(*flush_hash_range)(unsigned long number, int local);
+-	void		(*hugepage_invalidate)(struct mm_struct *mm,
++	void		(*hugepage_invalidate)(unsigned long vsid,
++					       unsigned long addr,
+ 					       unsigned char *hpte_slot_array,
+-					       unsigned long addr, int psize);
+-
++					       int psize, int ssize);
+ 	/* special for kexec, to be called in real mode, linear mapping is
+ 	 * destroyed as well */
+ 	void		(*hpte_clear_all)(void);
+--- a/arch/powerpc/mm/hash_native_64.c
++++ b/arch/powerpc/mm/hash_native_64.c
+@@ -418,18 +418,18 @@ static void native_hpte_invalidate(unsig
+ 	local_irq_restore(flags);
+ }
+ 
+-static void native_hugepage_invalidate(struct mm_struct *mm,
++static void native_hugepage_invalidate(unsigned long vsid,
++				       unsigned long addr,
+ 				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++				       int psize, int ssize)
+ {
+-	int ssize = 0, i;
+-	int lock_tlbie;
++	int i, lock_tlbie;
+ 	struct hash_pte *hptep;
+ 	int actual_psize = MMU_PAGE_16M;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long flags, s_addr = addr;
+ 	unsigned long hpte_v, want_v, shift;
+-	unsigned long hidx, vpn = 0, vsid, hash, slot;
++	unsigned long hidx, vpn = 0, hash, slot;
+ 
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -443,15 +443,6 @@ static void native_hugepage_invalidate(s
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -740,12 +740,21 @@ void hpte_do_hugepage_flush(struct mm_st
+ 	if (!hpte_slot_array)
+ 		return;
+ 
+-	/* get the base page size */
++	/* get the base page size,vsid and segment size */
+ 	psize = get_slice_psize(mm, s_addr);
++	if (!is_kernel_addr(s_addr)) {
++		ssize = user_segment_size(s_addr);
++		vsid = get_vsid(mm->context.id, s_addr, ssize);
++		WARN_ON(vsid == 0);
++	} else {
++		vsid = get_kernel_vsid(s_addr, mmu_kernel_ssize);
++		ssize = mmu_kernel_ssize;
++	}
+ 
+ 	if (ppc_md.hugepage_invalidate)
+-		return ppc_md.hugepage_invalidate(mm, hpte_slot_array,
+-						  s_addr, psize);
++		return ppc_md.hugepage_invalidate(vsid, s_addr,
++						  hpte_slot_array,
++						  psize, ssize);
+ 	/*
+ 	 * No bluk hpte removal support, invalidate each entry
+ 	 */
+@@ -763,15 +772,6 @@ void hpte_do_hugepage_flush(struct mm_st
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -430,16 +430,17 @@ static void __pSeries_lpar_hugepage_inva
+ 		spin_unlock_irqrestore(&pSeries_lpar_tlbie_lock, flags);
+ }
+ 
+-static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
+-				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++static void pSeries_lpar_hugepage_invalidate(unsigned long vsid,
++					     unsigned long addr,
++					     unsigned char *hpte_slot_array,
++					     int psize, int ssize)
+ {
+-	int ssize = 0, i, index = 0;
++	int i, index = 0;
+ 	unsigned long s_addr = addr;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long vpn_array[PPC64_HUGE_HPTE_BATCH];
+ 	unsigned long slot_array[PPC64_HUGE_HPTE_BATCH];
+-	unsigned long shift, hidx, vpn = 0, vsid, hash, slot;
++	unsigned long shift, hidx, vpn = 0, hash, slot;
+ 
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -452,15 +453,6 @@ static void pSeries_lpar_hugepage_invali
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+
+
