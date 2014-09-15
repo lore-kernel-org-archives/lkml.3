@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285AbaIOUpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:45:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56562 "EHLO mx1.redhat.com"
+	id S1758303AbaIOUpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:45:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64152 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756747AbaIOUpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:45:11 -0400
+	id S1756747AbaIOUpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 16:45:21 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 02/10] KEYS: Preparse match data [ver #2]
+Subject: [PATCH 04/10] KEYS: Remove key_type::match in favour of overriding
+ default by match_preparse [ver #2]
 From: David Howells <dhowells@redhat.com>
 To: vgoyal@redhat.com
 Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Sep 2014 21:45:07 +0100
-Message-ID: <20140915204507.27499.47976.stgit@warthog.procyon.org.uk>
+Date: Mon, 15 Sep 2014 21:45:17 +0100
+Message-ID: <20140915204517.27499.50590.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 References: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -26,462 +27,403 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparse the match data.  This provides several advantages:
+A previous patch added a ->match_preparse() method to the key type.  This is
+allowed to override the function called by the iteration algorithm.
+Therefore, we can just set a default that simply checks for an exact match of
+the key description with the original criterion data and allow match_preparse
+to override it as needed.
 
- (1) The preparser can reject invalid criteria up front.
-
- (2) The preparser can convert the criteria to binary data if necessary (the
-     asymmetric key type really wants to do binary comparison of the key IDs).
-
- (3) The preparser can set the type of search to be performed.  This means
-     that it's not then a one-off setting in the key type.
-
- (4) The preparser can set an appropriate comparator function.
+The key_type::match op is then redundant and can be removed, as can the
+user_match() function.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- crypto/asymmetric_keys/asymmetric_type.c |   31 ++++++++++++++++++-
- include/keys/user-type.h                 |    4 ++
- include/linux/key-type.h                 |   31 +++++++++++++++++--
- net/dns_resolver/dns_key.c               |    5 ++-
- security/keys/internal.h                 |    8 ++---
- security/keys/keyring.c                  |   49 ++++++++++++++++++------------
- security/keys/proc.c                     |    8 ++---
- security/keys/process_keys.c             |   13 ++++----
- security/keys/request_key.c              |   21 ++++++++++---
- security/keys/request_key_auth.c         |    6 ++--
- security/keys/user_defined.c             |    4 +-
- 11 files changed, 129 insertions(+), 51 deletions(-)
+ crypto/asymmetric_keys/asymmetric_type.c |    6 +++---
+ crypto/asymmetric_keys/pkcs7_key_type.c  |    1 -
+ fs/cifs/cifs_spnego.c                    |    1 -
+ fs/cifs/cifsacl.c                        |    1 -
+ fs/nfs/idmap.c                           |    2 --
+ include/keys/user-type.h                 |    3 ---
+ include/linux/key-type.h                 |    4 ----
+ net/ceph/crypto.c                        |    1 -
+ net/dns_resolver/dns_key.c               |   17 +++++++++++++----
+ net/rxrpc/ar-key.c                       |    2 --
+ security/keys/big_key.c                  |    1 -
+ security/keys/encrypted-keys/encrypted.c |    1 -
+ security/keys/internal.h                 |    2 ++
+ security/keys/key.c                      |    2 +-
+ security/keys/keyring.c                  |   15 ++++++++++-----
+ security/keys/request_key.c              |    2 +-
+ security/keys/request_key_auth.c         |    2 +-
+ security/keys/trusted.c                  |    1 -
+ security/keys/user_defined.c             |   12 ------------
+ 19 files changed, 31 insertions(+), 45 deletions(-)
 
 diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
-index eb8cd46961a5..f666b4e8d256 100644
+index 9d78ad7754d9..7c0498968975 100644
 --- a/crypto/asymmetric_keys/asymmetric_type.c
 +++ b/crypto/asymmetric_keys/asymmetric_type.c
-@@ -59,9 +59,11 @@ EXPORT_SYMBOL_GPL(asymmetric_keyid_match);
+@@ -59,8 +59,8 @@ EXPORT_SYMBOL_GPL(asymmetric_keyid_match);
   *	"id:<id>"	- request a key matching the ID
   *	"<subtype>:<id>" - request a key of a subtype
   */
--static int asymmetric_key_match(const struct key *key, const void *description)
-+static int asymmetric_key_match(const struct key *key,
-+				const struct key_match_data *match_data)
+-static int asymmetric_key_match(const struct key *key,
+-				const struct key_match_data *match_data)
++static int asymmetric_key_cmp(const struct key *key,
++			      const struct key_match_data *match_data)
  {
  	const struct asymmetric_key_subtype *subtype = asymmetric_key_subtype(key);
-+	const char *description = match_data->raw_data;
- 	const char *spec = description;
- 	const char *id;
- 	ptrdiff_t speclen;
-@@ -94,6 +96,31 @@ static int asymmetric_key_match(const struct key *key, const void *description)
+ 	const char *description = match_data->raw_data;
+@@ -110,6 +110,7 @@ static int asymmetric_key_match(const struct key *key,
+ static int asymmetric_key_match_preparse(struct key_match_data *match_data)
+ {
+ 	match_data->lookup_type = KEYRING_SEARCH_LOOKUP_ITERATE;
++	match_data->cmp = asymmetric_key_cmp;
+ 	return 0;
  }
  
- /*
-+ * Preparse the match criterion.  If we don't set lookup_type and cmp,
-+ * the default will be an exact match on the key description.
-+ *
-+ * There are some specifiers for matching key IDs rather than by the key
-+ * description:
-+ *
-+ *	"id:<id>" - request a key by any available ID
-+ *
-+ * These have to be searched by iteration rather than by direct lookup because
-+ * the key is hashed according to its description.
-+ */
-+static int asymmetric_key_match_preparse(struct key_match_data *match_data)
-+{
-+	match_data->lookup_type = KEYRING_SEARCH_LOOKUP_ITERATE;
-+	return 0;
-+}
-+
-+/*
-+ * Free the preparsed the match criterion.
-+ */
-+static void asymmetric_key_match_free(struct key_match_data *match_data)
-+{
-+}
-+
-+/*
-  * Describe the asymmetric key
-  */
- static void asymmetric_key_describe(const struct key *key, struct seq_file *m)
-@@ -196,7 +223,9 @@ struct key_type key_type_asymmetric = {
- 	.preparse	= asymmetric_key_preparse,
+@@ -224,7 +225,6 @@ struct key_type key_type_asymmetric = {
  	.free_preparse	= asymmetric_key_free_preparse,
  	.instantiate	= generic_key_instantiate,
-+	.match_preparse	= asymmetric_key_match_preparse,
- 	.match		= asymmetric_key_match,
-+	.match_free	= asymmetric_key_match_free,
+ 	.match_preparse	= asymmetric_key_match_preparse,
+-	.match		= asymmetric_key_match,
+ 	.match_free	= asymmetric_key_match_free,
  	.destroy	= asymmetric_key_destroy,
  	.describe	= asymmetric_key_describe,
- 	.def_lookup_type = KEYRING_SEARCH_LOOKUP_ITERATE,
+diff --git a/crypto/asymmetric_keys/pkcs7_key_type.c b/crypto/asymmetric_keys/pkcs7_key_type.c
+index d1faa1df1dec..751f8fd7335d 100644
+--- a/crypto/asymmetric_keys/pkcs7_key_type.c
++++ b/crypto/asymmetric_keys/pkcs7_key_type.c
+@@ -75,7 +75,6 @@ static struct key_type key_type_pkcs7 = {
+ 	.preparse		= pkcs7_preparse,
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+-	.match			= user_match,
+ 	.revoke			= user_revoke,
+ 	.destroy		= user_destroy,
+ 	.describe		= user_describe,
+diff --git a/fs/cifs/cifs_spnego.c b/fs/cifs/cifs_spnego.c
+index a3e932547617..f4cf200b3c76 100644
+--- a/fs/cifs/cifs_spnego.c
++++ b/fs/cifs/cifs_spnego.c
+@@ -62,7 +62,6 @@ cifs_spnego_key_destroy(struct key *key)
+ struct key_type cifs_spnego_key_type = {
+ 	.name		= "cifs.spnego",
+ 	.instantiate	= cifs_spnego_key_instantiate,
+-	.match		= user_match,
+ 	.destroy	= cifs_spnego_key_destroy,
+ 	.describe	= user_describe,
+ };
+diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+index 7ff866dbb89e..6d00c419cbae 100644
+--- a/fs/cifs/cifsacl.c
++++ b/fs/cifs/cifsacl.c
+@@ -84,7 +84,6 @@ static struct key_type cifs_idmap_key_type = {
+ 	.instantiate = cifs_idmap_key_instantiate,
+ 	.destroy     = cifs_idmap_key_destroy,
+ 	.describe    = user_describe,
+-	.match       = user_match,
+ };
+ 
+ static char *
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 7dd55b745c4d..2f5db844c172 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -177,7 +177,6 @@ static struct key_type key_type_id_resolver = {
+ 	.preparse	= user_preparse,
+ 	.free_preparse	= user_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= user_match,
+ 	.revoke		= user_revoke,
+ 	.destroy	= user_destroy,
+ 	.describe	= user_describe,
+@@ -401,7 +400,6 @@ static struct key_type key_type_id_resolver_legacy = {
+ 	.preparse	= user_preparse,
+ 	.free_preparse	= user_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= user_match,
+ 	.revoke		= user_revoke,
+ 	.destroy	= user_destroy,
+ 	.describe	= user_describe,
 diff --git a/include/keys/user-type.h b/include/keys/user-type.h
-index 3ab1873a4bfa..66d92af30e7c 100644
+index 66d92af30e7c..cebefb069c44 100644
 --- a/include/keys/user-type.h
 +++ b/include/keys/user-type.h
-@@ -36,11 +36,13 @@ extern struct key_type key_type_user;
+@@ -36,13 +36,10 @@ extern struct key_type key_type_user;
  extern struct key_type key_type_logon;
  
  struct key_preparsed_payload;
-+struct key_match_data;
+-struct key_match_data;
  
  extern int user_preparse(struct key_preparsed_payload *prep);
  extern void user_free_preparse(struct key_preparsed_payload *prep);
  extern int user_update(struct key *key, struct key_preparsed_payload *prep);
--extern int user_match(const struct key *key, const void *criterion);
-+extern int user_match(const struct key *key,
-+		      const struct key_match_data *match_data);
+-extern int user_match(const struct key *key,
+-		      const struct key_match_data *match_data);
  extern void user_revoke(struct key *key);
  extern void user_destroy(struct key *key);
  extern void user_describe(const struct key *user, struct seq_file *m);
 diff --git a/include/linux/key-type.h b/include/linux/key-type.h
-index 44792ee649de..8aba688a451a 100644
+index bf93ea609273..c14816bd3b44 100644
 --- a/include/linux/key-type.h
 +++ b/include/linux/key-type.h
-@@ -53,6 +53,22 @@ typedef int (*request_key_actor_t)(struct key_construction *key,
- 				   const char *op, void *aux);
- 
- /*
-+ * Preparsed matching criterion.
-+ */
-+struct key_match_data {
-+	/* Comparison function, defaults to type->match, but can be replaced by
-+	 * type->match_preparse(). */
-+	int (*cmp)(const struct key *key,
-+		   const struct key_match_data *match_data);
-+
-+	const void	*raw_data;	/* Raw match data */
-+	void		*preparsed;	/* For ->match_preparse() to stash stuff */
-+	unsigned	lookup_type;	/* Type of lookup for this search. */
-+#define KEYRING_SEARCH_LOOKUP_DIRECT	0x0000	/* Direct lookup by description. */
-+#define KEYRING_SEARCH_LOOKUP_ITERATE	0x0001	/* Iterative search. */
-+};
-+
-+/*
-  * kernel managed key type definition
-  */
- struct key_type {
-@@ -67,8 +83,6 @@ struct key_type {
- 
- 	/* Default key search algorithm. */
- 	unsigned def_lookup_type;
--#define KEYRING_SEARCH_LOOKUP_DIRECT	0x0000	/* Direct lookup by description. */
--#define KEYRING_SEARCH_LOOKUP_ITERATE	0x0001	/* Iterative search. */
- 
- 	/* vet a description */
- 	int (*vet_description)(const char *description);
-@@ -96,8 +110,19 @@ struct key_type {
+@@ -113,10 +113,6 @@ struct key_type {
  	 */
- 	int (*update)(struct key *key, struct key_preparsed_payload *prep);
+ 	int (*match_preparse)(struct key_match_data *match_data);
  
-+	/* Preparse the data supplied to ->match() (optional).  The
-+	 * data to be preparsed can be found in match_data->raw_data.
-+	 * The lookup type can also be set by this function.
-+	 */
-+	int (*match_preparse)(struct key_match_data *match_data);
-+
- 	/* match a key against a description */
--	int (*match)(const struct key *key, const void *desc);
-+	int (*match)(const struct key *key,
-+		     const struct key_match_data *match_data);
-+
-+	/* Free preparsed match data (optional).  This should be supplied it
-+	 * ->match_preparse() is supplied. */
-+	void (*match_free)(struct key_match_data *match_data);
+-	/* match a key against a description */
+-	int (*match)(const struct key *key,
+-		     const struct key_match_data *match_data);
+-
+ 	/* Free preparsed match data (optional).  This should be supplied it
+ 	 * ->match_preparse() is supplied. */
+ 	void (*match_free)(struct key_match_data *match_data);
+diff --git a/net/ceph/crypto.c b/net/ceph/crypto.c
+index ffeba8f9dda9..62fc5e7a9acf 100644
+--- a/net/ceph/crypto.c
++++ b/net/ceph/crypto.c
+@@ -476,7 +476,6 @@ struct key_type key_type_ceph = {
+ 	.preparse	= ceph_key_preparse,
+ 	.free_preparse	= ceph_key_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= user_match,
+ 	.destroy	= ceph_key_destroy,
+ };
  
- 	/* clear some of the data from a key on revokation (optional)
- 	 * - the key's semaphore will be write-locked by the caller
 diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index f380b2c58178..92df6e508ae7 100644
+index 92df6e508ae7..a07b9ba7e0b7 100644
 --- a/net/dns_resolver/dns_key.c
 +++ b/net/dns_resolver/dns_key.c
-@@ -177,10 +177,11 @@ static void dns_resolver_free_preparse(struct key_preparsed_payload *prep)
+@@ -176,9 +176,8 @@ static void dns_resolver_free_preparse(struct key_preparsed_payload *prep)
+  * The domain name may be a simple name or an absolute domain name (which
   * should end with a period).  The domain name is case-independent.
   */
- static int
--dns_resolver_match(const struct key *key, const void *description)
-+dns_resolver_match(const struct key *key,
-+		   const struct key_match_data *match_data)
+-static int
+-dns_resolver_match(const struct key *key,
+-		   const struct key_match_data *match_data)
++static int dns_resolver_cmp(const struct key *key,
++			    const struct key_match_data *match_data)
  {
  	int slen, dlen, ret = 0;
--	const char *src = key->description, *dsp = description;
-+	const char *src = key->description, *dsp = match_data->raw_data;
+ 	const char *src = key->description, *dsp = match_data->raw_data;
+@@ -210,6 +209,16 @@ no_match:
+ }
  
- 	kenter("%s,%s", src, dsp);
- 
+ /*
++ * Preparse the match criterion.
++ */
++static int dns_resolver_match_preparse(struct key_match_data *match_data)
++{
++	match_data->lookup_type = KEYRING_SEARCH_LOOKUP_ITERATE;
++	match_data->cmp = dns_resolver_cmp;
++	return 0;
++}
++
++/*
+  * Describe a DNS key
+  */
+ static void dns_resolver_describe(const struct key *key, struct seq_file *m)
+@@ -243,7 +252,7 @@ struct key_type key_type_dns_resolver = {
+ 	.preparse	= dns_resolver_preparse,
+ 	.free_preparse	= dns_resolver_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= dns_resolver_match,
++	.match_preparse	= dns_resolver_match_preparse,
+ 	.revoke		= user_revoke,
+ 	.destroy	= user_destroy,
+ 	.describe	= dns_resolver_describe,
+diff --git a/net/rxrpc/ar-key.c b/net/rxrpc/ar-key.c
+index b45d080e64a7..c08d4649157a 100644
+--- a/net/rxrpc/ar-key.c
++++ b/net/rxrpc/ar-key.c
+@@ -44,7 +44,6 @@ struct key_type key_type_rxrpc = {
+ 	.preparse	= rxrpc_preparse,
+ 	.free_preparse	= rxrpc_free_preparse,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= user_match,
+ 	.destroy	= rxrpc_destroy,
+ 	.describe	= rxrpc_describe,
+ 	.read		= rxrpc_read,
+@@ -61,7 +60,6 @@ struct key_type key_type_rxrpc_s = {
+ 	.preparse	= rxrpc_preparse_s,
+ 	.free_preparse	= rxrpc_free_preparse_s,
+ 	.instantiate	= generic_key_instantiate,
+-	.match		= user_match,
+ 	.destroy	= rxrpc_destroy_s,
+ 	.describe	= rxrpc_describe,
+ };
+diff --git a/security/keys/big_key.c b/security/keys/big_key.c
+index 4045c13a761a..b6adb94f6d52 100644
+--- a/security/keys/big_key.c
++++ b/security/keys/big_key.c
+@@ -36,7 +36,6 @@ struct key_type key_type_big_key = {
+ 	.preparse		= big_key_preparse,
+ 	.free_preparse		= big_key_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+-	.match			= user_match,
+ 	.revoke			= big_key_revoke,
+ 	.destroy		= big_key_destroy,
+ 	.describe		= big_key_describe,
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index 5fe443d120af..db9675db1026 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -970,7 +970,6 @@ struct key_type key_type_encrypted = {
+ 	.name = "encrypted",
+ 	.instantiate = encrypted_instantiate,
+ 	.update = encrypted_update,
+-	.match = user_match,
+ 	.destroy = encrypted_destroy,
+ 	.describe = user_describe,
+ 	.read = encrypted_read,
 diff --git a/security/keys/internal.h b/security/keys/internal.h
-index 5f20da01fd8d..805e60b0b87e 100644
+index b47cc532be1e..e66a16cb63e1 100644
 --- a/security/keys/internal.h
 +++ b/security/keys/internal.h
-@@ -107,13 +107,10 @@ extern int iterate_over_keyring(const struct key *keyring,
- 				int (*func)(const struct key *key, void *data),
- 				void *data);
+@@ -127,6 +127,8 @@ struct keyring_search_context {
+ 	struct timespec		now;
+ };
  
--typedef int (*key_match_func_t)(const struct key *, const void *);
--
- struct keyring_search_context {
- 	struct keyring_index_key index_key;
- 	const struct cred	*cred;
--	key_match_func_t	match;
--	const void		*match_data;
-+	struct key_match_data	match_data;
- 	unsigned		flags;
- #define KEYRING_SEARCH_LOOKUP_TYPE	0x0001	/* [as type->def_lookup_type] */
- #define KEYRING_SEARCH_NO_STATE_CHECK	0x0002	/* Skip state checks */
-@@ -152,7 +149,8 @@ extern struct key *request_key_and_link(struct key_type *type,
- 					struct key *dest_keyring,
- 					unsigned long flags);
++extern int key_default_cmp(const struct key *key,
++			   const struct key_match_data *match_data);
+ extern key_ref_t keyring_search_aux(key_ref_t keyring_ref,
+ 				    struct keyring_search_context *ctx);
  
--extern int lookup_user_key_possessed(const struct key *key, const void *target);
-+extern int lookup_user_key_possessed(const struct key *key,
-+				     const struct key_match_data *match_data);
- extern key_ref_t lookup_user_key(key_serial_t id, unsigned long flags,
- 				 key_perm_t perm);
- #define KEY_LOOKUP_CREATE	0x01
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 6d0cad16f002..e17ba6aefdc0 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -799,7 +799,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	}
+ 
+ 	key_ref = ERR_PTR(-EINVAL);
+-	if (!index_key.type->match || !index_key.type->instantiate ||
++	if (!index_key.type->instantiate ||
+ 	    (!index_key.description && !index_key.type->preparse))
+ 		goto error_put_type;
+ 
 diff --git a/security/keys/keyring.c b/security/keys/keyring.c
-index 8314a7d2104d..10f0a5f2d362 100644
+index 10f0a5f2d362..253c9a0eb092 100644
 --- a/security/keys/keyring.c
 +++ b/security/keys/keyring.c
-@@ -545,7 +545,7 @@ static int keyring_search_iterator(const void *object, void *iterator_data)
- 	}
+@@ -89,7 +89,6 @@ struct key_type key_type_keyring = {
+ 	.preparse	= keyring_preparse,
+ 	.free_preparse	= keyring_free_preparse,
+ 	.instantiate	= keyring_instantiate,
+-	.match		= user_match,
+ 	.revoke		= keyring_revoke,
+ 	.destroy	= keyring_destroy,
+ 	.describe	= keyring_describe,
+@@ -512,6 +511,15 @@ struct key *keyring_alloc(const char *description, kuid_t uid, kgid_t gid,
+ EXPORT_SYMBOL(keyring_alloc);
  
- 	/* keys that don't match */
--	if (!ctx->match(key, ctx->match_data)) {
-+	if (!ctx->match_data.cmp(key, &ctx->match_data)) {
- 		kleave(" = 0 [!match]");
- 		return 0;
- 	}
-@@ -585,8 +585,7 @@ skipped:
+ /*
++ * By default, we keys found by getting an exact match on their descriptions.
++ */
++int key_default_cmp(const struct key *key,
++		    const struct key_match_data *match_data)
++{
++	return strcmp(key->description, match_data->raw_data) == 0;
++}
++
++/*
+  * Iteration function to consider each key found.
   */
- static int search_keyring(struct key *keyring, struct keyring_search_context *ctx)
- {
--	if ((ctx->flags & KEYRING_SEARCH_LOOKUP_TYPE) ==
--	    KEYRING_SEARCH_LOOKUP_DIRECT) {
-+	if (ctx->match_data.lookup_type == KEYRING_SEARCH_LOOKUP_DIRECT) {
- 		const void *object;
- 
- 		object = assoc_array_find(&keyring->keys,
-@@ -627,7 +626,7 @@ static bool search_nested_keyrings(struct key *keyring,
- 	/* Check to see if this top-level keyring is what we are looking for
- 	 * and whether it is valid or not.
- 	 */
--	if (ctx->flags & KEYRING_SEARCH_LOOKUP_ITERATE ||
-+	if (ctx->match_data.lookup_type == KEYRING_SEARCH_LOOKUP_ITERATE ||
- 	    keyring_compare_object(keyring, &ctx->index_key)) {
- 		ctx->skipped_ret = 2;
- 		ctx->flags |= KEYRING_SEARCH_DO_STATE_CHECK;
-@@ -885,16 +884,28 @@ key_ref_t keyring_search(key_ref_t keyring,
+ static int keyring_search_iterator(const void *object, void *iterator_data)
+@@ -884,7 +892,7 @@ key_ref_t keyring_search(key_ref_t keyring,
  		.index_key.type		= type,
  		.index_key.description	= description,
  		.cred			= current_cred(),
--		.match			= type->match,
--		.match_data		= description,
--		.flags			= (type->def_lookup_type |
--					   KEYRING_SEARCH_DO_STATE_CHECK),
-+		.match_data.cmp		= type->match,
-+		.match_data.raw_data	= description,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
- 	};
-+	key_ref_t key;
-+	int ret;
+-		.match_data.cmp		= type->match,
++		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+ 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+ 		.flags			= KEYRING_SEARCH_DO_STATE_CHECK,
+@@ -892,9 +900,6 @@ key_ref_t keyring_search(key_ref_t keyring,
+ 	key_ref_t key;
+ 	int ret;
  
--	if (!ctx.match)
-+	if (!ctx.match_data.cmp)
- 		return ERR_PTR(-ENOKEY);
- 
--	return keyring_search_aux(keyring, &ctx);
-+	if (type->match_preparse) {
-+		ret = type->match_preparse(&ctx.match_data);
-+		if (ret < 0)
-+			return ERR_PTR(ret);
-+	}
-+
-+	key = keyring_search_aux(keyring, &ctx);
-+
-+	if (type->match_free)
-+		type->match_free(&ctx.match_data);
-+	return key;
- }
- EXPORT_SYMBOL(keyring_search);
- 
-@@ -1014,7 +1025,7 @@ static int keyring_detect_cycle_iterator(const void *object,
- 
- 	/* We might get a keyring with matching index-key that is nonetheless a
- 	 * different keyring. */
--	if (key != ctx->match_data)
-+	if (key != ctx->match_data.raw_data)
- 		return 0;
- 
- 	ctx->result = ERR_PTR(-EDEADLK);
-@@ -1031,14 +1042,14 @@ static int keyring_detect_cycle_iterator(const void *object,
- static int keyring_detect_cycle(struct key *A, struct key *B)
- {
- 	struct keyring_search_context ctx = {
--		.index_key	= A->index_key,
--		.match_data	= A,
--		.iterator	= keyring_detect_cycle_iterator,
--		.flags		= (KEYRING_SEARCH_LOOKUP_DIRECT |
--				   KEYRING_SEARCH_NO_STATE_CHECK |
--				   KEYRING_SEARCH_NO_UPDATE_TIME |
--				   KEYRING_SEARCH_NO_CHECK_PERM |
--				   KEYRING_SEARCH_DETECT_TOO_DEEP),
-+		.index_key		= A->index_key,
-+		.match_data.raw_data	= A,
-+		.match_data.lookup_type = KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.iterator		= keyring_detect_cycle_iterator,
-+		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
-+					   KEYRING_SEARCH_NO_UPDATE_TIME |
-+					   KEYRING_SEARCH_NO_CHECK_PERM |
-+					   KEYRING_SEARCH_DETECT_TOO_DEEP),
- 	};
- 
- 	rcu_read_lock();
-diff --git a/security/keys/proc.c b/security/keys/proc.c
-index d3f6f2fd21db..972eeb336b81 100644
---- a/security/keys/proc.c
-+++ b/security/keys/proc.c
-@@ -194,10 +194,10 @@ static int proc_keys_show(struct seq_file *m, void *v)
- 		.index_key.type		= key->type,
- 		.index_key.description	= key->description,
- 		.cred			= current_cred(),
--		.match			= lookup_user_key_possessed,
--		.match_data		= key,
--		.flags			= (KEYRING_SEARCH_NO_STATE_CHECK |
--					   KEYRING_SEARCH_LOOKUP_DIRECT),
-+		.match_data.cmp		= lookup_user_key_possessed,
-+		.match_data.raw_data	= key,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
- 	};
- 
- 	key_ref = make_key_ref(key, 0);
-diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
-index 0cf8a130a267..08bd533d014f 100644
---- a/security/keys/process_keys.c
-+++ b/security/keys/process_keys.c
-@@ -489,9 +489,10 @@ found:
- /*
-  * See if the key we're looking at is the target key.
-  */
--int lookup_user_key_possessed(const struct key *key, const void *target)
-+int lookup_user_key_possessed(const struct key *key,
-+			      const struct key_match_data *match_data)
- {
--	return key == target;
-+	return key == match_data->raw_data;
- }
- 
- /*
-@@ -516,9 +517,9 @@ key_ref_t lookup_user_key(key_serial_t id, unsigned long lflags,
- 			  key_perm_t perm)
- {
- 	struct keyring_search_context ctx = {
--		.match	= lookup_user_key_possessed,
--		.flags	= (KEYRING_SEARCH_NO_STATE_CHECK |
--			   KEYRING_SEARCH_LOOKUP_DIRECT),
-+		.match_data.cmp		= lookup_user_key_possessed,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.flags			= KEYRING_SEARCH_NO_STATE_CHECK,
- 	};
- 	struct request_key_auth *rka;
- 	struct key *key;
-@@ -673,7 +674,7 @@ try_again:
- 		ctx.index_key.type		= key->type;
- 		ctx.index_key.description	= key->description;
- 		ctx.index_key.desc_len		= strlen(key->description);
--		ctx.match_data			= key;
-+		ctx.match_data.raw_data		= key;
- 		kdebug("check possessed");
- 		skey_ref = search_process_keyrings(&ctx);
- 		kdebug("possessed=%p", skey_ref);
+-	if (!ctx.match_data.cmp)
+-		return ERR_PTR(-ENOKEY);
+-
+ 	if (type->match_preparse) {
+ 		ret = type->match_preparse(&ctx.match_data);
+ 		if (ret < 0)
 diff --git a/security/keys/request_key.c b/security/keys/request_key.c
-index 26a94f18af94..5dd2088ade23 100644
+index 5dd2088ade23..bb4337c7ae1b 100644
 --- a/security/keys/request_key.c
 +++ b/security/keys/request_key.c
-@@ -513,9 +513,9 @@ struct key *request_key_and_link(struct key_type *type,
+@@ -513,7 +513,7 @@ struct key *request_key_and_link(struct key_type *type,
  		.index_key.type		= type,
  		.index_key.description	= description,
  		.cred			= current_cred(),
--		.match			= type->match,
--		.match_data		= description,
--		.flags			= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.match_data.cmp		= type->match,
-+		.match_data.raw_data	= description,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+-		.match_data.cmp		= type->match,
++		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+ 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
  	};
- 	struct key *key;
- 	key_ref_t key_ref;
-@@ -525,6 +525,14 @@ struct key *request_key_and_link(struct key_type *type,
- 	       ctx.index_key.type->name, ctx.index_key.description,
- 	       callout_info, callout_len, aux, dest_keyring, flags);
- 
-+	if (type->match_preparse) {
-+		ret = type->match_preparse(&ctx.match_data);
-+		if (ret < 0) {
-+			key = ERR_PTR(ret);
-+			goto error;
-+		}
-+	}
-+
- 	/* search all the process keyrings for a key */
- 	key_ref = search_process_keyrings(&ctx);
- 
-@@ -537,7 +545,7 @@ struct key *request_key_and_link(struct key_type *type,
- 			if (ret < 0) {
- 				key_put(key);
- 				key = ERR_PTR(ret);
--				goto error;
-+				goto error_free;
- 			}
- 		}
- 	} else if (PTR_ERR(key_ref) != -EAGAIN) {
-@@ -547,12 +555,15 @@ struct key *request_key_and_link(struct key_type *type,
- 		 * should consult userspace if we can */
- 		key = ERR_PTR(-ENOKEY);
- 		if (!callout_info)
--			goto error;
-+			goto error_free;
- 
- 		key = construct_key_and_link(&ctx, callout_info, callout_len,
- 					     aux, dest_keyring, flags);
- 	}
- 
-+error_free:
-+	if (type->match_free)
-+		type->match_free(&ctx.match_data);
- error:
- 	kleave(" = %p", key);
- 	return key;
 diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 739e7455d388..9ae02819cc06 100644
+index 9ae02819cc06..6639e2cb8853 100644
 --- a/security/keys/request_key_auth.c
 +++ b/security/keys/request_key_auth.c
-@@ -246,9 +246,9 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
+@@ -246,7 +246,7 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
  		.index_key.type		= &key_type_request_key_auth,
  		.index_key.description	= description,
  		.cred			= current_cred(),
--		.match			= user_match,
--		.match_data		= description,
--		.flags			= KEYRING_SEARCH_LOOKUP_DIRECT,
-+		.match_data.cmp		= user_match,
-+		.match_data.raw_data	= description,
-+		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
+-		.match_data.cmp		= user_match,
++		.match_data.cmp		= key_default_cmp,
+ 		.match_data.raw_data	= description,
+ 		.match_data.lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
  	};
- 	struct key *authkey;
- 	key_ref_t authkey_ref;
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 6b804aa4529a..c0594cb07ada 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1096,7 +1096,6 @@ struct key_type key_type_trusted = {
+ 	.name = "trusted",
+ 	.instantiate = trusted_instantiate,
+ 	.update = trusted_update,
+-	.match = user_match,
+ 	.destroy = trusted_destroy,
+ 	.describe = user_describe,
+ 	.read = trusted_read,
 diff --git a/security/keys/user_defined.c b/security/keys/user_defined.c
-index eee340011f2b..ec8a56063b02 100644
+index cd7e726e8646..36b47bbd3d8c 100644
 --- a/security/keys/user_defined.c
 +++ b/security/keys/user_defined.c
-@@ -141,9 +141,9 @@ EXPORT_SYMBOL_GPL(user_update);
- /*
-  * match users on their name
-  */
--int user_match(const struct key *key, const void *description)
-+int user_match(const struct key *key, const struct key_match_data *match_data)
- {
--	return strcmp(key->description, description) == 0;
-+	return strcmp(key->description, match_data->raw_data) == 0;
- }
+@@ -30,7 +30,6 @@ struct key_type key_type_user = {
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+ 	.update			= user_update,
+-	.match			= user_match,
+ 	.revoke			= user_revoke,
+ 	.destroy		= user_destroy,
+ 	.describe		= user_describe,
+@@ -51,7 +50,6 @@ struct key_type key_type_logon = {
+ 	.free_preparse		= user_free_preparse,
+ 	.instantiate		= generic_key_instantiate,
+ 	.update			= user_update,
+-	.match			= user_match,
+ 	.revoke			= user_revoke,
+ 	.destroy		= user_destroy,
+ 	.describe		= user_describe,
+@@ -137,16 +135,6 @@ error:
+ EXPORT_SYMBOL_GPL(user_update);
  
- EXPORT_SYMBOL_GPL(user_match);
+ /*
+- * match users on their name
+- */
+-int user_match(const struct key *key, const struct key_match_data *match_data)
+-{
+-	return strcmp(key->description, match_data->raw_data) == 0;
+-}
+-
+-EXPORT_SYMBOL_GPL(user_match);
+-
+-/*
+  * dispose of the links from a revoked keyring
+  * - called with the key sem write-locked
+  */
 
