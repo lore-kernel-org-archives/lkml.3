@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261AbaIOVMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:12:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54669 "EHLO
+	id S1759321AbaIOVNm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:13:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901AbaIOT0u (ORCPT
+	with ESMTP id S1754887AbaIOT0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:50 -0400
+	Mon, 15 Sep 2014 15:26:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 044/158] powerpc/thp: Invalidate with vpn in loop
-Date: Mon, 15 Sep 2014 12:24:43 -0700
-Message-Id: <20140915192544.220860592@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Christoph Lameter <cl@gentwo.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Tejun Heo <htejun@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 029/158] kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
+Date: Mon, 15 Sep 2014 12:24:28 -0700
+Message-Id: <20140915192543.758888845@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,65 +34,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 969b7b208f7408712a3526856e4ae60ad13f6928 upstream.
+commit 618fde872163e782183ce574c77f1123e2be8887 upstream.
 
-As per ISA, for 4k base page size we compare 14..65 bits of VA specified
-with the entry_VA in tlb. That implies we need to make sure we do a
-tlbie with all the possible 4k va we used to access the 16MB hugepage.
-With 64k base page size we compare 14..57 bits of VA. Hence we cannot
-ignore the lower 24 bits of va while tlbie .We also cannot tlb
-invalidate a 16MB entry with just one tlbie instruction because
-we don't track which va was used to instantiate the tlb entry.
+The rarely-executed memry-allocation-failed callback path generates a
+WARN_ON_ONCE() when smp_call_function_single() succeeds.  Presumably
+it's supposed to warn on failures.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: Christoph Lameter <cl@gentwo.org>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Tejun Heo <htejun@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/hash_native_64.c |   23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+ kernel/smp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -417,7 +417,7 @@ static void native_hugepage_invalidate(u
- 				       unsigned char *hpte_slot_array,
- 				       int psize, int ssize)
- {
--	int i, lock_tlbie;
-+	int i;
- 	struct hash_pte *hptep;
- 	int actual_psize = MMU_PAGE_16M;
- 	unsigned int max_hpte_count, valid;
-@@ -456,22 +456,13 @@ static void native_hugepage_invalidate(u
- 		else
- 			/* Invalidate the hpte. NOTE: this also unlocks it */
- 			hptep->v = 0;
-+		/*
-+		 * We need to do tlb invalidate for all the address, tlbie
-+		 * instruction compares entry_VA in tlb with the VA specified
-+		 * here
-+		 */
-+		tlbie(vpn, psize, actual_psize, ssize, 0);
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -661,7 +661,7 @@ void on_each_cpu_cond(bool (*cond_func)(
+ 			if (cond_func(cpu, info)) {
+ 				ret = smp_call_function_single(cpu, func,
+ 								info, wait);
+-				WARN_ON_ONCE(!ret);
++				WARN_ON_ONCE(ret);
+ 			}
+ 		preempt_enable();
  	}
--	/*
--	 * Since this is a hugepage, we just need a single tlbie.
--	 * use the last vpn.
--	 */
--	lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
--	if (lock_tlbie)
--		raw_spin_lock(&native_tlbie_lock);
--
--	asm volatile("ptesync":::"memory");
--	__tlbie(vpn, psize, actual_psize, ssize);
--	asm volatile("eieio; tlbsync; ptesync":::"memory");
--
--	if (lock_tlbie)
--		raw_spin_unlock(&native_tlbie_lock);
--
- 	local_irq_restore(flags);
- }
- 
 
 
