@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaIOTvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:51:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212AbaIOTr0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.10 64/71] CIFS: Fix wrong restart readdir for SMB1
-Date: Mon, 15 Sep 2014 12:27:02 -0700
-Message-Id: <20140915192640.830524187@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1756637AbaIOTwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:52:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277AbaIOTwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:52:14 -0400
+Date: Mon, 15 Sep 2014 16:52:01 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Cc: linux-kernel@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
+        Cody P Schafer <dev@codyps.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [PATCH] perf tools: fix type mismatch - long vs __statfs_word
+Message-ID: <20140915195201.GF2259@redhat.com>
+References: <1407949429-25421-1-git-send-email-abrodkin@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1407949429-25421-1-git-send-email-abrodkin@synopsys.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Em Wed, Aug 13, 2014 at 09:03:49PM +0400, Alexey Brodkin escreveu:
+> >From "include/uapi/asm-generic/statfs.h" it is seen that "statfs.f_type" is of
+> type "__statfs_word" which in its turn is "__u32" (unsigned int) for 32-bit
+> systems.
+> 
+> So in case of compilation with "-Werror" following breakage happens:
+> --->---
+> fs.c: In function ‘fs__valid_mount’:
+> fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+>   else if (st_fs.f_type != magic)
+>                         ^
+> cc1: all warnings being treated as errors
+> --->---
+> 
+> Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
+> CFLAGS has hard-coded "-Werror" this is inevitable even if one builds "perf"
+> with "WERROR=0".
 
-------------------
+So we have one more case of comparision involving f_type:
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+[acme@zoo linux]$ find tools/ -type f | xargs grep -w f_type
+tools/lib/api/fs/fs.c:	else if (st_fs.f_type != magic)
+tools/lib/api/fs/debugfs.c:	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
+[acme@zoo linux]$
 
-commit f736906a7669a77cf8cabdcbcf1dc8cb694e12ef upstream.
+Do we have to apply the same fix to that other case as well?
+Interestingly it does it on a different way, that by your description
+above would make it fail on 32-bit systems, no?
 
-The existing code calls server->ops->close() that is not
-right. This causes XFS test generic/310 to fail. Fix this
-by using server->ops->closedir() function.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/cifs/readdir.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -585,8 +585,8 @@ find_cifs_entry(const unsigned int xid,
- 		if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
- 			cfile->invalidHandle = true;
- 			spin_unlock(&cifs_file_list_lock);
--			if (server->ops->close)
--				server->ops->close(xid, tcon, &cfile->fid);
-+			if (server->ops->close_dir)
-+				server->ops->close_dir(xid, tcon, &cfile->fid);
- 		} else
- 			spin_unlock(&cifs_file_list_lock);
- 		if (cfile->srch_inf.ntwrk_buf_start) {
-
-
+- Arnaldo
+ 
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+> 
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Jiri Olsa <jolsa@kernel.org>
+> Cc: Cody P Schafer <dev@codyps.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>  tools/lib/api/fs/fs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+> index c1b49c3..4b2fa7b 100644
+> --- a/tools/lib/api/fs/fs.c
+> +++ b/tools/lib/api/fs/fs.c
+> @@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
+>  
+>  	if (statfs(fs, &st_fs) < 0)
+>  		return -ENOENT;
+> -	else if (st_fs.f_type != magic)
+> +	else if ((long)st_fs.f_type != magic)
+>  		return -ENOENT;
+>  
+>  	return 0;
+> -- 
+> 1.9.3
