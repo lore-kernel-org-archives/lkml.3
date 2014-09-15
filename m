@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaIOTAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:00:23 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44080 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaIOTAR (ORCPT
+	id S1754397AbaIOTGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:06:07 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:54184 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493AbaIOTGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:00:17 -0400
-Date: Mon, 15 Sep 2014 14:45:47 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Sergey Ryazanov <ryazanov.s.a@gmail.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
-        open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-Message-ID: <20140915184546.GB3891@tuxdriver.com>
-References: <1403091974.1984.102.camel@x220>
- <1409911856.7832.9.camel@x220>
- <CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
- <1409916824.7832.20.camel@x220>
- <CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
- <20140909182734.GJ29412@tuxdriver.com>
- <CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
- <541037D2.7060007@gmail.com>
- <CAHNKnsTtqz10c=vV-f10awLanYZzom3kJ1cO5xgTGs-t3O9NYg@mail.gmail.com>
- <20140911192146.GC22872@tuxdriver.com>
+	Mon, 15 Sep 2014 15:06:05 -0400
+Message-ID: <54173874.6080900@hp.com>
+Date: Mon, 15 Sep 2014 15:05:24 -0400
+From: Webb Scales <webbnh@hp.com>
+Organization: HP Architectural Simulator Devleopment Group
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140911192146.GC22872@tuxdriver.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Christoph Hellwig <hch@infradead.org>, Hans de Goede <hdegoede@redhat.com>
+CC: linux-usb <linux-usb@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scsi: fix regression that accidentally disabled block-based
+ tcq
+References: <540EC52C.3000804@redhat.com> <20140909152730.GA17882@infradead.org> <540FFBF4.9090001@redhat.com> <20140910154535.GA5102@infradead.org> <541172E9.8070309@redhat.com> <20140911161331.GA24488@infradead.org> <54134E50.6040805@redhat.com> <20140912230032.GA21143@infradead.org>
+In-Reply-To: <20140912230032.GA21143@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 03:21:46PM -0400, John W. Linville wrote:
-> On Wed, Sep 10, 2014 at 04:19:21PM +0400, Sergey Ryazanov wrote:
-> > 2014-09-10 15:36 GMT+04:00, Jiri Slaby <jirislaby@gmail.com>:
-> > > On 09/10/2014, 12:33 PM, Sergey Ryazanov wrote:
-> > >> 2014-09-09 22:27 GMT+04:00, John W. Linville <linville@tuxdriver.com>:
-> > >>> On Fri, Sep 05, 2014 at 04:02:10PM +0400, Sergey Ryazanov wrote:
-> > >>>> 2014-09-05 15:33 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
-> > >>>>> Hi Sergey,
-> > >>>>>
-> > >>>>> On Fri, 2014-09-05 at 15:12 +0400, Sergey Ryazanov wrote:
-> > >>>>>> 2014-09-05 14:10 GMT+04:00, Paul Bolle <pebolle@tiscali.nl>:
-> > >>>>>>> On Wed, 2014-06-18 at 13:46 +0200, Paul Bolle wrote:
-> > >>>>>>>> Having this conversation every rc1 is getting a bit silly. Could
-> > >>>>>>>> Jiri
-> > >>>>>>>> e.a. perhaps set some specific deadline for ATHEROS_AR231X to be
-> > >>>>>>>> submitted?
-> > >>>>>>>
-> > >>>>>>> I waited until rc3. Have you seen any activity on this front? If
-> > >>>>>>> not,
-> > >>>>>>> should I resend the patch that removes the code in mainline that
-> > >>>>>>> depends
-> > >>>>>>> on ATHEROS_AR231X (ie, AHB bus support)?
-> > >>>>>>>
-> > >>>>>> Recent activity always could be found in [1]. Now I finish another
-> > >>>>>> one
-> > >>>>>> round of cleanups and have a plan to fix several things (you can
-> > >>>>>> always find something that you really want to improve). But if you
-> > >>>>>> insist I could immediately switch to "send upstream" mode. And seems
-> > >>>>>> that this would be better approach.
-> > >>>>>>
-> > >>>>>> 1. https://dev.openwrt.org/log/trunk/target/linux/atheros
-> > >>>>>
-> > >>>>> And where can the related PULL requests or patch submissions be found?
-> > >>>>>
-> > >>>> I have not sent patches yet, since I thought that it would be easier
-> > >>>> to cleanup them in openwrt tree and then send them upstream.
-> > >>>
-> > >>> That excuse has worn a bit thin.  Perhaps Paul should repost his
-> > >>> removal and you can add a revert to the start of your patch series?
-> > >>>
-> > >> As for me, I do not like such flapping
-> > >
-> > > Agreed in case what you have is in a good enough shape. You (and also
-> > > others) can still clean up the code in upstream too. So, if it is
-> > > mergeable, send it for upstream inclusion now, otherwise I am all for
-> > > John to apply the Paul's patch.
-> > 
-> > Two days is the last deadline :)
-> > 
-> > > The unused code has been a way too long
-> > > in the tree now.
-> > 
-> > Code actively used in owrt firmware and its forks.
-> 
-> Is this code coming or not?  When can I expect to see it posted?
+On 9/12/14 7:00 PM, Christoph Hellwig wrote:
+> Please try the fix below, looks like the commit broke TCQ for all drivers
+> using block-level tagging.
+>
+> ---
+>  From 865a19b760d2786fe37d3b5c151a4ecea4c0e95e Mon Sep 17 00:00:00 2001
+> From: Christoph Hellwig <hch@lst.de>
+> Date: Fri, 12 Sep 2014 16:00:19 -0700
+> Subject: scsi: fix regression that accidentally disabled block-based tcq
+>
+> The scsi blk-mq support accidentally flipped a conditional, which lead to
+> never enabling block based tcq when using the legacy request path.
+>
+> Fixes: d285203cf647d7c9 scsi: add support for a blk-mq based I/O path.
+> Reported-by: Hans de Goede <hdegoede@redhat.com>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+>   include/scsi/scsi_tcq.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/include/scsi/scsi_tcq.h b/include/scsi/scsi_tcq.h
+> index cdcc90b..e645835 100644
+> --- a/include/scsi/scsi_tcq.h
+> +++ b/include/scsi/scsi_tcq.h
+> @@ -68,7 +68,7 @@ static inline void scsi_activate_tcq(struct scsi_device *sdev, int depth)
+>   		return;
+>   
+>   	if (!shost_use_blk_mq(sdev->host) &&
+> -	    blk_queue_tagged(sdev->request_queue))
+> +	    !blk_queue_tagged(sdev->request_queue))
+>   		blk_queue_init_tags(sdev->request_queue, depth,
+>   				    sdev->host->bqt);
+>   
 
-FYI -- Sergey posted a series to linux-mips on 14 September 2014 that
-touches the symbol in question.  For whatever reason, it is posted
-there as RFC.
 
-Does this satisfy the interested parties??
+Reviewed-by: Webb Scales <webbnh@hp.com>
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
