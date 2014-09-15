@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176AbaIOWh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:37:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51143 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193AbaIOWTI (ORCPT
+	id S1759193AbaIOWia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:38:30 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:35911 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859AbaIOWi0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:08 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 183/187] powerpc/thp: Invalidate with vpn in loop
-Date: Mon, 15 Sep 2014 15:09:53 -0700
-Message-Id: <1410818997-9432-184-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:38:26 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Andreas Dilger <adilger@dilger.ca>, Milosz Tanski <milosz@adfin.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Christoph Hellwig" <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: RE: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+Thread-Topic: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache
+ only)
+Thread-Index: AQHP0SKGxsA+DTFen0Wh6Y6YnaKzXpwCtzGAgAANsvA=
+Date: Mon, 15 Sep 2014 22:36:46 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C81D56@G9W0745.americas.hpqcorp.net>
+References: <cover.1410810247.git.milosz@adfin.com>
+ <8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
+In-Reply-To: <8EC2A7F3-0E25-4054-9863-4488B8ED5C8D@dilger.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Andreas Dilger
+> Sent: Monday, 15 September, 2014 4:34 PM
+> To: Milosz Tanski
+> Cc: linux-kernel@vger.kernel.org; Christoph Hellwig; linux-
+> fsdevel@vger.kernel.org; linux-aio@kvack.org; Mel Gorman; Volker Lendecke;
+> Tejun Heo; Jeff Moyer
+> Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+> 
+> On Sep 15, 2014, at 2:20 PM, Milosz Tanski <milosz@adfin.com> wrote:
+> 
+> > This patcheset introduces an ability to perform a non-blocking read
+> > from regular files in buffered IO mode. This works by only for those
+> > filesystems that have data in the page cache.
+> >
+> > It does this by introducing new syscalls new syscalls readv2/writev2
+> > and preadv2/pwritev2. These new syscalls behave like the network sendmsg,
+> > recvmsg syscalls that accept an extra flag argument (O_NONBLOCK).
+> 
+> It's too bad that we are introducing yet another new read/write
+> syscall pair that only allow IO into discontiguous memory regions,
+> but do not allow a single call to access discontiguous file regions
+> (i.e. specify a separate file offset for each iov).
+> 
+> Adding syscalls similar to preadv/pwritev() that could take a iovec
+> that specified the file offset+length in addition to the memory address
+> would allow efficient scatter-gather IO in a single syscall.  While
+> that is less critical for local filesystems with small syscall latency,
+> it is more important for network filesystems, or in the case of
+> NVRAM-backed filesystems.
+> 
+> Cheers, Andreas
 
-commit 969b7b208f7408712a3526856e4ae60ad13f6928 upstream.
+That sounds like the proposed WRITE SCATTERED/READ GATHERED 
+commands for SCSI (where are related to, but not necessarily
+tied to, atomic writes).  We discussed them a bit at 
+LSF-MM 2013 - see http://lwn.net/Articles/548116/.
 
-As per ISA, for 4k base page size we compare 14..65 bits of VA specified
-with the entry_VA in tlb. That implies we need to make sure we do a
-tlbie with all the possible 4k va we used to access the 16MB hugepage.
-With 64k base page size we compare 14..57 bits of VA. Hence we cannot
-ignore the lower 24 bits of va while tlbie .We also cannot tlb
-invalidate a 16MB entry with just one tlbie instruction because
-we don't track which va was used to instantiate the tlb entry.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/mm/hash_native_64.c | 23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
+Rob Elliott    HP Server Storage
 
-diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
-index 44886c2..838de8e 100644
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -423,7 +423,7 @@ static void native_hugepage_invalidate(unsigned long vsid,
- 				       unsigned char *hpte_slot_array,
- 				       int psize, int ssize)
- {
--	int i, lock_tlbie;
-+	int i;
- 	struct hash_pte *hptep;
- 	int actual_psize = MMU_PAGE_16M;
- 	unsigned int max_hpte_count, valid;
-@@ -462,22 +462,13 @@ static void native_hugepage_invalidate(unsigned long vsid,
- 		else
- 			/* Invalidate the hpte. NOTE: this also unlocks it */
- 			hptep->v = 0;
-+		/*
-+		 * We need to do tlb invalidate for all the address, tlbie
-+		 * instruction compares entry_VA in tlb with the VA specified
-+		 * here
-+		 */
-+		tlbie(vpn, psize, actual_psize, ssize, 0);
- 	}
--	/*
--	 * Since this is a hugepage, we just need a single tlbie.
--	 * use the last vpn.
--	 */
--	lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
--	if (lock_tlbie)
--		raw_spin_lock(&native_tlbie_lock);
--
--	asm volatile("ptesync":::"memory");
--	__tlbie(vpn, psize, actual_psize, ssize);
--	asm volatile("eieio; tlbsync; ptesync":::"memory");
--
--	if (lock_tlbie)
--		raw_spin_unlock(&native_tlbie_lock);
--
- 	local_irq_restore(flags);
- }
- 
--- 
-1.9.1
+
+
+
 
