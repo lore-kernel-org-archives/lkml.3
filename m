@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112AbaIOVry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:47:54 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35095 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805AbaIOVru (ORCPT
+	id S932161AbaIOVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:47:59 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:34932 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117AbaIOVry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:47:50 -0400
-Message-ID: <54175E87.2070509@linaro.org>
-Date: Mon, 15 Sep 2014 22:47:51 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 15 Sep 2014 17:47:54 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v8 6/9] arm: netx: Migrate DEBUG_LL macros to shared directory
-References: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-7-git-send-email-daniel.thompson@linaro.org> <1410798874.31130.57.camel@x220>
-In-Reply-To: <1410798874.31130.57.camel@x220>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
+References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <063D6719AE5E284EB5DD2968C1650D6D17491F2B@AcuExch.aculab.com>
+ <5416A65D.6010500@pengutronix.de> <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Mon, 15 Sep 2014 23:47:33 +0200
+Message-ID: <CAFo99gb9Rqnc7HrPbN7UVyQwPv_a=fxAbe+FTtm+9GgsjG7StA@mail.gmail.com>
+Subject: Re: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c: Cleaning up
+ missing null-terminate in conjunction with strncpy
+To: David Laight <David.Laight@aculab.com>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/14 17:34, Paul Bolle wrote:
-> On Tue, 2014-08-19 at 15:48 +0100, Daniel Thompson wrote:
->> As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
->> which default to UART1 but allow a user to configure UART2 or UART3.
->> We also introduce symbolic names for the registers and flags.
+2014-09-15 10:47 GMT+02:00 David Laight <David.Laight@aculab.com>:
+> From: Marc Kleine-Budde [
+>> On 09/15/2014 10:28 AM, David Laight wrote:
+>> > From: Rickard Strandqvist
+>> > ...
+>> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>> > ...
+>> >> diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+>> >> b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+>> >> index 644e6ab..d4fe8ac 100644
+>> >> --- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+>> >> +++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+>> >> @@ -830,7 +830,7 @@ static void peak_usb_disconnect(struct usb_interface *intf)
+>> >>            char name[IFNAMSIZ];
+>> >>
+>> >>            dev->state &= ~PCAN_USB_STATE_CONNECTED;
+>> >> -          strncpy(name, netdev->name, IFNAMSIZ);
+>> >> +          strlcpy(name, netdev->name, IFNAMSIZ);
+>> >>
+>> >>            unregister_netdev(netdev);
+>> >>            free_candev(netdev);
+>> >
+>> > Or:
+>> >     char name[sizeof netdev->name];
+>> >     memcpy(name, netdev->name, sizeof netdev->name);
 >>
->> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
->> Cc: linux-arm-kernel@lists.infradead.org
-> 
-> This patch landed in today's linux-next, as 880fa9b6fd73 ("ARM: 8144/1:
-> netx: Migrate DEBUG_LL macros to shared directory").
-> 
->> [...]
->> --- a/arch/arm/Kconfig.debug
->> +++ b/arch/arm/Kconfig.debug
->> @@ -447,6 +447,14 @@ choice
->>  		  Say Y here if you want kernel low-level debugging support
->>  		  on Vybrid based platforms.
->>  
->> +	config DEBUG_NETX_UART
->> +		bool "Kernel low-level debugging messages via NetX UART"
->> +		depends on ARCH_NETX
->> +		select DEBUG_UART_NETX
-> 
-> There's no Kconfig symbol DEBUG_UART_NETX in next-20140915. So in
-> linux-next this is currently a nop. Is this symbol queued somewhere?
+>> I would be "sizeof(foo)" in kernel coding style,
+> But not in mine :-)
+> sizeof is an operator, not a function, it's argument can be (type).
+>
+>> but let's have a look at the original code:
+>>
+>>                 struct net_device *netdev = dev->netdev;
+>>                 char name[IFNAMSIZ];
+>>
+>>                 dev->state &= ~PCAN_USB_STATE_CONNECTED;
+>>                 strncpy(name, netdev->name, IFNAMSIZ);
+>>
+>>                 unregister_netdev(netdev);
+>>                 free_candev(netdev);
+>>
+>>                 kfree(dev->cmd_buf);
+>>                 dev->next_siblings = NULL;
+>>                 if (dev->adapter->dev_free)
+>>                         dev->adapter->dev_free(dev);
+>>
+>>                 dev_info(&intf->dev, "%s removed\n", name);
+>>
+>> I think it's save to use:
+>>
+>>     dev_info(&intf->dev, "%s removed\n", netdev_name(dev->netdev));
+>>
+>> instead of doing the str?cpy() in the first place. But why not use:
+>>
+>>     netdev_info(dev->netdev, "removed\n");
+>>
+>> Is the USB device information lost when using netdev_info()?
+>
+> My guess is it avoids a 'use after free' - but I'm not going to
+> dig that far.
+>
+> Another issue with blindly replacing strncpy() with strlcpy()
+> (which doesn't affect the above) is when copying status to userspace.
+>
+>         David
 
-No. The symbol isn't queued anywhere.
 
-DEBUG_UART_NETX is a config value that existed transiently when I wrote
-the patch and I didn't clean it up properly. I suspect its visual
-similarity to DEBUG_NETX_UART means it didn't jump out when I self reviewed.
+Hi all
 
-Thanks for raising this. I will share a patch to remove this.
+I have been more and more careful so I did not introduce the type of
+error that can arise by blindly replacing strncpy to strlcpy.
+But this is one of the most apparent where there will not be a problem.
+
+I liked the variant:
+char name[sizeof(netdev->name)];
+
+But dislike and do not understand what the point would be with memcpy variant.
 
 
+Kind regards
+Rickard Strandqvist
