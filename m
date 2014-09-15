@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607AbaIOWUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:20:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51370 "EHLO
+	id S1758633AbaIOWUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:20:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51383 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216AbaIOWUn (ORCPT
+	with ESMTP id S1755039AbaIOWUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:43 -0400
+	Mon, 15 Sep 2014 18:20:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Kees van Veen <kees.vanveen@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 036/187] sunrpc: replace sunrpc_net->gssd_running flag with a more reliable check
-Date: Mon, 15 Sep 2014 15:07:26 -0700
-Message-Id: <1410818997-9432-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 047/187] ALSA: usb-audio: fix BOSS ME-25 MIDI regression
+Date: Mon, 15 Sep 2014 15:07:37 -0700
+Message-Id: <1410818997-9432-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,148 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 89f842435c630f8426f414e6030bc2ffea0d6f81 upstream.
+commit 53da5ebfef66ea6e478ad9c6add3781472b79475 upstream.
 
-Now that we have a more reliable method to tell if gssd is running, we
-can replace the sn->gssd_running flag with a function that will query to
-see if it's up and running.
+The BOSS ME-25 turns out not to have any useful descriptors in its MIDI
+interface, so its needs a quirk entry after all.
 
-There's also no need to attempt an upcall that we know will fail, so
-just return -EACCES if gssd isn't running. Finally, fix the warn_gss()
-message not to claim that that the upcall timed out since we don't
-necesarily perform one now when gssd isn't running, and remove the
-extraneous newline from the message.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[ kamal: 3.13-stable prereq for 6aa23d76 "nfs: check if gssd is running
-  before attempting to use krb5i auth in SETCLIENTID call" ]
-Cc: Stefan Bader <stefan.bader@canonical.com>
+Reported-and-tested-by: Kees van Veen <kees.vanveen@gmail.com>
+Fixes: 8e5ced83dd1c ("ALSA: usb-audio: remove superfluous Roland quirks")
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Tim Gardner <tim.gardner@canonical.com>
+Cc: Kees van Veen <kees.vanveen@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sunrpc/rpc_pipe_fs.h |  2 ++
- net/sunrpc/auth_gss/auth_gss.c     | 17 +++++++----------
- net/sunrpc/netns.h                 |  2 --
- net/sunrpc/rpc_pipe.c              | 14 ++++++++++----
- 4 files changed, 19 insertions(+), 16 deletions(-)
+ sound/usb/quirks-table.h | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 85f1342..7f490be 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -131,5 +131,7 @@ extern int rpc_unlink(struct dentry *);
- extern int register_rpc_pipefs(void);
- extern void unregister_rpc_pipefs(void);
- 
-+extern bool gssd_running(struct net *net);
-+
- #endif
- #endif
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index 1eebf22..154c504 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -541,8 +541,7 @@ static void warn_gssd(void)
- 	unsigned long now = jiffies;
- 
- 	if (time_after(now, ratelimit)) {
--		printk(KERN_WARNING "RPC: AUTH_GSS upcall timed out.\n"
--				"Please check user daemon is running.\n");
-+		pr_warn("RPC: AUTH_GSS upcall failed. Please check user daemon is running.\n");
- 		ratelimit = now + 15*HZ;
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index f5f0595..0a81a51 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1582,6 +1582,35 @@ YAMAHA_DEVICE(0x7010, "UB99"),
  	}
- }
-@@ -605,7 +604,6 @@ gss_create_upcall(struct gss_auth *gss_auth, struct gss_cred *gss_cred)
- 	struct rpc_pipe *pipe;
- 	struct rpc_cred *cred = &gss_cred->gc_base;
- 	struct gss_upcall_msg *gss_msg;
--	unsigned long timeout;
- 	DEFINE_WAIT(wait);
- 	int err;
- 
-@@ -613,17 +611,16 @@ gss_create_upcall(struct gss_auth *gss_auth, struct gss_cred *gss_cred)
- 		__func__, from_kuid(&init_user_ns, cred->cr_uid));
- retry:
- 	err = 0;
--	/* Default timeout is 15s unless we know that gssd is not running */
--	timeout = 15 * HZ;
--	if (!sn->gssd_running)
--		timeout = HZ >> 2;
-+	/* if gssd is down, just skip upcalling altogether */
-+	if (!gssd_running(net)) {
-+		warn_gssd();
-+		return -EACCES;
-+	}
- 	gss_msg = gss_setup_upcall(gss_auth, cred);
- 	if (PTR_ERR(gss_msg) == -EAGAIN) {
- 		err = wait_event_interruptible_timeout(pipe_version_waitqueue,
--				sn->pipe_version >= 0, timeout);
-+				sn->pipe_version >= 0, 15 * HZ);
- 		if (sn->pipe_version < 0) {
--			if (err == 0)
--				sn->gssd_running = 0;
- 			warn_gssd();
- 			err = -EACCES;
- 		}
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index c804ed4..df58268 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -32,8 +32,6 @@ struct sunrpc_net {
- 	int pipe_version;
- 	atomic_t pipe_users;
- 	struct proc_dir_entry *use_gssp_proc;
--
--	unsigned int gssd_running;
- };
- 
- extern int sunrpc_net_id;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index c23458b..5cd7ad1 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -216,14 +216,11 @@ rpc_destroy_inode(struct inode *inode)
- static int
- rpc_pipe_open(struct inode *inode, struct file *filp)
+ },
  {
--	struct net *net = inode->i_sb->s_fs_info;
--	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	struct rpc_pipe *pipe;
- 	int first_open;
- 	int res = -ENXIO;
- 
- 	mutex_lock(&inode->i_mutex);
--	sn->gssd_running = 1;
- 	pipe = RPC_I(inode)->pipe;
- 	if (pipe == NULL)
- 		goto out;
-@@ -1222,7 +1219,6 @@ int rpc_pipefs_init_net(struct net *net)
- 		return PTR_ERR(sn->gssd_dummy);
- 
- 	mutex_init(&sn->pipefs_sb_lock);
--	sn->gssd_running = 1;
- 	sn->pipe_version = -1;
- 	return 0;
- }
-@@ -1376,6 +1372,16 @@ err_depopulate:
- 	return err;
- }
- 
-+bool
-+gssd_running(struct net *net)
++	/* BOSS ME-25 */
++	USB_DEVICE(0x0582, 0x0113),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 0,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_MIDI_FIXED_ENDPOINT,
++				.data = & (const struct snd_usb_midi_endpoint_info) {
++					.out_cables = 0x0001,
++					.in_cables  = 0x0001
++				}
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
 +{
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
-+	struct rpc_pipe *pipe = sn->gssd_dummy;
-+
-+	return pipe->nreaders || pipe->nwriters;
-+}
-+EXPORT_SYMBOL_GPL(gssd_running);
-+
- static struct dentry *
- rpc_mount(struct file_system_type *fs_type,
- 		int flags, const char *dev_name, void *data)
+ 	/* only 44.1 kHz works at the moment */
+ 	USB_DEVICE(0x0582, 0x0120),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
 -- 
 1.9.1
 
