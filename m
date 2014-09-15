@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957AbaIOWST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:18:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51096 "EHLO
+	id S933006AbaIOWSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:18:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51125 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932904AbaIOWSK (ORCPT
+	with ESMTP id S932954AbaIOWS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:18:10 -0400
+	Mon, 15 Sep 2014 18:18:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 028/187] sparc64: Add membar to Niagara2 memcpy code.
-Date: Mon, 15 Sep 2014 15:07:18 -0700
-Message-Id: <1410818997-9432-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 041/187] x86, espfix: Fix broken header guard
+Date: Mon, 15 Sep 2014 15:07:31 -0700
+Message-Id: <1410818997-9432-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,33 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-[ Upstream commit 5aa4ecfd0ddb1e6dcd1c886e6c49677550f581aa ]
+commit 20b68535cd27183ebd3651ff313afb2b97dac941 upstream.
 
-This is the prevent previous stores from overlapping the block stores
-done by the memcpy loop.
+Header guard is #ifndef, not #ifdef...
 
-Based upon a glibc patch by Jose E. Marchesi
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/lib/NG2memcpy.S | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/include/asm/espfix.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/lib/NG2memcpy.S b/arch/sparc/lib/NG2memcpy.S
-index 2c20ad6..30eee6e 100644
---- a/arch/sparc/lib/NG2memcpy.S
-+++ b/arch/sparc/lib/NG2memcpy.S
-@@ -236,6 +236,7 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len */
- 	 */
- 	VISEntryHalf
+diff --git a/arch/x86/include/asm/espfix.h b/arch/x86/include/asm/espfix.h
+index 729051c..99efebb 100644
+--- a/arch/x86/include/asm/espfix.h
++++ b/arch/x86/include/asm/espfix.h
+@@ -1,4 +1,4 @@
+-#ifdef _ASM_X86_ESPFIX_H
++#ifndef _ASM_X86_ESPFIX_H
+ #define _ASM_X86_ESPFIX_H
  
-+	membar		#Sync
- 	alignaddr	%o1, %g0, %g0
- 
- 	add		%o1, (64 - 1), %o4
+ #ifdef CONFIG_X86_64
 -- 
 1.9.1
 
