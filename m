@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993AbaIOThj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1755979AbaIOThh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:37:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755793AbaIOThQ (ORCPT
+	with ESMTP id S1755789AbaIOThQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 072/114] ring-buffer: Up rb_iter_peek() loop count to 3
-Date: Mon, 15 Sep 2014 12:26:12 -0700
-Message-Id: <20140915192643.695147330@linuxfoundation.org>
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCH 3.14 063/114] bq2415x_charger: Fix Atomic Sleep Bug
+Date: Mon, 15 Sep 2014 12:26:03 -0700
+Message-Id: <20140915192643.412903771@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,100 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Sebastian Reichel <sre@kernel.org>
 
-commit 021de3d904b88b1771a3a2cfc5b75023c391e646 upstream.
+commit 3c0185046c0ee49a6e55c714612ef3bcd5385df3 upstream.
 
-After writting a test to try to trigger the bug that caused the
-ring buffer iterator to become corrupted, I hit another bug:
+Move sysfs_notify and i2c_transfer calls from bq2415x_notifier_call
+to bq2415x_timer_work to avoid sleeping in atomic context.
 
- WARNING: CPU: 1 PID: 5281 at kernel/trace/ring_buffer.c:3766 rb_iter_peek+0x113/0x238()
- Modules linked in: ipt_MASQUERADE sunrpc [...]
- CPU: 1 PID: 5281 Comm: grep Tainted: G        W     3.16.0-rc3-test+ #143
- Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-  0000000000000000 ffffffff81809a80 ffffffff81503fb0 0000000000000000
-  ffffffff81040ca1 ffff8800796d6010 ffffffff810c138d ffff8800796d6010
-  ffff880077438c80 ffff8800796d6010 ffff88007abbe600 0000000000000003
- Call Trace:
-  [<ffffffff81503fb0>] ? dump_stack+0x4a/0x75
-  [<ffffffff81040ca1>] ? warn_slowpath_common+0x7e/0x97
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c138d>] ? rb_iter_peek+0x113/0x238
-  [<ffffffff810c14df>] ? ring_buffer_iter_peek+0x2d/0x5c
-  [<ffffffff810c6f73>] ? tracing_iter_reset+0x6e/0x96
-  [<ffffffff810c74a3>] ? s_start+0xd7/0x17b
-  [<ffffffff8112b13e>] ? kmem_cache_alloc_trace+0xda/0xea
-  [<ffffffff8114cf94>] ? seq_read+0x148/0x361
-  [<ffffffff81132d98>] ? vfs_read+0x93/0xf1
-  [<ffffffff81132f1b>] ? SyS_read+0x60/0x8e
-  [<ffffffff8150bf9f>] ? tracesys+0xdd/0xe2
+This fixes the following bug:
 
-Debugging this bug, which triggers when the rb_iter_peek() loops too
-many times (more than 2 times), I discovered there's a case that can
-cause that function to legitimately loop 3 times!
+[ 7.667449] Workqueue: events power_supply_changed_work
+[ 7.673034] [<c0015c28>] (unwind_backtrace+0x0/0xe0) from [<c0011e1c>] (show_stack+0x10/0x14)
+[ 7.682098] [<c0011e1c>] (show_stack+0x10/0x14) from [<c052cdd0>] (dump_stack+0x78/0xac)
+[ 7.690704] [<c052cdd0>] (dump_stack+0x78/0xac) from [<c052a044>] (__schedule_bug+0x48/0x60)
+[ 7.699645] [<c052a044>] (__schedule_bug+0x48/0x60) from [<c053071c>] (__schedule+0x74/0x638)
+[ 7.708618] [<c053071c>] (__schedule+0x74/0x638) from [<c05301fc>] (schedule_timeout+0x1dc/0x24c)
+[ 7.718017] [<c05301fc>] (schedule_timeout+0x1dc/0x24c) from [<c05316ec>] (wait_for_common+0x138/0x17c)
+[ 7.727966] [<c05316ec>] (wait_for_common+0x138/0x17c) from [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0)
+[ 7.737640] [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0) from [<c035d928>] (__i2c_transfer+0x40/0x74)
+[ 7.747039] [<c035d928>] (__i2c_transfer+0x40/0x74) from [<c035e22c>] (i2c_transfer+0x6c/0x90)
+[ 7.756195] [<c035e22c>] (i2c_transfer+0x6c/0x90) from [<c037ad24>] (bq2415x_i2c_write+0x48/0x78)
+[ 7.765563] [<c037ad24>] (bq2415x_i2c_write+0x48/0x78) from [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50)
+[ 7.776824] [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50) from [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c)
+[ 7.788085] [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c) from [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4)
+[ 7.798309] [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4) from [<c005f228>] (notifier_call_chain+0x38/0x68)
+[ 7.808715] [<c005f228>] (notifier_call_chain+0x38/0x68) from [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c)
+[ 7.819732] [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c) from [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18)
+[ 7.831420] [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18) from [<c0378078>] (power_supply_changed_work+0x6c/0xb8)
+[ 7.842864] [<c0378078>] (power_supply_changed_work+0x6c/0xb8) from [<c00556c0>] (process_one_work+0x248/0x440)
+[ 7.853546] [<c00556c0>] (process_one_work+0x248/0x440) from [<c0055d6c>] (worker_thread+0x208/0x350)
+[ 7.863372] [<c0055d6c>] (worker_thread+0x208/0x350) from [<c005b0ac>] (kthread+0xc8/0xdc)
+[ 7.872131] [<c005b0ac>] (kthread+0xc8/0xdc) from [<c000e138>] (ret_from_fork+0x14/0x3c)
 
-rb_iter_peek() is different than rb_buffer_peek() as the rb_buffer_peek()
-only deals with the reader page (it's for consuming reads). The
-rb_iter_peek() is for traversing the buffer without consuming it, and as
-such, it can loop for one more reason. That is, if we hit the end of
-the reader page or any page, it will go to the next page and try again.
-
-That is, we have this:
-
- 1. iter->head > iter->head_page->page->commit
-    (rb_inc_iter() which moves the iter to the next page)
-    try again
-
- 2. event = rb_iter_head_event()
-    event->type_len == RINGBUF_TYPE_TIME_EXTEND
-    rb_advance_iter()
-    try again
-
- 3. read the event.
-
-But we never get to 3, because the count is greater than 2 and we
-cause the WARNING and return NULL.
-
-Up the counter to 3.
-
-Fixes: 69d1b839f7ee "ring-buffer: Bind time extend and data events together"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fixes: 32260308b4ca ("bq2415x_charger: Use power_supply notifier for automode")
+Signed-off-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/power/bq2415x_charger.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1981,7 +1981,7 @@ rb_add_time_stamp(struct ring_buffer_eve
+--- a/drivers/power/bq2415x_charger.c
++++ b/drivers/power/bq2415x_charger.c
+@@ -840,8 +840,7 @@ static int bq2415x_notifier_call(struct
+ 	if (bq->automode < 1)
+ 		return NOTIFY_OK;
  
- /**
-  * rb_update_event - update event type and data
-- * @event: the even to update
-+ * @event: the event to update
-  * @type: the type of event
-  * @length: the size of the event field in the ring buffer
-  *
-@@ -3756,12 +3756,14 @@ rb_iter_peek(struct ring_buffer_iter *it
- 		return NULL;
+-	sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
+-	bq2415x_set_mode(bq, bq->reported_mode);
++	schedule_delayed_work(&bq->work, 0);
  
- 	/*
--	 * We repeat when a time extend is encountered.
--	 * Since the time extend is always attached to a data event,
--	 * we should never loop more than once.
--	 * (We never hit the following condition more than twice).
-+	 * We repeat when a time extend is encountered or we hit
-+	 * the end of the page. Since the time extend is always attached
-+	 * to a data event, we should never loop more than three times.
-+	 * Once for going to next page, once on time extend, and
-+	 * finally once to get the event.
-+	 * (We never hit the following condition more than thrice).
- 	 */
--	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 2))
-+	if (RB_WARN_ON(cpu_buffer, ++nr_loops > 3))
- 		return NULL;
+ 	return NOTIFY_OK;
+ }
+@@ -892,6 +891,11 @@ static void bq2415x_timer_work(struct wo
+ 	int error;
+ 	int boost;
  
- 	if (rb_per_cpu_empty(cpu_buffer))
++	if (bq->automode > 0 && (bq->reported_mode != bq->mode)) {
++		sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
++		bq2415x_set_mode(bq, bq->reported_mode);
++	}
++
+ 	if (!bq->autotimer)
+ 		return;
+ 
 
 
