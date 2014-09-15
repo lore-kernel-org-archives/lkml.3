@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbaIOUZE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:25:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1757609AbaIOUZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:25:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742AbaIOThK (ORCPT
+	with ESMTP id S1755738AbaIOThK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Scott Jiang <scott.jiang.linux@gmail.com>,
+        Praveen Diwakar <praveen.diwakar@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 054/114] ASoC: blackfin: use samples to set silence
-Date: Mon, 15 Sep 2014 12:25:54 -0700
-Message-Id: <20140915192643.130445243@linuxfoundation.org>
+Subject: [PATCH 3.14 053/114] ASoC: wm_adsp: Add missing MODULE_LICENSE
+Date: Mon, 15 Sep 2014 12:25:53 -0700
+Message-Id: <20140915192643.099360667@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,46 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Jiang <scott.jiang.linux@gmail.com>
+From: Praveen Diwakar <praveen.diwakar@intel.com>
 
-commit 30443408fd7201fd1911b09daccf92fae3cc700d upstream.
+commit 0a37c6efec4a2fdc2563c5a8faa472b814deee80 upstream.
 
-The third parameter for snd_pcm_format_set_silence needs the number
-of samples instead of sample bytes.
+Since MODULE_LICENSE is missing the module load fails,
+so add this for module.
 
-Signed-off-by: Scott Jiang <scott.jiang.linux@gmail.com>
+Signed-off-by: Praveen Diwakar <praveen.diwakar@intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Reviewed-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/blackfin/bf5xx-i2s-pcm.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ sound/soc/codecs/wm_adsp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/blackfin/bf5xx-i2s-pcm.c
-+++ b/sound/soc/blackfin/bf5xx-i2s-pcm.c
-@@ -290,19 +290,19 @@ static int bf5xx_pcm_silence(struct snd_
- 	unsigned int sample_size = runtime->sample_bits / 8;
- 	void *buf = runtime->dma_area;
- 	struct bf5xx_i2s_pcm_data *dma_data;
--	unsigned int offset, size;
-+	unsigned int offset, samples;
- 
- 	dma_data = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
- 
- 	if (dma_data->tdm_mode) {
- 		offset = pos * 8 * sample_size;
--		size = count * 8 * sample_size;
-+		samples = count * 8;
- 	} else {
- 		offset = frames_to_bytes(runtime, pos);
--		size = frames_to_bytes(runtime, count);
-+		samples = count * runtime->channels;
- 	}
- 
--	snd_pcm_format_set_silence(runtime->format, buf + offset, size);
-+	snd_pcm_format_set_silence(runtime->format, buf + offset, samples);
- 
+--- a/sound/soc/codecs/wm_adsp.c
++++ b/sound/soc/codecs/wm_adsp.c
+@@ -1745,3 +1745,5 @@ int wm_adsp2_init(struct wm_adsp *adsp,
  	return 0;
  }
+ EXPORT_SYMBOL_GPL(wm_adsp2_init);
++
++MODULE_LICENSE("GPL v2");
 
 
