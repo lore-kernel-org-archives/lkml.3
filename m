@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860AbaIOUxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:53:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54593 "EHLO
+	id S932254AbaIOUyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:54:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755058AbaIOT1L (ORCPT
+	with ESMTP id S1754745AbaIOT1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:11 -0400
+	Mon, 15 Sep 2014 15:27:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 3.16 106/158] xen/events/fifo: reset control block and local HEADs on resume
-Date: Mon, 15 Sep 2014 12:25:45 -0700
-Message-Id: <20140915192546.059792455@linuxfoundation.org>
+        Jiri Kosina <jkosina@suse.cz>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 102/158] ACPI / cpuidle: fix deadlock between cpuidle_lock and cpu_hotplug.lock
+Date: Mon, 15 Sep 2014 12:25:41 -0700
+Message-Id: <20140915192545.944266792@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,129 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit c12784c3d14a2110468ec4d1383f60cfd2665576 upstream.
+commit 6726655dfdd2dc60c035c690d9f10cb69d7ea075 upstream.
 
-When using the FIFO-based event channel ABI, if the control block or
-the local HEADs are not reset after resuming the guest may see stale
-HEAD values and will fail to traverse the FIFO correctly.
+There is a following AB-BA dependency between cpu_hotplug.lock and
+cpuidle_lock:
 
-This may prevent one or more VCPUs from receiving any events following
-a resume.
+1) cpu_hotplug.lock -> cpuidle_lock
+enable_nonboot_cpus()
+ _cpu_up()
+  cpu_hotplug_begin()
+   LOCK(cpu_hotplug.lock)
+ cpu_notify()
+  ...
+  acpi_processor_hotplug()
+   cpuidle_pause_and_lock()
+    LOCK(cpuidle_lock)
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+2) cpuidle_lock -> cpu_hotplug.lock
+acpi_os_execute_deferred() workqueue
+ ...
+ acpi_processor_cst_has_changed()
+  cpuidle_pause_and_lock()
+   LOCK(cpuidle_lock)
+  get_online_cpus()
+   LOCK(cpu_hotplug.lock)
+
+Fix this by reversing the order acpi_processor_cst_has_changed() does
+thigs -- let it first execute the protection against CPU hotplug by
+calling get_online_cpus() and obtain the cpuidle lock only after that (and
+perform the symmentric change when allowing CPUs hotplug again and
+dropping cpuidle lock).
+
+Spotted by lockdep.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events/events_fifo.c |   48 ++++++++++++++++++++++-----------------
- 1 file changed, 28 insertions(+), 20 deletions(-)
+ drivers/acpi/processor_idle.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/xen/events/events_fifo.c
-+++ b/drivers/xen/events/events_fifo.c
-@@ -99,6 +99,25 @@ static unsigned evtchn_fifo_nr_channels(
- 	return event_array_pages * EVENT_WORDS_PER_PAGE;
- }
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struc
  
-+static int init_control_block(int cpu,
-+                              struct evtchn_fifo_control_block *control_block)
-+{
-+	struct evtchn_fifo_queue *q = &per_cpu(cpu_queue, cpu);
-+	struct evtchn_init_control init_control;
-+	unsigned int i;
-+
-+	/* Reset the control block and the local HEADs. */
-+	clear_page(control_block);
-+	for (i = 0; i < EVTCHN_FIFO_MAX_QUEUES; i++)
-+		q->head[i] = 0;
-+
-+	init_control.control_gfn = virt_to_mfn(control_block);
-+	init_control.offset      = 0;
-+	init_control.vcpu        = cpu;
-+
-+	return HYPERVISOR_event_channel_op(EVTCHNOP_init_control, &init_control);
-+}
-+
- static void free_unused_array_pages(void)
- {
- 	unsigned i;
-@@ -323,7 +342,6 @@ static void evtchn_fifo_resume(void)
+ 	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
  
- 	for_each_possible_cpu(cpu) {
- 		void *control_block = per_cpu(cpu_control_block, cpu);
--		struct evtchn_init_control init_control;
- 		int ret;
+-		cpuidle_pause_and_lock();
+ 		/* Protect against cpu-hotplug */
+ 		get_online_cpus();
++		cpuidle_pause_and_lock();
  
- 		if (!control_block)
-@@ -340,12 +358,7 @@ static void evtchn_fifo_resume(void)
- 			continue;
+ 		/* Disable all cpuidle devices */
+ 		for_each_online_cpu(cpu) {
+@@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struc
+ 				cpuidle_enable_device(dev);
+ 			}
  		}
- 
--		init_control.control_gfn = virt_to_mfn(control_block);
--		init_control.offset = 0;
--		init_control.vcpu = cpu;
--
--		ret = HYPERVISOR_event_channel_op(EVTCHNOP_init_control,
--						  &init_control);
-+		ret = init_control_block(cpu, control_block);
- 		if (ret < 0)
- 			BUG();
+-		put_online_cpus();
+ 		cpuidle_resume_and_unlock();
++		put_online_cpus();
  	}
-@@ -373,30 +386,25 @@ static const struct evtchn_ops evtchn_op
- 	.resume            = evtchn_fifo_resume,
- };
- 
--static int evtchn_fifo_init_control_block(unsigned cpu)
-+static int evtchn_fifo_alloc_control_block(unsigned cpu)
- {
--	struct page *control_block = NULL;
--	struct evtchn_init_control init_control;
-+	void *control_block = NULL;
- 	int ret = -ENOMEM;
- 
--	control_block = alloc_page(GFP_KERNEL|__GFP_ZERO);
-+	control_block = (void *)__get_free_page(GFP_KERNEL);
- 	if (control_block == NULL)
- 		goto error;
- 
--	init_control.control_gfn = virt_to_mfn(page_address(control_block));
--	init_control.offset      = 0;
--	init_control.vcpu        = cpu;
--
--	ret = HYPERVISOR_event_channel_op(EVTCHNOP_init_control, &init_control);
-+	ret = init_control_block(cpu, control_block);
- 	if (ret < 0)
- 		goto error;
- 
--	per_cpu(cpu_control_block, cpu) = page_address(control_block);
-+	per_cpu(cpu_control_block, cpu) = control_block;
  
  	return 0;
- 
-   error:
--	__free_page(control_block);
-+	free_page((unsigned long)control_block);
- 	return ret;
- }
- 
-@@ -410,7 +418,7 @@ static int evtchn_fifo_cpu_notification(
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 		if (!per_cpu(cpu_control_block, cpu))
--			ret = evtchn_fifo_init_control_block(cpu);
-+			ret = evtchn_fifo_alloc_control_block(cpu);
- 		break;
- 	default:
- 		break;
-@@ -427,7 +435,7 @@ int __init xen_evtchn_fifo_init(void)
- 	int cpu = get_cpu();
- 	int ret;
- 
--	ret = evtchn_fifo_init_control_block(cpu);
-+	ret = evtchn_fifo_alloc_control_block(cpu);
- 	if (ret < 0)
- 		goto out;
- 
 
 
