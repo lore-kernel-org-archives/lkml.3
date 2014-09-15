@@ -1,83 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaIOOvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:51:23 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:32953 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485AbaIOOvV (ORCPT
+	id S1753187AbaIOOwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:52:14 -0400
+Received: from bastet.se.axis.com ([195.60.68.11]:37302 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681AbaIOOwL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:51:21 -0400
-Date: Mon, 15 Sep 2014 15:51:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v4 06/18] ARM64 / ACPI: Introduce early_param for "acpi"
-Message-ID: <20140915145106.GC5415@arm.com>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-7-git-send-email-hanjun.guo@linaro.org>
- <20140915062824.GB26649@localhost>
+	Mon, 15 Sep 2014 10:52:11 -0400
+Date: Mon, 15 Sep 2014 16:52:03 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com,
+        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Subject: Re: Status of 'cris' architecture support in Linux kernel
+Message-ID: <20140915145203.GK4659@axis.com>
+References: <20140831175010.GA15408@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140915062824.GB26649@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140831175010.GA15408@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 07:28:24AM +0100, Olof Johansson wrote:
-> On Fri, Sep 12, 2014 at 10:00:04PM +0800, Hanjun Guo wrote:
-> >  			See also Documentation/power/runtime_pm.txt, pci=noacpi
-> >  
-> > diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> > index 9252f72..693da7f 100644
-> > --- a/arch/arm64/kernel/acpi.c
-> > +++ b/arch/arm64/kernel/acpi.c
-> > @@ -67,3 +67,18 @@ void __init acpi_boot_table_init(void)
-> >  	if (acpi_table_init())
-> >  		disable_acpi();
-> >  }
-> > +
-> > +static int __init parse_acpi(char *arg)
-> > +{
-> > +	if (!arg)
-> > +		return -EINVAL;
-> > +
-> > +	/* "acpi=off" disables both ACPI table parsing and interpreter */
-> > +	if (strcmp(arg, "off") == 0)
-> > +		disable_acpi();
-> > +	else
-> > +		return -EINVAL;	/* Core will print when we return error */
+Hi Guenter,
+
+Sorry for not answering earlier, like some have said in
+the thread followups, I have been on parental leave for quite some time.
+
+On Sun, Aug 31, 2014 at 10:50:10AM -0700, Guenter Roeck wrote:
+> The idea was to create a crisv32 kernel and initramfs to work with qemu
+> for the ongoing Linux kernel test project.
+
+A very ambitious goal. :-)
+
+> After spending a number of days (and nights) on it, the results don't look
+> very encouraging.
 > 
-> For symmetry, you should handle acpi=force here too (i.e. if someone
-> disables by default, which I expect we'll ask for when this code is
-> first merged).
+> My overall conclusion is that 'cris' architecture support in the Linux kernel
+> is in bad shape, does not work anymore, and would require substantial effort
+> to get it into working state.
 
-Does this mean you want another Kconfig option - ACPI_DEFAULT_OFF (which
-would be set by default)?
+Your conclusion is not completely off, but it could be better than it looks. :-)
 
+I'll try to explain the state of the CRIS port as it currently stands:
+
+(Background: CRIS port supports 3 different SoC:s, where the CRISv10 is
+older and subsequently less used. The other two are ETRAX FS and ARTPEC-3,
+which in principle share the same CPU-core (CRISv32) but contain some changes to
+the peripheral hardware IPs)
+
+CRISv10 is only supported by me as a hobby project, AXIS does not have any
+current shipping units with this SoC, thus support for this is waning fast.
+QEMU support is not available for this SoC.
+Additionally, newer gcc assumes TLS support, which CRISv10 does not have,
+and older gcc:s yields an ICE (internal compiler error) on newer kernels.
+
+Units with ETRAX FS is no longer actively upgraded by AXIS with newer kernels,
+and I have a problem testing anything other than the AXIS 88 developer board
+(Last relase of the SDK was a couple of years ago with the 2.6.32 kernel IIRC)
+which is not up to date, but at least have a lot in common with ARTPEC-3 and
+so is not so hard to support.
+
+ARTPEC-3 support is not complete as some drivers are not included in upstream
+(ethernet and serial are the most notable ones) but is actually in best shape,
+we have 3.16 booting on real hardware in house.
+
+I'll add the missing drivers and current patches we have locally to a
+git tree on git-hub, I'll get back to you on that.
+
+It is also the ARTPEC-3 SoC that is implemented in QEMU unless I'm mistaken.
+
+> Anyway, below are my individual findings. If there is an ongoing effort to
+> improve cris support in the upstream kernel, specifically support for crisv32,
+> please let me know. I'll be happy to test the resulting kernels.
+
+Thank you for your work, I'll try to add some more information in the hope
+that this will at least help people google for more information.
+
+Feel free to send me an email if you want to pick this up again.
+
+> Thanks,
+> Guenter
+
+> ---------------------
+> 
+> Individual findings:
+> 
+> headers_install
+> 
+> make ARCH=cris INSTALL_HDR_PATH=/tmp headers_install
+> 
+> results in:
+> 
+> ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
+> 	No such file or directory
+> make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
+
+Yes, known error, I believe that Sam Ravnborg's patch will correct this.
+
+On a tangential note, my automatic (minimal) builds does not do
+make install, so I haven't seen this error. :-P
+
+> -----------
+> 
+> Trying to enable architecture specific drivers:
+> 
+> Enabling ETRAX_I2C or ETRAX_STREAMCOPROC results in compile errors.
+> The errors date back as far as 2.6.27 and are thus not the result
+> of later API changes. I did not attempt to enable any other functionality.
+
+Thanks, I don't have these included in my automatic builds,
+and I note that the cryptocop.c which is gated with ETRAX_STREAMCOPROC
+has a large number of changes in our internal tree as compared to upstream.
+
+> -----------
+> 
+> qemu: Attempts to load images in qemu fail.
+> 
+> Command line:
+> 
+> qemu-system-cris -serial stdio -kernel vmlinux -monitor none \
+> 	-nographic -append "console=ttyS0,115200,N,8 rdinit=/sbin/init" \
+> 	-initrd busybox-cris.img
+> 
+> This command yields no output; using arch/cris/boot/Image has the same result.
+> 
+> With arch/cris/boot/zImage, the result is:
+> 
+> Uncompressing Linux...
+
+... which at least indicates that the uncompress code is running...
+
+> 
+> 
+> invalid compressed format (err=1)
+> 
+>  -- System halted
+
+... but I believe that the image might need to be massaged a bit
+further to be able to boot in QEMU, however it's been some time since
+I last did this. I'll have to get back to you on this.
+
+> ---
+> 
+> Research shows that there is a working image and root file system at the
+> qemu web site. Further research shows that this image includes code which
+> was never merged upstream. The missing code includes (at least) early console
+> support as well as support for the crisv32 serial interface.
+
+Confirmed, the serial driver isn't upstream.
+
+> After some digging, I found at least some of the code in out-of-tree sources.
+> After adding early console support, there is console output, but the image
+> crashes with the following log message.
+> 
+> ...
+> NET: Registered protocol family 16
+> Switched to clocksource crisv32_rotime
+> Unable to handle kernel NULL pointer dereferenceOops: 0000
+> CPU: 0
+> ERP: c001029e SRP: c00108ce  CCS: 00028008 USP: 00000000 MOF: 00000000
+>  r0: c0230660  r1: c1ff3e7c   r2: 00000014  r3: 00000001
+>  r4: c1ff3e88  r5: c1ffffff   r6: c0102b94  r7: 00000000
+>  r8: c1ff3e58  r9: c1ff3e80  r10: c1ff3e7c r11: c0230660
+> r12: 00000001 r13: 80000200 oR10: c1ff3e7c acr: 00000018
+>  sp: c1ff3dd4
+>        Data MMU Cause: 00000100
+> Instruction MMU Cause: 00000000
+> Process swapper (pid: 1, stackpage=c1ff1c40)
+> 
+> Stack from c1ff3cbc:
+>        c0004a44 c01e84e6 c1ff3e20 c1ff3e28 00000000 c1ffffff c1ff3cf8 c000589c 
+>        00000018 00000000 c1ff3dd4 00000000 00000000 00000000 c1ff3e88 c1ff3d04 
+>        c0004b6e c0293bb0 c1ff3dcc c0005220 00000000 c0230660 c1ff3e7c 00000014 
+> Call Trace: [<c0004a44>] [<c01e84e6>] [<c000589c>] [<c0004b6e>] [<c0005220>] [<c0102b94>] [<c00fb92c>] 
+>        [<c002922c>] [<c00fbd58>] [<c00fb858>] [<c00fbc02>] [<c002922c>] [<c0008896>] [<c0102b94>] [<c00108ce>] 
+>        [<c001029e>] [<c0010250>] [<c00be2d6>] [<c00203f4>] [<c00108ce>] [<c00ff4d8>] [<c00b81b4>] [<c00be3b0>] 
+>        [<c00ff4d8>] [<c0004236>] [<c00041bc>] [<c00205ae>] [<c00ff4d8>] [<c00203f4>] [<c01e6f22>] [<c01e6f36>] 
+>        [<c000547e>] 
+> Code: 04 29 0f 00 43 36 68 30 18 21 14 22 (62) 2a c0 22 32 30 b0 05 0c 21 6f fa 
+> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> 
+> ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+> 
+> Manual backtrace:
+> 
+> c0004a44	show_stack
+> c01e84e6	printk
+> c000589c	show_registers
+> c0004b6e	die_if_kernel
+> c0005220	get_mmu_context
+> c0102b94	strcmp
+> c00fb92c	idr_get_empty_slot
+> c002922c	__init_waitqueue_head
+> c00fbd58	ida_get_new_above
+> c00fb858	ida_pre_get
+> c00fbc02	ida_get_new_above
+> c002922c	__init_waitqueue_head
+> c0008896	d_mmu_refill
+> c0102b94	strcmp
+> c00108ce	walk_system_ram_range
+> c001029e	find_next_iomem_res
+> c0010250	find_next_iomem_res
+> c00be2d6	kclist_add_private
+> c00203f4	parse_args
+> c00108ce	walk_system_ram_range
+> c00ff4d8	strcpy
+> c00b81b4	proc_register
+> c00be3b0	kcore_update_ram
+> c00ff4d8	strcpy
+> c0004236	do_one_initcall
+> c00041bc	do_one_initcall
+> c00205ae	parse_args
+> c00ff4d8	strcpy
+> c00203f4	parse_args
+> c01e6f22	kernel_init
+> c01e6f36	kernel_init
+
+No clue on this though...
+
+> ----------------
+> I did not attempt to bisect the problem.
+> 
+> I got an earlier kernel, 2.6.27, to proceed further, though I did not attempt
+> to load initramfs (the kernel had a missing symbol when I tried to enable 
+> initramfs support).
+> 
+> I was able to find the serial driver for crisv32 in an out-of-kernel tree
+> and port it to 2.6.27 to the point where it loads. I did not attempt to do
+> this with the current upstream kernel, as it crashed before it gets to
+> the point of trying to load the driver.
+> 
+> The crisv32 serial driver (or at least the version I found) is far from
+> acceptable for upstream integration and would require major cleanup or even
+> rewrite effort if it was to be merged upstream. The version I found is from
+> a 2.6.26 kernel, while the kernel version at the qemu web site (binary only)
+> is 2.6.33, so the driver I worked with is not the latest version and may
+> have been improved later. However, the result was not published, or I was
+> unable to find it.
+
+Unfortunately, the code quality was the original problem why it
+wasn't upstreamed at the same time as the rest of the port,
+and it still hasn't changed in any markable respect. :-(
+
+> -----------------
+> 
+> Toolchain
+> 
+> Creating a toolchain from upstream sources required a number of patches.
+> 
+> Linux headers:
+> - Fix the basic headers_install problem mentioned above
+> - Export ptrace.h
+> - Some post-processing after installing the headers; specifically,
+>   create a couple of symlinks in the headers directory
+>   	usr/include/arch-v10/arch -> usr/include/arch [for crisv10]
+>   	usr/include/arch-v32/arch -> usr/include/arch [for crisv32]
+> 
+> gcc:
+> - binutils 2.24
+> - uclibc 0.9.33.2
+> - gcc 4.7.4
+>   Requires a backport from upstream gcc to compile.
+>   Later versions of gcc (4.8.3, 4.9.1) fail with internal compiler errors
+>   even after patching.
+
+I'm using gcc 4.7.2, but of course, that is a locally built
+version that might have patches not upstream
+(although I doubt it knowing the gcc CRIS maintainer :-)
+
+> Toolchain was built successfully with buildroot (after adding cris support to
+> it) with above patches / changes.
+
+Thanks again,
+
+/^JN - Jesper Nilsson
 -- 
-Catalin
+               Jesper Nilsson -- jesper.nilsson@axis.com
