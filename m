@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467AbaIOU7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:59:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
+	id S1756886AbaIOU7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:59:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54846 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026AbaIOT1F (ORCPT
+	with ESMTP id S1755028AbaIOT1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:05 -0400
+	Mon, 15 Sep 2014 15:27:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.16 066/158] MIPS: Prevent user from setting FCSR cause bits
-Date: Mon, 15 Sep 2014 12:25:05 -0700
-Message-Id: <20140915192544.874182650@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>, David Dillow <dave@thedillows.org>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.16 057/158] scsi_transport_srp: Fix fast_io_fail_tmo=dev_loss_tmo=off behavior
+Date: Mon, 15 Sep 2014 12:24:56 -0700
+Message-Id: <20140915192544.605701395@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,58 +30,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Burton <paul.burton@imgtec.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit b1442d39fac2fcfbe6a4814979020e993ca59c9e upstream.
+commit cd53eb686d2418eda938aad3c9da42b7dfa9351f upstream.
 
-If one or more matching FCSR cause & enable bits are set in saved thread
-context then when that context is restored the kernel will take an FP
-exception. This is of course undesirable and considered an oops, leading
-to the kernel writing a backtrace to the console and potentially
-rebooting depending upon the configuration. Thus the kernel avoids this
-situation by clearing the cause bits of the FCSR register when handling
-FP exceptions and after emulating FP instructions.
+If scsi_remove_host() is called while an rport is in the blocked state
+then scsi_remove_host() will only finish if the rport is unblocked
+from inside a timer function. Make sure that an rport only enters the
+blocked state if a timer will be started that will unblock it. This
+avoids that unloading the ib_srp kernel module after having
+disconnected the initiator from the target system results in a
+deadlock if both the fast_io_fail_tmo and dev_loss_tmo parameters have
+been set to "off".
 
-However the kernel does not prevent userland from setting arbitrary FCSR
-cause & enable bits via ptrace, using either the PTRACE_POKEUSR or
-PTRACE_SETFPREGS requests. This means userland can trivially cause the
-kernel to oops on any system with an FPU. Prevent this from happening
-by clearing the cause bits when writing to the saved FCSR context via
-ptrace.
-
-This problem appears to exist at least back to the beginning of the git
-era in the PTRACE_POKEUSR case.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Paul Burton <paul.burton@imgtec.com>
-Cc: stable@vger.kernel.org
-Patchwork: https://patchwork.linux-mips.org/patch/7438/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Reviewed-by: David Dillow <dave@thedillows.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/ptrace.c |    3 ++-
+ drivers/scsi/scsi_transport_srp.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@ -151,6 +151,7 @@ int ptrace_setfpregs(struct task_struct
- 	}
- 
- 	__get_user(child->thread.fpu.fcr31, data + 64);
-+	child->thread.fpu.fcr31 &= ~FPU_CSR_ALL_X;
- 
- 	/* FIR may not be written.  */
- 
-@@ -696,7 +697,7 @@ long arch_ptrace(struct task_struct *chi
- 			break;
- #endif
- 		case FPC_CSR:
--			child->thread.fpu.fcr31 = data;
-+			child->thread.fpu.fcr31 = data & ~FPU_CSR_ALL_X;
- 			break;
- 		case DSP_BASE ... DSP_BASE + 5: {
- 			dspreg_t *dregs;
+--- a/drivers/scsi/scsi_transport_srp.c
++++ b/drivers/scsi/scsi_transport_srp.c
+@@ -473,7 +473,8 @@ static void __srp_start_tl_fail_timers(s
+ 	if (delay > 0)
+ 		queue_delayed_work(system_long_wq, &rport->reconnect_work,
+ 				   1UL * delay * HZ);
+-	if (srp_rport_set_state(rport, SRP_RPORT_BLOCKED) == 0) {
++	if ((fast_io_fail_tmo >= 0 || dev_loss_tmo >= 0) &&
++	    srp_rport_set_state(rport, SRP_RPORT_BLOCKED) == 0) {
+ 		pr_debug("%s new state: %d\n", dev_name(&shost->shost_gendev),
+ 			 rport->state);
+ 		scsi_target_block(&shost->shost_gendev);
 
 
