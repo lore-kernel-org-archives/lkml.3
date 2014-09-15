@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaIOKgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:36:40 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36925 "EHLO
+	id S1754204AbaIOKgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:36:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36932 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753842AbaIOKgY (ORCPT
+	with ESMTP id S1753989AbaIOKg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:36:24 -0400
+	Mon, 15 Sep 2014 06:36:27 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, Peter.Chen@freescale.com, balbi@ti.com,
         p.zabel@pengutronix.de
@@ -16,9 +16,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 04/12] ARM: dts: berlin: add a required reset property in the chip controller node
-Date: Mon, 15 Sep 2014 12:36:10 +0200
-Message-Id: <1410777378-12726-5-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v5 08/12] Documentation: bindings: add doc for the USB2 ChipIdea USB driver
+Date: Mon, 15 Sep 2014 12:36:14 +0200
+Message-Id: <1410777378-12726-9-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -26,53 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chip controller node now also describes the Marvell Berlin reset
-controller. Add the required 'reset-cells' property.
+Document the USB2 ChipIdea driver (ci13xxx) bindings.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- arch/arm/boot/dts/berlin2.dtsi   | 1 +
- arch/arm/boot/dts/berlin2cd.dtsi | 1 +
- arch/arm/boot/dts/berlin2q.dtsi  | 1 +
- 3 files changed, 3 insertions(+)
+ .../devicetree/bindings/usb/ci-hdrc-usb2.txt       | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 9d7c810ebd0b..d7e81e124de0 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -249,6 +249,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index cc1df65da504..68f7032b4686 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -231,6 +231,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2cd-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 400c40fceccc..ffba5c3bdab8 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -332,6 +332,7 @@
- 		chip: chip-control@ea0000 {
- 			compatible = "marvell,berlin2q-chip-ctrl";
- 			#clock-cells = <1>;
-+			#reset-cells = <2>;
- 			reg = <0xea0000 0x400>, <0xdd0170 0x10>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
+diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+new file mode 100644
+index 000000000000..8dd6d8285dab
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ci-hdrc-usb2.txt
+@@ -0,0 +1,22 @@
++* USB2 ChipIdea USB controller for ci13xxx
++
++Required properties:
++- compatible: should be "chipidea,usb2"
++- reg: base address and length of the registers
++- interrupts: interrupt for the USB controller
++
++Optional properties:
++- clocks: reference to the USB clock
++- phys: reference to the USB PHY
++- vbus-supply: reference to the VBUS regulator
++
++Example:
++
++	usb@f7ed0000 {
++		compatible = "chipidea,usb2";
++		reg = <0xf7ed0000 0x10000>;
++		interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&chip CLKID_USB0>;
++		phys = <&usb_phy0>;
++		vbus-supply = <&reg_usb0_vbus>;
++	};
 -- 
 1.9.1
 
