@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636AbaIOU42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:56:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39081 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaIOU4Z (ORCPT
+	id S1757557AbaIOU4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:56:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54675 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040AbaIOT1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:56:25 -0400
-Date: Mon, 15 Sep 2014 16:56:20 -0400 (EDT)
-Message-Id: <20140915.165620.1169777676117933052.davem@davemloft.net>
-To: stephen@networkplumber.org
-Cc: rickard_strandqvist@spectrumdigital.se, mlindner@marvell.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: marvell: sky2.c: Cleaning up missing
- null-terminate in conjunction with strncpy
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140915135339.0659f618@urahara>
-References: <20140914190557.690183d2@urahara>
-	<20140915.130721.589682835868904320.davem@davemloft.net>
-	<20140915135339.0659f618@urahara>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 13:56:24 -0700 (PDT)
+	Mon, 15 Sep 2014 15:27:09 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 100/158] ACPI / EC: Add support to disallow QR_EC to be issued before completing previous QR_EC
+Date: Mon, 15 Sep 2014 12:25:39 -0700
+Message-Id: <20140915192545.886024370@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
+References: <20140915192542.872134685@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <stephen@networkplumber.org>
-Date: Mon, 15 Sep 2014 13:53:39 -0700
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-> On Mon, 15 Sep 2014 13:07:21 -0400 (EDT)
-> David Miller <davem@davemloft.net> wrote:
-> 
->> From: Stephen Hemminger <stephen@networkplumber.org>
->> Date: Sun, 14 Sep 2014 19:05:57 -0700
->> 
->> > On Sun, 14 Sep 2014 19:33:43 +0200
->> > Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
->> > 
->> >> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->> >> 
->> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> >> ---
->> >>  drivers/net/ethernet/marvell/sky2.c |    2 +-
->> >>  1 file changed, 1 insertion(+), 1 deletion(-)
->> >> 
->> >> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
->> >> index dba48a5c..7053d38 100644
->> >> --- a/drivers/net/ethernet/marvell/sky2.c
->> >> +++ b/drivers/net/ethernet/marvell/sky2.c
->> >> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
->> >>  	};
->> >>  
->> >>  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
->> >> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
->> >> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
->> >>  	else
->> >>  		snprintf(buf, sz, "(chip %#x)", chipid);
->> >>  	return buf;
->> > 
->> > Useless and unnecessary since the list of names is right there.
->> > Why not avoid the copy all together?
->> > 
->> > Subject: sky2: avoid strncpy
->> > 
->> > Don't use strncpy() since security thought police think it is bad.
->> > 
->> > Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
->> 
->> I think providing the buffer on the stack of the thread executing the
->> probe is superior because it will allow enabling parallel probing
->> in the future.
->> 
->> I don't think you have to change that aspect to achieve your goal
->> of returning the const char * string when possible.
-> 
-> What is benefit of s/strncpy/strlcpy/ for known safe code?
-> Seems like more of the checkpatch police state.
-> 
+------------------
 
-Stephen, read my reply again.
+From: Lv Zheng <lv.zheng@intel.com>
 
-I didn't say to go back to the strlcpy change.
+commit 558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4 upstream.
 
-I said to use your patch, but keep the buf[] parameter allocated on
-the caller's stack.
+There is platform refusing to respond QR_EC when SCI_EVT isn't set
+which is Acer Aspire V5-573G.
 
-Thanks.
+By disallowing QR_EC to be issued before the previous one has been
+completed we are able to reduce the possibilities to trigger issues on
+such platforms.
+
+Note that this fix can only reduce the occurrence rate of this issue, but
+this issue may still occur when such a platform doesn't clear SCI_EVT
+before or immediately after completing the previous QR_EC transaction.
+This patch cannot fix the CLEAR_ON_RESUME quirk which also relies on
+the assumption that the platforms are able to respond even when SCI_EVT
+isn't set.
+
+But this patch is still useful as it can help to reduce the number of
+scheduled QR_EC work items.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=82611
+Reported-and-tested-by: Alexander Mezin <mezin.alexander@gmail.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/acpi/ec.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -303,11 +303,11 @@ static int acpi_ec_transaction_unlocked(
+ 	/* following two actions should be kept atomic */
+ 	ec->curr = t;
+ 	start_transaction(ec);
+-	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
+-		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	ret = ec_poll(ec);
+ 	spin_lock_irqsave(&ec->lock, tmp);
++	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
++		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+ 	ec->curr = NULL;
+ 	spin_unlock_irqrestore(&ec->lock, tmp);
+ 	return ret;
+
+
