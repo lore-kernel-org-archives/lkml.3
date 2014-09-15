@@ -1,337 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312AbaIOCyw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:54:52 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:7076 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205AbaIOCyu (ORCPT
+	id S1753354AbaIOC5B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:57:01 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:43118 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332AbaIOC46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:54:50 -0400
-Message-ID: <54165496.7040401@huawei.com>
-Date: Mon, 15 Sep 2014 10:53:10 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "Vinod Koul" <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
-        <linux-hotplug@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [Patch Part3 V5 7/8] iommu/vt-d: Enhance intel-iommu driver to
- support DMAR unit hotplug
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-8-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1410487848-6027-8-git-send-email-jiang.liu@linux.intel.com>
+	Sun, 14 Sep 2014 22:56:58 -0400
+Subject: Re: [PATCH v4 1/2] arcmsr: simplify ioctl data read/write
+From: Ching Huang <ching2048@areca.com.tw>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: hch@infradead.org, jbottomley@parallels.com, dan.carpenter@oracle.com,
+        agordeev@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <5412F680.2070702@redhat.com>
+References: <1410506960.5045.250.camel@Centos6.3-64>
+	 <5412F680.2070702@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Sep 2014 10:56:48 +0800
+Message-ID: <1410749808.4764.5.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.541654E8.00E8,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: ef69b058992fbaea303251ca7654413f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/12 10:10, Jiang Liu wrote:
-> Implement required callback functions for intel-iommu driver
-> to support DMAR unit hotplug.
+On Fri, 2014-09-12 at 15:34 +0200, Tomas Henzl wrote:
+> On 09/12/2014 09:29 AM, Ching Huang wrote:
+> > From: Ching Huang <ching2048@areca.com.tw>
+> >
+> > This patch is to modify previous patch 13/17 and it is relative to
+> > http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
+> >
+> > change in v4:
+> > 1. for readability, rename firstindex to getIndex, rename lastindex to putIndex
+> For some reason, the names head+tail areusual for a circular buffer.
+> But let us ignore the names, I don't care.
+> > 2. define ARCMSR_API_DATA_BUFLEN as 1032
+> > 3. simplify ioctl data read by macro CIRC_CNT_TO_END and CIRC_CNT
+> It's definitely better when you post renames and other non-functional changes in separate
+> patches, it's easier for the reviewer. 
+> >
+> > Signed-off-by: Ching Huang <ching2048@areca.com.tw>
+> > ---
+> >
+> > diff -uprN a/drivers/scsi/arcmsr/arcmsr_attr.c b/drivers/scsi/arcmsr/arcmsr_attr.c
+> > --- a/drivers/scsi/arcmsr/arcmsr_attr.c	2014-08-21 12:14:27.000000000 +0800
+> > +++ b/drivers/scsi/arcmsr/arcmsr_attr.c	2014-09-12 15:18:46.659125000 +0800
+> > @@ -50,6 +50,7 @@
+> >  #include <linux/errno.h>
+> >  #include <linux/delay.h>
+> >  #include <linux/pci.h>
+> > +#include <linux/circ_buf.h>
+> >  
+> >  #include <scsi/scsi_cmnd.h>
+> >  #include <scsi/scsi_device.h>
+> > @@ -68,7 +69,7 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >  	struct device *dev = container_of(kobj,struct device,kobj);
+> >  	struct Scsi_Host *host = class_to_shost(dev);
+> >  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+> > -	uint8_t *pQbuffer,*ptmpQbuffer;
+> > +	uint8_t *ptmpQbuffer;
+> >  	int32_t allxfer_len = 0;
+> >  	unsigned long flags;
+> >  
+> > @@ -78,57 +79,22 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >  	/* do message unit read. */
+> >  	ptmpQbuffer = (uint8_t *)buf;
+> >  	spin_lock_irqsave(&acb->rqbuffer_lock, flags);
+> > -	if (acb->rqbuf_firstindex != acb->rqbuf_lastindex) {
+> > -		pQbuffer = &acb->rqbuffer[acb->rqbuf_firstindex];
+> > -		if (acb->rqbuf_firstindex > acb->rqbuf_lastindex) {
+> > -			if ((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex) >= 1032) {
+> > -				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> > -				acb->rqbuf_firstindex += 1032;
+> > -				acb->rqbuf_firstindex %= ARCMSR_MAX_QBUFFER;
+> > -				allxfer_len = 1032;
+> > -			} else {
+> > -				if (((ARCMSR_MAX_QBUFFER - acb->rqbuf_firstindex)
+> > -					+ acb->rqbuf_lastindex) > 1032) {
+> > -					memcpy(ptmpQbuffer, pQbuffer,
+> > -						ARCMSR_MAX_QBUFFER
+> > -						- acb->rqbuf_firstindex);
+> > -					ptmpQbuffer += ARCMSR_MAX_QBUFFER
+> > -						- acb->rqbuf_firstindex;
+> > -					memcpy(ptmpQbuffer, acb->rqbuffer, 1032
+> > -						- (ARCMSR_MAX_QBUFFER -
+> > -						acb->rqbuf_firstindex));
+> > -					acb->rqbuf_firstindex = 1032 -
+> > -						(ARCMSR_MAX_QBUFFER -
+> > -						acb->rqbuf_firstindex);
+> > -					allxfer_len = 1032;
+> > -				} else {
+> > -					memcpy(ptmpQbuffer, pQbuffer,
+> > -						ARCMSR_MAX_QBUFFER -
+> > -						acb->rqbuf_firstindex);
+> > -					ptmpQbuffer += ARCMSR_MAX_QBUFFER -
+> > -						acb->rqbuf_firstindex;
+> > -					memcpy(ptmpQbuffer, acb->rqbuffer,
+> > -						acb->rqbuf_lastindex);
+> > -					allxfer_len = ARCMSR_MAX_QBUFFER -
+> > -						acb->rqbuf_firstindex +
+> > -						acb->rqbuf_lastindex;
+> > -					acb->rqbuf_firstindex =
+> > -						acb->rqbuf_lastindex;
+> > -				}
+> > -			}
+> > -		} else {
+> > -			if ((acb->rqbuf_lastindex - acb->rqbuf_firstindex) > 1032) {
+> > -				memcpy(ptmpQbuffer, pQbuffer, 1032);
+> > -				acb->rqbuf_firstindex += 1032;
+> > -				allxfer_len = 1032;
+> > -			} else {
+> > -				memcpy(ptmpQbuffer, pQbuffer, acb->rqbuf_lastindex
+> > -					- acb->rqbuf_firstindex);
+> > -				allxfer_len = acb->rqbuf_lastindex -
+> > -					acb->rqbuf_firstindex;
+> > -				acb->rqbuf_firstindex = acb->rqbuf_lastindex;
+> > -			}
+> > +	if (acb->rqbuf_getIndex != acb->rqbuf_putIndex) {
+> > +		unsigned int tail = acb->rqbuf_getIndex;
+> > +		unsigned int head = acb->rqbuf_putIndex;
+> > +		unsigned int cnt_to_end = CIRC_CNT_TO_END(head, tail, ARCMSR_MAX_QBUFFER);
+> > +
+> > +		allxfer_len = CIRC_CNT(head, tail, ARCMSR_MAX_QBUFFER);
+> > +		if (allxfer_len > ARCMSR_API_DATA_BUFLEN)
+> > +			allxfer_len = ARCMSR_API_DATA_BUFLEN;
+> > +
+> > +		if (allxfer_len <= cnt_to_end)
+> > +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, allxfer_len);
+> > +		else {
+> > +			memcpy(ptmpQbuffer, acb->rqbuffer + tail, cnt_to_end);
+> > +			memcpy(ptmpQbuffer + cnt_to_end, acb->rqbuffer, allxfer_len - cnt_to_end);
+> >  		}
+> > +		acb->rqbuf_getIndex = (acb->rqbuf_getIndex + allxfer_len) % ARCMSR_MAX_QBUFFER;
+> >  	}
+> >  	if (acb->acb_flags & ACB_F_IOPDATA_OVERFLOW) {
+> >  		struct QBUFFER __iomem *prbuffer;
+> > @@ -150,33 +116,32 @@ static ssize_t arcmsr_sysfs_iop_message_
+> >  	struct device *dev = container_of(kobj,struct device,kobj);
+> >  	struct Scsi_Host *host = class_to_shost(dev);
+> >  	struct AdapterControlBlock *acb = (struct AdapterControlBlock *) host->hostdata;
+> > -	int32_t my_empty_len, user_len, wqbuf_firstindex, wqbuf_lastindex;
+> > +	int32_t my_empty_len, user_len, wqbuf_getIndex, wqbuf_putIndex;
+> >  	uint8_t *pQbuffer, *ptmpuserbuffer;
+> >  	unsigned long flags;
+> >  
+> >  	if (!capable(CAP_SYS_ADMIN))
+> >  		return -EACCES;
+> > -	if (count > 1032)
+> > +	if (count > ARCMSR_API_DATA_BUFLEN)
+> >  		return -EINVAL;
+> >  	/* do message unit write. */
+> >  	ptmpuserbuffer = (uint8_t *)buf;
+> >  	user_len = (int32_t)count;
+> >  	spin_lock_irqsave(&acb->wqbuffer_lock, flags);
+> > -	wqbuf_lastindex = acb->wqbuf_lastindex;
+> > -	wqbuf_firstindex = acb->wqbuf_firstindex;
+> > -	if (wqbuf_lastindex != wqbuf_firstindex) {
+> > +	wqbuf_putIndex = acb->wqbuf_putIndex;
+> > +	wqbuf_getIndex = acb->wqbuf_getIndex;
+> > +	if (wqbuf_putIndex != wqbuf_getIndex) {
+> >  		arcmsr_write_ioctldata2iop(acb);
+> >  		spin_unlock_irqrestore(&acb->wqbuffer_lock, flags);
+> >  		return 0;	/*need retry*/
+> >  	} else {
+> > -		my_empty_len = (wqbuf_firstindex-wqbuf_lastindex - 1)
+> > -			&(ARCMSR_MAX_QBUFFER - 1);
+> > +		my_empty_len = ARCMSR_MAX_QBUFFER - 1;
+> This^ doesn't look like like an rename can you explain?
+It is just a code simplification.
+> 
+> Let us stop here, or we end in an endless loop of corrections. The original 13/17
+> you are trying to improve here was at least without bugs (better said I haven't noticed) so
+> improving it now only complicates the process.
+> My suggestion is -let us skip this patch and focus only on fixing the spinlock problem found in 16/17.
+> OKay?
+Agree.
+> 
+> Cheers,
+> Tomas
 > 
 
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
-
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> ---
->  drivers/iommu/intel-iommu.c |  206 +++++++++++++++++++++++++++++++------------
->  1 file changed, 151 insertions(+), 55 deletions(-)
-> 
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 70d9d47eaeda..c2d369524960 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -1125,8 +1125,11 @@ static int iommu_alloc_root_entry(struct intel_iommu *iommu)
->  	unsigned long flags;
->  
->  	root = (struct root_entry *)alloc_pgtable_page(iommu->node);
-> -	if (!root)
-> +	if (!root) {
-> +		pr_err("IOMMU: allocating root entry for %s failed\n",
-> +			iommu->name);
->  		return -ENOMEM;
-> +	}
->  
->  	__iommu_flush_cache(iommu, root, ROOT_SIZE);
->  
-> @@ -1466,7 +1469,7 @@ static int iommu_init_domains(struct intel_iommu *iommu)
->  	return 0;
->  }
->  
-> -static void free_dmar_iommu(struct intel_iommu *iommu)
-> +static void disable_dmar_iommu(struct intel_iommu *iommu)
->  {
->  	struct dmar_domain *domain;
->  	int i;
-> @@ -1490,11 +1493,16 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
->  
->  	if (iommu->gcmd & DMA_GCMD_TE)
->  		iommu_disable_translation(iommu);
-> +}
->  
-> -	kfree(iommu->domains);
-> -	kfree(iommu->domain_ids);
-> -	iommu->domains = NULL;
-> -	iommu->domain_ids = NULL;
-> +static void free_dmar_iommu(struct intel_iommu *iommu)
-> +{
-> +	if ((iommu->domains) && (iommu->domain_ids)) {
-> +		kfree(iommu->domains);
-> +		kfree(iommu->domain_ids);
-> +		iommu->domains = NULL;
-> +		iommu->domain_ids = NULL;
-> +	}
->  
->  	g_iommus[iommu->seq_id] = NULL;
->  
-> @@ -2701,6 +2709,41 @@ static int __init iommu_prepare_static_identity_mapping(int hw)
->  	return 0;
->  }
->  
-> +static void intel_iommu_init_qi(struct intel_iommu *iommu)
-> +{
-> +	/*
-> +	 * Start from the sane iommu hardware state.
-> +	 * If the queued invalidation is already initialized by us
-> +	 * (for example, while enabling interrupt-remapping) then
-> +	 * we got the things already rolling from a sane state.
-> +	 */
-> +	if (!iommu->qi) {
-> +		/*
-> +		 * Clear any previous faults.
-> +		 */
-> +		dmar_fault(-1, iommu);
-> +		/*
-> +		 * Disable queued invalidation if supported and already enabled
-> +		 * before OS handover.
-> +		 */
-> +		dmar_disable_qi(iommu);
-> +	}
-> +
-> +	if (dmar_enable_qi(iommu)) {
-> +		/*
-> +		 * Queued Invalidate not enabled, use Register Based Invalidate
-> +		 */
-> +		iommu->flush.flush_context = __iommu_flush_context;
-> +		iommu->flush.flush_iotlb = __iommu_flush_iotlb;
-> +		pr_info("IOMMU: %s using Register based invalidation\n",
-> +			iommu->name);
-> +	} else {
-> +		iommu->flush.flush_context = qi_flush_context;
-> +		iommu->flush.flush_iotlb = qi_flush_iotlb;
-> +		pr_info("IOMMU: %s using Queued invalidation\n", iommu->name);
-> +	}
-> +}
-> +
->  static int __init init_dmars(void)
->  {
->  	struct dmar_drhd_unit *drhd;
-> @@ -2729,6 +2772,10 @@ static int __init init_dmars(void)
->  			  DMAR_UNITS_SUPPORTED);
->  	}
->  
-> +	/* Preallocate enough resources for IOMMU hot-addition */
-> +	if (g_num_of_iommus < DMAR_UNITS_SUPPORTED)
-> +		g_num_of_iommus = DMAR_UNITS_SUPPORTED;
-> +
->  	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
->  			GFP_KERNEL);
->  	if (!g_iommus) {
-> @@ -2757,58 +2804,14 @@ static int __init init_dmars(void)
->  		 * among all IOMMU's. Need to Split it later.
->  		 */
->  		ret = iommu_alloc_root_entry(iommu);
-> -		if (ret) {
-> -			printk(KERN_ERR "IOMMU: allocate root entry failed\n");
-> +		if (ret)
->  			goto free_iommu;
-> -		}
->  		if (!ecap_pass_through(iommu->ecap))
->  			hw_pass_through = 0;
->  	}
->  
-> -	/*
-> -	 * Start from the sane iommu hardware state.
-> -	 */
-> -	for_each_active_iommu(iommu, drhd) {
-> -		/*
-> -		 * If the queued invalidation is already initialized by us
-> -		 * (for example, while enabling interrupt-remapping) then
-> -		 * we got the things already rolling from a sane state.
-> -		 */
-> -		if (iommu->qi)
-> -			continue;
-> -
-> -		/*
-> -		 * Clear any previous faults.
-> -		 */
-> -		dmar_fault(-1, iommu);
-> -		/*
-> -		 * Disable queued invalidation if supported and already enabled
-> -		 * before OS handover.
-> -		 */
-> -		dmar_disable_qi(iommu);
-> -	}
-> -
-> -	for_each_active_iommu(iommu, drhd) {
-> -		if (dmar_enable_qi(iommu)) {
-> -			/*
-> -			 * Queued Invalidate not enabled, use Register Based
-> -			 * Invalidate
-> -			 */
-> -			iommu->flush.flush_context = __iommu_flush_context;
-> -			iommu->flush.flush_iotlb = __iommu_flush_iotlb;
-> -			printk(KERN_INFO "IOMMU %d 0x%Lx: using Register based "
-> -			       "invalidation\n",
-> -				iommu->seq_id,
-> -			       (unsigned long long)drhd->reg_base_addr);
-> -		} else {
-> -			iommu->flush.flush_context = qi_flush_context;
-> -			iommu->flush.flush_iotlb = qi_flush_iotlb;
-> -			printk(KERN_INFO "IOMMU %d 0x%Lx: using Queued "
-> -			       "invalidation\n",
-> -				iommu->seq_id,
-> -			       (unsigned long long)drhd->reg_base_addr);
-> -		}
-> -	}
-> +	for_each_active_iommu(iommu, drhd)
-> +		intel_iommu_init_qi(iommu);
->  
->  	if (iommu_pass_through)
->  		iommu_identity_mapping |= IDENTMAP_ALL;
-> @@ -2894,8 +2897,10 @@ static int __init init_dmars(void)
->  	return 0;
->  
->  free_iommu:
-> -	for_each_active_iommu(iommu, drhd)
-> +	for_each_active_iommu(iommu, drhd) {
-> +		disable_dmar_iommu(iommu);
->  		free_dmar_iommu(iommu);
-> +	}
->  	kfree(deferred_flush);
->  free_g_iommus:
->  	kfree(g_iommus);
-> @@ -3801,9 +3806,100 @@ int dmar_check_one_atsr(struct acpi_dmar_header *hdr, void *arg)
->  	return 0;
->  }
->  
-> +static int intel_iommu_add(struct dmar_drhd_unit *dmaru)
-> +{
-> +	int sp, ret = 0;
-> +	struct intel_iommu *iommu = dmaru->iommu;
-> +
-> +	if (g_iommus[iommu->seq_id])
-> +		return 0;
-> +
-> +	if (hw_pass_through && !ecap_pass_through(iommu->ecap)) {
-> +		pr_warn("IOMMU: %s doesn't support hardware pass through.\n",
-> +			iommu->name);
-> +		return -ENXIO;
-> +	}
-> +	if (!ecap_sc_support(iommu->ecap) &&
-> +	    domain_update_iommu_snooping(iommu)) {
-> +		pr_warn("IOMMU: %s doesn't support snooping.\n",
-> +			iommu->name);
-> +		return -ENXIO;
-> +	}
-> +	sp = domain_update_iommu_superpage(iommu) - 1;
-> +	if (sp >= 0 && !(cap_super_page_val(iommu->cap) & (1 << sp))) {
-> +		pr_warn("IOMMU: %s doesn't support large page.\n",
-> +			iommu->name);
-> +		return -ENXIO;
-> +	}
-> +
-> +	/*
-> +	 * Disable translation if already enabled prior to OS handover.
-> +	 */
-> +	if (iommu->gcmd & DMA_GCMD_TE)
-> +		iommu_disable_translation(iommu);
-> +
-> +	g_iommus[iommu->seq_id] = iommu;
-> +	ret = iommu_init_domains(iommu);
-> +	if (ret == 0)
-> +		ret = iommu_alloc_root_entry(iommu);
-> +	if (ret)
-> +		goto out;
-> +
-> +	if (dmaru->ignored) {
-> +		/*
-> +		 * we always have to disable PMRs or DMA may fail on this device
-> +		 */
-> +		if (force_on)
-> +			iommu_disable_protect_mem_regions(iommu);
-> +		return 0;
-> +	}
-> +
-> +	intel_iommu_init_qi(iommu);
-> +	iommu_flush_write_buffer(iommu);
-> +	ret = dmar_set_interrupt(iommu);
-> +	if (ret)
-> +		goto disable_iommu;
-> +
-> +	iommu_set_root_entry(iommu);
-> +	iommu->flush.flush_context(iommu, 0, 0, 0, DMA_CCMD_GLOBAL_INVL);
-> +	iommu->flush.flush_iotlb(iommu, 0, 0, 0, DMA_TLB_GLOBAL_FLUSH);
-> +	iommu_enable_translation(iommu);
-> +
-> +	if (si_domain) {
-> +		ret = iommu_attach_domain(si_domain, iommu);
-> +		if (ret < 0 || si_domain->id != ret)
-> +			goto disable_iommu;
-> +		domain_attach_iommu(si_domain, iommu);
-> +	}
-> +
-> +	iommu_disable_protect_mem_regions(iommu);
-> +	return 0;
-> +
-> +disable_iommu:
-> +	disable_dmar_iommu(iommu);
-> +out:
-> +	free_dmar_iommu(iommu);
-> +	return ret;
-> +}
-> +
->  int dmar_iommu_hotplug(struct dmar_drhd_unit *dmaru, bool insert)
->  {
-> -	return intel_iommu_enabled ? -ENOSYS : 0;
-> +	int ret = 0;
-> +	struct intel_iommu *iommu = dmaru->iommu;
-> +
-> +	if (!intel_iommu_enabled)
-> +		return 0;
-> +	if (iommu == NULL)
-> +		return -EINVAL;
-> +
-> +	if (insert) {
-> +		ret = intel_iommu_add(dmaru);
-> +	} else {
-> +		disable_dmar_iommu(iommu);
-> +		free_dmar_iommu(iommu);
-> +	}
-> +
-> +	return ret;
->  }
->  
->  static void intel_iommu_free_dmars(void)
-> 
-
-
--- 
-Thanks!
-Yijing
 
