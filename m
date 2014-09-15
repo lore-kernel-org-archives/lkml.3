@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855AbaIOThU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1755461AbaIOTnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:43:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755771AbaIOThO (ORCPT
+	with ESMTP id S1755835AbaIOThU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:14 -0400
+	Mon, 15 Sep 2014 15:37:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
-        Rui Wang <wangr@lemote.com>, John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 048/114] MIPS: Remove BUG_ON(!is_fpu_owner()) in do_ade()
-Date: Mon, 15 Sep 2014 12:25:48 -0700
-Message-Id: <20140915192642.944348149@linuxfoundation.org>
+        Vignesh Raman <Vignesh_Raman@mentor.com>,
+        Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>,
+        Dean Jenkins <Dean_Jenkins@mentor.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.14 082/114] Bluetooth: Avoid use of session socket after the session gets freed
+Date: Mon, 15 Sep 2014 12:26:22 -0700
+Message-Id: <20140915192643.995521476@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -32,62 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Vignesh Raman <Vignesh_Raman@mentor.com>
 
-commit 2e5767a27337812f6850b3fa362419e2f085e5c3 upstream.
+commit 32333edb82fb2009980eefc5518100068147ab82 upstream.
 
-In do_ade(), is_fpu_owner() isn't preempt-safe. For example, when an
-unaligned ldc1 is executed, do_cpu() is called and then FPU will be
-enabled (and TIF_USEDFPU will be set for the current process). Then,
-do_ade() is called because the access is unaligned.  If the current
-process is preempted at this time, TIF_USEDFPU will be cleard.  So when
-the process is scheduled again, BUG_ON(!is_fpu_owner()) is triggered.
+The commits 08c30aca9e698faddebd34f81e1196295f9dc063 "Bluetooth: Remove
+RFCOMM session refcnt" and 8ff52f7d04d9cc31f1e81dcf9a2ba6335ed34905
+"Bluetooth: Return RFCOMM session ptrs to avoid freed session"
+allow rfcomm_recv_ua and rfcomm_session_close to delete the session
+(and free the corresponding socket) and propagate NULL session pointer
+to the upper callers.
 
-This small program can trigger this BUG in a preemptible kernel:
+Additional fix is required to terminate the loop in rfcomm_process_rx
+function to avoid use of freed 'sk' memory.
 
-int main (int argc, char *argv[])
-{
-        double u64[2];
+The issue is only reproducible with kernel option CONFIG_PAGE_POISONING
+enabled making freed memory being changed and filled up with fixed char
+value used to unmask use-after-free issues.
 
-        while (1) {
-                asm volatile (
-                        ".set push \n\t"
-                        ".set noreorder \n\t"
-                        "ldc1 $f3, 4(%0) \n\t"
-                        ".set pop \n\t"
-                        ::"r"(u64):
-                );
-        }
-
-        return 0;
-}
-
-V2: Remove the BUG_ON() unconditionally due to Paul's suggestion.
-
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Jie Chen <chenj@lemote.com>
-Signed-off-by: Rui Wang <wangr@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
+Signed-off-by: Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>
+Acked-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/unaligned.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/bluetooth/rfcomm/core.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/mips/kernel/unaligned.c
-+++ b/arch/mips/kernel/unaligned.c
-@@ -605,7 +605,6 @@ static void emulate_load_store_insn(stru
- 	case sdc1_op:
- 		die_if_kernel("Unaligned FP access in kernel code", regs);
- 		BUG_ON(!used_math());
--		BUG_ON(!is_fpu_owner());
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -1859,10 +1859,13 @@ static struct rfcomm_session *rfcomm_pro
+ 	/* Get data directly from socket receive queue without copying it. */
+ 	while ((skb = skb_dequeue(&sk->sk_receive_queue))) {
+ 		skb_orphan(skb);
+-		if (!skb_linearize(skb))
++		if (!skb_linearize(skb)) {
+ 			s = rfcomm_recv_frame(s, skb);
+-		else
++			if (!s)
++				break;
++		} else {
+ 			kfree_skb(skb);
++		}
+ 	}
  
- 		lose_fpu(1);	/* Save FPU state for the emulator. */
- 		res = fpu_emulator_cop1Handler(regs, &current->thread.fpu, 1,
+ 	if (s && (sk->sk_state == BT_CLOSED))
 
 
