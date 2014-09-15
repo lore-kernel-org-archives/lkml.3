@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241AbaIOTrO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55653 "EHLO
+	id S1757033AbaIOUEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:04:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaIOTrK (ORCPT
+	with ESMTP id S1756226AbaIOTrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:10 -0400
+	Mon, 15 Sep 2014 15:47:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.10 08/71] firmware: Do not use WARN_ON(!spin_is_locked())
-Date: Mon, 15 Sep 2014 12:26:06 -0700
-Message-Id: <20140915192638.993669508@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 34/71] bfa: Fix undefined bit shift on big-endian architectures with 32-bit DMA address
+Date: Mon, 15 Sep 2014 12:26:32 -0700
+Message-Id: <20140915192639.841161002@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,60 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit aee530cfecf4f3ec83b78406bac618cec35853f8 upstream.
+commit 03a6c3ff3282ee9fa893089304d951e0be93a144 upstream.
 
-spin_is_locked() always returns false for uniprocessor configurations
-in several architectures, so do not use WARN_ON with it.
-Use lockdep_assert_held() instead to also reduce overhead in
-non-debug kernels.
+bfa_swap_words() shifts its argument (assumed to be 64-bit) by 32 bits
+each way.  In two places the argument type is dma_addr_t, which may be
+32-bit, in which case the effect of the bit shift is undefined:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+drivers/scsi/bfa/bfa_fcpim.c: In function 'bfa_ioim_send_ioreq':
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: right shift count >= width of type [enabled by default]
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: right shift count >= width of type [enabled by default]
+
+Avoid this by adding casts to u64 in bfa_swap_words().
+
+Compile-tested only.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Fixes: f16a17507b09 ('[SCSI] bfa: remove all OS wrappers')
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efi/vars.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/bfa/bfa_ioc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -481,7 +481,7 @@ EXPORT_SYMBOL_GPL(efivar_entry_remove);
-  */
- static void efivar_entry_list_del_unlock(struct efivar_entry *entry)
- {
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
+--- a/drivers/scsi/bfa/bfa_ioc.h
++++ b/drivers/scsi/bfa/bfa_ioc.h
+@@ -72,7 +72,7 @@ struct bfa_sge_s {
+ } while (0)
  
- 	list_del(&entry->list);
- 	spin_unlock_irq(&__efivars->lock);
-@@ -507,7 +507,7 @@ int __efivar_entry_delete(struct efivar_
- 	const struct efivar_operations *ops = __efivars->ops;
- 	efi_status_t status;
+ #define bfa_swap_words(_x)  (	\
+-	((_x) << 32) | ((_x) >> 32))
++	((u64)(_x) << 32) | ((u64)(_x) >> 32))
  
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
- 
- 	status = ops->set_variable(entry->var.VariableName,
- 				   &entry->var.VendorGuid,
-@@ -667,7 +667,7 @@ struct efivar_entry *efivar_entry_find(e
- 	int strsize1, strsize2;
- 	bool found = false;
- 
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
- 
- 	list_for_each_entry_safe(entry, n, head, list) {
- 		strsize1 = ucs2_strsize(name, 1024);
-@@ -731,7 +731,7 @@ int __efivar_entry_get(struct efivar_ent
- 	const struct efivar_operations *ops = __efivars->ops;
- 	efi_status_t status;
- 
--	WARN_ON(!spin_is_locked(&__efivars->lock));
-+	lockdep_assert_held(&__efivars->lock);
- 
- 	status = ops->get_variable(entry->var.VariableName,
- 				   &entry->var.VendorGuid,
+ #ifdef __BIG_ENDIAN
+ #define bfa_sge_to_be(_x)
 
 
