@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019AbaIOT1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:27:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
+	id S1755116AbaIOT1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:27:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494AbaIOT0q (ORCPT
+	with ESMTP id S1755023AbaIOT1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:46 -0400
+	Mon, 15 Sep 2014 15:27:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 004/158] media: xc4000: Fix get_frequency()
-Date: Mon, 15 Sep 2014 12:24:03 -0700
-Message-Id: <20140915192543.006163996@linuxfoundation.org>
+        Alex Smith <alex@alex-smith.me.uk>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.16 062/158] MIPS: ptrace: Test correct tasks flags in task_user_regset_view()
+Date: Mon, 15 Sep 2014 12:25:01 -0700
+Message-Id: <20140915192544.757856198@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,105 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Alex Smith <alex@alex-smith.me.uk>
 
-commit 4c07e32884ab69574cfd9eb4de3334233c938071 upstream.
+commit 65768a1a92cb12cbba87588927cf597a65d560aa upstream.
 
-The programmed frequency on xc4000 is not the middle
-frequency, but the initial frequency on the bandwidth range.
-However, the DVB API works with the middle frequency.
+task_user_regset_view() should test for TIF_32BIT_REGS in the flags of
+the specified task, not of the current task.
 
-This works fine on set_frontend, as the device calculates
-the needed offset. However, at get_frequency(), the returned
-value is the initial frequency. That's generally not a big
-problem on most drivers, however, starting with changeset
-6fe1099c7aec, the frequency drift is taken into account at
-dib7000p driver.
-
-This broke support for PCTV 340e, with uses dib7000p demod and
-xc4000 tuner.
-
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Alex Smith <alex@alex-smith.me.uk>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7450/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/tuners/xc4000.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+ arch/mips/kernel/ptrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/tuners/xc4000.c
-+++ b/drivers/media/tuners/xc4000.c
-@@ -93,7 +93,7 @@ struct xc4000_priv {
- 	struct firmware_description *firm;
- 	int	firm_size;
- 	u32	if_khz;
--	u32	freq_hz;
-+	u32	freq_hz, freq_offset;
- 	u32	bandwidth;
- 	u8	video_standard;
- 	u8	rf_mode;
-@@ -1157,14 +1157,14 @@ static int xc4000_set_params(struct dvb_
- 	case SYS_ATSC:
- 		dprintk(1, "%s() VSB modulation\n", __func__);
- 		priv->rf_mode = XC_RF_MODE_AIR;
--		priv->freq_hz = c->frequency - 1750000;
-+		priv->freq_offset = 1750000;
- 		priv->video_standard = XC4000_DTV6;
- 		type = DTV6;
- 		break;
- 	case SYS_DVBC_ANNEX_B:
- 		dprintk(1, "%s() QAM modulation\n", __func__);
- 		priv->rf_mode = XC_RF_MODE_CABLE;
--		priv->freq_hz = c->frequency - 1750000;
-+		priv->freq_offset = 1750000;
- 		priv->video_standard = XC4000_DTV6;
- 		type = DTV6;
- 		break;
-@@ -1173,23 +1173,23 @@ static int xc4000_set_params(struct dvb_
- 		dprintk(1, "%s() OFDM\n", __func__);
- 		if (bw == 0) {
- 			if (c->frequency < 400000000) {
--				priv->freq_hz = c->frequency - 2250000;
-+				priv->freq_offset = 2250000;
- 			} else {
--				priv->freq_hz = c->frequency - 2750000;
-+				priv->freq_offset = 2750000;
- 			}
- 			priv->video_standard = XC4000_DTV7_8;
- 			type = DTV78;
- 		} else if (bw <= 6000000) {
- 			priv->video_standard = XC4000_DTV6;
--			priv->freq_hz = c->frequency - 1750000;
-+			priv->freq_offset = 1750000;
- 			type = DTV6;
- 		} else if (bw <= 7000000) {
- 			priv->video_standard = XC4000_DTV7;
--			priv->freq_hz = c->frequency - 2250000;
-+			priv->freq_offset = 2250000;
- 			type = DTV7;
- 		} else {
- 			priv->video_standard = XC4000_DTV8;
--			priv->freq_hz = c->frequency - 2750000;
-+			priv->freq_offset = 2750000;
- 			type = DTV8;
- 		}
- 		priv->rf_mode = XC_RF_MODE_AIR;
-@@ -1200,6 +1200,8 @@ static int xc4000_set_params(struct dvb_
- 		goto fail;
- 	}
+--- a/arch/mips/kernel/ptrace.c
++++ b/arch/mips/kernel/ptrace.c
+@@ -398,7 +398,7 @@ const struct user_regset_view *task_user
+ #endif
  
-+	priv->freq_hz = c->frequency - priv->freq_offset;
-+
- 	dprintk(1, "%s() frequency=%d (compensated)\n",
- 		__func__, priv->freq_hz);
+ #ifdef CONFIG_MIPS32_O32
+-		if (test_thread_flag(TIF_32BIT_REGS))
++		if (test_tsk_thread_flag(task, TIF_32BIT_REGS))
+ 			return &user_mips_view;
+ #endif
  
-@@ -1520,7 +1522,7 @@ static int xc4000_get_frequency(struct d
- {
- 	struct xc4000_priv *priv = fe->tuner_priv;
- 
--	*freq = priv->freq_hz;
-+	*freq = priv->freq_hz + priv->freq_offset;
- 
- 	if (debug) {
- 		mutex_lock(&priv->lock);
 
 
