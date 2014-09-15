@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbaIOO45 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:56:57 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:32996 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaIOO4z (ORCPT
+	id S1753615AbaIOO51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:57:27 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50143 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752740AbaIOO5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:56:55 -0400
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 10:56:55 EDT
-Date: Mon, 15 Sep 2014 15:56:31 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jon Masters <jcm@redhat.com>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Subject: Re: [PATCH v4 11/18] ARM64 / ACPI: Parse MADT for SMP initialization
-Message-ID: <20140915145630.GE5415@arm.com>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-12-git-send-email-hanjun.guo@linaro.org>
- <54134DB4.6010705@redhat.com>
+	Mon, 15 Sep 2014 10:57:25 -0400
+Date: Mon, 15 Sep 2014 10:57:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+cc: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-pm@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v3 1/4] PM / Runtime: Add getter for quering the IRQ safe
+ option
+In-Reply-To: <1410776033-22156-2-git-send-email-k.kozlowski@samsung.com>
+Message-ID: <Pine.LNX.4.44L0.1409151056170.1360-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54134DB4.6010705@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 08:47:00PM +0100, Jon Masters wrote:
-> On 09/12/2014 10:00 AM, Hanjun Guo wrote:
-> > MADT contains the information for MPIDR which is essential for
-> > SMP initialization, parse the GIC cpu interface structures to
-> > get the MPIDR value and map it to cpu_logical_map(), and add
-> > enabled cpu with valid MPIDR into cpu_possible_map.
-> > 
-> > ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
-> > Parking protocol, but the Parking protocol is only specified for
-> > ARMv7 now, so make PSCI as the only way for the SMP boot protocol
-> > before some updates for the ACPI spec or the Parking protocol spec.
+On Mon, 15 Sep 2014, Krzysztof Kozlowski wrote:
+
+> Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+> PM IRQ safe was set or not.
 > 
-> As an aside, initial support for the Parking Protocol is working on test
-> systems within Red Hat at this time.
+> Various bus drivers implementing runtime PM may use choose to suspend
+> differently based on IRQ safeness status of child driver (e.g. do not
+> unprepare the clock if IRQ safe is not set).
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  include/linux/pm_runtime.h | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> index 367f49b9a1c9..44d74f0f182e 100644
+> --- a/include/linux/pm_runtime.h
+> +++ b/include/linux/pm_runtime.h
+> @@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+>  	ACCESS_ONCE(dev->power.last_busy) = jiffies;
+>  }
+>  
+> +static inline bool pm_runtime_is_irq_safe(struct device *dev)
+> +{
+> +	return dev->power.irq_safe;
+> +}
+> +
 
-BTW, have the details of the parking protocol been updated for ARMv8
-yet?
+If you add something to the runtime PM API, you must update the 
+documentation file (Documentation/power/runtime_pm.txt) 
+correspondingly.
 
--- 
-Catalin
+Alan Stern
+
