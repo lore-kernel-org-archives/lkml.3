@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452AbaIOWMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:12:36 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:50137 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932397AbaIOWM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:12:29 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Subject: Re: [PATCH 3/5] dt-bindings: add devicetree bindings for Fairchild FAN53555 regulators
-Date: Tue, 16 Sep 2014 00:14:43 +0200
-Message-ID: <2217201.MLW1SzL0fz@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20140915215410.GB7960@sirena.org.uk>
-References: <1410722585-13393-1-git-send-email-heiko@sntech.de> <1410722585-13393-4-git-send-email-heiko@sntech.de> <20140915215410.GB7960@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1640997.3ONdSdnbW3"; micalg="pgp-sha256"; protocol="application/pgp-signature"
+	id S1760045AbaIOXKX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:10:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50639 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932362AbaIOWMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:12:12 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 142/187] hwmon: (gpio-fan) Prevent overflow problem when writing large limits
+Date: Mon, 15 Sep 2014 15:09:12 -0700
+Message-Id: <1410818997-9432-143-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
---nextPart1640997.3ONdSdnbW3
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+------------------
 
-Am Montag, 15. September 2014, 14:54:10 schrieb Mark Brown:
-> On Sun, Sep 14, 2014 at 09:23:03PM +0200, Heiko Stuebner wrote:
-> > +Optional properties:
-> > +  - fairchild,suspend-regulator: regulator number to use for suspend
-> > voltages +		possible values are either <0> or <1>
-> 
-> I'm not sure what this means - What exactly is a "regulator" in this
-> context?  Are there really two separate regulators?
+From: Axel Lin <axel.lin@ingics.com>
 
-The fan53555 has two voltage selection registers (VSEL0 and VSEL1) which can 
-be switched through a gpio ... to use one as suspend voltage.
+commit 2565fb05d1e9fc0831f7b1c083bcfcb1cba1f020 upstream.
 
-So it's just one regulator output but can select one of two voltages.
---nextPart1640997.3ONdSdnbW3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+On platforms with sizeof(int) < sizeof(unsigned long), writing a rpm value
+larger than MAXINT will result in unpredictable limit values written to the
+chip. Avoid auto-conversion from unsigned long to int to fix the problem.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/hwmon/gpio-fan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-iQEcBAABCAAGBQJUF2TTAAoJEPOmecmc0R2B1FsH/j2fXuHJoxJIsDq91Vhsyz40
-SUa1dkNmKL4U4e9wa6dOat1JU1IefXoW8hRkQ1jhEoQPPiFbNNHnIxW2B7MIU051
-3BpcTCYoxx+hP4b87fRxp/RmpGhLVLSWEA660QVvD7hZ10b9OJttAFitsQK0J0kV
-EdFd9r9LiSgEyu0/mBL2MACgZwPor6G0mhdAs38qlvK9aaBcnTqFjR/Vq0bwAMpR
-IJ5wsPPky/OmNHgyVZIFy8h1l0tX51nxdtQjRpZ02Ds6Re3JERkVv9KqUUXL7j38
-I6ZK9ZnUtPSeyI+WZRd0kTl0LeOp/t9OCFBm5i5uWpEFf/Vg4Bff6URn4m+mOqc=
-=HBi2
------END PGP SIGNATURE-----
-
---nextPart1640997.3ONdSdnbW3--
+diff --git a/drivers/hwmon/gpio-fan.c b/drivers/hwmon/gpio-fan.c
+index 73181be..814f7ee 100644
+--- a/drivers/hwmon/gpio-fan.c
++++ b/drivers/hwmon/gpio-fan.c
+@@ -173,7 +173,7 @@ static int get_fan_speed_index(struct gpio_fan_data *fan_data)
+ 	return -ENODEV;
+ }
+ 
+-static int rpm_to_speed_index(struct gpio_fan_data *fan_data, int rpm)
++static int rpm_to_speed_index(struct gpio_fan_data *fan_data, unsigned long rpm)
+ {
+ 	struct gpio_fan_speed *speed = fan_data->speed;
+ 	int i;
+-- 
+1.9.1
 
