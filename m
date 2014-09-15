@@ -1,172 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaIOPAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:00:24 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:37494 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaIOPAX (ORCPT
+	id S1753304AbaIOPBc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:01:32 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:50868 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaIOPBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:00:23 -0400
-Date: Tue, 16 Sep 2014 00:00:01 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        Chao Yu <chao2.yu@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] zram: use notify_free to account all free notifications
-Message-ID: <20140915150001.GA953@swordfish>
-References: <1410580334-8429-1-git-send-email-sergey.senozhatsky@gmail.com>
- <1410580334-8429-2-git-send-email-sergey.senozhatsky@gmail.com>
- <20140914232249.GC2160@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140914232249.GC2160@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 15 Sep 2014 11:01:31 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Olof Johansson <olof@lixom.net>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-geode@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2] drivers: char: hw_random: printk replacement
+Date: Mon, 15 Sep 2014 20:31:20 +0530
+Message-Id: <1410793281-30305-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+as pr_* macros are more preffered over printk, so printk replaced with corresponding pr_* macros
 
-On (09/15/14 08:22), Minchan Kim wrote:
-> Hi Sergey,
-> 
-> On Sat, Sep 13, 2014 at 12:52:14PM +0900, Sergey Senozhatsky wrote:
-> > notify_free device attribute accounts the number of slot free notifications
-> > and internally represents the number of zram_free_page() calls. Slot free
-> > notifications are sent only when device is used as a swap device, hence
-> > notify_free is used only for swap devices. Since f4659d8e620d08 (zram:
-> > support REQ_DISCARD) ZRAM handles yet another one free notification (also
-> > via zram_free_page() call) -- REQ_DISCARD requests, which are sent by a
-> > filesystem, whenever some data blocks are discarded. However, there is no
-> > way to know the number of notifications in the latter case.
-> > 
-> > Change zram_free_page() to return a bool status, indicating if zs_free()
-> > has happened. So we can use `notify_free' to account the number of pages
-> > freed by zram_bio_discard() and zram_slot_free_notify().
-> > 
-> > This means that depending on usage scenario `notify_free' represents:
-> >  a) the number of pages freed because of slot free notifications, which is
-> >    equal to the number of swap_slot_free_notify() calls, so there is no
-> >    behaviour change
-> > 
-> >  b) the number of pages freed because of REQ_DISCARD notifications
-> > 
-> > Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > ---
-> >  Documentation/ABI/testing/sysfs-block-zram | 13 ++++++++-----
-> >  drivers/block/zram/zram_drv.c              | 12 +++++++-----
-> >  2 files changed, 15 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-> > index b13dc99..a6148ea 100644
-> > --- a/Documentation/ABI/testing/sysfs-block-zram
-> > +++ b/Documentation/ABI/testing/sysfs-block-zram
-> > @@ -77,11 +77,14 @@ What:		/sys/block/zram<id>/notify_free
-> >  Date:		August 2010
-> >  Contact:	Nitin Gupta <ngupta@vflare.org>
-> >  Description:
-> > -		The notify_free file is read-only and specifies the number of
-> > -		swap slot free notifications received by this device. These
-> > -		notifications are sent to a swap block device when a swap slot
-> > -		is freed. This statistic is applicable only when this disk is
-> > -		being used as a swap disk.
-> > +		The notify_free file is read-only. Depending on device usage
-> > +		scenario it may account a) the number of pages freed because
-> > +		of swap slot free notifications or b) the number of pages freed
-> > +		because of REQ_DISCARD requests sent by bio. The former ones
-> > +		are sent to a swap block device when a swap slot is freed, which
-> > +		implies that this disk is being used as a swap disk. The latter
-> > +		ones are sent by filesystem mounted with discard option,
-> > +		whenever some data blocks are getting discarded.
-> >  
-> >  What:		/sys/block/zram<id>/zero_pages
-> >  Date:		August 2010
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index d78b245..03d11d5 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -388,7 +388,7 @@ static void handle_zero_page(struct bio_vec *bvec)
-> >   * caller should hold this table index entry's bit_spinlock to
-> >   * indicate this index entry is accessing.
-> >   */
-> > -static void zram_free_page(struct zram *zram, size_t index)
-> > +static bool zram_free_page(struct zram *zram, size_t index)
-> >  {
-> >  	struct zram_meta *meta = zram->meta;
-> >  	unsigned long handle = meta->table[index].handle;
-> > @@ -402,7 +402,7 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  			zram_clear_flag(meta, index, ZRAM_ZERO);
-> >  			atomic64_dec(&zram->stats.zero_pages);
-> >  		}
-> > -		return;
-> > +		return false;
-> >  	}
-> >  
-> >  	zs_free(meta->mem_pool, handle);
-> > @@ -413,6 +413,7 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >  
-> >  	meta->table[index].handle = 0;
-> >  	zram_set_obj_size(meta, index, 0);
-> > +	return true;
-> >  }
-> 
-> For just stat accounting, adding return value for fast path?
-> I don't think it's not a important stat at the cost of adding more overhead
-> in fastpath. If you have a strong reason, I will do that. Otherwise,
-> please, don't touch fast path and just account it regardless of real freeing.
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
-yes, that was the reason -- we can show just a number of notifications
-or a number of notifications that forced zram to take some actions (free memory).
-my target was the second case. [[besides, a single mov could not dramatically
-impact the perfomance; we do much heavier staff when we actually free the
-memory]].
+The replacement was done by a bash script to avoid copy paste error. The script is as follows :
 
-> I should have said before resending.
-> Sorry for bothering you. :)
+OLD="printk(KERN_ERR \?"
+OLD1="printk(KERN_NOTICE \?"
+OLD2="printk(KERN_WARNING \?"
+OLD3="printk(KERN_INFO \?"
+NEW="pr_err("
+NEW1="pr_notice("
+NEW2="pr_warn("
+NEW3="pr_info("
+TFILE="/tmp/out.tmp.$$"
+for f in *.c
+do
+sed -e "s/$OLD/$NEW/g" -e "s/$OLD1/$NEW1/g" -e "s/$OLD2/$NEW2/g" -e "s/$OLD3/$NEW3/g" "$f" > $TFILE && mv $TFILE "$f"
+done
 
-no problem, resent v3.
-hoping this time it'll work out for everyone :)
+exception is intel-rng.c . 
+in v1 the build failed due to intel-rng.c . 
+it has been corrected and has been carefully build tested.
 
-	-ss
+ drivers/char/hw_random/amd-rng.c     |  4 ++--
+ drivers/char/hw_random/geode-rng.c   |  4 ++--
+ drivers/char/hw_random/intel-rng.c   | 13 ++++++-------
+ drivers/char/hw_random/pasemi-rng.c  |  2 +-
+ drivers/char/hw_random/pseries-rng.c |  2 +-
+ drivers/char/hw_random/via-rng.c     |  8 ++++----
+ 6 files changed, 16 insertions(+), 17 deletions(-)
 
-> 
-> >  
-> >  static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > @@ -696,7 +697,8 @@ static void zram_bio_discard(struct zram *zram, u32 index,
-> >  
-> >  	while (n >= PAGE_SIZE) {
-> >  		bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
-> > -		zram_free_page(zram, index);
-> > +		if (zram_free_page(zram, index))
-> > +			atomic64_inc(&zram->stats.notify_free);
-> >  		bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> >  		index++;
-> >  		n -= PAGE_SIZE;
-> > @@ -936,9 +938,9 @@ static void zram_slot_free_notify(struct block_device *bdev,
-> >  	meta = zram->meta;
-> >  
-> >  	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
-> > -	zram_free_page(zram, index);
-> > +	if (zram_free_page(zram, index))
-> > +		atomic64_inc(&zram->stats.notify_free);
-> >  	bit_spin_unlock(ZRAM_ACCESS, &meta->table[index].value);
-> > -	atomic64_inc(&zram->stats.notify_free);
-> >  }
-> >  
-> >  static const struct block_device_operations zram_devops = {
-> > -- 
-> > 2.1.0.251.ga182987
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
-> 
+diff --git a/drivers/char/hw_random/amd-rng.c b/drivers/char/hw_random/amd-rng.c
+index c6af038..48f6a83 100644
+--- a/drivers/char/hw_random/amd-rng.c
++++ b/drivers/char/hw_random/amd-rng.c
+@@ -142,10 +142,10 @@ found:
+ 	amd_rng.priv = (unsigned long)pmbase;
+ 	amd_pdev = pdev;
+ 
+-	printk(KERN_INFO "AMD768 RNG detected\n");
++	pr_info("AMD768 RNG detected\n");
+ 	err = hwrng_register(&amd_rng);
+ 	if (err) {
+-		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
++		pr_err(PFX "RNG registering failed (%d)\n",
+ 		       err);
+ 		release_region(pmbase + 0xF0, 8);
+ 		goto out;
+diff --git a/drivers/char/hw_random/geode-rng.c b/drivers/char/hw_random/geode-rng.c
+index 4c4d4e1..0d0579f 100644
+--- a/drivers/char/hw_random/geode-rng.c
++++ b/drivers/char/hw_random/geode-rng.c
+@@ -109,10 +109,10 @@ found:
+ 		goto out;
+ 	geode_rng.priv = (unsigned long)mem;
+ 
+-	printk(KERN_INFO "AMD Geode RNG detected\n");
++	pr_info("AMD Geode RNG detected\n");
+ 	err = hwrng_register(&geode_rng);
+ 	if (err) {
+-		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
++		pr_err(PFX "RNG registering failed (%d)\n",
+ 		       err);
+ 		goto err_unmap;
+ 	}
+diff --git a/drivers/char/hw_random/intel-rng.c b/drivers/char/hw_random/intel-rng.c
+index 86fe45c..290c880 100644
+--- a/drivers/char/hw_random/intel-rng.c
++++ b/drivers/char/hw_random/intel-rng.c
+@@ -199,7 +199,7 @@ static int intel_rng_init(struct hwrng *rng)
+ 	if ((hw_status & INTEL_RNG_ENABLED) == 0)
+ 		hw_status = hwstatus_set(mem, hw_status | INTEL_RNG_ENABLED);
+ 	if ((hw_status & INTEL_RNG_ENABLED) == 0) {
+-		printk(KERN_ERR PFX "cannot enable RNG, aborting\n");
++		pr_err(PFX "cannot enable RNG, aborting\n");
+ 		goto out;
+ 	}
+ 	err = 0;
+@@ -216,7 +216,7 @@ static void intel_rng_cleanup(struct hwrng *rng)
+ 	if (hw_status & INTEL_RNG_ENABLED)
+ 		hwstatus_set(mem, hw_status & ~INTEL_RNG_ENABLED);
+ 	else
+-		printk(KERN_WARNING PFX "unusual: RNG already disabled\n");
++		pr_warn(PFX "unusual: RNG already disabled\n");
+ }
+ 
+ 
+@@ -274,7 +274,7 @@ static int __init intel_rng_hw_init(void *_intel_rng_hw)
+ 	if (mfc != INTEL_FWH_MANUFACTURER_CODE ||
+ 	    (dvc != INTEL_FWH_DEVICE_CODE_8M &&
+ 	     dvc != INTEL_FWH_DEVICE_CODE_4M)) {
+-		printk(KERN_NOTICE PFX "FWH not detected\n");
++		pr_notice(PFX "FWH not detected\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -306,7 +306,6 @@ static int __init intel_init_hw_struct(struct intel_rng_hw *intel_rng_hw,
+ 	     (BIOS_CNTL_LOCK_ENABLE_MASK|BIOS_CNTL_WRITE_ENABLE_MASK))
+ 	    == BIOS_CNTL_LOCK_ENABLE_MASK) {
+ 		static __initdata /*const*/ char warning[] =
+-			KERN_WARNING
+ PFX "Firmware space is locked read-only. If you can't or\n"
+ PFX "don't want to disable this in firmware setup, and if\n"
+ PFX "you are certain that your system has a functional\n"
+@@ -314,7 +313,7 @@ PFX "RNG, try using the 'no_fwh_detect' option.\n";
+ 
+ 		if (no_fwh_detect)
+ 			return -ENODEV;
+-		printk(warning);
++		pr_warn("%s", warning);
+ 		return -EBUSY;
+ 	}
+ 
+@@ -392,10 +391,10 @@ fwh_done:
+ 		goto out;
+ 	}
+ 
+-	printk(KERN_INFO "Intel 82802 RNG detected\n");
++	pr_info("Intel 82802 RNG detected\n");
+ 	err = hwrng_register(&intel_rng);
+ 	if (err) {
+-		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
++		pr_err(PFX "RNG registering failed (%d)\n",
+ 		       err);
+ 		iounmap(mem);
+ 	}
+diff --git a/drivers/char/hw_random/pasemi-rng.c b/drivers/char/hw_random/pasemi-rng.c
+index c66279b..c0347d1 100644
+--- a/drivers/char/hw_random/pasemi-rng.c
++++ b/drivers/char/hw_random/pasemi-rng.c
+@@ -113,7 +113,7 @@ static int rng_probe(struct platform_device *ofdev)
+ 
+ 	pasemi_rng.priv = (unsigned long)rng_regs;
+ 
+-	printk(KERN_INFO "Registering PA Semi RNG\n");
++	pr_info("Registering PA Semi RNG\n");
+ 
+ 	err = hwrng_register(&pasemi_rng);
+ 
+diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
+index ab7ffde..6226aa0 100644
+--- a/drivers/char/hw_random/pseries-rng.c
++++ b/drivers/char/hw_random/pseries-rng.c
+@@ -86,7 +86,7 @@ static struct vio_driver pseries_rng_driver = {
+ 
+ static int __init rng_init(void)
+ {
+-	printk(KERN_INFO "Registering IBM pSeries RNG driver\n");
++	pr_info("Registering IBM pSeries RNG driver\n");
+ 	return vio_register_driver(&pseries_rng_driver);
+ }
+ 
+diff --git a/drivers/char/hw_random/via-rng.c b/drivers/char/hw_random/via-rng.c
+index de5a6dc..a3bebef 100644
+--- a/drivers/char/hw_random/via-rng.c
++++ b/drivers/char/hw_random/via-rng.c
+@@ -141,7 +141,7 @@ static int via_rng_init(struct hwrng *rng)
+ 	 * register */
+ 	if ((c->x86 == 6) && (c->x86_model >= 0x0f)) {
+ 		if (!cpu_has_xstore_enabled) {
+-			printk(KERN_ERR PFX "can't enable hardware RNG "
++			pr_err(PFX "can't enable hardware RNG "
+ 				"if XSTORE is not enabled\n");
+ 			return -ENODEV;
+ 		}
+@@ -180,7 +180,7 @@ static int via_rng_init(struct hwrng *rng)
+ 	   unneeded */
+ 	rdmsr(MSR_VIA_RNG, lo, hi);
+ 	if ((lo & VIA_RNG_ENABLE) == 0) {
+-		printk(KERN_ERR PFX "cannot enable VIA C3 RNG, aborting\n");
++		pr_err(PFX "cannot enable VIA C3 RNG, aborting\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -202,10 +202,10 @@ static int __init mod_init(void)
+ 
+ 	if (!cpu_has_xstore)
+ 		return -ENODEV;
+-	printk(KERN_INFO "VIA RNG detected\n");
++	pr_info("VIA RNG detected\n");
+ 	err = hwrng_register(&via_rng);
+ 	if (err) {
+-		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
++		pr_err(PFX "RNG registering failed (%d)\n",
+ 		       err);
+ 		goto out;
+ 	}
+-- 
+1.8.1.2
+
