@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434AbaIOIwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 04:52:10 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50426 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400AbaIOIwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 04:52:08 -0400
-Message-ID: <5416A8B0.8040603@linux.vnet.ibm.com>
-Date: Mon, 15 Sep 2014 14:22:00 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753572AbaIOI4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 04:56:39 -0400
+Received: from bes.se.axis.com ([195.60.68.10]:37846 "EHLO bes.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753338AbaIOI4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 04:56:38 -0400
+X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 04:56:38 EDT
+Date: Mon, 15 Sep 2014 10:50:29 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Michal Simek <monstr@monstr.eu>,
+        Rob Herring <rob.herring@calxeda.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>
+Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default
+ 'screen_info" for fixing compiling break
+Message-ID: <20140915085029.GY4659@axis.com>
+References: <541552B8.8020807@gmail.com>
+ <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-CC: mikey@neuling.org, linux-pm@vger.kernel.org, rjw@rjwysocki.net,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH] cpuidle/powernv: Enter fastsleep on checking if deep
- idle states are allowed
-References: <20140912110131.7311.86417.stgit@preeti.in.ibm.com> <1410764352.32643.2.camel@concordia>
-In-Reply-To: <1410764352.32643.2.camel@concordia>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091508-0928-0000-0000-000004D51533
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 12:29 PM, Michael Ellerman wrote:
-> On Fri, 2014-09-12 at 16:31 +0530, Preeti U Murthy wrote:
->> Today the procfs interface /proc/sys/kernel/powersave-nap is used to control
->> entry into deep idle states beyond snooze. Check for the value of this
->> parameter before entering fastsleep. We already do this check for nap in
->> power7_idle().
->>
->> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/cpuidle/cpuidle-powernv.c |    6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
->> index a64be57..b8ba52e 100644
->> --- a/drivers/cpuidle/cpuidle-powernv.c
->> +++ b/drivers/cpuidle/cpuidle-powernv.c
->> @@ -69,6 +69,12 @@ static int fastsleep_loop(struct cpuidle_device *dev,
->>  	unsigned long old_lpcr = mfspr(SPRN_LPCR);
->>  	unsigned long new_lpcr;
->>  
->> +	/*
->> +	 * Verify if snooze is the only valid cpuidle state
->> +	 */
->> +	if (!(powersave_nap > 0))
->> +		return index;
->> +
->>  	if (unlikely(system_state < SYSTEM_RUNNING))
->>  		return index;
+On Sun, Sep 14, 2014 at 10:45:23AM +0200, Geert Uytterhoeven wrote:
+> Hi Chen,
 > 
-> Doesn't the above mean we are just going to keep trying to go into fastsleep
-> again and again? Or does the idle code work out that it didn't work based on
-> the fact that we didn't sleep for the right period?
+> On Sun, Sep 14, 2014 at 10:32 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+> > Add default one just like other architectures have done (e.g. cris,
+> > score, sh ...), the related error with allmodconfig:
+> >
+> >     LD      init/built-in.o
+> >   drivers/built-in.o: In function `vgacon_save_screen':
+> >   drivers/video/console/.tmp_vgacon.o:(.text+0x834d0): undefined reference to `screen_info'
+> >   drivers/video/console/.tmp_vgacon.o:(.text+0x834ec): undefined reference to `screen_info'
+> >   drivers/built-in.o: In function `vgacon_resize':
+> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83cdc): undefined reference to `screen_info'
+> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83d38): undefined reference to `screen_info'
+> >   drivers/built-in.o: In function `vgacon_switch':
+> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83f50): undefined reference to `screen_info'
+> >   drivers/built-in.o:drivers/video/console/.tmp_vgacon.o:(.text+0x8407c): more undefined references to `screen_info' follow
+> >   make: *** [vmlinux] Error 1
+> 
+> Can microblaze actually have VGA?
+> 
+> If not, it's better to disable it.
+> 
+> BTW, it's interesting you mention cris, as VGA_CONSOLE depends on !CRIS
+> in drivers/video/console/Kconfig...
 
-Thats right. The idle code figures that its judgment to enter fastsleep
-was not correct and applies a correction factor to its future decisions
-. This correction factor is intended to influence the cpuidle governor's
-decision on choosing an idle state for the cpu based on the history of
-wakeups. Hence a shallower idle state will be chosen here on in the
-above circumstance.
+No CRIS platform has ever had a video console.
 
-> 
-> We were talking about getting rid of powersave_nap altogether, but I think we
-> decided we couldn't, I forget.
+> I (still) think it's time to introduce ARCH_MIGHT_HAVE_VGA, and make
+> VGA_CONSOLE depend on that, cfr.
 
-Isn't this a helpful knob to disable cpuidle at runtime? Currently we
-check the value of powersave_nap before entering both nap and fastsleep.
+Sounds reasonable, at least it can avoid the specific depends on !*arch* cruft.
 
-Regards
-Preeti U Murthy
+> Gr{oetje,eeting}s,
 > 
-> cheers
-> 
-> 
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-> 
+>                         Geert
 
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
