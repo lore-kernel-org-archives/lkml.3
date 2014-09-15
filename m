@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216AbaIOUIb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:08:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	id S1757207AbaIOUI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:08:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756192AbaIOTrH (ORCPT
+	with ESMTP id S1756193AbaIOTrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 16/71] powerpc/pseries: Failure on removing device node
-Date: Mon, 15 Sep 2014 12:26:14 -0700
-Message-Id: <20140915192639.257349507@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.10 17/71] Drivers: scsi: storvsc: Implement a eh_timed_out handler
+Date: Mon, 15 Sep 2014 12:26:15 -0700
+Message-Id: <20140915192639.287390423@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -29,51 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit f1b3929c232784580e5d8ee324b6bc634e709575 upstream.
+commit 56b26e69c8283121febedd12b3cc193384af46b9 upstream.
 
-While running command "drmgr -c phb -r -s 'PHB 528'", following
-backtrace jumped out because the target device node isn't marked
-with OF_DETACHED by of_detach_node(), which caused by error
-returned from memory hotplug related reconfig notifier when
-disabling CONFIG_MEMORY_HOTREMOVE. The patch fixes it.
+On Azure, we have seen instances of unbounded I/O latencies. To deal with
+this issue, implement handler that can reset the timeout. Note that the
+host gaurantees that it will respond to each command that has been issued.
 
-ERROR: Bad of_node_put() on /pci@800000020000210/ethernet@0
-CPU: 14 PID: 2252 Comm: drmgr Tainted: G        W     3.16.0+ #427
-Call Trace:
-[c000000012a776a0] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
-[c000000012a77750] [c00000000083cd34] .dump_stack+0x7c/0x9c
-[c000000012a777d0] [c0000000006807c4] .of_node_release+0x58/0xe0
-[c000000012a77860] [c00000000038a7d0] .kobject_release+0x174/0x1b8
-[c000000012a77900] [c00000000038a884] .kobject_put+0x70/0x78
-[c000000012a77980] [c000000000681680] .of_node_put+0x28/0x34
-[c000000012a77a00] [c000000000681ea8] .__of_get_next_child+0x64/0x70
-[c000000012a77a90] [c000000000682138] .of_find_node_by_path+0x1b8/0x20c
-[c000000012a77b40] [c000000000051840] .ofdt_write+0x308/0x688
-[c000000012a77c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
-[c000000012a77cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
-[c000000012a77d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
-[c000000012a77e30] [c00000000000a064] syscall_exit+0x0/0x98
-
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+[hch: added a better comment explaining the issue]
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/hotplug-memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/storvsc_drv.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -158,7 +158,7 @@ static int pseries_remove_memory(struct
- static inline int pseries_remove_memblock(unsigned long base,
- 					  unsigned int memblock_size)
- {
--	return -EOPNOTSUPP;
-+	return 0;
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -33,6 +33,7 @@
+ #include <linux/device.h>
+ #include <linux/hyperv.h>
+ #include <linux/mempool.h>
++#include <linux/blkdev.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <scsi/scsi_host.h>
+@@ -1285,6 +1286,16 @@ static int storvsc_host_reset_handler(st
+ 	return SUCCESS;
  }
- static inline int pseries_remove_memory(struct device_node *np)
+ 
++/*
++ * The host guarantees to respond to each command, although I/O latencies might
++ * be unbounded on Azure.  Reset the timer unconditionally to give the host a
++ * chance to perform EH.
++ */
++static enum blk_eh_timer_return storvsc_eh_timed_out(struct scsi_cmnd *scmnd)
++{
++	return BLK_EH_RESET_TIMER;
++}
++
+ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
  {
+ 	bool allowed = true;
+@@ -1444,6 +1455,7 @@ static struct scsi_host_template scsi_dr
+ 	.bios_param =		storvsc_get_chs,
+ 	.queuecommand =		storvsc_queuecommand,
+ 	.eh_host_reset_handler =	storvsc_host_reset_handler,
++	.eh_timed_out =		storvsc_eh_timed_out,
+ 	.slave_alloc =		storvsc_device_alloc,
+ 	.slave_destroy =	storvsc_device_destroy,
+ 	.slave_configure =	storvsc_device_configure,
 
 
