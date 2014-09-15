@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaIOTfG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:35:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54579 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088AbaIOT1N (ORCPT
+	id S1755474AbaIOTfy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:35:54 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37096 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054AbaIOTfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie+linaro@kernel.org>
-Subject: [PATCH 3.16 090/158] ASoC: omap-twl4030: Fix typo in 2nd dai links platform_name
-Date: Mon, 15 Sep 2014 12:25:29 -0700
-Message-Id: <20140915192545.583583011@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 15:35:51 -0400
+Date: Mon, 15 Sep 2014 15:35:45 -0400 (EDT)
+Message-Id: <20140915.153545.2175311588825407387.davem@davemloft.net>
+To: antoine.tenart@free-electrons.com
+Cc: sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 5/9] net: pxa168_eth: get and set the mac address on
+ the Ethernet controller
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1410789713-15341-6-git-send-email-antoine.tenart@free-electrons.com>
+References: <1410789713-15341-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1410789713-15341-6-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 12:35:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+Date: Mon, 15 Sep 2014 16:01:49 +0200
 
-------------------
+> +static void pxa168_eth_get_mac_address(struct net_device *dev,
+> +				       unsigned char *addr)
+> +{
+> +	struct pxa168_eth_private *pep = netdev_priv(dev);
+> +	unsigned int mac_h = rdl(pep, MAC_ADDR_HIGH);
+> +	unsigned int mac_l = rdl(pep, MAC_ADDR_LOW);
+> +
+> +	addr[0] = (mac_h >> 24) & 0xff;
+> +	addr[1] = (mac_h >> 16) & 0xff;
+> +	addr[2] = (mac_h >> 8) & 0xff;
+> +	addr[3] = mac_h & 0xff;
+> +	addr[4] = (mac_l >> 8) & 0xff;
+> +	addr[5] = mac_l & 0xff;
+> +}
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+This function is not used in this patch and thus will result in a compile
+warning.
 
-commit fdaf42c0105a24de8aefa60f6f7360842c4e673e upstream.
+The tree must be fully functional and compile with no new warnings after
+each patch in a patch series.
 
-The platform_name should be omap-mcasp3 for the 2nd link which is used for
-voice connection.
-
-Reported-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie+linaro@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/omap/omap-twl4030.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/sound/soc/omap/omap-twl4030.c
-+++ b/sound/soc/omap/omap-twl4030.c
-@@ -260,7 +260,7 @@ static struct snd_soc_dai_link omap_twl4
- 		.stream_name = "TWL4030 Voice",
- 		.cpu_dai_name = "omap-mcbsp.3",
- 		.codec_dai_name = "twl4030-voice",
--		.platform_name = "omap-mcbsp.2",
-+		.platform_name = "omap-mcbsp.3",
- 		.codec_name = "twl4030-codec",
- 		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF |
- 			   SND_SOC_DAIFMT_CBM_CFM,
-
-
+Therefore you must add this new function in the first patch which actually
+makes use of the new function.
