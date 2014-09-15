@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333AbaIOUAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:00:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756258AbaIOTrQ (ORCPT
+	id S1756908AbaIOUBT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:01:19 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42203 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756474AbaIOUBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@nsn.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH 3.10 26/71] MIPS: OCTEON: make get_system_type() thread-safe
-Date: Mon, 15 Sep 2014 12:26:24 -0700
-Message-Id: <20140915192639.578596535@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 16:01:16 -0400
+Date: Mon, 15 Sep 2014 22:01:12 +0200
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/13] eeepc-laptop: make disp attribute really write-only
+Message-ID: <20140915200112.GB7867@gmail.com>
+References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
+ <1410563212-31565-8-git-send-email-fransklaver@gmail.com>
+ <20140915200007.GB62440@vmdeb7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140915200007.GB62440@vmdeb7>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Sep 15, 2014 at 01:00:07PM -0700, Darren Hart wrote:
+> On Sat, Sep 13, 2014 at 01:06:46AM +0200, Frans Klaver wrote:
+> > The disp attribute is write-only, but sysfs doesn't know this. Currently
+> > show_sys_acpi() is mimicking sysfs behavior, if the underlying acpi call
+> > should fail. This is not ideal; behaving like sysfs is better left to
+> > sysfs.
+> > 
+> > Introduce EEEPC_CREATE_DEVICE_ATTR_WO() to instantiate a write-only
+> > attribute, and declare the disp attribute with it. Sysfs makes sure
+> > userspace can only write to disp at all times. This also means we can
+> > back to propagating any errors from get_acpi().
+> > 
+> > Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> > ---
+> >  drivers/platform/x86/eeepc-laptop.c | 8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> > index 3c04b77..4f6490d 100644
+> > --- a/drivers/platform/x86/eeepc-laptop.c
+> > +++ b/drivers/platform/x86/eeepc-laptop.c
+> > @@ -291,7 +291,7 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+> >  	int value = get_acpi(eeepc, cm);
+> >  
+> >  	if (value < 0)
+> > -		return -EIO;
+> > +		return value;
+> >  	return sprintf(buf, "%d\n", value);
+> >  }
+> >  
+> > @@ -316,9 +316,13 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
+> >  	EEEPC_ACPI_STORE_FUNC(_name, _cm)				\
+> >  	static DEVICE_ATTR(_name, _mode, show_##_name, store_##_name)
+> >  
+> > +#define EEEPC_CREATE_DEVICE_ATTR_WO(_name, _mode, _cm)			\
+> > +	EEEPC_ACPI_STORE_FUNC(_name, _cm)				\
+> > +	static DEVICE_ATTR(_name, _mode, NULL, store_##_name)
+> 
+> Per Greg's previous reply, I presume DEVICE_ATTR_WO here?
 
-------------------
+Yes, already taken care of in all similar cases.
 
-From: Aaro Koskinen <aaro.koskinen@nsn.com>
-
-commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
-
-get_system_type() is not thread-safe on OCTEON. It uses static data,
-also more dangerous issue is that it's calling cvmx_fuse_read_byte()
-every time without any synchronization. Currently it's possible to get
-processes stuck looping forever in kernel simply by launching multiple
-readers of /proc/cpuinfo:
-
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	(while true; do cat /proc/cpuinfo > /dev/null; done) &
-	...
-
-Fix by initializing the system type string only once during the early
-boot.
-
-Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
-Patchwork: http://patchwork.linux-mips.org/patch/7437/
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/mips/cavium-octeon/setup.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
-
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -463,6 +463,18 @@ static void octeon_halt(void)
- 	octeon_kill_core(NULL);
- }
- 
-+static char __read_mostly octeon_system_type[80];
-+
-+static int __init init_octeon_system_type(void)
-+{
-+	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
-+		cvmx_board_type_to_string(octeon_bootinfo->board_type),
-+		octeon_model_get_string(read_c0_prid()));
-+
-+	return 0;
-+}
-+early_initcall(init_octeon_system_type);
-+
- /**
-  * Handle all the error condition interrupts that might occur.
-  *
-@@ -482,11 +494,7 @@ static irqreturn_t octeon_rlm_interrupt(
-  */
- const char *octeon_board_type_string(void)
- {
--	static char name[80];
--	sprintf(name, "%s (%s)",
--		cvmx_board_type_to_string(octeon_bootinfo->board_type),
--		octeon_model_get_string(read_c0_prid()));
--	return name;
-+	return octeon_system_type;
- }
- 
- const char *get_system_type(void)
-
-
+Thanks,
+Frans
