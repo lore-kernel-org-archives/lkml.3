@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623AbaIOUvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:51:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
+	id S1758609AbaIOUvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:51:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55096 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044AbaIOTgo (ORCPT
+	with ESMTP id S1755063AbaIOTgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.16 133/158] xfs: quotacheck leaves dquot buffers without verifiers
-Date: Mon, 15 Sep 2014 12:26:12 -0700
-Message-Id: <20140915192546.869012657@linuxfoundation.org>
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.16 134/158] xfs: dont dirty buffers beyond EOF
+Date: Mon, 15 Sep 2014 12:26:13 -0700
+Message-Id: <20140915192546.898363267@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -31,108 +31,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-commit 5fd364fee81a7888af806e42ed8a91c845894f2d upstream.
+commit 22e757a49cf010703fcb9c9b4ef793248c39b0c2 upstream.
 
-When running xfs/305, I noticed that quotacheck was flushing dquot
-buffers that did not have the xfs_dquot_buf_ops verifiers attached:
+generic/263 is failing fsx at this point with a page spanning
+EOF that cannot be invalidated. The operations are:
 
-XFS (vdb): _xfs_buf_ioapply: no ops on block 0x1dc8/0x1dc8
-ffff880052489000: 44 51 01 04 00 00 65 b8 00 00 00 00 00 00 00 00  DQ....e.........
-ffff880052489010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-ffff880052489020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-ffff880052489030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-CPU: 1 PID: 2376 Comm: mount Not tainted 3.16.0-rc2-dgc+ #306
-Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
- ffff88006fe38000 ffff88004a0ffae8 ffffffff81cf1cca 0000000000000001
- ffff88004a0ffb88 ffffffff814d50ca 000010004a0ffc70 0000000000000000
- ffff88006be56dc4 0000000000000021 0000000000001dc8 ffff88007c773d80
-Call Trace:
- [<ffffffff81cf1cca>] dump_stack+0x45/0x56
- [<ffffffff814d50ca>] _xfs_buf_ioapply+0x3ca/0x3d0
- [<ffffffff810db520>] ? wake_up_state+0x20/0x20
- [<ffffffff814d51f5>] ? xfs_bdstrat_cb+0x55/0xb0
- [<ffffffff814d513b>] xfs_buf_iorequest+0x6b/0xd0
- [<ffffffff814d51f5>] xfs_bdstrat_cb+0x55/0xb0
- [<ffffffff814d53ab>] __xfs_buf_delwri_submit+0x15b/0x220
- [<ffffffff814d6040>] ? xfs_buf_delwri_submit+0x30/0x90
- [<ffffffff814d6040>] xfs_buf_delwri_submit+0x30/0x90
- [<ffffffff8150f89d>] xfs_qm_quotacheck+0x17d/0x3c0
- [<ffffffff81510591>] xfs_qm_mount_quotas+0x151/0x1e0
- [<ffffffff814ed01c>] xfs_mountfs+0x56c/0x7d0
- [<ffffffff814f0f12>] xfs_fs_fill_super+0x2c2/0x340
- [<ffffffff811c9fe4>] mount_bdev+0x194/0x1d0
- [<ffffffff814f0c50>] ? xfs_finish_flags+0x170/0x170
- [<ffffffff814ef0f5>] xfs_fs_mount+0x15/0x20
- [<ffffffff811ca8c9>] mount_fs+0x39/0x1b0
- [<ffffffff811e4d67>] vfs_kern_mount+0x67/0x120
- [<ffffffff811e757e>] do_mount+0x23e/0xad0
- [<ffffffff8117abde>] ? __get_free_pages+0xe/0x50
- [<ffffffff811e71e6>] ? copy_mount_options+0x36/0x150
- [<ffffffff811e8103>] SyS_mount+0x83/0xc0
- [<ffffffff81cfd40b>] tracesys+0xdd/0xe2
+1190 mapwrite   0x52c00 thru    0x5e569 (0xb96a bytes)
+1191 mapread    0x5c000 thru    0x5d636 (0x1637 bytes)
+1192 write      0x5b600 thru    0x771ff (0x1bc00 bytes)
 
-This was caused by dquot buffer readahead not attaching a verifier
-structure to the buffer when readahead was issued, resulting in the
-followup read of the buffer finding a valid buffer and so not
-attaching new verifiers to the buffer as part of the read.
+where 1190 extents EOF from 0x54000 to 0x5e569. When the direct IO
+write attempts to invalidate the cached page over this range, it
+fails with -EBUSY and so any attempt to do page invalidation fails.
 
-Also, when a verifier failure occurs, we then read the buffer
-without verifiers. Attach the verifiers manually after this read so
-that if the buffer is then written it will be verified that the
-corruption has been repaired.
+The real question is this: Why can't that page be invalidated after
+it has been written to disk and cleaned?
 
-Further, when flushing a dquot we don't ask for a verifier when
-reading in the dquot buffer the dquot belongs to. Most of the time
-this isn't an issue because the buffer is still cached, but when it
-is not cached it will result in writing the dquot buffer without
-having the verfier attached.
+Well, there's data on the first two buffers in the page (1k block
+size, 4k page), but the third buffer on the page (i.e. beyond EOF)
+is failing drop_buffers because it's bh->b_state == 0x3, which is
+BH_Uptodate | BH_Dirty.  IOWs, there's dirty buffers beyond EOF. Say
+what?
+
+OK, set_buffer_dirty() is called on all buffers from
+__set_page_buffers_dirty(), regardless of whether the buffer is
+beyond EOF or not, which means that when we get to ->writepage,
+we have buffers marked dirty beyond EOF that we need to clean.
+So, we need to implement our own .set_page_dirty method that
+doesn't dirty buffers beyond EOF.
+
+This is messy because the buffer code is not meant to be shared
+and it has interesting locking issues on the buffer dirty bits.
+So just copy and paste it and then modify it to suit what we need.
+
+Note: the solutions the other filesystems and generic block code use
+of marking the buffers clean in ->writepage does not work for XFS.
+It still leaves dirty buffers beyond EOF and invalidations still
+fail. Hence rather than play whack-a-mole, this patch simply
+prevents those buffers from being dirtied in the first place.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_dquot.c |    3 ++-
- fs/xfs/xfs_qm.c    |    8 +++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ fs/xfs/xfs_aops.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
 
---- a/fs/xfs/xfs_dquot.c
-+++ b/fs/xfs/xfs_dquot.c
-@@ -974,7 +974,8 @@ xfs_qm_dqflush(
- 	 * Get the buffer containing the on-disk dquot
- 	 */
- 	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dqp->q_blkno,
--				   mp->m_quotainfo->qi_dqchunklen, 0, &bp, NULL);
-+				   mp->m_quotainfo->qi_dqchunklen, 0, &bp,
-+				   &xfs_dquot_buf_ops);
- 	if (error)
- 		goto out_unlock;
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -1753,11 +1753,72 @@ xfs_vm_readpages(
+ 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
+ }
  
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -1005,6 +1005,12 @@ xfs_qm_dqiter_bufs(
- 		if (error)
- 			break;
- 
-+		/*
-+		 * A corrupt buffer might not have a verifier attached, so
-+		 * make sure we have the correct one attached before writeback
-+		 * occurs.
-+		 */
-+		bp->b_ops = &xfs_dquot_buf_ops;
- 		xfs_qm_reset_dqcounts(mp, bp, firstid, type);
- 		xfs_buf_delwri_queue(bp, buffer_list);
- 		xfs_buf_relse(bp);
-@@ -1090,7 +1096,7 @@ xfs_qm_dqiterate(
- 					xfs_buf_readahead(mp->m_ddev_targp,
- 					       XFS_FSB_TO_DADDR(mp, rablkno),
- 					       mp->m_quotainfo->qi_dqchunklen,
--					       NULL);
-+					       &xfs_dquot_buf_ops);
- 					rablkno++;
- 				}
- 			}
++/*
++ * This is basically a copy of __set_page_dirty_buffers() with one
++ * small tweak: buffers beyond EOF do not get marked dirty. If we mark them
++ * dirty, we'll never be able to clean them because we don't write buffers
++ * beyond EOF, and that means we can't invalidate pages that span EOF
++ * that have been marked dirty. Further, the dirty state can leak into
++ * the file interior if the file is extended, resulting in all sorts of
++ * bad things happening as the state does not match the underlying data.
++ *
++ * XXX: this really indicates that bufferheads in XFS need to die. Warts like
++ * this only exist because of bufferheads and how the generic code manages them.
++ */
++STATIC int
++xfs_vm_set_page_dirty(
++	struct page		*page)
++{
++	struct address_space	*mapping = page->mapping;
++	struct inode		*inode = mapping->host;
++	loff_t			end_offset;
++	loff_t			offset;
++	int			newly_dirty;
++
++	if (unlikely(!mapping))
++		return !TestSetPageDirty(page);
++
++	end_offset = i_size_read(inode);
++	offset = page_offset(page);
++
++	spin_lock(&mapping->private_lock);
++	if (page_has_buffers(page)) {
++		struct buffer_head *head = page_buffers(page);
++		struct buffer_head *bh = head;
++
++		do {
++			if (offset < end_offset)
++				set_buffer_dirty(bh);
++			bh = bh->b_this_page;
++			offset += 1 << inode->i_blkbits;
++		} while (bh != head);
++	}
++	newly_dirty = !TestSetPageDirty(page);
++	spin_unlock(&mapping->private_lock);
++
++	if (newly_dirty) {
++		/* sigh - __set_page_dirty() is static, so copy it here, too */
++		unsigned long flags;
++
++		spin_lock_irqsave(&mapping->tree_lock, flags);
++		if (page->mapping) {	/* Race with truncate? */
++			WARN_ON_ONCE(!PageUptodate(page));
++			account_page_dirtied(page, mapping);
++			radix_tree_tag_set(&mapping->page_tree,
++					page_index(page), PAGECACHE_TAG_DIRTY);
++		}
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
++		__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++	}
++	return newly_dirty;
++}
++
+ const struct address_space_operations xfs_address_space_operations = {
+ 	.readpage		= xfs_vm_readpage,
+ 	.readpages		= xfs_vm_readpages,
+ 	.writepage		= xfs_vm_writepage,
+ 	.writepages		= xfs_vm_writepages,
++	.set_page_dirty		= xfs_vm_set_page_dirty,
+ 	.releasepage		= xfs_vm_releasepage,
+ 	.invalidatepage		= xfs_vm_invalidatepage,
+ 	.write_begin		= xfs_vm_write_begin,
 
 
