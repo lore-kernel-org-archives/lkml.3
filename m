@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291AbaIOVMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:12:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54580 "EHLO
+	id S1759307AbaIOVMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:12:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895AbaIOT0u (ORCPT
+	with ESMTP id S1754770AbaIOT0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 042/158] powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
-Date: Mon, 15 Sep 2014 12:24:41 -0700
-Message-Id: <20140915192544.157022664@linuxfoundation.org>
+Subject: [PATCH 3.16 041/158] powerpc/thp: Dont recompute vsid and ssize in loop on invalidate
+Date: Mon, 15 Sep 2014 12:24:40 -0700
+Message-Id: <20140915192544.127636875@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -31,152 +31,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 629149fae478f0ac6bf705a535708b192e9c6b59 upstream.
+commit fa1f8ae80f8bb996594167ff4750a0b0a5a5bb5d upstream.
 
-If we changed base page size of the segment, either via sub_page_protect
-or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
-table entries. We do a lazy hash page table flush for all mapped pages
-in the demoted segment. This happens when we handle hash page fault
-for these pages.
-
-We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
-pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
-that implies that we could possibly have older 64K hash pte entries in
-the hash page table and we need to invalidate those entries.
-
-Handle this correctly for 16M pages
+The segment identifier and segment size will remain the same in
+the loop, So we can compute it outside. We also change the
+hugepage_invalidate interface so that we can use it the later patch
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/hugepage-hash64.c |   79 +++++++++++++++++++++++++++++++++-----
- 1 file changed, 70 insertions(+), 9 deletions(-)
+ arch/powerpc/include/asm/machdep.h    |    6 +++---
+ arch/powerpc/mm/hash_native_64.c      |   19 +++++--------------
+ arch/powerpc/mm/pgtable_64.c          |   24 ++++++++++++------------
+ arch/powerpc/platforms/pseries/lpar.c |   20 ++++++--------------
+ 4 files changed, 26 insertions(+), 43 deletions(-)
 
---- a/arch/powerpc/mm/hugepage-hash64.c
-+++ b/arch/powerpc/mm/hugepage-hash64.c
-@@ -18,6 +18,57 @@
- #include <linux/mm.h>
- #include <asm/machdep.h>
- 
-+static void invalidate_old_hpte(unsigned long vsid, unsigned long addr,
-+				pmd_t *pmdp, unsigned int psize, int ssize)
-+{
-+	int i, max_hpte_count, valid;
-+	unsigned long s_addr;
-+	unsigned char *hpte_slot_array;
-+	unsigned long hidx, shift, vpn, hash, slot;
-+
-+	s_addr = addr & HPAGE_PMD_MASK;
-+	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	/*
-+	 * IF we try to do a HUGE PTE update after a withdraw is done.
-+	 * we will find the below NULL. This happens when we do
-+	 * split_huge_page_pmd
-+	 */
-+	if (!hpte_slot_array)
-+		return;
-+
-+	if (ppc_md.hugepage_invalidate)
-+		return ppc_md.hugepage_invalidate(vsid, s_addr, hpte_slot_array,
-+						  psize, ssize);
-+	/*
-+	 * No bluk hpte removal support, invalidate each entry
-+	 */
-+	shift = mmu_psize_defs[psize].shift;
-+	max_hpte_count = HPAGE_PMD_SIZE >> shift;
-+	for (i = 0; i < max_hpte_count; i++) {
-+		/*
-+		 * 8 bits per each hpte entries
-+		 * 000| [ secondary group (one bit) | hidx (3 bits) | valid bit]
-+		 */
-+		valid = hpte_valid(hpte_slot_array, i);
-+		if (!valid)
-+			continue;
-+		hidx =  hpte_hash_index(hpte_slot_array, i);
-+
-+		/* get the vpn */
-+		addr = s_addr + (i * (1ul << shift));
-+		vpn = hpt_vpn(addr, vsid, ssize);
-+		hash = hpt_hash(vpn, shift, ssize);
-+		if (hidx & _PTEIDX_SECONDARY)
-+			hash = ~hash;
-+
-+		slot = (hash & htab_hash_mask) * HPTES_PER_GROUP;
-+		slot += hidx & _PTEIDX_GROUP_IX;
-+		ppc_md.hpte_invalidate(slot, vpn, psize,
-+				       MMU_PAGE_16M, ssize, 0);
-+	}
-+}
-+
-+
- int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
- 		    pmd_t *pmdp, unsigned long trap, int local, int ssize,
- 		    unsigned int psize)
-@@ -85,6 +136,15 @@ int __hash_page_thp(unsigned long ea, un
- 	vpn = hpt_vpn(ea, vsid, ssize);
- 	hash = hpt_hash(vpn, shift, ssize);
- 	hpte_slot_array = get_hpte_slot_array(pmdp);
-+	if (psize == MMU_PAGE_4K) {
-+		/*
-+		 * invalidate the old hpte entry if we have that mapped via 64K
-+		 * base page size. This is because demote_segment won't flush
-+		 * hash page table entries.
-+		 */
-+		if ((old_pmd & _PAGE_HASHPTE) && !(old_pmd & _PAGE_COMBO))
-+			invalidate_old_hpte(vsid, ea, pmdp, MMU_PAGE_64K, ssize);
-+	}
- 
- 	valid = hpte_valid(hpte_slot_array, index);
- 	if (valid) {
-@@ -107,11 +167,8 @@ int __hash_page_thp(unsigned long ea, un
- 			 * safely update this here.
- 			 */
- 			valid = 0;
--			new_pmd &= ~_PAGE_HPTEFLAGS;
- 			hpte_slot_array[index] = 0;
--		} else
--			/* clear the busy bits and set the hash pte bits */
--			new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		}
- 	}
- 
- 	if (!valid) {
-@@ -119,11 +176,7 @@ int __hash_page_thp(unsigned long ea, un
- 
- 		/* insert new entry */
- 		pa = pmd_pfn(__pmd(old_pmd)) << PAGE_SHIFT;
--repeat:
--		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -57,10 +57,10 @@ struct machdep_calls {
+ 	void            (*hpte_removebolted)(unsigned long ea,
+ 					     int psize, int ssize);
+ 	void		(*flush_hash_range)(unsigned long number, int local);
+-	void		(*hugepage_invalidate)(struct mm_struct *mm,
++	void		(*hugepage_invalidate)(unsigned long vsid,
++					       unsigned long addr,
+ 					       unsigned char *hpte_slot_array,
+-					       unsigned long addr, int psize);
 -
--		/* clear the busy bits and set the hash pte bits */
--		new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
-+		new_pmd |= _PAGE_HASHPTE;
++					       int psize, int ssize);
+ 	/* special for kexec, to be called in real mode, linear mapping is
+ 	 * destroyed as well */
+ 	void		(*hpte_clear_all)(void);
+--- a/arch/powerpc/mm/hash_native_64.c
++++ b/arch/powerpc/mm/hash_native_64.c
+@@ -412,18 +412,18 @@ static void native_hpte_invalidate(unsig
+ 	local_irq_restore(flags);
+ }
  
- 		/* Add in WIMG bits */
- 		rflags |= (new_pmd & (_PAGE_WRITETHRU | _PAGE_NO_CACHE |
-@@ -132,6 +185,8 @@ repeat:
- 		 * enable the memory coherence always
- 		 */
- 		rflags |= HPTE_R_M;
-+repeat:
-+		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
+-static void native_hugepage_invalidate(struct mm_struct *mm,
++static void native_hugepage_invalidate(unsigned long vsid,
++				       unsigned long addr,
+ 				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++				       int psize, int ssize)
+ {
+-	int ssize = 0, i;
+-	int lock_tlbie;
++	int i, lock_tlbie;
+ 	struct hash_pte *hptep;
+ 	int actual_psize = MMU_PAGE_16M;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long flags, s_addr = addr;
+ 	unsigned long hpte_v, want_v, shift;
+-	unsigned long hidx, vpn = 0, vsid, hash, slot;
++	unsigned long hidx, vpn = 0, hash, slot;
  
- 		/* Insert into the hash table, primary slot */
- 		slot = ppc_md.hpte_insert(hpte_group, vpn, pa, rflags, 0,
-@@ -172,6 +227,12 @@ repeat:
- 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
- 	}
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -437,15 +437,6 @@ static void native_hugepage_invalidate(s
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -745,12 +745,21 @@ void hpte_do_hugepage_flush(struct mm_st
+ 	if (!hpte_slot_array)
+ 		return;
+ 
+-	/* get the base page size */
++	/* get the base page size,vsid and segment size */
+ 	psize = get_slice_psize(mm, s_addr);
++	if (!is_kernel_addr(s_addr)) {
++		ssize = user_segment_size(s_addr);
++		vsid = get_vsid(mm->context.id, s_addr, ssize);
++		WARN_ON(vsid == 0);
++	} else {
++		vsid = get_kernel_vsid(s_addr, mmu_kernel_ssize);
++		ssize = mmu_kernel_ssize;
++	}
+ 
+ 	if (ppc_md.hugepage_invalidate)
+-		return ppc_md.hugepage_invalidate(mm, hpte_slot_array,
+-						  s_addr, psize);
++		return ppc_md.hugepage_invalidate(vsid, s_addr,
++						  hpte_slot_array,
++						  psize, ssize);
  	/*
-+	 * Mark the pte with _PAGE_COMBO, if we are trying to hash it with
-+	 * base page size 4k.
-+	 */
-+	if (psize == MMU_PAGE_4K)
-+		new_pmd |= _PAGE_COMBO;
-+	/*
- 	 * The hpte valid is stored in the pgtable whose address is in the
- 	 * second half of the PMD. Order this against clearing of the busy bit in
- 	 * huge pmd.
+ 	 * No bluk hpte removal support, invalidate each entry
+ 	 */
+@@ -768,15 +777,6 @@ void hpte_do_hugepage_flush(struct mm_st
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -430,16 +430,17 @@ static void __pSeries_lpar_hugepage_inva
+ 		spin_unlock_irqrestore(&pSeries_lpar_tlbie_lock, flags);
+ }
+ 
+-static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
+-				       unsigned char *hpte_slot_array,
+-				       unsigned long addr, int psize)
++static void pSeries_lpar_hugepage_invalidate(unsigned long vsid,
++					     unsigned long addr,
++					     unsigned char *hpte_slot_array,
++					     int psize, int ssize)
+ {
+-	int ssize = 0, i, index = 0;
++	int i, index = 0;
+ 	unsigned long s_addr = addr;
+ 	unsigned int max_hpte_count, valid;
+ 	unsigned long vpn_array[PPC64_HUGE_HPTE_BATCH];
+ 	unsigned long slot_array[PPC64_HUGE_HPTE_BATCH];
+-	unsigned long shift, hidx, vpn = 0, vsid, hash, slot;
++	unsigned long shift, hidx, vpn = 0, hash, slot;
+ 
+ 	shift = mmu_psize_defs[psize].shift;
+ 	max_hpte_count = 1U << (PMD_SHIFT - shift);
+@@ -452,15 +453,6 @@ static void pSeries_lpar_hugepage_invali
+ 
+ 		/* get the vpn */
+ 		addr = s_addr + (i * (1ul << shift));
+-		if (!is_kernel_addr(addr)) {
+-			ssize = user_segment_size(addr);
+-			vsid = get_vsid(mm->context.id, addr, ssize);
+-			WARN_ON(vsid == 0);
+-		} else {
+-			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
+-			ssize = mmu_kernel_ssize;
+-		}
+-
+ 		vpn = hpt_vpn(addr, vsid, ssize);
+ 		hash = hpt_hash(vpn, shift, ssize);
+ 		if (hidx & _PTEIDX_SECONDARY)
 
 
