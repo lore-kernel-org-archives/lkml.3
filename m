@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809AbaIOW21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:28:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51319 "EHLO
+	id S1758458AbaIOWUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:20:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51286 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758481AbaIOWUY (ORCPT
+	with ESMTP id S1758410AbaIOWUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:24 -0400
+	Mon, 15 Sep 2014 18:20:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Huacai Chen <chenhc@lemote.com>, Jie Chen <chenj@lemote.com>,
-        Rui Wang <wangr@lemote.com>, John Crispin <john@phrozen.org>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>, linux-mips@linux-mips.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
+Cc: Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 115/187] MIPS: Remove BUG_ON(!is_fpu_owner()) in do_ade()
-Date: Mon, 15 Sep 2014 15:08:45 -0700
-Message-Id: <1410818997-9432-116-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 124/187] MIPS: GIC: Prevent array overrun
+Date: Mon, 15 Sep 2014 15:08:54 -0700
+Message-Id: <1410818997-9432-125-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -31,64 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Jeffrey Deans <jeffrey.deans@imgtec.com>
 
-commit 2e5767a27337812f6850b3fa362419e2f085e5c3 upstream.
+commit ffc8415afab20bd97754efae6aad1f67b531132b upstream.
 
-In do_ade(), is_fpu_owner() isn't preempt-safe. For example, when an
-unaligned ldc1 is executed, do_cpu() is called and then FPU will be
-enabled (and TIF_USEDFPU will be set for the current process). Then,
-do_ade() is called because the access is unaligned.  If the current
-process is preempted at this time, TIF_USEDFPU will be cleard.  So when
-the process is scheduled again, BUG_ON(!is_fpu_owner()) is triggered.
+A GIC interrupt which is declared as having a GIC_MAP_TO_NMI_MSK
+mapping causes the cpu parameter to gic_setup_intr() to be increased
+to 32, causing memory corruption when pcpu_masks[] is written to again
+later in the function.
 
-This small program can trigger this BUG in a preemptible kernel:
-
-int main (int argc, char *argv[])
-{
-        double u64[2];
-
-        while (1) {
-                asm volatile (
-                        ".set push \n\t"
-                        ".set noreorder \n\t"
-                        "ldc1 $f3, 4(%0) \n\t"
-                        ".set pop \n\t"
-                        ::"r"(u64):
-                );
-        }
-
-        return 0;
-}
-
-V2: Remove the BUG_ON() unconditionally due to Paul's suggestion.
-
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Jie Chen <chenj@lemote.com>
-Signed-off-by: Rui Wang <wangr@lemote.com>
-Cc: John Crispin <john@phrozen.org>
-Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Signed-off-by: Jeffrey Deans <jeffrey.deans@imgtec.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
 Cc: linux-mips@linux-mips.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/7375/
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/mips/kernel/unaligned.c | 1 -
- 1 file changed, 1 deletion(-)
+ arch/mips/kernel/irq-gic.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/kernel/unaligned.c b/arch/mips/kernel/unaligned.c
-index c369a5d..b897dde 100644
---- a/arch/mips/kernel/unaligned.c
-+++ b/arch/mips/kernel/unaligned.c
-@@ -605,7 +605,6 @@ static void emulate_load_store_insn(struct pt_regs *regs,
- 	case sdc1_op:
- 		die_if_kernel("Unaligned FP access in kernel code", regs);
- 		BUG_ON(!used_math());
--		BUG_ON(!is_fpu_owner());
+diff --git a/arch/mips/kernel/irq-gic.c b/arch/mips/kernel/irq-gic.c
+index 5b5ddb2..78f1843 100644
+--- a/arch/mips/kernel/irq-gic.c
++++ b/arch/mips/kernel/irq-gic.c
+@@ -255,11 +255,13 @@ static void __init gic_setup_intr(unsigned int intr, unsigned int cpu,
  
- 		lose_fpu(1);	/* Save FPU state for the emulator. */
- 		res = fpu_emulator_cop1Handler(regs, &current->thread.fpu, 1,
+ 	/* Setup Intr to Pin mapping */
+ 	if (pin & GIC_MAP_TO_NMI_MSK) {
++		int i;
++
+ 		GICWRITE(GIC_REG_ADDR(SHARED, GIC_SH_MAP_TO_PIN(intr)), pin);
+ 		/* FIXME: hack to route NMI to all cpu's */
+-		for (cpu = 0; cpu < NR_CPUS; cpu += 32) {
++		for (i = 0; i < NR_CPUS; i += 32) {
+ 			GICWRITE(GIC_REG_ADDR(SHARED,
+-					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, cpu)),
++					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, i)),
+ 				 0xffffffff);
+ 		}
+ 	} else {
 -- 
 1.9.1
 
