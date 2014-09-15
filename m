@@ -1,111 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756180AbaIOVWg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:22:36 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:35545 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755293AbaIOVWe (ORCPT
+	id S1756258AbaIOVXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:23:49 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:49374 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741AbaIOVXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:22:34 -0400
+	Mon, 15 Sep 2014 17:23:48 -0400
+Date: Mon, 15 Sep 2014 22:23:42 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        KY Srinivasan <kys@microsoft.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [PATCH 3.14 039/114] scsi: add a blacklist flag which enables
+ VPD page inquiries
+Message-ID: <20140915212342.GB7014@sucs.org>
+References: <20140915192641.428509513@linuxfoundation.org>
+ <20140915192642.667743291@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1409111455320.16533@knanqh.ubzr>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-7-git-send-email-vincent.guittot@linaro.org> <alpine.LFD.2.11.1409111455320.16533@knanqh.ubzr>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Mon, 15 Sep 2014 23:22:14 +0200
-Message-ID: <CAKfTPtA7AwMS5VcbM_CUCMq2N+zE0teaxkpYvoRhbQzgdK8J-Q@mail.gmail.com>
-Subject: Re: [PATCH v5 06/12] sched: add per rq cpu_capacity_orig
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915192642.667743291@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 September 2014 21:02, Nicolas Pitre <nicolas.pitre@linaro.org> wrote:
-> On Tue, 26 Aug 2014, Vincent Guittot wrote:
->
->> This new field cpu_capacity_orig reflects the available capacity of a CPUs
->
-> s/a CPUs/a CPU/
+On Mon, Sep 15, 2014 at 12:25:39PM -0700, Greg Kroah-Hartman wrote:
+> 3.14-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: "Martin K. Petersen" <martin.petersen@oracle.com>
+> 
+> commit c1d40a527e885a40bb9ea6c46a1b1145d42b66a0 upstream.
+> 
+> Despite supporting modern SCSI features some storage devices continue to
+> claim conformance to an older version of the SPC spec. This is done for
+> compatibility with legacy operating systems.
+> 
+> Linux by default will not attempt to read VPD pages on devices that
+> claim SPC-2 or older. Introduce a blacklist flag that can be used to
+> trigger VPD page inquiries on devices that are known to support them.
+> 
+> Reported-by: KY Srinivasan <kys@microsoft.com>
+> Tested-by: KY Srinivasan <kys@microsoft.com>
+> Reviewed-by: KY Srinivasan <kys@microsoft.com>
+> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
 
-good catch
+<snip>
 
->
->> unlike the cpu_capacity which reflects the current capacity that can be altered
->> by frequency and rt tasks.
->
-> Shouldn't this be described as the "highest possible capacity" instead
-> of only "available capacity" to make it clearer?  In which case,
-> shouldn't it be called capacity_max instead of capacity_orig?  With
-> "orig" we may think "origin" as the capacity that was available at boot
-> time or the like.  If for example the CPU was booted with a low P-state
-> then its max capacity is different from the original one.
+> +#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
+>  #endif
 
-I have use the orig suffix to be aligned with the capacity_orig which
-is a sum of cpu_capacity_orig.
-I agree that orig is standing for original in the sense that it's the
-original capacity befor being altered by scale_freq and scale_rt
+Where is BLIST_TRY_VPD_PAGES being quirked on for Hyper-V's devices - is
+there some later patch or some missing code I'm overlooking?
 
-Vincent
->
->
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  kernel/sched/core.c  | 2 +-
->>  kernel/sched/fair.c  | 1 +
->>  kernel/sched/sched.h | 1 +
->>  3 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->> index a394f99..7c3b237 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -7003,7 +7003,7 @@ void __init sched_init(void)
->>  #ifdef CONFIG_SMP
->>               rq->sd = NULL;
->>               rq->rd = NULL;
->> -             rq->cpu_capacity = SCHED_CAPACITY_SCALE;
->> +             rq->cpu_capacity = rq->cpu_capacity_orig = SCHED_CAPACITY_SCALE;
->>               rq->post_schedule = 0;
->>               rq->active_balance = 0;
->>               rq->next_balance = jiffies;
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 8176bda..17c16cc 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5756,6 +5756,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
->>
->>       capacity >>= SCHED_CAPACITY_SHIFT;
->>
->> +     cpu_rq(cpu)->cpu_capacity_orig = capacity;
->>       sdg->sgc->capacity_orig = capacity;
->>
->>       if (sched_feat(ARCH_CAPACITY))
->> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->> index aa0f73b..7c0a74e 100644
->> --- a/kernel/sched/sched.h
->> +++ b/kernel/sched/sched.h
->> @@ -575,6 +575,7 @@ struct rq {
->>       struct sched_domain *sd;
->>
->>       unsigned long cpu_capacity;
->> +     unsigned long cpu_capacity_orig;
->>
->>       unsigned char idle_balance;
->>       /* For active balancing */
->> --
->> 1.9.1
->>
->>
+If the missing piece is f3cfabce7a2e92564d380de3aad4b43901fb7ae6, are
+people sure it works? I'll retest but the last two times I tested it
+(https://lkml.org/lkml/2014/7/23/615 and
+https://lkml.org/lkml/2014/8/1/460 ) no one said anything after I said
+thin provisioning wasn't enabled and James doesn't like quirking this on
+every Hyper-V device (https://lkml.org/lkml/2014/7/24/393 )...
+
+-- 
+Sitsofe | http://sucs.org/~sits/
