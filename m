@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760264AbaIOXRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:17:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50519 "EHLO
+	id S1760270AbaIOXRj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:17:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50508 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377AbaIOWK7 (ORCPT
+	with ESMTP id S1756826AbaIOWKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:10:59 -0400
+	Mon, 15 Sep 2014 18:10:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+Cc: Ben Hutchings <ben@decadent.org.uk>, Christoph Hellwig <hch@lst.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 103/187] KVM: PPC: Book3S PR: Take SRCU read lock around RTAS kvm_read_guest() call
-Date: Mon, 15 Sep 2014 15:08:33 -0700
-Message-Id: <1410818997-9432-104-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 093/187] bfa: Fix undefined bit shift on big-endian architectures with 32-bit DMA address
+Date: Mon, 15 Sep 2014 15:08:23 -0700
+Message-Id: <1410818997-9432-94-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,52 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit ef1af2e29622ff3403926ae801a2b10da075a2de upstream.
+commit 03a6c3ff3282ee9fa893089304d951e0be93a144 upstream.
 
-This does for PR KVM what c9438092cae4 ("KVM: PPC: Book3S HV: Take SRCU
-read lock around kvm_read_guest() call") did for HV KVM, that is,
-eliminate a "suspicious rcu_dereference_check() usage!" warning by
-taking the SRCU lock around the call to kvmppc_rtas_hcall().
+bfa_swap_words() shifts its argument (assumed to be 64-bit) by 32 bits
+each way.  In two places the argument type is dma_addr_t, which may be
+32-bit, in which case the effect of the bit shift is undefined:
 
-It also fixes a return of RESUME_HOST to return EMULATE_FAIL instead,
-since kvmppc_h_pr() is supposed to return EMULATE_* values.
+drivers/scsi/bfa/bfa_fcpim.c: In function 'bfa_ioim_send_ioreq':
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2497:4: warning: right shift count >= width of type [enabled by default]
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: left shift count >= width of type [enabled by default]
+    addr = bfa_sgaddr_le(sg_dma_address(sg));
+    ^
+drivers/scsi/bfa/bfa_fcpim.c:2509:4: warning: right shift count >= width of type [enabled by default]
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexander Graf <agraf@suse.de>
+Avoid this by adding casts to u64 in bfa_swap_words().
+
+Compile-tested only.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
+Fixes: f16a17507b09 ('[SCSI] bfa: remove all OS wrappers')
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kvm/book3s_pr_papr.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/scsi/bfa/bfa_ioc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/kvm/book3s_pr_papr.c b/arch/powerpc/kvm/book3s_pr_papr.c
-index 5efa97b..7a801b5 100644
---- a/arch/powerpc/kvm/book3s_pr_papr.c
-+++ b/arch/powerpc/kvm/book3s_pr_papr.c
-@@ -258,6 +258,8 @@ static int kvmppc_h_pr_xics_hcall(struct kvm_vcpu *vcpu, u32 cmd)
+diff --git a/drivers/scsi/bfa/bfa_ioc.h b/drivers/scsi/bfa/bfa_ioc.h
+index 90814fe..d5b3f66 100644
+--- a/drivers/scsi/bfa/bfa_ioc.h
++++ b/drivers/scsi/bfa/bfa_ioc.h
+@@ -72,7 +72,7 @@ struct bfa_sge_s {
+ } while (0)
  
- int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
- {
-+	int rc, idx;
-+
- 	switch (cmd) {
- 	case H_ENTER:
- 		return kvmppc_h_pr_enter(vcpu);
-@@ -286,8 +288,11 @@ int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
- 		break;
- 	case H_RTAS:
- 		if (list_empty(&vcpu->kvm->arch.rtas_tokens))
--			return RESUME_HOST;
--		if (kvmppc_rtas_hcall(vcpu))
-+			break;
-+		idx = srcu_read_lock(&vcpu->kvm->srcu);
-+		rc = kvmppc_rtas_hcall(vcpu);
-+		srcu_read_unlock(&vcpu->kvm->srcu, idx);
-+		if (rc)
- 			break;
- 		kvmppc_set_gpr(vcpu, 3, 0);
- 		return EMULATE_DONE;
+ #define bfa_swap_words(_x)  (	\
+-	((_x) << 32) | ((_x) >> 32))
++	((u64)(_x) << 32) | ((u64)(_x) >> 32))
+ 
+ #ifdef __BIG_ENDIAN
+ #define bfa_sge_to_be(_x)
 -- 
 1.9.1
 
