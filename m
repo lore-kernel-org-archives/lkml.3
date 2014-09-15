@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaIOWLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50569 "EHLO
+	id S932329AbaIOWLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:11:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50593 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932246AbaIOWLd (ORCPT
+	with ESMTP id S932310AbaIOWLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:33 -0400
+	Mon, 15 Sep 2014 18:11:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 099/187] Drivers: scsi: storvsc: Implement a eh_timed_out handler
-Date: Mon, 15 Sep 2014 15:08:29 -0700
-Message-Id: <1410818997-9432-100-git-send-email-kamal@canonical.com>
+Cc: Janusz Dziemidowicz <rraptorr@nails.eu.org>,
+        Christoph Hellwig <hch@lst.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 109/187] scsi: do not issue SCSI RSOC command to Promise Vtrak E610f
+Date: Mon, 15 Sep 2014 15:08:39 -0700
+Message-Id: <1410818997-9432-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,60 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Janusz Dziemidowicz <rraptorr@nails.eu.org>
 
-commit 56b26e69c8283121febedd12b3cc193384af46b9 upstream.
+commit 0213436a2cc5e4a5ca2fabfaa4d3877097f3b13f upstream.
 
-On Azure, we have seen instances of unbounded I/O latencies. To deal with
-this issue, implement handler that can reset the timeout. Note that the
-host gaurantees that it will respond to each command that has been issued.
+Some devices don't like REPORT SUPPORTED OPERATION CODES and will
+simply timeout causing sd_mod init to take a very very long time.
+Introduce BLIST_NO_RSOC scsi scan flag, that stops RSOC from being
+issued. Add it to Promise Vtrak E610f entry in scsi scan
+blacklist. Fixes bug #79901 reported at
+https://bugzilla.kernel.org/show_bug.cgi?id=79901
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-[hch: added a better comment explaining the issue]
+Fixes: 98dcc2946adb ("SCSI: sd: Update WRITE SAME heuristics")
+
+Signed-off-by: Janusz Dziemidowicz <rraptorr@nails.eu.org>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/storvsc_drv.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/scsi/scsi_devinfo.c | 1 +
+ drivers/scsi/scsi_scan.c    | 6 ++++++
+ include/scsi/scsi_devinfo.h | 2 ++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 7e8a642..2b8595b 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -33,6 +33,7 @@
- #include <linux/device.h>
- #include <linux/hyperv.h>
- #include <linux/mempool.h>
-+#include <linux/blkdev.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_host.h>
-@@ -1518,6 +1519,16 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- 	return SUCCESS;
- }
+diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+index f969aca..49014a1 100644
+--- a/drivers/scsi/scsi_devinfo.c
++++ b/drivers/scsi/scsi_devinfo.c
+@@ -222,6 +222,7 @@ static struct {
+ 	{"PIONEER", "CD-ROM DRM-602X", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+ 	{"PIONEER", "CD-ROM DRM-604X", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
+ 	{"PIONEER", "CD-ROM DRM-624X", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
++	{"Promise", "VTrak E610f", NULL, BLIST_SPARSELUN | BLIST_NO_RSOC},
+ 	{"Promise", "", NULL, BLIST_SPARSELUN},
+ 	{"QUANTUM", "XP34301", "1071", BLIST_NOTQ},
+ 	{"REGAL", "CDC-4X", NULL, BLIST_MAX5LUN | BLIST_SINGLELUN},
+diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+index 08e6151..f194e43 100644
+--- a/drivers/scsi/scsi_scan.c
++++ b/drivers/scsi/scsi_scan.c
+@@ -898,6 +898,12 @@ static int scsi_add_lun(struct scsi_device *sdev, unsigned char *inq_result,
+ 	if (*bflags & BLIST_USE_10_BYTE_MS)
+ 		sdev->use_10_for_ms = 1;
  
-+/*
-+ * The host guarantees to respond to each command, although I/O latencies might
-+ * be unbounded on Azure.  Reset the timer unconditionally to give the host a
-+ * chance to perform EH.
-+ */
-+static enum blk_eh_timer_return storvsc_eh_timed_out(struct scsi_cmnd *scmnd)
-+{
-+	return BLK_EH_RESET_TIMER;
-+}
++	/* some devices don't like REPORT SUPPORTED OPERATION CODES
++	 * and will simply timeout causing sd_mod init to take a very
++	 * very long time */
++	if (*bflags & BLIST_NO_RSOC)
++		sdev->no_report_opcodes = 1;
 +
- static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
- {
- 	bool allowed = true;
-@@ -1697,6 +1708,7 @@ static struct scsi_host_template scsi_driver = {
- 	.bios_param =		storvsc_get_chs,
- 	.queuecommand =		storvsc_queuecommand,
- 	.eh_host_reset_handler =	storvsc_host_reset_handler,
-+	.eh_timed_out =		storvsc_eh_timed_out,
- 	.slave_alloc =		storvsc_device_alloc,
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
+ 	/* set the device running here so that slave configure
+ 	 * may do I/O */
+ 	ret = scsi_device_set_state(sdev, SDEV_RUNNING);
+diff --git a/include/scsi/scsi_devinfo.h b/include/scsi/scsi_devinfo.h
+index 913c624..428b023 100644
+--- a/include/scsi/scsi_devinfo.h
++++ b/include/scsi/scsi_devinfo.h
+@@ -33,4 +33,6 @@
+ #define BLIST_NO_DIF		0x2000000 /* Disable T10 PI (DIF) */
+ #define BLIST_SKIP_VPD_PAGES	0x4000000 /* Ignore SBC-3 VPD pages */
+ #define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
++#define BLIST_NO_RSOC		0x20000000 /* don't try to issue RSOC */
++
+ #endif
 -- 
 1.9.1
 
