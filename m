@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108AbaIOBSb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 21:18:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57199 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038AbaIOBS2 convert rfc822-to-8bit (ORCPT
+	id S1753131AbaIOB0z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 21:26:55 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:44964 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaIOB0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 21:18:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,523,1406617200"; 
-   d="scan'208";a="602802923"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, atull <atull@opensource.altera.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Subject: RE: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver binding
- to MFD driver
-Thread-Topic: [PATCH 1/4 v3] GPIO: gpio-dwapb: Enable platform driver
- binding to MFD driver
-Thread-Index: AQHP0ILxaGk/ya5Mn0yC06Al/AQx+A==
-Date: Mon, 15 Sep 2014 01:18:24 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E9915E6@SHSMSX101.ccr.corp.intel.com>
-References: <1410286081-16653-1-git-send-email-alvin.chen@intel.com>
-  <1410286081-16653-2-git-send-email-alvin.chen@intel.com>
-  <alpine.DEB.2.02.1409101353500.2790@atx-linux-37>
- <1410422381.7023.15.camel@intel.com>
- <alpine.DEB.2.02.1409111020130.19272@atx-linux-37>
-In-Reply-To: <alpine.DEB.2.02.1409111020130.19272@atx-linux-37>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 14 Sep 2014 21:26:54 -0400
+Message-ID: <5416403D.8010504@huawei.com>
+Date: Mon, 15 Sep 2014 09:26:21 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <ak@linux.intel.com>,
+        "Pei Feiyue" <peifeiyue@huawei.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] kprobes/x86: opt: free optinsn cache when range check
+ fails
+References: <1406550019-70935-1-git-send-email-wangnan0@huawei.com> <53D6FC38.8070801@hitachi.com> <53FDCBF1.2020606@huawei.com> <53FDDF08.5090604@hitachi.com>
+In-Reply-To: <53FDDF08.5090604@hitachi.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > > >  static int dwapb_gpio_probe(struct platform_device *pdev)  {
-> > > > +	int i;
-> > > >  	struct resource *res;
-> > > >  	struct dwapb_gpio *gpio;
-> > > > -	struct device_node *np;
-> > > >  	int err;
-> > > > -	unsigned int offs = 0;
-> > > > +	struct device *dev = &pdev->dev;
-> > > > +	struct dwapb_platform_data *pdata = dev_get_platdata(dev);
-> > > > +	bool is_pdata_alloc = !pdata;
-> > >
-> > > Please combine the int's in one line (int err, i;) and put them as
-> > > the last one on this list.  It looks the same to the compiler of
-> > > course, but more uniform for human eyes :)
-> >
-> > Do you think it's a good idea? In this case I, for example, would like
-> > to see int err as a separate line at the end of definition block. It
-> > would be better to distinguish counters and return code storage.
-> > Moreover, often counters would be unsigned int.
-> 
-> If they are both 'int' they should be combined.  If 'i' is changed to be an
-> unsigned int they would be separate.
+Hi Ingo and Masami,
 
-Linus, do you have any idea about it? I think it is not a big issue.
+I still unable to find this bugfix in mainline code. Is there any problem?
+
+Thank you!
+
+On 2014/8/27 21:37, Masami Hiramatsu wrote:
 > 
+> Hi Ingo,
+> 
+> Could you pull this for a bugfix of a memory leak?
+> 
+> (2014/08/27 21:15), Wang Nan wrote:
+>> On 2014/7/29 9:43, Masami Hiramatsu wrote:
+>>> (2014/07/28 21:20), Wang Nan wrote:
+>>>> This patch frees optinsn slot when range check error to prevent memory
+>>>> leaks. Before this patch, cache entry in kprobe_insn_cache won't be
+>>>> freed if kprobe optimizing fails due to range check failure.
+>>>>
+>>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>>
+>>> Oops, thank you for finding it!
+>>>
+>>> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>>
+>>
+>> Hi Masami Hiramatsu,
+>>
+>> I don't find this patch in newest upstream. Is there any problem?
+>>
+>>> BTW, would you really have hit this error?
+>>> I'd like to know the case if this really happens.
+>>>
+>>>> ---
+>>>>  arch/x86/kernel/kprobes/opt.c | 4 +++-
+>>>>  1 file changed, 3 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+>>>> index f304773..f1314d0 100644
+>>>> --- a/arch/x86/kernel/kprobes/opt.c
+>>>> +++ b/arch/x86/kernel/kprobes/opt.c
+>>>> @@ -338,8 +338,10 @@ int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+>>>>  	 * a relative jump.
+>>>>  	 */
+>>>>  	rel = (long)op->optinsn.insn - (long)op->kp.addr + RELATIVEJUMP_SIZE;
+>>>> -	if (abs(rel) > 0x7fffffff)
+>>>> +	if (abs(rel) > 0x7fffffff) {
+>>>> +		__arch_remove_optimized_kprobe(op, 0);
+>>>>  		return -ERANGE;
+>>>> +	}
+>>>>  
+>>>>  	buf = (u8 *)op->optinsn.insn;
+>>>>  
+>>>>
+>>>
+>>>
+>>
+>>
+>>
+> 
+> 
+
+
