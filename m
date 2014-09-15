@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305AbaIPAUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:20:07 -0400
+	id S932776AbaIPAUm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:20:42 -0400
 Received: from mga11.intel.com ([192.55.52.93]:10904 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760671AbaIPAUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:20:00 -0400
+	id S1758970AbaIPAT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:19:59 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,531,1406617200"; 
-   d="scan'208";a="600070664"
+   d="scan'208";a="600070663"
 From: Andi Kleen <andi@firstfloor.org>
 To: peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/8] perf, tools: Support source line numbers in annotate
-Date: Mon, 15 Sep 2014 16:54:30 -0700
-Message-Id: <1410825273-7054-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 6/8] tools, perf: Make get_srcline fall back to sym+offset
+Date: Mon, 15 Sep 2014 16:54:31 -0700
+Message-Id: <1410825273-7054-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410825273-7054-1-git-send-email-andi@firstfloor.org>
 References: <1410825273-7054-1-git-send-email-andi@firstfloor.org>
@@ -25,214 +25,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With srcline key/sort'ing it's useful to have line numbers
-in the annotate window. This patch implements this.
-
-Use objdump -l to request the line numbers and
-save them in the line structure. Then the browser
-displays them for source lines.
-
-The line numbers are not displayed by default, but can be
-toggled on with 'k'
-
-There is one unfortunate problem with this setup. For
-lines not containing source and which are outside functions
-objdump -l reports line numbers off by a few: it always reports
-the first line number in the next function even for lines
-that are outside the function.
-I haven't found a nice way to detect/correct this. Probably objdump
-has to be fixed.
-See https://sourceware.org/bugzilla/show_bug.cgi?id=16433
-
-The line numbers are still useful even with these problems,
-as most are correct and the ones which are not are nearby.
+When the source line is not found fall back to sym + offset.
+This is generally much more useful than a raw address.
+For this we need to pass in the symbol from the caller.
+For some callers it's awkward to compute, so we stay
+at the old behaviour.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/ui/browsers/annotate.c | 13 ++++++++++++-
- tools/perf/util/annotate.c        | 30 +++++++++++++++++++++++++-----
- tools/perf/util/annotate.h        |  1 +
- 3 files changed, 38 insertions(+), 6 deletions(-)
+ tools/perf/util/annotate.c  |  2 +-
+ tools/perf/util/callchain.c |  3 ++-
+ tools/perf/util/map.c       |  2 +-
+ tools/perf/util/sort.c      |  6 ++++--
+ tools/perf/util/srcline.c   | 12 +++++++++---
+ tools/perf/util/util.h      |  4 +++-
+ 6 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index f0697a3..8df6787 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -27,6 +27,7 @@ static struct annotate_browser_opt {
- 	bool hide_src_code,
- 	     use_offset,
- 	     jump_arrows,
-+	     show_linenr,
- 	     show_nr_jumps;
- } annotate_browser__opts = {
- 	.use_offset	= true,
-@@ -128,7 +129,11 @@ static void annotate_browser__write(struct ui_browser *browser, void *entry, int
- 	if (!*dl->line)
- 		slsmg_write_nstring(" ", width - pcnt_width);
- 	else if (dl->offset == -1) {
--		printed = scnprintf(bf, sizeof(bf), "%*s  ",
-+		if (dl->line_nr && annotate_browser__opts.show_linenr)
-+			printed = scnprintf(bf, sizeof(bf), "%*s %-5d ",
-+					ab->addr_width, " ", dl->line_nr);
-+		else
-+			printed = scnprintf(bf, sizeof(bf), "%*s  ",
- 				    ab->addr_width, " ");
- 		slsmg_write_nstring(bf, printed);
- 		slsmg_write_nstring(dl->line, width - printed - pcnt_width + 1);
-@@ -733,6 +738,7 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 		"o             Toggle disassembler output/simplified view\n"
- 		"s             Toggle source code view\n"
- 		"/             Search string\n"
-+		"k	       Toggle line numbers\n"
- 		"r             Run available scripts\n"
- 		"?             Search string backwards\n");
- 			continue;
-@@ -741,6 +747,10 @@ static int annotate_browser__run(struct annotate_browser *browser,
- 				script_browse(NULL);
- 				continue;
- 			}
-+		case 'k':
-+			annotate_browser__opts.show_linenr =
-+				!annotate_browser__opts.show_linenr;
-+			break;
- 		case 'H':
- 			nd = browser->curr_hot;
- 			break;
-@@ -984,6 +994,7 @@ static struct annotate_config {
- } annotate__configs[] = {
- 	ANNOTATE_CFG(hide_src_code),
- 	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_linenr),
- 	ANNOTATE_CFG(show_nr_jumps),
- 	ANNOTATE_CFG(use_offset),
- };
 diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 3643752..f49f9a5 100644
+index f49f9a5..ccd6f3a 100644
 --- a/tools/perf/util/annotate.c
 +++ b/tools/perf/util/annotate.c
-@@ -17,11 +17,13 @@
- #include "debug.h"
- #include "annotate.h"
- #include "evsel.h"
-+#include <regex.h>
- #include <pthread.h>
- #include <linux/bitops.h>
+@@ -1190,7 +1190,7 @@ static int symbol__get_source_line(struct symbol *sym, struct map *map,
+ 			goto next;
  
- const char 	*disassembler_style;
- const char	*objdump_path;
-+static regex_t	 file_lineno;
+ 		offset = start + i;
+-		src_line->path = get_srcline(map->dso, offset);
++		src_line->path = get_srcline(map->dso, offset, NULL, false);
+ 		insert_source_line(&tmp_root, src_line);
  
- static struct ins *ins__find(const char *name);
- static int disasm_line__parse(char *line, char **namep, char **rawp);
-@@ -570,13 +572,15 @@ out_free_name:
- 	return -1;
- }
+ 	next:
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index b7ee210..8c0cea0 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -666,7 +666,8 @@ char *callchain_list__sym_name(struct callchain_list *cl,
+ 		    cl->ms.map && !cl->srcline)
+ 			cl->srcline = get_srcline(cl->ms.map->dso,
+ 						  map__rip_2objdump(cl->ms.map,
+-								    cl->ip));
++								    cl->ip),
++						  cl->ms.sym, false);
+ 		if (cl->srcline)
+ 			printed = scnprintf(bf, bfsize, "%s %s",
+ 					cl->ms.sym->name, cl->srcline);
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index b709059..4f3cdbc 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -360,7 +360,7 @@ int map__fprintf_srcline(struct map *map, u64 addr, const char *prefix,
  
--static struct disasm_line *disasm_line__new(s64 offset, char *line, size_t privsize)
-+static struct disasm_line *disasm_line__new(s64 offset, char *line,
-+					size_t privsize, int line_nr)
- {
- 	struct disasm_line *dl = zalloc(sizeof(*dl) + privsize);
- 
- 	if (dl != NULL) {
- 		dl->offset = offset;
- 		dl->line = strdup(line);
-+		dl->line_nr = line_nr;
- 		if (dl->line == NULL)
- 			goto out_delete;
- 
-@@ -788,13 +792,15 @@ static int disasm_line__print(struct disasm_line *dl, struct symbol *sym, u64 st
-  * The ops.raw part will be parsed further according to type of the instruction.
-  */
- static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
--				      FILE *file, size_t privsize)
-+				      FILE *file, size_t privsize,
-+				      int *line_nr)
- {
- 	struct annotation *notes = symbol__annotation(sym);
- 	struct disasm_line *dl;
- 	char *line = NULL, *parsed_line, *tmp, *tmp2, *c;
- 	size_t line_len;
- 	s64 line_ip, offset = -1;
-+	regmatch_t match[2];
- 
- 	if (getline(&line, &line_len, file) < 0)
- 		return -1;
-@@ -812,6 +818,12 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	line_ip = -1;
- 	parsed_line = line;
- 
-+	/* /filename:linenr ? Save line number and ignore. */
-+	if (regexec(&file_lineno, line, 2, match, 0) == 0) {
-+		*line_nr = atoi(line + match[1].rm_so);
-+		return 0;
-+	}
-+
- 	/*
- 	 * Strip leading spaces:
- 	 */
-@@ -842,8 +854,9 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 			parsed_line = tmp2 + 1;
+ 	if (map && map->dso) {
+ 		srcline = get_srcline(map->dso,
+-				      map__rip_2objdump(map, addr));
++				      map__rip_2objdump(map, addr), NULL, true);
+ 		if (srcline != SRCLINE_UNKNOWN)
+ 			ret = fprintf(fp, "%s%s", prefix, srcline);
+ 		free_srcline(srcline);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 1958637..8ea6105 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -291,7 +291,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
+ 		else {
+ 			struct map *map = left->ms.map;
+ 			left->srcline = get_srcline(map->dso,
+-					    map__rip_2objdump(map, left->ip));
++					   map__rip_2objdump(map, left->ip),
++						    left->ms.sym, true);
+ 		}
  	}
+ 	if (!right->srcline) {
+@@ -300,7 +301,8 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
+ 		else {
+ 			struct map *map = right->ms.map;
+ 			right->srcline = get_srcline(map->dso,
+-					    map__rip_2objdump(map, right->ip));
++					     map__rip_2objdump(map, right->ip),
++						     right->ms.sym, true);
+ 		}
+ 	}
+ 	return strcmp(right->srcline, left->srcline);
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index ac877f9..36a7aff 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -8,12 +8,13 @@
+ #include "util/util.h"
+ #include "util/debug.h"
  
--	dl = disasm_line__new(offset, parsed_line, privsize);
-+	dl = disasm_line__new(offset, parsed_line, privsize, *line_nr);
- 	free(line);
-+	(*line_nr)++;
++#include "symbol.h"
++
+ #ifdef HAVE_LIBBFD_SUPPORT
  
- 	if (dl == NULL)
- 		return -1;
-@@ -869,6 +882,11 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	return 0;
+ /*
+  * Implement addr2line using libbfd.
+  */
+-#define PACKAGE "perf"
+ #include <bfd.h>
+ 
+ struct a2l_data {
+@@ -250,7 +251,8 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
+  */
+ #define A2L_FAIL_LIMIT 123
+ 
+-char *get_srcline(struct dso *dso, unsigned long addr)
++char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
++		  bool show_sym)
+ {
+ 	char *file = NULL;
+ 	unsigned line = 0;
+@@ -289,7 +291,11 @@ out:
+ 		dso->has_srcline = 0;
+ 		dso__free_a2l(dso);
+ 	}
+-	if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
++	if (sym) {
++		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
++					addr - sym->start) < 0)
++			return SRCLINE_UNKNOWN;
++	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
+ 		return SRCLINE_UNKNOWN;
+ 	return srcline;
+ }
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index d6a79b1..d4dd409 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -336,8 +336,10 @@ static inline int path__join3(char *bf, size_t size,
  }
  
-+static __attribute__((constructor)) void symbol__init_regexpr(void)
-+{
-+	regcomp(&file_lineno, "^/[^:]+:([0-9]+)$", REG_EXTENDED);
-+}
-+
- static void delete_last_nop(struct symbol *sym)
- {
- 	struct annotation *notes = symbol__annotation(sym);
-@@ -904,6 +922,7 @@ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize)
- 	char symfs_filename[PATH_MAX];
- 	struct kcore_extract kce;
- 	bool delete_extract = false;
-+	int lineno = 0;
+ struct dso;
++struct symbol;
  
- 	if (filename)
- 		symbol__join_symfs(symfs_filename, filename);
-@@ -982,7 +1001,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
-+		 " -l -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
-@@ -999,7 +1018,8 @@ fallback:
- 		goto out_free_filename;
+-char *get_srcline(struct dso *dso, unsigned long addr);
++char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
++		  bool show_sym);
+ void free_srcline(char *srcline);
  
- 	while (!feof(file))
--		if (symbol__parse_objdump_line(sym, map, file, privsize) < 0)
-+		if (symbol__parse_objdump_line(sym, map, file, privsize,
-+			    &lineno) < 0)
- 			break;
- 
- 	/*
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 112d6e2..0784a94 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -58,6 +58,7 @@ struct disasm_line {
- 	char		    *line;
- 	char		    *name;
- 	struct ins	    *ins;
-+	int		    line_nr;
- 	struct ins_operands ops;
- };
- 
+ int filename__read_int(const char *filename, int *value);
 -- 
 1.9.3
 
