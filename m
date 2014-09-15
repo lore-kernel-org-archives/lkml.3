@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447AbaIOWLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50536 "EHLO
+	id S1760264AbaIOXRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:17:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50519 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640AbaIOWLJ (ORCPT
+	with ESMTP id S1757377AbaIOWK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:09 -0400
+	Mon, 15 Sep 2014 18:10:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Peter Huewe <peterhuewe@gmx.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 108/187] tpm: missing tpm_chip_put in tpm_get_random()
-Date: Mon, 15 Sep 2014 15:08:38 -0700
-Message-Id: <1410818997-9432-109-git-send-email-kamal@canonical.com>
+Cc: Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 103/187] KVM: PPC: Book3S PR: Take SRCU read lock around RTAS kvm_read_guest() call
+Date: Mon, 15 Sep 2014 15:08:33 -0700
+Message-Id: <1410818997-9432-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,50 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 3e14d83ef94a5806a865b85b513b4e891923c19b upstream.
+commit ef1af2e29622ff3403926ae801a2b10da075a2de upstream.
 
-Regression in 41ab999c. Call to tpm_chip_put is missing. This
-will cause TPM device driver not to unload if tmp_get_random()
-is called.
+This does for PR KVM what c9438092cae4 ("KVM: PPC: Book3S HV: Take SRCU
+read lock around kvm_read_guest() call") did for HV KVM, that is,
+eliminate a "suspicious rcu_dereference_check() usage!" warning by
+taking the SRCU lock around the call to kvmppc_rtas_hcall().
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+It also fixes a return of RESUME_HOST to return EMULATE_FAIL instead,
+since kvmppc_h_pr() is supposed to return EMULATE_* values.
+
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Alexander Graf <agraf@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/char/tpm/tpm-interface.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/powerpc/kvm/book3s_pr_papr.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 6ae41d3..901b370 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -1400,13 +1400,13 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 	int err, total = 0, retries = 5;
- 	u8 *dest = out;
+diff --git a/arch/powerpc/kvm/book3s_pr_papr.c b/arch/powerpc/kvm/book3s_pr_papr.c
+index 5efa97b..7a801b5 100644
+--- a/arch/powerpc/kvm/book3s_pr_papr.c
++++ b/arch/powerpc/kvm/book3s_pr_papr.c
+@@ -258,6 +258,8 @@ static int kvmppc_h_pr_xics_hcall(struct kvm_vcpu *vcpu, u32 cmd)
  
-+	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
-+		return -EINVAL;
+ int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
+ {
++	int rc, idx;
 +
- 	chip = tpm_chip_find_get(chip_num);
- 	if (chip == NULL)
- 		return -ENODEV;
- 
--	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
--		return -EINVAL;
--
- 	do {
- 		tpm_cmd.header.in = tpm_getrandom_header;
- 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-@@ -1425,6 +1425,7 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 		num_bytes -= recd;
- 	} while (retries-- && total < max);
- 
-+	tpm_chip_put(chip);
- 	return total ? total : -EIO;
- }
- EXPORT_SYMBOL_GPL(tpm_get_random);
+ 	switch (cmd) {
+ 	case H_ENTER:
+ 		return kvmppc_h_pr_enter(vcpu);
+@@ -286,8 +288,11 @@ int kvmppc_h_pr(struct kvm_vcpu *vcpu, unsigned long cmd)
+ 		break;
+ 	case H_RTAS:
+ 		if (list_empty(&vcpu->kvm->arch.rtas_tokens))
+-			return RESUME_HOST;
+-		if (kvmppc_rtas_hcall(vcpu))
++			break;
++		idx = srcu_read_lock(&vcpu->kvm->srcu);
++		rc = kvmppc_rtas_hcall(vcpu);
++		srcu_read_unlock(&vcpu->kvm->srcu, idx);
++		if (rc)
+ 			break;
+ 		kvmppc_set_gpr(vcpu, 3, 0);
+ 		return EMULATE_DONE;
 -- 
 1.9.1
 
