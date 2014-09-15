@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239AbaIOUyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:54:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54583 "EHLO
+	id S932224AbaIOUym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:54:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54618 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045AbaIOT1K (ORCPT
+	with ESMTP id S1755048AbaIOT1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:27:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jie Yang <yang.jie@intel.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 085/158] ASoC: Intel: Cleanup HSW pcm format support
-Date: Mon, 15 Sep 2014 12:25:24 -0700
-Message-Id: <20140915192545.438271070@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 103/158] ACPI / video: Fix use_native_backlight selection logic
+Date: Mon, 15 Sep 2014 12:25:42 -0700
+Message-Id: <20140915192545.973147655@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,105 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jie Yang <yang.jie@intel.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 8e89761876611f06ef4be865b4780b4361caf4af upstream.
+commit 25294e9f00f03b2b4f4c56e913bc8c573972f33b upstream.
 
-This change removes unsupported formats from System,
-Capture and Loopback FE DAIs.
-Also it fixes S24_LE support on all DAIs.
-While at this fix 24 bit flag for BYT as well.
+Commit 751109aad583 ("ACPI / video: Change the default for
+video.use_native_backlight to 1") has changed the default for
+use_native_backlight from 0 to 1, but instead of changing
+use_native_backlight_dmi to true, and leaving use_native_backlight_param at -1,
+it has changed use_native_backlight_param to 1.
 
-Signed-off-by: Jie Yang <yang.jie@intel.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This causes acpi_video_use_native_backlight() to always think that a value was
+specified through the param, making it impossible to add a dmi based quirk
+to force 0 now that the default is 1.
+
+This fixes this by restoring the use_native_backlight_param default to -1, and
+instead setting the use_native_backlight_dmi default to true.
+
+Fixes: 751109aad583 (ACPI / video: Change the default for video.use_native_backlight to 1)
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/intel/sst-baytrail-pcm.c |    2 +-
- sound/soc/intel/sst-haswell-pcm.c  |   27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 10 deletions(-)
+ drivers/acpi/video.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/intel/sst-baytrail-pcm.c
-+++ b/sound/soc/intel/sst-baytrail-pcm.c
-@@ -32,7 +32,7 @@ static const struct snd_pcm_hardware sst
- 				  SNDRV_PCM_INFO_PAUSE |
- 				  SNDRV_PCM_INFO_RESUME,
- 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
--				  SNDRV_PCM_FORMAT_S24_LE,
-+				  SNDRV_PCM_FMTBIT_S24_LE,
- 	.period_bytes_min	= 384,
- 	.period_bytes_max	= 48000,
- 	.periods_min		= 2,
---- a/sound/soc/intel/sst-haswell-pcm.c
-+++ b/sound/soc/intel/sst-haswell-pcm.c
-@@ -80,7 +80,7 @@ static const struct snd_pcm_hardware hsw
- 				  SNDRV_PCM_INFO_PAUSE |
- 				  SNDRV_PCM_INFO_RESUME |
- 				  SNDRV_PCM_INFO_NO_PERIOD_WAKEUP,
--	.formats		= SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FORMAT_S24_LE |
-+	.formats		= SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE |
- 				  SNDRV_PCM_FMTBIT_S32_LE,
- 	.period_bytes_min	= PAGE_SIZE,
- 	.period_bytes_max	= (HSW_PCM_PERIODS_MAX / HSW_PCM_PERIODS_MIN) * PAGE_SIZE,
-@@ -400,7 +400,15 @@ static int hsw_pcm_hw_params(struct snd_
- 		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 16);
- 		break;
- 	case SNDRV_PCM_FORMAT_S24_LE:
--		bits = SST_HSW_DEPTH_24BIT;
-+		bits = SST_HSW_DEPTH_32BIT;
-+		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 24);
-+		break;
-+	case SNDRV_PCM_FORMAT_S8:
-+		bits = SST_HSW_DEPTH_8BIT;
-+		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 8);
-+		break;
-+	case SNDRV_PCM_FORMAT_S32_LE:
-+		bits = SST_HSW_DEPTH_32BIT;
- 		sst_hsw_stream_set_valid(hsw, pcm_data->stream, 32);
- 		break;
- 	default:
-@@ -685,8 +693,9 @@ static int hsw_pcm_new(struct snd_soc_pc
- }
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -82,9 +82,9 @@ module_param(allow_duplicates, bool, 064
+  * For Windows 8 systems: used to decide if video module
+  * should skip registering backlight interface of its own.
+  */
+-static int use_native_backlight_param = 1;
++static int use_native_backlight_param = -1;
+ module_param_named(use_native_backlight, use_native_backlight_param, int, 0444);
+-static bool use_native_backlight_dmi = false;
++static bool use_native_backlight_dmi = true;
  
- #define HSW_FORMATS \
--	(SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S16_LE |\
--	 SNDRV_PCM_FMTBIT_S32_LE)
-+	(SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_S24_LE | \
-+	SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S16_LE |\
-+	SNDRV_PCM_FMTBIT_S8)
- 
- static struct snd_soc_dai_driver hsw_dais[] = {
- 	{
-@@ -696,7 +705,7 @@ static struct snd_soc_dai_driver hsw_dai
- 			.channels_min = 2,
- 			.channels_max = 2,
- 			.rates = SNDRV_PCM_RATE_48000,
--			.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
- 		},
- 	},
- 	{
-@@ -727,8 +736,8 @@ static struct snd_soc_dai_driver hsw_dai
- 			.stream_name = "Loopback Capture",
- 			.channels_min = 2,
- 			.channels_max = 2,
--			.rates = SNDRV_PCM_RATE_8000_192000,
--			.formats = HSW_FORMATS,
-+			.rates = SNDRV_PCM_RATE_48000,
-+			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
- 		},
- 	},
- 	{
-@@ -737,8 +746,8 @@ static struct snd_soc_dai_driver hsw_dai
- 			.stream_name = "Analog Capture",
- 			.channels_min = 2,
- 			.channels_max = 2,
--			.rates = SNDRV_PCM_RATE_8000_192000,
--			.formats = HSW_FORMATS,
-+			.rates = SNDRV_PCM_RATE_48000,
-+			.formats = SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S16_LE,
- 		},
- 	},
- };
+ static int register_count;
+ static struct mutex video_list_lock;
 
 
