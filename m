@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759484AbaIOVPt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:15:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54589 "EHLO
+	id S1759470AbaIOVPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754737AbaIOT0p (ORCPT
+	with ESMTP id S1754675AbaIOT0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:45 -0400
+	Mon, 15 Sep 2014 15:26:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Walch <walch.martin@web.de>, Paul Bolle <pebolle@tiscali.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 010/158] media: sms: Remove CONFIG_ prefix from Kconfig symbols
-Date: Mon, 15 Sep 2014 12:24:09 -0700
-Message-Id: <20140915192543.186073699@linuxfoundation.org>
+        "Mark A. Greer" <mgreer@animalcreek.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 016/158] spi: omap2-mcspi: Configure hardware when slave driver changes mode
+Date: Mon, 15 Sep 2014 12:24:15 -0700
+Message-Id: <20140915192543.366959957@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,44 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: "Mark A. Greer" <mgreer@animalcreek.com>
 
-commit 3c4b422adb7694418848cefc2a4669d63192c649 upstream.
+commit 97ca0d6cc118716840ea443e010cb3d5f2d25eaf upstream.
 
-X-Patchwork-Delegate: mchehab@redhat.com
-Remove the CONFIG_ prefix from two Kconfig symbols in a dependency for
-SMS_SIANO_DEBUGFS. This prefix is invalid inside Kconfig files.
+Commit id 2bd16e3e23d9df41592c6b257c59b6860a9cc3ea
+(spi: omap2-mcspi: Do not configure the controller
+on each transfer unless needed) does its job too
+well so omap2_mcspi_setup_transfer() isn't called
+even when an SPI slave driver changes 'spi->mode'.
+The result is that the mode requested by the SPI
+slave driver never takes effect.
 
-Note that the current (common sense) dependency on SMS_USB_DRV and
-SMS_SDIO_DRV being equal ensures that SMS_SIANO_DEBUGFS will not
-violate its constraints. These constraint are that:
-- it should only be built if SMS_USB_DRV is set;
-- it can't be builtin if USB support is modular.
+Fix this by adding the 'mode' member to the
+omap2_mcspi_cs structure which holds the mode
+value that the hardware is configured for.
+When the SPI slave driver changes 'spi->mode'
+it will be different than the value of this new
+member and the SPI master driver will know that
+the hardware must be reconfigured (by calling
+omap2_mcspi_setup_transfer()).
 
-So drop the dependency on SMS_USB_DRV, as it is unneeded.
-
-Fixes: 6c84b214284e ("[media] sms: fix randconfig building error")
-
-Reported-by: Martin Walch <walch.martin@web.de>
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: 2bd16e3e23 (spi: omap2-mcspi: Do not configure the controller on each transfer unless needed)
+Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/common/siano/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/spi/spi-omap2-mcspi.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/media/common/siano/Kconfig
-+++ b/drivers/media/common/siano/Kconfig
-@@ -22,8 +22,7 @@ config SMS_SIANO_DEBUGFS
- 	bool "Enable debugfs for smsdvb"
- 	depends on SMS_SIANO_MDTV
- 	depends on DEBUG_FS
--	depends on SMS_USB_DRV
--	depends on CONFIG_SMS_USB_DRV = CONFIG_SMS_SDIO_DRV
-+	depends on SMS_USB_DRV = SMS_SDIO_DRV
+--- a/drivers/spi/spi-omap2-mcspi.c
++++ b/drivers/spi/spi-omap2-mcspi.c
+@@ -149,6 +149,7 @@ struct omap2_mcspi_cs {
+ 	void __iomem		*base;
+ 	unsigned long		phys;
+ 	int			word_len;
++	u16			mode;
+ 	struct list_head	node;
+ 	/* Context save and restore shadow register */
+ 	u32			chconf0, chctrl0;
+@@ -926,6 +927,8 @@ static int omap2_mcspi_setup_transfer(st
  
- 	---help---
- 	  Choose Y to enable visualizing a dump of the frontend
+ 	mcspi_write_chconf0(spi, l);
+ 
++	cs->mode = spi->mode;
++
+ 	dev_dbg(&spi->dev, "setup: speed %d, sample %s edge, clk %s\n",
+ 			speed_hz,
+ 			(spi->mode & SPI_CPHA) ? "trailing" : "leading",
+@@ -998,6 +1001,7 @@ static int omap2_mcspi_setup(struct spi_
+ 			return -ENOMEM;
+ 		cs->base = mcspi->base + spi->chip_select * 0x14;
+ 		cs->phys = mcspi->phys + spi->chip_select * 0x14;
++		cs->mode = 0;
+ 		cs->chconf0 = 0;
+ 		cs->chctrl0 = 0;
+ 		spi->controller_state = cs;
+@@ -1079,6 +1083,16 @@ static void omap2_mcspi_work(struct omap
+ 	cs = spi->controller_state;
+ 	cd = spi->controller_data;
+ 
++	/*
++	 * The slave driver could have changed spi->mode in which case
++	 * it will be different from cs->mode (the current hardware setup).
++	 * If so, set par_override (even though its not a parity issue) so
++	 * omap2_mcspi_setup_transfer will be called to configure the hardware
++	 * with the correct mode on the first iteration of the loop below.
++	 */
++	if (spi->mode != cs->mode)
++		par_override = 1;
++
+ 	omap2_mcspi_set_enable(spi, 0);
+ 	list_for_each_entry(t, &m->transfers, transfer_list) {
+ 		if (t->tx_buf == NULL && t->rx_buf == NULL && t->len) {
 
 
