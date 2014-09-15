@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaIOI4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 04:56:39 -0400
-Received: from bes.se.axis.com ([195.60.68.10]:37846 "EHLO bes.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338AbaIOI4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 04:56:38 -0400
-X-Greylist: delayed 360 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 04:56:38 EDT
-Date: Mon, 15 Sep 2014 10:50:29 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chen Gang <gang.chen.5i5j@gmail.com>, Michal Simek <monstr@monstr.eu>,
-        Rob Herring <rob.herring@calxeda.com>, Paul Bolle <pebolle@tiscali.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>
-Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default
- 'screen_info" for fixing compiling break
-Message-ID: <20140915085029.GY4659@axis.com>
-References: <541552B8.8020807@gmail.com>
- <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
+	id S1753608AbaIOI7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 04:59:00 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56893 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753430AbaIOI67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 04:58:59 -0400
+Date: Mon, 15 Sep 2014 09:58:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        lauraa@codeaurora.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, santosh.shilimkar@ti.com, tony@atomide.com,
+        drake@endlessm.com, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, loeliger@gmail.com
+Subject: Re: [PATCH v4 5/7] ARM: EXYNOS: Add .write_sec outer cache
+	callback for L2C-310
+Message-ID: <20140915085845.GC12379@n2100.arm.linux.org.uk>
+References: <1409062680-15906-1-git-send-email-t.figa@samsung.com> <1409062680-15906-6-git-send-email-t.figa@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1409062680-15906-6-git-send-email-t.figa@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 14, 2014 at 10:45:23AM +0200, Geert Uytterhoeven wrote:
-> Hi Chen,
+On Tue, Aug 26, 2014 at 04:17:58PM +0200, Tomasz Figa wrote:
+> Exynos4 SoCs equipped with an L2C-310 cache controller and running under
+> secure firmware require certain registers of aforementioned IP to be
+> accessed only from secure mode. This means that SMC calls are required
+> for certain register writes. To handle this, an implementation of
+> .write_sec and .configure callbacks is provided by this patch.
 > 
-> On Sun, Sep 14, 2014 at 10:32 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
-> > Add default one just like other architectures have done (e.g. cris,
-> > score, sh ...), the related error with allmodconfig:
-> >
-> >     LD      init/built-in.o
-> >   drivers/built-in.o: In function `vgacon_save_screen':
-> >   drivers/video/console/.tmp_vgacon.o:(.text+0x834d0): undefined reference to `screen_info'
-> >   drivers/video/console/.tmp_vgacon.o:(.text+0x834ec): undefined reference to `screen_info'
-> >   drivers/built-in.o: In function `vgacon_resize':
-> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83cdc): undefined reference to `screen_info'
-> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83d38): undefined reference to `screen_info'
-> >   drivers/built-in.o: In function `vgacon_switch':
-> >   drivers/video/console/.tmp_vgacon.o:(.text+0x83f50): undefined reference to `screen_info'
-> >   drivers/built-in.o:drivers/video/console/.tmp_vgacon.o:(.text+0x8407c): more undefined references to `screen_info' follow
-> >   make: *** [vmlinux] Error 1
+> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  arch/arm/mach-exynos/firmware.c | 38 ++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 38 insertions(+)
 > 
-> Can microblaze actually have VGA?
-> 
-> If not, it's better to disable it.
-> 
-> BTW, it's interesting you mention cris, as VGA_CONSOLE depends on !CRIS
-> in drivers/video/console/Kconfig...
+> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+> index f5e626d..554b350 100644
+> --- a/arch/arm/mach-exynos/firmware.c
+> +++ b/arch/arm/mach-exynos/firmware.c
+> @@ -17,6 +17,7 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/cputype.h>
+>  #include <asm/firmware.h>
+> +#include <asm/hardware/cache-l2x0.h>
+>  #include <asm/suspend.h>
+>  
+>  #include <mach/map.h>
+> @@ -120,6 +121,31 @@ static const struct firmware_ops exynos_firmware_ops = {
+>  	.resume			= exynos_resume,
+>  };
+>  
+> +static void exynos_l2_write_sec(unsigned long val, unsigned reg)
+> +{
+> +	switch (reg) {
+> +	case L2X0_CTRL:
+> +		if (val & L2X0_CTRL_EN)
+> +			exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
 
-No CRIS platform has ever had a video console.
+If we're calling this with the cache already enabled, presumably you're
+doing this to cover the case where we're disabling the cache.
 
-> I (still) think it's time to introduce ARCH_MIGHT_HAVE_VGA, and make
-> VGA_CONSOLE depend on that, cfr.
+1. Do you really want to *invalidate* the L2 cache, discarding its
+   contents?
+2. Don't you think that... if you needed something like this here, then
+   it could be a defficiency in the common code?
 
-Sounds reasonable, at least it can avoid the specific depends on !*arch* cruft.
+If (2) doesn't apply, then should be a comment here why this is needed.
 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-
-/^JN - Jesper Nilsson
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
