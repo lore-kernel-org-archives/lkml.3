@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894AbaIOUAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:00:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	id S1756333AbaIOUAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:00:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255AbaIOTrQ (ORCPT
+	with ESMTP id S1756258AbaIOTrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Aaro Koskinen <aaro.koskinen@nsn.com>,
         Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 25/71] MIPS: asm: thread_info: Add _TIF_SECCOMP flag
-Date: Mon, 15 Sep 2014 12:26:23 -0700
-Message-Id: <20140915192639.546532685@linuxfoundation.org>
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH 3.10 26/71] MIPS: OCTEON: make get_system_type() thread-safe
+Date: Mon, 15 Sep 2014 12:26:24 -0700
+Message-Id: <20140915192639.578596535@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -32,38 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Aaro Koskinen <aaro.koskinen@nsn.com>
 
-commit 137f7df8cead00688524c82360930845396b8a21 upstream.
+commit 608308682addfdc7b8e2aee88f0e028331d88e4d upstream.
 
-Add _TIF_SECCOMP flag to _TIF_WORK_SYSCALL_ENTRY to indicate
-that the system call needs to be checked against a seccomp filter.
+get_system_type() is not thread-safe on OCTEON. It uses static data,
+also more dangerous issue is that it's calling cvmx_fuse_read_byte()
+every time without any synchronization. Currently it's possible to get
+processes stuck looping forever in kernel simply by launching multiple
+readers of /proc/cpuinfo:
 
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Reviewed-by: Paul Burton <paul.burton@imgtec.com>
-Reviewed-by: James Hogan <james.hogan@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/6405/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-[bwh: Backported to 3.2: various other flags are not included in
- _TIF_WORK_SYSCALL_ENTRY]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	(while true; do cat /proc/cpuinfo > /dev/null; done) &
+	...
+
+Fix by initializing the system type string only once during the early
+boot.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nsn.com>
+Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Patchwork: http://patchwork.linux-mips.org/patch/7437/
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/asm/thread_info.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/cavium-octeon/setup.c |   18 +++++++++++++-----
+ 1 file changed, 13 insertions(+), 5 deletions(-)
 
---- a/arch/mips/include/asm/thread_info.h
-+++ b/arch/mips/include/asm/thread_info.h
-@@ -131,7 +131,7 @@ static inline struct thread_info *curren
- #define _TIF_FPUBOUND		(1<<TIF_FPUBOUND)
- #define _TIF_LOAD_WATCH		(1<<TIF_LOAD_WATCH)
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -463,6 +463,18 @@ static void octeon_halt(void)
+ 	octeon_kill_core(NULL);
+ }
  
--#define _TIF_WORK_SYSCALL_ENTRY	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT)
-+#define _TIF_WORK_SYSCALL_ENTRY	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SECCOMP)
++static char __read_mostly octeon_system_type[80];
++
++static int __init init_octeon_system_type(void)
++{
++	snprintf(octeon_system_type, sizeof(octeon_system_type), "%s (%s)",
++		cvmx_board_type_to_string(octeon_bootinfo->board_type),
++		octeon_model_get_string(read_c0_prid()));
++
++	return 0;
++}
++early_initcall(init_octeon_system_type);
++
+ /**
+  * Handle all the error condition interrupts that might occur.
+  *
+@@ -482,11 +494,7 @@ static irqreturn_t octeon_rlm_interrupt(
+  */
+ const char *octeon_board_type_string(void)
+ {
+-	static char name[80];
+-	sprintf(name, "%s (%s)",
+-		cvmx_board_type_to_string(octeon_bootinfo->board_type),
+-		octeon_model_get_string(read_c0_prid()));
+-	return name;
++	return octeon_system_type;
+ }
  
- /* work to do in syscall_trace_leave() */
- #define _TIF_WORK_SYSCALL_EXIT	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT)
+ const char *get_system_type(void)
 
 
