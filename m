@@ -1,86 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637AbaIOTwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:52:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28807 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277AbaIOTwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:52:14 -0400
-Date: Mon, 15 Sep 2014 16:52:01 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: linux-kernel@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
-        Cody P Schafer <dev@codyps.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: [PATCH] perf tools: fix type mismatch - long vs __statfs_word
-Message-ID: <20140915195201.GF2259@redhat.com>
-References: <1407949429-25421-1-git-send-email-abrodkin@synopsys.com>
+	id S1756345AbaIOTrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212AbaIOTrU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:47:20 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>
+Subject: [PATCH 3.10 57/71] libceph: add process_one_ticket() helper
+Date: Mon, 15 Sep 2014 12:26:55 -0700
+Message-Id: <20140915192640.595701878@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1407949429-25421-1-git-send-email-abrodkin@synopsys.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 13, 2014 at 09:03:49PM +0400, Alexey Brodkin escreveu:
-> >From "include/uapi/asm-generic/statfs.h" it is seen that "statfs.f_type" is of
-> type "__statfs_word" which in its turn is "__u32" (unsigned int) for 32-bit
-> systems.
-> 
-> So in case of compilation with "-Werror" following breakage happens:
-> --->---
-> fs.c: In function ‘fs__valid_mount’:
-> fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
->   else if (st_fs.f_type != magic)
->                         ^
-> cc1: all warnings being treated as errors
-> --->---
-> 
-> Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
-> CFLAGS has hard-coded "-Werror" this is inevitable even if one builds "perf"
-> with "WERROR=0".
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-So we have one more case of comparision involving f_type:
+------------------
 
-[acme@zoo linux]$ find tools/ -type f | xargs grep -w f_type
-tools/lib/api/fs/fs.c:	else if (st_fs.f_type != magic)
-tools/lib/api/fs/debugfs.c:	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-[acme@zoo linux]$
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-Do we have to apply the same fix to that other case as well?
-Interestingly it does it on a different way, that by your description
-above would make it fail on 32-bit systems, no?
+commit 597cda357716a3cf8d994cb11927af917c8d71fa upstream.
 
-- Arnaldo
+Add a helper for processing individual cephx auth tickets.  Needed for
+the next commit, which deals with allocating ticket buffers.  (Most of
+the diff here is whitespace - view with git diff -b).
+
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/ceph/auth_x.c |  228 +++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 124 insertions(+), 104 deletions(-)
+
+--- a/net/ceph/auth_x.c
++++ b/net/ceph/auth_x.c
+@@ -129,17 +129,131 @@ static void remove_ticket_handler(struct
+ 	kfree(th);
+ }
  
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-> 
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: Cody P Schafer <dev@codyps.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/lib/api/fs/fs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-> index c1b49c3..4b2fa7b 100644
-> --- a/tools/lib/api/fs/fs.c
-> +++ b/tools/lib/api/fs/fs.c
-> @@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
->  
->  	if (statfs(fs, &st_fs) < 0)
->  		return -ENOENT;
-> -	else if (st_fs.f_type != magic)
-> +	else if ((long)st_fs.f_type != magic)
->  		return -ENOENT;
->  
->  	return 0;
-> -- 
-> 1.9.3
++static int process_one_ticket(struct ceph_auth_client *ac,
++			      struct ceph_crypto_key *secret,
++			      void **p, void *end,
++			      void *dbuf, void *ticket_buf)
++{
++	struct ceph_x_info *xi = ac->private;
++	int type;
++	u8 tkt_struct_v, blob_struct_v;
++	struct ceph_x_ticket_handler *th;
++	void *dp, *dend;
++	int dlen;
++	char is_enc;
++	struct timespec validity;
++	struct ceph_crypto_key old_key;
++	void *tp, *tpend;
++	struct ceph_timespec new_validity;
++	struct ceph_crypto_key new_session_key;
++	struct ceph_buffer *new_ticket_blob;
++	unsigned long new_expires, new_renew_after;
++	u64 new_secret_id;
++	int ret;
++
++	ceph_decode_need(p, end, sizeof(u32) + 1, bad);
++
++	type = ceph_decode_32(p);
++	dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
++
++	tkt_struct_v = ceph_decode_8(p);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	th = get_ticket_handler(ac, type);
++	if (IS_ERR(th)) {
++		ret = PTR_ERR(th);
++		goto out;
++	}
++
++	/* blob for me */
++	dlen = ceph_x_decrypt(secret, p, end, dbuf,
++			      TEMP_TICKET_BUF_LEN);
++	if (dlen <= 0) {
++		ret = dlen;
++		goto out;
++	}
++	dout(" decrypted %d bytes\n", dlen);
++	dp = dbuf;
++	dend = dp + dlen;
++
++	tkt_struct_v = ceph_decode_8(&dp);
++	if (tkt_struct_v != 1)
++		goto bad;
++
++	memcpy(&old_key, &th->session_key, sizeof(old_key));
++	ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
++	if (ret)
++		goto out;
++
++	ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
++	ceph_decode_timespec(&validity, &new_validity);
++	new_expires = get_seconds() + validity.tv_sec;
++	new_renew_after = new_expires - (validity.tv_sec / 4);
++	dout(" expires=%lu renew_after=%lu\n", new_expires,
++	     new_renew_after);
++
++	/* ticket blob for service */
++	ceph_decode_8_safe(p, end, is_enc, bad);
++	tp = ticket_buf;
++	if (is_enc) {
++		/* encrypted */
++		dout(" encrypted ticket\n");
++		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
++				      TEMP_TICKET_BUF_LEN);
++		if (dlen < 0) {
++			ret = dlen;
++			goto out;
++		}
++		dlen = ceph_decode_32(&tp);
++	} else {
++		/* unencrypted */
++		ceph_decode_32_safe(p, end, dlen, bad);
++		ceph_decode_need(p, end, dlen, bad);
++		ceph_decode_copy(p, ticket_buf, dlen);
++	}
++	tpend = tp + dlen;
++	dout(" ticket blob is %d bytes\n", dlen);
++	ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
++	blob_struct_v = ceph_decode_8(&tp);
++	new_secret_id = ceph_decode_64(&tp);
++	ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	if (ret)
++		goto out;
++
++	/* all is well, update our ticket */
++	ceph_crypto_key_destroy(&th->session_key);
++	if (th->ticket_blob)
++		ceph_buffer_put(th->ticket_blob);
++	th->session_key = new_session_key;
++	th->ticket_blob = new_ticket_blob;
++	th->validity = new_validity;
++	th->secret_id = new_secret_id;
++	th->expires = new_expires;
++	th->renew_after = new_renew_after;
++	dout(" got ticket service %d (%s) secret_id %lld len %d\n",
++	     type, ceph_entity_type_name(type), th->secret_id,
++	     (int)th->ticket_blob->vec.iov_len);
++	xi->have_keys |= th->service;
++
++out:
++	return ret;
++
++bad:
++	ret = -EINVAL;
++	goto out;
++}
++
+ static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
+ 				    struct ceph_crypto_key *secret,
+ 				    void *buf, void *end)
+ {
+-	struct ceph_x_info *xi = ac->private;
+-	int num;
+ 	void *p = buf;
+-	int ret;
+ 	char *dbuf;
+ 	char *ticket_buf;
+ 	u8 reply_struct_v;
++	u32 num;
++	int ret;
+ 
+ 	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
+ 	if (!dbuf)
+@@ -150,112 +264,18 @@ static int ceph_x_proc_ticket_reply(stru
+ 	if (!ticket_buf)
+ 		goto out_dbuf;
+ 
+-	ceph_decode_need(&p, end, 1 + sizeof(u32), bad);
+-	reply_struct_v = ceph_decode_8(&p);
++	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
+ 	if (reply_struct_v != 1)
+-		goto bad;
+-	num = ceph_decode_32(&p);
+-	dout("%d tickets\n", num);
+-	while (num--) {
+-		int type;
+-		u8 tkt_struct_v, blob_struct_v;
+-		struct ceph_x_ticket_handler *th;
+-		void *dp, *dend;
+-		int dlen;
+-		char is_enc;
+-		struct timespec validity;
+-		struct ceph_crypto_key old_key;
+-		void *tp, *tpend;
+-		struct ceph_timespec new_validity;
+-		struct ceph_crypto_key new_session_key;
+-		struct ceph_buffer *new_ticket_blob;
+-		unsigned long new_expires, new_renew_after;
+-		u64 new_secret_id;
+-
+-		ceph_decode_need(&p, end, sizeof(u32) + 1, bad);
+-
+-		type = ceph_decode_32(&p);
+-		dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
+-
+-		tkt_struct_v = ceph_decode_8(&p);
+-		if (tkt_struct_v != 1)
+-			goto bad;
+-
+-		th = get_ticket_handler(ac, type);
+-		if (IS_ERR(th)) {
+-			ret = PTR_ERR(th);
+-			goto out;
+-		}
+-
+-		/* blob for me */
+-		dlen = ceph_x_decrypt(secret, &p, end, dbuf,
+-				      TEMP_TICKET_BUF_LEN);
+-		if (dlen <= 0) {
+-			ret = dlen;
+-			goto out;
+-		}
+-		dout(" decrypted %d bytes\n", dlen);
+-		dend = dbuf + dlen;
+-		dp = dbuf;
+-
+-		tkt_struct_v = ceph_decode_8(&dp);
+-		if (tkt_struct_v != 1)
+-			goto bad;
++		return -EINVAL;
+ 
+-		memcpy(&old_key, &th->session_key, sizeof(old_key));
+-		ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
+-		if (ret)
+-			goto out;
++	ceph_decode_32_safe(&p, end, num, bad);
++	dout("%d tickets\n", num);
+ 
+-		ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
+-		ceph_decode_timespec(&validity, &new_validity);
+-		new_expires = get_seconds() + validity.tv_sec;
+-		new_renew_after = new_expires - (validity.tv_sec / 4);
+-		dout(" expires=%lu renew_after=%lu\n", new_expires,
+-		     new_renew_after);
+-
+-		/* ticket blob for service */
+-		ceph_decode_8_safe(&p, end, is_enc, bad);
+-		tp = ticket_buf;
+-		if (is_enc) {
+-			/* encrypted */
+-			dout(" encrypted ticket\n");
+-			dlen = ceph_x_decrypt(&old_key, &p, end, ticket_buf,
+-					      TEMP_TICKET_BUF_LEN);
+-			if (dlen < 0) {
+-				ret = dlen;
+-				goto out;
+-			}
+-			dlen = ceph_decode_32(&tp);
+-		} else {
+-			/* unencrypted */
+-			ceph_decode_32_safe(&p, end, dlen, bad);
+-			ceph_decode_need(&p, end, dlen, bad);
+-			ceph_decode_copy(&p, ticket_buf, dlen);
+-		}
+-		tpend = tp + dlen;
+-		dout(" ticket blob is %d bytes\n", dlen);
+-		ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
+-		blob_struct_v = ceph_decode_8(&tp);
+-		new_secret_id = ceph_decode_64(&tp);
+-		ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
++	while (num--) {
++		ret = process_one_ticket(ac, secret, &p, end,
++					 dbuf, ticket_buf);
+ 		if (ret)
+ 			goto out;
+-
+-		/* all is well, update our ticket */
+-		ceph_crypto_key_destroy(&th->session_key);
+-		if (th->ticket_blob)
+-			ceph_buffer_put(th->ticket_blob);
+-		th->session_key = new_session_key;
+-		th->ticket_blob = new_ticket_blob;
+-		th->validity = new_validity;
+-		th->secret_id = new_secret_id;
+-		th->expires = new_expires;
+-		th->renew_after = new_renew_after;
+-		dout(" got ticket service %d (%s) secret_id %lld len %d\n",
+-		     type, ceph_entity_type_name(type), th->secret_id,
+-		     (int)th->ticket_blob->vec.iov_len);
+-		xi->have_keys |= th->service;
+ 	}
+ 
+ 	ret = 0;
+
+
