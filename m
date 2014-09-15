@@ -1,40 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227AbaIOXPE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:15:04 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:60125 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781AbaIOXPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 19:15:00 -0400
-Date: Tue, 16 Sep 2014 02:14:54 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Neil Horman <nhorman@tuxdriver.com>
-cc: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
-        netdev@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: bisected regression: 3c59x corrupts packets in 3.17-rc5
-Message-ID: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758399AbaIOXPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:15:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50563 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757421AbaIOWLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:11:30 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 102/187] x86_64/vsyscall: Fix warn_bad_vsyscall log output
+Date: Mon, 15 Sep 2014 15:08:32 -0700
+Message-Id: <1410818997-9432-103-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somewhere between 3.17.0-rc3 and 3.17.0-rc5 I started seeing dropped ssh 
-connections to a couple of test servers with dual AthlonMP (32-bit) and 
-3C90x family of NICs (3Com Corporation 3c980-C 10/100baseTX NIC 
-[Python-T] (rev 78) in one server and 3Com Corporation 3c905C-TX/TX-M 
-[Tornado] (rev 78) in the other server). Bisect leads to the following 
-commit:
+3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-98ea232cf63961fad734cc8c5e07e8915ec73073 is the first bad commit
-commit 98ea232cf63961fad734cc8c5e07e8915ec73073
-Author: Neil Horman <nhorman@tuxdriver.com>
-Date:   Thu Sep 4 06:13:38 2014 -0400
+------------------
 
-    3c59x: avoid panic in boomerang_start_xmit when finding page address:
-    ...
+From: Andy Lutomirski <luto@amacapital.net>
 
+commit 53b884ac3745353de220d92ef792515c3ae692f0 upstream.
+
+This commit in Linux 3.6:
+
+    commit c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
+    Author: Joe Perches <joe@perches.com>
+    Date:   Mon May 21 19:50:07 2012 -0700
+
+        x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
+
+caused warn_bad_vsyscall to output garbage in the middle of the
+line.  Revert the bad part of it.
+
+The printk in question isn't actually bare; the level is "%s".
+
+The bug this fixes is purely cosmetic; backports are optional.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/03eac1f24110bbe496ecc12a4df467e0d88466d4.1406330947.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/x86/kernel/vsyscall_64.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 1f96f93..09ce23a 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -125,10 +125,10 @@ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
+ 	if (!show_unhandled_signals)
+ 		return;
+ 
+-	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
+-			      level, current->comm, task_pid_nr(current),
+-			      message, regs->ip, regs->cs,
+-			      regs->sp, regs->ax, regs->si, regs->di);
++	printk_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
++			   level, current->comm, task_pid_nr(current),
++			   message, regs->ip, regs->cs,
++			   regs->sp, regs->ax, regs->si, regs->di);
+ }
+ 
+ static int addr_to_vsyscall_nr(unsigned long addr)
 -- 
-Meelis Roos (mroos@linux.ee)
+1.9.1
+
