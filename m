@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879AbaIOUXa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:23:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
+	id S1757567AbaIOUXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:23:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673AbaIOThL (ORCPT
+	with ESMTP id S1755747AbaIOThK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:11 -0400
+	Mon, 15 Sep 2014 15:37:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 057/114] ASoC: max98090: Fix missing free_irq
-Date: Mon, 15 Sep 2014 12:25:57 -0700
-Message-Id: <20140915192643.220958505@linuxfoundation.org>
+Subject: [PATCH 3.14 055/114] ASoC: samsung: Correct I2S DAI suspend/resume ops
+Date: Mon, 15 Sep 2014 12:25:55 -0700
+Message-Id: <20140915192643.160691159@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,34 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-commit 4adeb0ccf86a5af1825bbfe290dee9e60a5ab870 upstream.
+commit d3d4e5247b013008a39e4d5f69ce4c60ed57f997 upstream.
 
-max98090.c doesn't free the threaded interrupt it requests. This causes
-an oops when doing "cat /proc/interrupts" after snd-soc-max98090.ko is
-unloaded.
+We should save/restore relevant I2S registers regardless of
+the dai->active flag, otherwise some settings are being lost
+after system suspend/resume cycle. E.g. I2S slave mode set only
+during dai initialization is not preserved and the device ends
+up in master mode after system resume.
 
-Fix this by requesting the interrupt by using devm_request_threaded_irq().
-
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/samsung/i2s.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -2250,7 +2250,7 @@ static int max98090_probe(struct snd_soc
- 	/* Register for interrupts */
- 	dev_dbg(codec->dev, "irq = %d\n", max98090->irq);
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -915,11 +915,9 @@ static int i2s_suspend(struct snd_soc_da
+ {
+ 	struct i2s_dai *i2s = to_info(dai);
  
--	ret = request_threaded_irq(max98090->irq, NULL,
-+	ret = devm_request_threaded_irq(codec->dev, max98090->irq, NULL,
- 		max98090_interrupt, IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 		"max98090_interrupt", codec);
- 	if (ret < 0) {
+-	if (dai->active) {
+-		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
+-		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
+-		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+-	}
++	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
++	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
++	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+ 
+ 	return 0;
+ }
+@@ -928,11 +926,9 @@ static int i2s_resume(struct snd_soc_dai
+ {
+ 	struct i2s_dai *i2s = to_info(dai);
+ 
+-	if (dai->active) {
+-		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
+-		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
+-		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+-	}
++	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
++	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
++	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+ 
+ 	return 0;
+ }
 
 
