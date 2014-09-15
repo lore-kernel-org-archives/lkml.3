@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaIOJSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 05:18:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:41665 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622AbaIOJSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 05:18:11 -0400
-Message-ID: <1410772688.3931.0.camel@concordia>
-Subject: Re: [PATCH] powerpc/iommu/ddw: Fix endianness
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Alistair Popple <alistair@popple.id.au>,
-        Anton Blanchard <anton@samba.org>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Alexander Graf <agraf@suse.de>
-Date: Mon, 15 Sep 2014 19:18:08 +1000
-In-Reply-To: <5416A64E.1060005@ozlabs.ru>
-References: <1410261723-21810-1-git-send-email-aik@ozlabs.ru>
-	 <5416A64E.1060005@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	id S1753851AbaIOJS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 05:18:27 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:2279 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744AbaIOJS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 05:18:26 -0400
+Message-ID: <5416AEE2.4070303@atmel.com>
+Date: Mon, 15 Sep 2014 11:18:26 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 7/8] ARM: at91: add sama5d4 support to sama5_defconfig
+References: <1410536587-24607-1-git-send-email-alexandre.belloni@free-electrons.com> <1410536587-24607-8-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1410536587-24607-8-git-send-email-alexandre.belloni@free-electrons.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-15 at 18:41 +1000, Alexey Kardashevskiy wrote:
-> On 09/09/2014 09:22 PM, Alexey Kardashevskiy wrote:
-> > rtas_call() accepts and returns values in CPU endianness.
+On 12/09/2014 17:43, Alexandre Belloni :
+> Add sama5d4 to sama5_defconfig to build kernel booting on both sama5d3 and
+> samad4.
+> 
+> Note that earlyprintk can only be working for one or the other.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Sounds right.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> > of_read_number() accepts big-endian values but create.addr_hi/lo returned
-> > by rtas_call() are in CPU endiannes.
-
-Also sounds right.
-
-> > The dynamic_dma_window_prop struct defines all members as BE so let's
-> > make it true.
-
-It does. But why does it do that? It seems to be allocated and setup in
-enable_ddw() and then the only place I see it used is in
-tce_setrange_multi_pSeriesLP()/tce_clearrange_multi_pSeriesLP(), which both
-unpack it again. What am I missing?
-
-> > struct dynamic_dma_window_prop {
-> >         __be32  liobn;          /* tce table number */
-> >         __be64  dma_base;       /* address hi,lo */
-> >         __be32  tce_shift;      /* ilog2(tce_page_size) */
-> >         __be32  window_shift;   /* ilog2(tce_window_size) */
-> > };
-
-We do read them from the device tree in find_existing_ddw_windows(), but if
-that's the only place then the conversion to cpu endian should happen there.
-
-> > diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-> > index 7c1d77c..700020a 100644
-> > --- a/arch/powerpc/platforms/pseries/iommu.c
-> > +++ b/arch/powerpc/platforms/pseries/iommu.c
-> > @@ -750,7 +750,7 @@ static void remove_ddw(struct device_node *np, bool remove_prop)
-> >  		pr_debug("%s successfully cleared tces in window.\n",
-> >  			 np->full_name);
-> >  
-> > -	ret = rtas_call(ddw_avail[2], 1, 1, NULL, liobn);
-> > +	ret = rtas_call(be32_to_cpu(ddw_avail[2]), 1, 1, NULL, liobn);
-
-The conversion should happen once where ever ddw_avail comes out of the device
-tree, rather than everywhere it's used.
-
-cheers
+> ---
+>  arch/arm/configs/sama5_defconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+> index 96c15b775d57..c9089c927daf 100644
+> --- a/arch/arm/configs/sama5_defconfig
+> +++ b/arch/arm/configs/sama5_defconfig
+> @@ -19,6 +19,7 @@ CONFIG_MODULE_FORCE_UNLOAD=y
+>  CONFIG_ARCH_AT91=y
+>  CONFIG_SOC_SAM_V7=y
+>  CONFIG_SOC_SAMA5D3=y
+> +CONFIG_SOC_SAMA5D4=y
+>  CONFIG_MACH_SAMA5_DT=y
+>  CONFIG_AEABI=y
+>  CONFIG_UACCESS_WITH_MEMCPY=y
+> 
 
 
-
+-- 
+Nicolas Ferre
