@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042AbaIOTnx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:43:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1756067AbaIOToM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:44:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832AbaIOThT (ORCPT
+	with ESMTP id S1754612AbaIOThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Colin Ian King <colin.king@canonical.com>,
-        "David E. Box" <david.e.box@linux.intel.com>,
-        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 064/114] ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
-Date: Mon, 15 Sep 2014 12:26:04 -0700
-Message-Id: <20140915192643.445619274@linuxfoundation.org>
+        Chin-Ran Lo <crlo@marvell.com>, Jeff CF Chen <jeffc@marvell.com>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.14 080/114] Bluetooth: btmrvl: wait for HOST_SLEEP_ENABLE event in suspend
+Date: Mon, 15 Sep 2014 12:26:20 -0700
+Message-Id: <20140915192643.936920507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -31,42 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David E. Box" <david.e.box@linux.intel.com>
+From: Chin-Ran Lo <crlo@marvell.com>
 
-commit 8aa5e56eeb61a099ea6519eb30ee399e1bc043ce upstream.
+commit 396e04f4bb9afefb0744715dc76d9abe18ee5fb0 upstream.
 
-Adds return status check on copy routines to delete the allocated destination
-object if either copy fails. Reported by Colin Ian King on bugs.acpica.org,
-Bug 1087.
-The last applicable commit:
- Commit: 3371c19c294a4cb3649aa4e84606be8a1d999e61
- Subject: ACPICA: Remove ACPI_GET_OBJECT_TYPE macro
+After BT_CMD_HOST_SLEEP_ENABLE command finishes, driver should
+wait until getting BT_EVENT_HOST_SLEEP_ENABLE event to complete
+suspend procedure.
+Without this patch the suspend handler would return success
+earlier. By the time when the BT_EVENT_HOST_SLEEP_ENABLE event
+comes in the controller driver could have already turned off the
+bus clock. This causes kernel crash or system reboot eventually.
 
-Link: https://bugs.acpica.org/show_bug.cgi?id=1087
-Reported-by: Colin Ian King <colin.king@canonical.com>
-Signed-off-by: David E. Box <david.e.box@linux.intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Chin-Ran Lo <crlo@marvell.com>
+Signed-off-by: Jeff CF Chen <jeffc@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/utcopy.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/bluetooth/btmrvl_drv.h  |    1 +
+ drivers/bluetooth/btmrvl_main.c |   25 ++++++++++++++++++++++++-
+ 2 files changed, 25 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/acpica/utcopy.c
-+++ b/drivers/acpi/acpica/utcopy.c
-@@ -1001,5 +1001,11 @@ acpi_ut_copy_iobject_to_iobject(union ac
- 		status = acpi_ut_copy_simple_object(source_desc, *dest_desc);
- 	}
+--- a/drivers/bluetooth/btmrvl_drv.h
++++ b/drivers/bluetooth/btmrvl_drv.h
+@@ -66,6 +66,7 @@ struct btmrvl_adapter {
+ 	u8 hs_state;
+ 	u8 wakeup_tries;
+ 	wait_queue_head_t cmd_wait_q;
++	wait_queue_head_t event_hs_wait_q;
+ 	u8 cmd_complete;
+ 	bool is_suspended;
+ };
+--- a/drivers/bluetooth/btmrvl_main.c
++++ b/drivers/bluetooth/btmrvl_main.c
+@@ -112,6 +112,7 @@ int btmrvl_process_event(struct btmrvl_p
+ 			adapter->hs_state = HS_ACTIVATED;
+ 			if (adapter->psmode)
+ 				adapter->ps_state = PS_SLEEP;
++			wake_up_interruptible(&adapter->event_hs_wait_q);
+ 			BT_DBG("HS ACTIVATED!");
+ 		} else {
+ 			BT_DBG("HS Enable failed");
+@@ -251,11 +252,31 @@ EXPORT_SYMBOL_GPL(btmrvl_enable_ps);
  
-+	/* Delete the allocated object if copy failed */
-+
-+	if (ACPI_FAILURE(status)) {
-+		acpi_ut_remove_reference(*dest_desc);
+ int btmrvl_enable_hs(struct btmrvl_private *priv)
+ {
++	struct btmrvl_adapter *adapter = priv->adapter;
+ 	int ret;
+ 
+ 	ret = btmrvl_send_sync_cmd(priv, BT_CMD_HOST_SLEEP_ENABLE, NULL, 0);
+-	if (ret)
++	if (ret) {
+ 		BT_ERR("Host sleep enable command failed\n");
++		return ret;
 +	}
 +
- 	return_ACPI_STATUS(status);
++	ret = wait_event_interruptible_timeout(adapter->event_hs_wait_q,
++					       adapter->hs_state,
++			msecs_to_jiffies(WAIT_UNTIL_HS_STATE_CHANGED));
++	if (ret < 0) {
++		BT_ERR("event_hs_wait_q terminated (%d): %d,%d,%d",
++		       ret, adapter->hs_state, adapter->ps_state,
++		       adapter->wakeup_tries);
++	} else if (!ret) {
++		BT_ERR("hs_enable timeout: %d,%d,%d", adapter->hs_state,
++		       adapter->ps_state, adapter->wakeup_tries);
++		ret = -ETIMEDOUT;
++	} else {
++		BT_DBG("host sleep enabled: %d,%d,%d", adapter->hs_state,
++		       adapter->ps_state, adapter->wakeup_tries);
++		ret = 0;
++	}
+ 
+ 	return ret;
  }
+@@ -341,6 +362,7 @@ static void btmrvl_init_adapter(struct b
+ 	priv->adapter->ps_state = PS_AWAKE;
+ 
+ 	init_waitqueue_head(&priv->adapter->cmd_wait_q);
++	init_waitqueue_head(&priv->adapter->event_hs_wait_q);
+ }
+ 
+ static void btmrvl_free_adapter(struct btmrvl_private *priv)
+@@ -648,6 +670,7 @@ int btmrvl_remove_card(struct btmrvl_pri
+ 	hdev = priv->btmrvl_dev.hcidev;
+ 
+ 	wake_up_interruptible(&priv->adapter->cmd_wait_q);
++	wake_up_interruptible(&priv->adapter->event_hs_wait_q);
+ 
+ 	kthread_stop(priv->main_thread.task);
+ 
 
 
