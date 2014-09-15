@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaIOSMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 14:12:35 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54189 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaIOSMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 14:12:33 -0400
-Message-ID: <54172C18.60009@cogentembedded.com>
-Date: Mon, 15 Sep 2014 21:12:40 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754370AbaIOSM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 14:12:58 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:57626
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754270AbaIOSM5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 14:12:57 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 01/11] staging: comedi: add comedi_bytes_per_scan()
+Thread-Topic: [PATCH 01/11] staging: comedi: add comedi_bytes_per_scan()
+Thread-Index: AQHP0OMOJr4yzgDfe0mTwrvCk083IpwCfpkQ
+Date: Mon, 15 Sep 2014 18:12:55 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FA1B65@P3PWEX4MB008.ex4.secureserver.net>
+References: <1410785167-28506-1-git-send-email-abbotti@mev.co.uk>
+ <1410785167-28506-2-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1410785167-28506-2-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu
-CC: yoshihiro.shimoda.uh@renesas.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 5/9] usb: rename gen_phy to phy in HCD
-References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com> <1410777309-12552-6-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1410777309-12552-6-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/15/2014 1:35 PM, Antoine Tenart wrote:
+On Monday, September 15, 2014 5:46 AM, Ian Abbott wrote:
+> The "comedi_fc" module contains a few functions useful to Comedi
+> drivers.  Their functionality is being migrated to the core "comedi"
+> module and renamed to start with the prefix `comedi_`.  As part of this
+> migration, move `cfc_bytes_per_scan()` into the core comedi module and
+> rename it to `comedi_bytes_per_scan()`.  Change the external declaration
+> of `cfc_bytes_per_scan()` into an inline function that calls
+> `comedi_bytes_per_scan()`.
+>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> ---
+>  drivers/staging/comedi/comedidev.h         |  1 +
+>  drivers/staging/comedi/drivers.c           | 37 ++++++++++++++++++++++++++++++
+>  drivers/staging/comedi/drivers/comedi_fc.c | 22 ------------------
+>  drivers/staging/comedi/drivers/comedi_fc.h |  6 ++++-
+>  4 files changed, 43 insertions(+), 23 deletions(-)
 
-> The patch adding support to the generic PHY framework introduced a
-> 'gen_phy' member in the HCD structure. Rename it to 'phy' to have a
-> consistent USB framework.
+Ian,
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+I think this function should be moved to comedi_buf.c instead.
+It's only used by the drivers as part of the async command support.
 
-    With my recent patches we don't need this anymore. I considered quite 
-stupid renaming the field which hasn't been even added yet, so just returned 
-to my earlier version which called the field in question 'phy'.
-
-WBR, Sergei
+Regards,
+Hartley
 
