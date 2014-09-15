@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597AbaIOWxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:53:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50986 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197AbaIOWQy (ORCPT
+	id S1759603AbaIOWxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:53:49 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:57899 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686AbaIOWxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:16:54 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 087/187] [media] media-device: Remove duplicated memset() in media_enum_entities()
-Date: Mon, 15 Sep 2014 15:08:17 -0700
-Message-Id: <1410818997-9432-88-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+	Mon, 15 Sep 2014 18:53:46 -0400
+Message-ID: <54176E00.6040309@gmail.com>
+Date: Tue, 16 Sep 2014 06:53:52 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.13
+To: David Vrabel <david.vrabel@citrix.com>
+CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/4] drivers/xen/xenbus/xenbus_client.c: Correct
+ the comments for xenbus_grant_ring()
+References: <54157282.40402@gmail.com> <541572F6.3090900@gmail.com> <54170579.9040406@citrix.com>
+In-Reply-To: <54170579.9040406@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On 09/15/2014 11:27 PM, David Vrabel wrote:
+> On 14/09/14 11:50, Chen Gang wrote:
+>> Both zero and positive number can indicate success, so the original
+>> comments need be improved.
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>  drivers/xen/xenbus/xenbus_client.c | 4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
+>> index 277e74d..e2cf681 100644
+>> --- a/drivers/xen/xenbus/xenbus_client.c
+>> +++ b/drivers/xen/xenbus/xenbus_client.c
+>> @@ -361,8 +361,8 @@ static void xenbus_switch_fatal(struct xenbus_device *dev, int depth, int err,
+>>   * @ring_mfn: mfn of ring to grant
+>>  
+>>   * Grant access to the given @ring_mfn to the peer of the given device.  Return
+>> - * 0 on success, or -errno on error.  On error, the device will switch to
+>> - * XenbusStateClosing, and the error will be saved in the store.
+>> + * 0 or positive number on success, or -errno on error.  On error, the device
+>> + * will switch to XenbusStateClosing, and the error will be saved in the store.
+> 
+> If you're going to update this comment, please state what it is actually
+> returning: i.e., a grant reference or -ve on error.
+> 
 
-------------------
+OK, thanks, I shall update it when send patch v2 for it.
 
-From: =?UTF-8?q?Salva=20Peir=C3=B3?= <speiro@ai2.upv.es>
-
-commit f8ca6ac00d2ba24c5557f08f81439cd3432f0802 upstream.
-
-After the zeroing the whole struct struct media_entity_desc u_ent,
-it is no longer necessary to memset(0) its u_ent.name field.
-
-Signed-off-by: Salva Peiró <speiro@ai2.upv.es>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/media/media-device.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
-index 703560f..88c1606 100644
---- a/drivers/media/media-device.c
-+++ b/drivers/media/media-device.c
-@@ -106,8 +106,6 @@ static long media_device_enum_entities(struct media_device *mdev,
- 	if (ent->name) {
- 		strncpy(u_ent.name, ent->name, sizeof(u_ent.name));
- 		u_ent.name[sizeof(u_ent.name) - 1] = '\0';
--	} else {
--		memset(u_ent.name, 0, sizeof(u_ent.name));
- 	}
- 	u_ent.type = ent->type;
- 	u_ent.revision = ent->revision;
+Thanks.
 -- 
-1.9.1
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
