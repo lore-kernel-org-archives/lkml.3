@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541AbaIOWUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:20:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51328 "EHLO
+	id S1758743AbaIOW0u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:26:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51340 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758460AbaIOWU2 (ORCPT
+	with ESMTP id S1758515AbaIOWUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:28 -0400
+	Mon, 15 Sep 2014 18:20:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 120/187] ext4: fix ext4_discard_allocated_blocks() if we can't allocate the pa struct
-Date: Mon, 15 Sep 2014 15:08:50 -0700
-Message-Id: <1410818997-9432-121-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 050/187] ASoC: wm8994: Prevent double lock of accdet_lock mutex on wm1811
+Date: Mon, 15 Sep 2014 15:07:40 -0700
+Message-Id: <1410818997-9432-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -26,64 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
+commit b38314179c9ccb789e6fe967cff171fa817e8978 upstream.
 
-If there is a failure while allocating the preallocation structure, a
-number of blocks can end up getting marked in the in-memory buddy
-bitmap, and then not getting released.  This can result in the
-following corruption getting reported by the kernel:
+wm1811_micd_stop takes the accdet_lock mutex, and is called from two
+places, one of which is already holding the accdet_lock. This obviously
+causes a lock up.
 
-EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group 1126,
-12793 clusters in bitmap, 12729 in gd
+This patch fixes this issue by removing the lock from wm1811_micd_stop
+and ensuring that it is always locked externally.
 
-In that case, we need to release the blocks using mb_free_blocks().
-
-Tested: fs smoke test; also demonstrated that with injected errors,
-	the file system is no longer getting corrupted
-
-Google-Bug-Id: 16657874
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/mballoc.c | 21 ++++++++++++++++++++-
- 1 file changed, 20 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8994.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 502f0fd..795d5af 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3196,8 +3196,27 @@ static void ext4_mb_collect_stats(struct ext4_allocation_context *ac)
- static void ext4_discard_allocated_blocks(struct ext4_allocation_context *ac)
- {
- 	struct ext4_prealloc_space *pa = ac->ac_pa;
-+	struct ext4_buddy e4b;
-+	int err;
- 
--	if (pa && pa->pa_type == MB_INODE_PA)
-+	if (pa == NULL) {
-+		err = ext4_mb_load_buddy(ac->ac_sb, ac->ac_f_ex.fe_group, &e4b);
-+		if (err) {
-+			/*
-+			 * This should never happen since we pin the
-+			 * pages in the ext4_allocation_context so
-+			 * ext4_mb_load_buddy() should never fail.
-+			 */
-+			WARN(1, "mb_load_buddy failed (%d)", err);
-+			return;
-+		}
-+		ext4_lock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		mb_free_blocks(ac->ac_inode, &e4b, ac->ac_f_ex.fe_start,
-+			       ac->ac_f_ex.fe_len);
-+		ext4_unlock_group(ac->ac_sb, ac->ac_f_ex.fe_group);
-+		return;
-+	}
-+	if (pa->pa_type == MB_INODE_PA)
- 		pa->pa_free += ac->ac_b_ex.fe_len;
+diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
+index 86426a1..c9ce977 100644
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -3492,6 +3492,7 @@ static irqreturn_t wm8994_mic_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
  }
  
++/* Should be called with accdet_lock held */
+ static void wm1811_micd_stop(struct snd_soc_codec *codec)
+ {
+ 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+@@ -3499,14 +3500,10 @@ static void wm1811_micd_stop(struct snd_soc_codec *codec)
+ 	if (!wm8994->jackdet)
+ 		return;
+ 
+-	mutex_lock(&wm8994->accdet_lock);
+-
+ 	snd_soc_update_bits(codec, WM8958_MIC_DETECT_1, WM8958_MICD_ENA, 0);
+ 
+ 	wm1811_jackdet_set_mode(codec, WM1811_JACKDET_MODE_JACK);
+ 
+-	mutex_unlock(&wm8994->accdet_lock);
+-
+ 	if (wm8994->wm8994->pdata.jd_ext_cap)
+ 		snd_soc_dapm_disable_pin(&codec->dapm,
+ 					 "MICBIAS2");
+@@ -3547,10 +3544,10 @@ static void wm8958_open_circuit_work(struct work_struct *work)
+ 						  open_circuit_work.work);
+ 	struct device *dev = wm8994->wm8994->dev;
+ 
+-	wm1811_micd_stop(wm8994->hubs.codec);
+-
+ 	mutex_lock(&wm8994->accdet_lock);
+ 
++	wm1811_micd_stop(wm8994->hubs.codec);
++
+ 	dev_dbg(dev, "Reporting open circuit\n");
+ 
+ 	wm8994->jack_mic = false;
 -- 
 1.9.1
 
