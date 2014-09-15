@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793AbaIOT5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:57:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55853 "EHLO
+	id S1756812AbaIOT6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:58:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55794 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756286AbaIOTrT (ORCPT
+	with ESMTP id S1756275AbaIOTrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
         Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.10 53/71] xfs: dont zero partial page cache pages during O_DIRECT writes
-Date: Mon, 15 Sep 2014 12:26:51 -0700
-Message-Id: <20140915192640.463703352@linuxfoundation.org>
+Subject: [PATCH 3.10 51/71] xfs: quotacheck leaves dquot buffers without verifiers
+Date: Mon, 15 Sep 2014 12:26:49 -0700
+Message-Id: <20140915192640.397265359@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -31,16 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-commit 834ffca6f7e345a79f6f2e2d131b0dfba8a4b67a upstream.
+commit 5fd364fee81a7888af806e42ed8a91c845894f2d upstream.
 
-Similar to direct IO reads, direct IO writes are using
-truncate_pagecache_range to invalidate the page cache. This is
-incorrect due to the sub-block zeroing in the page cache that
-truncate_pagecache_range() triggers.
+When running xfs/305, I noticed that quotacheck was flushing dquot
+buffers that did not have the xfs_dquot_buf_ops verifiers attached:
 
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
+XFS (vdb): _xfs_buf_ioapply: no ops on block 0x1dc8/0x1dc8
+ffff880052489000: 44 51 01 04 00 00 65 b8 00 00 00 00 00 00 00 00  DQ....e.........
+ffff880052489010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+CPU: 1 PID: 2376 Comm: mount Not tainted 3.16.0-rc2-dgc+ #306
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+ ffff88006fe38000 ffff88004a0ffae8 ffffffff81cf1cca 0000000000000001
+ ffff88004a0ffb88 ffffffff814d50ca 000010004a0ffc70 0000000000000000
+ ffff88006be56dc4 0000000000000021 0000000000001dc8 ffff88007c773d80
+Call Trace:
+ [<ffffffff81cf1cca>] dump_stack+0x45/0x56
+ [<ffffffff814d50ca>] _xfs_buf_ioapply+0x3ca/0x3d0
+ [<ffffffff810db520>] ? wake_up_state+0x20/0x20
+ [<ffffffff814d51f5>] ? xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d513b>] xfs_buf_iorequest+0x6b/0xd0
+ [<ffffffff814d51f5>] xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d53ab>] __xfs_buf_delwri_submit+0x15b/0x220
+ [<ffffffff814d6040>] ? xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff814d6040>] xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff8150f89d>] xfs_qm_quotacheck+0x17d/0x3c0
+ [<ffffffff81510591>] xfs_qm_mount_quotas+0x151/0x1e0
+ [<ffffffff814ed01c>] xfs_mountfs+0x56c/0x7d0
+ [<ffffffff814f0f12>] xfs_fs_fill_super+0x2c2/0x340
+ [<ffffffff811c9fe4>] mount_bdev+0x194/0x1d0
+ [<ffffffff814f0c50>] ? xfs_finish_flags+0x170/0x170
+ [<ffffffff814ef0f5>] xfs_fs_mount+0x15/0x20
+ [<ffffffff811ca8c9>] mount_fs+0x39/0x1b0
+ [<ffffffff811e4d67>] vfs_kern_mount+0x67/0x120
+ [<ffffffff811e757e>] do_mount+0x23e/0xad0
+ [<ffffffff8117abde>] ? __get_free_pages+0xe/0x50
+ [<ffffffff811e71e6>] ? copy_mount_options+0x36/0x150
+ [<ffffffff811e8103>] SyS_mount+0x83/0xc0
+ [<ffffffff81cfd40b>] tracesys+0xdd/0xe2
+
+This was caused by dquot buffer readahead not attaching a verifier
+structure to the buffer when readahead was issued, resulting in the
+followup read of the buffer finding a valid buffer and so not
+attaching new verifiers to the buffer as part of the read.
+
+Also, when a verifier failure occurs, we then read the buffer
+without verifiers. Attach the verifiers manually after this read so
+that if the buffer is then written it will be verified that the
+corruption has been repaired.
+
+Further, when flushing a dquot we don't ask for a verifier when
+reading in the dquot buffer the dquot belongs to. Most of the time
+this isn't an issue because the buffer is still cached, but when it
+is not cached it will result in writing the dquot buffer without
+having the verfier attached.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Brian Foster <bfoster@redhat.com>
@@ -49,27 +94,45 @@ Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_file.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/xfs/xfs_dquot.c |    3 ++-
+ fs/xfs/xfs_qm.c    |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -677,7 +677,15 @@ xfs_file_dio_aio_write(
- 						    pos, -1);
- 		if (ret)
- 			goto out;
--		truncate_pagecache_range(VFS_I(ip), pos, -1);
-+		/*
-+		 * Invalidate whole pages. This can return an error if
-+		 * we fail to invalidate a page, but this should never
-+		 * happen on XFS. Warn if it does fail.
-+		 */
-+		ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+		WARN_ON_ONCE(ret);
-+		ret = 0;
- 	}
+--- a/fs/xfs/xfs_dquot.c
++++ b/fs/xfs/xfs_dquot.c
+@@ -1104,7 +1104,8 @@ xfs_qm_dqflush(
+ 	 * Get the buffer containing the on-disk dquot
+ 	 */
+ 	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dqp->q_blkno,
+-				   mp->m_quotainfo->qi_dqchunklen, 0, &bp, NULL);
++				   mp->m_quotainfo->qi_dqchunklen, 0, &bp,
++				   &xfs_dquot_buf_ops);
+ 	if (error)
+ 		goto out_unlock;
  
- 	/*
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -935,6 +935,12 @@ xfs_qm_dqiter_bufs(
+ 		if (error)
+ 			break;
+ 
++		/*
++		 * A corrupt buffer might not have a verifier attached, so
++		 * make sure we have the correct one attached before writeback
++		 * occurs.
++		 */
++		bp->b_ops = &xfs_dquot_buf_ops;
+ 		xfs_qm_reset_dqcounts(mp, bp, firstid, type);
+ 		xfs_buf_delwri_queue(bp, buffer_list);
+ 		xfs_buf_relse(bp);
+@@ -1018,7 +1024,7 @@ xfs_qm_dqiterate(
+ 					xfs_buf_readahead(mp->m_ddev_targp,
+ 					       XFS_FSB_TO_DADDR(mp, rablkno),
+ 					       mp->m_quotainfo->qi_dqchunklen,
+-					       NULL);
++					       &xfs_dquot_buf_ops);
+ 					rablkno++;
+ 				}
+ 			}
 
 
