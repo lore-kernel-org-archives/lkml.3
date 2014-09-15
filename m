@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998AbaIOXGW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:06:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50724 "EHLO
+	id S932563AbaIOWNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:13:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932570AbaIOWNO (ORCPT
+	with ESMTP id S932522AbaIOWNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:13:14 -0400
+	Mon, 15 Sep 2014 18:13:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 146/187] drm/ttm: Choose a pool to shrink correctly in ttm_dma_pool_shrink_scan().
-Date: Mon, 15 Sep 2014 15:09:16 -0700
-Message-Id: <1410818997-9432-147-git-send-email-kamal@canonical.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 141/187] ALSA: virtuoso: add Xonar Essence STX II support
+Date: Mon, 15 Sep 2014 15:09:11 -0700
+Message-Id: <1410818997-9432-142-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,47 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 46c2df68f03a236b30808bba361f10900c88d95e upstream.
+commit f42bb22243d2ae264d721b055f836059fe35321f upstream.
 
-We can use "unsigned int" instead of "atomic_t" by updating start_pool
-variable under _manager->lock. This patch will make it possible to avoid
-skipping when choosing a pool to shrink in round-robin style, after next
-patch changes mutex_lock(_manager->lock) to !mutex_trylock(_manager->lork).
+Just add the PCI ID for the STX II.  It appears to work the same as the
+STX, except for the addition of the not-yet-supported daughterboard.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Tested-by: Mario <fugazzi99@gmail.com>
+Tested-by: corubba <corubba@gmx.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ Documentation/sound/alsa/ALSA-Configuration.txt |  4 ++--
+ sound/pci/Kconfig                               |  4 ++--
+ sound/pci/oxygen/virtuoso.c                     |  1 +
+ sound/pci/oxygen/xonar_pcm179x.c                | 12 ++++++++++--
+ 4 files changed, 15 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index b751fff..d8e59f7 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1004,9 +1004,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
- static unsigned long
- ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- {
--	static atomic_t start_pool = ATOMIC_INIT(0);
-+	static unsigned start_pool;
- 	unsigned idx = 0;
--	unsigned pool_offset = atomic_add_return(1, &start_pool);
-+	unsigned pool_offset;
- 	unsigned shrink_pages = sc->nr_to_scan;
- 	struct device_pools *p;
- 	unsigned long freed = 0;
-@@ -1017,7 +1017,7 @@ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	mutex_lock(&_manager->lock);
- 	if (!_manager->npools)
- 		goto out;
--	pool_offset = pool_offset % _manager->npools;
-+	pool_offset = ++start_pool % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
+diff --git a/Documentation/sound/alsa/ALSA-Configuration.txt b/Documentation/sound/alsa/ALSA-Configuration.txt
+index b8dd0df..0fd40b1 100644
+--- a/Documentation/sound/alsa/ALSA-Configuration.txt
++++ b/Documentation/sound/alsa/ALSA-Configuration.txt
+@@ -2026,8 +2026,8 @@ Prior to version 0.9.0rc4 options had a 'snd_' prefix. This was removed.
+   -------------------
  
+     Module for sound cards based on the Asus AV66/AV100/AV200 chips,
+-    i.e., Xonar D1, DX, D2, D2X, DS, Essence ST (Deluxe), Essence STX,
+-    HDAV1.3 (Deluxe), and HDAV1.3 Slim.
++    i.e., Xonar D1, DX, D2, D2X, DS, DSX, Essence ST (Deluxe),
++    Essence STX (II), HDAV1.3 (Deluxe), and HDAV1.3 Slim.
+ 
+     This module supports autoprobe and multiple cards.
+ 
+diff --git a/sound/pci/Kconfig b/sound/pci/Kconfig
+index cc9fd67..be6277c 100644
+--- a/sound/pci/Kconfig
++++ b/sound/pci/Kconfig
+@@ -858,8 +858,8 @@ config SND_VIRTUOSO
+ 	select SND_JACK if INPUT=y || INPUT=SND
+ 	help
+ 	  Say Y here to include support for sound cards based on the
+-	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS,
+-	  Essence ST (Deluxe), and Essence STX.
++	  Asus AV66/AV100/AV200 chips, i.e., Xonar D1, DX, D2, D2X, DS, DSX,
++	  Essence ST (Deluxe), and Essence STX (II).
+ 	  Support for the HDAV1.3 (Deluxe) and HDAV1.3 Slim is experimental;
+ 	  for the Xense, missing.
+ 
+diff --git a/sound/pci/oxygen/virtuoso.c b/sound/pci/oxygen/virtuoso.c
+index 64b9fda..dbbbacf 100644
+--- a/sound/pci/oxygen/virtuoso.c
++++ b/sound/pci/oxygen/virtuoso.c
+@@ -53,6 +53,7 @@ static DEFINE_PCI_DEVICE_TABLE(xonar_ids) = {
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x835e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x838e) },
+ 	{ OXYGEN_PCI_SUBID(0x1043, 0x8522) },
++	{ OXYGEN_PCI_SUBID(0x1043, 0x85f4) },
+ 	{ OXYGEN_PCI_SUBID_BROKEN_EEPROM },
+ 	{ }
+ };
+diff --git a/sound/pci/oxygen/xonar_pcm179x.c b/sound/pci/oxygen/xonar_pcm179x.c
+index c8c7f2c..e026059 100644
+--- a/sound/pci/oxygen/xonar_pcm179x.c
++++ b/sound/pci/oxygen/xonar_pcm179x.c
+@@ -100,8 +100,8 @@
+  */
+ 
+ /*
+- * Xonar Essence ST (Deluxe)/STX
+- * -----------------------------
++ * Xonar Essence ST (Deluxe)/STX (II)
++ * ----------------------------------
+  *
+  * CMI8788:
+  *
+@@ -1138,6 +1138,14 @@ int get_xonar_pcm179x_model(struct oxygen *chip,
+ 		chip->model.resume = xonar_stx_resume;
+ 		chip->model.set_dac_params = set_pcm1796_params;
+ 		break;
++	case 0x85f4:
++		chip->model = model_xonar_st;
++		/* TODO: daughterboard support */
++		chip->model.shortname = "Xonar STX II";
++		chip->model.init = xonar_stx_init;
++		chip->model.resume = xonar_stx_resume;
++		chip->model.set_dac_params = set_pcm1796_params;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
 -- 
 1.9.1
 
