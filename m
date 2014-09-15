@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968AbaIOWRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:17:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50998 "EHLO
+	id S1758007AbaIOWRO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:17:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51006 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757925AbaIOWRG (ORCPT
+	with ESMTP id S1757949AbaIOWRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:06 -0400
+	Mon, 15 Sep 2014 18:17:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 077/187] ext4: fix punch hole on files with indirect mapping
-Date: Mon, 15 Sep 2014 15:08:07 -0700
-Message-Id: <1410818997-9432-78-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 080/187] Bluetooth: never linger on process exit
+Date: Mon, 15 Sep 2014 15:08:10 -0700
+Message-Id: <1410818997-9432-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,376 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit 4f579ae7de560e5f449587a6c3f02594d53d4d51 upstream.
+commit 093facf3634da1b0c2cc7ed106f1983da901bbab upstream.
 
-Currently punch hole code on files with direct/indirect mapping has some
-problems which may lead to a data loss. For example (from Jan Kara):
+If the current process is exiting, lingering on socket close will make
+it unkillable, so we should avoid it.
 
-fallocate -n -p 10240000 4096
+Reproducer:
 
-will punch the range 10240000 - 12632064 instead of the range 1024000 -
-10244096.
+  #include <sys/types.h>
+  #include <sys/socket.h>
 
-Also the code is a bit weird and it's not using infrastructure provided
-by indirect.c, but rather creating it's own way.
+  #define BTPROTO_L2CAP   0
+  #define BTPROTO_SCO     2
+  #define BTPROTO_RFCOMM  3
 
-This patch fixes the issues as well as making the operation to run 4
-times faster from my testing (punching out 60GB file). It uses similar
-approach used in ext4_ind_truncate() which takes advantage of
-ext4_free_branches() function.
+  int main()
+  {
+          int fd;
+          struct linger ling;
 
-Also rename the ext4_free_hole_blocks() to something more sensible, like
-the equivalent we have for extent mapped files. Call it
-ext4_ind_remove_space().
+          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
 
-This has been tested mostly with fsx and some xfstests which are testing
-punch hole but does not require unwritten extents which are not
-supported with direct/indirect mapping. Not problems showed up even with
-1024k block size.
+          ling.l_onoff = 1;
+          ling.l_linger = 1000000000;
+          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+          return 0;
+  }
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/ext4.h     |   4 +-
- fs/ext4/indirect.c | 281 ++++++++++++++++++++++++++++++++++++++---------------
- fs/ext4/inode.c    |   2 +-
- 3 files changed, 205 insertions(+), 82 deletions(-)
+ net/bluetooth/l2cap_sock.c  | 3 ++-
+ net/bluetooth/rfcomm/sock.c | 3 ++-
+ net/bluetooth/sco.c         | 6 ++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 62f024c..e531054 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2151,8 +2151,8 @@ extern ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- extern int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock);
- extern int ext4_ind_trans_blocks(struct inode *inode, int nrblocks);
- extern void ext4_ind_truncate(handle_t *, struct inode *inode);
--extern int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
--				 ext4_lblk_t first, ext4_lblk_t stop);
-+extern int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
-+				 ext4_lblk_t start, ext4_lblk_t end);
+diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+index c9e0915..eaa5ad5 100644
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -978,7 +978,8 @@ static int l2cap_sock_shutdown(struct socket *sock, int how)
+ 		l2cap_chan_close(chan, 0);
+ 		lock_sock(sk);
  
- /* ioctl.c */
- extern long ext4_ioctl(struct file *, unsigned int, unsigned long);
-diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index c30cbe2..4353522 100644
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -1297,97 +1297,220 @@ do_indirects:
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
  	}
- }
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 3c2d3e4..a0050de 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -898,7 +898,8 @@ static int rfcomm_sock_shutdown(struct socket *sock, int how)
+ 		sk->sk_shutdown = SHUTDOWN_MASK;
+ 		__rfcomm_sock_close(sk);
  
--static int free_hole_blocks(handle_t *handle, struct inode *inode,
--			    struct buffer_head *parent_bh, __le32 *i_data,
--			    int level, ext4_lblk_t first,
--			    ext4_lblk_t count, int max)
-+/**
-+ *	ext4_ind_remove_space - remove space from the range
-+ *	@handle: JBD handle for this transaction
-+ *	@inode:	inode we are dealing with
-+ *	@start:	First block to remove
-+ *	@end:	One block after the last block to remove (exclusive)
-+ *
-+ *	Free the blocks in the defined range (end is exclusive endpoint of
-+ *	range). This is used by ext4_punch_hole().
-+ */
-+int ext4_ind_remove_space(handle_t *handle, struct inode *inode,
-+			  ext4_lblk_t start, ext4_lblk_t end)
- {
--	struct buffer_head *bh = NULL;
-+	struct ext4_inode_info *ei = EXT4_I(inode);
-+	__le32 *i_data = ei->i_data;
- 	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
--	int ret = 0;
--	int i, inc;
--	ext4_lblk_t offset;
--	__le32 blk;
--
--	inc = 1 << ((EXT4_BLOCK_SIZE_BITS(inode->i_sb) - 2) * level);
--	for (i = 0, offset = 0; i < max; i++, i_data++, offset += inc) {
--		if (offset >= count + first)
--			break;
--		if (*i_data == 0 || (offset + inc) <= first)
--			continue;
--		blk = *i_data;
--		if (level > 0) {
--			ext4_lblk_t first2;
--			ext4_lblk_t count2;
-+	ext4_lblk_t offsets[4], offsets2[4];
-+	Indirect chain[4], chain2[4];
-+	Indirect *partial, *partial2;
-+	ext4_lblk_t max_block;
-+	__le32 nr = 0, nr2 = 0;
-+	int n = 0, n2 = 0;
-+	unsigned blocksize = inode->i_sb->s_blocksize;
- 
--			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
--			if (!bh) {
--				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
--						       "Read failure");
--				return -EIO;
--			}
--			if (first > offset) {
--				first2 = first - offset;
--				count2 = count;
-+	max_block = (EXT4_SB(inode->i_sb)->s_bitmap_maxbytes + blocksize-1)
-+					>> EXT4_BLOCK_SIZE_BITS(inode->i_sb);
-+	if (end >= max_block)
-+		end = max_block;
-+	if ((start >= end) || (start > max_block))
-+		return 0;
-+
-+	n = ext4_block_to_path(inode, start, offsets, NULL);
-+	n2 = ext4_block_to_path(inode, end, offsets2, NULL);
-+
-+	BUG_ON(n > n2);
-+
-+	if ((n == 1) && (n == n2)) {
-+		/* We're punching only within direct block range */
-+		ext4_free_data(handle, inode, NULL, i_data + offsets[0],
-+			       i_data + offsets2[0]);
-+		return 0;
-+	} else if (n2 > n) {
-+		/*
-+		 * Start and end are on a different levels so we're going to
-+		 * free partial block at start, and partial block at end of
-+		 * the range. If there are some levels in between then
-+		 * do_indirects label will take care of that.
-+		 */
-+
-+		if (n == 1) {
-+			/*
-+			 * Start is at the direct block level, free
-+			 * everything to the end of the level.
-+			 */
-+			ext4_free_data(handle, inode, NULL, i_data + offsets[0],
-+				       i_data + EXT4_NDIR_BLOCKS);
-+			goto end_range;
-+		}
-+
-+
-+		partial = ext4_find_shared(inode, n, offsets, chain, &nr);
-+		if (nr) {
-+			if (partial == chain) {
-+				/* Shared branch grows from the inode */
-+				ext4_free_branches(handle, inode, NULL,
-+					   &nr, &nr+1, (chain+n-1) - partial);
-+				*partial->p = 0;
- 			} else {
--				first2 = 0;
--				count2 = count - (offset - first);
-+				/* Shared branch grows from an indirect block */
-+				BUFFER_TRACE(partial->bh, "get_write_access");
-+				ext4_free_branches(handle, inode, partial->bh,
-+					partial->p,
-+					partial->p+1, (chain+n-1) - partial);
- 			}
--			ret = free_hole_blocks(handle, inode, bh,
--					       (__le32 *)bh->b_data, level - 1,
--					       first2, count2,
--					       inode->i_sb->s_blocksize >> 2);
--			if (ret) {
--				brelse(bh);
--				goto err;
-+		}
-+
-+		/*
-+		 * Clear the ends of indirect blocks on the shared branch
-+		 * at the start of the range
-+		 */
-+		while (partial > chain) {
-+			ext4_free_branches(handle, inode, partial->bh,
-+				partial->p + 1,
-+				(__le32 *)partial->bh->b_data+addr_per_block,
-+				(chain+n-1) - partial);
-+			BUFFER_TRACE(partial->bh, "call brelse");
-+			brelse(partial->bh);
-+			partial--;
-+		}
-+
-+end_range:
-+		partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
-+		if (nr2) {
-+			if (partial2 == chain2) {
-+				/*
-+				 * Remember, end is exclusive so here we're at
-+				 * the start of the next level we're not going
-+				 * to free. Everything was covered by the start
-+				 * of the range.
-+				 */
-+				return 0;
-+			} else {
-+				/* Shared branch grows from an indirect block */
-+				partial2--;
- 			}
-+		} else {
-+			/*
-+			 * ext4_find_shared returns Indirect structure which
-+			 * points to the last element which should not be
-+			 * removed by truncate. But this is end of the range
-+			 * in punch_hole so we need to point to the next element
-+			 */
-+			partial2->p++;
- 		}
--		if (level == 0 ||
--		    (bh && all_zeroes((__le32 *)bh->b_data,
--				      (__le32 *)bh->b_data + addr_per_block))) {
--			ext4_free_data(handle, inode, parent_bh,
--				       i_data, i_data + 1);
-+
-+		/*
-+		 * Clear the ends of indirect blocks on the shared branch
-+		 * at the end of the range
-+		 */
-+		while (partial2 > chain2) {
-+			ext4_free_branches(handle, inode, partial2->bh,
-+					   (__le32 *)partial2->bh->b_data,
-+					   partial2->p,
-+					   (chain2+n2-1) - partial2);
-+			BUFFER_TRACE(partial2->bh, "call brelse");
-+			brelse(partial2->bh);
-+			partial2--;
- 		}
--		brelse(bh);
--		bh = NULL;
-+		goto do_indirects;
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
  	}
+ 	release_sock(sk);
+diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
+index 24fa396..316dd4e 100644
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -909,7 +909,8 @@ static int sco_sock_shutdown(struct socket *sock, int how)
+ 		sco_sock_clear_timer(sk);
+ 		__sco_sock_close(sk);
  
--err:
--	return ret;
--}
--
--int ext4_free_hole_blocks(handle_t *handle, struct inode *inode,
--			  ext4_lblk_t first, ext4_lblk_t stop)
--{
--	int addr_per_block = EXT4_ADDR_PER_BLOCK(inode->i_sb);
--	int level, ret = 0;
--	int num = EXT4_NDIR_BLOCKS;
--	ext4_lblk_t count, max = EXT4_NDIR_BLOCKS;
--	__le32 *i_data = EXT4_I(inode)->i_data;
--
--	count = stop - first;
--	for (level = 0; level < 4; level++, max *= addr_per_block) {
--		if (first < max) {
--			ret = free_hole_blocks(handle, inode, NULL, i_data,
--					       level, first, count, num);
--			if (ret)
--				goto err;
--			if (count > max - first)
--				count -= max - first;
--			else
--				break;
--			first = 0;
--		} else {
--			first -= max;
-+	/* Punch happened within the same level (n == n2) */
-+	partial = ext4_find_shared(inode, n, offsets, chain, &nr);
-+	partial2 = ext4_find_shared(inode, n2, offsets2, chain2, &nr2);
-+	/*
-+	 * ext4_find_shared returns Indirect structure which
-+	 * points to the last element which should not be
-+	 * removed by truncate. But this is end of the range
-+	 * in punch_hole so we need to point to the next element
-+	 */
-+	partial2->p++;
-+	while ((partial > chain) || (partial2 > chain2)) {
-+		/* We're at the same block, so we're almost finished */
-+		if ((partial->bh && partial2->bh) &&
-+		    (partial->bh->b_blocknr == partial2->bh->b_blocknr)) {
-+			if ((partial > chain) && (partial2 > chain2)) {
-+				ext4_free_branches(handle, inode, partial->bh,
-+						   partial->p + 1,
-+						   partial2->p,
-+						   (chain+n-1) - partial);
-+				BUFFER_TRACE(partial->bh, "call brelse");
-+				brelse(partial->bh);
-+				BUFFER_TRACE(partial2->bh, "call brelse");
-+				brelse(partial2->bh);
-+			}
-+			return 0;
- 		}
--		i_data += num;
--		if (level == 0) {
--			num = 1;
--			max = 1;
-+		/*
-+		 * Clear the ends of indirect blocks on the shared branch
-+		 * at the start of the range
-+		 */
-+		if (partial > chain) {
-+			ext4_free_branches(handle, inode, partial->bh,
-+				   partial->p + 1,
-+				   (__le32 *)partial->bh->b_data+addr_per_block,
-+				   (chain+n-1) - partial);
-+			BUFFER_TRACE(partial->bh, "call brelse");
-+			brelse(partial->bh);
-+			partial--;
-+		}
-+		/*
-+		 * Clear the ends of indirect blocks on the shared branch
-+		 * at the end of the range
-+		 */
-+		if (partial2 > chain2) {
-+			ext4_free_branches(handle, inode, partial2->bh,
-+					   (__le32 *)partial2->bh->b_data,
-+					   partial2->p,
-+					   (chain2+n-1) - partial2);
-+			BUFFER_TRACE(partial2->bh, "call brelse");
-+			brelse(partial2->bh);
-+			partial2--;
- 		}
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
  	}
+@@ -929,7 +930,8 @@ static int sco_sock_release(struct socket *sock)
  
--err:
--	return ret;
-+do_indirects:
-+	/* Kill the remaining (whole) subtrees */
-+	switch (offsets[0]) {
-+	default:
-+		if (++n >= n2)
-+			return 0;
-+		nr = i_data[EXT4_IND_BLOCK];
-+		if (nr) {
-+			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 1);
-+			i_data[EXT4_IND_BLOCK] = 0;
-+		}
-+	case EXT4_IND_BLOCK:
-+		if (++n >= n2)
-+			return 0;
-+		nr = i_data[EXT4_DIND_BLOCK];
-+		if (nr) {
-+			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 2);
-+			i_data[EXT4_DIND_BLOCK] = 0;
-+		}
-+	case EXT4_DIND_BLOCK:
-+		if (++n >= n2)
-+			return 0;
-+		nr = i_data[EXT4_TIND_BLOCK];
-+		if (nr) {
-+			ext4_free_branches(handle, inode, NULL, &nr, &nr+1, 3);
-+			i_data[EXT4_TIND_BLOCK] = 0;
-+		}
-+	case EXT4_TIND_BLOCK:
-+		;
-+	}
-+	return 0;
- }
--
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 0fc189b..23e8c80 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3629,7 +3629,7 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
- 		ret = ext4_ext_remove_space(inode, first_block,
- 					    stop_block - 1);
- 	else
--		ret = ext4_free_hole_blocks(handle, inode, first_block,
-+		ret = ext4_ind_remove_space(handle, inode, first_block,
- 					    stop_block);
+ 	sco_sock_close(sk);
  
- 	ext4_discard_preallocations(inode);
+-	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime) {
++	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++	    !(current->flags & PF_EXITING)) {
+ 		lock_sock(sk);
+ 		err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 		release_sock(sk);
 -- 
 1.9.1
 
