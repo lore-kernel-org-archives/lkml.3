@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbaIOWTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:19:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51178 "EHLO
+	id S1758256AbaIOWTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:19:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51189 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758205AbaIOWT2 (ORCPT
+	with ESMTP id S1758205AbaIOWTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:28 -0400
+	Mon, 15 Sep 2014 18:19:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 175/187] ALSA: hda/ca0132 - Don't try loading firmware at resume when already failed
-Date: Mon, 15 Sep 2014 15:09:45 -0700
-Message-Id: <1410818997-9432-176-git-send-email-kamal@canonical.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 174/187] ALSA: usb-audio: fix BOSS ME-25 MIDI regression
+Date: Mon, 15 Sep 2014 15:09:44 -0700
+Message-Id: <1410818997-9432-175-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -26,60 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit e24aa0a4c5ac92a171d9dd74a8d3dbf652990d36 upstream.
+commit 53da5ebfef66ea6e478ad9c6add3781472b79475 upstream.
 
-CA0132 driver tries to reload the firmware at resume.  Usually this
-works since the firmware loader core caches the firmware contents by
-itself.  However, if the driver failed to load the firmwares
-(e.g. missing files), reloading the firmware at resume goes through
-the actual file loading code path, and triggers a kernel WARNING like:
+The BOSS ME-25 turns out not to have any useful descriptors in its MIDI
+interface, so its needs a quirk entry after all.
 
- WARNING: CPU: 10 PID:11371 at drivers/base/firmware_class.c:1105 _request_firmware+0x9ab/0x9d0()
-
-For avoiding this situation, this patch makes CA0132 skipping the f/w
-loading at resume when it failed at probe time.
-
-Reported-and-tested-by: Janek Kozicki <cosurgi@gmail.com>
+Reported-and-tested-by: Kees van Veen <kees.vanveen@gmail.com>
+Fixes: 8e5ced83dd1c ("ALSA: usb-audio: remove superfluous Roland quirks")
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/patch_ca0132.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/usb/quirks-table.h | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
-diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
-index 46ecdbb..d5843da 100644
---- a/sound/pci/hda/patch_ca0132.c
-+++ b/sound/pci/hda/patch_ca0132.c
-@@ -4379,6 +4379,9 @@ static void ca0132_download_dsp(struct hda_codec *codec)
- 	return; /* NOP */
- #endif
- 
-+	if (spec->dsp_state == DSP_DOWNLOAD_FAILED)
-+		return; /* don't retry failures */
-+
- 	chipio_enable_clocks(codec);
- 	spec->dsp_state = DSP_DOWNLOADING;
- 	if (!ca0132_download_dsp_images(codec))
-@@ -4555,7 +4558,8 @@ static int ca0132_init(struct hda_codec *codec)
- 	struct auto_pin_cfg *cfg = &spec->autocfg;
- 	int i;
- 
--	spec->dsp_state = DSP_DOWNLOAD_INIT;
-+	if (spec->dsp_state != DSP_DOWNLOAD_FAILED)
-+		spec->dsp_state = DSP_DOWNLOAD_INIT;
- 	spec->curr_chip_addx = INVALID_CHIP_ADDRESS;
- 
- 	snd_hda_power_up(codec);
-@@ -4666,6 +4670,7 @@ static int patch_ca0132(struct hda_codec *codec)
- 	codec->spec = spec;
- 	spec->codec = codec;
- 
-+	spec->dsp_state = DSP_DOWNLOAD_INIT;
- 	spec->num_mixers = 1;
- 	spec->mixers[0] = ca0132_mixer;
- 
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index 0a81a51..0e52836 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -1611,6 +1611,35 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 	}
+ },
+ {
++	/* BOSS ME-25 */
++	USB_DEVICE(0x0582, 0x0113),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 0,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_MIDI_FIXED_ENDPOINT,
++				.data = & (const struct snd_usb_midi_endpoint_info) {
++					.out_cables = 0x0001,
++					.in_cables  = 0x0001
++				}
++			},
++			{
++				.ifnum = -1
++			}
++		}
++	}
++},
++{
+ 	/* only 44.1 kHz works at the moment */
+ 	USB_DEVICE(0x0582, 0x0120),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
 -- 
 1.9.1
 
