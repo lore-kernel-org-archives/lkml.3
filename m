@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbaIOO0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:26:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54329 "EHLO mx1.redhat.com"
+	id S1753517AbaIOO11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:27:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983AbaIOOZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:25:44 -0400
+	id S1752892AbaIOOZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 10:25:39 -0400
 From: "Jerome Marchand" <jmarchan@redhat.com>
 To: linux-mm@kvack.org
 Cc: Randy Dunlap <rdunlap@infradead.org>,
@@ -17,151 +17,80 @@ Cc: Randy Dunlap <rdunlap@infradead.org>,
         Arnaldo Carvalho de Melo <acme@kernel.org>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>
-Subject: [RFC PATCH v2 5/5] mm, shmem: Show location of non-resident shmem pages in smaps
-Date: Mon, 15 Sep 2014 16:24:37 +0200
-Message-Id: <1410791077-5300-6-git-send-email-jmarchan@redhat.com>
-In-Reply-To: <1410791077-5300-1-git-send-email-jmarchan@redhat.com>
-References: <1410791077-5300-1-git-send-email-jmarchan@redhat.com>
+Subject: [RFC PATCH v2 0/5] mm, shmem: Enhance per-process accounting of shared memory
+Date: Mon, 15 Sep 2014 16:24:32 +0200
+Message-Id: <1410791077-5300-1-git-send-email-jmarchan@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds ShmSwap and ShmNotMapped lines to /proc/<pid>/smaps for shmem
-mappings.
+Changes since v1:
+ - Add VmFile and VmAnon line to /proc/<pid>/status.
+ - Split first patch: new accounting code on one side and and adding
+ new fields to status on the other.
+ - Remove ShmOther and ShmSwapCache from smaps and rename ShmOrphan to
+ ShmNotMapped.
+ - Drop fourth patch "mm, shmem: Add shmem swap memory accounting".
+ - Minor implementation details.
 
-ShmSwap: amount of memory that is paged out on disk.
-ShmNotMapped: amount of memory that is currently resident in memory but
-not mapped into any process. This can happens when a process unmaps a
-shared mapping or exits and no other process had acccessed the page.
-Despite being resident, this memory is not currently accounted to any
-process and since it belongs to the mapping of another process, it can
-not be discarded.
+I also tried again to come to a better way to account for shmem swap
+pages, but my effort were again unsuccessful. Any suggestion is gladly
+welcome.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- Documentation/filesystems/proc.txt |  6 +++++
- fs/proc/task_mmu.c                 | 46 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 51 insertions(+), 1 deletion(-)
+There are several shortcomings with the accounting of shared memory
+(sysV shm, shared anonymous mapping, mapping to a tmpfs file). The
+values in /proc/<pid>/status and statm don't allow to distinguish
+between shmem memory and a shared mapping to a regular file, even
+though theirs implication on memory usage are quite different: at
+reclaim, file mapping can be dropped or write back on disk while shmem
+needs a place in swap. As for shmem pages that are swapped-out or in
+swap cache, they aren't accounted at all.
 
-diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-index ffd4a7f..21eb614 100644
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -426,6 +426,8 @@ Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
- Locked:              374 kB
-+ShmSwap:              36 kB
-+ShmNotMapped:          0 kB
- VmFlags: rd ex mr mw me de
- 
- the first of these lines shows the same information as is displayed for the
-@@ -441,6 +443,10 @@ a mapping associated with a file may contain anonymous pages: when MAP_PRIVATE
- and a page is modified, the file page is replaced by a private anonymous copy.
- "Swap" shows how much would-be-anonymous memory is also used, but out on
- swap.
-+The ShmXXX lines only appears for shmem mapping. They show the amount of memory
-+from the mapping that is currently:
-+ - resident in RAM but not mapped into any process (ShmNotMapped)
-+ - paged out on swap (ShmSwap).
- 
- "VmFlags" field deserves a separate description. This member represents the kernel
- flags associated with the particular virtual memory area in two letter encoded
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 762257f..b697bf5 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -13,6 +13,7 @@
- #include <linux/swap.h>
- #include <linux/swapops.h>
- #include <linux/mmu_notifier.h>
-+#include <linux/shmem_fs.h>
- 
- #include <asm/elf.h>
- #include <asm/uaccess.h>
-@@ -455,9 +456,26 @@ struct mem_size_stats {
- 	unsigned long anonymous_thp;
- 	unsigned long swap;
- 	unsigned long nonlinear;
-+	unsigned long shmem_swap;
-+	unsigned long shmem_notmapped;
- 	u64 pss;
- };
- 
-+void update_shmem_stats(struct mem_size_stats *mss, struct vm_area_struct *vma,
-+			pgoff_t pgoff, unsigned long size)
-+{
-+	int count = 0;
-+
-+	switch (shmem_locate(vma, pgoff, &count)) {
-+	case SHMEM_RESIDENT:
-+		if (!count)
-+			mss->shmem_notmapped += size;
-+		break;
-+	case SHMEM_SWAP:
-+		mss->shmem_swap += size;
-+		break;
-+	}
-+}
- 
- static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 		unsigned long ptent_size, struct mm_walk *walk)
-@@ -480,7 +498,8 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
- 	} else if (pte_file(ptent)) {
- 		if (pte_to_pgoff(ptent) != pgoff)
- 			mss->nonlinear += ptent_size;
--	}
-+	} else if (pte_none(ptent) && shmem_vma(vma))
-+		update_shmem_stats(mss, vma, pgoff, ptent_size);
- 
- 	if (!page)
- 		return;
-@@ -541,6 +560,21 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	return 0;
- }
- 
-+static int smaps_pte_hole(unsigned long addr, unsigned long end,
-+			  struct mm_walk *walk)
-+{
-+	struct mem_size_stats *mss = walk->private;
-+	struct vm_area_struct *vma = mss->vma;
-+	pgoff_t pgoff;
-+
-+	for (; addr != end; addr += PAGE_SIZE) {
-+		pgoff = linear_page_index(vma, addr);
-+		update_shmem_stats(mss, vma, pgoff, PAGE_SIZE);
-+	}
-+
-+	return 0;
-+}
-+
- static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
- {
- 	/*
-@@ -605,6 +639,10 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 		.private = &mss,
- 	};
- 
-+	/* Only walk the holes when it'a a shmem mapping */
-+	if (shmem_vma(vma))
-+		smaps_walk.pte_hole = smaps_pte_hole;
-+
- 	memset(&mss, 0, sizeof mss);
- 	mss.vma = vma;
- 	/* mmap_sem is held in m_start */
-@@ -647,6 +685,12 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
- 	if (vma->vm_flags & VM_NONLINEAR)
- 		seq_printf(m, "Nonlinear:      %8lu kB\n",
- 				mss.nonlinear >> 10);
-+	if (shmem_vma(vma))
-+		seq_printf(m,
-+			   "ShmSwap:        %8lu kB\n"
-+			   "ShmNotMapped:   %8lu kB\n",
-+			   mss.shmem_swap >> 10,
-+			   mss.shmem_notmapped >> 10);
- 
- 	show_smap_vma_flags(m, vma);
- 	m_cache_vma(m, vma);
+This series addresses these issues by adding new fields to status and
+smaps file in /proc/<pid>/. The accounting of resident shared memory is
+made in the same way as it's currently done for resident memory and
+general swap (a counter in mm_rss_stat), but this approach proved
+impractical for paged-out shared memory (it would requires a rmap walk
+each time a page is paged-in).
+
+/proc/<pid>/smaps also lacks proper accounting of shared memory since
+shmem subsystem hides all implementation detail to generic mm code.
+This series adds the shmem_locate() function that returns the location
+of a particular page (resident, in swap or swap cache). Called from
+smaps code, it allows to show more detailled accounting of shmem
+mappings in smaps.
+
+Patch 1 adds a counter to keep track of resident shmem memory.
+Patch 2 adds VmFile, VmAnon and VmShm lines to /proc/<pid>/status.
+Patch 3 adds a function to allow generic code to know the physical
+location of a shmem page.
+Patch 4 adds simple helper function.
+Patch 5 adds shmem specific fields to /proc/<pid>/smaps.
+
+Thanks,
+Jerome
+
+Jerome Marchand (5):
+  mm, shmem: Add shmem resident memory accounting
+  mm, procfs: Display VmAnon, VmFile and VmShm in /proc/pid/status
+  mm, shmem: Add shmem_locate function
+  mm, shmem: Add shmem_vma() helper
+  mm, shmem: Show location of non-resident shmem pages in smaps
+
+ Documentation/filesystems/proc.txt | 16 +++++++++-
+ arch/s390/mm/pgtable.c             |  5 +---
+ fs/proc/task_mmu.c                 | 60 ++++++++++++++++++++++++++++++++++++--
+ include/linux/mm.h                 | 10 +++++++
+ include/linux/mm_types.h           |  7 +++--
+ include/linux/shmem_fs.h           |  7 +++++
+ kernel/events/uprobes.c            |  2 +-
+ mm/filemap_xip.c                   |  2 +-
+ mm/memory.c                        | 28 +++++-------------
+ mm/oom_kill.c                      |  5 ++--
+ mm/rmap.c                          | 17 ++++-------
+ mm/shmem.c                         | 35 ++++++++++++++++++++++
+ 12 files changed, 147 insertions(+), 47 deletions(-)
+
 -- 
 1.9.3
 
