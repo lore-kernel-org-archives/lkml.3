@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaIOQP6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:15:58 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:41380 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753272AbaIOQP5 (ORCPT
+	id S1753994AbaIOQQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:16:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39503 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753190AbaIOQQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:15:57 -0400
-Date: Mon, 15 Sep 2014 17:15:07 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: Z Lim <zlim.lnx@gmail.com>, Catalin Marinas <Catalin.Marinas@arm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH arm64-next v2] net: bpf: arm64: address randomize and
- write protect JIT code
-Message-ID: <20140915161507.GD29744@arm.com>
-References: <1410543308-27449-1-git-send-email-dborkman@redhat.com>
- <CABg9mcv6cSXZLPNH3Dvhr6XatA33VAPwgHyKgQ35f0DSmsObRQ@mail.gmail.com>
- <5416EF28.8020900@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5416EF28.8020900@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 15 Sep 2014 12:16:10 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 0/7] Initial support for the Atmel SMART sama5d4
+Date: Mon, 15 Sep 2014 18:15:52 +0200
+Message-Id: <1410797759-18675-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 02:52:40PM +0100, Daniel Borkmann wrote:
-> On 09/13/2014 06:32 AM, Z Lim wrote:
-> > On Fri, Sep 12, 2014 at 10:35 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
-> >> This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
-> >> jit against spraying attacks").
-> >>
-> >> Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
-> >> support") which added necessary infrastructure, we can now implement
-> >> RO marking of eBPF generated JIT image pages and randomize start offset
-> >> for the JIT code, so that it does not reside directly on a page boundary
-> >> anymore. Likewise, the holes are filled with illegal instructions.
-> >>
-> >> This is basically the ARM64 variant of what we already have in ARM via
-> >> commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
-> >> JIT code"). Moreover, this commit also presents a merge resolution due to
-> >> conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
-> >> read-only") as we don't use kfree() in bpf_jit_free() anymore to release
-> >> the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
-> >> a different allocator.
-> >>
-> >> JIT tested on aarch64 with BPF test suite.
-> >>
-> >> Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
-> >> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-> >> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
-> >> Cc: Will Deacon <will.deacon@arm.com>
-> >> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> >> Cc: David S. Miller <davem@davemloft.net>
-> >> Cc: Alexei Starovoitov <ast@plumgrid.com>
-> >> ---
-> >>   v1 -> v2:
-> >>    - Use brk insn as suggested by Catalin, thanks a lot for
-> >>      your feedback! Rest unchanged.
-> >>   Note:
-> >>    - This patch depends on net-next being merged to mainline due
-> >>      to the mentioned merge conflict.
-> >>
-> >>   arch/arm64/net/bpf_jit_comp.c | 38 +++++++++++++++++++++++++++++---------
-> >>   1 file changed, 29 insertions(+), 9 deletions(-)
-> >>
-> >> diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
-> >> index 7ae3354..4b71779 100644
-> >> --- a/arch/arm64/net/bpf_jit_comp.c
-> >> +++ b/arch/arm64/net/bpf_jit_comp.c
-> >> @@ -19,7 +19,6 @@
-> >>   #define pr_fmt(fmt) "bpf_jit: " fmt
-> >>
-> >>   #include <linux/filter.h>
-> >> -#include <linux/moduleloader.h>
-> >>   #include <linux/printk.h>
-> >>   #include <linux/skbuff.h>
-> >>   #include <linux/slab.h>
-> >> @@ -119,6 +118,15 @@ static inline int bpf2a64_offset(int bpf_to, int bpf_from,
-> >>          return to - from;
-> >>   }
-> >>
-> >> +static void jit_fill_hole(void *area, unsigned int size)
-> >> +{
-> >> +       /* We use brk #0x100 to trigger a fault. */
-> >> +       u32 *ptr, fill_ins = 0xd4202000;
-> >
-> > Missed this on first round of review, I think we also need
-> > cpu_to_le32(...) here.
-> 
-> Just wondering ... so that would also hold true in case I build/run my
-> kernel in big-endian (CPU_BIG_ENDIAN)?
+Introduce support for the Atmel SMART sama5d4.
 
-Yes, the instruction stream is always little endian so the conversion is
-required.
+Note that some drivers will complain that they can't work without DMA and the
+probe will fail. This will be solved when the dma driver hits mainline, it is
+still under review.
 
-Will
+changes in v3:
+ - removed aic patch, already taken by jason
+ - reworked documentation and h32mx clk driver like suggested by Nicolas
+ - reordered nodes in the dtsi
 
-> >> +       /* We are guaranteed to have aligned memory. */
-> >> +       for (ptr = area; size >= sizeof(u32); size -= sizeof(u32))
-> >> +               *ptr++ = fill_ins;
-> >> +}
-> >> +
-> > [...]
-> >
-> > Thanks Daniel.
-> 
+Alexandre Belloni (3):
+  clk: at91: add a driver for the h32mx clock
+  ARM: at91: add sama5d4 support to sama5_defconfig
+  ARM: at91: document Atmel SMART compatibles
+
+Nicolas Ferre (4):
+  ARM: at91: introduce basic SAMA5D4 support
+  ARM: at91: SAMA5D4 SoC detection code and low level routines
+  ARM: at91: dt: add device tree file for SAMA5D4 SoC
+  ARM: at91: dt: add device tree file for SAMA5D4ek board
+
+ .../devicetree/bindings/arm/atmel-at91.txt         |   37 +
+ .../devicetree/bindings/clock/at91-clock.txt       |   15 +
+ arch/arm/Kconfig.debug                             |    4 +
+ arch/arm/boot/dts/Makefile                         |    2 +
+ arch/arm/boot/dts/at91-sama5d4ek.dts               |  308 +++++
+ arch/arm/boot/dts/sama5d4.dtsi                     | 1239 ++++++++++++++++++++
+ arch/arm/configs/sama5_defconfig                   |    1 +
+ arch/arm/mach-at91/Kconfig                         |   21 +
+ arch/arm/mach-at91/Makefile                        |    1 +
+ arch/arm/mach-at91/board-dt-sama5.c                |   17 +-
+ arch/arm/mach-at91/generic.h                       |    1 +
+ arch/arm/mach-at91/include/mach/cpu.h              |   22 +-
+ arch/arm/mach-at91/include/mach/debug-macro.S      |    5 +-
+ arch/arm/mach-at91/include/mach/hardware.h         |   19 +-
+ arch/arm/mach-at91/include/mach/sama5d4.h          |   33 +
+ arch/arm/mach-at91/include/mach/uncompress.h       |   21 +-
+ arch/arm/mach-at91/sama5d4.c                       |   64 +
+ arch/arm/mach-at91/setup.c                         |   97 +-
+ arch/arm/mach-at91/soc.h                           |    5 +
+ drivers/clk/at91/Makefile                          |    1 +
+ drivers/clk/at91/clk-h32mx.c                       |  123 ++
+ drivers/clk/at91/pmc.c                             |    6 +
+ drivers/clk/at91/pmc.h                             |    5 +
+ include/linux/clk/at91_pmc.h                       |    1 +
+ 24 files changed, 2036 insertions(+), 12 deletions(-)
+ create mode 100644 arch/arm/boot/dts/at91-sama5d4ek.dts
+ create mode 100644 arch/arm/boot/dts/sama5d4.dtsi
+ create mode 100644 arch/arm/mach-at91/include/mach/sama5d4.h
+ create mode 100644 arch/arm/mach-at91/sama5d4.c
+ create mode 100644 drivers/clk/at91/clk-h32mx.c
+
+-- 
+1.9.1
+
