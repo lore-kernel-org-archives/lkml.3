@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760169AbaIOXNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:13:11 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:64845 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309AbaIOXNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 19:13:07 -0400
-Date: Mon, 15 Sep 2014 16:13:03 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Sean Cross <xobs@kosagi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree@vger.kernel.org, bunnie@kosagi.com
-Subject: Re: [PATCH v2 2/2] mfd: stmpe: Document DT binding for irq_over_gpio
-Message-ID: <20140915231303.GM25162@lee--X1>
-References: <1410491914-23378-1-git-send-email-xobs@kosagi.com>
- <1410491914-23378-3-git-send-email-xobs@kosagi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410491914-23378-3-git-send-email-xobs@kosagi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760149AbaIOXMl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:12:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755410AbaIOXMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 19:12:37 -0400
+From: Andy Grover <agrover@redhat.com>
+To: target-devel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, hch@lst.de, nab@linux-iscsi.org,
+        shli@kernel.org, linux-kernel@vger.kernel.org, rjones@redhat.com
+Subject: [PATCH 2/4] uio: Export definition of struct uio_device
+Date: Mon, 15 Sep 2014 16:12:28 -0700
+Message-Id: <1410822750-10717-3-git-send-email-agrover@redhat.com>
+In-Reply-To: <1410822750-10717-1-git-send-email-agrover@redhat.com>
+References: <1410822750-10717-1-git-send-email-agrover@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Sep 2014, Sean Cross wrote:
+In order to prevent a O(n) search of the filesystem to link up its uio
+node with its target configuration, TCMU needs to know the minor number
+that UIO assigned. Expose the definition of this struct so TCMU can
+access this field.
 
-> STMPE now supports using a GPIO as an IRQ source.  Document the device
-> tree binding for this option.
-> 
-> Signed-off-by: Sean Cross <xobs@kosagi.com>
-> ---
->  Documentation/devicetree/bindings/mfd/stmpe.txt | 1 +
->  1 file changed, 1 insertion(+)
+Signed-off-by: Andy Grover <agrover@redhat.com>
+---
+ drivers/uio/uio.c          | 12 ------------
+ include/linux/uio_driver.h | 12 +++++++++++-
+ 2 files changed, 11 insertions(+), 13 deletions(-)
 
-Applied, thanks.
-
-> diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-> index 56edb55..3fb68bf 100644
-> --- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-> +++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-> @@ -13,6 +13,7 @@ Optional properties:
->   - interrupt-parent             : Specifies which IRQ controller we're connected to
->   - wakeup-source                : Marks the input device as wakable
->   - st,autosleep-timeout         : Valid entries (ms); 4, 16, 32, 64, 128, 256, 512 and 1024
-> + - irq-gpio                     : If present, which GPIO to use for event IRQ
->  
->  Example:
->  
-
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index a673e5b..60fa627 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -28,18 +28,6 @@
+ 
+ #define UIO_MAX_DEVICES		(1U << MINORBITS)
+ 
+-struct uio_device {
+-	struct module		*owner;
+-	struct device		*dev;
+-	int			minor;
+-	atomic_t		event;
+-	struct fasync_struct	*async_queue;
+-	wait_queue_head_t	wait;
+-	struct uio_info		*info;
+-	struct kobject		*map_dir;
+-	struct kobject		*portio_dir;
+-};
+-
+ static int uio_major;
+ static struct cdev *uio_cdev;
+ static DEFINE_IDR(uio_idr);
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index 1ad4724..baa8171 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -63,7 +63,17 @@ struct uio_port {
+ 
+ #define MAX_UIO_PORT_REGIONS	5
+ 
+-struct uio_device;
++struct uio_device {
++        struct module           *owner;
++        struct device           *dev;
++        int                     minor;
++        atomic_t                event;
++        struct fasync_struct    *async_queue;
++        wait_queue_head_t       wait;
++        struct uio_info         *info;
++        struct kobject          *map_dir;
++        struct kobject          *portio_dir;
++};
+ 
+ /**
+  * struct uio_info - UIO device capabilities
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.3
+
