@@ -1,161 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851AbaIOPuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:50:20 -0400
-Received: from mail.neotion.com ([5.39.84.84]:59774 "EHLO mail.neotion.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753738AbaIOPuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:50:18 -0400
-Message-ID: <541709FF.6010408@neotion.com>
-Date: Mon, 15 Sep 2014 17:47:11 +0200
-From: =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753915AbaIOPub (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:50:31 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:44785 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738AbaIOPu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 11:50:27 -0400
 MIME-Version: 1.0
-To: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v6 0003/0003] mmc: Checks EXT_CSD_PARTITION_SETTING_COMPLETED
- before partitions computation
-References: <53C7E45E.2060102@neotion.com>	<CAPDyKFoRpQBHGGCMPvEKdeVGjTO-rnyYVostLZGCV3dudD1rmA@mail.gmail.com>	<53EB2DC3.2080002@neotion.com>	<CAPDyKFpjYqVUZ8GHB76gD8pOx_eMg9ecvbWrMEfbhEd5ffk7mw@mail.gmail.com>	<53ECB95F.2030207@neotion.com> <CAPDyKFp2ekmucHVzMWxeKfyTmuFKTXAYwUEpL5QxvEh8AjFopg@mail.gmail.com> <53F1FBA3.6060108@neotion.com> <5411435C.3080905@neotion.com> <541303BB.1000602@neotion.com>
-In-Reply-To: <541303BB.1000602@neotion.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Mon, 15 Sep 2014 17:50:04 +0200
+Message-ID: <CAH9NwWd46W-ad_o0T1dCBVTuQYEB7GJCZi=zW340-b=hZNVfCA@mail.gmail.com>
+Subject: requesting modules in the i2c-core in case of OF
+To: linux-i2c@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checks EXT_CSD_PARTITION_SETTING_COMPLETED bit before
- computing enhanced user area offset and size, and
- adding mmc general purpose partitions. The two needs
- EXT_CSD_PARTITION_SETTING_COMPLETED bit be set to be
- valid (as described in JEDEC standard).
-Warn user in case of misconfiguration.
+Hi all.
 
-Signed-off-by: Grégory Soutadé <gsoutade@neotion.com>
----
- drivers/mmc/core/mmc.c |   81 ++++++++++++++++++++++++++----------------------
- 1 file changed, 44 insertions(+), 37 deletions(-)
+I spend some time to debug an issue that our touch driver does not get
+loaded even
+if defined in devicetree. I enabled core debug and added a printk to
+kernel/kmod.c
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 64d0371..66928b0 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -300,7 +300,13 @@ static void mmc_select_card_type(struct mmc_card *card)
+[    0.223468] usbcore: registered new interface driver usbfs
+[    0.223558] usbcore: registered new interface driver hub
+[    0.223698] usbcore: registered new device driver usb
+[    0.224557] i2c i2c-1: adapter [21a4000.i2c] registered
+[    0.224583] i2c i2c-1: of_i2c: walking child nodes
+[    0.224596] i2c i2c-1: of_i2c: register
+/soc/aips-bus@02100000/i2c@021a4000/ar1021@4d
+[    0.224628] __request_module: i2c:ar1021_i2c
+[    0.225144] i2c 1-004d: uevent
+[    0.225183] i2c i2c-1: client [ar1021_i2c] registered with bus id 1-004d
+[    0.225198] i2c i2c-1: of_i2c: register
+/soc/aips-bus@02100000/i2c@021a4000/pca9555@20
+[    0.225213] __request_module: i2c:pca9555
+[    0.225519] i2c 1-0010: uevent
+[    0.225577] pca953x 1-0010: probe
+[    0.225602] i2c i2c-1: master_xfer[0] W, addr=0x10, len=1
 
- static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
- {
--	u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
-+	u8 hc_erase_grp_sz, hc_wp_grp_sz;
-+
-+	/*
-+	 * Disable these attributes by default
-+	 */
-+	card->ext_csd.enhanced_area_offset = -EINVAL;
-+	card->ext_csd.enhanced_area_size = -EINVAL;
 
- 	/*
- 	 * Enhanced area feature support -- check whether the eMMC
-@@ -309,43 +315,41 @@ static void mmc_manage_enhanced_area(struct mmc_card *card, u8 *ext_csd)
- 	 */
- 	if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
- 	    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
--		hc_erase_grp_sz =
--			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
--		hc_wp_grp_sz =
--			ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
-+		if (card->ext_csd.partition_setting_completed) {
-+			hc_erase_grp_sz =
-+				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-+			hc_wp_grp_sz =
-+				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+Now it gets interesting :)
 
--		/*
--		 * calculate the enhanced data area offset, in bytes
--		 */
--		card->ext_csd.enhanced_area_offset =
--			(ext_csd[139] << 24) + (ext_csd[138] << 16) +
--			(ext_csd[137] << 8) + ext_csd[136];
--		if (mmc_card_blockaddr(card))
--			card->ext_csd.enhanced_area_offset <<= 9;
--		/*
--		 * calculate the enhanced data area size, in kilobytes
--		 */
--		card->ext_csd.enhanced_area_size =
--			(ext_csd[142] << 16) + (ext_csd[141] << 8) +
--			ext_csd[140];
--		card->ext_csd.enhanced_area_size *=
--			(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
--		card->ext_csd.enhanced_area_size <<= 9;
--	} else {
--		/*
--		 * If the enhanced area is not enabled, disable these
--		 * device attributes.
--		 */
--		card->ext_csd.enhanced_area_offset = -EINVAL;
--		card->ext_csd.enhanced_area_size = -EINVAL;
-+			/*
-+			 * calculate the enhanced data area offset, in bytes
-+			 */
-+			card->ext_csd.enhanced_area_offset =
-+				(ext_csd[139] << 24) + (ext_csd[138] << 16) +
-+				(ext_csd[137] << 8) + ext_csd[136];
-+			if (mmc_card_blockaddr(card))
-+				card->ext_csd.enhanced_area_offset <<= 9;
-+			/*
-+			 * calculate the enhanced data area size, in kilobytes
-+			 */
-+			card->ext_csd.enhanced_area_size =
-+				(ext_csd[142] << 16) + (ext_csd[141] << 8) +
-+				ext_csd[140];
-+			card->ext_csd.enhanced_area_size *=
-+				(size_t)(hc_erase_grp_sz * hc_wp_grp_sz);
-+			card->ext_csd.enhanced_area_size <<= 9;
-+		} else {
-+			pr_warn("%s: defines enhanced area without partition setting complete\n",
-+				mmc_hostname(card->host));
-+		}
- 	}
- }
+root@OT:/# modinfo ar1021_i2c
+filename:
+/lib/modules/3.14.18/kernel/drivers/input/touchscreen/ar1021_i2c.ko
+license:        GPL
+description:    Microchip AR1021 I2C Driver
+author:         Christian Gmeiner <christian.gmeiner@gmail.com>
+alias:          of:N*T*Cmicrochip,ar1021_i2c*
+alias:          i2c:MICROCHIP_AR1021_I2C
+depends:
+intree:         Y
+vermagic:       3.14.18 SMP preempt mod_unload ARMv7 p2v8
 
- static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
- {
--	unsigned int part_size;
--	u8 hc_erase_grp_sz = 0, hc_wp_grp_sz = 0;
- 	int idx;
-+	u8 hc_erase_grp_sz, hc_wp_grp_sz;
-+	unsigned int part_size;
+So the ar1021_i2c driver is build as kernel module and at this point
+it is not possible to modprobe/request that module
+as the RFS is not yet mounted and the initramfs does not contain this driver.
 
- 	/*
- 	 * General purpose partition feature support --
-@@ -354,18 +358,21 @@ static void mmc_manage_gp_partitions(struct mmc_card *card, u8 *ext_csd)
- 	 */
- 	if (ext_csd[EXT_CSD_PARTITION_SUPPORT] &
- 	    EXT_CSD_PART_SUPPORT_PART_EN) {
--		if (card->ext_csd.partition_setting_completed) {
--			hc_erase_grp_sz =
--				ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
--			hc_wp_grp_sz =
--				ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
--		}
-+		hc_erase_grp_sz =
-+			ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE];
-+		hc_wp_grp_sz =
-+			ext_csd[EXT_CSD_HC_WP_GRP_SIZE];
+Should the i2c-core not load the requested driver in an deferred way?
+Any opinions?
 
- 		for (idx = 0; idx < MMC_NUM_GP_PARTITION; idx++) {
- 			if (!ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3] &&
- 			    !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 1] &&
- 			    !ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2])
- 				continue;
-+			if (card->ext_csd.partition_setting_completed == 0) {
-+				pr_warn("%s: has partition size defined without partition complete\n",
-+					mmc_hostname(card->host));
-+				break;
-+			}
- 			part_size =
- 				(ext_csd[EXT_CSD_GP_SIZE_MULT + idx * 3 + 2]
- 				<< 16) +
--- 
-1.7.9.5
+By the way the ar1021_i2c driver can be found here:
+https://www.mail-archive.com/linux-input@vger.kernel.org/msg08071.html
+
+Greets
+--
+Christian Gmeiner, MSc
+
+https://soundcloud.com/christian-gmeiner
