@@ -1,117 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaIOUMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:12:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41134 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755904AbaIOUMR (ORCPT
+	id S1757313AbaIOUMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:12:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55653 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755972AbaIOTrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:12:17 -0400
-Date: Mon, 15 Sep 2014 22:12:10 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Huang Shijie <shijie8@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <shijie.huang@intel.com>,
-        Mike Voytovich <mvoytovich@paypal.com>, linux-kernel@vger.kernel.org,
-        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
-        Roy Lee <roylee@paypal.com>, David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20140915221210.5d9871fb@bbrezillon>
-In-Reply-To: <20140915144259.GA1947@localhost.localdomain>
-References: <1410339339-25561-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140911120928.GA1585@localhost.localdomain>
-	<20140911143616.3ebb025a@bbrezillon>
-	<20140911142511.GA2543@localhost.localdomain>
-	<20140911163847.5e2f85c7@bbrezillon>
-	<20140912004550.GB26904@shldeISGChi005.sh.intel.com>
-	<20140912143050.014ad4c3@bbrezillon>
-	<20140913153622.GA10132@localhost.localdomain>
-	<20140913173841.GA18093@brian-ubuntu>
-	<20140915144259.GA1947@localhost.localdomain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 15 Sep 2014 15:47:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bart Van Assche <bvanassche@acm.org>,
+        Sagi Grimberg <sagig@mellanox.com>, David Dillow <dave@thedillows.org>,
+        Sebastian Parschauer <sebastian.riemer@profitbricks.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.14 109/114] IB/srp: Fix deadlock between host removal and multipathd
+Date: Mon, 15 Sep 2014 12:26:49 -0700
+Message-Id: <20140915192644.824835872@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014 22:43:02 +0800
-Huang Shijie <shijie8@gmail.com> wrote:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> On Sat, Sep 13, 2014 at 10:38:41AM -0700, Brian Norris wrote:
-> > On Sat, Sep 13, 2014 at 11:36:24PM +0800, Huang Shijie wrote:
-> > > On Fri, Sep 12, 2014 at 02:30:50PM +0200, Boris BREZILLON wrote:
-> > > > This test validates what's returned by ecc_strength file in sysfs
-> > > > (which in turn is specified by the NAND controller when initializing
-> > > > the NAND chip).
-> > > > 
-> > > > Doing this should not imply knowing the ECC algorithm in use in the
-> > > > NAND controller or the layout used to store data on NAND.
-> > > the difficulty is that the ECC parity area can be not byte aligned.
-> > 
-> > Is there a problem with just rounding up to the nearest byte alignment
-> > and ignoring the few bits that are wasted?
-> 
-> I feel a little confused with the two hooks.
-> 
-> does the ecc->write_page_raw need to write the ECC parity data?
+------------------
 
-Depending on the oob_required argument, it might be allowed to
-overwrite the ECC bytes even if this implies breaking page reliability
-(which is exactly what's expected).
+From: Bart Van Assche <bvanassche@acm.org>
 
-When using raw write with with oob write option the writer should take
-care of regenerating ECC bytes (which you said was impossible in GPMI
-case) or copying them from a previous raw read.
+commit bcc05910359183b431da92713e98eed478edf83a upstream.
 
-Here is a real example of what one could test with raw write + oob:
-1) read a page in raw mode
-2) flip some bits in the generated ECC bytes (or what you references as
-   parity data) (this case can actually happen in real life)
-3) write the modified page in raw mode
-4) read back the same page in normal and check that ECC correction still
-   works as expected
+If scsi_remove_host() is invoked after a SCSI device has been blocked,
+if the fast_io_fail_tmo or dev_loss_tmo work gets scheduled on the
+workqueue executing srp_remove_work() and if an I/O request is
+scheduled after the SCSI device had been blocked by e.g. multipathd
+then the following deadlock can occur:
 
-> 
-> The page's layout after an ecc->write_page  will look like this:
->                                               (Block Mark)
->                                                     |      |
->                                                     |  D   |
->                                                     |<---->|
->                                                     V      V
->      +---+----------+-+----------+-+----------+-+----------+-+
->      | M |   data   |E|   data   |E|   data   |E|   data   |E|
->      +---+----------+-+----------+-+----------+-+----------+-+
-> 
-> What will the page's layout look like after the ecc->write_page_raw?
+    kworker/6:1     D ffff880831f3c460     0   195      2 0x00000000
+    Call Trace:
+     [<ffffffff814aafd9>] schedule+0x29/0x70
+     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
+     [<ffffffff8105af6f>] msleep+0x2f/0x40
+     [<ffffffff8123b0ae>] __blk_drain_queue+0x4e/0x180
+     [<ffffffff8123d2d5>] blk_cleanup_queue+0x225/0x230
+     [<ffffffffa0010732>] __scsi_remove_device+0x62/0xe0 [scsi_mod]
+     [<ffffffffa000ed2f>] scsi_forget_host+0x6f/0x80 [scsi_mod]
+     [<ffffffffa0002eba>] scsi_remove_host+0x7a/0x130 [scsi_mod]
+     [<ffffffffa07cf5c5>] srp_remove_work+0x95/0x180 [ib_srp]
+     [<ffffffff8106d7aa>] process_one_work+0x1ea/0x6c0
+     [<ffffffff8106dd9b>] worker_thread+0x11b/0x3a0
+     [<ffffffff810758bd>] kthread+0xed/0x110
+     [<ffffffff814b972c>] ret_from_fork+0x7c/0xb0
+    multipathd      D ffff880096acc460     0  5340      1 0x00000000
+    Call Trace:
+     [<ffffffff814aafd9>] schedule+0x29/0x70
+     [<ffffffff814aa0ef>] schedule_timeout+0x10f/0x2a0
+     [<ffffffff814ab79b>] io_schedule_timeout+0x9b/0xf0
+     [<ffffffff814abe1c>] wait_for_completion_io_timeout+0xdc/0x110
+     [<ffffffff81244b9b>] blk_execute_rq+0x9b/0x100
+     [<ffffffff8124f665>] sg_io+0x1a5/0x450
+     [<ffffffff8124fd21>] scsi_cmd_ioctl+0x2a1/0x430
+     [<ffffffff8124fef2>] scsi_cmd_blk_ioctl+0x42/0x50
+     [<ffffffffa00ec97e>] sd_ioctl+0xbe/0x140 [sd_mod]
+     [<ffffffff8124bd04>] blkdev_ioctl+0x234/0x840
+     [<ffffffff811cb491>] block_ioctl+0x41/0x50
+     [<ffffffff811a0df0>] do_vfs_ioctl+0x300/0x520
+     [<ffffffff811a1051>] SyS_ioctl+0x41/0x80
+     [<ffffffff814b9962>] tracesys+0xd0/0xd5
 
-The same, but the user won't see this specific layout when reading a
-page in raw mode, and won't have to bother about disposing data a
-described above when writing in raw mode.
+Fix this by scheduling removal work on another workqueue than the
+transport layer timers.
 
-Here is the layout as seen by an MTD user, even though the real one is
-the one you previously described.
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Reviewed-by: David Dillow <dave@thedillows.org>
+Cc: Sebastian Parschauer <sebastian.riemer@profitbricks.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-                                             (Block Mark)
-                                                  |
-                                                  |
-                                                  |
-                                                  V
-      +------------------------------------------+-----+-------+---+
-      |                     data                 |  M  |   E   | R |
-      +------------------------------------------+-----+-------+---+
+---
+ drivers/infiniband/ulp/srp/ib_srp.c |   38 ++++++++++++++++++++++++++----------
+ 1 file changed, 28 insertions(+), 10 deletions(-)
 
-                                                  <------OOB------->
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -120,6 +120,7 @@ static void srp_send_completion(struct i
+ static int srp_cm_handler(struct ib_cm_id *cm_id, struct ib_cm_event *event);
+ 
+ static struct scsi_transport_template *ib_srp_transport_template;
++static struct workqueue_struct *srp_remove_wq;
+ 
+ static struct ib_client srp_client = {
+ 	.name   = "srp",
+@@ -539,7 +540,7 @@ static bool srp_queue_remove_work(struct
+ 	spin_unlock_irq(&target->lock);
+ 
+ 	if (changed)
+-		queue_work(system_long_wq, &target->remove_work);
++		queue_work(srp_remove_wq, &target->remove_work);
+ 
+ 	return changed;
+ }
+@@ -2886,9 +2887,10 @@ static void srp_remove_one(struct ib_dev
+ 		spin_unlock(&host->target_lock);
+ 
+ 		/*
+-		 * Wait for target port removal tasks.
++		 * Wait for tl_err and target port removal tasks.
+ 		 */
+ 		flush_workqueue(system_long_wq);
++		flush_workqueue(srp_remove_wq);
+ 
+ 		kfree(host);
+ 	}
+@@ -2940,16 +2942,22 @@ static int __init srp_init_module(void)
+ 		indirect_sg_entries = cmd_sg_entries;
+ 	}
+ 
++	srp_remove_wq = create_workqueue("srp_remove");
++	if (IS_ERR(srp_remove_wq)) {
++		ret = PTR_ERR(srp_remove_wq);
++		goto out;
++	}
++
++	ret = -ENOMEM;
+ 	ib_srp_transport_template =
+ 		srp_attach_transport(&ib_srp_transport_functions);
+ 	if (!ib_srp_transport_template)
+-		return -ENOMEM;
++		goto destroy_wq;
+ 
+ 	ret = class_register(&srp_class);
+ 	if (ret) {
+ 		pr_err("couldn't register class infiniband_srp\n");
+-		srp_release_transport(ib_srp_transport_template);
+-		return ret;
++		goto release_tr;
+ 	}
+ 
+ 	ib_sa_register_client(&srp_sa_client);
+@@ -2957,13 +2965,22 @@ static int __init srp_init_module(void)
+ 	ret = ib_register_client(&srp_client);
+ 	if (ret) {
+ 		pr_err("couldn't register IB client\n");
+-		srp_release_transport(ib_srp_transport_template);
+-		ib_sa_unregister_client(&srp_sa_client);
+-		class_unregister(&srp_class);
+-		return ret;
++		goto unreg_sa;
+ 	}
+ 
+-	return 0;
++out:
++	return ret;
++
++unreg_sa:
++	ib_sa_unregister_client(&srp_sa_client);
++	class_unregister(&srp_class);
++
++release_tr:
++	srp_release_transport(ib_srp_transport_template);
++
++destroy_wq:
++	destroy_workqueue(srp_remove_wq);
++	goto out;
+ }
+ 
+ static void __exit srp_cleanup_module(void)
+@@ -2972,6 +2989,7 @@ static void __exit srp_cleanup_module(vo
+ 	ib_sa_unregister_client(&srp_sa_client);
+ 	class_unregister(&srp_class);
+ 	srp_release_transport(ib_srp_transport_template);
++	destroy_workqueue(srp_remove_wq);
+ }
+ 
+ module_init(srp_init_module);
 
 
-Best Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
