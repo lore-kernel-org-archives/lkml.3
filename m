@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212AbaIOWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:19:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51169 "EHLO
+	id S1758230AbaIOWTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:19:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51178 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaIOWTX (ORCPT
+	with ESMTP id S1758205AbaIOWT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:23 -0400
+	Mon, 15 Sep 2014 18:19:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 176/187] x86/xen: resume timer irqs early
-Date: Mon, 15 Sep 2014 15:09:46 -0700
-Message-Id: <1410818997-9432-177-git-send-email-kamal@canonical.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 175/187] ALSA: hda/ca0132 - Don't try loading firmware at resume when already failed
+Date: Mon, 15 Sep 2014 15:09:45 -0700
+Message-Id: <1410818997-9432-176-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,45 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 8d5999df35314607c38fbd6bdd709e25c3a4eeab upstream.
+commit e24aa0a4c5ac92a171d9dd74a8d3dbf652990d36 upstream.
 
-If the timer irqs are resumed during device resume it is possible in
-certain circumstances for the resume to hang early on, before device
-interrupts are resumed.  For an Ubuntu 14.04 PVHVM guest this would
-occur in ~0.5% of resume attempts.
+CA0132 driver tries to reload the firmware at resume.  Usually this
+works since the firmware loader core caches the firmware contents by
+itself.  However, if the driver failed to load the firmwares
+(e.g. missing files), reloading the firmware at resume goes through
+the actual file loading code path, and triggers a kernel WARNING like:
 
-It is not entirely clear what is occuring the point of the hang but I
-think a task necessary for the resume calls schedule_timeout(),
-waiting for a timer interrupt (which never arrives).  This failure may
-require specific tasks to be running on the other VCPUs to trigger
-(processes are not frozen during a suspend/resume if PREEMPT is
-disabled).
+ WARNING: CPU: 10 PID:11371 at drivers/base/firmware_class.c:1105 _request_firmware+0x9ab/0x9d0()
 
-Add IRQF_EARLY_RESUME to the timer interrupts so they are resumed in
-syscore_resume().
+For avoiding this situation, this patch makes CA0132 skipping the f/w
+loading at resume when it failed at probe time.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Reported-and-tested-by: Janek Kozicki <cosurgi@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/xen/time.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_ca0132.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 12a1ca7..f314067 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -444,7 +444,7 @@ void xen_setup_timer(int cpu)
+diff --git a/sound/pci/hda/patch_ca0132.c b/sound/pci/hda/patch_ca0132.c
+index 46ecdbb..d5843da 100644
+--- a/sound/pci/hda/patch_ca0132.c
++++ b/sound/pci/hda/patch_ca0132.c
+@@ -4379,6 +4379,9 @@ static void ca0132_download_dsp(struct hda_codec *codec)
+ 	return; /* NOP */
+ #endif
  
- 	irq = bind_virq_to_irqhandler(VIRQ_TIMER, cpu, xen_timer_interrupt,
- 				      IRQF_PERCPU|IRQF_NOBALANCING|IRQF_TIMER|
--				      IRQF_FORCE_RESUME,
-+				      IRQF_FORCE_RESUME|IRQF_EARLY_RESUME,
- 				      name, NULL);
++	if (spec->dsp_state == DSP_DOWNLOAD_FAILED)
++		return; /* don't retry failures */
++
+ 	chipio_enable_clocks(codec);
+ 	spec->dsp_state = DSP_DOWNLOADING;
+ 	if (!ca0132_download_dsp_images(codec))
+@@ -4555,7 +4558,8 @@ static int ca0132_init(struct hda_codec *codec)
+ 	struct auto_pin_cfg *cfg = &spec->autocfg;
+ 	int i;
  
- 	memcpy(evt, xen_clockevent, sizeof(*evt));
+-	spec->dsp_state = DSP_DOWNLOAD_INIT;
++	if (spec->dsp_state != DSP_DOWNLOAD_FAILED)
++		spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->curr_chip_addx = INVALID_CHIP_ADDRESS;
+ 
+ 	snd_hda_power_up(codec);
+@@ -4666,6 +4670,7 @@ static int patch_ca0132(struct hda_codec *codec)
+ 	codec->spec = spec;
+ 	spec->codec = codec;
+ 
++	spec->dsp_state = DSP_DOWNLOAD_INIT;
+ 	spec->num_mixers = 1;
+ 	spec->mixers[0] = ca0132_mixer;
+ 
 -- 
 1.9.1
 
