@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaIOQ6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:58:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40552 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717AbaIOQ6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:58:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,529,1406617200"; 
-   d="scan'208";a="603131927"
-Date: Mon, 15 Sep 2014 09:55:45 -0700
-From: "David E. Box" <david.e.box@linux.intel.com>
-To: Maxime Coquelin <maxime.coquelin@st.com>
-Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
-        sjg@chromium.org, laurent.pinchart+renesas@ideasonboard.com,
-        u.kleine-koenig@pengutronix.de, boris.brezillon@free-electrons.com,
-        max.schwarz@online.de, schwidefsky@de.ibm.com, iivanov@mm-sol.com,
-        jacob.jun.pan@linux.intel.com, soren.brinkmann@xilinx.com,
-        bjorn.andersson@sonymobile.com, andrew@lunn.ch, skuribay@pobox.com,
-        christian.ruppert@abilis.com, Romain.Baeriswyl@abilis.com,
-        mika.westerberg@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c-designware: Intel BayTrail PMIC I2C bus support
-Message-ID: <20140915165545.GA2039@pathfinder>
-References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
- <54168DE2.8020303@st.com>
+	id S1753469AbaIORCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:02:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35474 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaIORCE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 13:02:04 -0400
+Message-ID: <54171B85.5060209@linutronix.de>
+Date: Mon, 15 Sep 2014 19:01:57 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54168DE2.8020303@st.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5411967A.6090406@hurleysoftware.com> <54119AAA.9080907@linutronix.de> <5411B33F.10405@hurleysoftware.com>
+In-Reply-To: <5411B33F.10405@hurleysoftware.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+On 09/11/2014 04:35 PM, Peter Hurley wrote:
+> I do need to find out if omap hardware sets UART_MSR_DCTS when auto CTS
+> is on. Would you mind running the debug patch below with HW flow control on?
 
-On Mon, Sep 15, 2014 at 08:57:38AM +0200, Maxime Coquelin wrote:
+I didn't forget about this. However I told minicom to use hardware flow
+control (and I see the driver set the HW bit) but I haven't seen that
+uart_handle_cts_change() has been invoked at all. I'm going to check
+two other boards and report then.
 
-> >+		err = dev->acquire_ownership(dev->dev);
-> Have you considered using hwspinlocks instead?
+> Regards,
+> Peter Hurley
 
-No, I've not used it before but it looks applicable here. I'll take a look.
-
-> >@@ -212,6 +259,25 @@ static int dw_i2c_probe(struct platform_device *pdev)
-> >  	adap->dev.parent = &pdev->dev;
-> >  	adap->dev.of_node = pdev->dev.of_node;
-> >
-> >+#if IS_ENABLED(CONFIG_I2C_SHARED_CONTROLLER)
-> >+	if (dev->shared_host)
-> >+		adap->algo = &i2c_sc_algo;
-> >+
-> >+	r = i2c_add_numbered_adapter(adap);
-> >+	if (r) {
-> >+		dev_err(&pdev->dev, "failure adding adapter\n");
-> >+		return r;
-> >+	}
-> >+
-> >+	if (dev->shared_host)
-> >+		pm_runtime_forbid(&pdev->dev);
-> >+	else {
-> >+		pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-> >+		pm_runtime_use_autosuspend(&pdev->dev);
-> >+		pm_runtime_set_active(&pdev->dev);
-> >+		pm_runtime_enable(&pdev->dev);
-> >+	}
-> >+#else
-> Why do you put all this under config flags?
-
-So that this additional code only compiles for this very specific
-implementation.
-
-> >@@ -268,7 +334,11 @@ static int dw_i2c_resume(struct device *dev)
-> >  	struct dw_i2c_dev *i_dev = platform_get_drvdata(pdev);
-> >
-> >  	clk_prepare_enable(i_dev->clk);
-> >-	i2c_dw_init(i_dev);
-> >+
-> >+#if IS_ENABLED(CONFIG_I2C_SHARED_CONTROLLER)
-> >+	if (!i_dev->shared_host)
-> >+#endif
-> Putting this under config flag should not be needed.
-> 
-> And even not under config flags, why don't you re-initialize your
-> device in case of resume?
-
-Because the device is already being managed by hardware, not the OS.
-
-David Box
+Sebastian
