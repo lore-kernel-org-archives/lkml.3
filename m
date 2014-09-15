@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357AbaIOVPc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:15:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54620 "EHLO
+	id S1758074AbaIOVPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785AbaIOT0r (ORCPT
+	with ESMTP id S1754875AbaIOT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Steve Grubb <sgrubb@redhat.com>, Dan Walsh <dwalsh@redhat.com>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [PATCH 3.16 024/158] CAPABILITIES: remove undefined caps from all processes
-Date: Mon, 15 Sep 2014 12:24:23 -0700
-Message-Id: <20140915192543.606895834@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 026/158] ocfs2: do not write error flag to user structure we cannot copy from/to
+Date: Mon, 15 Sep 2014 12:24:25 -0700
+Message-Id: <20140915192543.672079292@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -33,178 +31,350 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
+commit 2b462638e41ea62230297c21c4da9955937b7a3c upstream.
 
-This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
-plus fixing it a different way...
+If we failed to copy from the structure, writing back the flags leaks 31
+bits of kernel memory (the rest of the ir_flags field).
 
-We found, when trying to run an application from an application which
-had dropped privs that the kernel does security checks on undefined
-capability bits.  This was ESPECIALLY difficult to debug as those
-undefined bits are hidden from /proc/$PID/status.
+In any case, if we cannot copy from/to the structure, why should we
+expect putting just the flags to work?
 
-Consider a root application which drops all capabilities from ALL 4
-capability sets.  We assume, since the application is going to set
-eff/perm/inh from an array that it will clear not only the defined caps
-less than CAP_LAST_CAP, but also the higher 28ish bits which are
-undefined future capabilities.
+Also make sure ocfs2_info_handle_freeinode() returns the right error
+code if the copy_to_user() fails.
 
-The BSET gets cleared differently.  Instead it is cleared one bit at a
-time.  The problem here is that in security/commoncap.c::cap_task_prctl()
-we actually check the validity of a capability being read.  So any task
-which attempts to 'read all things set in bset' followed by 'unset all
-things set in bset' will not even attempt to unset the undefined bits
-higher than CAP_LAST_CAP.
-
-So the 'parent' will look something like:
-CapInh:	0000000000000000
-CapPrm:	0000000000000000
-CapEff:	0000000000000000
-CapBnd:	ffffffc000000000
-
-All of this 'should' be fine.  Given that these are undefined bits that
-aren't supposed to have anything to do with permissions.  But they do...
-
-So lets now consider a task which cleared the eff/perm/inh completely
-and cleared all of the valid caps in the bset (but not the invalid caps
-it couldn't read out of the kernel).  We know that this is exactly what
-the libcap-ng library does and what the go capabilities library does.
-They both leave you in that above situation if you try to clear all of
-you capapabilities from all 4 sets.  If that root task calls execve()
-the child task will pick up all caps not blocked by the bset.  The bset
-however does not block bits higher than CAP_LAST_CAP.  So now the child
-task has bits in eff which are not in the parent.  These are
-'meaningless' undefined bits, but still bits which the parent doesn't
-have.
-
-The problem is now in cred_cap_issubset() (or any operation which does a
-subset test) as the child, while a subset for valid cap bits, is not a
-subset for invalid cap bits!  So now we set durring commit creds that
-the child is not dumpable.  Given it is 'more priv' than its parent.  It
-also means the parent cannot ptrace the child and other stupidity.
-
-The solution here:
-1) stop hiding capability bits in status
-	This makes debugging easier!
-
-2) stop giving any task undefined capability bits.  it's simple, it you
-don't put those invalid bits in CAP_FULL_SET you won't get them in init
-and you won't get them in any other task either.
-	This fixes the cap_issubset() tests and resulting fallout (which
-	made the init task in a docker container untraceable among other
-	things)
-
-3) mask out undefined bits when sys_capset() is called as it might use
-~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
-	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
-
-4) mask out undefined bit when we read a file capability off of disk as
-again likely all bits are set in the xattr for forward/backward
-compatibility.
-	This lets 'setcap all+pe /bin/bash; /bin/bash' run
-
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Cc: Andrew Vagin <avagin@openvz.org>
-Cc: Andrew G. Morgan <morgan@kernel.org>
-Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Steve Grubb <sgrubb@redhat.com>
-Cc: Dan Walsh <dwalsh@redhat.com>
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Fixes: ddee5cdb70e6 ('Ocfs2: Add new OCFS2_IOC_INFO ioctl for ocfs2 v8.')
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Joel Becker <jlbec@evilplan.org>
+Acked-by: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/array.c            |   11 +----------
- include/linux/capability.h |    5 ++++-
- kernel/audit.c             |    2 +-
- kernel/capability.c        |    4 ++++
- security/commoncap.c       |    3 +++
- 5 files changed, 13 insertions(+), 12 deletions(-)
+ fs/ocfs2/ioctl.c |  129 ++++++++++++++++++-------------------------------------
+ 1 file changed, 43 insertions(+), 86 deletions(-)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -297,15 +297,11 @@ static void render_cap_t(struct seq_file
- 	seq_puts(m, header);
- 	CAP_FOR_EACH_U32(__capi) {
- 		seq_printf(m, "%08x",
--			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
-+			   a->cap[CAP_LAST_U32 - __capi]);
- 	}
- 	seq_putc(m, '\n');
- }
+--- a/fs/ocfs2/ioctl.c
++++ b/fs/ocfs2/ioctl.c
+@@ -35,9 +35,8 @@
+ 		copy_to_user((typeof(a) __user *)b, &(a), sizeof(a))
  
--/* Remove non-existent capabilities */
--#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
--				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
--
- static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ /*
+- * This call is void because we are already reporting an error that may
+- * be -EFAULT.  The error will be returned from the ioctl(2) call.  It's
+- * just a best-effort to tell userspace that this request caused the error.
++ * This is just a best-effort to tell userspace that this request
++ * caused the error.
+  */
+ static inline void o2info_set_request_error(struct ocfs2_info_request *kreq,
+ 					struct ocfs2_info_request __user *req)
+@@ -146,136 +145,105 @@ bail:
+ static int ocfs2_info_handle_blocksize(struct inode *inode,
+ 				       struct ocfs2_info_request __user *req)
  {
- 	const struct cred *cred;
-@@ -319,11 +315,6 @@ static inline void task_cap(struct seq_f
- 	cap_bset	= cred->cap_bset;
- 	rcu_read_unlock();
+-	int status = -EFAULT;
+ 	struct ocfs2_info_blocksize oib;
  
--	NORM_CAPS(cap_inheritable);
--	NORM_CAPS(cap_permitted);
--	NORM_CAPS(cap_effective);
--	NORM_CAPS(cap_bset);
+ 	if (o2info_from_user(oib, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	oib.ib_blocksize = inode->i_sb->s_blocksize;
+ 
+ 	o2info_set_request_filled(&oib.ib_req);
+ 
+ 	if (o2info_to_user(oib, req))
+-		goto bail;
++		return -EFAULT;
+ 
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oib.ib_req, req);
 -
- 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
- 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
- 	render_cap_t(m, "CapEff:\t", &cap_effective);
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff
- # error Fix up hand-coded capability macro initializers
- #else /* HAND-CODED capability initializers */
- 
-+#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
-+#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
-+
- # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
--# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
-+# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
- # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
- 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
- 				    CAP_FS_MASK_B1 } })
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1677,7 +1677,7 @@ void audit_log_cap(struct audit_buffer *
- 	audit_log_format(ab, " %s=", prefix);
- 	CAP_FOR_EACH_U32(i) {
- 		audit_log_format(ab, "%08x",
--				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
-+				 cap->cap[CAP_LAST_U32 - i]);
- 	}
+-	return status;
++	return 0;
  }
  
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -258,6 +258,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_
- 		i++;
- 	}
+ static int ocfs2_info_handle_clustersize(struct inode *inode,
+ 					 struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_clustersize oic;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
  
-+	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	new = prepare_creds();
- 	if (!new)
- 		return -ENOMEM;
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct
- 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
- 	}
+ 	if (o2info_from_user(oic, req))
+-		goto bail;
++		return -EFAULT;
  
-+	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
-+
- 	return 0;
+ 	oic.ic_clustersize = osb->s_clustersize;
+ 
+ 	o2info_set_request_filled(&oic.ic_req);
+ 
+ 	if (o2info_to_user(oic, req))
+-		goto bail;
++		return -EFAULT;
+ 
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oic.ic_req, req);
+-
+-	return status;
++	return 0;
  }
  
+ static int ocfs2_info_handle_maxslots(struct inode *inode,
+ 				      struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_maxslots oim;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (o2info_from_user(oim, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	oim.im_max_slots = osb->max_slots;
+ 
+ 	o2info_set_request_filled(&oim.im_req);
+ 
+ 	if (o2info_to_user(oim, req))
+-		goto bail;
+-
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oim.im_req, req);
++		return -EFAULT;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ static int ocfs2_info_handle_label(struct inode *inode,
+ 				   struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_label oil;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (o2info_from_user(oil, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	memcpy(oil.il_label, osb->vol_label, OCFS2_MAX_VOL_LABEL_LEN);
+ 
+ 	o2info_set_request_filled(&oil.il_req);
+ 
+ 	if (o2info_to_user(oil, req))
+-		goto bail;
++		return -EFAULT;
+ 
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oil.il_req, req);
+-
+-	return status;
++	return 0;
+ }
+ 
+ static int ocfs2_info_handle_uuid(struct inode *inode,
+ 				  struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_uuid oiu;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (o2info_from_user(oiu, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	memcpy(oiu.iu_uuid_str, osb->uuid_str, OCFS2_TEXT_UUID_LEN + 1);
+ 
+ 	o2info_set_request_filled(&oiu.iu_req);
+ 
+ 	if (o2info_to_user(oiu, req))
+-		goto bail;
+-
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oiu.iu_req, req);
++		return -EFAULT;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ static int ocfs2_info_handle_fs_features(struct inode *inode,
+ 					 struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_fs_features oif;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (o2info_from_user(oif, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	oif.if_compat_features = osb->s_feature_compat;
+ 	oif.if_incompat_features = osb->s_feature_incompat;
+@@ -284,39 +252,28 @@ static int ocfs2_info_handle_fs_features
+ 	o2info_set_request_filled(&oif.if_req);
+ 
+ 	if (o2info_to_user(oif, req))
+-		goto bail;
++		return -EFAULT;
+ 
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oif.if_req, req);
+-
+-	return status;
++	return 0;
+ }
+ 
+ static int ocfs2_info_handle_journal_size(struct inode *inode,
+ 					  struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_journal_size oij;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 
+ 	if (o2info_from_user(oij, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	oij.ij_journal_size = i_size_read(osb->journal->j_inode);
+ 
+ 	o2info_set_request_filled(&oij.ij_req);
+ 
+ 	if (o2info_to_user(oij, req))
+-		goto bail;
+-
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oij.ij_req, req);
++		return -EFAULT;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ static int ocfs2_info_scan_inode_alloc(struct ocfs2_super *osb,
+@@ -373,7 +330,7 @@ static int ocfs2_info_handle_freeinode(s
+ 	u32 i;
+ 	u64 blkno = -1;
+ 	char namebuf[40];
+-	int status = -EFAULT, type = INODE_ALLOC_SYSTEM_INODE;
++	int status, type = INODE_ALLOC_SYSTEM_INODE;
+ 	struct ocfs2_info_freeinode *oifi = NULL;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+ 	struct inode *inode_alloc = NULL;
+@@ -385,8 +342,10 @@ static int ocfs2_info_handle_freeinode(s
+ 		goto out_err;
+ 	}
+ 
+-	if (o2info_from_user(*oifi, req))
+-		goto bail;
++	if (o2info_from_user(*oifi, req)) {
++		status = -EFAULT;
++		goto out_free;
++	}
+ 
+ 	oifi->ifi_slotnum = osb->max_slots;
+ 
+@@ -424,14 +383,16 @@ static int ocfs2_info_handle_freeinode(s
+ 
+ 	o2info_set_request_filled(&oifi->ifi_req);
+ 
+-	if (o2info_to_user(*oifi, req))
+-		goto bail;
++	if (o2info_to_user(*oifi, req)) {
++		status = -EFAULT;
++		goto out_free;
++	}
+ 
+ 	status = 0;
+ bail:
+ 	if (status)
+ 		o2info_set_request_error(&oifi->ifi_req, req);
+-
++out_free:
+ 	kfree(oifi);
+ out_err:
+ 	return status;
+@@ -658,7 +619,7 @@ static int ocfs2_info_handle_freefrag(st
+ {
+ 	u64 blkno = -1;
+ 	char namebuf[40];
+-	int status = -EFAULT, type = GLOBAL_BITMAP_SYSTEM_INODE;
++	int status, type = GLOBAL_BITMAP_SYSTEM_INODE;
+ 
+ 	struct ocfs2_info_freefrag *oiff;
+ 	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
+@@ -671,8 +632,10 @@ static int ocfs2_info_handle_freefrag(st
+ 		goto out_err;
+ 	}
+ 
+-	if (o2info_from_user(*oiff, req))
+-		goto bail;
++	if (o2info_from_user(*oiff, req)) {
++		status = -EFAULT;
++		goto out_free;
++	}
+ 	/*
+ 	 * chunksize from userspace should be power of 2.
+ 	 */
+@@ -711,14 +674,14 @@ static int ocfs2_info_handle_freefrag(st
+ 
+ 	if (o2info_to_user(*oiff, req)) {
+ 		status = -EFAULT;
+-		goto bail;
++		goto out_free;
+ 	}
+ 
+ 	status = 0;
+ bail:
+ 	if (status)
+ 		o2info_set_request_error(&oiff->iff_req, req);
+-
++out_free:
+ 	kfree(oiff);
+ out_err:
+ 	return status;
+@@ -727,23 +690,17 @@ out_err:
+ static int ocfs2_info_handle_unknown(struct inode *inode,
+ 				     struct ocfs2_info_request __user *req)
+ {
+-	int status = -EFAULT;
+ 	struct ocfs2_info_request oir;
+ 
+ 	if (o2info_from_user(oir, req))
+-		goto bail;
++		return -EFAULT;
+ 
+ 	o2info_clear_request_filled(&oir);
+ 
+ 	if (o2info_to_user(oir, req))
+-		goto bail;
+-
+-	status = 0;
+-bail:
+-	if (status)
+-		o2info_set_request_error(&oir, req);
++		return -EFAULT;
+ 
+-	return status;
++	return 0;
+ }
+ 
+ /*
 
 
