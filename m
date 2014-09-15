@@ -1,115 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaIOLdf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 07:33:35 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57041 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752863AbaIOLde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 07:33:34 -0400
-Date: Mon, 15 Sep 2014 12:33:25 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page
-	aligned
-Message-ID: <20140915113325.GD12361@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753962AbaIOLdo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 07:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37542 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753870AbaIOLdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 07:33:41 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, dmaengine@vger.kernel.org
+Subject: [PATCH] ioatdma, fix dma mapping errors
+Date: Mon, 15 Sep 2014 07:33:27 -0400
+Message-Id: <1410780807-23986-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 07:07:20PM +0800, Wang, Yalin wrote:
-> this patch extend the start and end address of initrd to be page aligned,
-> so that we can free all memory including the un-page aligned head or tail
-> page of initrd, if the start or end address of initrd are not page
-> aligned, the page can't be freed by free_initrd_mem() function.
+Several systems are showing the following stack trace:
 
-Better, but I think it's more complicated than it needs to be:
+WARNING: CPU: 0 PID: 2352 at lib/dma-debug.c:1140 check_unmap+0x4ee/0x9e0()
+ioatdma 0000:00:04.0: DMA-API: device driver failed to check map error[device address=0x0000000465bad000] [size=4096 bytes] [mapped as page]
+Modules linked in: ioatdma(E+) nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel cdc_ether ses ghash_clmulni_intel usbnet mii enclosure aesni_intel lrw gf128mul glue_helper iTCO_wdt shpchp ablk_helper iTCO_vendor_support cryptd pcspkr ipmi_devintf sb_edac lpc_ich edac_core mfd_core ipmi_si i2c_i801 wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper ttm igb drm ptp pps_core dca i2c_algo_bit i2ccore megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: ioatdma]
+CPU: 0 PID: 2352 Comm: insmod Tainted: G            E  3.17.0-rc4+ #14
+Hardware name: HP ProLiant m300 Server Cartridge/, BIOS H02 01/30/2014
+ 0000000000000009 ffff88007994b7d8 ffffffff816e7225 ffff88007994b820
+ ffff88007994b810 ffffffff8107e51d ffff88045fc56c00 ffff88046643ee90
+ ffffffff8338ccd0 0000000000000286 ffffffff81956629 ffff88007994b870
+Call Trace:
+ [<ffffffff816e7225>] dump_stack+0x4d/0x66
+ [<ffffffff8107e51d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff8107e58c>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff81381e6e>] check_unmap+0x4ee/0x9e0
+ [<ffffffff813823bf>] debug_dma_unmap_page+0x5f/0x70
+ [<ffffffffa04546d8>] ioat_xor_val_self_test+0x498/0xcf0 [ioatdma]
+ [<ffffffff81204f0a>] ? kfree+0xda/0x2b0
+ [<ffffffffa044d510>] ? ioat_dma_setup_interrupts+0x120/0x2d0 [ioatdma]
+ [<ffffffffa0454f4e>] ioat3_dma_self_test+0x1e/0x30 [ioatdma]
+ [<ffffffffa044f904>] ioat_probe+0xf4/0x110 [ioatdma]
+ [<ffffffffa04550f8>] ioat3_dma_probe+0x198/0x3a0 [ioatdma]
+ [<ffffffffa044d18e>] ioat_pci_probe+0x11e/0x1b0 [ioatdma]
+ [<ffffffff81393a15>] local_pci_probe+0x45/0xa0
+ [<ffffffff81394be5>] ? pci_match_device+0xe5/0x110
+ [<ffffffff81394d29>] pci_device_probe+0xd9/0x130
+ [<ffffffff81462860>] driver_probe_device+0x90/0x3c0
+ [<ffffffff81462c63>] __driver_attach+0x93/0xa0
+ [<ffffffff81462bd0>] ? __device_attach+0x40/0x40
+ [<ffffffff8146080b>] bus_for_each_dev+0x6b/0xb0
+ [<ffffffff814622ce>] driver_attach+0x1e/0x20
+ [<ffffffff81461ed8>] bus_add_driver+0x188/0x260
+ [<ffffffffa0423000>] ? 0xffffffffa0423000
+ [<ffffffff81463734>] driver_register+0x64/0xf0
+ [<ffffffff813933a0>] __pci_register_driver+0x60/0x70
+ [<ffffffffa0423089>] ioat_init_module+0x89/0x1000 [ioatdma]
+ [<ffffffff8100212c>] do_one_initcall+0xbc/0x200
+ [<ffffffff811e8b22>] ? __vunmap+0xd2/0x120
+ [<ffffffff8111e73c>] load_module+0x14ec/0x1b50
+ [<ffffffff81119970>] ? store_uevent+0x40/0x40
+ [<ffffffff8111ef36>] SyS_finit_module+0x86/0xb0
+ [<ffffffff816f1469>] system_call_fastpath+0x16/0x1b
+---[ end trace 1052ccbbc3db4d08 ]---
+Mapped at:
+ [<ffffffff81380be1>] debug_dma_map_page+0x91/0x140
+ [<ffffffffa045440e>] ioat_xor_val_self_test+0x1ce/0xcf0 [ioatdma]
+ [<ffffffffa0454f4e>] ioat3_dma_self_test+0x1e/0x30 [ioatdma]
+ [<ffffffffa044f904>] ioat_probe+0xf4/0x110 [ioatdma]
+ [<ffffffffa04550f8>] ioat3_dma_probe+0x198/0x3a0 [ioatdma]
 
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
->  arch/arm/mm/init.c   | 19 +++++++++++++++++--
->  arch/arm64/mm/init.c | 37 +++++++++++++++++++++++++++++++++----
->  2 files changed, 50 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 659c75d..8490b70 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -277,6 +277,8 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
->  void __init arm_memblock_init(const struct machine_desc *mdesc)
->  {
->  	/* Register the kernel text, kernel data and initrd with memblock. */
-> +	phys_addr_t phys_initrd_start_orig __maybe_unused;
-> +	phys_addr_t phys_initrd_size_orig __maybe_unused;
->  #ifdef CONFIG_XIP_KERNEL
->  	memblock_reserve(__pa(_sdata), _end - _sdata);
->  #else
-> @@ -289,6 +291,13 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
->  		phys_initrd_size = initrd_end - initrd_start;
->  	}
->  	initrd_start = initrd_end = 0;
-> +	phys_initrd_start_orig = phys_initrd_start;
-> +	phys_initrd_size_orig = phys_initrd_size;
-> +	/* make sure the start and end address are page aligned */
-> +	phys_initrd_size = round_up(phys_initrd_start + phys_initrd_size, PAGE_SIZE);
-> +	phys_initrd_start = round_down(phys_initrd_start, PAGE_SIZE);
-> +	phys_initrd_size -= phys_initrd_start;
-> +
->  	if (phys_initrd_size &&
->  	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
->  		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
-> @@ -305,9 +314,10 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
->  		memblock_reserve(phys_initrd_start, phys_initrd_size);
->  
->  		/* Now convert initrd to virtual addresses */
-> -		initrd_start = __phys_to_virt(phys_initrd_start);
-> -		initrd_end = initrd_start + phys_initrd_size;
-> +		initrd_start = __phys_to_virt(phys_initrd_start_orig);
-> +		initrd_end = initrd_start + phys_initrd_size_orig;
->  	}
-> +
+This happens because the current ioatdma DMA test code does not check the return
+value of dma_map_page() calls with dma_mapping_error().  In addition, it was
+noticed that mapping for the variable dest_dma is free'd before the last use.
 
-I think all the above is entirely unnecessary.  The memblock APIs
-(especially memblock_reserve()) will mark the overlapped pages as reserved
-- they round down the starting address, and round up the end address
-(calculated from start + size).
+This patch fixes these errors by initializing the dma_srcs[] array and checking
+the returns with dma_mapping_error().
 
-Hence, this:
+Cc: Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: dmaengine@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ drivers/dma/ioat/dma_v3.c |   35 +++++++++++++++++++++++++++++------
+ 1 file changed, 29 insertions(+), 6 deletions(-)
 
-> @@ -636,6 +646,11 @@ static int keep_initrd;
->  void free_initrd_mem(unsigned long start, unsigned long end)
->  {
->  	if (!keep_initrd) {
-> +		if (start == initrd_start)
-> +			start = round_down(start, PAGE_SIZE);
-> +		if (end == initrd_end)
-> +			end = round_up(end, PAGE_SIZE);
-> +
->  		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
->  		free_reserved_area((void *)start, (void *)end, -1, "initrd");
->  	}
-
-is the only bit of code you likely need to achieve your goal.
-
-Thinking about this, I think that you are quite right to align these.
-The memory around the initrd is defined to be system memory, and we
-already free the pages around it, so it *is* wrong not to free the
-partial initrd pages.
-
-Good catch.
-
+diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
+index b9b38a1..8c51b5c 100644
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -1265,9 +1265,17 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 	op = IOAT_OP_XOR;
+ 
+ 	dest_dma = dma_map_page(dev, dest, 0, PAGE_SIZE, DMA_FROM_DEVICE);
++	if (dma_mapping_error(dev, dest_dma))
++		goto dma_unmap;
++
+ 	for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
++		dma_srcs[i] = DMA_ERROR_CODE;
++	for (i = 0; i < IOAT_NUM_SRC_TEST; i++) {
+ 		dma_srcs[i] = dma_map_page(dev, xor_srcs[i], 0, PAGE_SIZE,
+ 					   DMA_TO_DEVICE);
++		if (dma_mapping_error(dev, dma_srcs[i]))
++			goto dma_unmap;
++	}
+ 	tx = dma->device_prep_dma_xor(dma_chan, dest_dma, dma_srcs,
+ 				      IOAT_NUM_SRC_TEST, PAGE_SIZE,
+ 				      DMA_PREP_INTERRUPT);
+@@ -1298,7 +1306,6 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 		goto dma_unmap;
+ 	}
+ 
+-	dma_unmap_page(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
+ 	for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
+ 		dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE, DMA_TO_DEVICE);
+ 
+@@ -1313,6 +1320,8 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 	}
+ 	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
+ 
++	dma_unmap_page(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
++
+ 	/* skip validate if the capability is not present */
+ 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
+ 		goto free_resources;
+@@ -1327,8 +1336,13 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 	xor_val_result = 1;
+ 
+ 	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
++		dma_srcs[i] = DMA_ERROR_CODE;
++	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++) {
+ 		dma_srcs[i] = dma_map_page(dev, xor_val_srcs[i], 0, PAGE_SIZE,
+ 					   DMA_TO_DEVICE);
++		if (dma_mapping_error(dev, dma_srcs[i]))
++			goto dma_unmap;
++	}
+ 	tx = dma->device_prep_dma_xor_val(dma_chan, dma_srcs,
+ 					  IOAT_NUM_SRC_TEST + 1, PAGE_SIZE,
+ 					  &xor_val_result, DMA_PREP_INTERRUPT);
+@@ -1374,8 +1388,13 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 
+ 	xor_val_result = 0;
+ 	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
++		dma_srcs[i] = DMA_ERROR_CODE;
++	for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++) {
+ 		dma_srcs[i] = dma_map_page(dev, xor_val_srcs[i], 0, PAGE_SIZE,
+ 					   DMA_TO_DEVICE);
++		if (dma_mapping_error(dev, dma_srcs[i]))
++			goto dma_unmap;
++	}
+ 	tx = dma->device_prep_dma_xor_val(dma_chan, dma_srcs,
+ 					  IOAT_NUM_SRC_TEST + 1, PAGE_SIZE,
+ 					  &xor_val_result, DMA_PREP_INTERRUPT);
+@@ -1417,14 +1436,18 @@ static int ioat_xor_val_self_test(struct ioatdma_device *device)
+ 	goto free_resources;
+ dma_unmap:
+ 	if (op == IOAT_OP_XOR) {
+-		dma_unmap_page(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
++		if (dest_dma != DMA_ERROR_CODE)
++			dma_unmap_page(dev, dest_dma, PAGE_SIZE,
++				       DMA_FROM_DEVICE);
+ 		for (i = 0; i < IOAT_NUM_SRC_TEST; i++)
+-			dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
+-				       DMA_TO_DEVICE);
++			if (dma_srcs[i] != DMA_ERROR_CODE)
++				dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
++					       DMA_TO_DEVICE);
+ 	} else if (op == IOAT_OP_XOR_VAL) {
+ 		for (i = 0; i < IOAT_NUM_SRC_TEST + 1; i++)
+-			dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
+-				       DMA_TO_DEVICE);
++			if (dma_srcs[i] != DMA_ERROR_CODE)
++				dma_unmap_page(dev, dma_srcs[i], PAGE_SIZE,
++					       DMA_TO_DEVICE);
+ 	}
+ free_resources:
+ 	dma->device_free_chan_resources(dma_chan);
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.7.9.3
+
