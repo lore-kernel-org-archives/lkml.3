@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaIOUI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:08:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193AbaIOTrH (ORCPT
+	id S1756620AbaIOUI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:08:28 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:56394 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640AbaIOUIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 17/71] Drivers: scsi: storvsc: Implement a eh_timed_out handler
-Date: Mon, 15 Sep 2014 12:26:15 -0700
-Message-Id: <20140915192639.287390423@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 16:08:25 -0400
+Date: Mon, 15 Sep 2014 13:08:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: gxt@mprc.pku.edu.cn
+Cc: linux-kernel@vger.kernel.org, gxt@pku.edu.cn, gang.chen.5i5j@gmail.com,
+        Qin Rui <qinrui@pku.edu.cn>
+Subject: Re: [PATCH 1/4] unicore32-oldabi: add CONFIG_UNICORE32_OLDABI for
+ distinguishing two ABIs
+Message-ID: <20140915200820.GD18175@roeck-us.net>
+References: <1b5cc90293670926b5a1e5a06995e527442f8bde.1410502415.git.gxt@mprc.pku.edu.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1b5cc90293670926b5a1e5a06995e527442f8bde.1410502415.git.gxt@mprc.pku.edu.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Sep 12, 2014 at 02:41:43PM +0800, gxt@mprc.pku.edu.cn wrote:
+> From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> 
+> Signed-off-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Signed-off-by: Qin Rui <qinrui@pku.edu.cn>
 
-------------------
+This series lets me build and run an initramfs with the published toolchain,
+after adding the patch 'unicore32: Add ocd console and qemu-defconfig
+to support qemu simulator' as well to get console output. So feel free
+to add
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 
-commit 56b26e69c8283121febedd12b3cc193384af46b9 upstream.
+to the series.
 
-On Azure, we have seen instances of unbounded I/O latencies. To deal with
-this issue, implement handler that can reset the timeout. Note that the
-host gaurantees that it will respond to each command that has been issued.
+I have a couple of questions:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-[hch: added a better comment explaining the issue]
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+- After adding the patch 'unicore32: Add ocd console and qemu-defconfig
+  to support qemu simulator', I only get console output, but no input.
+  Is there a way (for example with a qemu command line option) to get
+  input as well ?
+- Is it possible to connect a console to a serial device in qemu (in other
+  words to run the image in qemu without the ocd console patch) ?
+- Is there a working description on how to create a toolchain for the _new_
+  ABI ? Alternatively, would it be possible to publish such a toolchain ?
 
----
- drivers/scsi/storvsc_drv.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Thanks a lot,
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -33,6 +33,7 @@
- #include <linux/device.h>
- #include <linux/hyperv.h>
- #include <linux/mempool.h>
-+#include <linux/blkdev.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_host.h>
-@@ -1285,6 +1286,16 @@ static int storvsc_host_reset_handler(st
- 	return SUCCESS;
- }
- 
-+/*
-+ * The host guarantees to respond to each command, although I/O latencies might
-+ * be unbounded on Azure.  Reset the timer unconditionally to give the host a
-+ * chance to perform EH.
-+ */
-+static enum blk_eh_timer_return storvsc_eh_timed_out(struct scsi_cmnd *scmnd)
-+{
-+	return BLK_EH_RESET_TIMER;
-+}
-+
- static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
- {
- 	bool allowed = true;
-@@ -1444,6 +1455,7 @@ static struct scsi_host_template scsi_dr
- 	.bios_param =		storvsc_get_chs,
- 	.queuecommand =		storvsc_queuecommand,
- 	.eh_host_reset_handler =	storvsc_host_reset_handler,
-+	.eh_timed_out =		storvsc_eh_timed_out,
- 	.slave_alloc =		storvsc_device_alloc,
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
+Guenter
 
-
+> ---
+>  arch/unicore32/Kconfig | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+> index 928237a..e5d25b4 100644
+> --- a/arch/unicore32/Kconfig
+> +++ b/arch/unicore32/Kconfig
+> @@ -72,6 +72,17 @@ source "kernel/Kconfig.freezer"
+>  
+>  menu "System Type"
+>  
+> +config UNICORE32_OLDABI
+> +	bool "Allow old ABI binaries to run with this kernel"
+> +	default y
+> +	help
+> +	  This option preserves the old syscall interface instead of the
+> +	  asm-generic one. It also provides a compatibility layer to
+> +	  intercept syscalls that have structure arguments which layout
+> +	  in memory differs between the asm-generic ABI and this old one.
+> +
+> +	  If in doubt, say Y.
+> +
+>  config MMU
+>  	def_bool y
+>  
+> -- 
+> 2.0.0.GIT
+> 
