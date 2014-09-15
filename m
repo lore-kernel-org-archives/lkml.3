@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384AbaIOWm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:42:27 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43668 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539AbaIOWmX (ORCPT
+	id S1759319AbaIOWmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:42:03 -0400
+Received: from qmta11.westchester.pa.mail.comcast.net ([76.96.59.211]:33667
+	"EHLO QMTA11.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932088AbaIOWka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:42:23 -0400
-Date: Mon, 15 Sep 2014 23:42:19 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Andreas Werner <andreas.werner@men.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Adds Andreas Werner to maintainers list for
- MEN F21BMC
-Message-ID: <20140915224219.GE25162@lee--X1>
-References: <cover.1409161615.git.andreas.werner@men.de>
- <20140915073625.GA515@awelinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140915073625.GA515@awelinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 15 Sep 2014 18:40:30 -0400
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        felipensp@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] selftests/mount: change mount test to use kselftest exit codes
+Date: Mon, 15 Sep 2014 16:34:00 -0600
+Message-Id: <1410820442-8774-6-git-send-email-shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
+References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014, Andreas Werner wrote:
+Change mount test to use kselftest exit codes in kselftest.h
+to report test results.
 
-> Added maintainer for the following MEN F21BMC drivers:
-> 	- menf21bmc (MFD)
-> 	- menf21bmc_wdt (Watchdog)
-> 	- menf21bmc_hwmon (HWMON)
-> 	- leds-menf21bmc (LED)
-> 
-> Signed-off-by: Andreas Werner <andreas.werner@men.de>
-> ---
->  MAINTAINERS | 9 +++++++++
->  1 file changed, 9 insertions(+)
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ tools/testing/selftests/mount/unprivileged-remount-test.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 65cc66d..c4a188c 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5938,6 +5938,15 @@ S:	Supported
->  F:	drivers/mcb/
->  F:	include/linux/mcb.h
->  
-> +MEN F21BMC (Board Management Controller)
-> +M:	Andreas Werner <andreas.werner@men.de>
-> +S:	Supported
-> +F:	drivers/mfd/menf21bmc.c
-> +F:	drivers/watchdog/menf21bmc_wdt.c
-> +F:	drivers/leds/leds-menf21bmc.c
-> +F:	drivers/hwmon/menf21bmc_hwmon.c
-> +F:	Documentation/hwmon/menf21bmc
-> +
->  METAG ARCHITECTURE
->  M:	James Hogan <james.hogan@imgtec.com>
->  L:	linux-metag@vger.kernel.org
-
+diff --git a/tools/testing/selftests/mount/unprivileged-remount-test.c b/tools/testing/selftests/mount/unprivileged-remount-test.c
+index 1b3ff2f..d3c703f 100644
+--- a/tools/testing/selftests/mount/unprivileged-remount-test.c
++++ b/tools/testing/selftests/mount/unprivileged-remount-test.c
+@@ -13,6 +13,8 @@
+ #include <stdbool.h>
+ #include <stdarg.h>
+ 
++#include "../kselftest.h"
++
+ #ifndef CLONE_NEWNS
+ # define CLONE_NEWNS 0x00020000
+ #endif
+@@ -45,7 +47,7 @@ static void die(char *fmt, ...)
+ 	va_start(ap, fmt);
+ 	vfprintf(stderr, fmt, ap);
+ 	va_end(ap);
+-	exit(EXIT_FAILURE);
++	exit(EXIT_FAIL);
+ }
+ 
+ static void write_file(char *filename, char *fmt, ...)
+@@ -142,7 +144,7 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
+ 		if (!WIFEXITED(status)) {
+ 			die("child did not terminate cleanly\n");
+ 		}
+-		return WEXITSTATUS(status) == EXIT_SUCCESS ? true : false;
++		return WEXITSTATUS(status) == EXIT_PASS ? true : false;
+ 	}
+ 
+ 	create_and_enter_userns();
+@@ -176,7 +178,7 @@ bool test_unpriv_remount(int mount_flags, int remount_flags, int invalid_flags)
+ 		die("remount of /tmp with invalid flags "
+ 		    "succeeded unexpectedly\n");
+ 	}
+-	exit(EXIT_SUCCESS);
++	exit(EXIT_PASS);
+ }
+ 
+ static bool test_unpriv_remount_simple(int mount_flags)
+@@ -238,5 +240,5 @@ int main(int argc, char **argv)
+ 	{
+ 		die("Default atime malfunctions\n");
+ 	}
+-	return EXIT_SUCCESS;
++	return EXIT_PASS;
+ }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
