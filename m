@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622AbaIOP5j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:57:39 -0400
-Received: from bes.se.axis.com ([195.60.68.10]:36527 "EHLO bes.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772AbaIOP5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:57:38 -0400
-X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 11:57:38 EDT
-Date: Mon, 15 Sep 2014 17:49:49 +0200
-Message-Id: <201409151549.s8FFnner005703@ignucius.se.axis.com>
-From: Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
-To: linux@roeck-us.net
-CC: jespern@axis.com, linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, edgar.iglesias@gmail.com
-In-reply-to: <20140915145203.GK4659@axis.com> (message from Jesper Nilsson on
-	Mon, 15 Sep 2014 16:52:03 +0200)
-Subject: Re: Status of 'cris' architecture support in Linux kernel
+	id S1753804AbaIOP6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:58:00 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40988 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753113AbaIOP57 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 11:57:59 -0400
+Date: Mon, 15 Sep 2014 16:56:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Joe Perches <joe@perches.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
+Message-ID: <20140915155656.GA29744@arm.com>
+References: <cover.1410632834.git.joe@perches.com>
+ <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following up on Jesper's reply...
+On Sat, Sep 13, 2014 at 07:31:12PM +0100, Joe Perches wrote:
+> Use the more common pr_warn.
+> 
+> Other miscellanea:
+> 
+> o Coalesce formats
+> o Realign arguments
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/arm/include/asm/syscall.h   |  8 ++++----
+>  arch/arm/kernel/atags_parse.c    |  2 +-
+>  arch/arm/kernel/hw_breakpoint.c  | 18 +++++++++---------
+>  arch/arm/kernel/irq.c            |  4 ++--
+>  arch/arm/kernel/perf_event_cpu.c |  4 ++--
+>  arch/arm/kernel/smp.c            |  2 +-
+>  arch/arm/kernel/unwind.c         | 24 ++++++++++++------------
+>  arch/arm/mm/idmap.c              |  2 +-
+>  arch/arm/mm/mmu.c                |  4 ++--
+>  9 files changed, 34 insertions(+), 34 deletions(-)
 
-> From: Jesper Nilsson <jespern@axis.com>
-> Date: Mon, 15 Sep 2014 16:52:03 +0200
+It's Russell's call on this, but it really looks like more trouble than it's
+worth imo. Having git blame identify the person who wrote the original code
+is considerably more useful than being pointed at somebody making cosmetic
+changes.
 
-> > Toolchain
-> > 
-> > Creating a toolchain from upstream sources required a number of patches.
-
-> > - gcc 4.7.4
-> >   Requires a backport from upstream gcc to compile.
-> >   Later versions of gcc (4.8.3, 4.9.1) fail with internal compiler errors
-> >   even after patching.
-
-This sounds like PR61737 (fixed; use 4.9.2 not released yet),
-but of course with the above sentence serving as your complete
-bug-report (or did I miss one?) that will only be a guess.
-
-> I'm using gcc 4.7.2, but of course, that is a locally built
-> version that might have patches not upstream
-> (although I doubt it knowing the gcc CRIS maintainer :-)
-
-(oops. *blush*)  The TLS stuff is unfortunately not upstreamed
-at this time.  Unimportant when building the kernel, but
-mentioned for completeness.  (The bad excuse is that I
-originally awaited pre-v32 kernels to get the corresponding TLS
-support so I wouldn't have to do ugly pre-vs.-v32 conditionals,
-then the whole thing lost priority, and now I avoid adding code
-I can't/won't test - the glibc end isn't upstreamed either.
-Sorry.)
-
-brgds, H-P
+Will
