@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932592AbaIOWNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:13:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50729 "EHLO
+	id S932611AbaIOWN1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:13:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50739 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079AbaIOWNR (ORCPT
+	with ESMTP id S932594AbaIOWNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:13:17 -0400
+	Mon, 15 Sep 2014 18:13:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>,
-        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/187] drm/tilcdc: panel: fix leak when unloading the module
-Date: Mon, 15 Sep 2014 15:07:55 -0700
-Message-Id: <1410818997-9432-66-git-send-email-kamal@canonical.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 054/187] [media] au0828: Only alt setting logic when needed
+Date: Mon, 15 Sep 2014 15:07:44 -0700
+Message-Id: <1410818997-9432-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,37 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 3a49012224ca9016658a831a327ff6a7fe5bb4f9 upstream.
+commit 64ea37bbd8a5815522706f0099ad3f11c7537e15 upstream.
 
-The driver did not unregister the allocated framebuffer, which caused
-memory leaks (and memory manager WARNs) when unloading. Also, the
-framebuffer device under /dev still existed after unloading.
+It seems that there's a bug at au0828 hardware/firmware
+related to alternate setting: when the device is already at
+alt 5, a further call causes the URBs to receive -ESHUTDOWN.
 
-Add a call to drm_fbdev_cma_fini when unloading the module to prevent
-both issues.
+I found two different encarnations of this issue:
 
-Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
-Tested-by: Darren Etheridge <detheridge@ti.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+1) at qv4l2, it fails the second time we try to open the
+video screen;
+2) at xawtv, when audio underrun occurs, with is very
+frequent, at least on my test machine.
+
+The fix is simple: just check if alt=5 before calling
+set_usb_interface().
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/tilcdc/tilcdc_drv.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/usb/au0828/au0828-video.c | 34 ++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-index 116da19..247ab5d 100644
---- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-+++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-@@ -122,6 +122,7 @@ static int tilcdc_unload(struct drm_device *dev)
- 	struct tilcdc_drm_private *priv = dev->dev_private;
- 	struct tilcdc_module *mod, *cur;
+diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
+index f615454..7ed75ef 100644
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -787,11 +787,27 @@ static int au0828_i2s_init(struct au0828_dev *dev)
  
-+	drm_fbdev_cma_fini(priv->fbdev);
- 	drm_kms_helper_poll_fini(dev);
- 	drm_mode_config_cleanup(dev);
- 	drm_vblank_cleanup(dev);
+ /*
+  * Auvitek au0828 analog stream enable
+- * Please set interface0 to AS5 before enable the stream
+  */
+ static int au0828_analog_stream_enable(struct au0828_dev *d)
+ {
++	struct usb_interface *iface;
++	int ret;
++
+ 	dprintk(1, "au0828_analog_stream_enable called\n");
++
++	iface = usb_ifnum_to_if(d->usbdev, 0);
++	if (iface && iface->cur_altsetting->desc.bAlternateSetting != 5) {
++		dprintk(1, "Changing intf#0 to alt 5\n");
++		/* set au0828 interface0 to AS5 here again */
++		ret = usb_set_interface(d->usbdev, 0, 5);
++		if (ret < 0) {
++			printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
++			return -EBUSY;
++		}
++	}
++
++	/* FIXME: size should be calculated using d->width, d->height */
++
+ 	au0828_writereg(d, AU0828_SENSORCTRL_VBI_103, 0x00);
+ 	au0828_writereg(d, 0x106, 0x00);
+ 	/* set x position */
+@@ -1002,15 +1018,6 @@ static int au0828_v4l2_open(struct file *filp)
+ 		return -ERESTARTSYS;
+ 	}
+ 	if (dev->users == 0) {
+-		/* set au0828 interface0 to AS5 here again */
+-		ret = usb_set_interface(dev->usbdev, 0, 5);
+-		if (ret < 0) {
+-			mutex_unlock(&dev->lock);
+-			printk(KERN_INFO "Au0828 can't set alternate to 5!\n");
+-			kfree(fh);
+-			return -EBUSY;
+-		}
+-
+ 		au0828_analog_stream_enable(dev);
+ 		au0828_analog_stream_reset(dev);
+ 
+@@ -1252,13 +1259,6 @@ static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
+ 		}
+ 	}
+ 
+-	/* set au0828 interface0 to AS5 here again */
+-	ret = usb_set_interface(dev->usbdev, 0, 5);
+-	if (ret < 0) {
+-		printk(KERN_INFO "Au0828 can't set alt setting to 5!\n");
+-		return -EBUSY;
+-	}
+-
+ 	au0828_analog_stream_enable(dev);
+ 
+ 	return 0;
 -- 
 1.9.1
 
