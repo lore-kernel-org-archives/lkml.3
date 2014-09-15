@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaIOILu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 04:11:50 -0400
-Received: from mail.peak-system.com ([213.157.13.214]:48976 "EHLO
-	mail.peak-system.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324AbaIOILs (ORCPT
+	id S1753414AbaIOIQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 04:16:33 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:54307 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196AbaIOIQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 04:11:48 -0400
-Message-ID: <54169D10.6040104@peak-system.com>
-Date: Mon, 15 Sep 2014 10:02:24 +0200
-From: Stephane Grosjean <s.grosjean@peak-system.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0)
- Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-CC: "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: can: sja1000: peak_pcmcia.c:  Cleaning up missing
- null-terminate in conjunction with strncpy
-References: <1410715833-15809-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1410715833-15809-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-AxigenSpam-Level: 1
-X-CTCH-RefID: str=0001.0A0C0205.54169D11.0288,ss=1,fgs=0
-X-CTCH-VOD: Unknown
-X-CTCH-Spam: Unknown
-X-AxigenVirus-Level: 1
-X-AXIGEN-KAV-Info: clean: Scanned with Kaspersky Anti Virus 8.0.3.83
-X-AXIGEN-KAS-Info: Not spam
-X-AXIGEN-KAS-Info: Version: 4.4.2 (May 20 2011 12:01:19)
-X-AXIGEN-KAS-Info: Envelope from: 
-X-AXIGEN-KAS-Info: {HEADERS: 7-bit header Content-Type found with 8-bit header
- Content-Transfer-Encoding}
-X-AXIGEN-KAS-Info: Rate: 10
-X-AXIGEN-KAS-Info: Status: not_detected
-X-AXIGEN-KAS-Info: Method: none
-X-AXIGEN-KAS-Info: DBG v.5. 2188, 818. R:128,1,128,6,7,128,1,128,0.
- M:4,24,55,145,160,169,174,193,194, CF:0,814,1. Date: +0200
-X-AXIGEN-KAS-Spam-Level: Not Spam
-X-AXIGEN-KAS-Spam-Confidence: 10%
+	Mon, 15 Sep 2014 04:16:30 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-04-5416a05c9bf1
+From: Maciej Matraszek <m.matraszek@samsung.com>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Sakari Ailus <sakari.ailus@linux.intel.com>,
+        Maciej Matraszek <m.matraszek@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH v3] [media] v4l2-common: fix overflow in v4l_bound_align_image()
+Date: Mon, 15 Sep 2014 10:14:48 +0200
+Message-id: <1410768888-14367-1-git-send-email-m.matraszek@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAJMWRmVeSWpSXmKPExsVy+t/xK7oxC8RCDD6e4bLYOGM9q8WSn7uY
+	LF6/MLRYMnk+q8XlXXPYLHo2bGW1uLhO3uLki8uMFofftLNafNryjcliwcZHjA7cHlN+b2T1
+	mHcy0GPJm0OsHn1bVjF6fN4kF8AaxWWTkpqTWZZapG+XwJVx7N5rloLXAhUrej8xNjBe4e1i
+	5OSQEDCR2LH0BTuELSZx4d56ti5GLg4hgaWMEpd3/2SCcPqYJPY8PgBWxSZgILH5Xz8LSEJE
+	4DWjxMSO24wgCWaBe4wS53dYgNjCAgES8178YQKxWQRUJW6cfMcCYvMKuEs0NF1ngVgnJ3Hy
+	2GTWCYzcCxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefnbmKEhNKXHYyLj1kdYhTgYFTi4WW4
+	IhwixJpYVlyZe4hRgoNZSYTXY65YiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGtVMjTdfaK19q
+	is7S+vj+x5sjeb/8TCydoz++tVBfKCDHvyRCRF3sUcel/8clLtvcaX5uMHcHW8vtZE+z+3t5
+	rtqoN6x4aLeA9/SVbak/Fdfpy8z/Jps97SljnEbjRP+2xTfKOJI+OHombfri/15wiebF8yFC
+	7B9uHIgWSOYPV3QqWHvUtzpHiaU4I9FQi7moOBEAkde5/wMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Fix clamp_align() used in v4l_bound_align_image() to prevent overflow when
+passed large value like UINT32_MAX. In the current implementation:
+    clamp_align(UINT32_MAX, 8, 8192, 3)
+returns 8, because in line:
+    x = (x + (1 << (align - 1))) & mask;
+x overflows to (-1 + 4) & 0x7 = 3, while expected value is 8192.
 
-Le 14/09/2014 19:30, Rickard Strandqvist a écrit :
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->   drivers/net/can/sja1000/peak_pcmcia.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/net/can/sja1000/peak_pcmcia.c b/drivers/net/can/sja1000/peak_pcmcia.c
-> index dd56133..fc9f8b01 100644
-> --- a/drivers/net/can/sja1000/peak_pcmcia.c
-> +++ b/drivers/net/can/sja1000/peak_pcmcia.c
-> @@ -487,7 +487,7 @@ static void pcan_free_channels(struct pcan_pccard *card)
->   		if (!netdev)
->   			continue;
->   
-> -		strncpy(name, netdev->name, IFNAMSIZ);
-> +		strlcpy(name, netdev->name, IFNAMSIZ);
->   
->   		unregister_sja1000dev(netdev);
->   
+v4l_bound_align_image() is heavily used in VIDIOC_S_FMT
+and VIDIOC_SUBDEV_S_FMT ioctls handlers, and documentation of the latter
+explicitly states that:
 
---
-PEAK-System Technik GmbH, Otto-Roehm-Strasse 69, D-64293 Darmstadt 
-Geschaeftsleitung: A.Gach/U.Wilhelm,St.Nr.:007/241/13586 FA Darmstadt 
-HRB-9183 Darmstadt, Ust.IdNr.:DE 202220078, WEE-Reg.-Nr.: DE39305391 
-Tel.+49 (0)6151-817320 / Fax:+49 (0)6151-817329, info@peak-system.com
---
+"The modified format should be as close as possible to the original request."
+  -- http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-subdev-g-fmt.html
+
+Thus one would expect, that passing UINT32_MAX as format width and height
+will result in setting maximum possible resolution for the device.
+Particularly, when the driver doesn't support VIDIOC_ENUM_FRAMESIZES ioctl,
+which is common in the codebase.
+
+Fixes: b0d3159be9a3 ("V4L/DVB (11901): v4l2: Create helper function for bounding and aligning images")
+Signed-off-by: Maciej Matraszek <m.matraszek@samsung.com>
+Acked-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+
+---
+v2: use clamp() instead of clamp_t(), as suggested by Sakari
+v3: correct way of submitting patches for inclusion in the stable tree
+
+ drivers/media/v4l2-core/v4l2-common.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-common.c b/drivers/media/v4l2-core/v4l2-common.c
+index ccaa38f65cf1..2e9d81f4c1a5 100644
+--- a/drivers/media/v4l2-core/v4l2-common.c
++++ b/drivers/media/v4l2-core/v4l2-common.c
+@@ -435,16 +435,13 @@ static unsigned int clamp_align(unsigned int x, unsigned int min,
+ 	/* Bits that must be zero to be aligned */
+ 	unsigned int mask = ~((1 << align) - 1);
+ 
++	/* Clamp to aligned min and max */
++	x = clamp(x, (min + ~mask) & mask, max & mask);
++
+ 	/* Round to nearest aligned value */
+ 	if (align)
+ 		x = (x + (1 << (align - 1))) & mask;
+ 
+-	/* Clamp to aligned value of min and max */
+-	if (x < min)
+-		x = (min + ~mask) & mask;
+-	else if (x > max)
+-		x = max & mask;
+-
+ 	return x;
+ }
+ 
+-- 
+1.9.1
+
