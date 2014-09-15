@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767AbaIOW1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:27:13 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62235 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758749AbaIOW1J (ORCPT
+	id S1758786AbaIOW1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:27:19 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43815 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758760AbaIOW1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:27:09 -0400
+	Mon, 15 Sep 2014 18:27:13 -0400
+Date: Mon, 15 Sep 2014 15:27:06 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Message-ID: <20140915222706.GD7960@sirena.org.uk>
+References: <1410722585-13393-1-git-send-email-heiko@sntech.de>
+ <1410722585-13393-6-git-send-email-heiko@sntech.de>
 MIME-Version: 1.0
-In-Reply-To: <x49d2awr1ez.fsf@segfault.boston.devel.redhat.com>
-References: <cover.1410810247.git.milosz@adfin.com>
-	<x49d2awr1ez.fsf@segfault.boston.devel.redhat.com>
-Date: Mon, 15 Sep 2014 18:27:07 -0400
-Message-ID: <CANP1eJF7b3RFd4NdyCfsFuf9uyhrahVqJkDHs81nd2ZvVDwzSg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        michael.kerrisk@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z7ir0bSQfJ1ZTyo9"
+Content-Disposition: inline
+In-Reply-To: <1410722585-13393-6-git-send-email-heiko@sntech.de>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/5] regulator: fan53555: add support for Silergy SYR82x
+ regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff,
 
-This patchset creates a new read (readv2/preadv2) syscall(s) that take
-a extra flag argument (kind of like recvmsg). What it doesn't do is
-change the current behavior of of the O_NONBLOCK, if the file is
-open() with O_NONBLOCK flag. It shouldn't break any existing
-applications since you have to opt into using this by using the new
-syscall.
+--z7ir0bSQfJ1ZTyo9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't have a preference either way if we should create a new flag or
-re-use O_NONBLOCK the flag. Instead, I'm hoping to get some consensus
-here from senior kernel developers like yourself. Maybe a RWF_NONBLOCK
-(I'm stealing from eventfd, EFD_NONBLOCK).
+On Sun, Sep 14, 2014 at 09:23:05PM +0200, Heiko Stuebner wrote:
+> Silergy SYR82x regulators share the exact same functionality and register layout
+> as the Fairchild FAN53555 regulators. Therefore extend the driver to add
+> support for them.
 
-As a side note, I noticed that EFD_NONBLOCK, SFD_NONBLOCK, etc... all
-alias to the value of O_NONBLOCK and there's a bunch of bug checks in
-the code like this:
-BUILD_BUG_ON(EFD_NONBLOCK != O_NONBLOCK);
+This seems OK but depends on the previous patches.
 
-Thanks,
-- Milosz
+--z7ir0bSQfJ1ZTyo9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-On Mon, Sep 15, 2014 at 5:58 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Hi, Milosz,
->
-> I CC'd Michael Kerrisk, in case he has any opinions on the matter.
->
-> Milosz Tanski <milosz@adfin.com> writes:
->
->> This patcheset introduces an ability to perform a non-blocking read from
->> regular files in buffered IO mode. This works by only for those filesystems
->> that have data in the page cache.
->>
->> It does this by introducing new syscalls new syscalls readv2/writev2 and
->> preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
->> syscalls that accept an extra flag argument (O_NONBLOCK).
->
-> I thought you were going to introduce a new flag instead of using
-> O_NONBLOCK for this.  I dug up an old email that suggested that enabling
-> O_NONBLOCK for regular files (well, a device node in this case) broke a
-> cd ripping or burning application.  I also found this old bugzilla,
-> which states that squid would fail to start, and that gqview was also
-> broken:
->   https://bugzilla.redhat.com/show_bug.cgi?id=136057
->
-> More generally, do you expect the open(2) of a regular file with
-> O_NONBLOCK to perform the same way as a pipe, fifo, or device (namely,
-> that the open itself won't block)?  Should O_NONBLOCK affect writes to
-> regular files?  What do you think the return value from poll and friends
-> should be when a file is opened in this manner (probably not important,
-> as poll always returns data ready on regular files)?  Also consider
-> whether you want the O_NONBLOCK behaviour for mandatory file locks in
-> your use case (or any other, for that matter).  If you issue a read and
-> it returns -EAGAIN, should it be up to the application to kick off I/O
-> to ensure it makes progress?
->
-> I don't think O_NONBLOCK is the right flag.  What you're really
-> specifying is a flag that prevents I/O in the read path, and nowhere
-> else.  As such, I'd feel much better about this if we defined a new flag
-> (O_NONBLOCK_READ maybe?  No, that's too verbose.).
->
-> In summary, I like the idea, but I worry about overloading O_NONBLOCK.
->
-> Cheers,
-> Jeff
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJUF2e5AAoJECTWi3JdVIfQOx4H/iPIQxjS/XxDDWepNK55C1Bv
+SNBJSJttGJQ+dckT4qRUxdmHXvLMFvm0Y8r0t/PNf8wv/9pyOPs3RY0WpgXvsQL8
+PraJxInJBElkqOT04PZmDMxlWMTVoj/7QJ3bWo1UA+L58mf74BwjgkTFeSGssujH
+CGtMa2wm0orhx2GAXW/dr3OIL79TIJ1FhYXcQ6vKJQIAAcGsZBNL3412YgF1W2Eb
+6WcHAHWMh1q0NcIlXsG6HtGCTnAfHaV89YhMD/0e0ycZy8aFky22gBFt1GyPIa5A
+X6geTq8QHN7gYT4O6wjvFvEXB3Fh9rBHurVZo2YOjwelPtQuKTY5svPAqb3wR2A=
+=uIBk
+-----END PGP SIGNATURE-----
 
-
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
-
-p: 646-253-9055
-e: milosz@adfin.com
+--z7ir0bSQfJ1ZTyo9--
