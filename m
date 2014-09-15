@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824AbaIOU2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:28:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	id S932182AbaIOU3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:29:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755704AbaIOThH (ORCPT
+	with ESMTP id S1755702AbaIOThG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:07 -0400
+	Mon, 15 Sep 2014 15:37:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 026/114] powerpc/thp: Dont recompute vsid and ssize in loop on invalidate
-Date: Mon, 15 Sep 2014 12:25:26 -0700
-Message-Id: <20140915192642.242691110@linuxfoundation.org>
+Subject: [PATCH 3.14 024/114] powerpc/pseries: Avoid deadlock on removing ddw
+Date: Mon, 15 Sep 2014 12:25:24 -0700
+Message-Id: <20140915192642.176973278@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,166 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit fa1f8ae80f8bb996594167ff4750a0b0a5a5bb5d upstream.
+commit 5efbabe09d986f25c02d19954660238fcd7f008a upstream.
 
-The segment identifier and segment size will remain the same in
-the loop, So we can compute it outside. We also change the
-hugepage_invalidate interface so that we can use it the later patch
+Function remove_ddw() could be called in of_reconfig_notifier and
+we potentially remove the dynamic DMA window property, which invokes
+of_reconfig_notifier again. Eventually, it leads to the deadlock as
+following backtrace shows.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+The patch fixes the above issue by deferring releasing the dynamic
+DMA window property while releasing the device node.
+
+=============================================
+[ INFO: possible recursive locking detected ]
+3.16.0+ #428 Tainted: G        W
+---------------------------------------------
+drmgr/2273 is trying to acquire lock:
+ ((of_reconfig_chain).rwsem){.+.+..}, at: [<c000000000091890>] \
+ .__blocking_notifier_call_chain+0x40/0x78
+
+but task is already holding lock:
+ ((of_reconfig_chain).rwsem){.+.+..}, at: [<c000000000091890>] \
+ .__blocking_notifier_call_chain+0x40/0x78
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock((of_reconfig_chain).rwsem);
+  lock((of_reconfig_chain).rwsem);
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+2 locks held by drmgr/2273:
+ #0:  (sb_writers#4){.+.+.+}, at: [<c0000000001cbe70>] \
+      .vfs_write+0xb0/0x1f8
+ #1:  ((of_reconfig_chain).rwsem){.+.+..}, at: [<c000000000091890>] \
+      .__blocking_notifier_call_chain+0x40/0x78
+
+stack backtrace:
+CPU: 17 PID: 2273 Comm: drmgr Tainted: G        W     3.16.0+ #428
+Call Trace:
+[c0000000137e7000] [c000000000013d9c] .show_stack+0x88/0x148 (unreliable)
+[c0000000137e70b0] [c00000000083cd34] .dump_stack+0x7c/0x9c
+[c0000000137e7130] [c0000000000b8afc] .__lock_acquire+0x128c/0x1c68
+[c0000000137e7280] [c0000000000b9a4c] .lock_acquire+0xe8/0x104
+[c0000000137e7350] [c00000000083588c] .down_read+0x4c/0x90
+[c0000000137e73e0] [c000000000091890] .__blocking_notifier_call_chain+0x40/0x78
+[c0000000137e7490] [c000000000091900] .blocking_notifier_call_chain+0x38/0x48
+[c0000000137e7520] [c000000000682a28] .of_reconfig_notify+0x34/0x5c
+[c0000000137e75b0] [c000000000682a9c] .of_property_notify+0x4c/0x54
+[c0000000137e7650] [c000000000682bf0] .of_remove_property+0x30/0xd4
+[c0000000137e76f0] [c000000000052a44] .remove_ddw+0x144/0x168
+[c0000000137e7790] [c000000000053204] .iommu_reconfig_notifier+0x30/0xe0
+[c0000000137e7820] [c00000000009137c] .notifier_call_chain+0x6c/0xb4
+[c0000000137e78c0] [c0000000000918ac] .__blocking_notifier_call_chain+0x5c/0x78
+[c0000000137e7970] [c000000000091900] .blocking_notifier_call_chain+0x38/0x48
+[c0000000137e7a00] [c000000000682a28] .of_reconfig_notify+0x34/0x5c
+[c0000000137e7a90] [c000000000682e14] .of_detach_node+0x44/0x1fc
+[c0000000137e7b40] [c0000000000518e4] .ofdt_write+0x3ac/0x688
+[c0000000137e7c20] [c000000000238430] .proc_reg_write+0xb8/0xd4
+[c0000000137e7cd0] [c0000000001cbeac] .vfs_write+0xec/0x1f8
+[c0000000137e7d70] [c0000000001cc3b0] .SyS_write+0x58/0xa0
+[c0000000137e7e30] [c00000000000a064] syscall_exit+0x0/0x98
+
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/machdep.h    |    6 +++---
- arch/powerpc/mm/hash_native_64.c      |   19 +++++--------------
- arch/powerpc/mm/pgtable_64.c          |   24 ++++++++++++------------
- arch/powerpc/platforms/pseries/lpar.c |   20 ++++++--------------
- 4 files changed, 26 insertions(+), 43 deletions(-)
+ arch/powerpc/platforms/pseries/iommu.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/arch/powerpc/include/asm/machdep.h
-+++ b/arch/powerpc/include/asm/machdep.h
-@@ -57,10 +57,10 @@ struct machdep_calls {
- 	void            (*hpte_removebolted)(unsigned long ea,
- 					     int psize, int ssize);
- 	void		(*flush_hash_range)(unsigned long number, int local);
--	void		(*hugepage_invalidate)(struct mm_struct *mm,
-+	void		(*hugepage_invalidate)(unsigned long vsid,
-+					       unsigned long addr,
- 					       unsigned char *hpte_slot_array,
--					       unsigned long addr, int psize);
--
-+					       int psize, int ssize);
- 	/* special for kexec, to be called in real mode, linear mapping is
- 	 * destroyed as well */
- 	void		(*hpte_clear_all)(void);
---- a/arch/powerpc/mm/hash_native_64.c
-+++ b/arch/powerpc/mm/hash_native_64.c
-@@ -418,18 +418,18 @@ static void native_hpte_invalidate(unsig
- 	local_irq_restore(flags);
- }
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -721,13 +721,13 @@ static int __init disable_ddw_setup(char
  
--static void native_hugepage_invalidate(struct mm_struct *mm,
-+static void native_hugepage_invalidate(unsigned long vsid,
-+				       unsigned long addr,
- 				       unsigned char *hpte_slot_array,
--				       unsigned long addr, int psize)
-+				       int psize, int ssize)
+ early_param("disable_ddw", disable_ddw_setup);
+ 
+-static void remove_ddw(struct device_node *np)
++static void remove_ddw(struct device_node *np, bool remove_prop)
  {
--	int ssize = 0, i;
--	int lock_tlbie;
-+	int i, lock_tlbie;
- 	struct hash_pte *hptep;
- 	int actual_psize = MMU_PAGE_16M;
- 	unsigned int max_hpte_count, valid;
- 	unsigned long flags, s_addr = addr;
- 	unsigned long hpte_v, want_v, shift;
--	unsigned long hidx, vpn = 0, vsid, hash, slot;
-+	unsigned long hidx, vpn = 0, hash, slot;
+ 	struct dynamic_dma_window_prop *dwp;
+ 	struct property *win64;
+ 	const u32 *ddw_avail;
+ 	u64 liobn;
+-	int len, ret;
++	int len, ret = 0;
  
- 	shift = mmu_psize_defs[psize].shift;
- 	max_hpte_count = 1U << (PMD_SHIFT - shift);
-@@ -443,15 +443,6 @@ static void native_hugepage_invalidate(s
+ 	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
+ 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
+@@ -761,7 +761,8 @@ static void remove_ddw(struct device_nod
+ 			np->full_name, ret, ddw_avail[2], liobn);
  
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
---- a/arch/powerpc/mm/pgtable_64.c
-+++ b/arch/powerpc/mm/pgtable_64.c
-@@ -740,12 +740,21 @@ void hpte_do_hugepage_flush(struct mm_st
- 	if (!hpte_slot_array)
- 		return;
+ delprop:
+-	ret = of_remove_property(np, win64);
++	if (remove_prop)
++		ret = of_remove_property(np, win64);
+ 	if (ret)
+ 		pr_warning("%s: failed to remove direct window property: %d\n",
+ 			np->full_name, ret);
+@@ -805,7 +806,7 @@ static int find_existing_ddw_windows(voi
+ 		window = kzalloc(sizeof(*window), GFP_KERNEL);
+ 		if (!window || len < sizeof(struct dynamic_dma_window_prop)) {
+ 			kfree(window);
+-			remove_ddw(pdn);
++			remove_ddw(pdn, true);
+ 			continue;
+ 		}
  
--	/* get the base page size */
-+	/* get the base page size,vsid and segment size */
- 	psize = get_slice_psize(mm, s_addr);
-+	if (!is_kernel_addr(s_addr)) {
-+		ssize = user_segment_size(s_addr);
-+		vsid = get_vsid(mm->context.id, s_addr, ssize);
-+		WARN_ON(vsid == 0);
-+	} else {
-+		vsid = get_kernel_vsid(s_addr, mmu_kernel_ssize);
-+		ssize = mmu_kernel_ssize;
-+	}
+@@ -1045,7 +1046,7 @@ out_free_window:
+ 	kfree(window);
  
- 	if (ppc_md.hugepage_invalidate)
--		return ppc_md.hugepage_invalidate(mm, hpte_slot_array,
--						  s_addr, psize);
-+		return ppc_md.hugepage_invalidate(vsid, s_addr,
-+						  hpte_slot_array,
-+						  psize, ssize);
- 	/*
- 	 * No bluk hpte removal support, invalidate each entry
- 	 */
-@@ -763,15 +772,6 @@ void hpte_do_hugepage_flush(struct mm_st
+ out_clear_window:
+-	remove_ddw(pdn);
++	remove_ddw(pdn, true);
  
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -430,16 +430,17 @@ static void __pSeries_lpar_hugepage_inva
- 		spin_unlock_irqrestore(&pSeries_lpar_tlbie_lock, flags);
- }
+ out_free_prop:
+ 	kfree(win64->name);
+@@ -1255,7 +1256,14 @@ static int iommu_reconfig_notifier(struc
  
--static void pSeries_lpar_hugepage_invalidate(struct mm_struct *mm,
--				       unsigned char *hpte_slot_array,
--				       unsigned long addr, int psize)
-+static void pSeries_lpar_hugepage_invalidate(unsigned long vsid,
-+					     unsigned long addr,
-+					     unsigned char *hpte_slot_array,
-+					     int psize, int ssize)
- {
--	int ssize = 0, i, index = 0;
-+	int i, index = 0;
- 	unsigned long s_addr = addr;
- 	unsigned int max_hpte_count, valid;
- 	unsigned long vpn_array[PPC64_HUGE_HPTE_BATCH];
- 	unsigned long slot_array[PPC64_HUGE_HPTE_BATCH];
--	unsigned long shift, hidx, vpn = 0, vsid, hash, slot;
-+	unsigned long shift, hidx, vpn = 0, hash, slot;
+ 	switch (action) {
+ 	case OF_RECONFIG_DETACH_NODE:
+-		remove_ddw(np);
++		/*
++		 * Removing the property will invoke the reconfig
++		 * notifier again, which causes dead-lock on the
++		 * read-write semaphore of the notifier chain. So
++		 * we have to remove the property when releasing
++		 * the device node.
++		 */
++		remove_ddw(np, false);
+ 		if (pci && pci->iommu_table)
+ 			iommu_free_table(pci->iommu_table, np->full_name);
  
- 	shift = mmu_psize_defs[psize].shift;
- 	max_hpte_count = 1U << (PMD_SHIFT - shift);
-@@ -452,15 +453,6 @@ static void pSeries_lpar_hugepage_invali
- 
- 		/* get the vpn */
- 		addr = s_addr + (i * (1ul << shift));
--		if (!is_kernel_addr(addr)) {
--			ssize = user_segment_size(addr);
--			vsid = get_vsid(mm->context.id, addr, ssize);
--			WARN_ON(vsid == 0);
--		} else {
--			vsid = get_kernel_vsid(addr, mmu_kernel_ssize);
--			ssize = mmu_kernel_ssize;
--		}
--
- 		vpn = hpt_vpn(addr, vsid, ssize);
- 		hash = hpt_hash(vpn, shift, ssize);
- 		if (hidx & _PTEIDX_SECONDARY)
 
 
