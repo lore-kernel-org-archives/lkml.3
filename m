@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759987AbaIOXG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 19:06:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50706 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932536AbaIOWND (ORCPT
+	id S1758852AbaIOXHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:07:31 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:47745 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252AbaIOXH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:13:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Patrick Riphagen <patrick.riphagen@xsens.com>,
-        Frans Klaver <frans.klaver@xsens.com>, Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 135/187] USB: serial: ftdi_sio: Add support for new Xsens devices
-Date: Mon, 15 Sep 2014 15:09:05 -0700
-Message-Id: <1410818997-9432-136-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 19:07:27 -0400
+Date: Tue, 16 Sep 2014 00:07:23 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH] mfd: intel_soc_pmic: Add CONFIG_PM_SLEEP check for
+ suspend_fn/resume_fn
+Message-ID: <20140915230723.GK25162@lee--X1>
+References: <1410496545-6579-1-git-send-email-jaewon02.kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410496545-6579-1-git-send-email-jaewon02.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 12 Sep 2014, Jaewon Kim wrote:
 
-------------------
+> This patch fix warning message with CONFIG_PM_SLEEP disabled
+> If CONFIG_PM_SLEEP is not enabled we receive the following warning message:
+> 
+> drivers/mfd/intel_soc_pmic_core.c:118:12:
+>  warning: 'intel_soc_pmic_suspend' defined but not used
+> 
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> ---
+>  drivers/mfd/intel_soc_pmic_core.c |    2 ++
+>  1 file changed, 2 insertions(+)
 
-From: Patrick Riphagen <patrick.riphagen@xsens.com>
+Applied, thanks.
 
-commit 4bdcde358b4bda74e356841d351945ca3f2245dd upstream.
+> diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+> index 2720922..df7b064 100644
+> --- a/drivers/mfd/intel_soc_pmic_core.c
+> +++ b/drivers/mfd/intel_soc_pmic_core.c
+> @@ -115,6 +115,7 @@ static void intel_soc_pmic_shutdown(struct i2c_client *i2c)
+>  	return;
+>  }
+>  
+> +#if defined(CONFIG_PM_SLEEP)
+>  static int intel_soc_pmic_suspend(struct device *dev)
+>  {
+>  	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
+> @@ -132,6 +133,7 @@ static int intel_soc_pmic_resume(struct device *dev)
+>  
+>  	return 0;
+>  }
+> +#endif
+>  
+>  static SIMPLE_DEV_PM_OPS(intel_soc_pmic_pm_ops, intel_soc_pmic_suspend,
+>  			 intel_soc_pmic_resume);
 
-This adds support for new Xsens devices, using Xsens' own Vendor ID.
-
-Signed-off-by: Patrick Riphagen <patrick.riphagen@xsens.com>
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-Cc: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 3 +++
- 2 files changed, 5 insertions(+)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 44771a0..594a707 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -674,6 +674,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
-+	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
- 	{ USB_DEVICE(MOBILITY_VID, MOBILITY_USB_SERIAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACTIVE_ROBOTS_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 3fc7897..1e58d90 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -140,6 +140,9 @@
- /*
-  * Xsens Technologies BV products (http://www.xsens.com).
-  */
-+#define XSENS_VID		0x2639
-+#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-+#define XSENS_MTW_PID		0x0200	/* Xsens MTw */
- #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
- #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
- #define XSENS_CONVERTER_2_PID	0xD38A
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
