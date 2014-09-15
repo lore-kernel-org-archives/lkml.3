@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759140AbaIOWhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:37:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43849 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624AbaIOWhB (ORCPT
+	id S932065AbaIOWiA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:38:00 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:58955 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758197AbaIOWTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:37:01 -0400
-Date: Mon, 15 Sep 2014 15:36:45 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Message-ID: <20140915223645.GG7960@sirena.org.uk>
-References: <1410722585-13393-1-git-send-email-heiko@sntech.de>
- <1410722585-13393-3-git-send-email-heiko@sntech.de>
- <20140915165923.GX7960@sirena.org.uk>
- <2905334.044J8r4kOu@diego>
+	Mon, 15 Sep 2014 18:19:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AtnpEaT8eVnHe5fr"
-Content-Disposition: inline
-In-Reply-To: <2905334.044J8r4kOu@diego>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/5] regulator: fan53555: set regulator name from
- constraints name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAKfTPtDHSWs8xumOSfWkyucAtkBvvbJkOVTQkoYXYCBpmHrMZg@mail.gmail.com>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+ <20140911161517.GA3190@worktop.ger.corp.intel.com> <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
+ <20140914194156.GC2832@worktop.localdomain> <20140915114229.GB3037@worktop.localdomain>
+ <CAKfTPtDHSWs8xumOSfWkyucAtkBvvbJkOVTQkoYXYCBpmHrMZg@mail.gmail.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Tue, 16 Sep 2014 00:18:48 +0200
+Message-ID: <CAKfTPtDe388d7iYzCgoO4VfMerYOEGb1GuJ1RdMiyqTJ35c+=A@mail.gmail.com>
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16 September 2014 00:14, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+> On 15 September 2014 13:42, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Sun, Sep 14, 2014 at 09:41:56PM +0200, Peter Zijlstra wrote:
+>>> On Thu, Sep 11, 2014 at 07:26:48PM +0200, Vincent Guittot wrote:
+>>> > On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>>> > > I'm confused about the utilization vs capacity_orig. I see how we should
+>>> >
+>>> > 1st point is that I should compare utilization vs capacity and not
+>>> > capacity_orig.
+>>> > I should have replaced capacity_orig by capacity in the functions
+>>> > above when i move the utilization statistic from
+>>> > rq->avg.runnable_avg_sum to cfs.usage_load_avg.
+>>> > rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
+>>> > cfs.usage_load_avg integrates only cfs tasks
+>>> >
+>>> > With this change, we don't need sgs->group_capacity_orig anymore but
+>>> > only sgs->group_capacity. So sgs->group_capacity_orig can be removed
+>>> > as it's no more used in the code as sg_capacity_factor has been
+>>> > removed
+>>>
+>>> Yes, but.. so I suppose we need to add DVFS accounting and remove
+>>> cpufreq from the capacity thing. Otherwise I don't see it make sense.
+>>
+>> OK, I've reconsidered _again_, I still don't get it.
+>>
+>> So fundamentally I think its wrong to scale with the capacity; it just
+>> doesn't make any sense. Consider big.little stuff, their CPUs are
+>> inherently asymmetric in capacity, but that doesn't matter one whit for
+>> utilization numbers. If a core is fully consumed its fully consumed, no
+>> matter how much work it can or can not do.
+>>
+>>
+>> So the only thing that needs correcting is the fact that these
+>> statistics are based on clock_task and some of that time can end up in
+>> other scheduling classes, at which point we'll never get 100% even
+>> though we're 'saturated'. But correcting for that using capacity doesn't
+>> 'work'.
+>
+> I'm not sure to catch your last point because the capacity is the only
+> figures that take into account the "time" consumed by other classes.
+> Have you got in mind another way to take into account the other
+> classes ?
+>
+> So we have cpu_capacity that is the capacity that can be currently
+> used by cfs class
+> We have cfs.usage_load_avg that is the sum of running time of cfs
+> tasks on the CPU and reflect the % of usage of this CPU by CFS tasks
+> We have to use the same metrics to compare available capacity for CFS
+> and current cfs usage
+>
+> Now we have to use the same unit so we can either weight the
+> cpu_capacity_orig with the cfs.usage_load_avg and compare it with
+> cpu_capacity
+> or with divide cpu_capacity by cpu_capacity_orig and scale it into the
+> SCHED_LOAD_SCALE range. Is It what you are proposing ?
 
---AtnpEaT8eVnHe5fr
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+For the latter, we need to keep the  sgs->group_capacity_orig in order
+to check if a group is overloaded whereas the 1st solution don't need
+it anymore (once the correction i mentioned previously)
 
-On Tue, Sep 16, 2014 at 12:08:12AM +0200, Heiko St=FCbner wrote:
-
-> I've just tested, patches 3-5 apply and work correctly without this one, =
-so do=20
-> you want to apply them like this or a resend of last 3?
-
-No, please implement the changes I asked for in the DT stuff.
-
---AtnpEaT8eVnHe5fr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUF2n9AAoJECTWi3JdVIfQb88H/1gDzN8V9Ru9UsqwW0xvFPdF
-tlVq7Ocj7HehPjQcwPcpIWxLmxCCBLBU+PkA6c2++20KbQrz1S8LJ1W+4VfsyT+S
-aE0qgLrCuIjr2r5rze5D139uGw2MeVIanYezJXYSkrRYcUIp3ZMMofBWy4csxaw9
-rfPwoKXbTz5j0jwZKvgNUoU9vTtiD5IibuTLCCamtchz9kCQTEL0krU/yk9YgDRl
-M1KPwcjybDO23glrtKFffcGQgtP4Hu4nAFr4HbBbTv438Yud9GWmgNwOBgtYNNSl
-TXSgZ8PJdgWjJVQeETYKLB8lrpTNU+Trf6AZfJf2I+v4ij0qadXnDxeCmJbvlq0=
-=x2yP
------END PGP SIGNATURE-----
-
---AtnpEaT8eVnHe5fr--
+Vincent
+>
+> Vincent
