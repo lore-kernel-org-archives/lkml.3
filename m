@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979AbaIOThh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:37:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	id S1755950AbaIOThd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:37:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755789AbaIOThQ (ORCPT
+	with ESMTP id S1755781AbaIOThP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:16 -0400
+	Mon, 15 Sep 2014 15:37:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Reichel <sre@kernel.org>
-Subject: [PATCH 3.14 063/114] bq2415x_charger: Fix Atomic Sleep Bug
-Date: Mon, 15 Sep 2014 12:26:03 -0700
-Message-Id: <20140915192643.412903771@linuxfoundation.org>
+        Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 042/114] MIPS: GIC: Prevent array overrun
+Date: Mon, 15 Sep 2014 12:25:42 -0700
+Message-Id: <20140915192642.760752714@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,69 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Reichel <sre@kernel.org>
+From: Jeffrey Deans <jeffrey.deans@imgtec.com>
 
-commit 3c0185046c0ee49a6e55c714612ef3bcd5385df3 upstream.
+commit ffc8415afab20bd97754efae6aad1f67b531132b upstream.
 
-Move sysfs_notify and i2c_transfer calls from bq2415x_notifier_call
-to bq2415x_timer_work to avoid sleeping in atomic context.
+A GIC interrupt which is declared as having a GIC_MAP_TO_NMI_MSK
+mapping causes the cpu parameter to gic_setup_intr() to be increased
+to 32, causing memory corruption when pcpu_masks[] is written to again
+later in the function.
 
-This fixes the following bug:
-
-[ 7.667449] Workqueue: events power_supply_changed_work
-[ 7.673034] [<c0015c28>] (unwind_backtrace+0x0/0xe0) from [<c0011e1c>] (show_stack+0x10/0x14)
-[ 7.682098] [<c0011e1c>] (show_stack+0x10/0x14) from [<c052cdd0>] (dump_stack+0x78/0xac)
-[ 7.690704] [<c052cdd0>] (dump_stack+0x78/0xac) from [<c052a044>] (__schedule_bug+0x48/0x60)
-[ 7.699645] [<c052a044>] (__schedule_bug+0x48/0x60) from [<c053071c>] (__schedule+0x74/0x638)
-[ 7.708618] [<c053071c>] (__schedule+0x74/0x638) from [<c05301fc>] (schedule_timeout+0x1dc/0x24c)
-[ 7.718017] [<c05301fc>] (schedule_timeout+0x1dc/0x24c) from [<c05316ec>] (wait_for_common+0x138/0x17c)
-[ 7.727966] [<c05316ec>] (wait_for_common+0x138/0x17c) from [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0)
-[ 7.737640] [<c0362a70>] (omap_i2c_xfer+0x340/0x4a0) from [<c035d928>] (__i2c_transfer+0x40/0x74)
-[ 7.747039] [<c035d928>] (__i2c_transfer+0x40/0x74) from [<c035e22c>] (i2c_transfer+0x6c/0x90)
-[ 7.756195] [<c035e22c>] (i2c_transfer+0x6c/0x90) from [<c037ad24>] (bq2415x_i2c_write+0x48/0x78)
-[ 7.765563] [<c037ad24>] (bq2415x_i2c_write+0x48/0x78) from [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50)
-[ 7.776824] [<c037ae60>] (bq2415x_set_weak_battery_voltage+0x4c/0x50) from [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c)
-[ 7.788085] [<c037bce8>] (bq2415x_set_mode+0xdc/0x14c) from [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4)
-[ 7.798309] [<c037bfb8>] (bq2415x_notifier_call+0xa8/0xb4) from [<c005f228>] (notifier_call_chain+0x38/0x68)
-[ 7.808715] [<c005f228>] (notifier_call_chain+0x38/0x68) from [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c)
-[ 7.819732] [<c005f284>] (__atomic_notifier_call_chain+0x2c/0x3c) from [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18)
-[ 7.831420] [<c005f2a8>] (atomic_notifier_call_chain+0x14/0x18) from [<c0378078>] (power_supply_changed_work+0x6c/0xb8)
-[ 7.842864] [<c0378078>] (power_supply_changed_work+0x6c/0xb8) from [<c00556c0>] (process_one_work+0x248/0x440)
-[ 7.853546] [<c00556c0>] (process_one_work+0x248/0x440) from [<c0055d6c>] (worker_thread+0x208/0x350)
-[ 7.863372] [<c0055d6c>] (worker_thread+0x208/0x350) from [<c005b0ac>] (kthread+0xc8/0xdc)
-[ 7.872131] [<c005b0ac>] (kthread+0xc8/0xdc) from [<c000e138>] (ret_from_fork+0x14/0x3c)
-
-Fixes: 32260308b4ca ("bq2415x_charger: Use power_supply notifier for automode")
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
+Signed-off-by: Jeffrey Deans <jeffrey.deans@imgtec.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7375/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/bq2415x_charger.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/mips/kernel/irq-gic.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/power/bq2415x_charger.c
-+++ b/drivers/power/bq2415x_charger.c
-@@ -840,8 +840,7 @@ static int bq2415x_notifier_call(struct
- 	if (bq->automode < 1)
- 		return NOTIFY_OK;
+--- a/arch/mips/kernel/irq-gic.c
++++ b/arch/mips/kernel/irq-gic.c
+@@ -255,11 +255,13 @@ static void __init gic_setup_intr(unsign
  
--	sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
--	bq2415x_set_mode(bq, bq->reported_mode);
-+	schedule_delayed_work(&bq->work, 0);
- 
- 	return NOTIFY_OK;
- }
-@@ -892,6 +891,11 @@ static void bq2415x_timer_work(struct wo
- 	int error;
- 	int boost;
- 
-+	if (bq->automode > 0 && (bq->reported_mode != bq->mode)) {
-+		sysfs_notify(&bq->charger.dev->kobj, NULL, "reported_mode");
-+		bq2415x_set_mode(bq, bq->reported_mode);
-+	}
+ 	/* Setup Intr to Pin mapping */
+ 	if (pin & GIC_MAP_TO_NMI_MSK) {
++		int i;
 +
- 	if (!bq->autotimer)
- 		return;
- 
+ 		GICWRITE(GIC_REG_ADDR(SHARED, GIC_SH_MAP_TO_PIN(intr)), pin);
+ 		/* FIXME: hack to route NMI to all cpu's */
+-		for (cpu = 0; cpu < NR_CPUS; cpu += 32) {
++		for (i = 0; i < NR_CPUS; i += 32) {
+ 			GICWRITE(GIC_REG_ADDR(SHARED,
+-					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, cpu)),
++					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, i)),
+ 				 0xffffffff);
+ 		}
+ 	} else {
 
 
