@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291AbaIOTrU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
+	id S1755470AbaIOTrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:47:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212AbaIOTrK (ORCPT
+	with ESMTP id S1756408AbaIOTrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:10 -0400
+	Mon, 15 Sep 2014 15:47:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Mark A. Greer" <mgreer@animalcreek.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 07/71] spi: omap2-mcspi: Configure hardware when slave driver changes mode
-Date: Mon, 15 Sep 2014 12:26:05 -0700
-Message-Id: <20140915192638.957619203@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 093/114] xfs: dont zero partial page cache pages during O_DIRECT writes
+Date: Mon, 15 Sep 2014 12:26:33 -0700
+Message-Id: <20140915192644.336360014@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
-References: <20140915192638.702282534@linuxfoundation.org>
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,83 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Mark A. Greer" <mgreer@animalcreek.com>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 97ca0d6cc118716840ea443e010cb3d5f2d25eaf upstream.
+commit 834ffca6f7e345a79f6f2e2d131b0dfba8a4b67a upstream.
 
-Commit id 2bd16e3e23d9df41592c6b257c59b6860a9cc3ea
-(spi: omap2-mcspi: Do not configure the controller
-on each transfer unless needed) does its job too
-well so omap2_mcspi_setup_transfer() isn't called
-even when an SPI slave driver changes 'spi->mode'.
-The result is that the mode requested by the SPI
-slave driver never takes effect.
+Similar to direct IO reads, direct IO writes are using
+truncate_pagecache_range to invalidate the page cache. This is
+incorrect due to the sub-block zeroing in the page cache that
+truncate_pagecache_range() triggers.
 
-Fix this by adding the 'mode' member to the
-omap2_mcspi_cs structure which holds the mode
-value that the hardware is configured for.
-When the SPI slave driver changes 'spi->mode'
-it will be different than the value of this new
-member and the SPI master driver will know that
-the hardware must be reconfigured (by calling
-omap2_mcspi_setup_transfer()).
+This patch fixes things by using invalidate_inode_pages2_range
+instead.  It preserves the page cache invalidation, but won't zero
+any pages.
 
-Fixes: 2bd16e3e23 (spi: omap2-mcspi: Do not configure the controller on each transfer unless needed)
-Signed-off-by: Mark A. Greer <mgreer@animalcreek.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-omap2-mcspi.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ fs/xfs/xfs_file.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -136,6 +136,7 @@ struct omap2_mcspi_cs {
- 	void __iomem		*base;
- 	unsigned long		phys;
- 	int			word_len;
-+	u16			mode;
- 	struct list_head	node;
- 	/* Context save and restore shadow register */
- 	u32			chconf0;
-@@ -801,6 +802,8 @@ static int omap2_mcspi_setup_transfer(st
- 
- 	mcspi_write_chconf0(spi, l);
- 
-+	cs->mode = spi->mode;
-+
- 	dev_dbg(&spi->dev, "setup: speed %d, sample %s edge, clk %s\n",
- 			OMAP2_MCSPI_MAX_FREQ >> div,
- 			(spi->mode & SPI_CPHA) ? "trailing" : "leading",
-@@ -871,6 +874,7 @@ static int omap2_mcspi_setup(struct spi_
- 			return -ENOMEM;
- 		cs->base = mcspi->base + spi->chip_select * 0x14;
- 		cs->phys = mcspi->phys + spi->chip_select * 0x14;
-+		cs->mode = 0;
- 		cs->chconf0 = 0;
- 		spi->controller_state = cs;
- 		/* Link this to context save list */
-@@ -1043,6 +1047,16 @@ static void omap2_mcspi_work(struct omap
- 			mcspi_read_cs_reg(spi, OMAP2_MCSPI_MODULCTRL);
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -683,7 +683,15 @@ xfs_file_dio_aio_write(
+ 						    pos, -1);
+ 		if (ret)
+ 			goto out;
+-		truncate_pagecache_range(VFS_I(ip), pos, -1);
++		/*
++		 * Invalidate whole pages. This can return an error if
++		 * we fail to invalidate a page, but this should never
++		 * happen on XFS. Warn if it does fail.
++		 */
++		ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
++						pos >> PAGE_CACHE_SHIFT, -1);
++		WARN_ON_ONCE(ret);
++		ret = 0;
  	}
  
-+	/*
-+	 * The slave driver could have changed spi->mode in which case
-+	 * it will be different from cs->mode (the current hardware setup).
-+	 * If so, set par_override (even though its not a parity issue) so
-+	 * omap2_mcspi_setup_transfer will be called to configure the hardware
-+	 * with the correct mode on the first iteration of the loop below.
-+	 */
-+	if (spi->mode != cs->mode)
-+		par_override = 1;
-+
- 	omap2_mcspi_set_enable(spi, 0);
- 
- 	m->status = status;
+ 	/*
 
 
