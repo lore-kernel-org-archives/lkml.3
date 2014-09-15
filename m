@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaIOWKn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:10:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50457 "EHLO
+	id S932138AbaIOWKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:10:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50474 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284AbaIOWK3 (ORCPT
+	with ESMTP id S1756356AbaIOWKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:10:29 -0400
+	Mon, 15 Sep 2014 18:10:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Sven Eckelmann <sven@narfation.org>,
+        Marek Lindner <mareklindner@neomailbox.ch>,
+        Antonio Quartulli <antonio@meshcoding.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 016/187] sparc64: Fix huge PMD invalidation.
-Date: Mon, 15 Sep 2014 15:07:06 -0700
-Message-Id: <1410818997-9432-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 011/187] batman-adv: Fix out-of-order fragmentation support
+Date: Mon, 15 Sep 2014 15:07:01 -0700
+Message-Id: <1410818997-9432-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,105 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Sven Eckelmann <sven@narfation.org>
 
-[ Upstream commit 51e5ef1bb7ab0e5fa7de4e802da5ab22fe35f0bf ]
+[ Upstream commit d9124268d84a836f14a6ead54ff9d8eee4c43be5 ]
 
-On sparc64 "present" and "valid" are seperate PTE bits, this allows us to
-naturally distinguish between the user explicitly asking for PROT_NONE
-with mprotect() and other situations.
+batadv_frag_insert_packet was unable to handle out-of-order packets because it
+dropped them directly. This is caused by the way the fragmentation lists is
+checked for the correct place to insert a fragmentation entry.
 
-However we weren't handling this properly in the huge PMD paths.
+The fragmentation code keeps the fragments in lists. The fragmentation entries
+are kept in descending order of sequence number. The list is traversed and each
+entry is compared with the new fragment. If the current entry has a smaller
+sequence number than the new fragment then the new one has to be inserted
+before the current entry. This ensures that the list is still in descending
+order.
 
-First of all, the page table walker in the TSB miss path only checks
-for _PAGE_PMD_HUGE.  So the generic pmdp_invalidate() would clear
-_PAGE_PRESENT but the TLB miss paths would still load it into the TLB
-as a valid huge PMD.
+An out-of-order packet with a smaller sequence number than all entries in the
+list still has to be added to the end of the list. The used hlist has no
+information about the last entry in the list inside hlist_head and thus the
+last entry has to be calculated differently. Currently the code assumes that
+the iterator variable of hlist_for_each_entry can be used for this purpose
+after the hlist_for_each_entry finished. This is obviously wrong because the
+iterator variable is always NULL when the list was completely traversed.
 
-Fix this by clearing the valid bit in pmdp_invalidate(), and also
-checking the valid bit in USER_PGTABLE_CHECK_PMD_HUGE using "brgez"
-since _PAGE_VALID is bit 63 in both the sun4u and sun4v pte layouts.
+Instead the information about the last entry has to be stored in a different
+variable.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This problem was introduced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
+("batman-adv: Receive fragmented packets and merge").
+
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
+Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/include/asm/pgtable_64.h | 18 ++++--------------
- arch/sparc/include/asm/tsb.h        |  3 ++-
- arch/sparc/mm/tlb.c                 | 11 +++++++++++
- 3 files changed, 17 insertions(+), 15 deletions(-)
+ net/batman-adv/fragmentation.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 0f9e945..e3db4b8 100644
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -719,20 +719,6 @@ static inline pmd_t pmd_mkwrite(pmd_t pmd)
- 	return __pmd(pte_val(pte));
- }
- 
--static inline pmd_t pmd_mknotpresent(pmd_t pmd)
--{
--	unsigned long mask;
--
--	if (tlb_type == hypervisor)
--		mask = _PAGE_PRESENT_4V;
--	else
--		mask = _PAGE_PRESENT_4U;
--
--	pmd_val(pmd) &= ~mask;
--
--	return pmd;
--}
--
- static inline pmd_t pmd_mksplitting(pmd_t pmd)
+diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
+index a674034..8a1d4b54 100644
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -130,6 +130,7 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
  {
- 	pte_t pte = __pte(pmd_val(pmd));
-@@ -893,6 +879,10 @@ extern void update_mmu_cache(struct vm_area_struct *, unsigned long, pte_t *);
- extern void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
- 				 pmd_t *pmd);
- 
-+#define __HAVE_ARCH_PMDP_INVALIDATE
-+extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+			    pmd_t *pmdp);
+ 	struct batadv_frag_table_entry *chain;
+ 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
++	struct batadv_frag_list_entry *frag_entry_last = NULL;
+ 	struct batadv_frag_packet *frag_packet;
+ 	uint8_t bucket;
+ 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
+@@ -182,11 +183,14 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
+ 			ret = true;
+ 			goto out;
+ 		}
 +
- #define __HAVE_ARCH_PGTABLE_DEPOSIT
- extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				       pgtable_t pgtable);
-diff --git a/arch/sparc/include/asm/tsb.h b/arch/sparc/include/asm/tsb.h
-index 2230f80..90916f9 100644
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -171,7 +171,8 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	andcc		REG1, REG2, %g0;		\
- 	be,pt		%xcc, 700f;			\
- 	 sethi		%hi(4 * 1024 * 1024), REG2;	\
--	andn		REG1, REG2, REG1;		\
-+	brgez,pn	REG1, FAIL_LABEL;		\
-+	 andn		REG1, REG2, REG1;		\
- 	and		VADDR, REG2, REG2;		\
- 	brlz,pt		REG1, PTE_LABEL;		\
- 	 or		REG1, REG2, REG1;		\
-diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
-index 3999297..28ae593 100644
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -194,6 +194,17 @@ void set_pmd_at(struct mm_struct *mm, unsigned long addr,
++		/* store current entry because it could be the last in list */
++		frag_entry_last = frag_entry_curr;
  	}
- }
  
-+void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+		     pmd_t *pmdp)
-+{
-+	pmd_t entry = *pmdp;
-+
-+	pmd_val(entry) &= ~_PAGE_VALID;
-+
-+	set_pmd_at(vma->vm_mm, address, pmdp, entry);
-+	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-+}
-+
- void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				pgtable_t pgtable)
- {
+-	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
+-	if (likely(frag_entry_curr)) {
+-		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
++	/* Reached the end of the list, so insert after 'frag_entry_last'. */
++	if (likely(frag_entry_last)) {
++		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
+ 		chain->size += skb->len - hdr_size;
+ 		chain->timestamp = jiffies;
+ 		ret = true;
 -- 
 1.9.1
 
