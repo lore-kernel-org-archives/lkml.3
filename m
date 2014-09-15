@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaIOWL5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:11:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50605 "EHLO
+	id S1760102AbaIOXLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:11:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50611 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310AbaIOWLv (ORCPT
+	with ESMTP id S932331AbaIOWLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:51 -0400
+	Mon, 15 Sep 2014 18:11:55 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Guenter Roeck <linux@roeck-us.net>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, Christoph Hellwig <hch@lst.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 110/187] hwmon: (ads1015) Fix off-by-one for valid channel index checking
-Date: Mon, 15 Sep 2014 15:08:40 -0700
-Message-Id: <1410818997-9432-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 101/187] drivers: scsi: storvsc: Correctly handle TEST_UNIT_READY failure
+Date: Mon, 15 Sep 2014 15:08:31 -0700
+Message-Id: <1410818997-9432-102-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,33 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 56de1377ad92f72ee4e5cb0faf7a9b6048fdf0bf upstream.
+commit 3533f8603d28b77c62d75ec899449a99bc6b77a1 upstream.
 
-Current code uses channel as array index, so the valid channel value is
-0 .. ADS1015_CHANNELS - 1.
+On some Windows hosts on FC SANs, TEST_UNIT_READY can return SRB_STATUS_ERROR.
+Correctly handle this. Note that there is sufficient sense information to
+support scsi error handling even in this case.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/hwmon/ads1015.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/storvsc_drv.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/hwmon/ads1015.c b/drivers/hwmon/ads1015.c
-index 7f9dc2f..22e0c92 100644
---- a/drivers/hwmon/ads1015.c
-+++ b/drivers/hwmon/ads1015.c
-@@ -198,7 +198,7 @@ static int ads1015_get_channels_config_of(struct i2c_client *client)
+diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+index b529ae8..ed0f899 100644
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1018,6 +1018,13 @@ static void storvsc_handle_error(struct vmscsi_request *vm_srb,
+ 		case ATA_12:
+ 			set_host_byte(scmnd, DID_PASSTHROUGH);
+ 			break;
++		/*
++		 * On Some Windows hosts TEST_UNIT_READY command can return
++		 * SRB_STATUS_ERROR, let the upper level code deal with it
++		 * based on the sense information.
++		 */
++		case TEST_UNIT_READY:
++			break;
+ 		default:
+ 			set_host_byte(scmnd, DID_TARGET_FAILURE);
  		}
- 
- 		channel = be32_to_cpup(property);
--		if (channel > ADS1015_CHANNELS) {
-+		if (channel >= ADS1015_CHANNELS) {
- 			dev_err(&client->dev,
- 				"invalid channel index %d on %s\n",
- 				channel, node->full_name);
 -- 
 1.9.1
 
