@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758523AbaIOUsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:48:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754731AbaIOUpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 16:45:06 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 01/10] Provide a binary to hex conversion function [ver #2]
-From: David Howells <dhowells@redhat.com>
-To: vgoyal@redhat.com
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
-Date: Mon, 15 Sep 2014 21:45:02 +0100
-Message-ID: <20140915204502.27499.41387.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
-References: <20140915204456.27499.40234.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1755549AbaIOTgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:36:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55079 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731AbaIOTgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:36:43 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Doug Ledford <dledford@redhat.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.16 131/158] RDMA/uapi: Include socket.h in rdma_user_cm.h
+Date: Mon, 15 Sep 2014 12:26:10 -0700
+Message-Id: <20140915192546.811006460@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
+References: <20140915192542.872134685@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a function to convert a buffer of binary data into an unterminated
-ascii hex string representation of that data.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+------------------
+
+From: Doug Ledford <dledford@redhat.com>
+
+commit db1044d458a287c18c4d413adc4ad12e92e253b5 upstream.
+
+added struct sockaddr_storage to rdma_user_cm.h without also adding an
+include for linux/socket.h to make sure it is defined.  Systemtap
+needs the header files to build standalone and cannot rely on other
+files to pre-include other headers, so add linux/socket.h to the list
+of includes in this file.
+
+Fixes: ee7aed4528f ("RDMA/ucma: Support querying for AF_IB addresses")
+Signed-off-by: Doug Ledford <dledford@redhat.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ include/uapi/rdma/rdma_user_cm.h |    1 +
+ 1 file changed, 1 insertion(+)
 
- include/linux/kernel.h |    1 +
- lib/hexdump.c          |   16 ++++++++++++++++
- 2 files changed, 17 insertions(+)
+--- a/include/uapi/rdma/rdma_user_cm.h
++++ b/include/uapi/rdma/rdma_user_cm.h
+@@ -34,6 +34,7 @@
+ #define RDMA_USER_CM_H
+ 
+ #include <linux/types.h>
++#include <linux/socket.h>
+ #include <linux/in6.h>
+ #include <rdma/ib_user_verbs.h>
+ #include <rdma/ib_user_sa.h>
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 95624bed87ef..7c0ad8e38510 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -496,6 +496,7 @@ static inline char *hex_byte_pack_upper(char *buf, u8 byte)
- 
- extern int hex_to_bin(char ch);
- extern int __must_check hex2bin(u8 *dst, const char *src, size_t count);
-+extern char *bin2hex(char *dst, const void *src, size_t count);
- 
- bool mac_pton(const char *s, u8 *mac);
- 
-diff --git a/lib/hexdump.c b/lib/hexdump.c
-index 8499c810909a..270773b91923 100644
---- a/lib/hexdump.c
-+++ b/lib/hexdump.c
-@@ -59,6 +59,22 @@ int hex2bin(u8 *dst, const char *src, size_t count)
- EXPORT_SYMBOL(hex2bin);
- 
- /**
-+ * bin2hex - convert binary data to an ascii hexadecimal string
-+ * @dst: ascii hexadecimal result
-+ * @src: binary data
-+ * @count: binary data length
-+ */
-+char *bin2hex(char *dst, const void *src, size_t count)
-+{
-+	const unsigned char *_src = src;
-+
-+	while (count--)
-+		dst = hex_byte_pack(dst, *_src++);
-+	return dst;
-+}
-+EXPORT_SYMBOL(bin2hex);
-+
-+/**
-  * hex_dump_to_buffer - convert a blob of data to "hex ASCII" in memory
-  * @buf: data blob to dump
-  * @len: number of bytes in the @buf
 
