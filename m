@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759406AbaIOVPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:15:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54589 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784AbaIOT0r (ORCPT
+	id S1759391AbaIOVPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34424 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaIOVP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:47 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 3.16 023/158] tpm: Properly clean sysfs entries in error path
-Date: Mon, 15 Sep 2014 12:24:22 -0700
-Message-Id: <20140915192543.577907406@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 17:15:27 -0400
+Date: Mon, 15 Sep 2014 14:15:23 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 1/7] Prepare for adding a new readv/writev with user
+ flags.
+Message-ID: <20140915211523.GA5481@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+ <e434e839351324641e10cc0a309a5c5f86e196c5.1410810247.git.milosz@adfin.com>
+ <20140915202828.GV7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915202828.GV7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Sep 15, 2014 at 09:28:28PM +0100, Al Viro wrote:
+> On Mon, Sep 15, 2014 at 04:20:17PM -0400, Milosz Tanski wrote:
+> > Plumbing the flags argument through the vfs code so they can be passed down to
+> > __generic_file_(read/write)_iter function that do the acctual work.
+> 
+> NAK.  Put these flags into iocb, it'll be less noisy that way.
 
-------------------
+Fine with me.  My initial prototype had it in the iov_iter type field
+which is another possibility.
 
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-
-commit b49e1043c48dac23f64fba684d31c4a96c1ffaa0 upstream.
-
-Properly clean the sysfs entries in the error path
-
-Reported-by: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Signed-off-by: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/char/tpm/tpm-interface.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -1116,7 +1116,7 @@ struct tpm_chip *tpm_register_hardware(s
- 		goto del_misc;
- 
- 	if (tpm_add_ppi(&dev->kobj))
--		goto del_misc;
-+		goto del_sysfs;
- 
- 	chip->bios_dir = tpm_bios_log_setup(chip->devname);
- 
-@@ -1127,6 +1127,8 @@ struct tpm_chip *tpm_register_hardware(s
- 
- 	return chip;
- 
-+del_sysfs:
-+	tpm_sysfs_del_device(chip);
- del_misc:
- 	tpm_dev_del_device(chip);
- put_device:
-
-
+But if we get rid of the explicit flags field and make it more invisible
+I'd really like to add a features field struct file_operations where
+instances can advertize that they support it (and other things like
+actual AIO support in the future) so that we won't have a situation
+like with AIO where we can submit I/O but it might actually still block
+anyway because lots of operations don't support it.
