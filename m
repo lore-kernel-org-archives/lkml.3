@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349AbaIOUN6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:13:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55633 "EHLO
+	id S1757364AbaIOUN7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:13:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986AbaIOTrB (ORCPT
+	with ESMTP id S1756156AbaIOTrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:47:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 083/114] fix copy_tree() regression
-Date: Mon, 15 Sep 2014 12:26:23 -0700
-Message-Id: <20140915192644.024432405@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 092/114] xfs: dont dirty buffers beyond EOF
+Date: Mon, 15 Sep 2014 12:26:32 -0700
+Message-Id: <20140915192644.307200693@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,91 +29,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 12a5b5294cb1896e9a3c9fca8ff5a7e3def4e8c6 upstream.
+commit 22e757a49cf010703fcb9c9b4ef793248c39b0c2 upstream.
 
-Since 3.14 we had copy_tree() get the shadowing wrong - if we had one
-vfsmount shadowing another (i.e. if A is a slave of B, C is mounted
-on A/foo, then D got mounted on B/foo creating D' on A/foo shadowed
-by C), copy_tree() of A would make a copy of D' shadow the the copy of
-C, not the other way around.
+generic/263 is failing fsx at this point with a page spanning
+EOF that cannot be invalidated. The operations are:
 
-It's easy to fix, fortunately - just make sure that mount follows
-the one that shadows it in mnt_child as well as in mnt_hash, and when
-copy_tree() decides to attach a new mount, check if the last child
-it has added to the same parent should be shadowing the new one.
-And if it should, just use the same logics commit_tree() has - put the
-new mount into the hash and children lists right after the one that
-should shadow it.
+1190 mapwrite   0x52c00 thru    0x5e569 (0xb96a bytes)
+1191 mapread    0x5c000 thru    0x5d636 (0x1637 bytes)
+1192 write      0x5b600 thru    0x771ff (0x1bc00 bytes)
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+where 1190 extents EOF from 0x54000 to 0x5e569. When the direct IO
+write attempts to invalidate the cached page over this range, it
+fails with -EBUSY and so any attempt to do page invalidation fails.
+
+The real question is this: Why can't that page be invalidated after
+it has been written to disk and cleaned?
+
+Well, there's data on the first two buffers in the page (1k block
+size, 4k page), but the third buffer on the page (i.e. beyond EOF)
+is failing drop_buffers because it's bh->b_state == 0x3, which is
+BH_Uptodate | BH_Dirty.  IOWs, there's dirty buffers beyond EOF. Say
+what?
+
+OK, set_buffer_dirty() is called on all buffers from
+__set_page_buffers_dirty(), regardless of whether the buffer is
+beyond EOF or not, which means that when we get to ->writepage,
+we have buffers marked dirty beyond EOF that we need to clean.
+So, we need to implement our own .set_page_dirty method that
+doesn't dirty buffers beyond EOF.
+
+This is messy because the buffer code is not meant to be shared
+and it has interesting locking issues on the buffer dirty bits.
+So just copy and paste it and then modify it to suit what we need.
+
+Note: the solutions the other filesystems and generic block code use
+of marking the buffers clean in ->writepage does not work for XFS.
+It still leaves dirty buffers beyond EOF and invalidations still
+fail. Hence rather than play whack-a-mole, this patch simply
+prevents those buffers from being dirtied in the first place.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c |   31 ++++++++++++++++++++++++-------
- 1 file changed, 24 insertions(+), 7 deletions(-)
+ fs/xfs/xfs_aops.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -777,6 +777,20 @@ static void attach_mnt(struct mount *mnt
- 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -1660,11 +1660,72 @@ xfs_vm_readpages(
+ 	return mpage_readpages(mapping, pages, nr_pages, xfs_get_blocks);
  }
  
-+static void attach_shadowed(struct mount *mnt,
-+			struct mount *parent,
-+			struct mount *shadows)
++/*
++ * This is basically a copy of __set_page_dirty_buffers() with one
++ * small tweak: buffers beyond EOF do not get marked dirty. If we mark them
++ * dirty, we'll never be able to clean them because we don't write buffers
++ * beyond EOF, and that means we can't invalidate pages that span EOF
++ * that have been marked dirty. Further, the dirty state can leak into
++ * the file interior if the file is extended, resulting in all sorts of
++ * bad things happening as the state does not match the underlying data.
++ *
++ * XXX: this really indicates that bufferheads in XFS need to die. Warts like
++ * this only exist because of bufferheads and how the generic code manages them.
++ */
++STATIC int
++xfs_vm_set_page_dirty(
++	struct page		*page)
 +{
-+	if (shadows) {
-+		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
-+		list_add(&mnt->mnt_child, &shadows->mnt_child);
-+	} else {
-+		hlist_add_head_rcu(&mnt->mnt_hash,
-+				m_hash(&parent->mnt, mnt->mnt_mountpoint));
-+		list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
++	struct address_space	*mapping = page->mapping;
++	struct inode		*inode = mapping->host;
++	loff_t			end_offset;
++	loff_t			offset;
++	int			newly_dirty;
++
++	if (unlikely(!mapping))
++		return !TestSetPageDirty(page);
++
++	end_offset = i_size_read(inode);
++	offset = page_offset(page);
++
++	spin_lock(&mapping->private_lock);
++	if (page_has_buffers(page)) {
++		struct buffer_head *head = page_buffers(page);
++		struct buffer_head *bh = head;
++
++		do {
++			if (offset < end_offset)
++				set_buffer_dirty(bh);
++			bh = bh->b_this_page;
++			offset += 1 << inode->i_blkbits;
++		} while (bh != head);
 +	}
++	newly_dirty = !TestSetPageDirty(page);
++	spin_unlock(&mapping->private_lock);
++
++	if (newly_dirty) {
++		/* sigh - __set_page_dirty() is static, so copy it here, too */
++		unsigned long flags;
++
++		spin_lock_irqsave(&mapping->tree_lock, flags);
++		if (page->mapping) {	/* Race with truncate? */
++			WARN_ON_ONCE(!PageUptodate(page));
++			account_page_dirtied(page, mapping);
++			radix_tree_tag_set(&mapping->page_tree,
++					page_index(page), PAGECACHE_TAG_DIRTY);
++		}
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
++		__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++	}
++	return newly_dirty;
 +}
 +
- /*
-  * vfsmount lock must be held for write
-  */
-@@ -795,12 +809,7 @@ static void commit_tree(struct mount *mn
- 
- 	list_splice(&head, n->list.prev);
- 
--	if (shadows)
--		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
--	else
--		hlist_add_head_rcu(&mnt->mnt_hash,
--				m_hash(&parent->mnt, mnt->mnt_mountpoint));
--	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
-+	attach_shadowed(mnt, parent, shadows);
- 	touch_mnt_namespace(n);
- }
- 
-@@ -1504,6 +1513,7 @@ struct mount *copy_tree(struct mount *mn
- 			continue;
- 
- 		for (s = r; s; s = next_mnt(s, r)) {
-+			struct mount *t = NULL;
- 			if (!(flag & CL_COPY_UNBINDABLE) &&
- 			    IS_MNT_UNBINDABLE(s)) {
- 				s = skip_mnt_tree(s);
-@@ -1525,7 +1535,14 @@ struct mount *copy_tree(struct mount *mn
- 				goto out;
- 			lock_mount_hash();
- 			list_add_tail(&q->mnt_list, &res->mnt_list);
--			attach_mnt(q, parent, p->mnt_mp);
-+			mnt_set_mountpoint(parent, p->mnt_mp, q);
-+			if (!list_empty(&parent->mnt_mounts)) {
-+				t = list_last_entry(&parent->mnt_mounts,
-+					struct mount, mnt_child);
-+				if (t->mnt_mp != p->mnt_mp)
-+					t = NULL;
-+			}
-+			attach_shadowed(q, parent, t);
- 			unlock_mount_hash();
- 		}
- 	}
+ const struct address_space_operations xfs_address_space_operations = {
+ 	.readpage		= xfs_vm_readpage,
+ 	.readpages		= xfs_vm_readpages,
+ 	.writepage		= xfs_vm_writepage,
+ 	.writepages		= xfs_vm_writepages,
++	.set_page_dirty		= xfs_vm_set_page_dirty,
+ 	.releasepage		= xfs_vm_releasepage,
+ 	.invalidatepage		= xfs_vm_invalidatepage,
+ 	.write_begin		= xfs_vm_write_begin,
 
 
