@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258AbaIOVXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:23:49 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:49374 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaIOVXs (ORCPT
+	id S1755749AbaIOV2C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:28:02 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:50336 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015AbaIOV17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:23:48 -0400
-Date: Mon, 15 Sep 2014 22:23:42 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        KY Srinivasan <kys@microsoft.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH 3.14 039/114] scsi: add a blacklist flag which enables
- VPD page inquiries
-Message-ID: <20140915212342.GB7014@sucs.org>
-References: <20140915192641.428509513@linuxfoundation.org>
- <20140915192642.667743291@linuxfoundation.org>
+	Mon, 15 Sep 2014 17:27:59 -0400
+Message-ID: <541759DB.8090408@gmail.com>
+Date: Mon, 15 Sep 2014 23:27:55 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140915192642.667743291@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>
+CC: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        lauraa@codeaurora.org, linux-omap@vger.kernel.org,
+        linus.walleij@linaro.org, santosh.shilimkar@ti.com, tony@atomide.com,
+        drake@endlessm.com, Marek Szyprowski <m.szyprowski@samsung.com>,
+        loeliger@gmail.com
+Subject: Re: [PATCH v4 5/7] ARM: EXYNOS: Add .write_sec outer cache callback
+ for L2C-310
+References: <1409062680-15906-1-git-send-email-t.figa@samsung.com> <1409062680-15906-6-git-send-email-t.figa@samsung.com> <20140915085845.GC12379@n2100.arm.linux.org.uk>
+In-Reply-To: <20140915085845.GC12379@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:25:39PM -0700, Greg Kroah-Hartman wrote:
-> 3.14-stable review patch.  If anyone has any objections, please let me know.
+>> +static void exynos_l2_write_sec(unsigned long val, unsigned reg)
+>> +{
+>> +	switch (reg) {
+>> +	case L2X0_CTRL:
+>> +		if (val & L2X0_CTRL_EN)
+>> +			exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
 > 
-> ------------------
-> 
-> From: "Martin K. Petersen" <martin.petersen@oracle.com>
-> 
-> commit c1d40a527e885a40bb9ea6c46a1b1145d42b66a0 upstream.
-> 
-> Despite supporting modern SCSI features some storage devices continue to
-> claim conformance to an older version of the SPC spec. This is done for
-> compatibility with legacy operating systems.
-> 
-> Linux by default will not attempt to read VPD pages on devices that
-> claim SPC-2 or older. Introduce a blacklist flag that can be used to
-> trigger VPD page inquiries on devices that are known to support them.
-> 
-> Reported-by: KY Srinivasan <kys@microsoft.com>
-> Tested-by: KY Srinivasan <kys@microsoft.com>
-> Reviewed-by: KY Srinivasan <kys@microsoft.com>
-> Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
+> If we're calling this with the cache already enabled, presumably you're
+> doing this to cover the case where we're disabling the cache.
 
-<snip>
+Can we ever call this with L2X0_CTRL_EN set in val, while the cache is
+already enabled?
 
-> +#define BLIST_TRY_VPD_PAGES	0x10000000 /* Attempt to read VPD pages */
->  #endif
+Anyway, calling of this firmware operation is necessary before enabling
+the cache and this code is here to cover this requirement. Whether this
+function simply invalidates the cache or does something else is unknown
+to me, as all the information I got is that this needs to be done.
 
-Where is BLIST_TRY_VPD_PAGES being quirked on for Hyper-V's devices - is
-there some later patch or some missing code I'm overlooking?
+> 
+> 1. Do you really want to *invalidate* the L2 cache, discarding its
+>    contents?
+> 2. Don't you think that... if you needed something like this here, then
+>    it could be a defficiency in the common code?
+> 
+> If (2) doesn't apply, then should be a comment here why this is needed.
+> 
 
-If the missing piece is f3cfabce7a2e92564d380de3aad4b43901fb7ae6, are
-people sure it works? I'll retest but the last two times I tested it
-(https://lkml.org/lkml/2014/7/23/615 and
-https://lkml.org/lkml/2014/8/1/460 ) no one said anything after I said
-thin provisioning wasn't enabled and James doesn't like quirking this on
-every Hyper-V device (https://lkml.org/lkml/2014/7/24/393 )...
+This is a quirk specific to Exynos firmware and I suspect it doesn't
+even have anything to do with cache invalidation, but rather some
+internal logic inside the firmware.
 
--- 
-Sitsofe | http://sucs.org/~sits/
+I agree, though, that a comment might be useful here.
+
+Best regards,
+Tomasz
