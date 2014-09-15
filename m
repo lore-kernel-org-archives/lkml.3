@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaIOOKv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:10:51 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50334 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720AbaIOOKt (ORCPT
+	id S1752860AbaIOOMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:12:32 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:56097 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaIOOMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:10:49 -0400
+	Mon, 15 Sep 2014 10:12:30 -0400
+Date: Mon, 15 Sep 2014 10:11:20 -0400 (EDT)
+Subject: Re: [PATCH v4 10/18] ACPI / table: Print GIC information when MADT
+ is parsed
+From: Jon Masters <jcm@redhat.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-acpi@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Lv Zheng <lv.zheng@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Hanjun Guo <hanjun.guo@linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, linaro-acpi@lists.linaro.org,
+        Robert Richter <rric@kernel.org>, Charles.Garcia-Tobin@arm.com,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Rob Herring <robh@kernel.org>, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Mark Brown <broonie@kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Robert Moore <robert.moore@intel.com>,
+        Jason Cooper <jason@lakedaemon.net>
 MIME-Version: 1.0
-In-Reply-To: <20140915083220.GC6480@redhat.com>
-References: <1410751406-10039-1-git-send-email-anthony@codemonkey.ws>
-	<20140915083220.GC6480@redhat.com>
-Date: Mon, 15 Sep 2014 07:10:45 -0700
-Message-ID: <CA+aC4kuHTjVF7vMbYwXPdoKcOfxQLKQywo+WMtjGfk99iJ9XUA@mail.gmail.com>
-Subject: Re: [PATCH] virtio_pci: properly clean up MSI-X state when
- initialization fails
-From: Anthony Liguori <anthony@codemonkey.ws>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org,
-        Anthony Liguori <aliguori@amazon.com>, Matt Wilson <msw@amazon.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <110210623.13993550.1410790280170.JavaMail.zimbra@zmail15.collab.prod.int.phx2.redhat.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Zimbra 8.0.6_GA_5922 (MobileSync - Android/4.4.4-EAS-2.0)
+In-Reply-To: <20140915064010.GD26649@localhost>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-11-git-send-email-hanjun.guo@linaro.org> <20140915064010.GD26649@localhost>
+Thread-Topic: ACPI / table: Print GIC information when MADT is parsed
+Thread-Index: EFjzTF77i+00kwVAU+3MZ5w/wtcVRA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
+Hi Olof,
 
-On Mon, Sep 15, 2014 at 1:32 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Sun, Sep 14, 2014 at 08:23:26PM -0700, Anthony Liguori wrote:
->> From: Anthony Liguori <aliguori@amazon.com>
->>
->> If MSI-X initialization fails after setting msix_enabled = 1, then
->> the device is left in an inconsistent state.  This would normally
->> only happen if there was a bug in the device emulation but it still
->> should be handled correctly.
+How about having it verbose in the initial implementation (in case there are any fun times bringing up early systems) and then revisiting this? x86 is very verbose but it can be helpful.
+
+Jon.
+
+-- 
+Computer Architect | Sent from my #ARM Powered Mobile device
+
+On Sep 15, 2014 12:34 AM, Olof Johansson <olof@lixom.net> wrote:
 >
-> This might happen if host runs out of resources when trying
-> to map VQs to vectors, so doesn't have to be a bug.
->
-> But I don't see what the problem is:
-> msix_used_vectors reflects the number of used vectors
-> and msix_enabled is set, thus vp_free_vectors
-> will free all IRQs and then disable MSIX.
->
-> Where is the inconsistency you speak about?
+> On Fri, Sep 12, 2014 at 10:00:08PM +0800, Hanjun Guo wrote: 
+> > When MADT is parsed, print GIC information to On Fri, Sep 12, 2014 at 10:00:08PM +0800, Hanjun Guo wrote:
+> When MADT is parsed, print GIC information to make the boot
+> log look pretty.
 
-I missed the fact that vp_free_vectors() conditionally sets
-msix_enabled=0.  It seems a bit cludgy especially since it is called
-both before and after setting msix_enabled=1.
+If you do this for prettiness, having an example output in the commit
+message would be a nice touch.
 
-I ran into a number of weird problems due to read/write reordering
-that was causing this code path to fail.  The impact was
-non-deterministic.  I'll go back and try to better understand what
-code path is causing it.
+The question is why it's needed though? Do we really need all this verbose
+information in dmesg when it could be found out in other ways instead?
 
->> Cc: Matt Wilson <msw@amazon.com>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Michael Tsirkin <mst@redhat.com>
->> Signed-off-by: Anthony Liguori <aliguori@amazon.com>
->> ---
->>  drivers/virtio/virtio_pci.c |    8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
->> index 9cbac33..3d2c2a5 100644
->> --- a/drivers/virtio/virtio_pci.c
->> +++ b/drivers/virtio/virtio_pci.c
->> @@ -357,7 +357,7 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->>       v = ioread16(vp_dev->ioaddr + VIRTIO_MSI_CONFIG_VECTOR);
->>       if (v == VIRTIO_MSI_NO_VECTOR) {
->>               err = -EBUSY;
->> -             goto error;
->> +             goto error_msix_used;
->>       }
->>
->>       if (!per_vq_vectors) {
->> @@ -369,11 +369,15 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->>                                 vp_vring_interrupt, 0, vp_dev->msix_names[v],
->>                                 vp_dev);
->>               if (err)
->> -                     goto error;
->> +                     goto error_msix_used;
->>               ++vp_dev->msix_used_vectors;
->>       }
->>       return 0;
->> +error_msix_used:
->> +     v = --vp_dev->msix_used_vectors;
->> +     free_irq(vp_dev->msix_entries[v].vector, vp_dev);
->>  error:
->> +     vp_dev->msix_enabled = 0;
->
-> As far as I can see, if you do this, guest will not call
-> pci_disable_msix thus leaving the device with MSIX enabled.
+x86 is notoriously verbose in some of these aspects, I'm not sure it's
+something we need to mimic here?
 
-I don't understand this comment.  How is the work done in this path
-any different from what's done in vp_free_vectors()?
 
-Regards,
-
-Anthony Liguori
-
-> I'm not sure this won't break drivers if they then
-> try to use the device without MSIX, and it
-> definitely seems less elegant than reverting the
-> device to the original state.
->
->
->>       vp_free_vectors(vdev);
->>       return err;
->>  }
->> --
->> 1.7.9.5
+-Olof
