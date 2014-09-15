@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873AbaIOWQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:16:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50971 "EHLO
+	id S1757899AbaIOWQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:16:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50984 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaIOWQm (ORCPT
+	with ESMTP id S1754881AbaIOWQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:16:42 -0400
+	Mon, 15 Sep 2014 18:16:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ronald Wahl <ronald.wahl@raritan.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 177/187] carl9170: fix sending URBs with wrong type when using full-speed
-Date: Mon, 15 Sep 2014 15:09:47 -0700
-Message-Id: <1410818997-9432-178-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 181/187] powerpc/thp: Invalidate old 64K based hash page mapping before insert of 4k pte
+Date: Mon, 15 Sep 2014 15:09:51 -0700
+Message-Id: <1410818997-9432-182-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,106 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ronald Wahl <ronald.wahl@raritan.com>
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-commit 671796dd96b6cd85b75fba9d3007bcf7e5f7c309 upstream.
+commit 629149fae478f0ac6bf705a535708b192e9c6b59 upstream.
 
-The driver assumes that endpoint 4 is always an interrupt endpoint.
-Unfortunately the type differs between high-speed and full-speed
-configurations while in the former case it is indeed an interrupt
-endpoint this is not true for the latter case - here it is a bulk
-endpoint. When sending URBs with the wrong type the kernel will
-generate a warning message including backtrace. In this specific
-case there will be a huge amount of warnings which can bring the system
-to freeze.
+If we changed base page size of the segment, either via sub_page_protect
+or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
+table entries. We do a lazy hash page table flush for all mapped pages
+in the demoted segment. This happens when we handle hash page fault
+for these pages.
 
-To fix this we are now sending URBs to endpoint 4 using the type
-found in the endpoint descriptor.
+We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
+pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
+that implies that we could possibly have older 64K hash pte entries in
+the hash page table and we need to invalidate those entries.
 
-A side note: The carl9170 firmware currently specifies endpoint 4 as
-interrupt endpoint even in the full-speed configuration but this has
-no relevance because before this firmware is loaded the endpoint type
-is as described above and after the firmware is running the stick is not
-reenumerated and so the old descriptor is used.
+Handle this correctly for 16M pages
 
-Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/carl9170/carl9170.h |  1 +
- drivers/net/wireless/ath/carl9170/usb.c      | 31 ++++++++++++++++++++++++----
- 2 files changed, 28 insertions(+), 4 deletions(-)
+ arch/powerpc/mm/hugepage-hash64.c | 79 ++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 70 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/carl9170/carl9170.h b/drivers/net/wireless/ath/carl9170/carl9170.h
-index 8596aba..237d0cd 100644
---- a/drivers/net/wireless/ath/carl9170/carl9170.h
-+++ b/drivers/net/wireless/ath/carl9170/carl9170.h
-@@ -256,6 +256,7 @@ struct ar9170 {
- 	atomic_t rx_work_urbs;
- 	atomic_t rx_pool_urbs;
- 	kernel_ulong_t features;
-+	bool usb_ep_cmd_is_bulk;
+diff --git a/arch/powerpc/mm/hugepage-hash64.c b/arch/powerpc/mm/hugepage-hash64.c
+index f50c4df..e0da847 100644
+--- a/arch/powerpc/mm/hugepage-hash64.c
++++ b/arch/powerpc/mm/hugepage-hash64.c
+@@ -18,6 +18,57 @@
+ #include <linux/mm.h>
+ #include <asm/machdep.h>
  
- 	/* firmware settings */
- 	struct completion fw_load_wait;
-diff --git a/drivers/net/wireless/ath/carl9170/usb.c b/drivers/net/wireless/ath/carl9170/usb.c
-index ca115f3..bc931f6 100644
---- a/drivers/net/wireless/ath/carl9170/usb.c
-+++ b/drivers/net/wireless/ath/carl9170/usb.c
-@@ -621,9 +621,16 @@ int __carl9170_exec_cmd(struct ar9170 *ar, struct carl9170_cmd *cmd,
- 		goto err_free;
++static void invalidate_old_hpte(unsigned long vsid, unsigned long addr,
++				pmd_t *pmdp, unsigned int psize, int ssize)
++{
++	int i, max_hpte_count, valid;
++	unsigned long s_addr;
++	unsigned char *hpte_slot_array;
++	unsigned long hidx, shift, vpn, hash, slot;
++
++	s_addr = addr & HPAGE_PMD_MASK;
++	hpte_slot_array = get_hpte_slot_array(pmdp);
++	/*
++	 * IF we try to do a HUGE PTE update after a withdraw is done.
++	 * we will find the below NULL. This happens when we do
++	 * split_huge_page_pmd
++	 */
++	if (!hpte_slot_array)
++		return;
++
++	if (ppc_md.hugepage_invalidate)
++		return ppc_md.hugepage_invalidate(vsid, s_addr, hpte_slot_array,
++						  psize, ssize);
++	/*
++	 * No bluk hpte removal support, invalidate each entry
++	 */
++	shift = mmu_psize_defs[psize].shift;
++	max_hpte_count = HPAGE_PMD_SIZE >> shift;
++	for (i = 0; i < max_hpte_count; i++) {
++		/*
++		 * 8 bits per each hpte entries
++		 * 000| [ secondary group (one bit) | hidx (3 bits) | valid bit]
++		 */
++		valid = hpte_valid(hpte_slot_array, i);
++		if (!valid)
++			continue;
++		hidx =  hpte_hash_index(hpte_slot_array, i);
++
++		/* get the vpn */
++		addr = s_addr + (i * (1ul << shift));
++		vpn = hpt_vpn(addr, vsid, ssize);
++		hash = hpt_hash(vpn, shift, ssize);
++		if (hidx & _PTEIDX_SECONDARY)
++			hash = ~hash;
++
++		slot = (hash & htab_hash_mask) * HPTES_PER_GROUP;
++		slot += hidx & _PTEIDX_GROUP_IX;
++		ppc_md.hpte_invalidate(slot, vpn, psize,
++				       MMU_PAGE_16M, ssize, 0);
++	}
++}
++
++
+ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 		    pmd_t *pmdp, unsigned long trap, int local, int ssize,
+ 		    unsigned int psize)
+@@ -85,6 +136,15 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 	vpn = hpt_vpn(ea, vsid, ssize);
+ 	hash = hpt_hash(vpn, shift, ssize);
+ 	hpte_slot_array = get_hpte_slot_array(pmdp);
++	if (psize == MMU_PAGE_4K) {
++		/*
++		 * invalidate the old hpte entry if we have that mapped via 64K
++		 * base page size. This is because demote_segment won't flush
++		 * hash page table entries.
++		 */
++		if ((old_pmd & _PAGE_HASHPTE) && !(old_pmd & _PAGE_COMBO))
++			invalidate_old_hpte(vsid, ea, pmdp, MMU_PAGE_64K, ssize);
++	}
+ 
+ 	valid = hpte_valid(hpte_slot_array, index);
+ 	if (valid) {
+@@ -107,11 +167,8 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
+ 			 * safely update this here.
+ 			 */
+ 			valid = 0;
+-			new_pmd &= ~_PAGE_HPTEFLAGS;
+ 			hpte_slot_array[index] = 0;
+-		} else
+-			/* clear the busy bits and set the hash pte bits */
+-			new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
++		}
  	}
  
--	usb_fill_int_urb(urb, ar->udev, usb_sndintpipe(ar->udev,
--		AR9170_USB_EP_CMD), cmd, cmd->hdr.len + 4,
--		carl9170_usb_cmd_complete, ar, 1);
-+	if (ar->usb_ep_cmd_is_bulk)
-+		usb_fill_bulk_urb(urb, ar->udev,
-+				  usb_sndbulkpipe(ar->udev, AR9170_USB_EP_CMD),
-+				  cmd, cmd->hdr.len + 4,
-+				  carl9170_usb_cmd_complete, ar);
-+	else
-+		usb_fill_int_urb(urb, ar->udev,
-+				 usb_sndintpipe(ar->udev, AR9170_USB_EP_CMD),
-+				 cmd, cmd->hdr.len + 4,
-+				 carl9170_usb_cmd_complete, ar, 1);
+ 	if (!valid) {
+@@ -119,15 +176,13 @@ int __hash_page_thp(unsigned long ea, unsigned long access, unsigned long vsid,
  
- 	if (free_buf)
- 		urb->transfer_flags |= URB_FREE_BUFFER;
-@@ -1032,9 +1039,10 @@ static void carl9170_usb_firmware_step2(const struct firmware *fw,
- static int carl9170_usb_probe(struct usb_interface *intf,
- 			      const struct usb_device_id *id)
- {
-+	struct usb_endpoint_descriptor *ep;
- 	struct ar9170 *ar;
- 	struct usb_device *udev;
--	int err;
-+	int i, err;
+ 		/* insert new entry */
+ 		pa = pmd_pfn(__pmd(old_pmd)) << PAGE_SHIFT;
+-repeat:
+-		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
+-
+-		/* clear the busy bits and set the hash pte bits */
+-		new_pmd = (new_pmd & ~_PAGE_HPTEFLAGS) | _PAGE_HASHPTE;
++		new_pmd |= _PAGE_HASHPTE;
  
- 	err = usb_reset_device(interface_to_usbdev(intf));
- 	if (err)
-@@ -1050,6 +1058,21 @@ static int carl9170_usb_probe(struct usb_interface *intf,
- 	ar->intf = intf;
- 	ar->features = id->driver_info;
+ 		/* Add in WIMG bits */
+ 		rflags |= (new_pmd & (_PAGE_WRITETHRU | _PAGE_NO_CACHE |
+ 				      _PAGE_COHERENT | _PAGE_GUARDED));
++repeat:
++		hpte_group = ((hash & htab_hash_mask) * HPTES_PER_GROUP) & ~0x7UL;
  
-+	/* We need to remember the type of endpoint 4 because it differs
-+	 * between high- and full-speed configuration. The high-speed
-+	 * configuration specifies it as interrupt and the full-speed
-+	 * configuration as bulk endpoint. This information is required
-+	 * later when sending urbs to that endpoint.
+ 		/* Insert into the hash table, primary slot */
+ 		slot = ppc_md.hpte_insert(hpte_group, vpn, pa, rflags, 0,
+@@ -168,6 +223,12 @@ repeat:
+ 		mark_hpte_slot_valid(hpte_slot_array, index, slot);
+ 	}
+ 	/*
++	 * Mark the pte with _PAGE_COMBO, if we are trying to hash it with
++	 * base page size 4k.
 +	 */
-+	for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; ++i) {
-+		ep = &intf->cur_altsetting->endpoint[i].desc;
-+
-+		if (usb_endpoint_num(ep) == AR9170_USB_EP_CMD &&
-+		    usb_endpoint_dir_out(ep) &&
-+		    usb_endpoint_type(ep) == USB_ENDPOINT_XFER_BULK)
-+			ar->usb_ep_cmd_is_bulk = true;
-+	}
-+
- 	usb_set_intfdata(intf, ar);
- 	SET_IEEE80211_DEV(ar->hw, &intf->dev);
- 
++	if (psize == MMU_PAGE_4K)
++		new_pmd |= _PAGE_COMBO;
++	/*
+ 	 * The hpte valid is stored in the pgtable whose address is in the
+ 	 * second half of the PMD. Order this against clearing of the busy bit in
+ 	 * huge pmd.
 -- 
 1.9.1
 
