@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382AbaIOWMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:12:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50617 "EHLO
+	id S1760072AbaIOXLE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 19:11:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50621 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362AbaIOWL7 (ORCPT
+	with ESMTP id S932368AbaIOWMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:11:59 -0400
+	Mon, 15 Sep 2014 18:12:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, Christoph Hellwig <hch@lst.de>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 098/187] Drivers: scsi: storvsc: Fix a bug in handling VMBUS protocol version
-Date: Mon, 15 Sep 2014 15:08:28 -0700
-Message-Id: <1410818997-9432-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 090/187] [media] xc4000: Fix get_frequency()
+Date: Mon, 15 Sep 2014 15:08:20 -0700
+Message-Id: <1410818997-9432-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -27,57 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit adb6f9e1a8c6af1037232b59edb11277471537ea upstream.
+commit 4c07e32884ab69574cfd9eb4de3334233c938071 upstream.
 
-Based on the negotiated VMBUS protocol version, we adjust the size of the storage
-protocol messages. The two sizes we currently handle are pre-win8 and post-win8.
-In WS2012 R2, we are negotiating higher VMBUS protocol version than the win8
-version. Make adjustments to correctly handle this.
+The programmed frequency on xc4000 is not the middle
+frequency, but the initial frequency on the bandwidth range.
+However, the DVB API works with the middle frequency.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This works fine on set_frontend, as the device calculates
+the needed offset. However, at get_frequency(), the returned
+value is the initial frequency. That's generally not a big
+problem on most drivers, however, starting with changeset
+6fe1099c7aec, the frequency drift is taken into account at
+dib7000p driver.
+
+This broke support for PCTV 340e, with uses dib7000p demod and
+xc4000 tuner.
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/storvsc_drv.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/media/tuners/xc4000.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 8f8847e..7e8a642 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1752,19 +1752,22 @@ static int storvsc_probe(struct hv_device *device,
- 	 * set state to properly communicate with the host.
- 	 */
- 
--	if (vmbus_proto_version == VERSION_WIN8) {
--		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
--		vmscsi_size_delta = 0;
--		vmstor_current_major = VMSTOR_WIN8_MAJOR;
--		vmstor_current_minor = VMSTOR_WIN8_MINOR;
--	} else {
-+	switch (vmbus_proto_version) {
-+	case VERSION_WS2008:
-+	case VERSION_WIN7:
- 		sense_buffer_size = PRE_WIN8_STORVSC_SENSE_BUFFER_SIZE;
- 		vmscsi_size_delta = sizeof(struct vmscsi_win8_extension);
- 		vmstor_current_major = VMSTOR_WIN7_MAJOR;
- 		vmstor_current_minor = VMSTOR_WIN7_MINOR;
-+		break;
-+	default:
-+		sense_buffer_size = POST_WIN7_STORVSC_SENSE_BUFFER_SIZE;
-+		vmscsi_size_delta = 0;
-+		vmstor_current_major = VMSTOR_WIN8_MAJOR;
-+		vmstor_current_minor = VMSTOR_WIN8_MINOR;
-+		break;
+diff --git a/drivers/media/tuners/xc4000.c b/drivers/media/tuners/xc4000.c
+index 2018bef..e71decb 100644
+--- a/drivers/media/tuners/xc4000.c
++++ b/drivers/media/tuners/xc4000.c
+@@ -93,7 +93,7 @@ struct xc4000_priv {
+ 	struct firmware_description *firm;
+ 	int	firm_size;
+ 	u32	if_khz;
+-	u32	freq_hz;
++	u32	freq_hz, freq_offset;
+ 	u32	bandwidth;
+ 	u8	video_standard;
+ 	u8	rf_mode;
+@@ -1157,14 +1157,14 @@ static int xc4000_set_params(struct dvb_frontend *fe)
+ 	case SYS_ATSC:
+ 		dprintk(1, "%s() VSB modulation\n", __func__);
+ 		priv->rf_mode = XC_RF_MODE_AIR;
+-		priv->freq_hz = c->frequency - 1750000;
++		priv->freq_offset = 1750000;
+ 		priv->video_standard = XC4000_DTV6;
+ 		type = DTV6;
+ 		break;
+ 	case SYS_DVBC_ANNEX_B:
+ 		dprintk(1, "%s() QAM modulation\n", __func__);
+ 		priv->rf_mode = XC_RF_MODE_CABLE;
+-		priv->freq_hz = c->frequency - 1750000;
++		priv->freq_offset = 1750000;
+ 		priv->video_standard = XC4000_DTV6;
+ 		type = DTV6;
+ 		break;
+@@ -1173,23 +1173,23 @@ static int xc4000_set_params(struct dvb_frontend *fe)
+ 		dprintk(1, "%s() OFDM\n", __func__);
+ 		if (bw == 0) {
+ 			if (c->frequency < 400000000) {
+-				priv->freq_hz = c->frequency - 2250000;
++				priv->freq_offset = 2250000;
+ 			} else {
+-				priv->freq_hz = c->frequency - 2750000;
++				priv->freq_offset = 2750000;
+ 			}
+ 			priv->video_standard = XC4000_DTV7_8;
+ 			type = DTV78;
+ 		} else if (bw <= 6000000) {
+ 			priv->video_standard = XC4000_DTV6;
+-			priv->freq_hz = c->frequency - 1750000;
++			priv->freq_offset = 1750000;
+ 			type = DTV6;
+ 		} else if (bw <= 7000000) {
+ 			priv->video_standard = XC4000_DTV7;
+-			priv->freq_hz = c->frequency - 2250000;
++			priv->freq_offset = 2250000;
+ 			type = DTV7;
+ 		} else {
+ 			priv->video_standard = XC4000_DTV8;
+-			priv->freq_hz = c->frequency - 2750000;
++			priv->freq_offset = 2750000;
+ 			type = DTV8;
+ 		}
+ 		priv->rf_mode = XC_RF_MODE_AIR;
+@@ -1200,6 +1200,8 @@ static int xc4000_set_params(struct dvb_frontend *fe)
+ 		goto fail;
  	}
  
--
- 	if (dev_id->driver_data == SFC_GUID)
- 		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
- 					 STORVSC_FC_MAX_TARGETS);
++	priv->freq_hz = c->frequency - priv->freq_offset;
++
+ 	dprintk(1, "%s() frequency=%d (compensated)\n",
+ 		__func__, priv->freq_hz);
+ 
+@@ -1520,7 +1522,7 @@ static int xc4000_get_frequency(struct dvb_frontend *fe, u32 *freq)
+ {
+ 	struct xc4000_priv *priv = fe->tuner_priv;
+ 
+-	*freq = priv->freq_hz;
++	*freq = priv->freq_hz + priv->freq_offset;
+ 
+ 	if (debug) {
+ 		mutex_lock(&priv->lock);
 -- 
 1.9.1
 
