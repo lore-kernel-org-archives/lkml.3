@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933125AbaIOWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:20:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51404 "EHLO
+	id S933133AbaIOWVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:21:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51406 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039AbaIOWU4 (ORCPT
+	with ESMTP id S1755294AbaIOWU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:56 -0400
+	Mon, 15 Sep 2014 18:20:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 034/187] arch/sparc/math-emu/math_32.c: drop stray break operator
-Date: Mon, 15 Sep 2014 15:07:24 -0700
-Message-Id: <1410818997-9432-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 035/187] sunrpc: create a new dummy pipe for gssd to hold open
+Date: Mon, 15 Sep 2014 15:07:25 -0700
+Message-Id: <1410818997-9432-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,39 +29,247 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-[ Upstream commit 093758e3daede29cb4ce6aedb111becf9d4bfc57 ]
+commit 4b9a445e3eeb8bd9278b1ae51c1b3a651e370cd6 upstream.
 
-This commit is a guesswork, but it seems to make sense to drop this
-break, as otherwise the following line is never executed and becomes
-dead code. And that following line actually saves the result of
-local calculation by the pointer given in function argument. So the
-proposed change makes sense if this code in the whole makes sense (but I
-am unable to analyze it in the whole).
+rpc.gssd will naturally hold open any pipe named */clnt*/gssd that shows
+up under rpc_pipefs. That behavior gives us a reliable mechanism to tell
+whether it's actually running or not.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81641
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Andrey Utkin <andrey.krieger.utkin@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Create a new toplevel "gssd" directory in rpc_pipefs when it's mounted.
+Under that directory create another directory called "clntXX", and then
+within that a pipe called "gssd".
+
+We'll never send an upcall along that pipe, and any downcall written to
+it will just return -EINVAL.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[ kamal: 3.13-stable prereq for 6aa23d76 "nfs: check if gssd is running
+  before attempting to use krb5i auth in SETCLIENTID call" ]
+Cc: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/math-emu/math_32.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/sunrpc/rpc_pipe_fs.h |  3 +-
+ net/sunrpc/netns.h                 |  1 +
+ net/sunrpc/rpc_pipe.c              | 93 ++++++++++++++++++++++++++++++++++++--
+ net/sunrpc/sunrpc_syms.c           |  8 +++-
+ 4 files changed, 100 insertions(+), 5 deletions(-)
 
-diff --git a/arch/sparc/math-emu/math_32.c b/arch/sparc/math-emu/math_32.c
-index aa4d55b..5ce8f2f 100644
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -499,7 +499,7 @@ static int do_one_mathemu(u32 insn, unsigned long *pfsr, unsigned long *fregs)
- 		case 0: fsr = *pfsr;
- 			if (IR == -1) IR = 2;
- 			/* fcc is always fcc0 */
--			fsr &= ~0xc00; fsr |= (IR << 10); break;
-+			fsr &= ~0xc00; fsr |= (IR << 10);
- 			*pfsr = fsr;
- 			break;
- 		case 1: rd->s = IR; break;
+diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
+index a353e03..85f1342 100644
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -84,7 +84,8 @@ enum {
+ 
+ extern struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
+ 				      const unsigned char *dir_name);
+-extern void rpc_pipefs_init_net(struct net *net);
++extern int rpc_pipefs_init_net(struct net *net);
++extern void rpc_pipefs_exit_net(struct net *net);
+ extern struct super_block *rpc_get_sb_net(const struct net *net);
+ extern void rpc_put_sb_net(const struct net *net);
+ 
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index 3a260e4..c804ed4 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -14,6 +14,7 @@ struct sunrpc_net {
+ 	struct cache_detail *rsi_cache;
+ 
+ 	struct super_block *pipefs_sb;
++	struct rpc_pipe *gssd_dummy;
+ 	struct mutex pipefs_sb_lock;
+ 
+ 	struct list_head all_clients;
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index bf04b30..c23458b 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -38,7 +38,7 @@
+ #define NET_NAME(net)	((net == &init_net) ? " (init_net)" : "")
+ 
+ static struct file_system_type rpc_pipe_fs_type;
+-
++static const struct rpc_pipe_ops gssd_dummy_pipe_ops;
+ 
+ static struct kmem_cache *rpc_inode_cachep __read_mostly;
+ 
+@@ -1159,6 +1159,7 @@ enum {
+ 	RPCAUTH_nfsd4_cb,
+ 	RPCAUTH_cache,
+ 	RPCAUTH_nfsd,
++	RPCAUTH_gssd,
+ 	RPCAUTH_RootEOF
+ };
+ 
+@@ -1195,6 +1196,10 @@ static const struct rpc_filelist files[] = {
+ 		.name = "nfsd",
+ 		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
+ 	},
++	[RPCAUTH_gssd] = {
++		.name = "gssd",
++		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
++	},
+ };
+ 
+ /*
+@@ -1208,13 +1213,25 @@ struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
+ }
+ EXPORT_SYMBOL_GPL(rpc_d_lookup_sb);
+ 
+-void rpc_pipefs_init_net(struct net *net)
++int rpc_pipefs_init_net(struct net *net)
+ {
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
++	sn->gssd_dummy = rpc_mkpipe_data(&gssd_dummy_pipe_ops, 0);
++	if (IS_ERR(sn->gssd_dummy))
++		return PTR_ERR(sn->gssd_dummy);
++
+ 	mutex_init(&sn->pipefs_sb_lock);
+ 	sn->gssd_running = 1;
+ 	sn->pipe_version = -1;
++	return 0;
++}
++
++void rpc_pipefs_exit_net(struct net *net)
++{
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
++
++	rpc_destroy_pipe_data(sn->gssd_dummy);
+ }
+ 
+ /*
+@@ -1244,11 +1261,73 @@ void rpc_put_sb_net(const struct net *net)
+ }
+ EXPORT_SYMBOL_GPL(rpc_put_sb_net);
+ 
++static const struct rpc_filelist gssd_dummy_clnt_dir[] = {
++	[0] = {
++		.name = "clntXX",
++		.mode = S_IFDIR | S_IRUGO | S_IXUGO,
++	},
++};
++
++static ssize_t
++dummy_downcall(struct file *filp, const char __user *src, size_t len)
++{
++	return -EINVAL;
++}
++
++static const struct rpc_pipe_ops gssd_dummy_pipe_ops = {
++	.upcall		= rpc_pipe_generic_upcall,
++	.downcall	= dummy_downcall,
++};
++
++/**
++ * rpc_gssd_dummy_populate - create a dummy gssd pipe
++ * @root:	root of the rpc_pipefs filesystem
++ * @pipe_data:	pipe data created when netns is initialized
++ *
++ * Create a dummy set of directories and a pipe that gssd can hold open to
++ * indicate that it is up and running.
++ */
++static struct dentry *
++rpc_gssd_dummy_populate(struct dentry *root, struct rpc_pipe *pipe_data)
++{
++	int ret = 0;
++	struct dentry *gssd_dentry;
++	struct dentry *clnt_dentry = NULL;
++	struct dentry *pipe_dentry = NULL;
++	struct qstr q = QSTR_INIT(files[RPCAUTH_gssd].name,
++				  strlen(files[RPCAUTH_gssd].name));
++
++	/* We should never get this far if "gssd" doesn't exist */
++	gssd_dentry = d_hash_and_lookup(root, &q);
++	if (!gssd_dentry)
++		return ERR_PTR(-ENOENT);
++
++	ret = rpc_populate(gssd_dentry, gssd_dummy_clnt_dir, 0, 1, NULL);
++	if (ret) {
++		pipe_dentry = ERR_PTR(ret);
++		goto out;
++	}
++
++	q.name = gssd_dummy_clnt_dir[0].name;
++	q.len = strlen(gssd_dummy_clnt_dir[0].name);
++	clnt_dentry = d_hash_and_lookup(gssd_dentry, &q);
++	if (!clnt_dentry) {
++		pipe_dentry = ERR_PTR(-ENOENT);
++		goto out;
++	}
++
++	pipe_dentry = rpc_mkpipe_dentry(clnt_dentry, "gssd", NULL, pipe_data);
++out:
++	dput(clnt_dentry);
++	dput(gssd_dentry);
++	return pipe_dentry;
++}
++
+ static int
+ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	struct inode *inode;
+-	struct dentry *root;
++	struct dentry *root, *gssd_dentry;
+ 	struct net *net = data;
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	int err;
+@@ -1266,6 +1345,13 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 		return -ENOMEM;
+ 	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
+ 		return -ENOMEM;
++
++	gssd_dentry = rpc_gssd_dummy_populate(root, sn->gssd_dummy);
++	if (IS_ERR(gssd_dentry)) {
++		__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
++		return PTR_ERR(gssd_dentry);
++	}
++
+ 	dprintk("RPC:       sending pipefs MOUNT notification for net %p%s\n",
+ 		net, NET_NAME(net));
+ 	mutex_lock(&sn->pipefs_sb_lock);
+@@ -1280,6 +1366,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	return 0;
+ 
+ err_depopulate:
++	dput(gssd_dentry);
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
+ 					   sb);
+diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
+index 3d6498a..cd30120 100644
+--- a/net/sunrpc/sunrpc_syms.c
++++ b/net/sunrpc/sunrpc_syms.c
+@@ -44,12 +44,17 @@ static __net_init int sunrpc_init_net(struct net *net)
+ 	if (err)
+ 		goto err_unixgid;
+ 
+-	rpc_pipefs_init_net(net);
++	err = rpc_pipefs_init_net(net);
++	if (err)
++		goto err_pipefs;
++
+ 	INIT_LIST_HEAD(&sn->all_clients);
+ 	spin_lock_init(&sn->rpc_client_lock);
+ 	spin_lock_init(&sn->rpcb_clnt_lock);
+ 	return 0;
+ 
++err_pipefs:
++	unix_gid_cache_destroy(net);
+ err_unixgid:
+ 	ip_map_cache_destroy(net);
+ err_ipmap:
+@@ -60,6 +65,7 @@ err_proc:
+ 
+ static __net_exit void sunrpc_exit_net(struct net *net)
+ {
++	rpc_pipefs_exit_net(net);
+ 	unix_gid_cache_destroy(net);
+ 	ip_map_cache_destroy(net);
+ 	rpc_proc_exit(net);
 -- 
 1.9.1
 
