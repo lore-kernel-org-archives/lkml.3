@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576AbaIOWX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:23:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51355 "EHLO
+	id S1758700AbaIOWYC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:24:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51353 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933114AbaIOWUf (ORCPT
+	with ESMTP id S933109AbaIOWUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:20:35 -0400
+	Mon, 15 Sep 2014 18:20:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
+Cc: Wen Xiong <wenxiong@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andy Whitcroft <apw@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/187] blk-mq: fix initializing request's start time
-Date: Mon, 15 Sep 2014 15:07:38 -0700
-Message-Id: <1410818997-9432-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 046/187] bnx2x: Adapter not recovery from EEH error injection
+Date: Mon, 15 Sep 2014 15:07:36 -0700
+Message-Id: <1410818997-9432-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,39 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: "wenxiong@linux.vnet.ibm.com" <wenxiong@linux.vnet.ibm.com>
 
-commit 0fec08b4ecfc36fd8a64432343b2964fb86d2675 upstream.
+commit 0c0e63410a393aae4b615849625f539db775d586 upstream.
 
-blk_rq_init() is called in req's complete handler to initialize
-the request, so the members of start_time and start_time_ns might
-become inaccurate when it is allocated in future.
+When injecting EEH error to bnx2x adapter, adapter couldn't be recovery
+and caused recursive EEH errors. The patch fixes the issue.
 
-The patch initializes the two members in blk_mq_rq_ctx_init() to
-fix the problem.
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Chris J Arges <chris.j.arges@canonical.com>
-Cc: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- block/blk-mq.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 7f9b1f6..2192cf4 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -179,6 +179,8 @@ static void blk_mq_rq_ctx_init(struct request_queue *q, struct blk_mq_ctx *ctx,
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+index 0067b97..71d3f0c 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -12998,8 +12998,8 @@ static int bnx2x_eeh_nic_unload(struct bnx2x *bp)
+ 	netdev_reset_tc(bp->dev);
  
- 	rq->mq_ctx = ctx;
- 	rq->cmd_flags = rw_flags;
-+	rq->start_time = jiffies;
-+	set_start_time_ns(rq);
- 	ctx->rq_dispatched[rw_is_sync(rw_flags)]++;
- }
+ 	del_timer_sync(&bp->timer);
+-	cancel_delayed_work(&bp->sp_task);
+-	cancel_delayed_work(&bp->period_task);
++	cancel_delayed_work_sync(&bp->sp_task);
++	cancel_delayed_work_sync(&bp->period_task);
  
+ 	spin_lock_bh(&bp->stats_lock);
+ 	bp->stats_state = STATS_STATE_DISABLED;
 -- 
 1.9.1
 
