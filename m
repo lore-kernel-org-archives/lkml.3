@@ -1,405 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088AbaIOQ1e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:27:34 -0400
-Received: from mail-by2on0106.outbound.protection.outlook.com ([207.46.100.106]:14240
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752224AbaIOQ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:27:31 -0400
-X-Greylist: delayed 5524 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 12:27:31 EDT
-X-WSS-ID: 0NBYB1O-07-PBU-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        "Aravind Gopalakrishnan" <aravind.gopalakrishnan@amd.com>
-Subject: [PATCH V5] edac, amd64_edac: Modify usage of amd64_read_dct_pci_cfg()
-Date: Mon, 15 Sep 2014 11:37:38 -0500
-Message-ID: <1410799058-3149-1-git-send-email-aravind.gopalakrishnan@amd.com>
-X-Mailer: git-send-email 2.0.3
+	id S1753920AbaIOQ2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:28:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24401 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752772AbaIOQ2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 12:28:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,529,1406617200"; 
+   d="scan'208";a="591532964"
+Date: Mon, 15 Sep 2014 09:28:17 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH v3 1/5] mfd/axp20x: rename files to support more devices
+Message-ID: <20140915092817.071fd722@ultegra>
+In-Reply-To: <5414A264.8090100@kernel.org>
+References: <1410477357-6407-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1410477357-6407-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	<5414A264.8090100@kernel.org>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(46102001)(68736004)(74502001)(102836001)(79102001)(19580405001)(95666004)(97736003)(88136002)(83322001)(106466001)(44976005)(84676001)(87286001)(20776003)(81342001)(33646002)(89996001)(90102001)(76482001)(47776003)(48376002)(77156001)(62966002)(50466002)(4396001)(92566001)(105586002)(107046002)(92726001)(575784001)(2201001)(86362001)(85852003)(93916002)(83072002)(229853001)(101416001)(36756003)(74662001)(87936001)(85306004)(77096002)(77982001)(53416004)(104166001)(50986999)(19580395003)(64706001)(80022001)(21056001)(81542001)(50226001)(99396002)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB490;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03355EE97E
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+On Sat, 13 Sep 2014 21:00:36 +0100
+Jonathan Cameron <jic23@kernel.org> wrote:
 
-Rationale behind this change:
- - F2x1xx addresses were stopped from being mapped explicitly to DCT1
-   from F15h (OR) onwards. They use _dct[0:1] mechanism to access the
-   registers. So we should move away from using address ranges to select
-   DCT for these families.
- - On newer processors, the address ranges used to indicate DCT1 (0x140,
-   0x1a0) have different meanings than what is assumed currently.
+> On 12/09/14 00:15, Jacob Pan wrote:
+> > More XPowers PMIC devices can be supported by extending this
+> > driver, so rename it to axp2xx to cover axp288 variant.
+> > 
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> I'm not sure this rename is a good idea (or the original wild
+> card was for that matter).
+> 
+> For example, just a quick look at the xpowers website shows there is
+> a AXP228 which just got swept up by the name change.
+> 
+> Best plan, in my view, is to always name a driver after an individual
+> part it supports and rely on Kconfig description to say what else is
+> supported. Bit late here, but perhaps best not to make things worse!
+> > ---
+OK. I agree with this plan to keep axp20x name and modify Kconfig
+description.
 
-Changes introduced:
- - amd64_read_dct_pci_cfg() now takes in dct value and uses it for
-   'selecting the dct'
- - Update usage of the function. Keep in mind that different families
-   have specific handling requirements
- - Remove [k8|f10]_read_dct_pci_cfg() as they don't do much different
-   from amd64_read_pci_cfg()
-   - Move the k8 specific check to amd64_read_pci_cfg
- - Remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
- - Remove now needless .read_dct_pci_cfg
+Lee is that OK with you? please help to make a decision here.
 
-Testing:
- - Tested on Fam 10h; Fam15h Models: 00h, 30h; Fam16h using 'EDAC_DEBUG'
-   and mce_amd_inj
- - driver obtains info from F2x registers and caches it in pvt
-   structures correctly
- - ECC decoding works fine
 
-Signed-off-by: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
----
-Changes in V5: (per Boris suggestion)
- - use switch instead of if() in amd64_read_dct_pci_cfg() for better
-   readability.
- - retain if(!dct_ganging_enabled) condition while reading dclr1.
+> >  drivers/mfd/Kconfig                      | 7 ++++---
+> >  drivers/mfd/Makefile                     | 2 +-
+> >  drivers/mfd/{axp20x.c => axp2xx.c}       | 6 +++---
+> >  include/linux/mfd/{axp20x.h => axp2xx.h} | 6 +++---
+> >  4 files changed, 11 insertions(+), 10 deletions(-)
+> >  rename drivers/mfd/{axp20x.c => axp2xx.c} (97%)
+> >  rename include/linux/mfd/{axp20x.h => axp2xx.h} (98%)
+> > 
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index de5abf2..42a70a3 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -67,14 +67,15 @@ config MFD_BCM590XX
+> >  	help
+> >  	  Support for the BCM590xx PMUs from Broadcom
+> >  
+> > -config MFD_AXP20X
+> > -	bool "X-Powers AXP20X"
+> > +config MFD_AXP2XX
+> > +	bool "X-Powers AXP2XX"
+> >  	select MFD_CORE
+> >  	select REGMAP_I2C
+> >  	select REGMAP_IRQ
+> >  	depends on I2C=y
+> >  	help
+> > -	  If you say Y here you get support for the X-Powers
+> > AXP202 and AXP209.
+> > +	  If you say Y here you get support for the X-Powers
+> > AXP202, AXP209 and
+> > +	  AXP288 power management IC (PMIC).
+> >  	  This driver include only the core APIs. You have to
+> > select individual components like regulators or the PEK (Power
+> > Enable Key) under the corresponding menus.
+> > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > index 3fcfdfc..8d0beb2 100644
+> > --- a/drivers/mfd/Makefile
+> > +++ b/drivers/mfd/Makefile
+> > @@ -103,7 +103,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-irq.o
+> >  obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+> >  obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+> >  obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+> > -obj-$(CONFIG_MFD_AXP20X)	+= axp20x.o
+> > +obj-$(CONFIG_MFD_AXP2XX)	+= axp2xx.o
+> >  
+> >  obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+> >  obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+> > diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp2xx.c
+> > similarity index 97%
+> > rename from drivers/mfd/axp20x.c
+> > rename to drivers/mfd/axp2xx.c
+> > index dee6539..332a8a0 100644
+> > --- a/drivers/mfd/axp20x.c
+> > +++ b/drivers/mfd/axp2xx.c
+> > @@ -1,7 +1,7 @@
+> >  /*
+> > - * axp20x.c - MFD core driver for the X-Powers AXP202 and AXP209
+> > + * axp2xx.c - MFD core driver for the X-Powers AXP202 and AXP209
+> >   *
+> > - * AXP20x comprises an adaptive USB-Compatible PWM charger, 2 BUCK
+> > DC-DC
+> > + * AXP2xx comprises an adaptive USB-Compatible PWM charger, 2 BUCK
+> > DC-DC
+> >   * converters, 5 LDOs, multiple 12-bit ADCs of voltage, current
+> > and temperature
+> >   * as well as 4 configurable GPIOs.
+> >   *
+> > @@ -21,7 +21,7 @@
+> >  #include <linux/regmap.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/regulator/consumer.h>
+> > -#include <linux/mfd/axp20x.h>
+> > +#include <linux/mfd/axp2xx.h>
+> >  #include <linux/mfd/core.h>
+> >  #include <linux/of_device.h>
+> >  #include <linux/of_irq.h>
+> > diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp2xx.h
+> > similarity index 98%
+> > rename from include/linux/mfd/axp20x.h
+> > rename to include/linux/mfd/axp2xx.h
+> > index d0e31a2..a36d91b 100644
+> > --- a/include/linux/mfd/axp20x.h
+> > +++ b/include/linux/mfd/axp2xx.h
+> > @@ -8,8 +8,8 @@
+> >   * published by the Free Software Foundation.
+> >   */
+> >  
+> > -#ifndef __LINUX_MFD_AXP20X_H
+> > -#define __LINUX_MFD_AXP20X_H
+> > +#ifndef __LINUX_MFD_AXP2XX_H
+> > +#define __LINUX_MFD_AXP2XX_H
+> >  
+> >  enum {
+> >  	AXP202_ID = 0,
+> > @@ -177,4 +177,4 @@ struct axp20x_dev {
+> >  	long				variant;
+> >  };
+> >  
+> > -#endif /* __LINUX_MFD_AXP20X_H */
+> > +#endif /* __LINUX_MFD_AXP2XX_H */
+> > 
 
-Change in V4: (per Boris suggestion)
- - move amd64_read_dct_pci_cfg() to amd64_edac.c and save exporting
-   f15h_select_dct() in the process
-
-Changes in V3:
- - per Boris suggestion
-   - move dct selection logic to amd64_read_dct_pci_cfg()
-   - remove f15_read_dct_pci_cfg() and move logic to amd64_read_dct_pci_cfg()
- - misc
-   - modify logic in amd64_read_dct_pci_cfg() to keep in mind the specific
-     read handling requirements of different families. Previous version had
-     failed to do that.
-
-Changes in V2: (per Boris suggestion)
- - Hide family checks in amd64_read_dct_pci_cfg()
- - Use pvt structure for family checks and not boot_cpu_data
-
- drivers/edac/amd64_edac.c | 146 +++++++++++++++++++++++++---------------------
- drivers/edac/amd64_edac.h |   5 --
- 2 files changed, 80 insertions(+), 71 deletions(-)
-
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index f8bf000..bbd6514 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -87,61 +87,73 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
- }
- 
- /*
-+ * Select DCT to which PCI cfg accesses are routed
-+ */
-+static void f15h_select_dct(struct amd64_pvt *pvt, u8 dct)
-+{
-+	u32 reg = 0;
-+
-+	amd64_read_pci_cfg(pvt->F1, DCT_CFG_SEL, &reg);
-+	reg &= (pvt->model == 0x30) ? ~3 : ~1;
-+	reg |= dct;
-+	amd64_write_pci_cfg(pvt->F1, DCT_CFG_SEL, reg);
-+}
-+
-+/*
-  *
-  * Depending on the family, F2 DCT reads need special handling:
-  *
-- * K8: has a single DCT only
-+ * K8: has a single DCT only and no address offsets >= 0x100
-  *
-  * F10h: each DCT has its own set of regs
-  *	DCT0 -> F2x040..
-  *	DCT1 -> F2x140..
-  *
-- * F15h: we select which DCT we access using F1x10C[DctCfgSel]
-- *
-  * F16h: has only 1 DCT
-+ *
-+ * F15h: we select which DCT we access using F1x10C[DctCfgSel]
-  */
--static int k8_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
--			       const char *func)
-+static inline int amd64_read_dct_pci_cfg(struct amd64_pvt *pvt, u8 dct,
-+					 int offset, u32 *val)
- {
--	if (addr >= 0x100)
--		return -EINVAL;
--
--	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
--}
-+	switch (pvt->fam) {
-+	case 0xf:
-+		if (dct || offset >= 0x100)
-+			return -EINVAL;
-+		break;
- 
--static int f10_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
--				 const char *func)
--{
--	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
--}
-+	case 0x10:
-+		if (dct) {
-+			/*
-+			 * Note: If ganging is enabled, barring the regs
-+			 * F2x[1,0]98 and F2x[1,0]9C; reads reads to F2x1xx
-+			 * return 0. (cf. Section 2.8.1 F10h BKDG)
-+			 */
-+			if (dct_ganging_enabled(pvt))
-+				return 0;
- 
--/*
-- * Select DCT to which PCI cfg accesses are routed
-- */
--static void f15h_select_dct(struct amd64_pvt *pvt, u8 dct)
--{
--	u32 reg = 0;
-+			offset += 0x100;
-+		}
-+		break;
- 
--	amd64_read_pci_cfg(pvt->F1, DCT_CFG_SEL, &reg);
--	reg &= (pvt->model >= 0x30) ? ~3 : ~1;
--	reg |= dct;
--	amd64_write_pci_cfg(pvt->F1, DCT_CFG_SEL, reg);
--}
-+	case 0x15:
-+		/*
-+		 * F15h: F2x1xx addresses do not map explicitly to DCT1.
-+		 * We should select which DCT we access using F1x10C[DctCfgSel]
-+		 */
-+		dct = (dct && pvt->model == 0x30) ? 3 : dct;
-+		f15h_select_dct(pvt, dct);
-+		break;
- 
--static int f15_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
--				 const char *func)
--{
--	u8 dct  = 0;
-+	case 0x16:
-+		if (dct)
-+			return -EINVAL;
-+		break;
- 
--	/* For F15 M30h, the second dct is DCT 3, refer to BKDG Section 2.10 */
--	if (addr >= 0x140 && addr <= 0x1a0) {
--		dct   = (pvt->model >= 0x30) ? 3 : 1;
--		addr -= 0x100;
-+	default:
-+		break;
- 	}
--
--	f15h_select_dct(pvt, dct);
--
--	return __amd64_read_pci_cfg_dword(pvt->F2, addr, val, func);
-+	return amd64_read_pci_cfg(pvt->F2, offset, val);
- }
- 
- /*
-@@ -768,16 +780,17 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
- 		u32 *base0 = &pvt->csels[0].csbases[cs];
- 		u32 *base1 = &pvt->csels[1].csbases[cs];
- 
--		if (!amd64_read_dct_pci_cfg(pvt, reg0, base0))
-+		if (!amd64_read_dct_pci_cfg(pvt, 0, reg0, base0))
- 			edac_dbg(0, "  DCSB0[%d]=0x%08x reg: F2x%x\n",
- 				 cs, *base0, reg0);
- 
--		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
-+		if (pvt->fam == 0xf)
- 			continue;
- 
--		if (!amd64_read_dct_pci_cfg(pvt, reg1, base1))
-+		if (!amd64_read_dct_pci_cfg(pvt, 1, reg0, base1))
- 			edac_dbg(0, "  DCSB1[%d]=0x%08x reg: F2x%x\n",
--				 cs, *base1, reg1);
-+				 cs, *base1, (pvt->fam == 0x10) ? reg1
-+								: reg0);
- 	}
- 
- 	for_each_chip_select_mask(cs, 0, pvt) {
-@@ -786,16 +799,17 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
- 		u32 *mask0 = &pvt->csels[0].csmasks[cs];
- 		u32 *mask1 = &pvt->csels[1].csmasks[cs];
- 
--		if (!amd64_read_dct_pci_cfg(pvt, reg0, mask0))
-+		if (!amd64_read_dct_pci_cfg(pvt, 0, reg0, mask0))
- 			edac_dbg(0, "    DCSM0[%d]=0x%08x reg: F2x%x\n",
- 				 cs, *mask0, reg0);
- 
--		if (pvt->fam == 0xf || dct_ganging_enabled(pvt))
-+		if (pvt->fam == 0xf)
- 			continue;
- 
--		if (!amd64_read_dct_pci_cfg(pvt, reg1, mask1))
-+		if (!amd64_read_dct_pci_cfg(pvt, 1, reg0, mask1))
- 			edac_dbg(0, "    DCSM1[%d]=0x%08x reg: F2x%x\n",
--				 cs, *mask1, reg1);
-+				 cs, *mask1, (pvt->fam == 0x10) ? reg1
-+								: reg0);
- 	}
- }
- 
-@@ -1198,7 +1212,7 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
- 	if (pvt->fam == 0xf)
- 		return;
- 
--	if (!amd64_read_dct_pci_cfg(pvt, DCT_SEL_LO, &pvt->dct_sel_lo)) {
-+	if (!amd64_read_pci_cfg(pvt->F2, DCT_SEL_LO, &pvt->dct_sel_lo)) {
- 		edac_dbg(0, "F2x110 (DCTSelLow): 0x%08x, High range addrs at: 0x%x\n",
- 			 pvt->dct_sel_lo, dct_sel_baseaddr(pvt));
- 
-@@ -1219,7 +1233,7 @@ static void read_dram_ctl_register(struct amd64_pvt *pvt)
- 			 dct_sel_interleave_addr(pvt));
- 	}
- 
--	amd64_read_dct_pci_cfg(pvt, DCT_SEL_HI, &pvt->dct_sel_hi);
-+	amd64_read_pci_cfg(pvt->F2, DCT_SEL_HI, &pvt->dct_sel_hi);
- }
- 
- /*
-@@ -1430,7 +1444,7 @@ static u64 f1x_swap_interleaved_region(struct amd64_pvt *pvt, u64 sys_addr)
- 			return sys_addr;
- 	}
- 
--	amd64_read_dct_pci_cfg(pvt, SWAP_INTLV_REG, &swap_reg);
-+	amd64_read_pci_cfg(pvt->F2, SWAP_INTLV_REG, &swap_reg);
- 
- 	if (!(swap_reg & 0x1))
- 		return sys_addr;
-@@ -1723,10 +1737,16 @@ static void debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
- 		       WARN_ON(ctrl != 0);
- 	}
- 
--	dbam = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->dbam1 : pvt->dbam0;
--	dcsb = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->csels[1].csbases
--						   : pvt->csels[0].csbases;
--
-+	if (pvt->fam == 0x10) {
-+		dbam = (ctrl && !dct_ganging_enabled(pvt)) ? pvt->dbam1
-+							   : pvt->dbam0;
-+		dcsb = (ctrl && !dct_ganging_enabled(pvt)) ?
-+				 pvt->csels[1].csbases :
-+				 pvt->csels[0].csbases;
-+	} else if (ctrl) {
-+		dbam = pvt->dbam0;
-+		dcsb = pvt->csels[1].csbases;
-+	}
- 	edac_dbg(1, "F2x%d80 (DRAM Bank Address Mapping): 0x%08x\n",
- 		 ctrl, dbam);
- 
-@@ -1760,7 +1780,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= k8_early_channel_count,
- 			.map_sysaddr_to_csrow	= k8_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= k8_dbam_to_chip_select,
--			.read_dct_pci_cfg	= k8_read_dct_pci_cfg,
- 		}
- 	},
- 	[F10_CPUS] = {
-@@ -1771,7 +1790,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f10_dbam_to_chip_select,
--			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
- 		}
- 	},
- 	[F15_CPUS] = {
-@@ -1782,7 +1800,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f15_dbam_to_chip_select,
--			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
- 		}
- 	},
- 	[F15_M30H_CPUS] = {
-@@ -1793,7 +1810,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
--			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
- 		}
- 	},
- 	[F16_CPUS] = {
-@@ -1804,7 +1820,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
--			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
- 		}
- 	},
- 	[F16_M30H_CPUS] = {
-@@ -1815,7 +1830,6 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
--			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
- 		}
- 	},
- };
-@@ -2148,25 +2162,25 @@ static void read_mc_regs(struct amd64_pvt *pvt)
- 	read_dct_base_mask(pvt);
- 
- 	amd64_read_pci_cfg(pvt->F1, DHAR, &pvt->dhar);
--	amd64_read_dct_pci_cfg(pvt, DBAM0, &pvt->dbam0);
-+	amd64_read_dct_pci_cfg(pvt, 0, DBAM0, &pvt->dbam0);
- 
- 	amd64_read_pci_cfg(pvt->F3, F10_ONLINE_SPARE, &pvt->online_spare);
- 
--	amd64_read_dct_pci_cfg(pvt, DCLR0, &pvt->dclr0);
--	amd64_read_dct_pci_cfg(pvt, DCHR0, &pvt->dchr0);
-+	amd64_read_dct_pci_cfg(pvt, 0, DCLR0, &pvt->dclr0);
-+	amd64_read_dct_pci_cfg(pvt, 0, DCHR0, &pvt->dchr0);
- 
- 	if (!dct_ganging_enabled(pvt)) {
--		amd64_read_dct_pci_cfg(pvt, DCLR1, &pvt->dclr1);
--		amd64_read_dct_pci_cfg(pvt, DCHR1, &pvt->dchr1);
-+		amd64_read_dct_pci_cfg(pvt, 1, DCLR0, &pvt->dclr1);
-+		amd64_read_dct_pci_cfg(pvt, 1, DCHR0, &pvt->dchr1);
- 	}
- 
- 	pvt->ecc_sym_sz = 4;
- 
- 	if (pvt->fam >= 0x10) {
- 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
-+		/* F16h has only DCT0, so no need to read dbam1 */
- 		if (pvt->fam != 0x16)
--			/* F16h has only DCT0 */
--			amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
-+			amd64_read_dct_pci_cfg(pvt, 1, DBAM0, &pvt->dbam1);
- 
- 		/* F10h, revD and later can do x8 ECC too */
- 		if ((pvt->fam > 0x10 || pvt->model > 7) && tmp & BIT(25))
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index d903e0c..55fb594 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -481,8 +481,6 @@ struct low_ops {
- 	void (*map_sysaddr_to_csrow)	(struct mem_ctl_info *mci, u64 sys_addr,
- 					 struct err_info *);
- 	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct, unsigned cs_mode);
--	int (*read_dct_pci_cfg)		(struct amd64_pvt *pvt, int offset,
--					 u32 *val, const char *func);
- };
- 
- struct amd64_family_type {
-@@ -502,9 +500,6 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
- #define amd64_write_pci_cfg(pdev, offset, val)	\
- 	__amd64_write_pci_cfg_dword(pdev, offset, val, __func__)
- 
--#define amd64_read_dct_pci_cfg(pvt, offset, val) \
--	pvt->ops->read_dct_pci_cfg(pvt, offset, val, __func__)
--
- int amd64_get_dram_hole_info(struct mem_ctl_info *mci, u64 *hole_base,
- 			     u64 *hole_offset, u64 *hole_size);
- 
--- 
-2.0.2
-
+[Jacob Pan]
