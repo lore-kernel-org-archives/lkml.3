@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865AbaIOOBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:01:16 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:51234 "EHLO
+	id S1753043AbaIOOBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:01:25 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:51382 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaIOOBK (ORCPT
+	with ESMTP id S1752880AbaIOOBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:01:10 -0400
-X-ASG-Debug-ID: 1410789665-0759e746c032220002-xx1T2L
+	Mon, 15 Sep 2014 10:01:17 -0400
+X-ASG-Debug-ID: 1410789671-0759e746c032420002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -23,10 +23,10 @@ CC: Frans Klaver <frans.klaver@xsens.com>, Felipe Balbi <balbi@ti.com>,
         <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
-Date: Mon, 15 Sep 2014 16:00:07 +0200
-X-ASG-Orig-Subj: [PATCH 1/4] tty: omap-serial: pull out calculation from baud_is_mode16
-Message-ID: <1410789610-23059-2-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+Date: Mon, 15 Sep 2014 16:00:09 +0200
+X-ASG-Orig-Subj: [PATCH 3/4] tty: omap-serial: use threaded interrupt handler
+Message-ID: <1410789610-23059-4-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com>
 References: <1410789610-23059-1-git-send-email-frans.klaver@xsens.com>
@@ -34,7 +34,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.160]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1410789665
+X-Barracuda-Start-Time: 1410789672
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -48,60 +48,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To determine the correct divisor, we need to know the difference between
-the desired baud rate and the actual baud rate. The calculation for this
-difference is implemented twice within omap_serial_baud_is_mode16().
-Pull out the calculation for easier maintenance.
+At 3.6Mbaud, with slightly over 2Mbit/s data coming in, we see 1600 uart
+rx buffer overflows within 30 seconds. Threading the interrupt handling reduces
+this to about 170 overflows in 10 minutes.
+
+In practice this therefore reduces the need for hardware flow control,
+meaning the sending side doesn't have to buffer as much either.
 
 Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
- drivers/tty/serial/omap-serial.c | 26 ++++++++++++++++++--------
- 1 file changed, 18 insertions(+), 8 deletions(-)
+ drivers/tty/serial/omap-serial.c | 30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index d017cec..ae935ce 100644
+index 7d3f557..398139a 100644
 --- a/drivers/tty/serial/omap-serial.c
 +++ b/drivers/tty/serial/omap-serial.c
-@@ -239,6 +239,22 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
+@@ -575,6 +575,20 @@ static void serial_omap_rdi(struct uart_omap_port *up, unsigned int lsr)
  }
  
- /*
-+ * Calculate the absolute difference between the desired and actual baud
-+ * rate for the given mode.
+ /**
++ * serial_omap_fast_irq() - schedule interrupt handling
 + */
-+static inline int calculate_baud_abs_diff(struct uart_port *port,
-+				unsigned int baud, unsigned int mode)
++static irqreturn_t serial_omap_fast_irq(int irq, void *dev_id)
 +{
-+	unsigned int n = port->uartclk / (mode * baud);
-+	int abs_diff = baud - (port->uartclk / (mode * n));
++	struct uart_omap_port *up = dev_id;
++	unsigned int iir = serial_in(up, UART_IIR);
 +
-+	if (abs_diff < 0)
-+		abs_diff = -abs_diff;
++	if (iir & UART_IIR_NO_INT)
++		return IRQ_NONE;
 +
-+	return abs_diff;
++	return IRQ_WAKE_THREAD;
 +}
 +
-+/*
-  * serial_omap_baud_is_mode16 - check if baud rate is MODE16X
-  * @port: uart port info
-  * @baud: baudrate for which mode needs to be determined
-@@ -252,14 +268,8 @@ static void serial_omap_enable_wakeup(struct uart_omap_port *up, bool enable)
- static bool
- serial_omap_baud_is_mode16(struct uart_port *port, unsigned int baud)
- {
--	unsigned int n13 = port->uartclk / (13 * baud);
--	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
--	if (baudAbsDiff13 < 0)
--		baudAbsDiff13 = -baudAbsDiff13;
--	if (baudAbsDiff16 < 0)
--		baudAbsDiff16 = -baudAbsDiff16;
-+	int baudAbsDiff13 = calculate_baud_abs_diff(port, baud, 13);
-+	int baudAbsDiff16 = calculate_baud_abs_diff(port, baud, 16);
++/**
+  * serial_omap_irq() - This handles the interrupt from one port
+  * @irq: uart port irq number
+  * @dev_id: uart port info
+@@ -584,7 +598,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 	struct uart_omap_port *up = dev_id;
+ 	unsigned int iir, lsr;
+ 	unsigned int type;
+-	irqreturn_t ret = IRQ_NONE;
+ 	int max_count = 256;
  
- 	return (baudAbsDiff13 >= baudAbsDiff16);
+ 	spin_lock(&up->port.lock);
+@@ -595,7 +608,6 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 		if (iir & UART_IIR_NO_INT)
+ 			break;
+ 
+-		ret = IRQ_HANDLED;
+ 		lsr = serial_in(up, UART_LSR);
+ 
+ 		/* extract IRQ type from IIR register */
+@@ -634,7 +646,7 @@ static irqreturn_t serial_omap_irq(int irq, void *dev_id)
+ 	pm_runtime_put_autosuspend(up->dev);
+ 	up->port_activity = jiffies;
+ 
+-	return ret;
++	return IRQ_HANDLED;
  }
+ 
+ static unsigned int serial_omap_tx_empty(struct uart_port *port)
+@@ -731,15 +743,19 @@ static int serial_omap_startup(struct uart_port *port)
+ 	/*
+ 	 * Allocate the IRQ
+ 	 */
+-	retval = request_irq(up->port.irq, serial_omap_irq, up->port.irqflags,
+-				up->name, up);
++	retval = request_threaded_irq(up->port.irq, serial_omap_fast_irq,
++						serial_omap_irq,
++						IRQF_ONESHOT | up->port.irqflags,
++						up->name, up);
+ 	if (retval)
+ 		return retval;
+ 
+ 	/* Optional wake-up IRQ */
+ 	if (up->wakeirq) {
+-		retval = request_irq(up->wakeirq, serial_omap_irq,
+-				     up->port.irqflags, up->name, up);
++		retval = request_threaded_irq(up->wakeirq, serial_omap_fast_irq,
++						serial_omap_irq,
++						IRQF_ONESHOT | up->port.irqflags,
++						up->name, up);
+ 		if (retval) {
+ 			free_irq(up->port.irq, up);
+ 			return retval;
 -- 
 2.1.0
 
