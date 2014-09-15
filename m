@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaIOR1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:27:25 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33074 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807AbaIOR1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:27:23 -0400
-Message-ID: <1410802034.3817.21.camel@hornet>
-Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
-From: Pawel Moll <pawel.moll@arm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Mon, 15 Sep 2014 18:27:14 +0100
-In-Reply-To: <20140912161934.GJ1801@kernel.org>
-References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com>
-	 <1410522513-1045-3-git-send-email-pawel.moll@arm.com>
-	 <5412EA7A.9020807@codeaurora.org> <1410526672.16936.52.camel@hornet>
-	 <20140912134910.GG1801@kernel.org> <1410530335.16936.60.camel@hornet>
-	 <20140912161934.GJ1801@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754116AbaIOR24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:28:56 -0400
+Received: from p3plex2out03.prod.phx3.secureserver.net ([184.168.131.16]:41192
+	"EHLO p3plex2out03.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753342AbaIOR2z convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 13:28:55 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/3] staging: comedi: adl_pci9118: redo DMA buffer
+ allocation
+Thread-Topic: [PATCH 0/3] staging: comedi: adl_pci9118: redo DMA buffer
+ allocation
+Thread-Index: AQHPzmig8+EuAL3YEkW6/xzsYQv5N5wCaWeQ
+Date: Mon, 15 Sep 2014 17:28:52 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FA1985@P3PWEX4MB008.ex4.secureserver.net>
+References: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1410512684-17403-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-09-12 at 17:19 +0100, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Sep 12, 2014 at 02:58:55PM +0100, Pawel Moll escreveu:
-> > On Fri, 2014-09-12 at 14:49 +0100, Arnaldo Carvalho de Melo wrote:
-> > > Perhaps both? I.e. an u64 followed from a string, if the u64 is zero,
-> > > then there is a string right after it?
->  
-> > How would this look like in userspace? Something like this?
->  
-> > 8<----
-> > struct perf_event_marker {
-> > 	uint64_t value;
-> > 	char *string;
-> > } arg;
->  
-> > arg.value = 0x1234;
->  
-> > /* or */
->  
-> > arg.value = 0;
-> > arg.string = "abcd";
->  
-> > ioctl(fd, PERF_EVENT_IOC_MARKER, &arg)
-> > 8<----
->  
-> > If so, maybe it would simpler just to go for classic size/data
-> > structure?
->  
-> > 8<-----
-> > struct perf_event_marker {
-> > 	uint32_t size;
-> > 	void *data;
-> > }
-> > 8<-----
->  
-> > This would directly map into struct perf_raw_record...
-> 
-> I can see the usefulness of having it all, i.e. if we do just:
-> 
-> perf trace --pid `pidof some-tool-in-debug-mode-using-this-interface`
+On Friday, September 12, 2014 2:05 AM, Ian Abbott wrote:
+> "adl_pci9118" allocates more pages of DMA buffer than it uses, may
+> allocate half a double-buffer it does not use because it's the "wrong"
+> half that it managed to allocate (unlikely), and relies on virt_to_bus()
+> to treat generic kernel memory from get_free_pages() as coherent DMA
+> memory.  Correct the issues, using dma_alloc_coherent() to allocate the
+> DMA buffers.
+>
+> 1) staging: comedi: adl_pci9118: don't allocate 2nd DMA buffer on failure
+> 2) staging: comedi: adl_pci9118: don't overallocate DMA buffer
+> 3) staging: comedi: adl_pci9118: use dma_alloc_coherent()
+>
+>  drivers/staging/comedi/Kconfig               |  2 +-
+>  drivers/staging/comedi/drivers/adl_pci9118.c | 40 ++++++++++++++--------------
+>  2 files changed, 21 insertions(+), 21 deletions(-)
 
-Hm. I haven't thought about a situation when 3rd party wants to inject
-something into "my" data stream... I guess it could be implemented (a
-"pid" member of the struct perf_event_marker with default 0 meaning
-"myself"?), but will definitely complicate the patch. Should I have a
-look at it now or maybe leave it till we get a general agreement about
-the marker ioctl existence?
+Thanks. Know I don't need to look into how to remove the
+virt_to_bus()... ;-)
 
-> Then 'perf trace' doesn't know about any binary format a tool may have,
-> getting strings there (hey, LD_PRELOADing some logging library to hook
-> into this comes to mind) and having it merged with other events
-> (syscalls, pagefaults, etc) looks useful.
-
-But do you still mean a "magic" u64 before the rest? Injecting a string
-would just mean:
-
-	marker.size = strlen(s) + 1;
-	marker.data = s;
-
-> As well as some specialized version of 'perf trace' that knows about
-> some binary protocol that would get app specific stats or lock status,
-> etc, perhaps even plugins for 'perf trace' that would be selected by
-> that first u64? Also seems useful.
-> 	  
-> I.e. having a way to provide just strings and another that would allow
-> passing perf_raw_record.
-
-Sounds interesting. But then maybe this stuff shouldn't go into "raw"
-then? It could be something like this in the sample:
-
-	{ u64 type; /* 0 means zero-terminated string in data */
-	  u32 size;
-	  char data[size]; } && PERF_SAMPLE_MARKER
-
-Pawel
-
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
