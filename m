@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaIOT2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:28:53 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46369 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607AbaIOT2u (ORCPT
+	id S1754817AbaIOT3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:29:04 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49070 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbaIOT3A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:28:50 -0400
-Date: Mon, 15 Sep 2014 15:28:36 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: David Vrabel <david.vrabel@citrix.com>, roger.pau@citrix.com
-Cc: Mukesh Rathor <mukesh.rathor@oracle.com>, xen-devel@lists.xenproject.org,
-        boris.ostrovsky@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [V5 PATCH 1/1] x86/xen: Set EFER.NX and EFER.SCE in
- PVH guests
-Message-ID: <20140915192836.GE3683@laptop.dumpdata.com>
-References: <1410392166-16388-1-git-send-email-mukesh.rathor@oracle.com>
- <1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
- <20140912204258.GA24846@laptop.dumpdata.com>
- <5416FBA1.2060902@citrix.com>
+	Mon, 15 Sep 2014 15:29:00 -0400
+Date: Mon, 15 Sep 2014 20:28:50 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [PATCH v5 10/12] sched: get CPU's utilization statistic
+Message-ID: <20140915192850.GB28083@e103687>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-11-git-send-email-vincent.guittot@linaro.org>
+ <20140911123412.GY3190@worktop.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140911123412.GY3190@worktop.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 15 Sep 2014 19:28:55.0694 (UTC) FILETIME=[4A3E1AE0:01CFD11B]
+X-MC-Unique: 114091520285803301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <5416FBA1.2060902@citrix.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 03:45:53PM +0100, David Vrabel wrote:
-> On 12/09/14 21:42, Konrad Rzeszutek Wilk wrote:
-> > On Wed, Sep 10, 2014 at 04:36:06PM -0700, Mukesh Rathor wrote:
-> >> 
-> >> @@ -413,15 +417,18 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
-> >>  					(unsigned long)xen_failsafe_callback;
-> >>  		ctxt->user_regs.cs = __KERNEL_CS;
-> >>  		per_cpu(xen_cr3, cpu) = __pa(swapper_pg_dir);
-> >> -#ifdef CONFIG_X86_32
-> >>  	}
-> >> -#else
-> >> -	} else
-> >> -		/* N.B. The user_regs.eip (cpu_bringup_and_idle) is called with
-> >> -		 * %rdi having the cpu number - which means are passing in
-> >> -		 * as the first parameter the cpu. Subtle!
-> >> +#ifdef CONFIG_XEN_PVH
-> >> +	else {
-> >> +		/*
-> >> +		 * The vcpu comes on kernel page tables which have the NX pte
-> >> +		 * bit set. This means before DS/SS is touched, NX in
-> >> +		 * EFER must be set. Hence the following assembly glue code.
-> > 
-> > And you ripped out the nice 'N.B' comment I added. Sad :-(
+On Thu, Sep 11, 2014 at 01:34:12PM +0100, Peter Zijlstra wrote:
+> > @@ -4514,6 +4519,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
+> >  	return target;
+> >  }
+> >  
+> > +static int get_cpu_utilization(int cpu)
+> > +{
+> > +	unsigned long usage = cpu_rq(cpu)->cfs.usage_load_avg;
+> > +	unsigned long capacity = capacity_of(cpu);
+> > +
+> > +	if (usage >= SCHED_LOAD_SCALE)
+> > +		return capacity + 1;
+> > +
+> > +	return (usage * capacity) >> SCHED_LOAD_SHIFT;
+> > +}
 > 
-> I think I removed that.
+> So if I understood patch 9 correct, your changelog is iffy.
+> usage_load_avg should never get > 1 (of whatever unit), no matter how
+> many tasks are on the rq. You can only maximally run all the time.
 > 
-> I don't think passing parameters to a function is particularly subtle
-> and this comment is largely superseded by the comment for
-> xen_pvh_early_cpu_init() itself.
+> Therefore I can only interpret the if (usage >= SCHED_LOAD_SCALE) as
+> numerical error handling, nothing more.
 
-Good point.
-> 
-> >> +#ifdef CONFIG_XEN_PVH
-> >> +/*
-> >> + * xen_pvh_early_cpu_init() - early PVH VCPU initialization
-> >> + * @cpu: this cpu number (%rdi)
-> >> + * @flag: boolean flag true to indicate this is a secondary vcpu coming up
-> >> + *        on this entry point or the primary cpu coming back online.
-> > 
-> > Why do we do this? Why not just piggyback on the first parameter - the 'cpu'?
-> > 
-> > If it is zero it is boot CPU.
-> 
-> "Changes in v5 (Mukesh):
->   - Jan reminded us that vcpu 0 could go offline/online. So, add flag back"
+That is not entirely true unless you also classify transient usage
+spikes due to task migrations as numerical errors as well.
 
-Right, totally forgot about that.
+Since each task sched_entity is carrying around 350ms worth of execution
+history with it between different cpus and cpu utilization is based on
+the sum of task entity usage_avg_contrib on the runqueue you may get
+cfs.usage_load_avg > 1 temporarily after task migrations. It will
+eventually converge to 1.
 
-With that I think I think you can tack on 'Reviewed-by: Konrad Rzeszutek
-Wilk <konrad.wilk@oracle.com>'.
+The same goes for new tasks which are initialized to have a
+usage_avg_contrib of 1 and may be queued on cpu with tasks already
+running. In that case cfs.usage_load_avg is temporarily unbounded.
 
-Granted the PVH ABI doc needs to go in Xen base first as David requested.
-Even a draft that explains some of this would be good. 
+> Also I'm not entirely sure I like the usage, utilization names/metrics.
+> I would suggest to reverse them. Call the pure running number
+> 'utilization' and this scaled with capacity 'usage' or so.
 
-CC-ing Roger - perhaps v1 of the draft could be posted and we can flesh it
-out more?
-> 
-> David
+I can agree with calling running for utilization, but I'm not convienced
+about capacity. What does it exactly cover here? I'm confused and
+jetlagged.
+
+Morten
+
