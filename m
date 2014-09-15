@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758545AbaIOUs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:48:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
+	id S1758532AbaIOUs4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:48:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55133 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542AbaIOTgr (ORCPT
+	with ESMTP id S1755545AbaIOTgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:36:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.16 119/158] Bluetooth: never linger on process exit
-Date: Mon, 15 Sep 2014 12:25:58 -0700
-Message-Id: <20140915192546.453308382@linuxfoundation.org>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.16 110/158] mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into do_remount
+Date: Mon, 15 Sep 2014 12:25:49 -0700
+Message-Id: <20140915192546.181728847@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,93 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 093facf3634da1b0c2cc7ed106f1983da901bbab upstream.
+commit 07b645589dcda8b7a5249e096fece2a67556f0f4 upstream.
 
-If the current process is exiting, lingering on socket close will make
-it unkillable, so we should avoid it.
+There are no races as locked mount flags are guaranteed to never change.
 
-Reproducer:
+Moving the test into do_remount makes it more visible, and ensures all
+filesystem remounts pass the MNT_LOCK_READONLY permission check.  This
+second case is not an issue today as filesystem remounts are guarded
+by capable(CAP_DAC_ADMIN) and thus will always fail in less privileged
+mount namespaces, but it could become an issue in the future.
 
-  #include <sys/types.h>
-  #include <sys/socket.h>
-
-  #define BTPROTO_L2CAP   0
-  #define BTPROTO_SCO     2
-  #define BTPROTO_RFCOMM  3
-
-  int main()
-  {
-          int fd;
-          struct linger ling;
-
-          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
-          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
-          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
-
-          ling.l_onoff = 1;
-          ling.l_linger = 1000000000;
-          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
-
-          return 0;
-  }
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/l2cap_sock.c  |    3 ++-
- net/bluetooth/rfcomm/sock.c |    3 ++-
- net/bluetooth/sco.c         |    6 ++++--
- 3 files changed, 8 insertions(+), 4 deletions(-)
+ fs/namespace.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -1111,7 +1111,8 @@ static int l2cap_sock_shutdown(struct so
- 		l2cap_chan_close(chan, 0);
- 		lock_sock(sk);
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1896,9 +1896,6 @@ static int change_mount_flags(struct vfs
+ 	if (readonly_request == __mnt_is_readonly(mnt))
+ 		return 0;
  
--		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
-+		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
-+		    !(current->flags & PF_EXITING))
- 			err = bt_sock_wait_state(sk, BT_CLOSED,
- 						 sk->sk_lingertime);
- 	}
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -918,7 +918,8 @@ static int rfcomm_sock_shutdown(struct s
- 		sk->sk_shutdown = SHUTDOWN_MASK;
- 		__rfcomm_sock_close(sk);
+-	if (mnt->mnt_flags & MNT_LOCK_READONLY)
+-		return -EPERM;
+-
+ 	if (readonly_request)
+ 		error = mnt_make_readonly(real_mount(mnt));
+ 	else
+@@ -1924,6 +1921,16 @@ static int do_remount(struct path *path,
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
  
--		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
-+		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
-+		    !(current->flags & PF_EXITING))
- 			err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
- 	}
- 	release_sock(sk);
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -909,7 +909,8 @@ static int sco_sock_shutdown(struct sock
- 		sco_sock_clear_timer(sk);
- 		__sco_sock_close(sk);
- 
--		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
-+		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
-+		    !(current->flags & PF_EXITING))
- 			err = bt_sock_wait_state(sk, BT_CLOSED,
- 						 sk->sk_lingertime);
- 	}
-@@ -929,7 +930,8 @@ static int sco_sock_release(struct socke
- 
- 	sco_sock_close(sk);
- 
--	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime) {
-+	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
-+	    !(current->flags & PF_EXITING)) {
- 		lock_sock(sk);
- 		err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
- 		release_sock(sk);
++	/* Don't allow changing of locked mnt flags.
++	 *
++	 * No locks need to be held here while testing the various
++	 * MNT_LOCK flags because those flags can never be cleared
++	 * once they are set.
++	 */
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
++	    !(mnt_flags & MNT_READONLY)) {
++		return -EPERM;
++	}
+ 	err = security_sb_remount(sb, data);
+ 	if (err)
+ 		return err;
 
 
