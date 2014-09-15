@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480AbaIOUuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:50:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
+	id S1758623AbaIOUvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:51:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55092 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171AbaIOTgp (ORCPT
+	with ESMTP id S1755044AbaIOTgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:36:45 -0400
+	Mon, 15 Sep 2014 15:36:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.16 115/158] fix EBUSY on umount() from MNT_SHRINKABLE
-Date: Mon, 15 Sep 2014 12:25:54 -0700
-Message-Id: <20140915192546.330199788@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.16 133/158] xfs: quotacheck leaves dquot buffers without verifiers
+Date: Mon, 15 Sep 2014 12:26:12 -0700
+Message-Id: <20140915192546.869012657@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,49 +29,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 81b6b06197606b4bef4e427a197aeb808e8d89e1 upstream.
+commit 5fd364fee81a7888af806e42ed8a91c845894f2d upstream.
 
-We need the parents of victims alive until namespace_unlock() gets to
-dput() of the (ex-)mountpoints.  However, that screws up the "is it
-busy" checks in case when we have shrinkable mounts that need to be
-killed.  Solution: go ahead and decrement refcounts of parents right
-in umount_tree(), increment them again just before dropping rwsem in
-namespace_unlock() (and let the loop in the end of namespace_unlock()
-finally drop those references for good, as we do now).  Parents can't
-get freed until we drop rwsem - at least one reference is kept until
-then, both in case when parent is among the victims and when it is
-not.  So they'll still be around when we get to namespace_unlock().
+When running xfs/305, I noticed that quotacheck was flushing dquot
+buffers that did not have the xfs_dquot_buf_ops verifiers attached:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+XFS (vdb): _xfs_buf_ioapply: no ops on block 0x1dc8/0x1dc8
+ffff880052489000: 44 51 01 04 00 00 65 b8 00 00 00 00 00 00 00 00  DQ....e.........
+ffff880052489010: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489020: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+ffff880052489030: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+CPU: 1 PID: 2376 Comm: mount Not tainted 3.16.0-rc2-dgc+ #306
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS Bochs 01/01/2011
+ ffff88006fe38000 ffff88004a0ffae8 ffffffff81cf1cca 0000000000000001
+ ffff88004a0ffb88 ffffffff814d50ca 000010004a0ffc70 0000000000000000
+ ffff88006be56dc4 0000000000000021 0000000000001dc8 ffff88007c773d80
+Call Trace:
+ [<ffffffff81cf1cca>] dump_stack+0x45/0x56
+ [<ffffffff814d50ca>] _xfs_buf_ioapply+0x3ca/0x3d0
+ [<ffffffff810db520>] ? wake_up_state+0x20/0x20
+ [<ffffffff814d51f5>] ? xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d513b>] xfs_buf_iorequest+0x6b/0xd0
+ [<ffffffff814d51f5>] xfs_bdstrat_cb+0x55/0xb0
+ [<ffffffff814d53ab>] __xfs_buf_delwri_submit+0x15b/0x220
+ [<ffffffff814d6040>] ? xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff814d6040>] xfs_buf_delwri_submit+0x30/0x90
+ [<ffffffff8150f89d>] xfs_qm_quotacheck+0x17d/0x3c0
+ [<ffffffff81510591>] xfs_qm_mount_quotas+0x151/0x1e0
+ [<ffffffff814ed01c>] xfs_mountfs+0x56c/0x7d0
+ [<ffffffff814f0f12>] xfs_fs_fill_super+0x2c2/0x340
+ [<ffffffff811c9fe4>] mount_bdev+0x194/0x1d0
+ [<ffffffff814f0c50>] ? xfs_finish_flags+0x170/0x170
+ [<ffffffff814ef0f5>] xfs_fs_mount+0x15/0x20
+ [<ffffffff811ca8c9>] mount_fs+0x39/0x1b0
+ [<ffffffff811e4d67>] vfs_kern_mount+0x67/0x120
+ [<ffffffff811e757e>] do_mount+0x23e/0xad0
+ [<ffffffff8117abde>] ? __get_free_pages+0xe/0x50
+ [<ffffffff811e71e6>] ? copy_mount_options+0x36/0x150
+ [<ffffffff811e8103>] SyS_mount+0x83/0xc0
+ [<ffffffff81cfd40b>] tracesys+0xdd/0xe2
+
+This was caused by dquot buffer readahead not attaching a verifier
+structure to the buffer when readahead was issued, resulting in the
+followup read of the buffer finding a valid buffer and so not
+attaching new verifiers to the buffer as part of the read.
+
+Also, when a verifier failure occurs, we then read the buffer
+without verifiers. Attach the verifiers manually after this read so
+that if the buffer is then written it will be verified that the
+corruption has been repaired.
+
+Further, when flushing a dquot we don't ask for a verifier when
+reading in the dquot buffer the dquot belongs to. Most of the time
+this isn't an issue because the buffer is still cached, but when it
+is not cached it will result in writing the dquot buffer without
+having the verfier attached.
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/xfs/xfs_dquot.c |    3 ++-
+ fs/xfs/xfs_qm.c    |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1226,6 +1226,11 @@ static void namespace_unlock(void)
- 	head.first->pprev = &head.first;
- 	INIT_HLIST_HEAD(&unmounted);
+--- a/fs/xfs/xfs_dquot.c
++++ b/fs/xfs/xfs_dquot.c
+@@ -974,7 +974,8 @@ xfs_qm_dqflush(
+ 	 * Get the buffer containing the on-disk dquot
+ 	 */
+ 	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dqp->q_blkno,
+-				   mp->m_quotainfo->qi_dqchunklen, 0, &bp, NULL);
++				   mp->m_quotainfo->qi_dqchunklen, 0, &bp,
++				   &xfs_dquot_buf_ops);
+ 	if (error)
+ 		goto out_unlock;
  
-+	/* undo decrements we'd done in umount_tree() */
-+	hlist_for_each_entry(mnt, &head, mnt_hash)
-+		if (mnt->mnt_ex_mountpoint.mnt)
-+			mntget(mnt->mnt_ex_mountpoint.mnt);
-+
- 	up_write(&namespace_sem);
+--- a/fs/xfs/xfs_qm.c
++++ b/fs/xfs/xfs_qm.c
+@@ -1005,6 +1005,12 @@ xfs_qm_dqiter_bufs(
+ 		if (error)
+ 			break;
  
- 	synchronize_rcu();
-@@ -1277,6 +1282,7 @@ void umount_tree(struct mount *mnt, int
- 			p->mnt.mnt_flags |= MNT_SYNC_UMOUNT;
- 		if (mnt_has_parent(p)) {
- 			put_mountpoint(p->mnt_mp);
-+			mnt_add_count(p->mnt_parent, -1);
- 			/* move the reference to mountpoint into ->mnt_ex_mountpoint */
- 			p->mnt_ex_mountpoint.dentry = p->mnt_mountpoint;
- 			p->mnt_ex_mountpoint.mnt = &p->mnt_parent->mnt;
++		/*
++		 * A corrupt buffer might not have a verifier attached, so
++		 * make sure we have the correct one attached before writeback
++		 * occurs.
++		 */
++		bp->b_ops = &xfs_dquot_buf_ops;
+ 		xfs_qm_reset_dqcounts(mp, bp, firstid, type);
+ 		xfs_buf_delwri_queue(bp, buffer_list);
+ 		xfs_buf_relse(bp);
+@@ -1090,7 +1096,7 @@ xfs_qm_dqiterate(
+ 					xfs_buf_readahead(mp->m_ddev_targp,
+ 					       XFS_FSB_TO_DADDR(mp, rablkno),
+ 					       mp->m_quotainfo->qi_dqchunklen,
+-					       NULL);
++					       &xfs_dquot_buf_ops);
+ 					rablkno++;
+ 				}
+ 			}
 
 
