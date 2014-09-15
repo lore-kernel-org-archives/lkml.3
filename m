@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279AbaIOWTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:19:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51202 "EHLO
+	id S1758312AbaIOWTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:19:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51220 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245AbaIOWTh (ORCPT
+	with ESMTP id S1758245AbaIOWTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:19:37 -0400
+	Mon, 15 Sep 2014 18:19:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Milton Miller <miltonm@us.ibm.com>,
-        Wen Xiong <wenxiong@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Whitcroft <apw@canonical.com>,
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/187] bnx2x: Fix kernel crash and data miscompare after EEH recovery
-Date: Mon, 15 Sep 2014 15:07:35 -0700
-Message-Id: <1410818997-9432-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 040/187] x86, espfix: Move espfix definitions into a separate header file
+Date: Mon, 15 Sep 2014 15:07:30 -0700
+Message-Id: <1410818997-9432-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -30,52 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "wenxiong@linux.vnet.ibm.com" <wenxiong@linux.vnet.ibm.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 9aaae044abe95de182d09004cc3fa181bf22e6e0 upstream.
+commit e1fe9ed8d2a4937510d0d60e20705035c2609aea upstream.
 
-A rmb() is required to ensure that the CQE is not read before it
-is written by the adapter DMA.  PCI ordering rules will make sure
-the other fields are written before the marker at the end of struct
-eth_fast_path_rx_cqe but without rmb() a weakly ordered processor can
-process stale data.
+Sparse warns that the percpu variables aren't declared before they are
+defined.  Rather than hacking around it, move espfix definitions into
+a proper header file.
 
-Without the barrier we have observed various crashes including
-bnx2x_tpa_start being called on queues not stopped (resulting in message
-start of bin not in stop) and NULL pointer exceptions from bnx2x_rx_int.
-
-Signed-off-by: Milton Miller <miltonm@us.ibm.com>
-Signed-off-by: Wen Xiong <wenxiong@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Andy Whitcroft <apw@canonical.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/x86/include/asm/espfix.h | 16 ++++++++++++++++
+ arch/x86/include/asm/setup.h  |  5 ++---
+ arch/x86/kernel/espfix_64.c   |  1 +
+ 3 files changed, 19 insertions(+), 3 deletions(-)
+ create mode 100644 arch/x86/include/asm/espfix.h
 
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 6089bc4..a9324f4 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -868,6 +868,18 @@ int bnx2x_rx_int(struct bnx2x_fastpath *fp, int budget)
- 		bd_prod = RX_BD(bd_prod);
- 		bd_cons = RX_BD(bd_cons);
- 
-+		/* A rmb() is required to ensure that the CQE is not read
-+		 * before it is written by the adapter DMA.  PCI ordering
-+		 * rules will make sure the other fields are written before
-+		 * the marker at the end of struct eth_fast_path_rx_cqe
-+		 * but without rmb() a weakly ordered processor can process
-+		 * stale data.  Without the barrier TPA state-machine might
-+		 * enter inconsistent state and kernel stack might be
-+		 * provided with incorrect packet description - these lead
-+		 * to various kernel crashed.
-+		 */
-+		rmb();
+diff --git a/arch/x86/include/asm/espfix.h b/arch/x86/include/asm/espfix.h
+new file mode 100644
+index 0000000..729051c
+--- /dev/null
++++ b/arch/x86/include/asm/espfix.h
+@@ -0,0 +1,16 @@
++#ifdef _ASM_X86_ESPFIX_H
++#define _ASM_X86_ESPFIX_H
 +
- 		cqe_fp_flags = cqe_fp->type_error_flags;
- 		cqe_fp_type = cqe_fp_flags & ETH_FAST_PATH_RX_CQE_TYPE;
++#ifdef CONFIG_X86_64
++
++#include <asm/percpu.h>
++
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DECLARE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
++#endif /* CONFIG_X86_64 */
++
++#endif /* _ASM_X86_ESPFIX_H */
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index edfaf6a..c2003c0 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -62,11 +62,10 @@ extern void x86_ce4100_early_setup(void);
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
  
+-extern void init_espfix_bsp(void);
+-extern void init_espfix_ap(void);
+-
+ #ifndef _SETUP
+ 
++#include <asm/espfix.h>
++
+ /*
+  * This is set up by the setup-routine at boot-time
+  */
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+index 8a64da3..6afbb16 100644
+--- a/arch/x86/kernel/espfix_64.c
++++ b/arch/x86/kernel/espfix_64.c
+@@ -40,6 +40,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/setup.h>
++#include <asm/espfix.h>
+ 
+ /*
+  * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
 -- 
 1.9.1
 
