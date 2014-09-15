@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaIOTgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:36:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54594 "EHLO
+	id S1755622AbaIOTgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:36:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066AbaIOT1M (ORCPT
+	with ESMTP id S1754576AbaIOTgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:12 -0400
+	Mon, 15 Sep 2014 15:36:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.16 109/158] mnt: Only change user settable mount flags in remount
-Date: Mon, 15 Sep 2014 12:25:48 -0700
-Message-Id: <20140915192546.152998089@linuxfoundation.org>
+        Yuri Tikhonov <yur@emcraft.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "Manibalan P" <pmanibalan@amiindia.co.in>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.16 127/158] md/raid6: avoid data corruption during recovery of double-degraded RAID6
+Date: Mon, 15 Sep 2014 12:26:06 -0700
+Message-Id: <20140915192546.695280830@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,53 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: NeilBrown <neilb@suse.de>
 
-commit a6138db815df5ee542d848318e5dae681590fccd upstream.
+commit 9c4bdf697c39805078392d5ddbbba5ae5680e0dd upstream.
 
-Kenton Varda <kenton@sandstorm.io> discovered that by remounting a
-read-only bind mount read-only in a user namespace the
-MNT_LOCK_READONLY bit would be cleared, allowing an unprivileged user
-to the remount a read-only mount read-write.
+During recovery of a double-degraded RAID6 it is possible for
+some blocks not to be recovered properly, leading to corruption.
 
-Correct this by replacing the mask of mount flags to preserve
-with a mask of mount flags that may be changed, and preserve
-all others.   This ensures that any future bugs with this mask and
-remount will fail in an easy to detect way where new mount flags
-simply won't change.
+If a write happens to one block in a stripe that would be written to a
+missing device, and at the same time that stripe is recovering data
+to the other missing device, then that recovered data may not be written.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+This patch skips, in the double-degraded case, an optimisation that is
+only safe for single-degraded arrays.
+
+Bug was introduced in 2.6.32 and fix is suitable for any kernel since
+then.  In an older kernel with separate handle_stripe5() and
+handle_stripe6() functions the patch must change handle_stripe6().
+
+Fixes: 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+Cc: Yuri Tikhonov <yur@emcraft.com>
+Cc: Dan Williams <dan.j.williams@intel.com>
+Reported-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Tested-by: "Manibalan P" <pmanibalan@amiindia.co.in>
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1090423
+Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c        |    2 +-
- include/linux/mount.h |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1937,7 +1937,7 @@ static int do_remount(struct path *path,
- 		err = do_remount_sb(sb, flags, data, 0);
- 	if (!err) {
- 		lock_mount_hash();
--		mnt_flags |= mnt->mnt.mnt_flags & MNT_PROPAGATION_MASK;
-+		mnt_flags |= mnt->mnt.mnt_flags & ~MNT_USER_SETTABLE_MASK;
- 		mnt->mnt.mnt_flags = mnt_flags;
- 		touch_mnt_namespace(mnt->mnt_ns);
- 		unlock_mount_hash();
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -42,7 +42,9 @@ struct mnt_namespace;
-  * flag, consider how it interacts with shared mounts.
-  */
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
--#define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
-+#define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
-+				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
-+				 | MNT_READONLY)
- 
- #define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
- 			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3817,6 +3817,8 @@ static void handle_stripe(struct stripe_
+ 				set_bit(R5_Wantwrite, &dev->flags);
+ 				if (prexor)
+ 					continue;
++				if (s.failed > 1)
++					continue;
+ 				if (!test_bit(R5_Insync, &dev->flags) ||
+ 				    ((i == sh->pd_idx || i == sh->qd_idx)  &&
+ 				     s.failed == 0))
 
 
