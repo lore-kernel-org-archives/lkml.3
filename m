@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405AbaIOHbg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 03:31:36 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:33552 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375AbaIOHbc (ORCPT
+	id S1753894AbaIOHhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 03:37:05 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59253 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395AbaIOHbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 03:31:32 -0400
+	Mon, 15 Sep 2014 03:31:35 -0400
 From: behanw@converseincode.com
 To: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
         fabf@skynet.be, herbert@gondor.apana.org.au, jbacik@fb.com,
@@ -21,9 +21,9 @@ Cc: akpm@linux-foundation.org, bruce.w.allan@intel.com, d.kasatkin@samsung.com,
         thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
         torvalds@linux-foundation.org,
         Behan Webster <behanw@converseincode.com>
-Subject: [PATCH v3 04/12] crypto: LLVMLinux: Remove VLAIS from crypto/mv_cesa.c
-Date: Mon, 15 Sep 2014 00:30:26 -0700
-Message-Id: <1410766234-1634-5-git-send-email-behanw@converseincode.com>
+Subject: [PATCH v3 05/12] crypto: LLVMLinux: Remove VLAIS from crypto/n2_core.c
+Date: Mon, 15 Sep 2014 00:30:27 -0700
+Message-Id: <1410766234-1634-6-git-send-email-behanw@converseincode.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
 References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
@@ -46,95 +46,44 @@ Signed-off-by: Behan Webster <behanw@converseincode.com>
 Reviewed-by: Mark Charlebois <charlebm@gmail.com>
 Reviewed-by: Jan-Simon Möller <dl9pf@gmx.de>
 ---
- drivers/crypto/mv_cesa.c | 41 ++++++++++++++++++-----------------------
- 1 file changed, 18 insertions(+), 23 deletions(-)
+ drivers/crypto/n2_core.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/crypto/mv_cesa.c b/drivers/crypto/mv_cesa.c
-index 29d0ee5..032c72c 100644
---- a/drivers/crypto/mv_cesa.c
-+++ b/drivers/crypto/mv_cesa.c
-@@ -402,26 +402,23 @@ static int mv_hash_final_fallback(struct ahash_request *req)
- {
- 	const struct mv_tfm_hash_ctx *tfm_ctx = crypto_tfm_ctx(req->base.tfm);
- 	struct mv_req_hash_ctx *req_ctx = ahash_request_ctx(req);
+diff --git a/drivers/crypto/n2_core.c b/drivers/crypto/n2_core.c
+index 7263c10..f8e3207 100644
+--- a/drivers/crypto/n2_core.c
++++ b/drivers/crypto/n2_core.c
+@@ -445,10 +445,7 @@ static int n2_hmac_async_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 	struct n2_hmac_ctx *ctx = crypto_ahash_ctx(tfm);
+ 	struct crypto_shash *child_shash = ctx->child_shash;
+ 	struct crypto_ahash *fallback_tfm;
 -	struct {
 -		struct shash_desc shash;
--		char ctx[crypto_shash_descsize(tfm_ctx->fallback)];
+-		char ctx[crypto_shash_descsize(child_shash)];
 -	} desc;
-+	SHASH_DESC_ON_STACK(shash, tfm_ctx->fallback);
- 	int rc;
++	SHASH_DESC_ON_STACK(shash, child_shash);
+ 	int err, bs, ds;
  
--	desc.shash.tfm = tfm_ctx->fallback;
--	desc.shash.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+	shash->tfm = tfm_ctx->fallback;
-+	shash->flags = CRYPTO_TFM_REQ_MAY_SLEEP;
- 	if (unlikely(req_ctx->first_hash)) {
--		crypto_shash_init(&desc.shash);
--		crypto_shash_update(&desc.shash, req_ctx->buffer,
-+		crypto_shash_init(shash);
-+		crypto_shash_update(shash, req_ctx->buffer,
- 				    req_ctx->extra_bytes);
- 	} else {
- 		/* only SHA1 for now....
- 		 */
--		rc = mv_hash_import_sha1_ctx(req_ctx, &desc.shash);
-+		rc = mv_hash_import_sha1_ctx(req_ctx, shash);
- 		if (rc)
- 			goto out;
- 	}
--	rc = crypto_shash_final(&desc.shash, req->result);
-+	rc = crypto_shash_final(shash, req->result);
- out:
- 	return rc;
- }
-@@ -794,23 +791,21 @@ static int mv_hash_setkey(struct crypto_ahash *tfm, const u8 * key,
- 	ss = crypto_shash_statesize(ctx->base_hash);
+ 	fallback_tfm = ctx->base.fallback_tfm;
+@@ -456,15 +453,15 @@ static int n2_hmac_async_setkey(struct crypto_ahash *tfm, const u8 *key,
+ 	if (err)
+ 		return err;
  
- 	{
--		struct {
--			struct shash_desc shash;
--			char ctx[crypto_shash_descsize(ctx->base_hash)];
--		} desc;
-+		SHASH_DESC_ON_STACK(shash, ctx->base_hash);
-+
- 		unsigned int i;
- 		char ipad[ss];
- 		char opad[ss];
+-	desc.shash.tfm = child_shash;
+-	desc.shash.flags = crypto_ahash_get_flags(tfm) &
++	shash->tfm = child_shash;
++	shash->flags = crypto_ahash_get_flags(tfm) &
+ 		CRYPTO_TFM_REQ_MAY_SLEEP;
  
--		desc.shash.tfm = ctx->base_hash;
--		desc.shash.flags = crypto_shash_get_flags(ctx->base_hash) &
-+		shash->tfm = ctx->base_hash;
-+		shash->flags = crypto_shash_get_flags(ctx->base_hash) &
- 		    CRYPTO_TFM_REQ_MAY_SLEEP;
- 
- 		if (keylen > bs) {
- 			int err;
- 
- 			err =
--			    crypto_shash_digest(&desc.shash, key, keylen, ipad);
-+			    crypto_shash_digest(shash, key, keylen, ipad);
- 			if (err)
- 				return err;
- 
-@@ -826,12 +821,12 @@ static int mv_hash_setkey(struct crypto_ahash *tfm, const u8 * key,
- 			opad[i] ^= 0x5c;
- 		}
- 
--		rc = crypto_shash_init(&desc.shash) ? :
--		    crypto_shash_update(&desc.shash, ipad, bs) ? :
--		    crypto_shash_export(&desc.shash, ipad) ? :
--		    crypto_shash_init(&desc.shash) ? :
--		    crypto_shash_update(&desc.shash, opad, bs) ? :
--		    crypto_shash_export(&desc.shash, opad);
-+		rc = crypto_shash_init(shash) ? :
-+		    crypto_shash_update(shash, ipad, bs) ? :
-+		    crypto_shash_export(shash, ipad) ? :
-+		    crypto_shash_init(shash) ? :
-+		    crypto_shash_update(shash, opad, bs) ? :
-+		    crypto_shash_export(shash, opad);
- 
- 		if (rc == 0)
- 			mv_hash_init_ivs(ctx, ipad, opad);
+ 	bs = crypto_shash_blocksize(child_shash);
+ 	ds = crypto_shash_digestsize(child_shash);
+ 	BUG_ON(ds > N2_HASH_KEY_MAX);
+ 	if (keylen > bs) {
+-		err = crypto_shash_digest(&desc.shash, key, keylen,
++		err = crypto_shash_digest(shash, key, keylen,
+ 					  ctx->hash_key);
+ 		if (err)
+ 			return err;
 -- 
 1.9.1
 
