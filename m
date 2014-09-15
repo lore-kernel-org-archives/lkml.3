@@ -1,148 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759566AbaIOWro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:47:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64143 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758174AbaIOWrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:47:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="386502021"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>,
-        Vince Weaver <vincent.weaver@maine.edu>, jolsa@redhat.com
-Subject: [PATCH] Add some documentation on the perf sysfs ABI interface
-Date: Mon, 15 Sep 2014 15:47:20 -0700
-Message-Id: <1410821240-30334-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S932598AbaIOWsH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:48:07 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50244 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757188AbaIOWsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:48:04 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+In-Reply-To: <20140915091515.GA1577@arm.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	<20140911132935.068DCC408F6@trevor.secretlab.ca>
+	<20140911153739.GA24416@localhost>
+	<20140915043116.9985CC407E8@trevor.secretlab.ca>
+	<20140915091515.GA1577@arm.com>
+Date: Mon, 15 Sep 2014 15:48:00 -0700
+Message-Id: <20140915224800.BA32FC40B84@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Mon, 15 Sep 2014 10:15:16 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Mon, Sep 15, 2014 at 05:31:16AM +0100, Grant Likely wrote:
+> > On Thu, 11 Sep 2014 16:37:39 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
+> > > > Regarding the requests to refactor ACPICA to work better for ARM. I
+> > > > completely agree that it should be done, but I do not think it should be
+> > > > a prerequisite to getting this core support merged. That kind of
+> > > > refactoring is far easier to justify when it has immediate improvement
+> > > > on the mainline codebase, and it gives us a working baseline to test
+> > > > against. Doing it the other way around just makes things harder.
+> > > 
+> > > I have to disagree here. As I said, I'm perfectly fine with refactoring
+> > > happening later but I'm not happy with compiling in code with undefined
+> > > behaviour on ARM that may actually be executed at run-time.
+> > > 
+> > > I'm being told one of the main advantages of ACPI is forward
+> > > compatibility: running older kernels on newer hardware (potentially with
+> > > newer ACPI version tables). ACPI 5.1 includes partial support for ARM
+> > > but the S and C states are not defined yet. We therefore assume that
+> > > hardware vendors deploying servers using ACPI would not provide such
+> > > yet to be defined information in ACPI 5.1 tables.
+> > 
+> > We're good on this front. ACPI-future platforms aren't allowed to use
+> > new features when booting an older kernel.
+> 
+> Do you mean ACPI-future firmware should not provide new information to
+> older kernels?
 
-Initial attempt of documenting the perf sysfs interface as
-an ABI. I also added some additional pointers hopefully useful
-to the users. Comments welcome.
+I mean that ACPI has the mechanism so that the platform (via AML)
+doesn't try to do things that the OS doesn't understand.  AML methods are
+to use the \_REV object to determine whether or not it can use a
+feature. If, for example, the _REV is 5, then the AML must switch itself
+to code paths that don't use ACPI 6 features.
 
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: jolsa@redhat.com
-v2: Various fixes. Fix cmask/inv (Stephane) Fixes from Randy Dunlap.
-v3: Fix typo (Jiri).
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- Documentation/ABI/stable/sysfs-devices-perf | 99 +++++++++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
- create mode 100644 Documentation/ABI/stable/sysfs-devices-perf
+> The firmware must not care which kernel version (not even
+> which OS) runs on top. That's the whole point of an OS-agnostic
+> standardisation body).
 
-diff --git a/Documentation/ABI/stable/sysfs-devices-perf b/Documentation/ABI/stable/sysfs-devices-perf
-new file mode 100644
-index 0000000..73693e7
---- /dev/null
-+++ b/Documentation/ABI/stable/sysfs-devices-perf
-@@ -0,0 +1,99 @@
-+Perf events enumeration in sysfs
-+
-+The perf events subsystem exports the format of hardware performance
-+counter events supported by perf events. The events can be accessed
-+using the perf_event_open() syscall. Each perf directory in devices
-+represents a distinct PMU (Performance Monitoring Unit), but not all
-+directories in this directory are perf directories.
-+
-+What: /sys/devices/*/format/*
-+Description:
-+
-+Each file in format describes how to fill in an event attribute on the
-+current CPU for the perf_event_open syscall.  Multiple event
-+attributes may be overlapping and only be valid for some combination
-+of attributes (for example only for some event/umask combinations).
-+Most attributes are optional.
-+
-+Each field may have the following contents:
-+
-+CONFIG:START-END      Field consists of bits START-END in the perf_event_attr
-+		      CONFIG field
-+		      XXX is END one beyond?
-+CONFIG:BIT	      Field consists of a single bit with index BIT in
-+		      CONFIG field
-+
-+Valid CONFIG fields are config, config1, config2. These map to the respective
-+64bit words in struct perf_event_attr.
-+
-+Typical attributes on a x86 platform
-+
-+event		Set the 8 bit event code (required)
-+umask		Set the 8 bit umask. Event code and umask together select a
-+		hardware event.
-+cmask		Set the 8 bit counter Mask. Only increment counters when at
-+		least cmask events happen during the same cycle.
-+inv		(1bit flag) Invert the cmask condition. Only valid with
-+		cmask>0.
-+edge		(1bit flag) Only increment the event when the condition
-+		changes (starts happening)
-+any		(1bit flag) Count on both threads of a core
-+pc		(1bit flag) Toggle the PMi pins when the condition happens
-+
-+Attributes available on some x86 platforms:
-+
-+in_tx		(1bit flag) Only count in a hardware transaction.
-+in_tx_cp	(1bit flag) Undo counts inside transaction when the
-+		transaction aborts.
-+ldlat		Set the load-use latency threshold for sampling loads.
-+		Note this is a load-use latency so includes pipeline delays.
-+offcore_rsp     Set an extra mask qualifying the type of offcore access.
-+		Only with OFFCORE_RESPONSE events. The actual mask is CPU model
-+		specific.
-+
-+For more details on the x86 attributes on Intel platforms please see
-+http://www.intel.com/sdm Volume 3, Chapter 18 and 19.  For more
-+details on the perf_event_attr struct please see the perf_event_open
-+manpage and include/uapi/linux/perf_event.h.
-+
-+What: /sys/devices/*/events/*
-+Description:
-+
-+Describe predefined events available in the CPU. Each file describes an event.
-+The format is attr=0xHEXNUM{,attr=0xHEXNUM}. Each attr is described in a config
-+file. Together all the attributes can be used to set up a valid event for the
-+perf_event_open syscall.
-+
-+Typically only a small subset of the CPU events is described in sysfs.
-+Some more events are available through predefined classes in perf_event_attr.
-+Even more events require filling in CPU specific values. The libraries referenced
-+below provide larger event lists.
-+
-+What: /sys/devices/*/type
-+Description:
-+
-+Decimal number: The PMU type to fill into perf_event_attr in the
-+type field to select the correct PMU.
-+
-+What: /sys/devices/*/perf_event_mux_interval_ms
-+Description:
-+
-+Decimal number: Set the counter multiplexing interval in ms. When more
-+events are active than the hardware directly supports perf events
-+multiplexes the event. By default (value 0) this is done on timer interrupts
-+(depending on the CONFIG_HZ setting) and not done while idle. This
-+allows to set a different frequency. Note that setting this to non 0
-+may impact idle time, as the event switches will wake up the CPUs now.
-+
-+What: /sys/devices/*/rdpmc
-+Description:
-+
-+[x86] Decimal number: When 1, allow the RDPMC instruction in user space
-+to read performance events that have been set up with perf. When 0
-+ring 3 RDPMC access is disallowed.
-+
-+Users: perf (tools/perf/*)
-+The following libraries provide more user friendly interfaces:
-+       PAPI (http://icl.cs.utk.edu/papi/)
-+       libpfm4 (http://perfmon2.sourceforge.net/)
-+       jevents (http://github.com/andikleen/pmu-tools)
--- 
-1.9.3
+It shouldn't care about the OS, but it absolutely needs to care about
+which revision of ACPI spec that the OS implements, and the ACPI spec
+accounts for exactly that.
 
+> > ACPI has a mechanism to check version numbers.
+> 
+> I assume you are referring to the kernel checking of the ACPI version
+> the tables are compatible with (acpi_parse_fadt() in patch 7/17 in the
+> v3 series). With these patches, it currently assumes that it is
+> compatible with anything 5.1 and later.
+
+No, that's the other side. That's how the OS determines which version of
+the spec the ACPI tables implement. That's how the OS decides if it
+needs to use the behaviour from an older revision of the spec.
+
+For the kernel to accept anything 5.1 or later is the correct behavour
+here. ACPI compatibility is driven by the lowest common denominator. The
+kernel and the platform (AML) choose the most recent version of the spec
+that is supported by both.
+
+> > Similarly, when ACPI-future defines those states, the kernel shouldn't
+> > expose them to an older platform.
+> 
+> When the kernel implements ACPI-future, all is fine, it should still be
+> backwards compatible with 5.1.
+> 
+> > > What if in a year time we get ACPI 5.2 or 6 (or an errata update)
+> > > covering the S and C states for ARM? I would expect hardware vendors
+> > > to take advantage and provide such information in ACPI tables. Can we
+> > > guarantee that a kernel with the current ACPI patches wouldn't blow up
+> > > when it tries to interpret the new tables?
+> > 
+> > Yes - at least as much as we can guarantee anything in systems
+> > programming.
+> 
+> No, we don't. Once you define some sleep states in ACPI-future and
+> the firmware provides such tables to an older kernel, it is possible
+> that the current (x86-centric) ACPI sleep code will fault. Just look at
+> the acpi_suspend_enter() (and you also seemed OK to define
+> ACPI_FLUSH_CPU_CACHE as BUG).
+> 
+> Even if v4 of these patches removed the sleep code, given uncertainties
+> like above I'm thinking more and more that we should actually make the
+> acpi_parse_fadt() version check succeed only on ACPI 5.1 and no later
+> version (apart from ACPI sleep, is there anything else we would expect
+> to blow up when additional information is provided via ACPI-future
+> tables?).
+
+I was about to agree with you that we could do that temporarily, but
+after thinking about it more, this is actually an actively dangerous
+thing to do because it will encourage firmware vendors to lie about
+which version of the ACPI spec it conforms to. ie. A vendor may build a
+platform and use the ACPI6.0 spec, but they want it to boot on an older
+kernel, and so they make their tables lie and report 5.1.  This would be
+a horrible situation. We would loose the ability to use reported ACPI
+spec comformance to determine which features to enable.
+
+Selecting on v5.1 or later really is the right choice here. Vendors who
+do the wrong thing and produce broken firmware will get rightly dumped
+on by Red Hat and Canonical for shipping something that doesn't work.
+We have a lot less risk here than ACPI had historically in the x86 world
+because these systems are primarily built to run Linux instead of
+Windows. That means the systems will be tested and validated with
+released Linux distros, and they will fix the firmware if it is broken.
+
+g.
