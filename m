@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965AbaIOKOn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:14:43 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:25369 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740AbaIOKOj (ORCPT
+	id S1753921AbaIOKOm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:14:42 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:62688 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753737AbaIOKOi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:14:39 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-cf-5416bc0ca985
+	Mon, 15 Sep 2014 06:14:38 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-d0-5416bc0c7b62
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Dan Williams <dan.j.williams@intel.com>,
@@ -20,78 +20,63 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v3 0/4] amba/dma: pl330: add Power Management support
-Date: Mon, 15 Sep 2014 12:13:49 +0200
-Message-id: <1410776033-22156-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v3 1/4] PM / Runtime: Add getter for quering the IRQ safe option
+Date: Mon, 15 Sep 2014 12:13:50 +0200
+Message-id: <1410776033-22156-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkluLIzCtJLcpLzFFi42I5/e/4FV2ePWIhBu9vslpsnLGe1WL61AuM
-	Fqun/mW1OPBnB6PF6xeGFmeb3rBbLJk8n9Xi8q45bBafe48wWty+zGux9shddot3LyMsjq8N
-	t3jZt5/Fgc+jpbmHzWPxnpdMHneu7WHzWPLmEKtH35ZVjB6fN8l57P38myWAPYrLJiU1J7Ms
-	tUjfLoEr48Pp04wFnXwVy87NZWpgnMLdxcjJISFgInHw7Ac2CFtM4sK99UA2F4eQwFJGiYVn
-	n7FDOH1MEtt7J4JVsQkYS2xevgSsSkTgHZPEre2nWEAcZoGjjBLTe98ygVQJC7hKTJqzhR3E
-	ZhFQlXg76xRYN6+Au8SlA72sEPvkJE4em8w6gZF7ASPDKkbR1NLkguKk9FxDveLE3OLSvHS9
-	5PzcTYyQ4Puyg3HxMatDjAIcjEo8vAxXhEOEWBPLiitzDzFKcDArifBO3SoWIsSbklhZlVqU
-	H19UmpNafIiRiYNTqoGRYUrlglIBW9O0jvkFZeLBaV8P/o7p2lne1flsNfMdtkD9yd63jzDf
-	4F75KviQftCte1Fph5cYzDtts//WxOyVeSYHZ5/3WPlpe8qVIxYxW2NVW2XmLKo93rnystsF
-	z/CNFw+6spo98+E7LnhpUlzRj0TO51I8B6a8ydrqay7KLNBd8Zj9dVaiEktxRqKhFnNRcSIA
-	sYhmwxwCAAA=
+In-reply-to: <1410776033-22156-1-git-send-email-k.kozlowski@samsung.com>
+References: <1410776033-22156-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t/xK7o8e8RCDF7+k7LYOGM9q8X0qRcY
+	LVZP/ctqceDPDkaL1y8MLc42vWG3WDJ5PqvF5V1z2Cw+9x5htLh9mddi7ZG77BbvXkZYHF8b
+	bvGybz+LA59HS3MPm8fiPS+ZPO5c28PmseTNIVaPvi2rGD0+b5Lz2Pv5N0sAexSXTUpqTmZZ
+	apG+XQJXxrOG62wF27gr3h29x9TAeJ6zi5GTQ0LARGLn1y52CFtM4sK99WxdjFwcQgJLGSW+
+	733NDOH0MUk8vvOIGaSKTcBYYvPyJWBVIgLvmCRubT/FAuIwCxxllJje+5api5GDQ1ggQGLH
+	EROQBhYBVYlNaw6BNfMKuEtc+XoOap2cxMljk1lBbE4BD4ltbxvA4kJANZ+evGScwMi7gJFh
+	FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIqH7Zwbj4mNUhRgEORiUeXoYrwiFCrIllxZW5
+	hxglOJiVRHinbhULEeJNSaysSi3Kjy8qzUktPsTIxMEp1cAYz/Uzjs90F5Ozst8Gn2gTr3k3
+	Z74scdupc0bI2vPOduWtEjwKnSXLj5VKra99YJ2+zzw9SXKdVmP2oTb/6evnellmT9zGIReV
+	H7NJ+NTcuH8Hwh9W3QkWYKjgTuy3+czNwbZj9VXfgwfmW19IzpJZphWa/Ji/ZUKeTWR1cz5n
+	+GK1qxxv7iuxFGckGmoxFxUnAgBZLhr9MwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+PM IRQ safe was set or not.
 
+Various bus drivers implementing runtime PM may use choose to suspend
+differently based on IRQ safeness status of child driver (e.g. do not
+unprepare the clock if IRQ safe is not set).
 
-This is third version of patches adding runtime PM to the pl330
-driver.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ include/linux/pm_runtime.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-The runtime PM of pl330 driver requires interrupt safe suspend/resume
-callbacks which is in conflict with current amba bus driver.
-The latter also unprepares and prepares the AMBA bus clock which
-is not safe for atomic context.
-
-The patchset solves this in patch 3/4 by handling clocks in different
-way if device driver set interrupt safe runtime PM.
-
-Any comments are welcome.
-
-Tested on boards with pl330 DMA driver:
- - Trats2 (Exynos4212)
- - Samsung Gear2-like development board (Exynos3250)
-
-
-Changes since v2:
-=================
-1. Add patch 1 (PM / Runtime: Add getter for quering the IRQ safe option)
-2. Add patch 2 (amba: Add helper macros for (un)preparing AMBA clock)
-3. Patch 3/4: Rewrite the idea. If IRQ safe runtime PM is set then
-   do not unprepare/prepare the clocks. Suggested by Russell King.
-4. Patch 4/4: During system sleep unprepare the clock.
-
-Changes since v1:
-=================
-1. Add patch 1 (amba: Allow AMBA drivers to use their own runtime PM).
-2. Patch 2/2: Apply Michal Simek's suggestions.
-3. Patch 2/2: Fix atomic context safeness in pl330_issue_pending().
-
-
-Best regards,
-Krzysztof Kozlowski
-
-
-Krzysztof Kozlowski (4):
-  PM / Runtime: Add getter for quering the IRQ safe option
-  amba: Add helper macros for (un)preparing AMBA clock
-  amba: Don't unprepare the clocks if device driver wants IRQ safe
-    runtime PM
-  dma: pl330: add Power Management support
-
- drivers/amba/bus.c         | 30 +++++++++++++++---
- drivers/dma/pl330.c        | 77 +++++++++++++++++++++++++++++++++++++++++++---
- include/linux/amba/bus.h   |  7 +++++
- include/linux/pm_runtime.h |  6 ++++
- 4 files changed, 112 insertions(+), 8 deletions(-)
-
+diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+index 367f49b9a1c9..44d74f0f182e 100644
+--- a/include/linux/pm_runtime.h
++++ b/include/linux/pm_runtime.h
+@@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+ 	ACCESS_ONCE(dev->power.last_busy) = jiffies;
+ }
+ 
++static inline bool pm_runtime_is_irq_safe(struct device *dev)
++{
++	return dev->power.irq_safe;
++}
++
+ #else /* !CONFIG_PM_RUNTIME */
+ 
+ static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
+@@ -167,6 +172,7 @@ static inline bool pm_runtime_enabled(struct device *dev) { return false; }
+ 
+ static inline void pm_runtime_no_callbacks(struct device *dev) {}
+ static inline void pm_runtime_irq_safe(struct device *dev) {}
++static inline bool pm_runtime_is_irq_safe(struct device *dev) { return false; }
+ 
+ static inline bool pm_runtime_callbacks_present(struct device *dev) { return false; }
+ static inline void pm_runtime_mark_last_busy(struct device *dev) {}
 -- 
 1.9.1
 
