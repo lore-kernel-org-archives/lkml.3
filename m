@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211AbaIOByl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 21:54:41 -0400
-Received: from [119.145.14.66] ([119.145.14.66]:27913 "EHLO
-	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959AbaIOByi (ORCPT
+	id S1753146AbaIOCGD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:06:03 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64150 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500AbaIOCGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 21:54:38 -0400
-Message-ID: <54164699.9020906@huawei.com>
-Date: Mon, 15 Sep 2014 09:53:29 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Sun, 14 Sep 2014 22:06:01 -0400
+Date: Sun, 14 Sep 2014 19:05:57 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Mirko Lindner <mlindner@marvell.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: ethernet: marvell: sky2.c:  Cleaning up missing
+ null-terminate in conjunction with strncpy
+Message-ID: <20140914190557.690183d2@urahara>
+In-Reply-To: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+References: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "Vinod Koul" <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
-        <linux-hotplug@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [Patch Part3 V5 4/8] iommu/vt-d: Search for ACPI _DSM method
- for DMAR hotplug
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-5-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1410487848-6027-5-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020205.541646B1.00EC,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2011-05-27 18:58:46
-X-Mirapoint-Loop-Id: b94828c8025e3d6dacd8210bf5a4e843
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/12 10:10, Jiang Liu wrote:
-> According to Intel VT-d specification, _DSM method to support DMAR
-> hotplug should exist directly under corresponding ACPI object
-> representing PCI host bridge. But some BIOSes doesn't conform to
-> this, so search for _DSM method in the subtree starting from the
-> ACPI object representing the PCI host bridge.
+On Sun, 14 Sep 2014 19:33:43 +0200
+Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
 
-Reviewed-by: Yijing Wang <wangyijing@huawei.com>
-
+> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 > ---
->  drivers/iommu/dmar.c |   35 +++++++++++++++++++++++++++++++----
->  1 file changed, 31 insertions(+), 4 deletions(-)
+>  drivers/net/ethernet/marvell/sky2.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index e77b5d3f2f5c..df2c2591c1a6 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -1926,21 +1926,48 @@ static int dmar_hotplug_remove(acpi_handle handle)
->  	return ret;
->  }
+> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+> index dba48a5c..7053d38 100644
+> --- a/drivers/net/ethernet/marvell/sky2.c
+> +++ b/drivers/net/ethernet/marvell/sky2.c
+> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
+>  	};
 >  
-> -static int dmar_device_hotplug(acpi_handle handle, bool insert)
-> +static acpi_status dmar_get_dsm_handle(acpi_handle handle, u32 lvl,
-> +				       void *context, void **retval)
-> +{
-> +	acpi_handle *phdl = retval;
-> +
-> +	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-> +		*phdl = handle;
-> +		return AE_CTRL_TERMINATE;
-> +	}
-> +
-> +	return AE_OK;
-> +}
-> +
-> +int dmar_device_hotplug(acpi_handle handle, bool insert)
->  {
->  	int ret;
-> +	acpi_handle tmp = NULL;
-> +	acpi_status status;
->  
->  	if (!dmar_in_use())
->  		return 0;
->  
-> -	if (!dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD))
-> +	if (dmar_detect_dsm(handle, DMAR_DSM_FUNC_DRHD)) {
-> +		tmp = handle;
-> +	} else {
-> +		status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle,
-> +					     ACPI_UINT32_MAX,
-> +					     dmar_get_dsm_handle,
-> +					     NULL, NULL, &tmp);
-> +		if (ACPI_FAILURE(status)) {
-> +			pr_warn("Failed to locate _DSM method.\n");
-> +			return -ENXIO;
-> +		}
-> +	}
-> +	if (tmp == NULL)
->  		return 0;
->  
->  	down_write(&dmar_global_lock);
->  	if (insert)
-> -		ret = dmar_hotplug_insert(handle);
-> +		ret = dmar_hotplug_insert(tmp);
+>  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
 >  	else
-> -		ret = dmar_hotplug_remove(handle);
-> +		ret = dmar_hotplug_remove(tmp);
->  	up_write(&dmar_global_lock);
->  
->  	return ret;
-> 
+>  		snprintf(buf, sz, "(chip %#x)", chipid);
+>  	return buf;
+
+Useless and unnecessary since the list of names is right there.
+Why not avoid the copy all together?
+
+Subject: sky2: avoid strncpy
+
+Don't use strncpy() since security thought police think it is bad.
+
+Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 
 
--- 
-Thanks!
-Yijing
-
+--- a/drivers/net/ethernet/marvell/sky2.c	2014-08-25 09:01:16.292060455 -0700
++++ b/drivers/net/ethernet/marvell/sky2.c	2014-09-14 19:02:26.731034094 -0700
+@@ -4889,7 +4889,7 @@ static int sky2_test_msi(struct sky2_hw
+ }
+ 
+ /* This driver supports yukon2 chipset only */
+-static const char *sky2_name(u8 chipid, char *buf, int sz)
++static const char *sky2_name(u8 chipid)
+ {
+ 	const char *name[] = {
+ 		"XL",		/* 0xb3 */
+@@ -4905,11 +4905,12 @@ static const char *sky2_name(u8 chipid,
+ 		"OptimaEEE",    /* 0xbd */
+ 		"Optima 2",	/* 0xbe */
+ 	};
++	static char buf[16];
+ 
+ 	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+-		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+-	else
+-		snprintf(buf, sz, "(chip %#x)", chipid);
++		return name[chipid - CHIP_ID_YUKON_XL];
++
++	snprintf(buf, sizeof(buf), "(chip %#x)", chipid);
+ 	return buf;
+ }
+ 
+@@ -4919,7 +4920,6 @@ static int sky2_probe(struct pci_dev *pd
+ 	struct sky2_hw *hw;
+ 	int err, using_dac = 0, wol_default;
+ 	u32 reg;
+-	char buf1[16];
+ 
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+@@ -5014,7 +5014,7 @@ static int sky2_probe(struct pci_dev *pd
+ 	}
+ 
+ 	dev_info(&pdev->dev, "Yukon-2 %s chip revision %d\n",
+-		 sky2_name(hw->chip_id, buf1, sizeof(buf1)), hw->chip_rev);
++		 sky2_name(hw->chip_id), hw->chip_rev);
+ 
+ 	sky2_reset(hw);
+ 
