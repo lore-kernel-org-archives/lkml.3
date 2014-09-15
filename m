@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067AbaIOToM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:44:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	id S1756052AbaIOToL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:44:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612AbaIOThT (ORCPT
+	with ESMTP id S1755777AbaIOThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chin-Ran Lo <crlo@marvell.com>, Jeff CF Chen <jeffc@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
         Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 080/114] Bluetooth: btmrvl: wait for HOST_SLEEP_ENABLE event in suspend
-Date: Mon, 15 Sep 2014 12:26:20 -0700
-Message-Id: <20140915192643.936920507@linuxfoundation.org>
+Subject: [PATCH 3.14 081/114] Bluetooth: never linger on process exit
+Date: Mon, 15 Sep 2014 12:26:21 -0700
+Message-Id: <20140915192643.965631191@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -30,98 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chin-Ran Lo <crlo@marvell.com>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit 396e04f4bb9afefb0744715dc76d9abe18ee5fb0 upstream.
+commit 093facf3634da1b0c2cc7ed106f1983da901bbab upstream.
 
-After BT_CMD_HOST_SLEEP_ENABLE command finishes, driver should
-wait until getting BT_EVENT_HOST_SLEEP_ENABLE event to complete
-suspend procedure.
-Without this patch the suspend handler would return success
-earlier. By the time when the BT_EVENT_HOST_SLEEP_ENABLE event
-comes in the controller driver could have already turned off the
-bus clock. This causes kernel crash or system reboot eventually.
+If the current process is exiting, lingering on socket close will make
+it unkillable, so we should avoid it.
 
-Signed-off-by: Chin-Ran Lo <crlo@marvell.com>
-Signed-off-by: Jeff CF Chen <jeffc@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reproducer:
+
+  #include <sys/types.h>
+  #include <sys/socket.h>
+
+  #define BTPROTO_L2CAP   0
+  #define BTPROTO_SCO     2
+  #define BTPROTO_RFCOMM  3
+
+  int main()
+  {
+          int fd;
+          struct linger ling;
+
+          fd = socket(PF_BLUETOOTH, SOCK_STREAM, BTPROTO_RFCOMM);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_DGRAM, BTPROTO_L2CAP);
+          //or: fd = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_SCO);
+
+          ling.l_onoff = 1;
+          ling.l_linger = 1000000000;
+          setsockopt(fd, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling));
+
+          return 0;
+  }
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btmrvl_drv.h  |    1 +
- drivers/bluetooth/btmrvl_main.c |   25 ++++++++++++++++++++++++-
- 2 files changed, 25 insertions(+), 1 deletion(-)
+ net/bluetooth/l2cap_sock.c  |    3 ++-
+ net/bluetooth/rfcomm/sock.c |    3 ++-
+ net/bluetooth/sco.c         |    6 ++++--
+ 3 files changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/bluetooth/btmrvl_drv.h
-+++ b/drivers/bluetooth/btmrvl_drv.h
-@@ -66,6 +66,7 @@ struct btmrvl_adapter {
- 	u8 hs_state;
- 	u8 wakeup_tries;
- 	wait_queue_head_t cmd_wait_q;
-+	wait_queue_head_t event_hs_wait_q;
- 	u8 cmd_complete;
- 	bool is_suspended;
- };
---- a/drivers/bluetooth/btmrvl_main.c
-+++ b/drivers/bluetooth/btmrvl_main.c
-@@ -112,6 +112,7 @@ int btmrvl_process_event(struct btmrvl_p
- 			adapter->hs_state = HS_ACTIVATED;
- 			if (adapter->psmode)
- 				adapter->ps_state = PS_SLEEP;
-+			wake_up_interruptible(&adapter->event_hs_wait_q);
- 			BT_DBG("HS ACTIVATED!");
- 		} else {
- 			BT_DBG("HS Enable failed");
-@@ -251,11 +252,31 @@ EXPORT_SYMBOL_GPL(btmrvl_enable_ps);
+--- a/net/bluetooth/l2cap_sock.c
++++ b/net/bluetooth/l2cap_sock.c
+@@ -1112,7 +1112,8 @@ static int l2cap_sock_shutdown(struct so
+ 		l2cap_chan_close(chan, 0);
+ 		lock_sock(sk);
  
- int btmrvl_enable_hs(struct btmrvl_private *priv)
- {
-+	struct btmrvl_adapter *adapter = priv->adapter;
- 	int ret;
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
+ 	}
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -898,7 +898,8 @@ static int rfcomm_sock_shutdown(struct s
+ 		sk->sk_shutdown = SHUTDOWN_MASK;
+ 		__rfcomm_sock_close(sk);
  
- 	ret = btmrvl_send_sync_cmd(priv, BT_CMD_HOST_SLEEP_ENABLE, NULL, 0);
--	if (ret)
-+	if (ret) {
- 		BT_ERR("Host sleep enable command failed\n");
-+		return ret;
-+	}
-+
-+	ret = wait_event_interruptible_timeout(adapter->event_hs_wait_q,
-+					       adapter->hs_state,
-+			msecs_to_jiffies(WAIT_UNTIL_HS_STATE_CHANGED));
-+	if (ret < 0) {
-+		BT_ERR("event_hs_wait_q terminated (%d): %d,%d,%d",
-+		       ret, adapter->hs_state, adapter->ps_state,
-+		       adapter->wakeup_tries);
-+	} else if (!ret) {
-+		BT_ERR("hs_enable timeout: %d,%d,%d", adapter->hs_state,
-+		       adapter->ps_state, adapter->wakeup_tries);
-+		ret = -ETIMEDOUT;
-+	} else {
-+		BT_DBG("host sleep enabled: %d,%d,%d", adapter->hs_state,
-+		       adapter->ps_state, adapter->wakeup_tries);
-+		ret = 0;
-+	}
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 	}
+ 	release_sock(sk);
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -909,7 +909,8 @@ static int sco_sock_shutdown(struct sock
+ 		sco_sock_clear_timer(sk);
+ 		__sco_sock_close(sk);
  
- 	return ret;
- }
-@@ -341,6 +362,7 @@ static void btmrvl_init_adapter(struct b
- 	priv->adapter->ps_state = PS_AWAKE;
+-		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime)
++		if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++		    !(current->flags & PF_EXITING))
+ 			err = bt_sock_wait_state(sk, BT_CLOSED,
+ 						 sk->sk_lingertime);
+ 	}
+@@ -929,7 +930,8 @@ static int sco_sock_release(struct socke
  
- 	init_waitqueue_head(&priv->adapter->cmd_wait_q);
-+	init_waitqueue_head(&priv->adapter->event_hs_wait_q);
- }
+ 	sco_sock_close(sk);
  
- static void btmrvl_free_adapter(struct btmrvl_private *priv)
-@@ -648,6 +670,7 @@ int btmrvl_remove_card(struct btmrvl_pri
- 	hdev = priv->btmrvl_dev.hcidev;
- 
- 	wake_up_interruptible(&priv->adapter->cmd_wait_q);
-+	wake_up_interruptible(&priv->adapter->event_hs_wait_q);
- 
- 	kthread_stop(priv->main_thread.task);
- 
+-	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime) {
++	if (sock_flag(sk, SOCK_LINGER) && sk->sk_lingertime &&
++	    !(current->flags & PF_EXITING)) {
+ 		lock_sock(sk);
+ 		err = bt_sock_wait_state(sk, BT_CLOSED, sk->sk_lingertime);
+ 		release_sock(sk);
 
 
