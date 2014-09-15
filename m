@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684AbaIOU5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:57:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54579 "EHLO
+	id S1758669AbaIOU5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:57:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54606 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033AbaIOT1I (ORCPT
+	with ESMTP id S1755034AbaIOT1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:08 -0400
+	Mon, 15 Sep 2014 15:27:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 095/158] ACPI / hotplug: Check scan handlers in acpi_scan_hot_remove()
-Date: Mon, 15 Sep 2014 12:25:34 -0700
-Message-Id: <20140915192545.735233380@linuxfoundation.org>
+        Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 096/158] spi/pxa2xx: Add ACPI ID for Intel Braswell
+Date: Mon, 15 Sep 2014 12:25:35 -0700
+Message-Id: <20140915192545.770300919@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -29,77 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tang Chen <tangchen@cn.fujitsu.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit dee1592638ab7ea35a32179b73f9284dead49c03 upstream.
+commit aca26364689e00e3b2052072424682231bdae6ae upstream.
 
-When ACPI_HOTPLUG_MEMORY is not configured, memory_device_handler.attach
-is not set.  In acpi_scan_attach_handler(), the acpi_device->handler will
-not be initialized.
+The SPI host controller is the same as used in Baytrail, only the ACPI ID
+is different so add this new ID to the list.
 
-In acpi_scan_hot_remove(), it doesn't check if acpi_device->handler is NULL.
-If we do memory hot-remove without ACPI_HOTPLUG_MEMORY configured, the kernel
-will panic.
-
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000088
- IP: [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
- PGD 0
- Oops: 0000 [#1] SMP
- Modules linked in: sd_mod(E) sr_mod(E) cdrom(E) crc_t10dif(E) crct10dif_common(E) ata_piix(E) libata(E)
- CPU: 0 PID: 41 Comm: kworker/u2:1 Tainted: G            E 3.16.0-rc7--3.16-rc7-tangchen+ #20
- Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS rel-1.7.5-0-ge51488c-20140602_164612-nilsson.home.kraxel.org 04/01/2014
- Workqueue: kacpi_hotplug acpi_hotplug_work_fn
- task: ffff8800182436c0 ti: ffff880018254000 task.ti: ffff880018254000
- RIP: 0010:[<ffffffff813e318f>]  [<ffffffff813e318f>] acpi_device_hotplug+0x1d7/0x4c4
- RSP: 0000:ffff880018257da8  EFLAGS: 00000246
- RAX: 0000000000000000 RBX: ffff88001cd8d800 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: ffff88001e40e6f8 RDI: 0000000000000246
- RBP: ffff880018257df0 R08: 0000000000000096 R09: 00000000000011a0
- R10: 63735f6970636120 R11: 725f746f685f6e61 R12: 0000000000000003
- R13: ffff88001cc1c400 R14: ffff88001e062028 R15: 0000000000000040
- FS:  0000000000000000(0000) GS:ffff88001e400000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000088 CR3: 000000001a9a2000 CR4: 00000000000006f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
- Stack:
-  00000000523cab58 ffff88001cd8d9f8 ffff88001852d480 00000000523cab58
-  ffff88001852d480 ffff880018221e40 ffff88001cc1c400 ffff88001cce2d00
-  0000000000000040 ffff880018257e08 ffffffff813dc31d ffff88001852d480
- Call Trace:
-  [<ffffffff813dc31d>] acpi_hotplug_work_fn+0x1e/0x29
-  [<ffffffff8108eefb>] process_one_work+0x17b/0x460
-  [<ffffffff8108f69d>] worker_thread+0x11d/0x5b0
-  [<ffffffff8108f580>] ? rescuer_thread+0x3a0/0x3a0
-  [<ffffffff81096811>] kthread+0xe1/0x100
-  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
-  [<ffffffff816cc6bc>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81096730>] ? kthread_create_on_node+0x1a0/0x1a0
-
-This patch fixes this problem by checking if acpi_device->handler is NULL
-in acpi_scan_hot_remove().
-
-Fixes: d22ddcbc4fb7 (ACPI / hotplug: Add demand_offline hotplug profile flag)
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-[rjw: Subject]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/spi/spi-pxa2xx.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -351,7 +351,8 @@ static int acpi_scan_hot_remove(struct a
- 	unsigned long long sta;
- 	acpi_status status;
- 
--	if (device->handler->hotplug.demand_offline && !acpi_force_hot_remove) {
-+	if (device->handler && device->handler->hotplug.demand_offline
-+	    && !acpi_force_hot_remove) {
- 		if (!acpi_scan_is_offline(device, true))
- 			return -EBUSY;
- 	} else {
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1074,6 +1074,7 @@ static struct acpi_device_id pxa2xx_spi_
+ 	{ "INT3430", 0 },
+ 	{ "INT3431", 0 },
+ 	{ "80860F0E", 0 },
++	{ "8086228E", 0 },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
 
 
