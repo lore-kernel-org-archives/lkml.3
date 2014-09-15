@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138AbaIOWKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:10:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50474 "EHLO
+	id S1757283AbaIOWKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:10:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50459 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356AbaIOWKa (ORCPT
+	with ESMTP id S1756287AbaIOWK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:10:30 -0400
+	Mon, 15 Sep 2014 18:10:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Sven Eckelmann <sven@narfation.org>,
-        Marek Lindner <mareklindner@neomailbox.ch>,
-        Antonio Quartulli <antonio@meshcoding.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 011/187] batman-adv: Fix out-of-order fragmentation support
-Date: Mon, 15 Sep 2014 15:07:01 -0700
-Message-Id: <1410818997-9432-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 017/187] sparc64: Fix bugs in get_user_pages_fast() wrt. THP.
+Date: Mon, 15 Sep 2014 15:07:07 -0700
+Message-Id: <1410818997-9432-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -29,73 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sven Eckelmann <sven@narfation.org>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d9124268d84a836f14a6ead54ff9d8eee4c43be5 ]
+[ Upstream commit 04df419de34104d8818b8c5cffaa062fa36d20ea ]
 
-batadv_frag_insert_packet was unable to handle out-of-order packets because it
-dropped them directly. This is caused by the way the fragmentation lists is
-checked for the correct place to insert a fragmentation entry.
+The large PMD path needs to check _PAGE_VALID not _PAGE_PRESENT, to
+decide if it needs to bail and return 0.
 
-The fragmentation code keeps the fragments in lists. The fragmentation entries
-are kept in descending order of sequence number. The list is traversed and each
-entry is compared with the new fragment. If the current entry has a smaller
-sequence number than the new fragment then the new one has to be inserted
-before the current entry. This ensures that the list is still in descending
-order.
+pmd_large() should therefore just check _PAGE_PMD_HUGE.
 
-An out-of-order packet with a smaller sequence number than all entries in the
-list still has to be added to the end of the list. The used hlist has no
-information about the last entry in the list inside hlist_head and thus the
-last entry has to be calculated differently. Currently the code assumes that
-the iterator variable of hlist_for_each_entry can be used for this purpose
-after the hlist_for_each_entry finished. This is obviously wrong because the
-iterator variable is always NULL when the list was completely traversed.
+Calls to gup_huge_pmd() are guarded with a check of pmd_large(), so we
+just need to add a valid bit check.
 
-Instead the information about the last entry has to be stored in a different
-variable.
-
-This problem was introduced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
-("batman-adv: Receive fragmented packets and merge").
-
-Signed-off-by: Sven Eckelmann <sven@narfation.org>
-Signed-off-by: Marek Lindner <mareklindner@neomailbox.ch>
-Signed-off-by: Antonio Quartulli <antonio@meshcoding.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/batman-adv/fragmentation.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h | 2 +-
+ arch/sparc/mm/gup.c                 | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
-index a674034..8a1d4b54 100644
---- a/net/batman-adv/fragmentation.c
-+++ b/net/batman-adv/fragmentation.c
-@@ -130,6 +130,7 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
+diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
+index e3db4b8..1f28103 100644
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -633,7 +633,7 @@ static inline unsigned long pmd_large(pmd_t pmd)
  {
- 	struct batadv_frag_table_entry *chain;
- 	struct batadv_frag_list_entry *frag_entry_new = NULL, *frag_entry_curr;
-+	struct batadv_frag_list_entry *frag_entry_last = NULL;
- 	struct batadv_frag_packet *frag_packet;
- 	uint8_t bucket;
- 	uint16_t seqno, hdr_size = sizeof(struct batadv_frag_packet);
-@@ -182,11 +183,14 @@ static bool batadv_frag_insert_packet(struct batadv_orig_node *orig_node,
- 			ret = true;
- 			goto out;
- 		}
-+
-+		/* store current entry because it could be the last in list */
-+		frag_entry_last = frag_entry_curr;
- 	}
+ 	pte_t pte = __pte(pmd_val(pmd));
  
--	/* Reached the end of the list, so insert after 'frag_entry_curr'. */
--	if (likely(frag_entry_curr)) {
--		hlist_add_after(&frag_entry_curr->list, &frag_entry_new->list);
-+	/* Reached the end of the list, so insert after 'frag_entry_last'. */
-+	if (likely(frag_entry_last)) {
-+		hlist_add_after(&frag_entry_last->list, &frag_entry_new->list);
- 		chain->size += skb->len - hdr_size;
- 		chain->timestamp = jiffies;
- 		ret = true;
+-	return (pte_val(pte) & _PAGE_PMD_HUGE) && pte_present(pte);
++	return pte_val(pte) & _PAGE_PMD_HUGE;
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
+index c4d3da6..1aed043 100644
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -73,7 +73,7 @@ static int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 	struct page *head, *page, *tail;
+ 	int refs;
+ 
+-	if (!pmd_large(pmd))
++	if (!(pmd_val(pmd) & _PAGE_VALID))
+ 		return 0;
+ 
+ 	if (write && !pmd_write(pmd))
 -- 
 1.9.1
 
