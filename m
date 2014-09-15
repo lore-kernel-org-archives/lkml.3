@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694AbaIOTyD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:54:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41002 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755206AbaIOTyA (ORCPT
+	id S1756699AbaIOTyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:54:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756324AbaIOTrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:54:00 -0400
-Date: Mon, 15 Sep 2014 21:53:56 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] irqchip: atmel-aic: add RTT irq fixup
-Message-ID: <20140915215356.4c332acd@bbrezillon>
-In-Reply-To: <20140915214907.3ec49158@bbrezillon>
-References: <1409735271-15353-1-git-send-email-boris.brezillon@free-electrons.com>
-	<20140914054648.GJ21986@titan.lakedaemon.net>
-	<20140915214907.3ec49158@bbrezillon>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 15 Sep 2014 15:47:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vignesh Raman <Vignesh_Raman@mentor.com>,
+        Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>,
+        Dean Jenkins <Dean_Jenkins@mentor.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.10 46/71] Bluetooth: Avoid use of session socket after the session gets freed
+Date: Mon, 15 Sep 2014 12:26:44 -0700
+Message-Id: <20140915192640.218023468@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014 21:49:07 +0200
-Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> Hi,
-> 
-> On Sun, 14 Sep 2014 01:46:48 -0400
-> Jason Cooper <jason@lakedaemon.net> wrote:
-> 
-> > On Wed, Sep 03, 2014 at 11:07:46AM +0200, Boris BREZILLON wrote:
-> > > The series depends on the acceptation of the RTT DT bindings proposed here
-> > > [1].
-> > > 
-> > > Best Regards,
-> > > 
-> > > Boris
-> > > 
-> > > [1]https://lkml.org/lkml/2014/9/3/145
-> > 
-> > Hmm, the bindings, unfortunately, still seem to be in flux.  Any update?
-> 
-> Actually, all at91 developers seemed to agree on this binding [2], and
-> these changes do not impact the current series.
-> 
-> Anyway, I think it's safer to wait for an official approval before
-> taking this series into irqchip/next.
-> 
-> Best Regards,
-> 
-> Boris
-> 
-> [2]https://lkml.org/lkml/2014/9/11/513
+------------------
 
-Sorry, wrong link.
+From: Vignesh Raman <Vignesh_Raman@mentor.com>
 
-[2]http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/286524.html
+commit 32333edb82fb2009980eefc5518100068147ab82 upstream.
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+The commits 08c30aca9e698faddebd34f81e1196295f9dc063 "Bluetooth: Remove
+RFCOMM session refcnt" and 8ff52f7d04d9cc31f1e81dcf9a2ba6335ed34905
+"Bluetooth: Return RFCOMM session ptrs to avoid freed session"
+allow rfcomm_recv_ua and rfcomm_session_close to delete the session
+(and free the corresponding socket) and propagate NULL session pointer
+to the upper callers.
+
+Additional fix is required to terminate the loop in rfcomm_process_rx
+function to avoid use of freed 'sk' memory.
+
+The issue is only reproducible with kernel option CONFIG_PAGE_POISONING
+enabled making freed memory being changed and filled up with fixed char
+value used to unmask use-after-free issues.
+
+Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
+Signed-off-by: Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>
+Acked-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ net/bluetooth/rfcomm/core.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/net/bluetooth/rfcomm/core.c
++++ b/net/bluetooth/rfcomm/core.c
+@@ -1857,10 +1857,13 @@ static struct rfcomm_session *rfcomm_pro
+ 	/* Get data directly from socket receive queue without copying it. */
+ 	while ((skb = skb_dequeue(&sk->sk_receive_queue))) {
+ 		skb_orphan(skb);
+-		if (!skb_linearize(skb))
++		if (!skb_linearize(skb)) {
+ 			s = rfcomm_recv_frame(s, skb);
+-		else
++			if (!s)
++				break;
++		} else {
+ 			kfree_skb(skb);
++		}
+ 	}
+ 
+ 	if (s && (sk->sk_state == BT_CLOSED))
+
+
