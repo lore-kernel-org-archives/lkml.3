@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaIOVTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:19:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54583 "EHLO
+	id S1755266AbaIOVTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:19:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701AbaIOT0p (ORCPT
+	with ESMTP id S1754662AbaIOT0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:45 -0400
+	Mon, 15 Sep 2014 15:26:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takanari Hayama <taki@igel.co.jp>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 008/158] media: v4l: vsp1: Remove the unneeded vsp1_video_buffer video field
-Date: Mon, 15 Sep 2014 12:24:07 -0700
-Message-Id: <20140915192543.128404989@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 015/158] spi: orion: fix incorrect handling of cell-index DT property
+Date: Mon, 15 Sep 2014 12:24:14 -0700
+Message-Id: <20140915192543.338094394@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -30,46 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit e51daefc228aa164adcc17fe8fce0f856ad0a1cc upstream.
+commit e06871cd2c92e5c65d7ca1d32866b4ca5dd4ac30 upstream.
 
-The field is assigned but never read, remove it.
+In commit f814f9ac5a81 ("spi/orion: add device tree binding"), Device
+Tree support was added to the spi-orion driver. However, this commit
+reads the "cell-index" property, without taking into account the fact
+that DT properties are big-endian encoded.
 
-This fixes a bug caused by the struct vb2_buffer field not being be the
-very first field of the vsp1_video_buffer buffer structure as required
-by videobuf2.
+Since most of the platforms using spi-orion with DT have apparently
+not used anything but cell-index = <0>, the problem was not
+visible. But as soon as one starts using cell-index = <1>, the problem
+becomes clearly visible, as the master->bus_num gets a wrong value
+(actually it gets the value 0, which conflicts with the first bus that
+has cell-index = <0>).
 
-Reported-by: Takanari Hayama <taki@igel.co.jp>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+This commit fixes that by using of_property_read_u32() to read the
+property value, which does the appropriate endianness conversion when
+needed.
+
+Fixes: f814f9ac5a81 ("spi/orion: add device tree binding")
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/vsp1/vsp1_video.c |    2 --
- drivers/media/platform/vsp1/vsp1_video.h |    1 -
- 2 files changed, 3 deletions(-)
+ drivers/spi/spi-orion.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/media/platform/vsp1/vsp1_video.c
-+++ b/drivers/media/platform/vsp1/vsp1_video.c
-@@ -654,8 +654,6 @@ static int vsp1_video_buffer_prepare(str
- 	if (vb->num_planes < format->num_planes)
- 		return -EINVAL;
+--- a/drivers/spi/spi-orion.c
++++ b/drivers/spi/spi-orion.c
+@@ -346,8 +346,6 @@ static int orion_spi_probe(struct platfo
+ 	struct resource *r;
+ 	unsigned long tclk_hz;
+ 	int status = 0;
+-	const u32 *iprop;
+-	int size;
  
--	buf->video = video;
--
- 	for (i = 0; i < vb->num_planes; ++i) {
- 		buf->addr[i] = vb2_dma_contig_plane_dma_addr(vb, i);
- 		buf->length[i] = vb2_plane_size(vb, i);
---- a/drivers/media/platform/vsp1/vsp1_video.h
-+++ b/drivers/media/platform/vsp1/vsp1_video.h
-@@ -90,7 +90,6 @@ static inline struct vsp1_pipeline *to_v
- }
+ 	master = spi_alloc_master(&pdev->dev, sizeof(*spi));
+ 	if (master == NULL) {
+@@ -358,10 +356,10 @@ static int orion_spi_probe(struct platfo
+ 	if (pdev->id != -1)
+ 		master->bus_num = pdev->id;
+ 	if (pdev->dev.of_node) {
+-		iprop = of_get_property(pdev->dev.of_node, "cell-index",
+-					&size);
+-		if (iprop && size == sizeof(*iprop))
+-			master->bus_num = *iprop;
++		u32 cell_index;
++		if (!of_property_read_u32(pdev->dev.of_node, "cell-index",
++					  &cell_index))
++			master->bus_num = cell_index;
+ 	}
  
- struct vsp1_video_buffer {
--	struct vsp1_video *video;
- 	struct vb2_buffer buf;
- 	struct list_head queue;
- 
+ 	/* we support only mode 0, and no options */
 
 
