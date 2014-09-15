@@ -1,158 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686AbaIOW5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:57:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50904 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbaIOWQA (ORCPT
+	id S1759699AbaIOW5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:57:24 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:41672 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406AbaIOW5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:16:00 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 168/187] ring-buffer: Always reset iterator to reader page
-Date: Mon, 15 Sep 2014 15:09:38 -0700
-Message-Id: <1410818997-9432-169-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:57:21 -0400
+Message-ID: <54176ECD.8090807@gmail.com>
+Date: Tue, 16 Sep 2014 06:57:17 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
+        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com,
+        xen-devel@lists.xenproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] drivers/xen/xenbus/xenbus_client.c: Improve the failure
+ processing for __xenbus_switch_state()
+References: <54157282.40402@gmail.com> <5415737D.2030209@gmail.com> <5416FA0C.6090703@citrix.com>
+In-Reply-To: <5416FA0C.6090703@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On 09/15/2014 10:39 PM, David Vrabel wrote:
+> On 14/09/14 11:52, Chen Gang wrote:
+>> When failure occurs, need return failure code instead of 0, or the upper
+>> caller will misunderstand.
+>>
+>> Also when retry for EAGAIN reason, better to schedule out for a while,
+>> so can let others have chance to continue their tasks (especially,
+>> their tasks are related EAGAIN under UP kernel).
+> 
+> Is this fixing a real world problem you have seen?
+> 
 
-------------------
+Not real world, only reading by source code, and some of upper level
+callers really check the return value, indirectly (they may
+misunderstand).
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> xenbus_scanf() and xenbus_printf() already sleep while waiting for the
+> response and delaying isn't going to reduce the likelihood of the
+> transaction being aborted on the retry.
+> 
 
-commit 651e22f2701b4113989237c3048d17337dd2185c upstream.
+OK, thanks, what you said sound reasonable to me, I shall remove the
+waiting code when send patch v2 for it.
 
-When performing a consuming read, the ring buffer swaps out a
-page from the ring buffer with a empty page and this page that
-was swapped out becomes the new reader page. The reader page
-is owned by the reader and since it was swapped out of the ring
-buffer, writers do not have access to it (there's an exception
-to that rule, but it's out of scope for this commit).
 
-When reading the "trace" file, it is a non consuming read, which
-means that the data in the ring buffer will not be modified.
-When the trace file is opened, a ring buffer iterator is allocated
-and writes to the ring buffer are disabled, such that the iterator
-will not have issues iterating over the data.
+I shall try to send patch v2 within this week end (2014-09-21), if it is
+too late to bare, please let me know (I shall try in time).
 
-Although the ring buffer disabled writes, it does not disable other
-reads, or even consuming reads. If a consuming read happens, then
-the iterator is reset and starts reading from the beginning again.
-
-My tests would sometimes trigger this bug on my i386 box:
-
-WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
-Modules linked in:
-CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
-Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
- 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
- f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
- ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
-Call Trace:
- [<c18796b3>] dump_stack+0x4b/0x75
- [<c103a0e3>] warn_slowpath_common+0x7e/0x95
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
- [<c103a185>] warn_slowpath_fmt+0x33/0x35
- [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
- [<c10bed04>] trace_find_cmdline+0x40/0x64
- [<c10c3c16>] trace_print_context+0x27/0xec
- [<c10c4360>] ? trace_seq_printf+0x37/0x5b
- [<c10c0b15>] print_trace_line+0x319/0x39b
- [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
- [<c10c13b1>] s_show+0x192/0x1ab
- [<c10bfd9a>] ? s_next+0x5a/0x7c
- [<c112e76e>] seq_read+0x267/0x34c
- [<c1115a25>] vfs_read+0x8c/0xef
- [<c112e507>] ? seq_lseek+0x154/0x154
- [<c1115ba2>] SyS_read+0x54/0x7f
- [<c188488e>] syscall_call+0x7/0xb
----[ end trace 3f507febd6b4cc83 ]---
->>>> ##### CPU 1 buffer started ####
-
-Which was the __trace_find_cmdline() function complaining about the pid
-in the event record being negative.
-
-After adding more test cases, this would trigger more often. Strangely
-enough, it would never trigger on a single test, but instead would trigger
-only when running all the tests. I believe that was the case because it
-required one of the tests to be shutting down via delayed instances while
-a new test started up.
-
-After spending several days debugging this, I found that it was caused by
-the iterator becoming corrupted. Debugging further, I found out why
-the iterator became corrupted. It happened with the rb_iter_reset().
-
-As consuming reads may not read the full reader page, and only part
-of it, there's a "read" field to know where the last read took place.
-The iterator, must also start at the read position. In the rb_iter_reset()
-code, if the reader page was disconnected from the ring buffer, the iterator
-would start at the head page within the ring buffer (where writes still
-happen). But the mistake there was that it still used the "read" field
-to start the iterator on the head page, where it should always start
-at zero because readers never read from within the ring buffer where
-writes occur.
-
-I originally wrote a patch to have it set the iter->head to 0 instead
-of iter->head_page->read, but then I questioned why it wasn't always
-setting the iter to point to the reader page, as the reader page is
-still valid.  The list_empty(reader_page->list) just means that it was
-successful in swapping out. But the reader_page may still have data.
-
-There was a bug report a long time ago that was not reproducible that
-had something about trace_pipe (consuming read) not matching trace
-(iterator read). This may explain why that happened.
-
-Anyway, the correct answer to this bug is to always use the reader page
-an not reset the iterator to inside the writable ring buffer.
-
-Fixes: d769041f8653 "ring_buffer: implement new locking"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- kernel/trace/ring_buffer.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index ce8e924..572c8b8 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3351,21 +3351,16 @@ static void rb_iter_reset(struct ring_buffer_iter *iter)
- 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
- 
- 	/* Iterator usage is expected to have record disabled */
--	if (list_empty(&cpu_buffer->reader_page->list)) {
--		iter->head_page = rb_set_head_page(cpu_buffer);
--		if (unlikely(!iter->head_page))
--			return;
--		iter->head = iter->head_page->read;
--	} else {
--		iter->head_page = cpu_buffer->reader_page;
--		iter->head = cpu_buffer->reader_page->read;
--	}
-+	iter->head_page = cpu_buffer->reader_page;
-+	iter->head = cpu_buffer->reader_page->read;
-+
-+	iter->cache_reader_page = iter->head_page;
-+	iter->cache_read = iter->head;
-+
- 	if (iter->head)
- 		iter->read_stamp = cpu_buffer->read_stamp;
- 	else
- 		iter->read_stamp = iter->head_page->page->time_stamp;
--	iter->cache_reader_page = cpu_buffer->reader_page;
--	iter->cache_read = cpu_buffer->read;
- }
- 
- /**
+Thanks.
 -- 
-1.9.1
+Chen Gang
 
+Open share and attitude like air water and life which God blessed
