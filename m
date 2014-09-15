@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901AbaIOQXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:23:51 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48584 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaIOQXu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:23:50 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org, David Daney <david.daney@cavium.com>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH] netdev: octeon_mgmt: Fix ISO C90 forbids mixed declarations and code warning.
-Date: Mon, 15 Sep 2014 09:23:43 -0700
-Message-Id: <1410798223-21420-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1754006AbaIOQYv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:24:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051AbaIOQYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 12:24:49 -0400
+Date: Mon, 15 Sep 2014 18:21:31 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: linux-mm@kvack.org, Randy Dunlap <rdunlap@infradead.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [RFC PATCH v2 5/5] mm, shmem: Show location of non-resident
+	shmem pages in smaps
+Message-ID: <20140915162131.GA22768@redhat.com>
+References: <1410791077-5300-1-git-send-email-jmarchan@redhat.com> <1410791077-5300-6-git-send-email-jmarchan@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410791077-5300-6-git-send-email-jmarchan@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Hi Jerome,
 
-We were getting:
+Not sure I understand this patch correctly, will try to read it later.
+But a couple of nits/questions anyway,
 
-  drivers/net/ethernet/octeon/octeon_mgmt.c:295:4: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+On 09/15, Jerome Marchand wrote:
+>
+> +The ShmXXX lines only appears for shmem mapping. They show the amount of memory
+> +from the mapping that is currently:
+> + - resident in RAM but not mapped into any process (ShmNotMapped)
 
-The idea of the fix from Joe Perches.
+But how can we know that it is not mapped by another process?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Joe Perches <joe@perches.com>
----
+And in fact "not mapped" looks confusing (at least to me). IIUC it is actually
+mapped even by this process, just it never tried to fault these (resident or
+swapped) pages in. Right?
 
-This patch should supersede previous patches from Heinrich Schuchardt,
-and may be preferable as it touches fewer lines of code.
+> +void update_shmem_stats(struct mem_size_stats *mss, struct vm_area_struct *vma,
+> +			pgoff_t pgoff, unsigned long size)
 
- drivers/net/ethernet/octeon/octeon_mgmt.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+static?
 
-diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-index 979c698..5e10c1d 100644
---- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-+++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-@@ -290,12 +290,12 @@ static void octeon_mgmt_clean_tx_buffers(struct octeon_mgmt *p)
- 		/* Read the hardware TX timestamp if one was recorded */
- 		if (unlikely(re.s.tstamp)) {
- 			struct skb_shared_hwtstamps ts;
--			memset(&ts, 0, sizeof(ts));
- 			/* Read the timestamp */
- 			u64 ns = cvmx_read_csr(CVMX_MIXX_TSTAMP(p->port));
- 			/* Remove the timestamp from the FIFO */
- 			cvmx_write_csr(CVMX_MIXX_TSCTL(p->port), 0);
- 			/* Tell the kernel about the timestamp */
-+			memset(&ts, 0, sizeof(ts));
- 			ts.hwtstamp = ns_to_ktime(ns);
- 			skb_tstamp_tx(skb, &ts);
- 		}
--- 
-1.7.11.7
+> +{
+> +	int count = 0;
+> +
+> +	switch (shmem_locate(vma, pgoff, &count)) {
+> +	case SHMEM_RESIDENT:
+> +		if (!count)
+> +			mss->shmem_notmapped += size;
+> +		break;
+> +	case SHMEM_SWAP:
+> +		mss->shmem_swap += size;
+> +		break;
+> +	}
+> +}
+
+It seems that shmem_locate() and shmem_vma() are only defined if CONFIG_SHMEM,
+probably this series needs more ifdef's.
+
+And I am not sure why we ignore SHMEM_SWAPCACHE...
+
+Oleg.
 
