@@ -1,214 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaIOPBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:01:32 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:50868 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564AbaIOPBb (ORCPT
+	id S1753458AbaIOPBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:01:53 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33007 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaIOPBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:01:31 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Olof Johansson <olof@lixom.net>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2] drivers: char: hw_random: printk replacement
-Date: Mon, 15 Sep 2014 20:31:20 +0530
-Message-Id: <1410793281-30305-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 15 Sep 2014 11:01:51 -0400
+Date: Mon, 15 Sep 2014 16:01:36 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 14/18] ARM64 / ACPI: Add GICv2 specific ACPI boot
+ support
+Message-ID: <20140915150136.GF5415@arm.com>
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
+ <1410530416-30200-15-git-send-email-hanjun.guo@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410530416-30200-15-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as pr_* macros are more preffered over printk, so printk replaced with corresponding pr_* macros
+On Fri, Sep 12, 2014 at 03:00:12PM +0100, Hanjun Guo wrote:
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index 5b3546b..9869377 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/irqdomain.h>
+>  #include <linux/bootmem.h>
+>  #include <linux/smp.h>
+> +#include <linux/irqchip/arm-gic-acpi.h>
+>  
+>  #include <asm/cputype.h>
+>  #include <asm/cpu_ops.h>
+> @@ -312,6 +313,28 @@ void __init acpi_boot_table_init(void)
+>  		pr_err("Can't find FADT or error happened during parsing FADT\n");
+>  }
+>  
+> +void __init acpi_gic_init(void)
+> +{
+> +	struct acpi_table_header *table;
+> +	acpi_status status;
+> +	acpi_size tbl_size;
+> +	int err;
+> +
+> +	status = acpi_get_table_with_size(ACPI_SIG_MADT, 0, &table, &tbl_size);
+> +	if (ACPI_FAILURE(status)) {
+> +		const char *msg = acpi_format_exception(status);
+> +
+> +		pr_err("Failed to get MADT table, %s\n", msg);
+> +		return;
+> +	}
+> +
+> +	err = gic_v2_acpi_init(table);
+> +	if (err)
+> +		pr_err("Failed to initialize GIC IRQ controller");
+> +
+> +	early_acpi_os_unmap_memory((char *)table, tbl_size);
+> +}
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
+Maybe this was discussed already but why does this function need to live
+under arch/arm64? Isn't the driver code more appropriate?
 
-The replacement was done by a bash script to avoid copy paste error. The script is as follows :
-
-OLD="printk(KERN_ERR \?"
-OLD1="printk(KERN_NOTICE \?"
-OLD2="printk(KERN_WARNING \?"
-OLD3="printk(KERN_INFO \?"
-NEW="pr_err("
-NEW1="pr_notice("
-NEW2="pr_warn("
-NEW3="pr_info("
-TFILE="/tmp/out.tmp.$$"
-for f in *.c
-do
-sed -e "s/$OLD/$NEW/g" -e "s/$OLD1/$NEW1/g" -e "s/$OLD2/$NEW2/g" -e "s/$OLD3/$NEW3/g" "$f" > $TFILE && mv $TFILE "$f"
-done
-
-exception is intel-rng.c . 
-in v1 the build failed due to intel-rng.c . 
-it has been corrected and has been carefully build tested.
-
- drivers/char/hw_random/amd-rng.c     |  4 ++--
- drivers/char/hw_random/geode-rng.c   |  4 ++--
- drivers/char/hw_random/intel-rng.c   | 13 ++++++-------
- drivers/char/hw_random/pasemi-rng.c  |  2 +-
- drivers/char/hw_random/pseries-rng.c |  2 +-
- drivers/char/hw_random/via-rng.c     |  8 ++++----
- 6 files changed, 16 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/char/hw_random/amd-rng.c b/drivers/char/hw_random/amd-rng.c
-index c6af038..48f6a83 100644
---- a/drivers/char/hw_random/amd-rng.c
-+++ b/drivers/char/hw_random/amd-rng.c
-@@ -142,10 +142,10 @@ found:
- 	amd_rng.priv = (unsigned long)pmbase;
- 	amd_pdev = pdev;
- 
--	printk(KERN_INFO "AMD768 RNG detected\n");
-+	pr_info("AMD768 RNG detected\n");
- 	err = hwrng_register(&amd_rng);
- 	if (err) {
--		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
-+		pr_err(PFX "RNG registering failed (%d)\n",
- 		       err);
- 		release_region(pmbase + 0xF0, 8);
- 		goto out;
-diff --git a/drivers/char/hw_random/geode-rng.c b/drivers/char/hw_random/geode-rng.c
-index 4c4d4e1..0d0579f 100644
---- a/drivers/char/hw_random/geode-rng.c
-+++ b/drivers/char/hw_random/geode-rng.c
-@@ -109,10 +109,10 @@ found:
- 		goto out;
- 	geode_rng.priv = (unsigned long)mem;
- 
--	printk(KERN_INFO "AMD Geode RNG detected\n");
-+	pr_info("AMD Geode RNG detected\n");
- 	err = hwrng_register(&geode_rng);
- 	if (err) {
--		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
-+		pr_err(PFX "RNG registering failed (%d)\n",
- 		       err);
- 		goto err_unmap;
- 	}
-diff --git a/drivers/char/hw_random/intel-rng.c b/drivers/char/hw_random/intel-rng.c
-index 86fe45c..290c880 100644
---- a/drivers/char/hw_random/intel-rng.c
-+++ b/drivers/char/hw_random/intel-rng.c
-@@ -199,7 +199,7 @@ static int intel_rng_init(struct hwrng *rng)
- 	if ((hw_status & INTEL_RNG_ENABLED) == 0)
- 		hw_status = hwstatus_set(mem, hw_status | INTEL_RNG_ENABLED);
- 	if ((hw_status & INTEL_RNG_ENABLED) == 0) {
--		printk(KERN_ERR PFX "cannot enable RNG, aborting\n");
-+		pr_err(PFX "cannot enable RNG, aborting\n");
- 		goto out;
- 	}
- 	err = 0;
-@@ -216,7 +216,7 @@ static void intel_rng_cleanup(struct hwrng *rng)
- 	if (hw_status & INTEL_RNG_ENABLED)
- 		hwstatus_set(mem, hw_status & ~INTEL_RNG_ENABLED);
- 	else
--		printk(KERN_WARNING PFX "unusual: RNG already disabled\n");
-+		pr_warn(PFX "unusual: RNG already disabled\n");
- }
- 
- 
-@@ -274,7 +274,7 @@ static int __init intel_rng_hw_init(void *_intel_rng_hw)
- 	if (mfc != INTEL_FWH_MANUFACTURER_CODE ||
- 	    (dvc != INTEL_FWH_DEVICE_CODE_8M &&
- 	     dvc != INTEL_FWH_DEVICE_CODE_4M)) {
--		printk(KERN_NOTICE PFX "FWH not detected\n");
-+		pr_notice(PFX "FWH not detected\n");
- 		return -ENODEV;
- 	}
- 
-@@ -306,7 +306,6 @@ static int __init intel_init_hw_struct(struct intel_rng_hw *intel_rng_hw,
- 	     (BIOS_CNTL_LOCK_ENABLE_MASK|BIOS_CNTL_WRITE_ENABLE_MASK))
- 	    == BIOS_CNTL_LOCK_ENABLE_MASK) {
- 		static __initdata /*const*/ char warning[] =
--			KERN_WARNING
- PFX "Firmware space is locked read-only. If you can't or\n"
- PFX "don't want to disable this in firmware setup, and if\n"
- PFX "you are certain that your system has a functional\n"
-@@ -314,7 +313,7 @@ PFX "RNG, try using the 'no_fwh_detect' option.\n";
- 
- 		if (no_fwh_detect)
- 			return -ENODEV;
--		printk(warning);
-+		pr_warn("%s", warning);
- 		return -EBUSY;
- 	}
- 
-@@ -392,10 +391,10 @@ fwh_done:
- 		goto out;
- 	}
- 
--	printk(KERN_INFO "Intel 82802 RNG detected\n");
-+	pr_info("Intel 82802 RNG detected\n");
- 	err = hwrng_register(&intel_rng);
- 	if (err) {
--		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
-+		pr_err(PFX "RNG registering failed (%d)\n",
- 		       err);
- 		iounmap(mem);
- 	}
-diff --git a/drivers/char/hw_random/pasemi-rng.c b/drivers/char/hw_random/pasemi-rng.c
-index c66279b..c0347d1 100644
---- a/drivers/char/hw_random/pasemi-rng.c
-+++ b/drivers/char/hw_random/pasemi-rng.c
-@@ -113,7 +113,7 @@ static int rng_probe(struct platform_device *ofdev)
- 
- 	pasemi_rng.priv = (unsigned long)rng_regs;
- 
--	printk(KERN_INFO "Registering PA Semi RNG\n");
-+	pr_info("Registering PA Semi RNG\n");
- 
- 	err = hwrng_register(&pasemi_rng);
- 
-diff --git a/drivers/char/hw_random/pseries-rng.c b/drivers/char/hw_random/pseries-rng.c
-index ab7ffde..6226aa0 100644
---- a/drivers/char/hw_random/pseries-rng.c
-+++ b/drivers/char/hw_random/pseries-rng.c
-@@ -86,7 +86,7 @@ static struct vio_driver pseries_rng_driver = {
- 
- static int __init rng_init(void)
- {
--	printk(KERN_INFO "Registering IBM pSeries RNG driver\n");
-+	pr_info("Registering IBM pSeries RNG driver\n");
- 	return vio_register_driver(&pseries_rng_driver);
- }
- 
-diff --git a/drivers/char/hw_random/via-rng.c b/drivers/char/hw_random/via-rng.c
-index de5a6dc..a3bebef 100644
---- a/drivers/char/hw_random/via-rng.c
-+++ b/drivers/char/hw_random/via-rng.c
-@@ -141,7 +141,7 @@ static int via_rng_init(struct hwrng *rng)
- 	 * register */
- 	if ((c->x86 == 6) && (c->x86_model >= 0x0f)) {
- 		if (!cpu_has_xstore_enabled) {
--			printk(KERN_ERR PFX "can't enable hardware RNG "
-+			pr_err(PFX "can't enable hardware RNG "
- 				"if XSTORE is not enabled\n");
- 			return -ENODEV;
- 		}
-@@ -180,7 +180,7 @@ static int via_rng_init(struct hwrng *rng)
- 	   unneeded */
- 	rdmsr(MSR_VIA_RNG, lo, hi);
- 	if ((lo & VIA_RNG_ENABLE) == 0) {
--		printk(KERN_ERR PFX "cannot enable VIA C3 RNG, aborting\n");
-+		pr_err(PFX "cannot enable VIA C3 RNG, aborting\n");
- 		return -ENODEV;
- 	}
- 
-@@ -202,10 +202,10 @@ static int __init mod_init(void)
- 
- 	if (!cpu_has_xstore)
- 		return -ENODEV;
--	printk(KERN_INFO "VIA RNG detected\n");
-+	pr_info("VIA RNG detected\n");
- 	err = hwrng_register(&via_rng);
- 	if (err) {
--		printk(KERN_ERR PFX "RNG registering failed (%d)\n",
-+		pr_err(PFX "RNG registering failed (%d)\n",
- 		       err);
- 		goto out;
- 	}
 -- 
-1.8.1.2
-
+Catalin
