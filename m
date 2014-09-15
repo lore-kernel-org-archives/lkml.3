@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaIOCGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 22:06:03 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:64150 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500AbaIOCGB (ORCPT
+	id S1753154AbaIOCKr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 22:10:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45086 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaIOCKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 22:06:01 -0400
-Date: Sun, 14 Sep 2014 19:05:57 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Mirko Lindner <mlindner@marvell.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ethernet: marvell: sky2.c:  Cleaning up missing
- null-terminate in conjunction with strncpy
-Message-ID: <20140914190557.690183d2@urahara>
-In-Reply-To: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Sun, 14 Sep 2014 22:10:46 -0400
+Date: Sun, 14 Sep 2014 19:09:57 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Mark S <mstanovich15@gmail.com>, linux-kernel@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Jun Tian <jun.j.tian@intel.com>, Alan Cox <alan@linux.intel.com>
+Subject: Re: 3.15 Regression Due to goldfish bus Commit
+Message-ID: <20140915020957.GA8203@kroah.com>
+References: <CAPC5HRoW4pdMhBrJfQ40ZnJoon+zCRtAnZzzgEExw4ks=Trr2g@mail.gmail.com>
+ <20140914215737.GA945@kroah.com>
+ <20140915001219.63fb91dd@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915001219.63fb91dd@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Sep 2014 19:33:43 +0200
-Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
-
-> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+On Mon, Sep 15, 2014 at 12:12:19AM +0100, One Thousand Gnomes wrote:
+> On Sun, 14 Sep 2014 14:57:37 -0700
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 > 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/net/ethernet/marvell/sky2.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > On Sun, Sep 14, 2014 at 05:38:55PM -0400, Mark S wrote:
+> > > Commit c1bc97f8f498a2bfab63ceef761fb0e88ef7c065 causes a gateway x86 laptop,
+> > > booting from a usb device, to hang before the kernel completes booting. The
+> > > offending commit was found using git bisect. Reverting the commit fixes the
+> > > problem on 3.16.2.
+> > > 
+> > > The error resulting in the hang may not be a concern since the goldfish option
+> > > is not needed and should probably not be selected. I'm mentioning this problem
+> > > just in case it is unexpected behavior and it is worth fixing. Maybe the
+> > > goldfish option should not be selectable for a similar configuration as mine?
+> > 
+> > There should be some other type of run-time option to not have this code
+> > run if it is found to not be running on the goldfish virtual machine.
+> > 
+> > Anyone know how to do that?
 > 
-> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-> index dba48a5c..7053d38 100644
-> --- a/drivers/net/ethernet/marvell/sky2.c
-> +++ b/drivers/net/ethernet/marvell/sky2.c
-> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
->  	};
->  
->  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
-> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
-> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
->  	else
->  		snprintf(buf, sz, "(chip %#x)", chipid);
->  	return buf;
+> I asked last time it was reported and the time before (it comes up every
+> year or two). There is no sane documented way to detect the Goldfish
+> virtual machine as distinct from anything else.
+> 
+> We could hide Goldfish under expert ?
 
-Useless and unnecessary since the list of names is right there.
-Why not avoid the copy all together?
+No, that would be a mess.  Just put a big warning on the option, no one
+should be enabling it if they don't want it, the config option text
+should say this.
 
-Subject: sky2: avoid strncpy
+thanks,
 
-Don't use strncpy() since security thought police think it is bad.
-
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
-
-
---- a/drivers/net/ethernet/marvell/sky2.c	2014-08-25 09:01:16.292060455 -0700
-+++ b/drivers/net/ethernet/marvell/sky2.c	2014-09-14 19:02:26.731034094 -0700
-@@ -4889,7 +4889,7 @@ static int sky2_test_msi(struct sky2_hw
- }
- 
- /* This driver supports yukon2 chipset only */
--static const char *sky2_name(u8 chipid, char *buf, int sz)
-+static const char *sky2_name(u8 chipid)
- {
- 	const char *name[] = {
- 		"XL",		/* 0xb3 */
-@@ -4905,11 +4905,12 @@ static const char *sky2_name(u8 chipid,
- 		"OptimaEEE",    /* 0xbd */
- 		"Optima 2",	/* 0xbe */
- 	};
-+	static char buf[16];
- 
- 	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
--		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
--	else
--		snprintf(buf, sz, "(chip %#x)", chipid);
-+		return name[chipid - CHIP_ID_YUKON_XL];
-+
-+	snprintf(buf, sizeof(buf), "(chip %#x)", chipid);
- 	return buf;
- }
- 
-@@ -4919,7 +4920,6 @@ static int sky2_probe(struct pci_dev *pd
- 	struct sky2_hw *hw;
- 	int err, using_dac = 0, wol_default;
- 	u32 reg;
--	char buf1[16];
- 
- 	err = pci_enable_device(pdev);
- 	if (err) {
-@@ -5014,7 +5014,7 @@ static int sky2_probe(struct pci_dev *pd
- 	}
- 
- 	dev_info(&pdev->dev, "Yukon-2 %s chip revision %d\n",
--		 sky2_name(hw->chip_id, buf1, sizeof(buf1)), hw->chip_rev);
-+		 sky2_name(hw->chip_id), hw->chip_rev);
- 
- 	sky2_reset(hw);
- 
+greg k-h
