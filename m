@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaIORGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 13:06:38 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:57015 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046AbaIORGf (ORCPT
+	id S1754161AbaIORH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 13:07:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34360 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046AbaIORHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 13:06:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com>
-References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
-	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>
-	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>
-	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
-	<CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>
-	<CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com>
-Date: Mon, 15 Sep 2014 10:06:34 -0700
-X-Google-Sender-Auth: 4V73u5SUpWVY4BXeMQ063St8liU
-Message-ID: <CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>
-Subject: Re: [PATCH v3 0/9] Tegra xHCI support
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tomeu Vizoso <tomeu@tomeuvizoso.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 13:07:25 -0400
+Date: Mon, 15 Sep 2014 13:07:21 -0400 (EDT)
+Message-Id: <20140915.130721.589682835868904320.davem@davemloft.net>
+To: stephen@networkplumber.org
+Cc: rickard_strandqvist@spectrumdigital.se, mlindner@marvell.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: ethernet: marvell: sky2.c: Cleaning up missing
+ null-terminate in conjunction with strncpy
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140914190557.690183d2@urahara>
+References: <1410716023-16068-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20140914190557.690183d2@urahara>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 10:07:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:00 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
-> On 12 September 2014 18:37, Andrew Bresticker <abrestic@chromium.org> wrote:
->> On Tue, Sep 9, 2014 at 1:21 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
->>> On 8 September 2014 18:22, Andrew Bresticker <abrestic@chromium.org> wrote:
->>>> On Mon, Sep 8, 2014 at 8:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
->>>>> On 2 September 2014 23:34, Andrew Bresticker <abrestic@chromium.org> wrote:
->>>>>>
->>>>>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
->>>>>> USB3.0 memory sticks and ethernet dongles using controller firmware
->>>>>> recently posted by Andrew Chew [2].
->>>>>
->>>>> I have had mixed results when testing this on a Jetson TK1 board. Of 8
->>>>> USB devices I tested with, about half where probed correctly, but the
->>>>> other half repeatedly fail in hub_port_init because in the GET_STATUS
->>>>> right after the reset, the C_PORT_CONNECTION bit is set.
->>>>>
->>>>> I don't see any correlation between the failure and the kind of usb
->>>>> device, but I don't have much experience with USB implementations
->>>>> either.
->>>>
->>>> Hmm... I haven't seen that before.  Which particular devices were you using?
->>>
->>> Here they are:
->>>
->>> work:
->>>
->>> Genius keyboard: 05d5:6782
->>> Logitech mouse: 046d:c06a
->>> Denver MP3 player: 10d6:1100
->>> Atheros Bluetooth dongle: 0cf3:3005
->>>
->>> don't work:
->>>
->>> MCS7830 ethernet dongle: 9710:7830
->>> Genesys Logic hub: 05e3:0608
->>
->> I tried the hub and it works just fine for me... Have you tried this
->> on any other boards like Big or Blaze?
->
-> I have a Blaze here, but haven't been able to get the external ports
-> to power up. I don't have schematics nor a strong interest to get that
-> fixed myself, as I can test my code just fine with the Blaze's
-> internal camera and the devices that do work on the Jetson.
+From: Stephen Hemminger <stephen@networkplumber.org>
+Date: Sun, 14 Sep 2014 19:05:57 -0700
 
-Ok, since Blaze has been announced, hopefully we can post a
-device-tree for it soon.
+> On Sun, 14 Sep 2014 19:33:43 +0200
+> Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> wrote:
+> 
+>> Replacing strncpy with strlcpy to avoid strings that lacks null terminate.
+>> 
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/net/ethernet/marvell/sky2.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+>> index dba48a5c..7053d38 100644
+>> --- a/drivers/net/ethernet/marvell/sky2.c
+>> +++ b/drivers/net/ethernet/marvell/sky2.c
+>> @@ -4907,7 +4907,7 @@ static const char *sky2_name(u8 chipid, char *buf, int sz)
+>>  	};
+>>  
+>>  	if (chipid >= CHIP_ID_YUKON_XL && chipid <= CHIP_ID_YUKON_OP_2)
+>> -		strncpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>> +		strlcpy(buf, name[chipid - CHIP_ID_YUKON_XL], sz);
+>>  	else
+>>  		snprintf(buf, sz, "(chip %#x)", chipid);
+>>  	return buf;
+> 
+> Useless and unnecessary since the list of names is right there.
+> Why not avoid the copy all together?
+> 
+> Subject: sky2: avoid strncpy
+> 
+> Don't use strncpy() since security thought police think it is bad.
+> 
+> Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
 
-> I'm using the firmware file that was posted recently:
->
-> xhci-tegra 70090000.usb: Firmware timestamp: 2014-05-02 02:22:50 UTC,
-> Falcon state 0x20
+I think providing the buffer on the stack of the thread executing the
+probe is superior because it will allow enabling parallel probing
+in the future.
 
-Yup, I'm using the same firmware.
-
-> If things work for you with the same sources, .config and firmware, I
-> can only think of the hw being different (other hw revision?).
-
-That, or perhaps bootloader differences?  I'm using mainline U-Boot.
-
-Stephen, Thierry, have either of you had a chance to test this series?
+I don't think you have to change that aspect to achieve your goal
+of returning the const char * string when possible.
