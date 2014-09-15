@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051AbaIOWex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:34:53 -0400
-Received: from mail-bn1on0133.outbound.protection.outlook.com ([157.56.110.133]:39552
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756222AbaIOWet convert rfc822-to-8bit (ORCPT
+	id S1756571AbaIOWfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:35:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51183 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592AbaIOWTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:34:49 -0400
-X-Greylist: delayed 845 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Sep 2014 18:34:49 EDT
-From: Rajat Jain <rajatjain@juniper.net>
-To: Andreas Noever <andreas.noever@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Guenter Roeck <groeck@juniper.net>,
-        "rajatxjain@gmail.com" <rajatxjain@gmail.com>,
-        "Guenter Roeck" <linux@roeck-us.net>
-Subject: RE: [PATCH] PCI: Prevent NULL dereference during pciehp probe
-Thread-Topic: [PATCH] PCI: Prevent NULL dereference during pciehp probe
-Thread-Index: AQHPhCa99tmtRJwt0UaJ41jWBhDf35wDXTPg
-Date: Mon, 15 Sep 2014 22:20:41 +0000
-Message-ID: <580c2c85f8424369910b69a8f871f82e@DM2PR05MB671.namprd05.prod.outlook.com>
-References: <1402347812-8059-1-git-send-email-andreas.noever@gmail.com>
-In-Reply-To: <1402347812-8059-1-git-send-email-andreas.noever@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [66.129.239.14]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-x-forefront-prvs: 03355EE97E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(164054003)(377454003)(189002)(79102001)(76176999)(77982001)(50986999)(54356999)(74662001)(19580405001)(19580395003)(83322001)(74502001)(46102001)(107046002)(21056001)(15202345003)(76482001)(90102001)(74316001)(108616004)(15975445006)(97736003)(85306004)(101416001)(76576001)(86362001)(575784001)(2656002)(106356001)(87936001)(106116001)(85852003)(92566001)(83072002)(105586002)(81342001)(4396001)(80022001)(66066001)(33646002)(95666004)(99286002)(31966008)(99396002)(20776003)(81542001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR05MB527;H:DM2PR05MB671.namprd05.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
+	Mon, 15 Sep 2014 18:19:30 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 182/187] powerpc/thp: Handle combo pages in invalidate
+Date: Mon, 15 Sep 2014 15:09:52 -0700
+Message-Id: <1410818997-9432-183-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Bjorn,
+3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
 
-I think this patch needs to be applied to all -stable branches (all the way back to 3.2).
+------------------
 
-I encounter this same issue on my platform that is running 3.14.y. 
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Thanks,
+commit fc0479557572375100ef16c71170b29a98e0d69a upstream.
 
-Rajat
+If we changed base page size of the segment, either via sub_page_protect
+or via remap_4k_pfn, we do a demote_segment which doesn't flush the hash
+table entries. We do a lazy hash page table flush for all mapped pages
+in the demoted segment. This happens when we handle hash page fault for
+these pages.
 
-> -----Original Message-----
-> From: linux-pci-owner@vger.kernel.org [mailto:linux-pci-
-> owner@vger.kernel.org] On Behalf Of Andreas Noever
-> Sent: Monday, June 09, 2014 2:04 PM
-> To: linux-kernel@vger.kernel.org; Bjorn Helgaas; linux-pci@vger.kernel.org
-> Cc: Andreas Noever
-> Subject: [PATCH] PCI: Prevent NULL dereference during pciehp probe
-> 
-> pciehp assumes that dev->subordinate exists. But we do not assign a bus if
-> we run out of bus numbers during enumeration. This leads to a NULL
-> dereference in init_slot (and other places).
-> 
-> Change pciehp_probe to return -ENODEV when no subordinate bus is
-> present.
-> 
-> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-> ---
->  drivers/pci/hotplug/pciehp_core.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/pci/hotplug/pciehp_core.c
-> b/drivers/pci/hotplug/pciehp_core.c
-> index 0e0a2ff..e5abcaf 100644
-> --- a/drivers/pci/hotplug/pciehp_core.c
-> +++ b/drivers/pci/hotplug/pciehp_core.c
-> @@ -255,6 +255,13 @@ static int pciehp_probe(struct pcie_device *dev)
->  	else if (pciehp_acpi_slot_detection_check(dev->port))
->  		goto err_out_none;
-> 
-> +	if (!dev->port->subordinate) {
-> +		/* Can happen if we run out of bus numbers during probe */
-> +		dev_err(&dev->device,
-> +			"Hotplug bridge without secondary bus, ignoring\n");
-> +		goto err_out_none;
-> +	}
-> +
->  	ctrl = pcie_init(dev);
->  	if (!ctrl) {
->  		dev_err(&dev->device, "Controller initialization failed\n");
-> --
-> 2.0.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+We use _PAGE_COMBO bit along with _PAGE_HASHPTE to indicate whether a
+pte is backed by 4K hash pte. If we find _PAGE_COMBO not set on the pte,
+that implies that we could possibly have older 64K hash pte entries in
+the hash page table and we need to invalidate those entries.
+
+Use _PAGE_COMBO to determine the page size with which we should
+invalidate the hash table entries on unmap.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/powerpc/include/asm/pgtable-ppc64.h |  2 +-
+ arch/powerpc/mm/pgtable_64.c             | 14 +++++++++++---
+ arch/powerpc/mm/tlb_hash64.c             |  2 +-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
+index bc141c9..b26cc32 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc64.h
++++ b/arch/powerpc/include/asm/pgtable-ppc64.h
+@@ -411,7 +411,7 @@ static inline char *get_hpte_slot_array(pmd_t *pmdp)
+ }
+ 
+ extern void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
+-				   pmd_t *pmdp);
++				   pmd_t *pmdp, unsigned long old_pmd);
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ extern pmd_t pfn_pmd(unsigned long pfn, pgprot_t pgprot);
+ extern pmd_t mk_pmd(struct page *page, pgprot_t pgprot);
+diff --git a/arch/powerpc/mm/pgtable_64.c b/arch/powerpc/mm/pgtable_64.c
+index 5cd5182..3e575db 100644
+--- a/arch/powerpc/mm/pgtable_64.c
++++ b/arch/powerpc/mm/pgtable_64.c
+@@ -525,7 +525,7 @@ unsigned long pmd_hugepage_update(struct mm_struct *mm, unsigned long addr,
+ 	*pmdp = __pmd(old & ~clr);
+ #endif
+ 	if (old & _PAGE_HASHPTE)
+-		hpte_do_hugepage_flush(mm, addr, pmdp);
++		hpte_do_hugepage_flush(mm, addr, pmdp, old);
+ 	return old;
+ }
+ 
+@@ -632,7 +632,7 @@ void pmdp_splitting_flush(struct vm_area_struct *vma,
+ 	if (!(old & _PAGE_SPLITTING)) {
+ 		/* We need to flush the hpte */
+ 		if (old & _PAGE_HASHPTE)
+-			hpte_do_hugepage_flush(vma->vm_mm, address, pmdp);
++			hpte_do_hugepage_flush(vma->vm_mm, address, pmdp, old);
+ 	}
+ }
+ 
+@@ -705,7 +705,7 @@ void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
+  * neesd to be flushed.
+  */
+ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
+-			    pmd_t *pmdp)
++			    pmd_t *pmdp, unsigned long old_pmd)
+ {
+ 	int ssize, i;
+ 	unsigned long s_addr;
+@@ -728,7 +728,15 @@ void hpte_do_hugepage_flush(struct mm_struct *mm, unsigned long addr,
+ 		return;
+ 
+ 	/* get the base page size,vsid and segment size */
++#ifdef CONFIG_DEBUG_VM
+ 	psize = get_slice_psize(mm, s_addr);
++	BUG_ON(psize == MMU_PAGE_16M);
++#endif
++	if (old_pmd & _PAGE_COMBO)
++		psize = MMU_PAGE_4K;
++	else
++		psize = MMU_PAGE_64K;
++
+ 	if (!is_kernel_addr(s_addr)) {
+ 		ssize = user_segment_size(s_addr);
+ 		vsid = get_vsid(mm->context.id, s_addr, ssize);
+diff --git a/arch/powerpc/mm/tlb_hash64.c b/arch/powerpc/mm/tlb_hash64.c
+index 36e44b4..c66e445 100644
+--- a/arch/powerpc/mm/tlb_hash64.c
++++ b/arch/powerpc/mm/tlb_hash64.c
+@@ -217,7 +217,7 @@ void __flush_hash_table_range(struct mm_struct *mm, unsigned long start,
+ 		if (!(pte & _PAGE_HASHPTE))
+ 			continue;
+ 		if (unlikely(hugepage_shift && pmd_trans_huge(*(pmd_t *)pte)))
+-			hpte_do_hugepage_flush(mm, start, (pmd_t *)pte);
++			hpte_do_hugepage_flush(mm, start, (pmd_t *)ptep, pte);
+ 		else
+ 			hpte_need_flush(mm, start, ptep, pte, 0);
+ 	}
+-- 
+1.9.1
+
