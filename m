@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864AbaIOT6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:58:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55795 "EHLO
+	id S1756848AbaIOT6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:58:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269AbaIOTrR (ORCPT
+	with ESMTP id S1755958AbaIOTrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:17 -0400
+	Mon, 15 Sep 2014 15:47:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 19/71] MIPS: GIC: Prevent array overrun
-Date: Mon, 15 Sep 2014 12:26:17 -0700
-Message-Id: <20140915192639.354361680@linuxfoundation.org>
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH 3.10 41/71] mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into do_remount
+Date: Mon, 15 Sep 2014 12:26:39 -0700
+Message-Id: <20140915192640.063256868@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -30,43 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeffrey Deans <jeffrey.deans@imgtec.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit ffc8415afab20bd97754efae6aad1f67b531132b upstream.
+commit 07b645589dcda8b7a5249e096fece2a67556f0f4 upstream.
 
-A GIC interrupt which is declared as having a GIC_MAP_TO_NMI_MSK
-mapping causes the cpu parameter to gic_setup_intr() to be increased
-to 32, causing memory corruption when pcpu_masks[] is written to again
-later in the function.
+There are no races as locked mount flags are guaranteed to never change.
 
-Signed-off-by: Jeffrey Deans <jeffrey.deans@imgtec.com>
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7375/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Moving the test into do_remount makes it more visible, and ensures all
+filesystem remounts pass the MNT_LOCK_READONLY permission check.  This
+second case is not an issue today as filesystem remounts are guarded
+by capable(CAP_DAC_ADMIN) and thus will always fail in less privileged
+mount namespaces, but it could become an issue in the future.
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/irq-gic.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/namespace.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/arch/mips/kernel/irq-gic.c
-+++ b/arch/mips/kernel/irq-gic.c
-@@ -256,11 +256,13 @@ static void __init gic_setup_intr(unsign
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1764,9 +1764,6 @@ static int change_mount_flags(struct vfs
+ 	if (readonly_request == __mnt_is_readonly(mnt))
+ 		return 0;
  
- 	/* Setup Intr to Pin mapping */
- 	if (pin & GIC_MAP_TO_NMI_MSK) {
-+		int i;
-+
- 		GICWRITE(GIC_REG_ADDR(SHARED, GIC_SH_MAP_TO_PIN(intr)), pin);
- 		/* FIXME: hack to route NMI to all cpu's */
--		for (cpu = 0; cpu < NR_CPUS; cpu += 32) {
-+		for (i = 0; i < NR_CPUS; i += 32) {
- 			GICWRITE(GIC_REG_ADDR(SHARED,
--					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, cpu)),
-+					  GIC_SH_MAP_TO_VPE_REG_OFF(intr, i)),
- 				 0xffffffff);
- 		}
- 	} else {
+-	if (mnt->mnt_flags & MNT_LOCK_READONLY)
+-		return -EPERM;
+-
+ 	if (readonly_request)
+ 		error = mnt_make_readonly(real_mount(mnt));
+ 	else
+@@ -1792,6 +1789,16 @@ static int do_remount(struct path *path,
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
+ 
++	/* Don't allow changing of locked mnt flags.
++	 *
++	 * No locks need to be held here while testing the various
++	 * MNT_LOCK flags because those flags can never be cleared
++	 * once they are set.
++	 */
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
++	    !(mnt_flags & MNT_READONLY)) {
++		return -EPERM;
++	}
+ 	err = security_sb_remount(sb, data);
+ 	if (err)
+ 		return err;
 
 
