@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094AbaIOTp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:45:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1755101AbaIOTqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:46:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810AbaIOThR (ORCPT
+	with ESMTP id S1755803AbaIOThR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:37:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 3.14 075/114] mnt: Correct permission checks in do_remount
-Date: Mon, 15 Sep 2014 12:26:15 -0700
-Message-Id: <20140915192643.788291496@linuxfoundation.org>
+Subject: [PATCH 3.14 074/114] mnt: Move the test for MNT_LOCK_READONLY from change_mount_flags into do_remount
+Date: Mon, 15 Sep 2014 12:26:14 -0700
+Message-Id: <20140915192643.758559205@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -31,128 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 9566d6742852c527bf5af38af5cbb878dad75705 upstream.
+commit 07b645589dcda8b7a5249e096fece2a67556f0f4 upstream.
 
-While invesgiating the issue where in "mount --bind -oremount,ro ..."
-would result in later "mount --bind -oremount,rw" succeeding even if
-the mount started off locked I realized that there are several
-additional mount flags that should be locked and are not.
+There are no races as locked mount flags are guaranteed to never change.
 
-In particular MNT_NOSUID, MNT_NODEV, MNT_NOEXEC, and the atime
-flags in addition to MNT_READONLY should all be locked.  These
-flags are all per superblock, can all be changed with MS_BIND,
-and should not be changable if set by a more privileged user.
-
-The following additions to the current logic are added in this patch.
-- nosuid may not be clearable by a less privileged user.
-- nodev  may not be clearable by a less privielged user.
-- noexec may not be clearable by a less privileged user.
-- atime flags may not be changeable by a less privileged user.
-
-The logic with atime is that always setting atime on access is a
-global policy and backup software and auditing software could break if
-atime bits are not updated (when they are configured to be updated),
-and serious performance degradation could result (DOS attack) if atime
-updates happen when they have been explicitly disabled.  Therefore an
-unprivileged user should not be able to mess with the atime bits set
-by a more privileged user.
-
-The additional restrictions are implemented with the addition of
-MNT_LOCK_NOSUID, MNT_LOCK_NODEV, MNT_LOCK_NOEXEC, and MNT_LOCK_ATIME
-mnt flags.
-
-Taken together these changes and the fixes for MNT_LOCK_READONLY
-should make it safe for an unprivileged user to create a user
-namespace and to call "mount --bind -o remount,... ..." without
-the danger of mount flags being changed maliciously.
+Moving the test into do_remount makes it more visible, and ensures all
+filesystem remounts pass the MNT_LOCK_READONLY permission check.  This
+second case is not an issue today as filesystem remounts are guarded
+by capable(CAP_DAC_ADMIN) and thus will always fail in less privileged
+mount namespaces, but it could become an issue in the future.
 
 Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c        |   36 +++++++++++++++++++++++++++++++++---
- include/linux/mount.h |    5 +++++
- 2 files changed, 38 insertions(+), 3 deletions(-)
+ fs/namespace.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -887,8 +887,21 @@ static struct mount *clone_mnt(struct mo
+@@ -1887,9 +1887,6 @@ static int change_mount_flags(struct vfs
+ 	if (readonly_request == __mnt_is_readonly(mnt))
+ 		return 0;
  
- 	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~(MNT_WRITE_HOLD|MNT_MARKED);
- 	/* Don't allow unprivileged users to change mount flags */
--	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
--		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+	if (flag & CL_UNPRIVILEGED) {
-+		mnt->mnt.mnt_flags |= MNT_LOCK_ATIME;
-+
-+		if (mnt->mnt.mnt_flags & MNT_READONLY)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NODEV)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NODEV;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOSUID)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOSUID;
-+
-+		if (mnt->mnt.mnt_flags & MNT_NOEXEC)
-+			mnt->mnt.mnt_flags |= MNT_LOCK_NOEXEC;
-+	}
+-	if (mnt->mnt_flags & MNT_LOCK_READONLY)
+-		return -EPERM;
+-
+ 	if (readonly_request)
+ 		error = mnt_make_readonly(real_mount(mnt));
+ 	else
+@@ -1915,6 +1912,16 @@ static int do_remount(struct path *path,
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
  
- 	/* Don't allow unprivileged users to reveal what is under a mount */
- 	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
-@@ -1922,6 +1935,23 @@ static int do_remount(struct path *path,
- 	    !(mnt_flags & MNT_READONLY)) {
- 		return -EPERM;
- 	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NODEV) &&
-+	    !(mnt_flags & MNT_NODEV)) {
++	/* Don't allow changing of locked mnt flags.
++	 *
++	 * No locks need to be held here while testing the various
++	 * MNT_LOCK flags because those flags can never be cleared
++	 * once they are set.
++	 */
++	if ((mnt->mnt.mnt_flags & MNT_LOCK_READONLY) &&
++	    !(mnt_flags & MNT_READONLY)) {
 +		return -EPERM;
 +	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOSUID) &&
-+	    !(mnt_flags & MNT_NOSUID)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_NOEXEC) &&
-+	    !(mnt_flags & MNT_NOEXEC)) {
-+		return -EPERM;
-+	}
-+	if ((mnt->mnt.mnt_flags & MNT_LOCK_ATIME) &&
-+	    ((mnt->mnt.mnt_flags & MNT_ATIME_MASK) != (mnt_flags & MNT_ATIME_MASK))) {
-+		return -EPERM;
-+	}
-+
  	err = security_sb_remount(sb, data);
  	if (err)
  		return err;
-@@ -2120,7 +2150,7 @@ static int do_new_mount(struct path *pat
- 		 */
- 		if (!(type->fs_flags & FS_USERNS_DEV_MOUNT)) {
- 			flags |= MS_NODEV;
--			mnt_flags |= MNT_NODEV;
-+			mnt_flags |= MNT_NODEV | MNT_LOCK_NODEV;
- 		}
- 	}
- 
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -45,12 +45,17 @@ struct mnt_namespace;
- #define MNT_USER_SETTABLE_MASK  (MNT_NOSUID | MNT_NODEV | MNT_NOEXEC \
- 				 | MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME \
- 				 | MNT_READONLY)
-+#define MNT_ATIME_MASK (MNT_NOATIME | MNT_NODIRATIME | MNT_RELATIME )
- 
- #define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
- 			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_ATIME		0x040000
-+#define MNT_LOCK_NOEXEC		0x080000
-+#define MNT_LOCK_NOSUID		0x100000
-+#define MNT_LOCK_NODEV		0x200000
- #define MNT_LOCK_READONLY	0x400000
- #define MNT_LOCKED		0x800000
- #define MNT_DOOMED		0x1000000
 
 
