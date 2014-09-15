@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaIOMns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 08:43:48 -0400
-Received: from mga14.intel.com ([192.55.52.115]:54866 "EHLO mga14.intel.com"
+	id S1752717AbaIOMqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 08:46:21 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:34892 "EHLO mail.mev.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750920AbaIOMnr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 08:43:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,527,1406617200"; 
-   d="scan'208";a="477600891"
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-To: David Miller <davem@davemloft.net>
-CC: "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
-        "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
-        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
-        "srinivas.kandagatla@st.com" <srinivas.kandagatla@st.com>,
-        "wens@csie.org" <wens@csie.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Index: AQHPztbom04Iz4URhUOKiyu70+M/jZwB2NUw
-Date: Mon, 15 Sep 2014 12:42:03 +0000
-Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7E99A7@PGSMSX102.gar.corp.intel.com>
-References: <cover.1410416223.git.hock.leong.kweh@intel.com>
-	<cover.1410416223.git.hock.leong.kweh@intel.com>
-	<07ca9d2c89cf4f01037c98e3314dd035e4d2ee34.1410416224.git.hock.leong.kweh@intel.com>
- <20140912.181423.1831537443587796533.davem@davemloft.net>
-In-Reply-To: <20140912.181423.1831537443587796533.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752670AbaIOMqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 08:46:20 -0400
+From: Ian Abbott <abbotti@mev.co.uk>
+To: driverdev-devel@linuxdriverproject.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/11] staging: comedi: move comedi_fc functionality into core
+Date: Mon, 15 Sep 2014 13:45:56 +0100
+Message-Id: <1410785167-28506-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Saturday, September 13, 2014 6:14 AM
-> From: Kweh Hock Leong <hock.leong.kweh@intel.com>
-> Date: Thu, 11 Sep 2014 16:38:39 +0800
-> 
-> > +		if ((!strcmp(quark_x1000_phy_info[i].board_name,
-> board_name)) &&
-> > +		    quark_x1000_phy_info[i].pci_func_num == func_num)
-> 
-> It is entirely erroneous to identify a device by it's _PHYSICAL_ geographic
-> location on the PCI bus.
-> 
-> Please get rid of this PCI function number comparison and if necessary find
-> another means of identification.
+The "comedi_fc" module contains a few functions for use by several
+low-level comedi drivers.  Since they are used by quite a few drivers,
+it seems useful to migrate their functionality to the core "comedi"
+module, renaming them in the process, while keeping the original
+function names in "drivers/comedi_fc.h" available for now.  This set of
+patches accomplishes that.
 
-Hi David,
+The next stages after this will be to migrate the remaining inline
+functions from "drivers/comedi_fc.h" (possibly making them externally
+exported functions, although they are rather short), and then to update
+the low-level drivers to call the functions with the new names,
+eliminating the need to include "comedi_fc.h".  Then
+"drivers/comedi_fc.h" can be removed as well.
 
-Here is some background of this work. Intel Quark X1000 has 2 stmmac Ethernet IP
-built in the SoC. They both are using the same PCI DEVICE ID number. The only things 
-to differentiate them is PCI BUS DEVICE FUNCTION (Bus:Dev:Func) number which are
-fix numbers 00:20:6 for port 1 and 00:20:7 for port 2 stated in Quark X1000 datasheet.
-(https://communities.intel.com/docs/DOC-23092 page 44 & 97)
+Note that PATCH 10 has a couple of checkpatch warnings due to
+changing an existing block comment in non-standard block-comment style.
 
-When I was looking into making the code to upstream, I do think about is there a better
-identification way to do it? But, my mind still brought me back to this PCI FUNC number.
+PATCH 11 has a checkpatch warning to check whether MAINTAINERS needs
+updating.  It doesn't.
 
-So, i would like to understand the concern of using PCI FUNC number and also would like
-to see is there any advices, suggestion or pointer to deal with the scenario here.
+PATCH 11 might conflict with some other patch series that haven't been
+committed yet.
 
-Appreciate to the comments sharing. Thanks.
+01) staging: comedi: add comedi_bytes_per_scan()
+02) staging: comedi: comedi_fc: use comedi_bytes_per_scan()
+03) staging: comedi: add comedi_inc_scan_progress()
+04) staging: comedi: comedi_fc: use comedi_inc_scan_progress()
+05) staging: comedi: add comedi_handle_events()
+06) staging: comedi: comedi_fc: cfc_write_array_to_buffer() data is
+    const
+07) staging: comedi: add comedi_write_array_to_buffer()
+08) staging: comedi: comedi_fc.h: use comedi_write_array_to_buffer()
+09) staging: comedi: add comedi_read_array_from_buffer()
+10) staging: comedi: migrate copyrights from "comedi_fc.c"
+11) staging: comedi: remove comedi_fc module
 
-
-Regards,
-Wilson
+ drivers/staging/comedi/Kconfig             |  31 -------
+ drivers/staging/comedi/comedi_buf.c        |  66 +++++++++++++++
+ drivers/staging/comedi/comedidev.h         |  11 +++
+ drivers/staging/comedi/drivers.c           |  95 +++++++++++++++++++++
+ drivers/staging/comedi/drivers/Makefile    |   1 -
+ drivers/staging/comedi/drivers/comedi_fc.c | 132 -----------------------------
+ drivers/staging/comedi/drivers/comedi_fc.h |  40 ++++++---
+ 7 files changed, 201 insertions(+), 175 deletions(-)
