@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173AbaIOUcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:32:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55109 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671AbaIOThD (ORCPT
+	id S1757094AbaIOUdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:33:14 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:54813 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277AbaIOUdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 033/114] Drivers: scsi: storvsc: Change the limits to reflect the values on the host
-Date: Mon, 15 Sep 2014 12:25:33 -0700
-Message-Id: <20140915192642.481824478@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 16:33:09 -0400
+Message-ID: <54174CFF.7050504@codeaurora.org>
+Date: Mon, 15 Sep 2014 13:33:03 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+References: <1410452204-7277-1-git-send-email-dianders@chromium.org> <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com> <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com> <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com> <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org> <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org> <20140915111055.GD1577@arm.com>
+In-Reply-To: <20140915111055.GD1577@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 09/15/14 04:10, Catalin Marinas wrote:
+> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
+>> On 09/12/14 05:14, Marc Zyngier wrote:
+>>> We surely can handle the UNDEF and do something there. We just can't do
+>>> it the way Doug described it above.
+>> I suggested doing that for something else a while ago and Will and Dave
+>> we're not thrilled[1]. The suggestion back then was to use DT to
+>> indicate what mode the kernel is running in.
+>>
+>> [1]
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
+> I think the context was slightly different. As I re-read the thread, it
+> seems that the discussion was around whether to use some SMC interface
+> or not based on whether the kernel is running secure or non-secure. The
+> argument made by Will was to actually specify the type of the firmware
+> SMC interface in the DT and use it in the kernel (and probably assume
+> the kernel is running in secure mode if no smc interface is specified in
+> the DT; you could have both though, running in secure mode and also
+> having firmware).
+>
+> In this arch timer case, we need to work around a firmware bug (or
+> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
+> firmware, no matter how small such firmware is). We don't expect a
+> specific SMC call to initialise CNTVOFF, so we can't describe it in the
+> DT.
 
-------------------
+Agreed, we can't described SMC calls that don't exist. From my
+perspective it's just another part of the cpu boot sequence that needs
+to be handled in the kernel, so describing the requirement via the
+cpu-boot method seems appropriate. It seems like we're making it harder
+than it should be by handling the undef when we could have slightly
+different SMP boot code (and suspend/resume code) depending on the boot
+method property.
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-
-commit 4cd83ecdac20d30725b4f96e5d7814a1e290bc7e upstream.
-
-Hyper-V hosts can support multiple targets and multiple channels and larger number of
-LUNs per target. Update the code to reflect this. With this patch we can correctly
-enumerate all the paths in a multi-path storage environment.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/storvsc_drv.c |   51 +++++++++++++++++++++++++++++----------------
- 1 file changed, 33 insertions(+), 18 deletions(-)
-
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -331,17 +331,17 @@ static int storvsc_timeout = 180;
- 
- static void storvsc_on_channel_callback(void *context);
- 
--/*
-- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
-- * reality, the path/target is not used (ie always set to 0) so our
-- * scsi host adapter essentially has 1 bus with 1 target that contains
-- * up to 256 luns.
-- */
--#define STORVSC_MAX_LUNS_PER_TARGET			64
--#define STORVSC_MAX_TARGETS				1
--#define STORVSC_MAX_CHANNELS				1
--
--
-+#define STORVSC_MAX_LUNS_PER_TARGET			255
-+#define STORVSC_MAX_TARGETS				2
-+#define STORVSC_MAX_CHANNELS				8
-+
-+#define STORVSC_FC_MAX_LUNS_PER_TARGET			255
-+#define STORVSC_FC_MAX_TARGETS				128
-+#define STORVSC_FC_MAX_CHANNELS				8
-+
-+#define STORVSC_IDE_MAX_LUNS_PER_TARGET			64
-+#define STORVSC_IDE_MAX_TARGETS				1
-+#define STORVSC_IDE_MAX_CHANNELS			1
- 
- struct storvsc_cmd_request {
- 	struct list_head entry;
-@@ -1713,7 +1713,6 @@ static struct scsi_host_template scsi_dr
- 	.slave_destroy =	storvsc_device_destroy,
- 	.slave_configure =	storvsc_device_configure,
- 	.cmd_per_lun =		1,
--	/* 64 max_queue * 1 target */
- 	.can_queue =		STORVSC_MAX_IO_REQUESTS*STORVSC_MAX_TARGETS,
- 	.this_id =		-1,
- 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
-@@ -1778,6 +1777,9 @@ static int storvsc_probe(struct hv_devic
- 	}
- 
- 
-+	if (dev_id->driver_data == SFC_GUID)
-+		scsi_driver.can_queue = (STORVSC_MAX_IO_REQUESTS *
-+					 STORVSC_FC_MAX_TARGETS);
- 	host = scsi_host_alloc(&scsi_driver,
- 			       sizeof(struct hv_host_device));
- 	if (!host)
-@@ -1811,12 +1813,25 @@ static int storvsc_probe(struct hv_devic
- 	host_dev->path = stor_device->path_id;
- 	host_dev->target = stor_device->target_id;
- 
--	/* max # of devices per target */
--	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
--	/* max # of targets per channel */
--	host->max_id = STORVSC_MAX_TARGETS;
--	/* max # of channels */
--	host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+	switch (dev_id->driver_data) {
-+	case SFC_GUID:
-+		host->max_lun = STORVSC_FC_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_FC_MAX_TARGETS;
-+		host->max_channel = STORVSC_FC_MAX_CHANNELS - 1;
-+		break;
-+
-+	case SCSI_GUID:
-+		host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_MAX_TARGETS;
-+		host->max_channel = STORVSC_MAX_CHANNELS - 1;
-+		break;
-+
-+	default:
-+		host->max_lun = STORVSC_IDE_MAX_LUNS_PER_TARGET;
-+		host->max_id = STORVSC_IDE_MAX_TARGETS;
-+		host->max_channel = STORVSC_IDE_MAX_CHANNELS - 1;
-+		break;
-+	}
- 	/* max cmd length */
- 	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
- 
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
