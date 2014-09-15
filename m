@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759584AbaIOWv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:51:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51011 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975AbaIOWRN (ORCPT
+	id S1759588AbaIOWw2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:52:28 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:46024 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065AbaIOWwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:13 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 072/187] selinux: fix the default socket labeling in sock_graft()
-Date: Mon, 15 Sep 2014 15:08:02 -0700
-Message-Id: <1410818997-9432-73-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Sep 2014 18:52:24 -0400
+Date: Mon, 15 Sep 2014 23:52:20 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v6 0/8] charger/mfd: max14577: Add support for MAX77836
+Message-ID: <20140915225220.GH25162@lee--X1>
+References: <1410504840-23543-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410504840-23543-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 12 Sep 2014, Krzysztof Kozlowski wrote:
+> This is a sixth version of patches adding support for
+> MAX77836 device to the max14577 drivers.
+> 
+> This patchset has been on the lists for quite long time and was already
+> reviewed by all necessary maintainers except power supply.
+> I need acks from power supply subsystem (patches: 3, 5-8).
 
-------------------
+Give this set a few more days for the Power guys to respond.  If they
+don't, ping me and I will just apply the set.
 
-From: Paul Moore <pmoore@redhat.com>
+> Generally this should be pulled at once but some parts may be split
+> and pulled separately in following batches:
+>  - Patches 1 and 2: as MFD prerequisites,
+>  - Patches 3-5: adding actual charger code, depends on 1 and 2,
+>  - Patch 6: fuel-gauge, independent,
+>  - Patches 7 and 8: only documentation.
+> 
+> Lee Jones said he can take the set through his tree. Still I need acks
+> from power subsystem.
+> 
+> Everything rebased on Linus' tree (v3.17-rc2-9-g68e370289c29).
+> 
+> Changes since v5
+> ================
+> 1. 5/8: Remove 'inline' from functions (suggested by Andrew Morton).
+> 2. Add Andrew Morton's acks.
+> 
+> Changes since v4
+> ================
+> 1. Add Lee Jones' acks to patch 1 and 2 (mfd).
+> 2. power max17040 6/8: Remove duplicated (and not used) value of id
+>    in array of i2c_device_id. (suggested by Lee Jones)
+> 
+> Changes since v3
+> ================
+> 1. Split MFD changes into separate new patches:
+>    1/8: mfd: max14577: Add defines for MAX77836 charger
+>    2/8: Map charger device to its own of_node
+>    Suggested by Lee Jones.
+> 
+> Changes since v2
+> ================
+> 1. charger: Use sysfs instead of DTS for setting the fast charge timer.
+>    The charger driver now selects the CONFIG_SYSFS and exports
+>    a DEVICE_ATTR. (suggested by Mark Rutland)
+> 2. Add patch 6 with documentation of exported sysfs entry for fast
+>    charge timer.
+> 3. charger 3/6: Add missing 'break' in switch parsing valid values
+>    for fast charge timer.
+> 
+> Changes since v1
+> ================
+> 1. charger 3/5: Add an error message for each unsuccessful parse of DT
+>    property (suggested by Mark Rutland).
+> 2. charger 3/5: Use 'u32' type for storing values from DT (suggested
+>    by Mark Rutland).
+> 3. charger 3/5: Remove an error message for memory allocation failure.
+> 
+> 
+> The patchset (first and second part of the MAX77836 drivers) has been
+> on the lists since January. Changelog for the first part of the drivers
+> (merged):
+> https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg628696.html
+> 
+> 
+> Best regards,
+> Krzysztof Kozlowski
+> 
+> 
+> Krzysztof Kozlowski (8):
+>   mfd: max14577: Add defines for MAX77836 charger
+>   mfd: max14577: Map charger device to its own of_node
+>   charger: max14577: Add support for MAX77836 charger
+>   regulator/mfd: max14577: Export symbols for calculating charger
+>     current
+>   charger: max14577: Configure battery-dependent settings from DTS and
+>     sysfs
+>   power: max17040: Add ID for MAX77836 Fuel Gauge block
+>   devicetree: mfd: max14577: Add device tree bindings document
+>   Documentation: charger: max14577: Document exported sysfs entry
+> 
+>  Documentation/ABI/testing/sysfs-class-power        |  14 +
+>  Documentation/devicetree/bindings/mfd/max14577.txt | 146 ++++++++
+>  drivers/mfd/max14577.c                             | 100 +++++-
+>  drivers/power/Kconfig                              |   5 +-
+>  drivers/power/max14577_charger.c                   | 370 +++++++++++++++++++--
+>  drivers/power/max17040_battery.c                   |   3 +-
+>  drivers/regulator/max14577.c                       |  80 +----
+>  include/linux/mfd/max14577-private.h               |  95 ++++--
+>  include/linux/mfd/max14577.h                       |  30 ++
+>  9 files changed, 704 insertions(+), 139 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
+> 
 
-commit 4da6daf4d3df5a977e4623963f141a627fd2efce upstream.
-
-The sock_graft() hook has special handling for AF_INET, AF_INET, and
-AF_UNIX sockets as those address families have special hooks which
-label the sock before it is attached its associated socket.
-Unfortunately, the sock_graft() hook was missing a default approach
-to labeling sockets which meant that any other address family which
-made use of connections or the accept() syscall would find the
-returned socket to be in an "unlabeled" state.  This was recently
-demonstrated by the kcrypto/AF_ALG subsystem and the newly released
-cryptsetup package (cryptsetup v1.6.5 and later).
-
-This patch preserves the special handling in selinux_sock_graft(),
-but adds a default behavior - setting the sock's label equal to the
-associated socket - which resolves the problem with AF_ALG and
-presumably any other address family which makes use of accept().
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Tested-by: Milan Broz <gmazyland@gmail.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- include/linux/security.h |  5 ++++-
- security/selinux/hooks.c | 13 +++++++++++--
- 2 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 5623a7f..e42af21 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -987,7 +987,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	Retrieve the LSM-specific secid for the sock to enable caching of network
-  *	authorizations.
-  * @sock_graft:
-- *	Sets the socket's isec sid to the sock's sid.
-+ *	This hook is called in response to a newly created sock struct being
-+ *	grafted onto an existing socket and allows the security module to
-+ *	perform whatever security attribute management is necessary for both
-+ *	the sock and socket.
-  * @inet_conn_request:
-  *	Sets the openreq's sid to socket's sid with MLS portion taken from peer sid.
-  * @inet_csk_clone:
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 019749c..f66143d 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4497,9 +4497,18 @@ static void selinux_sock_graft(struct sock *sk, struct socket *parent)
- 	struct inode_security_struct *isec = SOCK_INODE(parent)->i_security;
- 	struct sk_security_struct *sksec = sk->sk_security;
- 
--	if (sk->sk_family == PF_INET || sk->sk_family == PF_INET6 ||
--	    sk->sk_family == PF_UNIX)
-+	switch (sk->sk_family) {
-+	case PF_INET:
-+	case PF_INET6:
-+	case PF_UNIX:
- 		isec->sid = sksec->sid;
-+		break;
-+	default:
-+		/* by default there is no special labeling mechanism for the
-+		 * sksec label so inherit the label from the parent socket */
-+		BUG_ON(sksec->sid != SECINITSID_UNLABELED);
-+		sksec->sid = isec->sid;
-+	}
- 	sksec->sclass = isec->sclass;
- }
- 
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
