@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144AbaIOWRp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:17:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51057 "EHLO
+	id S1758166AbaIOWRv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:17:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51065 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757949AbaIOWRl (ORCPT
+	with ESMTP id S1758136AbaIOWRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:17:41 -0400
+	Mon, 15 Sep 2014 18:17:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Pratyush Anand <pratyush.anand@st.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 086/187] USB: Fix persist resume of some SS USB devices
-Date: Mon, 15 Sep 2014 15:08:16 -0700
-Message-Id: <1410818997-9432-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 089/187] [media] xc5000: Fix get_frequency()
+Date: Mon, 15 Sep 2014 15:08:19 -0700
+Message-Id: <1410818997-9432-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410818997-9432-1-git-send-email-kamal@canonical.com>
 References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
@@ -28,142 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pratyush Anand <pratyush.anand@st.com>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit a40178b2fa6ad87670fb1e5fa4024db00c149629 upstream.
+commit a3eec916cbc17dc1aaa3ddf120836cd5200eb4ef upstream.
 
-Problem Summary: Problem has been observed generally with PM states
-where VBUS goes off during suspend. There are some SS USB devices which
-take longer time for link training compared to many others.  Such
-devices fail to reconnect with same old address which was associated
-with it before suspend.
+The programmed frequency on xc5000 is not the middle
+frequency, but the initial frequency on the bandwidth range.
+However, the DVB API works with the middle frequency.
 
-When system resumes, at some point of time (dpm_run_callback->
-usb_dev_resume->usb_resume->usb_resume_both->usb_resume_device->
-usb_port_resume) SW reads hub status. If device is present,
-then it finishes port resume and re-enumerates device with same
-address. If device is not present then, SW thinks that device was
-removed during suspend and therefore does logical disconnection
-and removes all the resource allocated for this device.
-
-Now, if I put sufficient delay just before root hub status read in
-usb_resume_device then, SW sees always that device is present. In normal
-course(without any delay) SW sees that no device is present and then SW
-removes all resource associated with the device at this port.  In the
-latter case, after sometime, device says that hey I am here, now host
-enumerates it, but with new address.
-
-Problem had been reproduced when I connect verbatim USB3.0 hard disc
-with my STiH407 XHCI host running with 3.10 kernel.
-
-I see that similar problem has been reported here.
-https://bugzilla.kernel.org/show_bug.cgi?id=53211
-Reading above it seems that bug was not in 3.6.6 and was present in 3.8
-and again it was not present for some in 3.12.6, while it was present
-for few others. I tested with 3.13-FC19 running at i686 desktop, problem
-was still there. However, I was failed to reproduce it with 3.16-RC4
-running at same i686 machine. I would say it is just a random
-observation. Problem for few devices is always there, as I am unable to
-find a proper fix for the issue.
-
-So, now question is what should be the amount of delay so that host is
-always able to recognize suspended device after resume.
-
-XHCI specs 4.19.4 says that when Link training is successful, port sets
-CSC bit to 1. So if SW reads port status before successful link
-training, then it will not find device to be present.  USB Analyzer log
-with such buggy devices show that in some cases device switch on the
-RX termination after long delay of host enabling the VBUS. In few other
-cases it has been seen that device fails to negotiate link training in
-first attempt. It has been reported till now that few devices take as
-long as 2000 ms to train the link after host enabling its VBUS and
-RX termination. This patch implements a 2000 ms timeout for CSC bit to set
-ie for link training. If in a case link trains before timeout, loop will
-exit earlier.
-
-This patch implements above delay, but only for SS device and when
-persist is enabled.
-
-So, for the good device overhead is almost none. While for the bad
-devices penalty could be the time which it take for link training.
-But, If a device was connected before suspend, and was removed
-while system was asleep, then the penalty would be the timeout ie
-2000 ms.
-
-Results:
-
-Verbatim USB SS hard disk connected with STiH407 USB host running 3.10
-Kernel resumes in 461 msecs without this patch, but hard disk is
-assigned a new device address. Same system resumes in 790 msecs with
-this patch, but with old device address.
-
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/hub.c | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ drivers/media/tuners/xc5000.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 2de2f27..9d30359 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3165,6 +3165,43 @@ static int finish_port_resume(struct usb_device *udev)
+diff --git a/drivers/media/tuners/xc5000.c b/drivers/media/tuners/xc5000.c
+index 5cd09a6..b2d9e9c 100644
+--- a/drivers/media/tuners/xc5000.c
++++ b/drivers/media/tuners/xc5000.c
+@@ -55,7 +55,7 @@ struct xc5000_priv {
+ 
+ 	u32 if_khz;
+ 	u16 xtal_khz;
+-	u32 freq_hz;
++	u32 freq_hz, freq_offset;
+ 	u32 bandwidth;
+ 	u8  video_standard;
+ 	u8  rf_mode;
+@@ -755,13 +755,13 @@ static int xc5000_set_params(struct dvb_frontend *fe)
+ 	case SYS_ATSC:
+ 		dprintk(1, "%s() VSB modulation\n", __func__);
+ 		priv->rf_mode = XC_RF_MODE_AIR;
+-		priv->freq_hz = freq - 1750000;
++		priv->freq_offset = 1750000;
+ 		priv->video_standard = DTV6;
+ 		break;
+ 	case SYS_DVBC_ANNEX_B:
+ 		dprintk(1, "%s() QAM modulation\n", __func__);
+ 		priv->rf_mode = XC_RF_MODE_CABLE;
+-		priv->freq_hz = freq - 1750000;
++		priv->freq_offset = 1750000;
+ 		priv->video_standard = DTV6;
+ 		break;
+ 	case SYS_ISDBT:
+@@ -776,15 +776,15 @@ static int xc5000_set_params(struct dvb_frontend *fe)
+ 		switch (bw) {
+ 		case 6000000:
+ 			priv->video_standard = DTV6;
+-			priv->freq_hz = freq - 1750000;
++			priv->freq_offset = 1750000;
+ 			break;
+ 		case 7000000:
+ 			priv->video_standard = DTV7;
+-			priv->freq_hz = freq - 2250000;
++			priv->freq_offset = 2250000;
+ 			break;
+ 		case 8000000:
+ 			priv->video_standard = DTV8;
+-			priv->freq_hz = freq - 2750000;
++			priv->freq_offset = 2750000;
+ 			break;
+ 		default:
+ 			printk(KERN_ERR "xc5000 bandwidth not set!\n");
+@@ -798,15 +798,15 @@ static int xc5000_set_params(struct dvb_frontend *fe)
+ 		priv->rf_mode = XC_RF_MODE_CABLE;
+ 		if (bw <= 6000000) {
+ 			priv->video_standard = DTV6;
+-			priv->freq_hz = freq - 1750000;
++			priv->freq_offset = 1750000;
+ 			b = 6;
+ 		} else if (bw <= 7000000) {
+ 			priv->video_standard = DTV7;
+-			priv->freq_hz = freq - 2250000;
++			priv->freq_offset = 2250000;
+ 			b = 7;
+ 		} else {
+ 			priv->video_standard = DTV7_8;
+-			priv->freq_hz = freq - 2750000;
++			priv->freq_offset = 2750000;
+ 			b = 8;
+ 		}
+ 		dprintk(1, "%s() Bandwidth %dMHz (%d)\n", __func__,
+@@ -817,6 +817,8 @@ static int xc5000_set_params(struct dvb_frontend *fe)
+ 		return -EINVAL;
+ 	}
+ 
++	priv->freq_hz = freq - priv->freq_offset;
++
+ 	dprintk(1, "%s() frequency=%d (compensated to %d)\n",
+ 		__func__, freq, priv->freq_hz);
+ 
+@@ -1067,7 +1069,7 @@ static int xc5000_get_frequency(struct dvb_frontend *fe, u32 *freq)
+ {
+ 	struct xc5000_priv *priv = fe->tuner_priv;
+ 	dprintk(1, "%s()\n", __func__);
+-	*freq = priv->freq_hz;
++	*freq = priv->freq_hz + priv->freq_offset;
+ 	return 0;
  }
  
- /*
-+ * There are some SS USB devices which take longer time for link training.
-+ * XHCI specs 4.19.4 says that when Link training is successful, port
-+ * sets CSC bit to 1. So if SW reads port status before successful link
-+ * training, then it will not find device to be present.
-+ * USB Analyzer log with such buggy devices show that in some cases
-+ * device switch on the RX termination after long delay of host enabling
-+ * the VBUS. In few other cases it has been seen that device fails to
-+ * negotiate link training in first attempt. It has been
-+ * reported till now that few devices take as long as 2000 ms to train
-+ * the link after host enabling its VBUS and termination. Following
-+ * routine implements a 2000 ms timeout for link training. If in a case
-+ * link trains before timeout, loop will exit earlier.
-+ *
-+ * FIXME: If a device was connected before suspend, but was removed
-+ * while system was asleep, then the loop in the following routine will
-+ * only exit at timeout.
-+ *
-+ * This routine should only be called when persist is enabled for a SS
-+ * device.
-+ */
-+static int wait_for_ss_port_enable(struct usb_device *udev,
-+		struct usb_hub *hub, int *port1,
-+		u16 *portchange, u16 *portstatus)
-+{
-+	int status = 0, delay_ms = 0;
-+
-+	while (delay_ms < 2000) {
-+		if (status || *portstatus & USB_PORT_STAT_CONNECTION)
-+			break;
-+		msleep(20);
-+		delay_ms += 20;
-+		status = hub_port_status(hub, *port1, portstatus, portchange);
-+	}
-+	return status;
-+}
-+
-+/*
-  * usb_port_resume - re-activate a suspended usb device's upstream port
-  * @udev: device to re-activate, not a root hub
-  * Context: must be able to sleep; device not locked; pm locks held
-@@ -3266,6 +3303,10 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
- 
- 	clear_bit(port1, hub->busy_bits);
- 
-+	if (udev->persist_enabled && hub_is_superspeed(hub->hdev))
-+		status = wait_for_ss_port_enable(udev, hub, &port1, &portchange,
-+				&portstatus);
-+
- 	status = check_port_resume_type(udev,
- 			hub, port1, status, portchange, portstatus);
- 	if (status == 0)
 -- 
 1.9.1
 
