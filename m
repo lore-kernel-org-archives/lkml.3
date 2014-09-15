@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759342AbaIOVOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:14:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54566 "EHLO
+	id S1759484AbaIOVPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54589 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878AbaIOT0s (ORCPT
+	with ESMTP id S1754737AbaIOT0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:26:48 -0400
+	Mon, 15 Sep 2014 15:26:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 028/158] mm: fix potential infinite loop in dissolve_free_huge_pages()
-Date: Mon, 15 Sep 2014 12:24:27 -0700
-Message-Id: <20140915192543.730250398@linuxfoundation.org>
+        Martin Walch <walch.martin@web.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.16 010/158] media: sms: Remove CONFIG_ prefix from Kconfig symbols
+Date: Mon, 15 Sep 2014 12:24:09 -0700
+Message-Id: <20140915192543.186073699@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -32,47 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit d0177639310d23c7739500df3c6ce6fdfe34acec upstream.
+commit 3c4b422adb7694418848cefc2a4669d63192c649 upstream.
 
-It is possible for some platforms, such as powerpc to set HPAGE_SHIFT to
-0 to indicate huge pages not supported.
+X-Patchwork-Delegate: mchehab@redhat.com
+Remove the CONFIG_ prefix from two Kconfig symbols in a dependency for
+SMS_SIANO_DEBUGFS. This prefix is invalid inside Kconfig files.
 
-When this is the case, hugetlbfs could be disabled during boot time:
-hugetlbfs: disabling because there are no supported hugepage sizes
+Note that the current (common sense) dependency on SMS_USB_DRV and
+SMS_SDIO_DRV being equal ensures that SMS_SIANO_DEBUGFS will not
+violate its constraints. These constraint are that:
+- it should only be built if SMS_USB_DRV is set;
+- it can't be builtin if USB support is modular.
 
-Then in dissolve_free_huge_pages(), order is kept maximum (64 for
-64bits), and the for loop below won't end: for (pfn = start_pfn; pfn <
-end_pfn; pfn += 1 << order)
+So drop the dependency on SMS_USB_DRV, as it is unneeded.
 
-As suggested by Naoya, below fix checks hugepages_supported() before
-calling dissolve_free_huge_pages().
+Fixes: 6c84b214284e ("[media] sms: fix randconfig building error")
 
-[rientjes@google.com: no legitimate reason to call dissolve_free_huge_pages() when !hugepages_supported()]
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Martin Walch <walch.martin@web.de>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/hugetlb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/common/siano/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1089,6 +1089,9 @@ void dissolve_free_huge_pages(unsigned l
- 	unsigned long pfn;
- 	struct hstate *h;
+--- a/drivers/media/common/siano/Kconfig
++++ b/drivers/media/common/siano/Kconfig
+@@ -22,8 +22,7 @@ config SMS_SIANO_DEBUGFS
+ 	bool "Enable debugfs for smsdvb"
+ 	depends on SMS_SIANO_MDTV
+ 	depends on DEBUG_FS
+-	depends on SMS_USB_DRV
+-	depends on CONFIG_SMS_USB_DRV = CONFIG_SMS_SDIO_DRV
++	depends on SMS_USB_DRV = SMS_SDIO_DRV
  
-+	if (!hugepages_supported())
-+		return;
-+
- 	/* Set scan step to minimum hugepage size */
- 	for_each_hstate(h)
- 		if (order > huge_page_order(h))
+ 	---help---
+ 	  Choose Y to enable visualizing a dump of the frontend
 
 
