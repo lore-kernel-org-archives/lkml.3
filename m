@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768AbaIOLWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 07:22:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35373 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaIOLWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 07:22:20 -0400
-Date: Mon, 15 Sep 2014 13:22:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Message-ID: <20140915112218.GB19976@dhcp22.suse.cz>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+	id S1753702AbaIOL31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 07:29:27 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:63822 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbaIOL3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 07:29:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL8zT=jVWTp5tzW3Pi2MFAq6gySeinvACwSyFdj+4SpYEW2YXg@mail.gmail.com>
+References: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <54110B29.7030303@samsung.com> <CAL8zT=iezoevh_12GAZyDOdRy1dAS876RZDUJGVTZyY4zYZbaQ@mail.gmail.com>
+ <5416C30C.6010400@samsung.com> <CAL8zT=jVWTp5tzW3Pi2MFAq6gySeinvACwSyFdj+4SpYEW2YXg@mail.gmail.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Mon, 15 Sep 2014 13:29:10 +0200
+X-Google-Sender-Auth: PoXemY9lBpEn1jMjU8-I2MpwIhs
+Message-ID: <CAL8zT=j86XDU7TZMALYnP+359dxGZHqWsERtRJaO8r-DES1dgg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Add delay between CMD6 and CMD13 for Sandisk eMMC cards
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-09-14 15:30:41, Cong Wang wrote:
-> There is a race condition between OOM killer and freezer when
-> they try to operate on the same process, something like below:
-> 
->         Process A       Process B               Process C
-> trigger page fault
-> then trigger oom
-> B=oom_scan_process_thread()
->                                         cgroup freezer freeze(A, B)
->                         ...
->                         try_to_freeze()
->                         stay in D state
-> oom_kill_process(B)
-> restart page fault
-> ...
-> 
-> In this case, process A triggered a page fault in user-space,
-> and the kernel page fault handler triggered OOM, then kernel
-> selected process B as the victim, right before being killed
-> process B was frozen by process C therefore went to D state,
-> then kernel sent SIGKILL but it is already too late as
-> process B will not care about pending signals any more.
+2014-09-15 12:53 GMT+02:00 Jean-Michel Hautbois
+<jean-michel.hautbois@vodalys.com>:
+> 2014-09-15 12:44 GMT+02:00 Jaehoon Chung <jh80.chung@samsung.com>:
+>> On 09/15/2014 07:08 PM, Jean-Michel Hautbois wrote:
+>>> Hi Jaehoon,
+>>>
+>>>> On 09/09/2014 09:26 PM, Jean-Michel Hautbois wrote:
+>>>>> Tested on a i.MX6 board, with Sandisk SDIN5D1-2G.
+>>>>> Without this patch, I/O errors occur.
+>>>>> This eMMC seems to have a different Manufacturer ID as it reads 0x45
+>>>>> and not 0x2 as specified in datasheet.
+>>>>
+>>>> I think this patch don't merge into mainline.
+>>>> This is not solution for problem.
+>>>> you mentioned the below comment, this is workaround.
+>>>
+>>> Yes
+>>>
+>>>>>
+>>>>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>>>>> ---
+>>>>>  drivers/mmc/core/mmc_ops.c | 9 +++++++++
+>>>>>  1 file changed, 9 insertions(+)
+>>>>>
+>>>>> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+>>>>> index f51b5ba..91babaa 100644
+>>>>> --- a/drivers/mmc/core/mmc_ops.c
+>>>>> +++ b/drivers/mmc/core/mmc_ops.c
+>>>>> @@ -458,6 +458,15 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+>>>>>       if (!use_busy_signal)
+>>>>>               return 0;
+>>>>>
+>>>>> +     /* WORKAROUND: for Sandisk eMMC cards, it might need certain delay
+>>>>> +      * before sending CMD13 after CMD6
+>>>>> +      * On SDIN5D1-2G MANFID is 0x45 and not 0x2 as specified in datasheet
+>>>>> +      */
+>>>>> +     if (card->cid.manfid == CID_MANFID_SANDISK ||
+>>>>> +             card->cid.manfid == 0x45) {
+>>>>> +             msleep(1);
+>>>>> +     }
+>>>>
+>>>> If it's a general problem of Sandisk SDIN5D1-2G,
+>>>> I think you need to verify this problem. And can you use the MMC_FIXUP() and QUIRK?
+>>>
+>>> Well, this is difficult to verify, I know that on all my SDIN5D1-2G I
+>>> have this MANFID different from what is defined by CID_MANFID_SANDISK.
+>>> How should I use MMC_FIXUP ? Like this ?
+>>
+>> I think you need to explain why delay is need.
+>> i didn't have same card, but it might be your host controller or other problem.
+>
+> Well, I don't know why it is needed, this is undocumented, nothing in
+> datasheet explains anything about this.
 
-I have just got back to this patch again and I guess that the
-description is a bit misleading. Sure there is a race but the main
-problem is that frozen tasks are OOM unkillable in principle. So a task
-might hide into the fridge and livelock OOM killer. This has been broken
-since __thaw_task doesn't thaw anything (I guess it was a3201227f803
-which broke it).
+It seems to be uSDHC / DDR mode related. I don't even know if this is
+limited to Sandisk !
+And I don't have another board with another manufacturer eMMC to test.
+Maybe some guys from Freescale could help with this ?
 
-What do you think about the following changelog instead?
-"
-Since f660daac474c6f (oom: thaw threads if oom killed thread is frozen
-before deferring) OOM killer relies on being able to thaw a frozen task
-to handle OOM situation but a3201227f803 (freezer: make freezing() test
-freeze conditions in effect instead of TIF_FREEZE) has reorganized the
-code and stopped clearing freeze flag in __thaw_task. This means that
-the target task only wakes up and goes into the fridge again because the
-freezing condition hasn't changed for it. This reintroduces the bug
-fixed by f660daac474c6f.
-
-Fix the issue by checking for TIF_MEMDIE thread flag and get away from
-the fridge if it is set. oom_scan_process_thread doesn't have to check
-for the frozen task anymore because do_send_sig_info will wake up the
-thread and TIF_MEMDIE is already set by that time.
-
-Fixes: a3201227f803 (freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE)
-Cc: stable@vger.kernel.org # 3.3+
-"
-
-[...]
-> +static bool should_thaw_current(bool check_kthr_stop)
-> +{
-> +	if (!freezing(current))
-> +		return true;
-> +
-> +	if (check_kthr_stop && kthread_should_stop())
-> +		return true;
-> +
-> +	/* It might not be safe to check TIF_MEMDIE for pm freeze. */
-> +	if (cgroup_freezing(current) && test_thread_flag(TIF_MEMDIE))
-> +		return true;
-
-+ cgroup_freezing check can go away.
-
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+JM
