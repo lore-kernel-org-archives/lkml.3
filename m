@@ -1,136 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaIOOY5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:24:57 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:11172 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751979AbaIOOYz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:24:55 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>
-Date: Mon, 15 Sep 2014 22:20:14 +0800
-Subject: RE: [RFC v2] arm:extend the reserved mrmory for initrd to be page
- aligned
-Thread-Topic: [RFC v2] arm:extend the reserved mrmory for initrd to be page
- aligned
-Thread-Index: AQHP0PC/xx1/1wWeLUCt9w3JpxCTeg==
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB4D6F19@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103D6DB491609@CNBJMBX05.corpusers.net>,<20140915113325.GD12361@n2100.arm.linux.org.uk>
-In-Reply-To: <20140915113325.GD12361@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752833AbaIOOZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:25:08 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:42807 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779AbaIOOZE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 10:25:04 -0400
+Message-ID: <5416F69C.8040905@converseincode.com>
+Date: Mon, 15 Sep 2014 07:24:28 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        llvmlinux@lists.linuxfoundation.org, Wim Van Sebroeck <wim@iguana.be>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Charlebois <charlebm@gmail.com>, Rob Clark <robdclark@gmail.com>
+Subject: Re: linux-next: manual merge of the llvmlinux tree with the  tree
+References: <20140915163813.490886b4@canb.auug.org.au>
+In-Reply-To: <20140915163813.490886b4@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great!
-yeah, you are right,
-just keep the change in free_initrd_mem( ) is ok.
-we don't need keep reserved memory to be aligned ,
-
-Thanks!
-
-________________________________________
-From: Russell King - ARM Linux [linux@arm.linux.org.uk]
-Sent: Monday, September 15, 2014 7:33 PM
-To: Wang, Yalin
-Cc: 'Will Deacon'; 'linux-kernel@vger.kernel.org'; 'linux-arm-kernel@lists.infradead.org'; 'linux-mm@kvack.org'; 'linux-arm-msm@vger.kernel.org'
-Subject: Re: [RFC v2] arm:extend the reserved mrmory for initrd to be page      aligned
-
-On Mon, Sep 15, 2014 at 07:07:20PM +0800, Wang, Yalin wrote:
-> this patch extend the start and end address of initrd to be page aligned,
-> so that we can free all memory including the un-page aligned head or tail
-> page of initrd, if the start or end address of initrd are not page
-> aligned, the page can't be freed by free_initrd_mem() function.
-
-Better, but I think it's more complicated than it needs to be:
-
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
->  arch/arm/mm/init.c   | 19 +++++++++++++++++--
->  arch/arm64/mm/init.c | 37 +++++++++++++++++++++++++++++++++----
->  2 files changed, 50 insertions(+), 6 deletions(-)
+On 09/14/14 23:38, Stephen Rothwell wrote:
+> Hi all,
 >
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 659c75d..8490b70 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -277,6 +277,8 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
->  void __init arm_memblock_init(const struct machine_desc *mdesc)
->  {
->       /* Register the kernel text, kernel data and initrd with memblock. */
-> +     phys_addr_t phys_initrd_start_orig __maybe_unused;
-> +     phys_addr_t phys_initrd_size_orig __maybe_unused;
->  #ifdef CONFIG_XIP_KERNEL
->       memblock_reserve(__pa(_sdata), _end - _sdata);
->  #else
-> @@ -289,6 +291,13 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
->               phys_initrd_size = initrd_end - initrd_start;
->       }
->       initrd_start = initrd_end = 0;
-> +     phys_initrd_start_orig = phys_initrd_start;
-> +     phys_initrd_size_orig = phys_initrd_size;
-> +     /* make sure the start and end address are page aligned */
-> +     phys_initrd_size = round_up(phys_initrd_start + phys_initrd_size, PAGE_SIZE);
-> +     phys_initrd_start = round_down(phys_initrd_start, PAGE_SIZE);
-> +     phys_initrd_size -= phys_initrd_start;
-> +
->       if (phys_initrd_size &&
->           !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
->               pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
-> @@ -305,9 +314,10 @@ void __init arm_memblock_init(const struct machine_desc *mdesc)
->               memblock_reserve(phys_initrd_start, phys_initrd_size);
+> Today's linux-next merge of the llvmlinux tree got a conflict in
+> drivers/gpu/drm/msm/hdmi/hdmi.c between commit fc886107c556 ("drm/msm:
+> Change nested function to static function") from the watchdog tree and
+> commit 8f2c494adad0 ("msm, hdmi: LLVMLinux: Remove nested function from
+> HDMI driver") from the llvmlinux tree.
 >
->               /* Now convert initrd to virtual addresses */
-> -             initrd_start = __phys_to_virt(phys_initrd_start);
-> -             initrd_end = initrd_start + phys_initrd_size;
-> +             initrd_start = __phys_to_virt(phys_initrd_start_orig);
-> +             initrd_end = initrd_start + phys_initrd_size_orig;
->       }
-> +
+> I fixed it up (these patches are doing the same thing, so I used the
+> version in the watchdog tree) and can carry the fix as necessary (no
+> action is required).
+>
+> P.S. Behan, I noticed that the llvmlinux patch has no Signed-off-by
+> from you even though you committed it ...
+Drat. That patch wasn't supposed to be in there. Sorry about that.
 
-I think all the above is entirely unnecessary.  The memblock APIs
-(especially memblock_reserve()) will mark the overlapped pages as reserved
-- they round down the starting address, and round up the end address
-(calculated from start + size).
+Yeah. That one was accepted upstream already. I was carrying it in my 
+repos so we could still build until it made it to mainline. I should not 
+have put that in linux-next. I actually just had to pull it out of my 
+own builds due to the same merge issue.
 
-Hence, this:
+Hmm. Seems I put a couple of patches into the for-next branch late last 
+night which shouldn't have been. Fixed.
 
-> @@ -636,6 +646,11 @@ static int keep_initrd;
->  void free_initrd_mem(unsigned long start, unsigned long end)
->  {
->       if (!keep_initrd) {
-> +             if (start == initrd_start)
-> +                     start = round_down(start, PAGE_SIZE);
-> +             if (end == initrd_end)
-> +                     end = round_up(end, PAGE_SIZE);
-> +
->               poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
->               free_reserved_area((void *)start, (void *)end, -1, "initrd");
->       }
+Apologies,
 
-is the only bit of code you likely need to achieve your goal.
+Behan
 
-Thinking about this, I think that you are quite right to align these.
-The memory around the initrd is defined to be system memory, and we
-already free the pages around it, so it *is* wrong not to free the
-partial initrd pages.
+-- 
+Behan Webster
+behanw@converseincode.com
 
-Good catch.
-
---
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
