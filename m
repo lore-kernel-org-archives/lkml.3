@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213AbaIOTrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55674 "EHLO
+	id S1757136AbaIOUFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:05:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756175AbaIOTrE (ORCPT
+	with ESMTP id S1756207AbaIOTrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:04 -0400
+	Mon, 15 Sep 2014 15:47:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreea-Cristina Bernat <bernat.ada@gmail.com>,
-        David Howells <dhowells@redhat.com>, shemming@brocade.com,
-        paulmck@linux.vnet.ibm.com, James Morris <james.l.morris@oracle.com>
-Subject: [PATCH 3.14 113/114] KEYS: Fix use-after-free in assoc_array_gc()
-Date: Mon, 15 Sep 2014 12:26:53 -0700
-Message-Id: <20140915192644.940429648@linuxfoundation.org>
+        Marti Raudsepp <marti@juffo.org>, Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.10 05/71] iommu/amd: Fix cleanup_domain for mass device removal
+Date: Mon, 15 Sep 2014 12:26:03 -0700
+Message-Id: <20140915192638.887479527@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+References: <20140915192638.702282534@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,42 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Joerg Roedel <jroedel@suse.de>
 
-commit 27419604f51a97d497853f14142c1059d46eb597 upstream.
+commit 9b29d3c6510407d91786c1cf9183ff4debb3473a upstream.
 
-An edit script should be considered inaccessible by a function once it has
-called assoc_array_apply_edit() or assoc_array_cancel_edit().
+When multiple devices are detached in __detach_device, they
+are also removed from the domains dev_list. This makes it
+unsafe to use list_for_each_entry_safe, as the next pointer
+might also not be in the list anymore after __detach_device
+returns. So just repeatedly remove the first element of the
+list until it is empty.
 
-However, assoc_array_gc() is accessing the edit script just after the
-gc_complete: label.
-
-Reported-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
-cc: shemming@brocade.com
-cc: paulmck@linux.vnet.ibm.com
-Signed-off-by: James Morris <james.l.morris@oracle.com>
+Tested-by: Marti Raudsepp <marti@juffo.org>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/assoc_array.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/lib/assoc_array.c
-+++ b/lib/assoc_array.c
-@@ -1735,7 +1735,7 @@ ascend_old_tree:
- gc_complete:
- 	edit->set[0].to = new_root;
- 	assoc_array_apply_edit(edit);
--	edit->array->nr_leaves_on_tree = nr_leaves_on_tree;
-+	array->nr_leaves_on_tree = nr_leaves_on_tree;
- 	return 0;
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3187,14 +3187,16 @@ free_domains:
  
- enomem:
+ static void cleanup_domain(struct protection_domain *domain)
+ {
+-	struct iommu_dev_data *dev_data, *next;
++	struct iommu_dev_data *entry;
+ 	unsigned long flags;
+ 
+ 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
+ 
+-	list_for_each_entry_safe(dev_data, next, &domain->dev_list, list) {
+-		__detach_device(dev_data);
+-		atomic_set(&dev_data->bind, 0);
++	while (!list_empty(&domain->dev_list)) {
++		entry = list_first_entry(&domain->dev_list,
++					 struct iommu_dev_data, list);
++		__detach_device(entry);
++		atomic_set(&entry->bind, 0);
+ 	}
+ 
+ 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
 
 
