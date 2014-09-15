@@ -1,251 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaIOTln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:41:43 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33095 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504AbaIOTlg (ORCPT
+	id S1755283AbaIOTll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:41:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55538 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582AbaIOTlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:41:36 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: "suravee.suthikulpanit\@amd.com" <suravee.suthikulpanit@amd.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "jason\@lakedaemon.net" <jason@lakedaemon.net>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "tglx\@linutronix.de" <tglx@linutronix.de>,
-        "Harish.Kasiviswanathan\@amd.com" <Harish.Kasiviswanathan@amd.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/2 V6] irqchip: gicv2m: Add support for multiple MSI for ARM64 GICv2m
-In-Reply-To: <1410676216-27953-3-git-send-email-suravee.suthikulpanit@amd.com>
-	(suravee's message of "Sun, 14 Sep 2014 07:30:16 +0100")
-Organization: ARM Ltd
-References: <1410676216-27953-1-git-send-email-suravee.suthikulpanit@amd.com>
-	<1410676216-27953-3-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Mon, 15 Sep 2014 20:41:22 +0100
-Message-ID: <86egvcn02l.fsf@arm.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 071/114] ring-buffer: Always reset iterator to reader page
+Date: Mon, 15 Sep 2014 12:26:11 -0700
+Message-Id: <20140915192643.664211254@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 14 2014 at 07:30:16 AM, "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com> wrote:
-> From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
->
-> This patch extend GICv2m MSI to support multiple MSI in ARM64.
->
-> This requires the common arch_setup_msi_irqs() to be overwriten
-> with ARM64 version which does not return 1 for PCI_CAP_ID_MSI and
-> nvec > 1.
->
-> Cc: Mark Rutland <Mark.Rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Catalin Marinas <Catalin.Marinas@arm.com>
-> Cc: Will Deacon <Will.Deacon@arm.com>
-> Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> ---
->  arch/arm64/kernel/Makefile    |  1 +
->  arch/arm64/kernel/msi.c       | 41 ++++++++++++++++++++
->  drivers/irqchip/irq-gic-v2m.c | 87 ++++++++++++++++++++++++++++++++++++++-----
->  3 files changed, 119 insertions(+), 10 deletions(-)
->  create mode 100644 arch/arm64/kernel/msi.c
->
-> diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-> index df7ef87..a921c42 100644
-> --- a/arch/arm64/kernel/Makefile
-> +++ b/arch/arm64/kernel/Makefile
-> @@ -29,6 +29,7 @@ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
->  arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
->  arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
->  arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
-> +arm64-obj-$(CONFIG_PCI_MSI)		+= msi.o
->  
->  obj-y					+= $(arm64-obj-y) vdso/
->  obj-m					+= $(arm64-obj-m)
-> diff --git a/arch/arm64/kernel/msi.c b/arch/arm64/kernel/msi.c
-> new file mode 100644
-> index 0000000..a295862
-> --- /dev/null
-> +++ b/arch/arm64/kernel/msi.c
-> @@ -0,0 +1,41 @@
-> +/*
-> + * ARM64 architectural MSI implemention
-> + *
-> + * Support for Message Signalelled Interrupts for systems that
-> + * implement ARM Generic Interrupt Controller: GICv2m.
-> + *
-> + * Copyright (C) 2014 Advanced Micro Devices, Inc.
-> + * Authors: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/irq.h>
-> +#include <linux/msi.h>
-> +#include <linux/pci.h>
-> +
-> +/*
-> + * ARM64 function for seting up MSI irqs.
-> + * Based on driver/pci/msi.c: arch_setup_msi_irqs().
-> + *
-> + * Note:
-> + * Current implementation assumes that all interrupt controller used in
-> + * ARM64 architecture _MUST_ supports multi-MSI.
-> + */
-> +int arm64_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-> +{
-> +	struct msi_desc *entry;
-> +	int ret;
-> +
-> +	list_for_each_entry(entry, &dev->msi_list, list) {
-> +		ret = arch_setup_msi_irq(dev, entry);
-> +		if (ret < 0)
-> +			return ret;
-> +		if (ret > 0)
-> +			return -ENOSPC;
-> +	}
-> +
-> +	return 0;
-> +}
-> diff --git a/drivers/irqchip/irq-gic-v2m.c b/drivers/irqchip/irq-gic-v2m.c
-> index 499bfb9..4ddb47d 100644
-> --- a/drivers/irqchip/irq-gic-v2m.c
-> +++ b/drivers/irqchip/irq-gic-v2m.c
-> @@ -99,13 +99,26 @@ static void gicv2m_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
->  	spin_unlock(&data->msi_cnt_lock);
->  }
->  
-> +static int gicv2m_msi_get_vec_count(struct pci_dev *pdev, struct msi_desc *desc)
-> +{
-> +	int ret = -EINVAL;
-> +#ifdef CONFIG_PCI_MSI
-> +	if (desc->msi_attrib.is_msix)
-> +		ret = pci_msix_vec_count(pdev);
-> +	else
-> +		ret = pci_msi_vec_count(pdev);
-> +#endif
-> +	return ret;
-> +}
-> +
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Since I also have:
-https://git.kernel.org/cgit/linux/kernel/git/maz/arm-platforms.git/tree/drivers/irqchip/irq-gic-v3-its.c?h=gicv3/its-split#n1107
+------------------
 
-Maybe it would be a good thing to make this a core thing (not something
-we have to do now though).
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
->  static int gicv2m_setup_msi_irq(struct msi_chip *chip,
->  				struct pci_dev *pdev,
->  				struct msi_desc *desc)
->  {
-> -	int irq, avail;
-> +	int i, irq, nvec, avail;
->  	struct msi_msg msg;
->  	phys_addr_t addr;
-> +	struct msi_desc *entry;
->  	struct v2m_data *data = container_of(chip, struct v2m_data, msi_chip);
->  
->  	if (!desc) {
-> @@ -114,16 +127,70 @@ static int gicv2m_setup_msi_irq(struct msi_chip *chip,
->  		return -EINVAL;
->  	}
->  
-> -	avail = alloc_msi_irq(data, 1, &irq);
-> -	if (avail != 0) {
-> -		dev_err(&pdev->dev,
-> -			"GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
-> -		return -ENOSPC;
-> -	}
-> +	if (desc->msi_attrib.is_msix) {
-> +		/**
-> +		 * For MSIx:
-> +		 * We allocate one irq at a time
-> +		 */
-> +		avail = alloc_msi_irq(data, 1, &irq);
-> +		if (avail != 0) {
-> +			dev_err(&pdev->dev,
-> +				"GICv2m: MSI setup failed. Cannnot allocate IRQ\n");
-> +			return -ENOSPC;
-> +		}
->  
-> -	irq_set_chip_data(irq, chip);
-> -	irq_set_msi_desc(irq, desc);
-> -	irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-> +		irq_set_chip_data(irq, chip);
-> +		irq_set_msi_desc(irq, desc);
-> +		irq_set_irq_type(irq, IRQ_TYPE_EDGE_RISING);
-> +	} else {
-> +		/**
-> +		 * For MSI and Multi-MSI:
-> +		 * All requested irqs are allocated and setup at
-> +		 * once. Subsequent calls to this function would simply return
-> +		 * success. This is to avoid having to implement a separate
-> +		 * function for setting up multiple irqs.
-> +		 */
-> +		BUG_ON(list_empty(&pdev->msi_list));
-> +		WARN_ON(!list_is_singular(&pdev->msi_list));
-> +
-> +		nvec = gicv2m_msi_get_vec_count(pdev, desc);
-> +		if (WARN_ON(nvec <= 0))
-> +			return nvec;
-> +
-> +		entry = list_first_entry(&pdev->msi_list,
-> +					 struct msi_desc, list);
-> +
-> +		if ((nvec > 1) && (entry->msi_attrib.multiple))
-> +			return 0;
-> +
-> +		avail = alloc_msi_irq(data, nvec, &irq);
-> +		if (avail != 0) {
-> +			dev_err(&pdev->dev,
-> +				"GICv2m: Failed to allocate %d irqs.\n", nvec);
-> +			return avail;
-> +		}
-> +
-> +		if (nvec > 1) {
-> +			/* Set lowest of the new interrupts assigned
-> +			 * to the PCI device
-> +			 */
-> +			entry->nvec_used = nvec;
-> +			entry->msi_attrib.multiple = ilog2(
-> +						__roundup_pow_of_two(nvec));
-> +		}
-> +
-> +		for (i = 0; i < nvec; i++) {
-> +			irq_set_chip_data(irq+i, chip);
-> +			if (irq_set_msi_desc_off(irq, i, entry)) {
-> +				dev_err(&pdev->dev,
-> +					"GICv2m: Failed to set up MSI irq %d\n",
-> +					(irq+i));
-> +				return -EINVAL;
-> +			}
-> +
-> +			irq_set_irq_type((irq+i), IRQ_TYPE_EDGE_RISING);
-> +		}
-> +	}
->  
->  	addr = data->res.start + V2M_MSI_SETSPI_NS;
->  	msg.address_hi = (u32)(addr >> 32);
+commit 651e22f2701b4113989237c3048d17337dd2185c upstream.
 
-Overall, I think you should move this "msi > 1" code directly into the
-first patch (not sure the intermediate implementation adds much to the
-understanding of the whole driver).
+When performing a consuming read, the ring buffer swaps out a
+page from the ring buffer with a empty page and this page that
+was swapped out becomes the new reader page. The reader page
+is owned by the reader and since it was swapped out of the ring
+buffer, writers do not have access to it (there's an exception
+to that rule, but it's out of scope for this commit).
 
-You can then have the arm64-specific code as your second patch.
+When reading the "trace" file, it is a non consuming read, which
+means that the data in the ring buffer will not be modified.
+When the trace file is opened, a ring buffer iterator is allocated
+and writes to the ring buffer are disabled, such that the iterator
+will not have issues iterating over the data.
 
-Thanks,
+Although the ring buffer disabled writes, it does not disable other
+reads, or even consuming reads. If a consuming read happens, then
+the iterator is reset and starts reading from the beginning again.
 
-	M.
--- 
-Jazz is not dead. It just smells funny.
+My tests would sometimes trigger this bug on my i386 box:
+
+WARNING: CPU: 0 PID: 5175 at kernel/trace/trace.c:1527 __trace_find_cmdline+0x66/0xaa()
+Modules linked in:
+CPU: 0 PID: 5175 Comm: grep Not tainted 3.16.0-rc3-test+ #8
+Hardware name:                  /DG965MQ, BIOS MQ96510J.86A.0372.2006.0605.1717 06/05/2006
+ 00000000 00000000 f09c9e1c c18796b3 c1b5d74c f09c9e4c c103a0e3 c1b5154b
+ f09c9e78 00001437 c1b5d74c 000005f7 c10bd85a c10bd85a c1cac57c f09c9eb0
+ ed0e0000 f09c9e64 c103a185 00000009 f09c9e5c c1b5154b f09c9e78 f09c9e80^M
+Call Trace:
+ [<c18796b3>] dump_stack+0x4b/0x75
+ [<c103a0e3>] warn_slowpath_common+0x7e/0x95
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c10bd85a>] ? __trace_find_cmdline+0x66/0xaa
+ [<c103a185>] warn_slowpath_fmt+0x33/0x35
+ [<c10bd85a>] __trace_find_cmdline+0x66/0xaa^M
+ [<c10bed04>] trace_find_cmdline+0x40/0x64
+ [<c10c3c16>] trace_print_context+0x27/0xec
+ [<c10c4360>] ? trace_seq_printf+0x37/0x5b
+ [<c10c0b15>] print_trace_line+0x319/0x39b
+ [<c10ba3fb>] ? ring_buffer_read+0x47/0x50
+ [<c10c13b1>] s_show+0x192/0x1ab
+ [<c10bfd9a>] ? s_next+0x5a/0x7c
+ [<c112e76e>] seq_read+0x267/0x34c
+ [<c1115a25>] vfs_read+0x8c/0xef
+ [<c112e507>] ? seq_lseek+0x154/0x154
+ [<c1115ba2>] SyS_read+0x54/0x7f
+ [<c188488e>] syscall_call+0x7/0xb
+---[ end trace 3f507febd6b4cc83 ]---
+>>>> ##### CPU 1 buffer started ####
+
+Which was the __trace_find_cmdline() function complaining about the pid
+in the event record being negative.
+
+After adding more test cases, this would trigger more often. Strangely
+enough, it would never trigger on a single test, but instead would trigger
+only when running all the tests. I believe that was the case because it
+required one of the tests to be shutting down via delayed instances while
+a new test started up.
+
+After spending several days debugging this, I found that it was caused by
+the iterator becoming corrupted. Debugging further, I found out why
+the iterator became corrupted. It happened with the rb_iter_reset().
+
+As consuming reads may not read the full reader page, and only part
+of it, there's a "read" field to know where the last read took place.
+The iterator, must also start at the read position. In the rb_iter_reset()
+code, if the reader page was disconnected from the ring buffer, the iterator
+would start at the head page within the ring buffer (where writes still
+happen). But the mistake there was that it still used the "read" field
+to start the iterator on the head page, where it should always start
+at zero because readers never read from within the ring buffer where
+writes occur.
+
+I originally wrote a patch to have it set the iter->head to 0 instead
+of iter->head_page->read, but then I questioned why it wasn't always
+setting the iter to point to the reader page, as the reader page is
+still valid.  The list_empty(reader_page->list) just means that it was
+successful in swapping out. But the reader_page may still have data.
+
+There was a bug report a long time ago that was not reproducible that
+had something about trace_pipe (consuming read) not matching trace
+(iterator read). This may explain why that happened.
+
+Anyway, the correct answer to this bug is to always use the reader page
+an not reset the iterator to inside the writable ring buffer.
+
+Fixes: d769041f8653 "ring_buffer: implement new locking"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/trace/ring_buffer.c |   17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
+
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3354,21 +3354,16 @@ static void rb_iter_reset(struct ring_bu
+ 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+ 
+ 	/* Iterator usage is expected to have record disabled */
+-	if (list_empty(&cpu_buffer->reader_page->list)) {
+-		iter->head_page = rb_set_head_page(cpu_buffer);
+-		if (unlikely(!iter->head_page))
+-			return;
+-		iter->head = iter->head_page->read;
+-	} else {
+-		iter->head_page = cpu_buffer->reader_page;
+-		iter->head = cpu_buffer->reader_page->read;
+-	}
++	iter->head_page = cpu_buffer->reader_page;
++	iter->head = cpu_buffer->reader_page->read;
++
++	iter->cache_reader_page = iter->head_page;
++	iter->cache_read = iter->head;
++
+ 	if (iter->head)
+ 		iter->read_stamp = cpu_buffer->read_stamp;
+ 	else
+ 		iter->read_stamp = iter->head_page->page->time_stamp;
+-	iter->cache_reader_page = cpu_buffer->reader_page;
+-	iter->cache_read = cpu_buffer->read;
+ }
+ 
+ /**
+
+
