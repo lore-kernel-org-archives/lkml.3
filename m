@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475AbaIOKxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 06:53:10 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60290 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237AbaIOKxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 06:53:07 -0400
-Date: Mon, 15 Sep 2014 11:53:03 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        SpacemanSpiff <a818958@trbvm.com>, Rajat Jain <rajatxjain@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        =?ISO-8859-15?Q?Pali_Roh=E1r?= <pali.rohar@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        "Jose P." <lbdkmjdf@sharklasers.com>
-Subject: Re: [PATCH 0/2] PCI: Ignore hotplug events for dual GPU systems
-In-Reply-To: <1434331.0IZIM5O2Ci@vostro.rjw.lan>
-Message-ID: <alpine.DEB.2.00.1409151152400.28050@skynet.skynet.ie>
-References: <20140911222022.16809.57079.stgit@bhelgaas-glaptop2.roam.corp.google.com> <1434331.0IZIM5O2Ci@vostro.rjw.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753567AbaIOKyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 06:54:12 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:49426 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158AbaIOKyL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 06:54:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5416C30C.6010400@samsung.com>
+References: <1410265614-3275-1-git-send-email-jean-michel.hautbois@vodalys.com>
+ <54110B29.7030303@samsung.com> <CAL8zT=iezoevh_12GAZyDOdRy1dAS876RZDUJGVTZyY4zYZbaQ@mail.gmail.com>
+ <5416C30C.6010400@samsung.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Mon, 15 Sep 2014 12:53:55 +0200
+X-Google-Sender-Auth: OQXXJA3tb_xOIpu7SxEX00lJv-c
+Message-ID: <CAL8zT=jVWTp5tzW3Pi2MFAq6gySeinvACwSyFdj+4SpYEW2YXg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: Add delay between CMD6 and CMD13 for Sandisk eMMC cards
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "tgih.jun@samsung.com" <tgih.jun@samsung.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-09-15 12:44 GMT+02:00 Jaehoon Chung <jh80.chung@samsung.com>:
+> On 09/15/2014 07:08 PM, Jean-Michel Hautbois wrote:
+>> Hi Jaehoon,
+>>
+>>> On 09/09/2014 09:26 PM, Jean-Michel Hautbois wrote:
+>>>> Tested on a i.MX6 board, with Sandisk SDIN5D1-2G.
+>>>> Without this patch, I/O errors occur.
+>>>> This eMMC seems to have a different Manufacturer ID as it reads 0x45
+>>>> and not 0x2 as specified in datasheet.
+>>>
+>>> I think this patch don't merge into mainline.
+>>> This is not solution for problem.
+>>> you mentioned the below comment, this is workaround.
+>>
+>> Yes
+>>
+>>>>
+>>>> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>>>> ---
+>>>>  drivers/mmc/core/mmc_ops.c | 9 +++++++++
+>>>>  1 file changed, 9 insertions(+)
+>>>>
+>>>> diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+>>>> index f51b5ba..91babaa 100644
+>>>> --- a/drivers/mmc/core/mmc_ops.c
+>>>> +++ b/drivers/mmc/core/mmc_ops.c
+>>>> @@ -458,6 +458,15 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+>>>>       if (!use_busy_signal)
+>>>>               return 0;
+>>>>
+>>>> +     /* WORKAROUND: for Sandisk eMMC cards, it might need certain delay
+>>>> +      * before sending CMD13 after CMD6
+>>>> +      * On SDIN5D1-2G MANFID is 0x45 and not 0x2 as specified in datasheet
+>>>> +      */
+>>>> +     if (card->cid.manfid == CID_MANFID_SANDISK ||
+>>>> +             card->cid.manfid == 0x45) {
+>>>> +             msleep(1);
+>>>> +     }
+>>>
+>>> If it's a general problem of Sandisk SDIN5D1-2G,
+>>> I think you need to verify this problem. And can you use the MMC_FIXUP() and QUIRK?
+>>
+>> Well, this is difficult to verify, I know that on all my SDIN5D1-2G I
+>> have this MANFID different from what is defined by CID_MANFID_SANDISK.
+>> How should I use MMC_FIXUP ? Like this ?
+>
+> I think you need to explain why delay is need.
+> i didn't have same card, but it might be your host controller or other problem.
 
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Well, I don't know why it is needed, this is undocumented, nothing in
+datasheet explains anything about this.
 
-Acked-by: Dave Airlie <airlied@redhat.com>
-> 
-> for both.
-> 
-> > ---
-> > 
-> > Bjorn Helgaas (2):
-> >       PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
-> >       ACPIPHP / radeon / nouveau: Remove acpi_bus_no_hotplug()
-> > 
-> > 
-> >  drivers/acpi/bus.c                           |   10 ----------
-> >  drivers/gpu/drm/nouveau/nouveau_acpi.c       |   16 ++--------------
-> >  drivers/gpu/drm/nouveau/nouveau_drm.c        |    1 +
-> >  drivers/gpu/drm/radeon/radeon_atpx_handler.c |   16 ++--------------
-> >  drivers/gpu/drm/radeon/radeon_drv.c          |    1 +
-> >  drivers/pci/hotplug/acpiphp_glue.c           |   16 ++++++----------
-> >  drivers/pci/hotplug/pciehp_hpc.c             |   12 ++++++++++++
-> >  include/acpi/acpi_bus.h                      |    4 +---
-> >  include/linux/pci.h                          |    6 ++++++
-> >  9 files changed, 31 insertions(+), 51 deletions(-)
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+JM
