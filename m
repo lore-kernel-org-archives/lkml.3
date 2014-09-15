@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaIOUXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:23:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667AbaIOThL (ORCPT
+	id S1757592AbaIOUYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:24:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41257 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753921AbaIOUYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 056/114] ASoC: adau1701: fix adau1701_reg_read()
-Date: Mon, 15 Sep 2014 12:25:56 -0700
-Message-Id: <20140915192643.190674826@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
-References: <20140915192641.428509513@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 16:24:08 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, Huang Shijie <shijie8@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 0/2] mtd: nand: gpmi: add proper raw access support
+Date: Mon, 15 Sep 2014 22:24:01 +0200
+Message-Id: <1410812643-14041-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hello Huang, Brian,
 
-------------------
+This is just a new proposal to support raw accesses in a more standard way
+in the GPMI driver.
+This series was not tested (just compile tested), and I won't be able to
+test it until next week. Thus I don't expect to get it accepted, but
+rather to serve as a starting point for our future discussions.
 
-From: Daniel Mack <zonque@gmail.com>
+Any suggestions are welcome.
 
-commit 3ad80b828b2533f37c221e2df155774efd6ed814 upstream.
+Best Regards,
 
-Fix a long standing bug in the read register routing of adau1701.
-The bytes arrive in the buffer in big-endian, so the result has to be
-shifted before and-ing the bytes in the loop.
+Boris
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Boris BREZILLON (2):
+  mtd: nand: gpmi: add gpmi_move_bits function
+  mtd: nand: gpmi: add proper raw access support
 
----
- sound/soc/codecs/adau1701.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/mtd/nand/gpmi-nand/gpmi-lib.c  |  86 ++++++++++++++++++++++++
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.c | 118 ++++++++++++++++++++++++++++++++-
+ drivers/mtd/nand/gpmi-nand/gpmi-nand.h |   4 ++
+ 3 files changed, 207 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/adau1701.c
-+++ b/sound/soc/codecs/adau1701.c
-@@ -230,8 +230,10 @@ static int adau1701_reg_read(void *conte
- 
- 	*value = 0;
- 
--	for (i = 0; i < size; i++)
--		*value |= recv_buf[i] << (i * 8);
-+	for (i = 0; i < size; i++) {
-+		*value <<= 8;
-+		*value |= recv_buf[i];
-+	}
- 
- 	return 0;
- }
-
+-- 
+1.9.1
 
