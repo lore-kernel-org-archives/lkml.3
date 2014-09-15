@@ -1,86 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaIOQtA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 12:49:00 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:34507 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307AbaIOQs6 (ORCPT
+	id S1754168AbaIOQtx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 12:49:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33983 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027AbaIOQtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 12:48:58 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH v4 03/18] ACPI / table: Count matched and successfully
- parsed entries without specifying max entries
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Graeme Gregory <graeme.gregory@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-In-Reply-To: <1410530416-30200-4-git-send-email-hanjun.guo@linaro.org>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
-	<1410530416-30200-4-git-send-email-hanjun.guo@linaro.org>
-Date: Mon, 15 Sep 2014 09:48:56 -0700
-Message-Id: <20140915164856.53B3EC40A26@trevor.secretlab.ca>
+	Mon, 15 Sep 2014 12:49:52 -0400
+Date: Mon, 15 Sep 2014 12:49:49 -0400 (EDT)
+Message-Id: <20140915.124949.674650868038581883.davem@davemloft.net>
+To: fabf@skynet.be
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/4 linux-next] net: fec: use container_of to resolve
+ bufdesc_ex from bufdesc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1410640709-18295-2-git-send-email-fabf@skynet.be>
+References: <1410640709-18295-1-git-send-email-fabf@skynet.be>
+	<1410640709-18295-2-git-send-email-fabf@skynet.be>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 09:49:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Sep 2014 22:00:01 +0800, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> 
-> It is very useful to traverse all available table entries without max
-> number of expected entries type. Current acpi_parse_entries()
-> implementation gives that feature but it does not count those entries,
-> it returns 0 instead, so fix it to count matched and successfully
-> entries and return it.
-> 
-> NOTE: This change has no impact to x86 and ia64 archs since existing code
-> checks for error occurrence only (acpi_parse_entries(...,0) < 0).
-> 
-> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+From: Fabian Frederick <fabf@skynet.be>
+Date: Sat, 13 Sep 2014 22:38:26 +0200
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
-
-> ---
->  drivers/acpi/tables.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
+> Use container_of instead of casting first structure member.
 > 
-> diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-> index 21ae521..b18e45e 100644
-> --- a/drivers/acpi/tables.c
-> +++ b/drivers/acpi/tables.c
-> @@ -225,10 +225,13 @@ acpi_parse_entries(unsigned long table_size,
->  	while (((unsigned long)entry) + sizeof(struct acpi_subtable_header) <
->  	       table_end) {
->  		if (entry->type == entry_id
-> -		    && (!max_entries || count++ < max_entries))
-> +		    && (!max_entries || count < max_entries)) {
->  			if (handler(entry, table_end))
->  				return -EINVAL;
->  
-> +			count++;
-> +		}
-> +
->  		/*
->  		 * If entry->length is 0, break from this loop to avoid
->  		 * infinite loop.
-> -- 
-> 1.7.9.5
+> ARM cross-compiled but untested.
 > 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
+Applied.
