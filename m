@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaIOT47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
+	id S1756047AbaIOT46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:56:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756288AbaIOTrU (ORCPT
+	with ESMTP id S1756298AbaIOTrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:20 -0400
+	Mon, 15 Sep 2014 15:47:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>, Dave Chinner <dchinner@redhat.com>,
-        Brian Foster <bfoster@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.10 54/71] xfs: dont zero partial page cache pages during O_DIRECT write
-Date: Mon, 15 Sep 2014 12:26:52 -0700
-Message-Id: <20140915192640.497378402@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.10 59/71] CIFS: Fix STATUS_CANNOT_DELETE error mapping for SMB2
+Date: Mon, 15 Sep 2014 12:26:57 -0700
+Message-Id: <20140915192640.665943864@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -30,58 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 85e584da3212140ee80fd047f9058bbee0bc00d5 upstream.
+commit 21496687a79424572f46a84c690d331055f4866f upstream.
 
-xfs is using truncate_pagecache_range to invalidate the page cache
-during DIO reads.  This is different from the other filesystems who
-only invalidate pages during DIO writes.
+The existing mapping causes unlink() call to return error after delete
+operation. Changing the mapping to -EACCES makes the client process
+the call like CIFS protocol does - reset dos attributes with ATTR_READONLY
+flag masked off and retry the operation.
 
-truncate_pagecache_range is meant to be used when we are freeing the
-underlying data structs from disk, so it will zero any partial
-ranges in the page.  This means a DIO read can zero out part of the
-page cache page, and it is possible the page will stay in cache.
-
-buffered reads will find an up to date page with zeros instead of
-the data actually on disk.
-
-This patch fixes things by using invalidate_inode_pages2_range
-instead.  It preserves the page cache invalidation, but won't zero
-any pages.
-
-[dchinner: catch error and warn if it fails. Comment.]
-
-Signed-off-by: Chris Mason <clm@fb.com>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_file.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ fs/cifs/smb2maperror.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_file.c
-+++ b/fs/xfs/xfs_file.c
-@@ -298,7 +298,16 @@ xfs_file_aio_read(
- 				xfs_rw_iunlock(ip, XFS_IOLOCK_EXCL);
- 				return ret;
- 			}
--			truncate_pagecache_range(VFS_I(ip), pos, -1);
-+
-+			/*
-+			 * Invalidate whole pages. This can return an error if
-+			 * we fail to invalidate a page, but this should never
-+			 * happen on XFS. Warn if it does fail.
-+			 */
-+			ret = invalidate_inode_pages2_range(VFS_I(ip)->i_mapping,
-+						pos >> PAGE_CACHE_SHIFT, -1);
-+			WARN_ON_ONCE(ret);
-+			ret = 0;
- 		}
- 		xfs_rw_ilock_demote(ip, XFS_IOLOCK_EXCL);
- 	}
+--- a/fs/cifs/smb2maperror.c
++++ b/fs/cifs/smb2maperror.c
+@@ -605,7 +605,7 @@ static const struct status_to_posix_erro
+ 	{STATUS_MAPPED_FILE_SIZE_ZERO, -EIO, "STATUS_MAPPED_FILE_SIZE_ZERO"},
+ 	{STATUS_TOO_MANY_OPENED_FILES, -EMFILE, "STATUS_TOO_MANY_OPENED_FILES"},
+ 	{STATUS_CANCELLED, -EIO, "STATUS_CANCELLED"},
+-	{STATUS_CANNOT_DELETE, -EIO, "STATUS_CANNOT_DELETE"},
++	{STATUS_CANNOT_DELETE, -EACCES, "STATUS_CANNOT_DELETE"},
+ 	{STATUS_INVALID_COMPUTER_NAME, -EIO, "STATUS_INVALID_COMPUTER_NAME"},
+ 	{STATUS_FILE_DELETED, -EIO, "STATUS_FILE_DELETED"},
+ 	{STATUS_SPECIAL_ACCOUNT, -EIO, "STATUS_SPECIAL_ACCOUNT"},
 
 
