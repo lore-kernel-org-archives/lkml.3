@@ -1,146 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaIOTUw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:20:52 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41365 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754754AbaIOTUu (ORCPT
+	id S1754788AbaIOTVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:21:47 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52410 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565AbaIOTTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:20:50 -0400
-Message-ID: <54173C11.8020602@infradead.org>
-Date: Mon, 15 Sep 2014 12:20:49 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
-MIME-Version: 1.0
-To: Peter Foley <pefoley2@pefoley.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] [PATCH] Documentation: update .gitignore files
-References: <1410216900-22390-1-git-send-email-pefoley2@pefoley.com>
-In-Reply-To: <1410216900-22390-1-git-send-email-pefoley2@pefoley.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Sep 2014 15:19:15 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v12 net-next 08/11] bpf: handle pseudo BPF_LD_IMM64 insn
+Date: Mon, 15 Sep 2014 12:18:38 -0700
+Message-Id: <1410808721-27493-9-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
+References: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/08/14 15:54, Peter Foley wrote:
-> Add some missing files to .gitignore.
-> Push Documentation/.gitignore down into subdirectories.
-> 
-> Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+eBPF programs passed from userspace are using pseudo BPF_LD_IMM64 instructions
+to refer to process-local map_fd. Scan the program for such instructions and
+if FDs are valid, convert them to 'struct bpf_map' pointers which will be used
+by verifier to check access to maps in bpf_map_lookup/update() calls.
+If program passes verifier, convert pseudo BPF_LD_IMM64 into generic by dropping
+BPF_PSEUDO_MAP_FD flag.
 
-Applied.  Thanks.
+Note that eBPF interpreter is generic and knows nothing about pseudo insns.
 
-> ---
->  Documentation/.gitignore                         | 7 -------
->  Documentation/arm/SH-Mobile/.gitignore           | 1 +
->  Documentation/filesystems/.gitignore             | 1 +
->  Documentation/laptops/.gitignore                 | 2 ++
->  Documentation/networking/.gitignore              | 0
->  Documentation/networking/timestamping/.gitignore | 1 +
->  Documentation/prctl/.gitignore                   | 3 +++
->  Documentation/ptp/.gitignore                     | 1 +
->  Documentation/timers/.gitignore                  | 1 +
->  Documentation/vDSO/.gitignore                    | 2 ++
->  Documentation/video4linux/.gitignore             | 1 -
->  11 files changed, 12 insertions(+), 8 deletions(-)
->  delete mode 100644 Documentation/.gitignore
->  create mode 100644 Documentation/arm/SH-Mobile/.gitignore
->  create mode 100644 Documentation/filesystems/.gitignore
->  create mode 100644 Documentation/laptops/.gitignore
->  delete mode 100644 Documentation/networking/.gitignore
->  create mode 100644 Documentation/prctl/.gitignore
->  create mode 100644 Documentation/ptp/.gitignore
->  create mode 100644 Documentation/timers/.gitignore
->  create mode 100644 Documentation/vDSO/.gitignore
->  delete mode 100644 Documentation/video4linux/.gitignore
-> 
-> diff --git a/Documentation/.gitignore b/Documentation/.gitignore
-> deleted file mode 100644
-> index bcd907b..0000000
-> --- a/Documentation/.gitignore
-> +++ /dev/null
-> @@ -1,7 +0,0 @@
-> -filesystems/dnotify_test
-> -laptops/dslm
-> -timers/hpet_example
-> -vm/hugepage-mmap
-> -vm/hugepage-shm
-> -vm/map_hugetlb
-> -
-> diff --git a/Documentation/arm/SH-Mobile/.gitignore b/Documentation/arm/SH-Mobile/.gitignore
-> new file mode 100644
-> index 0000000..c928dbf
-> --- /dev/null
-> +++ b/Documentation/arm/SH-Mobile/.gitignore
-> @@ -0,0 +1 @@
-> +vrl4
-> diff --git a/Documentation/filesystems/.gitignore b/Documentation/filesystems/.gitignore
-> new file mode 100644
-> index 0000000..31d6e42
-> --- /dev/null
-> +++ b/Documentation/filesystems/.gitignore
-> @@ -0,0 +1 @@
-> +dnotify_test
-> diff --git a/Documentation/laptops/.gitignore b/Documentation/laptops/.gitignore
-> new file mode 100644
-> index 0000000..da2bd06
-> --- /dev/null
-> +++ b/Documentation/laptops/.gitignore
-> @@ -0,0 +1,2 @@
-> +dslm
-> +freefall
-> diff --git a/Documentation/networking/.gitignore b/Documentation/networking/.gitignore
-> deleted file mode 100644
-> index e69de29..0000000
-> diff --git a/Documentation/networking/timestamping/.gitignore b/Documentation/networking/timestamping/.gitignore
-> index a380159..9e69e98 100644
-> --- a/Documentation/networking/timestamping/.gitignore
-> +++ b/Documentation/networking/timestamping/.gitignore
-> @@ -1,2 +1,3 @@
->  timestamping
-> +txtimestamp
->  hwtstamp_config
-> diff --git a/Documentation/prctl/.gitignore b/Documentation/prctl/.gitignore
-> new file mode 100644
-> index 0000000..0b5c274
-> --- /dev/null
-> +++ b/Documentation/prctl/.gitignore
-> @@ -0,0 +1,3 @@
-> +disable-tsc-ctxt-sw-stress-test
-> +disable-tsc-on-off-stress-test
-> +disable-tsc-test
-> diff --git a/Documentation/ptp/.gitignore b/Documentation/ptp/.gitignore
-> new file mode 100644
-> index 0000000..f562e49
-> --- /dev/null
-> +++ b/Documentation/ptp/.gitignore
-> @@ -0,0 +1 @@
-> +testptp
-> diff --git a/Documentation/timers/.gitignore b/Documentation/timers/.gitignore
-> new file mode 100644
-> index 0000000..c5c45d7
-> --- /dev/null
-> +++ b/Documentation/timers/.gitignore
-> @@ -0,0 +1 @@
-> +hpet_example
-> diff --git a/Documentation/vDSO/.gitignore b/Documentation/vDSO/.gitignore
-> new file mode 100644
-> index 0000000..133bf9e
-> --- /dev/null
-> +++ b/Documentation/vDSO/.gitignore
-> @@ -0,0 +1,2 @@
-> +vdso_test
-> +vdso_standalone_test_x86
-> diff --git a/Documentation/video4linux/.gitignore b/Documentation/video4linux/.gitignore
-> deleted file mode 100644
-> index 9527039..0000000
-> --- a/Documentation/video4linux/.gitignore
-> +++ /dev/null
-> @@ -1 +0,0 @@
-> -v4lgrab
-> 
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+ include/linux/filter.h |    6 ++
+ kernel/bpf/verifier.c  |  147 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 153 insertions(+)
 
-
+diff --git a/include/linux/filter.h b/include/linux/filter.h
+index 4ffc0958d85e..ca95abd2bed1 100644
+--- a/include/linux/filter.h
++++ b/include/linux/filter.h
+@@ -145,6 +145,12 @@ struct bpf_prog_aux;
+ 		.off   = 0,					\
+ 		.imm   = ((__u64) (IMM)) >> 32 })
+ 
++#define BPF_PSEUDO_MAP_FD	1
++
++/* pseudo BPF_LD_IMM64 insn used to refer to process-local map_fd */
++#define BPF_LD_MAP_FD(DST, MAP_FD)				\
++	BPF_LD_IMM64_RAW(DST, BPF_PSEUDO_MAP_FD, MAP_FD)
++
+ /* Short form of mov based on type, BPF_X: dst_reg = src_reg, BPF_K: dst_reg = imm32 */
+ 
+ #define BPF_MOV64_RAW(TYPE, DST, SRC, IMM)			\
+diff --git a/kernel/bpf/verifier.c b/kernel/bpf/verifier.c
+index c721d1f4d3cc..04d327a9a0d6 100644
+--- a/kernel/bpf/verifier.c
++++ b/kernel/bpf/verifier.c
+@@ -125,10 +125,15 @@
+  * are set to NOT_INIT to indicate that they are no longer readable.
+  */
+ 
++#define MAX_USED_MAPS 64 /* max number of maps accessed by one eBPF program */
++
+ /* single container for all structs
+  * one verifier_env per bpf_check() call
+  */
+ struct verifier_env {
++	struct bpf_prog *prog;		/* eBPF program being verified */
++	struct bpf_map *used_maps[MAX_USED_MAPS]; /* array of map's used by eBPF program */
++	u32 used_map_cnt;		/* number of used maps */
+ };
+ 
+ /* verbose verifier prints what it's seeing
+@@ -300,6 +305,115 @@ static void print_bpf_insn(struct bpf_insn *insn)
+ 	}
+ }
+ 
++/* return the map pointer stored inside BPF_LD_IMM64 instruction */
++static struct bpf_map *ld_imm64_to_map_ptr(struct bpf_insn *insn)
++{
++	u64 imm64 = ((u64) (u32) insn[0].imm) | ((u64) (u32) insn[1].imm) << 32;
++
++	return (struct bpf_map *) (unsigned long) imm64;
++}
++
++/* look for pseudo eBPF instructions that access map FDs and
++ * replace them with actual map pointers
++ */
++static int replace_map_fd_with_map_ptr(struct verifier_env *env)
++{
++	struct bpf_insn *insn = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int i, j;
++
++	for (i = 0; i < insn_cnt; i++, insn++) {
++		if (insn[0].code == (BPF_LD | BPF_IMM | BPF_DW)) {
++			struct bpf_map *map;
++			struct fd f;
++
++			if (i == insn_cnt - 1 || insn[1].code != 0 ||
++			    insn[1].dst_reg != 0 || insn[1].src_reg != 0 ||
++			    insn[1].off != 0) {
++				verbose("invalid bpf_ld_imm64 insn\n");
++				return -EINVAL;
++			}
++
++			if (insn->src_reg == 0)
++				/* valid generic load 64-bit imm */
++				goto next_insn;
++
++			if (insn->src_reg != BPF_PSEUDO_MAP_FD) {
++				verbose("unrecognized bpf_ld_imm64 insn\n");
++				return -EINVAL;
++			}
++
++			f = fdget(insn->imm);
++
++			map = bpf_map_get(f);
++			if (IS_ERR(map)) {
++				verbose("fd %d is not pointing to valid bpf_map\n",
++					insn->imm);
++				fdput(f);
++				return PTR_ERR(map);
++			}
++
++			/* store map pointer inside BPF_LD_IMM64 instruction */
++			insn[0].imm = (u32) (unsigned long) map;
++			insn[1].imm = ((u64) (unsigned long) map) >> 32;
++
++			/* check whether we recorded this map already */
++			for (j = 0; j < env->used_map_cnt; j++)
++				if (env->used_maps[j] == map) {
++					fdput(f);
++					goto next_insn;
++				}
++
++			if (env->used_map_cnt >= MAX_USED_MAPS) {
++				fdput(f);
++				return -E2BIG;
++			}
++
++			/* remember this map */
++			env->used_maps[env->used_map_cnt++] = map;
++
++			/* hold the map. If the program is rejected by verifier,
++			 * the map will be released by release_maps() or it
++			 * will be used by the valid program until it's unloaded
++			 * and all maps are released in free_bpf_prog_info()
++			 */
++			atomic_inc(&map->refcnt);
++
++			fdput(f);
++next_insn:
++			insn++;
++			i++;
++		}
++	}
++
++	/* now all pseudo BPF_LD_IMM64 instructions load valid
++	 * 'struct bpf_map *' into a register instead of user map_fd.
++	 * These pointers will be used later by verifier to validate map access.
++	 */
++	return 0;
++}
++
++/* drop refcnt of maps used by the rejected program */
++static void release_maps(struct verifier_env *env)
++{
++	int i;
++
++	for (i = 0; i < env->used_map_cnt; i++)
++		bpf_map_put(env->used_maps[i]);
++}
++
++/* convert pseudo BPF_LD_IMM64 into generic BPF_LD_IMM64 */
++static void convert_pseudo_ld_imm64(struct verifier_env *env)
++{
++	struct bpf_insn *insn = env->prog->insnsi;
++	int insn_cnt = env->prog->len;
++	int i;
++
++	for (i = 0; i < insn_cnt; i++, insn++)
++		if (insn->code == (BPF_LD | BPF_IMM | BPF_DW))
++			insn->src_reg = 0;
++}
++
+ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
+ {
+ 	char __user *log_ubuf = NULL;
+@@ -316,6 +430,8 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
+ 	if (!env)
+ 		return -ENOMEM;
+ 
++	env->prog = prog;
++
+ 	/* grab the mutex to protect few globals used by verifier */
+ 	mutex_lock(&bpf_verifier_lock);
+ 
+@@ -342,8 +458,14 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
+ 		log_level = 0;
+ 	}
+ 
++	ret = replace_map_fd_with_map_ptr(env);
++	if (ret < 0)
++		goto skip_full_check;
++
+ 	/* ret = do_check(env); */
+ 
++skip_full_check:
++
+ 	if (log_level && log_len >= log_size - 1) {
+ 		BUG_ON(log_len >= log_size);
+ 		/* verifier log exceeded user supplied buffer */
+@@ -357,11 +479,36 @@ int bpf_check(struct bpf_prog *prog, union bpf_attr *attr)
+ 		goto free_log_buf;
+ 	}
+ 
++	if (ret == 0 && env->used_map_cnt) {
++		/* if program passed verifier, update used_maps in bpf_prog_info */
++		prog->aux->used_maps = kmalloc_array(env->used_map_cnt,
++						     sizeof(env->used_maps[0]),
++						     GFP_KERNEL);
++
++		if (!prog->aux->used_maps) {
++			ret = -ENOMEM;
++			goto free_log_buf;
++		}
++
++		memcpy(prog->aux->used_maps, env->used_maps,
++		       sizeof(env->used_maps[0]) * env->used_map_cnt);
++		prog->aux->used_map_cnt = env->used_map_cnt;
++
++		/* program is valid. Convert pseudo bpf_ld_imm64 into generic
++		 * bpf_ld_imm64 instructions
++		 */
++		convert_pseudo_ld_imm64(env);
++	}
+ 
+ free_log_buf:
+ 	if (log_level)
+ 		vfree(log_buf);
+ free_env:
++	if (!prog->aux->used_maps)
++		/* if we didn't copy map pointers into bpf_prog_info, release
++		 * them now. Otherwise free_bpf_prog_info() will release them.
++		 */
++		release_maps(env);
+ 	kfree(env);
+ 	mutex_unlock(&bpf_verifier_lock);
+ 	return ret;
 -- 
-~Randy
+1.7.9.5
+
