@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaIOTnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:43:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55223 "EHLO
+	id S1756042AbaIOTnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:43:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755835AbaIOThU (ORCPT
+	with ESMTP id S1755832AbaIOThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:20 -0400
+	Mon, 15 Sep 2014 15:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vignesh Raman <Vignesh_Raman@mentor.com>,
-        Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>,
-        Dean Jenkins <Dean_Jenkins@mentor.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 082/114] Bluetooth: Avoid use of session socket after the session gets freed
-Date: Mon, 15 Sep 2014 12:26:22 -0700
-Message-Id: <20140915192643.995521476@linuxfoundation.org>
+        Colin Ian King <colin.king@canonical.com>,
+        "David E. Box" <david.e.box@linux.intel.com>,
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 064/114] ACPICA: Utilities: Fix memory leak in acpi_ut_copy_iobject_to_iobject
+Date: Mon, 15 Sep 2014 12:26:04 -0700
+Message-Id: <20140915192643.445619274@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -31,51 +31,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vignesh Raman <Vignesh_Raman@mentor.com>
+From: "David E. Box" <david.e.box@linux.intel.com>
 
-commit 32333edb82fb2009980eefc5518100068147ab82 upstream.
+commit 8aa5e56eeb61a099ea6519eb30ee399e1bc043ce upstream.
 
-The commits 08c30aca9e698faddebd34f81e1196295f9dc063 "Bluetooth: Remove
-RFCOMM session refcnt" and 8ff52f7d04d9cc31f1e81dcf9a2ba6335ed34905
-"Bluetooth: Return RFCOMM session ptrs to avoid freed session"
-allow rfcomm_recv_ua and rfcomm_session_close to delete the session
-(and free the corresponding socket) and propagate NULL session pointer
-to the upper callers.
+Adds return status check on copy routines to delete the allocated destination
+object if either copy fails. Reported by Colin Ian King on bugs.acpica.org,
+Bug 1087.
+The last applicable commit:
+ Commit: 3371c19c294a4cb3649aa4e84606be8a1d999e61
+ Subject: ACPICA: Remove ACPI_GET_OBJECT_TYPE macro
 
-Additional fix is required to terminate the loop in rfcomm_process_rx
-function to avoid use of freed 'sk' memory.
-
-The issue is only reproducible with kernel option CONFIG_PAGE_POISONING
-enabled making freed memory being changed and filled up with fixed char
-value used to unmask use-after-free issues.
-
-Signed-off-by: Vignesh Raman <Vignesh_Raman@mentor.com>
-Signed-off-by: Vitaly Kuzmichev <Vitaly_Kuzmichev@mentor.com>
-Acked-by: Dean Jenkins <Dean_Jenkins@mentor.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Link: https://bugs.acpica.org/show_bug.cgi?id=1087
+Reported-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/rfcomm/core.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/utcopy.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/bluetooth/rfcomm/core.c
-+++ b/net/bluetooth/rfcomm/core.c
-@@ -1859,10 +1859,13 @@ static struct rfcomm_session *rfcomm_pro
- 	/* Get data directly from socket receive queue without copying it. */
- 	while ((skb = skb_dequeue(&sk->sk_receive_queue))) {
- 		skb_orphan(skb);
--		if (!skb_linearize(skb))
-+		if (!skb_linearize(skb)) {
- 			s = rfcomm_recv_frame(s, skb);
--		else
-+			if (!s)
-+				break;
-+		} else {
- 			kfree_skb(skb);
-+		}
+--- a/drivers/acpi/acpica/utcopy.c
++++ b/drivers/acpi/acpica/utcopy.c
+@@ -1001,5 +1001,11 @@ acpi_ut_copy_iobject_to_iobject(union ac
+ 		status = acpi_ut_copy_simple_object(source_desc, *dest_desc);
  	}
  
- 	if (s && (sk->sk_state == BT_CLOSED))
++	/* Delete the allocated object if copy failed */
++
++	if (ACPI_FAILURE(status)) {
++		acpi_ut_remove_reference(*dest_desc);
++	}
++
+ 	return_ACPI_STATUS(status);
+ }
 
 
