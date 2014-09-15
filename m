@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461AbaIOUS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:18:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55572 "EHLO
+	id S1755560AbaIOUSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:18:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983AbaIOTqz (ORCPT
+	with ESMTP id S1755997AbaIOTq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:46:55 -0400
+	Mon, 15 Sep 2014 15:46:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>,
-        Alex Elder <elder@linaro.org>
-Subject: [PATCH 3.14 095/114] libceph: set last_piece in ceph_msg_data_pages_cursor_init() correctly
-Date: Mon, 15 Sep 2014 12:26:35 -0700
-Message-Id: <20140915192644.394374894@linuxfoundation.org>
+        Jeff Layton <jlayton@samba.org>,
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.14 099/114] CIFS: Fix async reading on reconnects
+Date: Mon, 15 Sep 2014 12:26:39 -0700
+Message-Id: <20140915192644.517796496@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -29,54 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 5f740d7e1531099b888410e6bab13f68da9b1a4d upstream.
+commit 038bc961c31b070269ecd07349a7ee2e839d4fec upstream.
 
-Determining ->last_piece based on the value of ->page_offset + length
-is incorrect because length here is the length of the entire message.
-->last_piece set to false even if page array data item length is <=
-PAGE_SIZE, which results in invalid length passed to
-ceph_tcp_{send,recv}page() and causes various asserts to fire.
+If we get into read_into_pages() from cifs_readv_receive() and then
+loose a network, we issue cifs_reconnect that moves all mids to
+a private list and issue their callbacks. The callback of the async
+read request sets a mid to retry, frees it and wakes up a process
+that waits on the rdata completion.
 
-    # cat pages-cursor-init.sh
-    #!/bin/bash
-    rbd create --size 10 --image-format 2 foo
-    FOO_DEV=$(rbd map foo)
-    dd if=/dev/urandom of=$FOO_DEV bs=1M &>/dev/null
-    rbd snap create foo@snap
-    rbd snap protect foo@snap
-    rbd clone foo@snap bar
-    # rbd_resize calls librbd rbd_resize(), size is in bytes
-    ./rbd_resize bar $(((4 << 20) + 512))
-    rbd resize --size 10 bar
-    BAR_DEV=$(rbd map bar)
-    # trigger a 512-byte copyup -- 512-byte page array data item
-    dd if=/dev/urandom of=$BAR_DEV bs=1M count=1 seek=5
+After the connection is established we return from read_into_pages()
+with a short read, use the mid that was freed before and try to read
+the remaining data from the a newly created socket. Both actions are
+not what we want to do. In reconnect cases (-EAGAIN) we should not
+mask off the error with a short read but should return the error
+code instead.
 
-The problem exists only in ceph_msg_data_pages_cursor_init(),
-ceph_msg_data_pages_advance() does the right thing.  The size_t cast is
-unnecessary.
-
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
-Reviewed-by: Alex Elder <elder@linaro.org>
+Acked-by: Jeff Layton <jlayton@samba.org>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/messenger.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/file.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -900,7 +900,7 @@ static void ceph_msg_data_pages_cursor_i
- 	BUG_ON(page_count > (int)USHRT_MAX);
- 	cursor->page_count = (unsigned short)page_count;
- 	BUG_ON(length > SIZE_MAX - cursor->page_offset);
--	cursor->last_piece = (size_t)cursor->page_offset + length <= PAGE_SIZE;
-+	cursor->last_piece = cursor->page_offset + cursor->resid <= PAGE_SIZE;
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2844,7 +2844,7 @@ cifs_uncached_read_into_pages(struct TCP
+ 		total_read += result;
+ 	}
+ 
+-	return total_read > 0 ? total_read : result;
++	return total_read > 0 && result != -EAGAIN ? total_read : result;
  }
  
- static struct page *
+ static ssize_t
+@@ -3267,7 +3267,7 @@ cifs_readpages_read_into_pages(struct TC
+ 		total_read += result;
+ 	}
+ 
+-	return total_read > 0 ? total_read : result;
++	return total_read > 0 && result != -EAGAIN ? total_read : result;
+ }
+ 
+ static int cifs_readpages(struct file *file, struct address_space *mapping,
 
 
