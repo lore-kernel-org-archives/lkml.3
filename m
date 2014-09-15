@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944AbaIOUcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:32:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55101 "EHLO
+	id S1757930AbaIOUcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:32:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755661AbaIOThA (ORCPT
+	with ESMTP id S1755604AbaIOThB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:37:00 -0400
+	Mon, 15 Sep 2014 15:37:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takanari Hayama <taki@igel.co.jp>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Martin Walch <walch.martin@web.de>, Paul Bolle <pebolle@tiscali.nl>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 006/114] media: v4l: vsp1: Remove the unneeded vsp1_video_buffer video field
-Date: Mon, 15 Sep 2014 12:25:06 -0700
-Message-Id: <20140915192641.624248133@linuxfoundation.org>
+Subject: [PATCH 3.14 007/114] media: sms: Remove CONFIG_ prefix from Kconfig symbols
+Date: Mon, 15 Sep 2014 12:25:07 -0700
+Message-Id: <20140915192641.656888622@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -30,46 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Paul Bolle <pebolle@tiscali.nl>
 
-commit e51daefc228aa164adcc17fe8fce0f856ad0a1cc upstream.
+commit 3c4b422adb7694418848cefc2a4669d63192c649 upstream.
 
-The field is assigned but never read, remove it.
+X-Patchwork-Delegate: mchehab@redhat.com
+Remove the CONFIG_ prefix from two Kconfig symbols in a dependency for
+SMS_SIANO_DEBUGFS. This prefix is invalid inside Kconfig files.
 
-This fixes a bug caused by the struct vb2_buffer field not being be the
-very first field of the vsp1_video_buffer buffer structure as required
-by videobuf2.
+Note that the current (common sense) dependency on SMS_USB_DRV and
+SMS_SDIO_DRV being equal ensures that SMS_SIANO_DEBUGFS will not
+violate its constraints. These constraint are that:
+- it should only be built if SMS_USB_DRV is set;
+- it can't be builtin if USB support is modular.
 
-Reported-by: Takanari Hayama <taki@igel.co.jp>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+So drop the dependency on SMS_USB_DRV, as it is unneeded.
+
+Fixes: 6c84b214284e ("[media] sms: fix randconfig building error")
+
+Reported-by: Martin Walch <walch.martin@web.de>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/vsp1/vsp1_video.c |    2 --
- drivers/media/platform/vsp1/vsp1_video.h |    1 -
- 2 files changed, 3 deletions(-)
+ drivers/media/common/siano/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/media/platform/vsp1/vsp1_video.c
-+++ b/drivers/media/platform/vsp1/vsp1_video.c
-@@ -635,8 +635,6 @@ static int vsp1_video_buffer_prepare(str
- 	if (vb->num_planes < format->num_planes)
- 		return -EINVAL;
+--- a/drivers/media/common/siano/Kconfig
++++ b/drivers/media/common/siano/Kconfig
+@@ -22,8 +22,7 @@ config SMS_SIANO_DEBUGFS
+ 	bool "Enable debugfs for smsdvb"
+ 	depends on SMS_SIANO_MDTV
+ 	depends on DEBUG_FS
+-	depends on SMS_USB_DRV
+-	depends on CONFIG_SMS_USB_DRV = CONFIG_SMS_SDIO_DRV
++	depends on SMS_USB_DRV = SMS_SDIO_DRV
  
--	buf->video = video;
--
- 	for (i = 0; i < vb->num_planes; ++i) {
- 		buf->addr[i] = vb2_dma_contig_plane_dma_addr(vb, i);
- 		buf->length[i] = vb2_plane_size(vb, i);
---- a/drivers/media/platform/vsp1/vsp1_video.h
-+++ b/drivers/media/platform/vsp1/vsp1_video.h
-@@ -89,7 +89,6 @@ static inline struct vsp1_pipeline *to_v
- }
- 
- struct vsp1_video_buffer {
--	struct vsp1_video *video;
- 	struct vb2_buffer buf;
- 	struct list_head queue;
- 
+ 	---help---
+ 	  Choose Y to enable visualizing a dump of the frontend
 
 
