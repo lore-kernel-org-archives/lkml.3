@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaIOTrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:47:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55576 "EHLO
+	id S1756311AbaIOUNz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:13:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986AbaIOTqz (ORCPT
+	with ESMTP id S1756161AbaIOTrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:46:55 -0400
+	Mon, 15 Sep 2014 15:47:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@redhat.com>
-Subject: [PATCH 3.14 096/114] libceph: add process_one_ticket() helper
-Date: Mon, 15 Sep 2014 12:26:36 -0700
-Message-Id: <20140915192644.424076568@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 107/114] mtd: nand: omap: Fix 1-bit Hamming code scheme, omap_calculate_ecc()
+Date: Mon, 15 Sep 2014 12:26:47 -0700
+Message-Id: <20140915192644.766988172@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
 References: <20140915192641.428509513@linuxfoundation.org>
@@ -28,278 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 597cda357716a3cf8d994cb11927af917c8d71fa upstream.
+commit 40ddbf5069bd4e11447c0088fc75318e0aac53f0 upstream.
 
-Add a helper for processing individual cephx auth tickets.  Needed for
-the next commit, which deals with allocating ticket buffers.  (Most of
-the diff here is whitespace - view with git diff -b).
+commit 65b97cf6b8de introduced in v3.7 caused a regression
+by using a reversed CS_MASK thus causing omap_calculate_ecc to
+always fail. As the NAND base driver never checks for .calculate()'s
+return value, the zeroed ECC values are used as is without showing
+any error to the user. However, this won't work and the NAND device
+won't be guarded by any error code.
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@redhat.com>
+Fix the issue by using the correct mask.
+
+Code was tested on omap3beagle using the following procedure
+- flash the primary bootloader (MLO) from the kernel to the first
+NAND partition using nandwrite.
+- boot the board from NAND. This utilizes OMAP ROM loader that
+relies on 1-bit Hamming code ECC.
+
+Fixes: 65b97cf6b8de (mtd: nand: omap2: handle nand on gpmc)
+
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/auth_x.c |  228 +++++++++++++++++++++++++++++-------------------------
- 1 file changed, 124 insertions(+), 104 deletions(-)
+ drivers/mtd/nand/omap2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ceph/auth_x.c
-+++ b/net/ceph/auth_x.c
-@@ -129,17 +129,131 @@ static void remove_ticket_handler(struct
- 	kfree(th);
- }
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -933,7 +933,7 @@ static int omap_calculate_ecc(struct mtd
+ 	u32 val;
  
-+static int process_one_ticket(struct ceph_auth_client *ac,
-+			      struct ceph_crypto_key *secret,
-+			      void **p, void *end,
-+			      void *dbuf, void *ticket_buf)
-+{
-+	struct ceph_x_info *xi = ac->private;
-+	int type;
-+	u8 tkt_struct_v, blob_struct_v;
-+	struct ceph_x_ticket_handler *th;
-+	void *dp, *dend;
-+	int dlen;
-+	char is_enc;
-+	struct timespec validity;
-+	struct ceph_crypto_key old_key;
-+	void *tp, *tpend;
-+	struct ceph_timespec new_validity;
-+	struct ceph_crypto_key new_session_key;
-+	struct ceph_buffer *new_ticket_blob;
-+	unsigned long new_expires, new_renew_after;
-+	u64 new_secret_id;
-+	int ret;
-+
-+	ceph_decode_need(p, end, sizeof(u32) + 1, bad);
-+
-+	type = ceph_decode_32(p);
-+	dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
-+
-+	tkt_struct_v = ceph_decode_8(p);
-+	if (tkt_struct_v != 1)
-+		goto bad;
-+
-+	th = get_ticket_handler(ac, type);
-+	if (IS_ERR(th)) {
-+		ret = PTR_ERR(th);
-+		goto out;
-+	}
-+
-+	/* blob for me */
-+	dlen = ceph_x_decrypt(secret, p, end, dbuf,
-+			      TEMP_TICKET_BUF_LEN);
-+	if (dlen <= 0) {
-+		ret = dlen;
-+		goto out;
-+	}
-+	dout(" decrypted %d bytes\n", dlen);
-+	dp = dbuf;
-+	dend = dp + dlen;
-+
-+	tkt_struct_v = ceph_decode_8(&dp);
-+	if (tkt_struct_v != 1)
-+		goto bad;
-+
-+	memcpy(&old_key, &th->session_key, sizeof(old_key));
-+	ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
-+	if (ret)
-+		goto out;
-+
-+	ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
-+	ceph_decode_timespec(&validity, &new_validity);
-+	new_expires = get_seconds() + validity.tv_sec;
-+	new_renew_after = new_expires - (validity.tv_sec / 4);
-+	dout(" expires=%lu renew_after=%lu\n", new_expires,
-+	     new_renew_after);
-+
-+	/* ticket blob for service */
-+	ceph_decode_8_safe(p, end, is_enc, bad);
-+	tp = ticket_buf;
-+	if (is_enc) {
-+		/* encrypted */
-+		dout(" encrypted ticket\n");
-+		dlen = ceph_x_decrypt(&old_key, p, end, ticket_buf,
-+				      TEMP_TICKET_BUF_LEN);
-+		if (dlen < 0) {
-+			ret = dlen;
-+			goto out;
-+		}
-+		dlen = ceph_decode_32(&tp);
-+	} else {
-+		/* unencrypted */
-+		ceph_decode_32_safe(p, end, dlen, bad);
-+		ceph_decode_need(p, end, dlen, bad);
-+		ceph_decode_copy(p, ticket_buf, dlen);
-+	}
-+	tpend = tp + dlen;
-+	dout(" ticket blob is %d bytes\n", dlen);
-+	ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
-+	blob_struct_v = ceph_decode_8(&tp);
-+	new_secret_id = ceph_decode_64(&tp);
-+	ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
-+	if (ret)
-+		goto out;
-+
-+	/* all is well, update our ticket */
-+	ceph_crypto_key_destroy(&th->session_key);
-+	if (th->ticket_blob)
-+		ceph_buffer_put(th->ticket_blob);
-+	th->session_key = new_session_key;
-+	th->ticket_blob = new_ticket_blob;
-+	th->validity = new_validity;
-+	th->secret_id = new_secret_id;
-+	th->expires = new_expires;
-+	th->renew_after = new_renew_after;
-+	dout(" got ticket service %d (%s) secret_id %lld len %d\n",
-+	     type, ceph_entity_type_name(type), th->secret_id,
-+	     (int)th->ticket_blob->vec.iov_len);
-+	xi->have_keys |= th->service;
-+
-+out:
-+	return ret;
-+
-+bad:
-+	ret = -EINVAL;
-+	goto out;
-+}
-+
- static int ceph_x_proc_ticket_reply(struct ceph_auth_client *ac,
- 				    struct ceph_crypto_key *secret,
- 				    void *buf, void *end)
- {
--	struct ceph_x_info *xi = ac->private;
--	int num;
- 	void *p = buf;
--	int ret;
- 	char *dbuf;
- 	char *ticket_buf;
- 	u8 reply_struct_v;
-+	u32 num;
-+	int ret;
+ 	val = readl(info->reg.gpmc_ecc_config);
+-	if (((val >> ECC_CONFIG_CS_SHIFT)  & ~CS_MASK) != info->gpmc_cs)
++	if (((val >> ECC_CONFIG_CS_SHIFT) & CS_MASK) != info->gpmc_cs)
+ 		return -EINVAL;
  
- 	dbuf = kmalloc(TEMP_TICKET_BUF_LEN, GFP_NOFS);
- 	if (!dbuf)
-@@ -150,112 +264,18 @@ static int ceph_x_proc_ticket_reply(stru
- 	if (!ticket_buf)
- 		goto out_dbuf;
- 
--	ceph_decode_need(&p, end, 1 + sizeof(u32), bad);
--	reply_struct_v = ceph_decode_8(&p);
-+	ceph_decode_8_safe(&p, end, reply_struct_v, bad);
- 	if (reply_struct_v != 1)
--		goto bad;
--	num = ceph_decode_32(&p);
--	dout("%d tickets\n", num);
--	while (num--) {
--		int type;
--		u8 tkt_struct_v, blob_struct_v;
--		struct ceph_x_ticket_handler *th;
--		void *dp, *dend;
--		int dlen;
--		char is_enc;
--		struct timespec validity;
--		struct ceph_crypto_key old_key;
--		void *tp, *tpend;
--		struct ceph_timespec new_validity;
--		struct ceph_crypto_key new_session_key;
--		struct ceph_buffer *new_ticket_blob;
--		unsigned long new_expires, new_renew_after;
--		u64 new_secret_id;
--
--		ceph_decode_need(&p, end, sizeof(u32) + 1, bad);
--
--		type = ceph_decode_32(&p);
--		dout(" ticket type %d %s\n", type, ceph_entity_type_name(type));
--
--		tkt_struct_v = ceph_decode_8(&p);
--		if (tkt_struct_v != 1)
--			goto bad;
--
--		th = get_ticket_handler(ac, type);
--		if (IS_ERR(th)) {
--			ret = PTR_ERR(th);
--			goto out;
--		}
--
--		/* blob for me */
--		dlen = ceph_x_decrypt(secret, &p, end, dbuf,
--				      TEMP_TICKET_BUF_LEN);
--		if (dlen <= 0) {
--			ret = dlen;
--			goto out;
--		}
--		dout(" decrypted %d bytes\n", dlen);
--		dend = dbuf + dlen;
--		dp = dbuf;
--
--		tkt_struct_v = ceph_decode_8(&dp);
--		if (tkt_struct_v != 1)
--			goto bad;
-+		return -EINVAL;
- 
--		memcpy(&old_key, &th->session_key, sizeof(old_key));
--		ret = ceph_crypto_key_decode(&new_session_key, &dp, dend);
--		if (ret)
--			goto out;
-+	ceph_decode_32_safe(&p, end, num, bad);
-+	dout("%d tickets\n", num);
- 
--		ceph_decode_copy(&dp, &new_validity, sizeof(new_validity));
--		ceph_decode_timespec(&validity, &new_validity);
--		new_expires = get_seconds() + validity.tv_sec;
--		new_renew_after = new_expires - (validity.tv_sec / 4);
--		dout(" expires=%lu renew_after=%lu\n", new_expires,
--		     new_renew_after);
--
--		/* ticket blob for service */
--		ceph_decode_8_safe(&p, end, is_enc, bad);
--		tp = ticket_buf;
--		if (is_enc) {
--			/* encrypted */
--			dout(" encrypted ticket\n");
--			dlen = ceph_x_decrypt(&old_key, &p, end, ticket_buf,
--					      TEMP_TICKET_BUF_LEN);
--			if (dlen < 0) {
--				ret = dlen;
--				goto out;
--			}
--			dlen = ceph_decode_32(&tp);
--		} else {
--			/* unencrypted */
--			ceph_decode_32_safe(&p, end, dlen, bad);
--			ceph_decode_need(&p, end, dlen, bad);
--			ceph_decode_copy(&p, ticket_buf, dlen);
--		}
--		tpend = tp + dlen;
--		dout(" ticket blob is %d bytes\n", dlen);
--		ceph_decode_need(&tp, tpend, 1 + sizeof(u64), bad);
--		blob_struct_v = ceph_decode_8(&tp);
--		new_secret_id = ceph_decode_64(&tp);
--		ret = ceph_decode_buffer(&new_ticket_blob, &tp, tpend);
-+	while (num--) {
-+		ret = process_one_ticket(ac, secret, &p, end,
-+					 dbuf, ticket_buf);
- 		if (ret)
- 			goto out;
--
--		/* all is well, update our ticket */
--		ceph_crypto_key_destroy(&th->session_key);
--		if (th->ticket_blob)
--			ceph_buffer_put(th->ticket_blob);
--		th->session_key = new_session_key;
--		th->ticket_blob = new_ticket_blob;
--		th->validity = new_validity;
--		th->secret_id = new_secret_id;
--		th->expires = new_expires;
--		th->renew_after = new_renew_after;
--		dout(" got ticket service %d (%s) secret_id %lld len %d\n",
--		     type, ceph_entity_type_name(type), th->secret_id,
--		     (int)th->ticket_blob->vec.iov_len);
--		xi->have_keys |= th->service;
- 	}
- 
- 	ret = 0;
+ 	/* read ecc result */
 
 
