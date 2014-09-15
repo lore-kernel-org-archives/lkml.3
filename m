@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247AbaIOT31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:29:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54949 "EHLO
+	id S1755265AbaIOT32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:29:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605AbaIOT3Y (ORCPT
+	with ESMTP id S1754548AbaIOT3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:29:24 -0400
+	Mon, 15 Sep 2014 15:29:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.16 125/158] md/raid1,raid10: always abort recover on write error.
-Date: Mon, 15 Sep 2014 12:26:04 -0700
-Message-Id: <20140915192546.636891438@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.16 124/158] fix copy_tree() regression
+Date: Mon, 15 Sep 2014 12:26:03 -0700
+Message-Id: <20140915192546.608235877@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -28,80 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 2446dba03f9dabe0b477a126cbeb377854785b47 upstream.
+commit 12a5b5294cb1896e9a3c9fca8ff5a7e3def4e8c6 upstream.
 
-Currently we don't abort recovery on a write error if the write error
-to the recovering device was triggerd by normal IO (as opposed to
-recovery IO).
+Since 3.14 we had copy_tree() get the shadowing wrong - if we had one
+vfsmount shadowing another (i.e. if A is a slave of B, C is mounted
+on A/foo, then D got mounted on B/foo creating D' on A/foo shadowed
+by C), copy_tree() of A would make a copy of D' shadow the the copy of
+C, not the other way around.
 
-This means that for one bitmap region, the recovery might write to the
-recovering device for a few sectors, then not bother for subsequent
-sectors (as it never writes to failed devices).  In this case
-the bitmap bit will be cleared, but it really shouldn't.
+It's easy to fix, fortunately - just make sure that mount follows
+the one that shadows it in mnt_child as well as in mnt_hash, and when
+copy_tree() decides to attach a new mount, check if the last child
+it has added to the same parent should be shadowing the new one.
+And if it should, just use the same logics commit_tree() has - put the
+new mount into the hash and children lists right after the one that
+should shadow it.
 
-The result is that if the recovering device fails and is then re-added
-(after fixing whatever hardware problem triggerred the failure),
-the second recovery won't redo the region it was in the middle of,
-so some of the device will not be recovered properly.
-
-If we abort the recovery, the region being processes will be cancelled
-(bit not cleared) and the whole region will be retried.
-
-As the bug can result in data corruption the patch is suitable for
--stable.  For kernels prior to 3.11 there is a conflict in raid10.c
-which will require care.
-
-Original-from: jiao hui <jiaohui@bwstor.com.cn>
-Reported-and-tested-by: jiao hui <jiaohui@bwstor.com.cn>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c  |    8 ++++----
- drivers/md/raid10.c |   11 +++++------
- 2 files changed, 9 insertions(+), 10 deletions(-)
+ fs/namespace.c |   31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1501,12 +1501,12 @@ static void error(struct mddev *mddev, s
- 		mddev->degraded++;
- 		set_bit(Faulty, &rdev->flags);
- 		spin_unlock_irqrestore(&conf->device_lock, flags);
--		/*
--		 * if recovery is running, make sure it aborts.
--		 */
--		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	} else
- 		set_bit(Faulty, &rdev->flags);
-+	/*
-+	 * if recovery is running, make sure it aborts.
-+	 */
-+	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
- 	printk(KERN_ALERT
- 	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1684,13 +1684,12 @@ static void error(struct mddev *mddev, s
- 		spin_unlock_irqrestore(&conf->device_lock, flags);
- 		return;
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -779,6 +779,20 @@ static void attach_mnt(struct mount *mnt
+ 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
+ }
+ 
++static void attach_shadowed(struct mount *mnt,
++			struct mount *parent,
++			struct mount *shadows)
++{
++	if (shadows) {
++		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
++		list_add(&mnt->mnt_child, &shadows->mnt_child);
++	} else {
++		hlist_add_head_rcu(&mnt->mnt_hash,
++				m_hash(&parent->mnt, mnt->mnt_mountpoint));
++		list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
++	}
++}
++
+ /*
+  * vfsmount lock must be held for write
+  */
+@@ -797,12 +811,7 @@ static void commit_tree(struct mount *mn
+ 
+ 	list_splice(&head, n->list.prev);
+ 
+-	if (shadows)
+-		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
+-	else
+-		hlist_add_head_rcu(&mnt->mnt_hash,
+-				m_hash(&parent->mnt, mnt->mnt_mountpoint));
+-	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
++	attach_shadowed(mnt, parent, shadows);
+ 	touch_mnt_namespace(n);
+ }
+ 
+@@ -1513,6 +1522,7 @@ struct mount *copy_tree(struct mount *mn
+ 			continue;
+ 
+ 		for (s = r; s; s = next_mnt(s, r)) {
++			struct mount *t = NULL;
+ 			if (!(flag & CL_COPY_UNBINDABLE) &&
+ 			    IS_MNT_UNBINDABLE(s)) {
+ 				s = skip_mnt_tree(s);
+@@ -1534,7 +1544,14 @@ struct mount *copy_tree(struct mount *mn
+ 				goto out;
+ 			lock_mount_hash();
+ 			list_add_tail(&q->mnt_list, &res->mnt_list);
+-			attach_mnt(q, parent, p->mnt_mp);
++			mnt_set_mountpoint(parent, p->mnt_mp, q);
++			if (!list_empty(&parent->mnt_mounts)) {
++				t = list_last_entry(&parent->mnt_mounts,
++					struct mount, mnt_child);
++				if (t->mnt_mp != p->mnt_mp)
++					t = NULL;
++			}
++			attach_shadowed(q, parent, t);
+ 			unlock_mount_hash();
+ 		}
  	}
--	if (test_and_clear_bit(In_sync, &rdev->flags)) {
-+	if (test_and_clear_bit(In_sync, &rdev->flags))
- 		mddev->degraded++;
--			/*
--		 * if recovery is running, make sure it aborts.
--		 */
--		set_bit(MD_RECOVERY_INTR, &mddev->recovery);
--	}
-+	/*
-+	 * If recovery is running, make sure it aborts.
-+	 */
-+	set_bit(MD_RECOVERY_INTR, &mddev->recovery);
- 	set_bit(Blocked, &rdev->flags);
- 	set_bit(Faulty, &rdev->flags);
- 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
 
 
