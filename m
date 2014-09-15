@@ -1,70 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931AbaINXln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Sep 2014 19:41:43 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:37440 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaINXlm (ORCPT
+	id S1752936AbaIOAAw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Sep 2014 20:00:52 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:57137 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaIOAAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Sep 2014 19:41:42 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH/RFC] rtc: rtc-twl: Fixed nested IRQ handling in resume from suspend
-Date: Mon, 15 Sep 2014 02:41:45 +0300
-Message-ID: <3285590.DFfac97QLO@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.10.1409132108520.23397@nanos>
-References: <1410607196-3941-1-git-send-email-laurent.pinchart@ideasonboard.com> <alpine.DEB.2.10.1409132108520.23397@nanos>
+	Sun, 14 Sep 2014 20:00:50 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Mon, 15 Sep 2014 09:00:58 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 00/10] implement zsmalloc shrinking
+Message-ID: <20140915000058.GE2160@bbox>
+References: <1410468841-320-1-git-send-email-ddstreet@ieee.org>
+ <20140912054640.GB2160@bbox>
+ <CALZtONAzfUaXpxPc83KA6edB21uptWWGZkWZZa5DTFi=CMpgXA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CALZtONAzfUaXpxPc83KA6edB21uptWWGZkWZZa5DTFi=CMpgXA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On Saturday 13 September 2014 21:12:16 Thomas Gleixner wrote:
-> On Sat, 13 Sep 2014, Laurent Pinchart wrote:
-> > The TWL RTC interrupt is a double-nested threaded interrupt, handled
-> > through the TWL SIH (Secondary Interrupt Handler) and PIH (Primary
-> > Interrupt Handler).
-> > 
-> > When the system is woken up from suspend by a TWL RTC alarm interrupt,
-> > the TWL PIH and SIH are enabled first (due to the normal IRQ enabling
-> > sequence for the PIH and to the IRQF_EARLY_RESUME flag for the SIH)
-> > before the TWL RTC interrupt gets enabled. This results on the interrupt
-> > being processed by the TWL primary interrupt handler, forwarded to the
-> > nested SIH, and then marked as pending for the RTC by handle_nested_irq
-> > called from the SIH.
-> > 
-> > The RTC interrupt then eventually gets reenabled the kernel, which will
-> > try to call its top half interrupt handler. As the interrupt is a nested
-> > threaded IRQ, its primary handler has been set to the
-> > irq_nested_primary_handler function, which is never supposed to be
-> > called and generates a WARN_ON, without waking the IRQ thread up.
-> > 
-> > Fix this by setting the IRQF_EARLY_RESUME for the TWL RTC interrupt to
-> > ensure it gets enabled before the parent handlers try to process it.
-> > 
-> > This is likely a bit of a hack, I have a feeling that a more generic
-> > solution that would fix the problem for all nested threaded IRQs enabled
-> > as a wake up source by enable_irq_wake would be better.
+On Fri, Sep 12, 2014 at 01:05:11PM -0400, Dan Streetman wrote:
+> On Fri, Sep 12, 2014 at 1:46 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > On Thu, Sep 11, 2014 at 04:53:51PM -0400, Dan Streetman wrote:
+> >> Now that zswap can use zsmalloc as a storage pool via zpool, it will
+> >> try to shrink its zsmalloc zs_pool once it reaches its max_pool_percent
+> >> limit.  These patches implement zsmalloc shrinking.  The way the pool is
+> >> shrunk is by finding a zspage and reclaiming it, by evicting each of its
+> >> objects that is in use.
+> >>
+> >> Without these patches zswap, and any other future user of zpool/zsmalloc
+> >> that attempts to shrink the zpool/zs_pool, will only get errors and will
+> >> be unable to shrink its zpool/zs_pool.  With the ability to shrink, zswap
+> >> can keep the most recent compressed pages in memory.
+> >>
+> >> Note that the design of zsmalloc makes it impossible to actually find the
+> >> LRU zspage, so each class and fullness group is searched in a round-robin
+> >> method to find the next zspage to reclaim.  Each fullness group orders its
+> >> zspages in LRU order, so the oldest zspage is used for each fullness group.
+> >>
+> >
+> > 1. Pz, Cc Mel who was strong against zswap with zsmalloc.
+> > 2. I don't think LRU stuff should be in allocator layer. Exp, it's really
+> >    hard to work well in zsmalloc design.
 > 
-> Indeed. It's a hack. This is not the first abuse of IRQF_EARLY_RESUME
-> which is used to "fix" ordering issues with nested thread handlers.
-> 
-> I haven't come around yet to analyze the issue and come up with a proper
-> core side mechanism to handle that case. I put it on the "look at it while
-> trapped in a tin can" list.
+> I didn't add any LRU - the existing fullness group LRU ordering is
+> already there.  And yes, the zsmalloc design prevents any real LRU
 
-Should this patch be applied in the meantime, or do you think you will be 
-trapped in a tin can in the not too distant future ?
+I don't think It's not LRU for reclaiming but just simple linked list for
+finding free slot.
+
+> ordering, beyond per-fullness-group LRU ordering.
+
+Yes.
+
+> 
+> > 3. If you want to add another writeback, make zswap writeback sane first.
+> >    current implemenation(zswap store -> zbud reclaim -> zswap writeback,
+> >    even) is really ugly.
+> 
+> why what's wrong with that?  how else can zbud/zsmalloc evict stored objects?
+
+You can refer Mel's suggestion for zswap/zsmalloc and writeback problem.
+
+http://www.spinics.net/lists/linux-mm/msg61601.html
+http://lkml.iu.edu//hypermail/linux/kernel/1304.1/04334.html
+
+I think LRU/writeback should be upper layer, not allocator itself.
+Please, don't force every allocator to implement it for only zswap.
+
+> 
+> > 4. Don't make zsmalloc complicated without any data(benefit, regression)
+> >    I will never ack if you don't give any number and real usecase.
+> 
+> ok, i'll run performance tests then, but let me know if you see any
+> technical problems with any of the patches before then.
+> 
+> thanks!
+> 
+> >
+> >> ---
+> >>
+> >> This patch set applies to linux-next.
+> >>
+> >> Dan Streetman (10):
+> >>   zsmalloc: fix init_zspage free obj linking
+> >>   zsmalloc: add fullness group list for ZS_FULL zspages
+> >>   zsmalloc: always update lru ordering of each zspage
+> >>   zsmalloc: move zspage obj freeing to separate function
+> >>   zsmalloc: add atomic index to find zspage to reclaim
+> >>   zsmalloc: add zs_ops to zs_pool
+> >>   zsmalloc: add obj_handle_is_free()
+> >>   zsmalloc: add reclaim_zspage()
+> >>   zsmalloc: add zs_shrink()
+> >>   zsmalloc: implement zs_zpool_shrink() with zs_shrink()
+> >>
+> >>  drivers/block/zram/zram_drv.c |   2 +-
+> >>  include/linux/zsmalloc.h      |   7 +-
+> >>  mm/zsmalloc.c                 | 314 +++++++++++++++++++++++++++++++++++++-----
+> >>  3 files changed, 290 insertions(+), 33 deletions(-)
+> >>
+> >> --
+> >> 1.8.3.1
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >
+> > --
+> > Kind regards,
+> > Minchan Kim
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+Kind regards,
+Minchan Kim
