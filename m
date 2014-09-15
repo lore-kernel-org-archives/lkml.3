@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685AbaIOVyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:54:38 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:58821 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576AbaIOVyf (ORCPT
+	id S1757201AbaIOVyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:54:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43626 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649AbaIOVyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:54:35 -0400
-Date: Mon, 15 Sep 2014 14:49:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.17-rc5
-Message-ID: <20140915214905.GA18749@core.coreip.homeip.net>
+	Mon, 15 Sep 2014 17:54:49 -0400
+Date: Mon, 15 Sep 2014 14:54:10 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org
+Message-ID: <20140915215410.GB7960@sirena.org.uk>
+References: <1410722585-13393-1-git-send-email-heiko@sntech.de>
+ <1410722585-13393-4-git-send-email-heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E6NCJjdg6OUEG/ZU"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410722585-13393-4-git-send-email-heiko@sntech.de>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] dt-bindings: add devicetree bindings for Fairchild
+ FAN53555 regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull from:
+--E6NCJjdg6OUEG/ZU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+On Sun, Sep 14, 2014 at 09:23:03PM +0200, Heiko Stuebner wrote:
 
-to receive updates for the input subsystem. You will get a few quirks
-for i8042/AT keyboards and a small device tree doc fix for Atmel
-Touchscreens.
+> +Optional properties:
+> +  - fairchild,suspend-regulator: regulator number to use for suspend voltages
+> +		possible values are either <0> or <1>
 
-Changelog:
----------
+I'm not sure what this means - What exactly is a "regulator" in this
+context?  Are there really two separate regulators?
 
-Dmitry Torokhov (1):
-      Input: atkbd - do not try 'deactivate' keyboard on any LG laptops
+--E6NCJjdg6OUEG/ZU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Hans de Goede (3):
-      Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-      Input: i8042 - add nomux quirk for Avatar AVIU-145A6
-      Input: i8042 - also set the firmware id for MUXed ports
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Nick Dyer (1):
-      Input: atmel_mxt_ts - fix merge in DT documentation
+iQEcBAEBAgAGBQJUF2ABAAoJECTWi3JdVIfQjPIH/3atNCdIf2+IJbhep7+hDrYu
+cgSWqILjCsiafw4x28KkGOiUz2oPbfH04+L7DLKCh655O4sQ5zshKIrL9+V6CBv7
+m4dZYBLXSlgU0/u8ZCYxYozrbUkhqAij4GHJQthtG4okfL4HixkH9j45nimTukb+
+98fjM5OZsHEMkSXn7LK5d4G0VLUa1hGEtFiVHsY/uWxvUn8lSEfVENX0ItDLeH4b
+6wxKeSSdrgQ05TBquRDML+IjqAXW+3kw3UjHvlX4gyRkVjvLjqq5XHcDon3x/1G7
+GeE+wvE52So9uspHlih8EjkIH1DHSqxo/Wy6iWmhDigwQVXJGKCgT4Nq+EzF8BQ=
+=zIch
+-----END PGP SIGNATURE-----
 
-
-Diffstat:
---------
-
- .../devicetree/bindings/input/atmel,maxtouch.txt          |  4 ----
- drivers/input/keyboard/atkbd.c                            |  8 --------
- drivers/input/serio/i8042-x86ia64io.h                     | 15 +++++++++++++++
- drivers/input/serio/i8042.c                               |  2 ++
- 4 files changed, 17 insertions(+), 12 deletions(-)
-
--- 
-Dmitry
+--E6NCJjdg6OUEG/ZU--
