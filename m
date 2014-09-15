@@ -1,118 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbaIOT32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:29:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54945 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754548AbaIOT3X (ORCPT
+	id S1755276AbaIOT3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:29:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45093 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754548AbaIOT3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:29:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.16 124/158] fix copy_tree() regression
-Date: Mon, 15 Sep 2014 12:26:03 -0700
-Message-Id: <20140915192546.608235877@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 15 Sep 2014 15:29:35 -0400
+Date: Mon, 15 Sep 2014 12:29:27 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 3/5] toshiba_acpi: Fix accelerometer direction
+ reporting
+Message-ID: <20140915192923.GA61529@vmdeb7>
+References: <1410569437-3066-1-git-send-email-coproscefalo@gmail.com>
+ <1410569437-3066-2-git-send-email-coproscefalo@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410569437-3066-2-git-send-email-coproscefalo@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Sep 12, 2014 at 06:50:37PM -0600, Azael Avalos wrote:
+> The position file on sysfs was reporting absolute values
+> for its axes.
+> 
+> This patch fixes the direction reporting (either negative
+> or positive), as well as added a mutex lock to it.
+> 
 
-------------------
+Hi All,
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+I've added Greg KH, Rafael, and H. Peter Anvin to get some clarity on a topic
+which is coming up repeatedly in the platform-drivers-x86 subsystem.
+Specifically, whether or not the driver-specific sysfs attributes should be
+considered a "stable userspace interface".
 
-commit 12a5b5294cb1896e9a3c9fca8ff5a7e3def4e8c6 upstream.
+The sysfs documentation [1] specfifically calls out the following types of
+device properties:
 
-Since 3.14 we had copy_tree() get the shadowing wrong - if we had one
-vfsmount shadowing another (i.e. if A is a slave of B, C is mounted
-on A/foo, then D got mounted on B/foo creating D' on A/foo shadowed
-by C), copy_tree() of A would make a copy of D' shadow the the copy of
-C, not the other way around.
+o devpath
+o kernel name
+o subsystem
+o driver
+o attributes (the topic of this email)
 
-It's easy to fix, fortunately - just make sure that mount follows
-the one that shadows it in mnt_child as well as in mnt_hash, and when
-copy_tree() decides to attach a new mount, check if the last child
-it has added to the same parent should be shadowing the new one.
-And if it should, just use the same logics commit_tree() has - put the
-new mount into the hash and children lists right after the one that
-should shadow it.
+In the case of this patch, Azael proposes changing the x,y,z attributes from the
+absolute values read from the device to relative signed values.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In my opinion, this changes a userspace interface that exists prior to this
+development cycle. As such, the attributes must remain as they are and new
+attributes should be added if a new interface is wanted/needed. New x_rel,
+y_rel, z_rel attributes could be added for this purpose.
 
----
- fs/namespace.c |   31 ++++++++++++++++++++++++-------
- 1 file changed, 24 insertions(+), 7 deletions(-)
+I have also suggested this device (2 actually) would be better supported as an
+IIO accelerometer device, but even that would change the sysfs interface by
+removing these altogether and using the IIO standardized path and accelerometer
+interface.
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -779,6 +779,20 @@ static void attach_mnt(struct mount *mnt
- 	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
- }
- 
-+static void attach_shadowed(struct mount *mnt,
-+			struct mount *parent,
-+			struct mount *shadows)
-+{
-+	if (shadows) {
-+		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
-+		list_add(&mnt->mnt_child, &shadows->mnt_child);
-+	} else {
-+		hlist_add_head_rcu(&mnt->mnt_hash,
-+				m_hash(&parent->mnt, mnt->mnt_mountpoint));
-+		list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
-+	}
-+}
-+
- /*
-  * vfsmount lock must be held for write
-  */
-@@ -797,12 +811,7 @@ static void commit_tree(struct mount *mn
- 
- 	list_splice(&head, n->list.prev);
- 
--	if (shadows)
--		hlist_add_after_rcu(&shadows->mnt_hash, &mnt->mnt_hash);
--	else
--		hlist_add_head_rcu(&mnt->mnt_hash,
--				m_hash(&parent->mnt, mnt->mnt_mountpoint));
--	list_add_tail(&mnt->mnt_child, &parent->mnt_mounts);
-+	attach_shadowed(mnt, parent, shadows);
- 	touch_mnt_namespace(n);
- }
- 
-@@ -1513,6 +1522,7 @@ struct mount *copy_tree(struct mount *mn
- 			continue;
- 
- 		for (s = r; s; s = next_mnt(s, r)) {
-+			struct mount *t = NULL;
- 			if (!(flag & CL_COPY_UNBINDABLE) &&
- 			    IS_MNT_UNBINDABLE(s)) {
- 				s = skip_mnt_tree(s);
-@@ -1534,7 +1544,14 @@ struct mount *copy_tree(struct mount *mn
- 				goto out;
- 			lock_mount_hash();
- 			list_add_tail(&q->mnt_list, &res->mnt_list);
--			attach_mnt(q, parent, p->mnt_mp);
-+			mnt_set_mountpoint(parent, p->mnt_mp, q);
-+			if (!list_empty(&parent->mnt_mounts)) {
-+				t = list_last_entry(&parent->mnt_mounts,
-+					struct mount, mnt_child);
-+				if (t->mnt_mp != p->mnt_mp)
-+					t = NULL;
-+			}
-+			attach_shadowed(q, parent, t);
- 			unlock_mount_hash();
- 		}
- 	}
+Do we have a policy for this kind of change already in place?
+
+1. Documentation/sysfs-rules.txt 
+
+Thanks,
+
+Darren
 
 
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> ---
+> This was: Add accelerometer input polled device
+> 
+> Changes since v1:
+> Dropped polldev and kept the position entry, and simply
+> fix the axes direction reporting, the IIO device will
+> be added in a future patch instead of the polled device.
+> 
+>  drivers/platform/x86/toshiba_acpi.c | 21 ++++++++++++++++-----
+>  1 file changed, 16 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index edd8f3d..a94e5ed 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -124,6 +124,7 @@ MODULE_LICENSE("GPL");
+>  #define SCI_TOUCHPAD			0x050e
+>  
+>  /* field definitions */
+> +#define HCI_ACCEL_DIRECTION_MASK	0x8000
+>  #define HCI_ACCEL_MASK			0x7fff
+>  #define HCI_HOTKEY_DISABLE		0x0b
+>  #define HCI_HOTKEY_ENABLE		0x09
+> @@ -1527,19 +1528,29 @@ static ssize_t toshiba_position_show(struct device *dev,
+>  				     struct device_attribute *attr, char *buf)
+>  {
+>  	struct toshiba_acpi_dev *toshiba = dev_get_drvdata(dev);
+> -	u32 xyval, zval, tmp;
+> -	u16 x, y, z;
+> +	u32 xyval, zval;
+> +	int x, y, z;
+>  	int ret;
+>  
+> +	mutex_lock(&dev->mutex);
+> +
+>  	xyval = zval = 0;
+>  	ret = toshiba_accelerometer_get(toshiba, &xyval, &zval);
+> -	if (ret < 0)
+> +	if (ret) {
+> +		mutex_unlock(&dev->mutex);
+>  		return ret;
+> +	}
+>  
+> +	/* Accelerometer values */
+>  	x = xyval & HCI_ACCEL_MASK;
+> -	tmp = xyval >> HCI_MISC_SHIFT;
+> -	y = tmp & HCI_ACCEL_MASK;
+> +	y = (xyval >> HCI_MISC_SHIFT) & HCI_ACCEL_MASK;
+>  	z = zval & HCI_ACCEL_MASK;
+> +	/* Movement direction */
+> +	x *= xyval & HCI_ACCEL_DIRECTION_MASK ? -1 : 1;
+> +	y *= (xyval >> HCI_MISC_SHIFT) & HCI_ACCEL_DIRECTION_MASK ? -1 : 1;
+> +	z *= zval & HCI_ACCEL_DIRECTION_MASK ? -1 : 1;
+> +
+> +	mutex_unlock(&dev->mutex);
+>  
+>  	return sprintf(buf, "%d %d %d\n", x, y, z);
+>  }
+> -- 
+> 2.0.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
