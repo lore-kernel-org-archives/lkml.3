@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247AbaIOWkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 18:40:24 -0400
-Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:37291
-	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754954AbaIOWkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 18:40:20 -0400
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, dbueso@suse.de, ebiederm@xmission.com,
-        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
-        felipensp@gmail.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] kselftest new exit codes and test changes to use them
-Date: Mon, 15 Sep 2014 16:33:55 -0600
-Message-Id: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 1.9.1
+	id S1754847AbaIOWkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 18:40:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759255AbaIOWkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 18:40:25 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH 0/5] hugepage migration fixes (v4)
+Date: Mon, 15 Sep 2014 18:39:54 -0400
+Message-Id: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds a new header file for kselftest defines
-for individual tests to report test results, and changes to
-several tests to use the new header file and exit codes.
+This is the ver.4 of hugepage migration fix patchset.
 
-Shuah Khan (7):
-  selftests: add header file for test exit code defines
-  selftests/breakpoints: change breakpoints test to use kselftest exit
-    codes
-  selftests/ipc: change ipc test to use kselftest exit codes
-  selftests/kcmp: change kcmp test to use kselftest exit codes
-  selftests/mount: change mount test to use kselftest exit codes
-  selftests/ptrace: change ptrace test to use kselftest exit codes
-  selftests/timers: change timers test to use kselftest exit codes
+Major changes from ver.3 are:
+- to drop locking from follow_huge_pud() and follow_huge_addr() in patch 2,
+  which was buggy and is not necessary now because they don't support FOLL_GET,
+- follow_huge_pmd(FOLL_GET) can pin and return tail pages,
+- and I fixed bugs accidentally introduced in patch 3 and 5.
+Others are code improvements and comment/description fixes.
 
- .../selftests/breakpoints/breakpoint_test.c        | 10 +++++----
- tools/testing/selftests/ipc/msgque.c               | 26 ++++++++++++----------
- tools/testing/selftests/kcmp/kcmp_test.c           | 16 +++++++------
- tools/testing/selftests/kselftest.h                | 20 +++++++++++++++++
- .../selftests/mount/unprivileged-remount-test.c    | 10 +++++----
- tools/testing/selftests/ptrace/peeksiginfo.c       | 21 ++++++++---------
- tools/testing/selftests/timers/posix_timers.c      | 19 +++++++++-------
- 7 files changed, 77 insertions(+), 45 deletions(-)
- create mode 100644 tools/testing/selftests/kselftest.h
+Two related topics (not included in this series but to be discussed/done)
+- follow_huge_pmd() explicitly uses pmd_lockptr() instead of huge_pte_lock().
+  This point shed light on the subtlety in huge_page_size == PMD_HUGE check
+  in huge_pte_lockptr(). This seems to make no runtime problem now, but might
+  look fragile for example when pmd is folded (where PUD_SIZE == PMD_SIZE)
+  or when hugepage in your architecture is not bound by page table (where
+  hugepage size happens to equal with PMD_SIZE.)
+- code around is_hugetlb_entry_migration() and is_hugetlb_entry_hwpoisoned()
+  is not beautiful or optimized. Cleanup is necessary.
 
--- 
-1.9.1
+This patchset is based on mmotm-2014-09-09-14-42 and shows no regression
+in libhugetlbfs test.
 
+Tree: git@github.com:Naoya-Horiguchi/linux.git
+Branch: mmotm-2014-09-09-14-42/fix_follow_huge_pmd.v4
+
+v2: http://thread.gmane.org/gmane.linux.kernel/1761065
+v3: http://thread.gmane.org/gmane.linux.kernel/1776585
+---
+Summary:
+
+Naoya Horiguchi (5):
+      mm/hugetlb: reduce arch dependent code around follow_huge_*
+      mm/hugetlb: take page table lock in follow_huge_pmd()
+      mm/hugetlb: fix getting refcount 0 page in hugetlb_fault()
+      mm/hugetlb: add migration/hwpoisoned entry check in hugetlb_change_protection
+      mm/hugetlb: add migration entry check in __unmap_hugepage_range
+
+ arch/arm/mm/hugetlbpage.c     |   6 --
+ arch/arm64/mm/hugetlbpage.c   |   6 --
+ arch/ia64/mm/hugetlbpage.c    |   6 --
+ arch/metag/mm/hugetlbpage.c   |   6 --
+ arch/mips/mm/hugetlbpage.c    |  18 ------
+ arch/powerpc/mm/hugetlbpage.c |   8 +++
+ arch/s390/mm/hugetlbpage.c    |  20 -------
+ arch/sh/mm/hugetlbpage.c      |  12 ----
+ arch/sparc/mm/hugetlbpage.c   |  12 ----
+ arch/tile/mm/hugetlbpage.c    |  28 ----------
+ arch/x86/mm/hugetlbpage.c     |  12 ----
+ include/linux/hugetlb.h       |   8 +--
+ mm/gup.c                      |  25 ++-------
+ mm/hugetlb.c                  | 124 ++++++++++++++++++++++++++++--------------
+ mm/migrate.c                  |   3 +-
+ 15 files changed, 101 insertions(+), 193 deletions(-)
