@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260AbaIOUJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:09:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55637 "EHLO
+	id S1757234AbaIOUJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:09:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55578 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187AbaIOTrF (ORCPT
+	with ESMTP id S1756189AbaIOTrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:47:05 -0400
+	Mon, 15 Sep 2014 15:47:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Tejun Heo <htejun@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 11/71] kernel/smp.c:on_each_cpu_cond(): fix warning in fallback path
-Date: Mon, 15 Sep 2014 12:26:09 -0700
-Message-Id: <20140915192639.089657041@linuxfoundation.org>
+        Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 13/71] regulator: arizona-ldo1: remove bypass functionality
+Date: Mon, 15 Sep 2014 12:26:11 -0700
+Message-Id: <20140915192639.157365285@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
 References: <20140915192638.702282534@linuxfoundation.org>
@@ -34,38 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
 
-commit 618fde872163e782183ce574c77f1123e2be8887 upstream.
+commit 5b919f3ebb533cbe400664837e24f66a0836b907 upstream.
 
-The rarely-executed memry-allocation-failed callback path generates a
-WARN_ON_ONCE() when smp_call_function_single() succeeds.  Presumably
-it's supposed to warn on failures.
+WM5110/8280 devices do not support bypass mode for LDO1 so remove
+the bypass callbacks registered with regulator core.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Christoph Lameter <cl@gentwo.org>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Tejun Heo <htejun@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/smp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/arizona-ldo1.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -658,7 +658,7 @@ void on_each_cpu_cond(bool (*cond_func)(
- 			if (cond_func(cpu, info)) {
- 				ret = smp_call_function_single(cpu, func,
- 								info, wait);
--				WARN_ON_ONCE(!ret);
-+				WARN_ON_ONCE(ret);
- 			}
- 		preempt_enable();
- 	}
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -141,8 +141,6 @@ static struct regulator_ops arizona_ldo1
+ 	.map_voltage = regulator_map_voltage_linear,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+-	.get_bypass = regulator_get_bypass_regmap,
+-	.set_bypass = regulator_set_bypass_regmap,
+ };
+ 
+ static const struct regulator_desc arizona_ldo1 = {
 
 
