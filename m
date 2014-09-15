@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690AbaIOPJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 11:09:14 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:34344 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaIOPJM (ORCPT
+	id S1753511AbaIOPLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 11:11:39 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:37676 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752564AbaIOPLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 11:09:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140915144803.GL18566@dragon>
-References: <cover.1410253534.git.shengjiu.wang@freescale.com>
-	<7ed21195ebff8b3ccbecaeb492504edd28deea2d.1410253534.git.shengjiu.wang@freescale.com>
-	<CAOMZO5A4FLbA_+u4oMTqgAY69DaF93V=oLiy+op=tEHbagF1pg@mail.gmail.com>
-	<CAOMZO5DJZHKAV4Y9aUwMNWZqhoLrKrsZdYnKqPem2ZSy=-oAYw@mail.gmail.com>
-	<20140915115855.GC23877@audiosh1>
-	<20140915144803.GL18566@dragon>
-Date: Mon, 15 Sep 2014 12:09:10 -0300
-Message-ID: <CAOMZO5DOPgLz3UMvVbJh33AuQfbs0G7XTCvTnVePHrpSyXiHiQ@mail.gmail.com>
-Subject: Re: [PATCH V1 1/3] ARM: clk-imx6sl: refine clock tree for SSI
-From: Fabio Estevam <festevam@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Shengjiu Wang <shengjiu.wang@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 11:11:37 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-5b-541701a641df
+Message-id: <1410793893.883.4.camel@AMDC1943>
+Subject: Re: [PATCH v3 1/4] PM / Runtime: Add getter for quering the IRQ safe
+ option
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>, linux-pm@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Mon, 15 Sep 2014 17:11:33 +0200
+In-reply-to: <Pine.LNX.4.44L0.1409151056170.1360-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1409151056170.1360-100000@iolanthe.rowland.org>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t/xy7rLGMVDDF6807fYOGM9q8X0qRcY
+	LVZP/ctqceDPDkaLs01v2C2WTJ7PanF51xw2i8+9Rxgtbl/mtVh75C67xbuXERYTfl9gszi+
+	NtziZd9+Fgc+j5bmHjaPxXteMnncubaHzWPJm0OsHrPv/mD06NuyitHj8yY5j72ff7MEcERx
+	2aSk5mSWpRbp2yVwZUz//oS9YC9XxfHjc9gaGDdwdDFyckgImEhM/XyBDcIWk7hwbz2QzcUh
+	JLCUUaL9xCEmCOczo8SJb6fBqngFdCW+393KAmILC4RJrD/cC2azCRhLbF6+BKxGREBLYnPT
+	S2aQZmaBBhaJLxumsIMkWARUJVZcvQnWwCngK/F5zimgDRxAG3wkTnyMBwkzC6hLTJq3iBkk
+	LCGgLNHY7waxVlDix+R7LBAl8hKb17xlnsAoMAtJxywkZbOQlC1gZF7FKJpamlxQnJSea6hX
+	nJhbXJqXrpecn7uJERJDX3YwLj5mdYhRgINRiYd34Q6xECHWxLLiytxDjBIczEoivLy/gEK8
+	KYmVValF+fFFpTmpxYcYmTg4pRoYmTYtnbvB3ZXpf7fhExmji629B1aE+O7Y9a6/8PPf5+uX
+	X3f7v9zUpe9rZdACUcnixQYvNr1OeRx/Yw9n6dKaVJe5CQKv7zEfcq688q3C/tAxm8WPRb0T
+	NQyfinSmM25P0rB79GvVlkm7Fhw0qv3sMfPM8aAKNW3Buhfnhbaf2NZ45ffePbWxrUosxRmJ
+	hlrMRcWJAFtOWgp/AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 11:48 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+On pon, 2014-09-15 at 10:57 -0400, Alan Stern wrote:
+> On Mon, 15 Sep 2014, Krzysztof Kozlowski wrote:
+> 
+> > Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+> > PM IRQ safe was set or not.
+> > 
+> > Various bus drivers implementing runtime PM may use choose to suspend
+> > differently based on IRQ safeness status of child driver (e.g. do not
+> > unprepare the clock if IRQ safe is not set).
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  include/linux/pm_runtime.h | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> > index 367f49b9a1c9..44d74f0f182e 100644
+> > --- a/include/linux/pm_runtime.h
+> > +++ b/include/linux/pm_runtime.h
+> > @@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+> >  	ACCESS_ONCE(dev->power.last_busy) = jiffies;
+> >  }
+> >  
+> > +static inline bool pm_runtime_is_irq_safe(struct device *dev)
+> > +{
+> > +	return dev->power.irq_safe;
+> > +}
+> > +
+> 
+> If you add something to the runtime PM API, you must update the 
+> documentation file (Documentation/power/runtime_pm.txt) 
+> correspondingly.
 
-> Shengjiu,
->
-> Your analysis is right.  I hope the following change will get the shared
-> gate clock code eventually does the right thing.
->
-> Shawn
->
-> diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
-> index 84acdfd1d715..89abdf738dc9 100644
-> --- a/arch/arm/mach-imx/clk-gate2.c
-> +++ b/arch/arm/mach-imx/clk-gate2.c
-> @@ -97,7 +97,7 @@ static int clk_gate2_is_enabled(struct clk_hw *hw)
->         struct clk_gate2 *gate = to_clk_gate2(hw);
->
->         if (gate->share_count)
-> -               return !!(*gate->share_count);
-> +               return !!__clk_get_enable_count(hw->clk);
->         else
->                 return clk_gate2_reg_is_enabled(gate->reg, gate->bit_idx);
 
-This fixes the audio playback, thanks. Tested on a mx6qsabresd and
-also on mx6sx sdb:
+Thank you for pointing this out. I'll fix this and re-spin.
 
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Best regards,
+Krzysztof
+
+> 
+> Alan Stern
+
