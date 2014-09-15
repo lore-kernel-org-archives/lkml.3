@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379AbaIOTkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 15:40:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46326 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619AbaIOTkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:40:10 -0400
-Message-ID: <54174082.4010008@ti.com>
-Date: Mon, 15 Sep 2014 14:39:46 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755910AbaIOTh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 15:37:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55158 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755769AbaIOThN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 15:37:13 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 046/114] MIPS: Prevent user from setting FCSR cause bits
+Date: Mon, 15 Sep 2014 12:25:46 -0700
+Message-Id: <20140915192642.882797404@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <20140915192641.428509513@linuxfoundation.org>
+References: <20140915192641.428509513@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Robert Tivy <rtivy@ti.com>
-Subject: Re: [PATCH 2/2] remoteproc: add support to handle internal memories
-References: <1404836521-59637-1-git-send-email-s-anna@ti.com> <1404836521-59637-3-git-send-email-s-anna@ti.com> <CAK=WgbY-WmcJdnLHDf1CSkJqNBUeUMPTLcEZyLGKnECbxH1OAQ@mail.gmail.com> <53D7F6F3.9020804@ti.com> <CAK=WgbZ+NhA5AAhURUOojwnCbi2wYkJ11i-C5e7-kpZL5vD_3g@mail.gmail.com>
-In-Reply-To: <CAK=WgbZ+NhA5AAhURUOojwnCbi2wYkJ11i-C5e7-kpZL5vD_3g@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Jul 29, 2014 at 10:33 PM, Suman Anna <s-anna@ti.com> wrote:
->> We currently have two usecases. The primary usecase is the WkupM3
->> processor on TI Sitara AM335x/AM437x SoCs used for suspend/resume
->> management. This series is a dependency for the WkupM3 remoteproc driver
->> that Dave posted [1]. More details are in section 8.1.4.6 of the AM335x
->> TRM [2]. The program/data sections for this processor all _needs_ to be
->> in the two internal memory RAMS (16K Unified RAM and 8K Data RAM), and
->> there is no MMU for this processor. The current RSC_CARVEOUT and
->> RSC_DEVMEM do not fit to describe this type of memory (we neither
->> allocate memory through dma api nor do we need to map these into an MMU).
-> 
-> Thanks for the details.
-> 
-> Can we define a CMA block for these regions, and then just use
-> carveout resource entries instead of the ioremap approach?
+------------------
 
-I am looking at refreshing these patches, and found that I missed
-responding to this message.
+From: Paul Burton <paul.burton@imgtec.com>
 
-These processors need to use their internal RAM for loading, which is
-not for generic usage by the kernel, so defining a CMA block for this
-memory doesn't make sense.
+commit b1442d39fac2fcfbe6a4814979020e993ca59c9e upstream.
 
-> This may require some changes in remoteproc which we'll need to think
-> about, but it sounds like it may fit the problem better instead of
-> forcing ioremap to provide a regular pointer (we're supposed to use
-> ioremaped memory only with memory primitives such as readl/writel/..).
+If one or more matching FCSR cause & enable bits are set in saved thread
+context then when that context is restored the kernel will take an FP
+exception. This is of course undesirable and considered an oops, leading
+to the kernel writing a backtrace to the console and potentially
+rebooting depending upon the configuration. Thus the kernel avoids this
+situation by clearing the cause bits of the FCSR register when handling
+FP exceptions and after emulating FP instructions.
 
-Will it suffice to replace the memcpy() with memcpy_toio()?
+However the kernel does not prevent userland from setting arbitrary FCSR
+cause & enable bits via ptrace, using either the PTRACE_POKEUSR or
+PTRACE_SETFPREGS requests. This means userland can trivially cause the
+kernel to oops on any system with an FPU. Prevent this from happening
+by clearing the cause bits when writing to the saved FCSR context via
+ptrace.
 
-regards
-Suman
+This problem appears to exist at least back to the beginning of the git
+era in the PTRACE_POKEUSR case.
+
+Signed-off-by: Paul Burton <paul.burton@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Cc: Paul Burton <paul.burton@imgtec.com>
+Cc: stable@vger.kernel.org
+Patchwork: https://patchwork.linux-mips.org/patch/7438/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/mips/kernel/ptrace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/arch/mips/kernel/ptrace.c
++++ b/arch/mips/kernel/ptrace.c
+@@ -170,6 +170,7 @@ int ptrace_setfpregs(struct task_struct
+ 		__get_user(fregs[i], i + (__u64 __user *) data);
+ 
+ 	__get_user(child->thread.fpu.fcr31, data + 64);
++	child->thread.fpu.fcr31 &= ~FPU_CSR_ALL_X;
+ 
+ 	/* FIR may not be written.  */
+ 
+@@ -724,7 +725,7 @@ long arch_ptrace(struct task_struct *chi
+ 			break;
+ #endif
+ 		case FPC_CSR:
+-			child->thread.fpu.fcr31 = data;
++			child->thread.fpu.fcr31 = data & ~FPU_CSR_ALL_X;
+ 			break;
+ 		case DSP_BASE ... DSP_BASE + 5: {
+ 			dspreg_t *dregs;
+
+
