@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759378AbaIOVPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:15:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54588 "EHLO
+	id S1759357AbaIOVPc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:15:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54620 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874AbaIOT0r (ORCPT
+	with ESMTP id S1754785AbaIOT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 15:26:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Douglas Leeder <douglas.leeder@sophos.com>,
-        Heinrich Schuchard <xypron.glpk@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 025/158] fanotify: fix double free of pending permission events
-Date: Mon, 15 Sep 2014 12:24:24 -0700
-Message-Id: <20140915192543.637686895@linuxfoundation.org>
+        Eric Paris <eparis@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        "Andrew G. Morgan" <morgan@kernel.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Steve Grubb <sgrubb@redhat.com>, Dan Walsh <dwalsh@redhat.com>,
+        James Morris <james.l.morris@oracle.com>
+Subject: [PATCH 3.16 024/158] CAPABILITIES: remove undefined caps from all processes
+Date: Mon, 15 Sep 2014 12:24:23 -0700
+Message-Id: <20140915192543.606895834@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
 References: <20140915192542.872134685@linuxfoundation.org>
@@ -31,128 +33,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Eric Paris <eparis@redhat.com>
 
-commit 5838d4442bd5971687b72221736222637e03140d upstream.
+commit 7d8b6c63751cfbbe5eef81a48c22978b3407a3ad upstream.
 
-Commit 85816794240b ("fanotify: Fix use after free for permission
-events") introduced a double free issue for permission events which are
-pending in group's notification queue while group is being destroyed.
-These events are freed from fanotify_handle_event() but they are not
-removed from groups notification queue and thus they get freed again
-from fsnotify_flush_notify().
+This is effectively a revert of 7b9a7ec565505699f503b4fcf61500dceb36e744
+plus fixing it a different way...
 
-Fix the problem by removing permission events from notification queue
-before freeing them if we skip processing access response.  Also expand
-comments in fanotify_release() to explain group shutdown in detail.
+We found, when trying to run an application from an application which
+had dropped privs that the kernel does security checks on undefined
+capability bits.  This was ESPECIALLY difficult to debug as those
+undefined bits are hidden from /proc/$PID/status.
 
-Fixes: 85816794240b9659e66e4d9b0df7c6e814e5f603
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reported-by: Douglas Leeder <douglas.leeder@sophos.com>
-Tested-by: Douglas Leeder <douglas.leeder@sophos.com>
-Reported-by: Heinrich Schuchard <xypron.glpk@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Consider a root application which drops all capabilities from ALL 4
+capability sets.  We assume, since the application is going to set
+eff/perm/inh from an array that it will clear not only the defined caps
+less than CAP_LAST_CAP, but also the higher 28ish bits which are
+undefined future capabilities.
+
+The BSET gets cleared differently.  Instead it is cleared one bit at a
+time.  The problem here is that in security/commoncap.c::cap_task_prctl()
+we actually check the validity of a capability being read.  So any task
+which attempts to 'read all things set in bset' followed by 'unset all
+things set in bset' will not even attempt to unset the undefined bits
+higher than CAP_LAST_CAP.
+
+So the 'parent' will look something like:
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	ffffffc000000000
+
+All of this 'should' be fine.  Given that these are undefined bits that
+aren't supposed to have anything to do with permissions.  But they do...
+
+So lets now consider a task which cleared the eff/perm/inh completely
+and cleared all of the valid caps in the bset (but not the invalid caps
+it couldn't read out of the kernel).  We know that this is exactly what
+the libcap-ng library does and what the go capabilities library does.
+They both leave you in that above situation if you try to clear all of
+you capapabilities from all 4 sets.  If that root task calls execve()
+the child task will pick up all caps not blocked by the bset.  The bset
+however does not block bits higher than CAP_LAST_CAP.  So now the child
+task has bits in eff which are not in the parent.  These are
+'meaningless' undefined bits, but still bits which the parent doesn't
+have.
+
+The problem is now in cred_cap_issubset() (or any operation which does a
+subset test) as the child, while a subset for valid cap bits, is not a
+subset for invalid cap bits!  So now we set durring commit creds that
+the child is not dumpable.  Given it is 'more priv' than its parent.  It
+also means the parent cannot ptrace the child and other stupidity.
+
+The solution here:
+1) stop hiding capability bits in status
+	This makes debugging easier!
+
+2) stop giving any task undefined capability bits.  it's simple, it you
+don't put those invalid bits in CAP_FULL_SET you won't get them in init
+and you won't get them in any other task either.
+	This fixes the cap_issubset() tests and resulting fallout (which
+	made the init task in a docker container untraceable among other
+	things)
+
+3) mask out undefined bits when sys_capset() is called as it might use
+~0, ~0 to denote 'all capabilities' for backward/forward compatibility.
+	This lets 'capsh --caps="all=eip" -- -c /bin/bash' run.
+
+4) mask out undefined bit when we read a file capability off of disk as
+again likely all bits are set in the xattr for forward/backward
+compatibility.
+	This lets 'setcap all+pe /bin/bash; /bin/bash' run
+
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Cc: Andrew Vagin <avagin@openvz.org>
+Cc: Andrew G. Morgan <morgan@kernel.org>
+Cc: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Steve Grubb <sgrubb@redhat.com>
+Cc: Dan Walsh <dwalsh@redhat.com>
+Signed-off-by: James Morris <james.l.morris@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fanotify/fanotify.c      |    9 ++++++++-
- fs/notify/fanotify/fanotify_user.c |   12 ++++++++++++
- fs/notify/notification.c           |   18 +++++++++++++++++-
- include/linux/fsnotify_backend.h   |    2 ++
- 4 files changed, 39 insertions(+), 2 deletions(-)
+ fs/proc/array.c            |   11 +----------
+ include/linux/capability.h |    5 ++++-
+ kernel/audit.c             |    2 +-
+ kernel/capability.c        |    4 ++++
+ security/commoncap.c       |    3 +++
+ 5 files changed, 13 insertions(+), 12 deletions(-)
 
---- a/fs/notify/fanotify/fanotify.c
-+++ b/fs/notify/fanotify/fanotify.c
-@@ -70,8 +70,15 @@ static int fanotify_get_response(struct
- 	wait_event(group->fanotify_data.access_waitq, event->response ||
- 				atomic_read(&group->fanotify_data.bypass_perm));
- 
--	if (!event->response) /* bypass_perm set */
-+	if (!event->response) {	/* bypass_perm set */
-+		/*
-+		 * Event was canceled because group is being destroyed. Remove
-+		 * it from group's event list because we are responsible for
-+		 * freeing the permission event.
-+		 */
-+		fsnotify_remove_event(group, &event->fae.fse);
- 		return 0;
-+	}
- 
- 	/* userspace responded, convert to something usable */
- 	switch (event->response) {
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -359,6 +359,11 @@ static int fanotify_release(struct inode
- #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
- 	struct fanotify_perm_event_info *event, *next;
- 
-+	/*
-+	 * There may be still new events arriving in the notification queue
-+	 * but since userspace cannot use fanotify fd anymore, no event can
-+	 * enter or leave access_list by now.
-+	 */
- 	spin_lock(&group->fanotify_data.access_lock);
- 
- 	atomic_inc(&group->fanotify_data.bypass_perm);
-@@ -373,6 +378,13 @@ static int fanotify_release(struct inode
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -297,15 +297,11 @@ static void render_cap_t(struct seq_file
+ 	seq_puts(m, header);
+ 	CAP_FOR_EACH_U32(__capi) {
+ 		seq_printf(m, "%08x",
+-			   a->cap[(_KERNEL_CAPABILITY_U32S-1) - __capi]);
++			   a->cap[CAP_LAST_U32 - __capi]);
  	}
- 	spin_unlock(&group->fanotify_data.access_lock);
+ 	seq_putc(m, '\n');
+ }
  
-+	/*
-+	 * Since bypass_perm is set, newly queued events will not wait for
-+	 * access response. Wake up the already sleeping ones now.
-+	 * synchronize_srcu() in fsnotify_destroy_group() will wait for all
-+	 * processes sleeping in fanotify_handle_event() waiting for access
-+	 * response and thus also for all permission events to be freed.
-+	 */
- 	wake_up(&group->fanotify_data.access_waitq);
- #endif
- 
---- a/fs/notify/notification.c
-+++ b/fs/notify/notification.c
-@@ -73,7 +73,8 @@ void fsnotify_destroy_event(struct fsnot
- 	/* Overflow events are per-group and we don't want to free them */
- 	if (!event || event->mask == FS_Q_OVERFLOW)
- 		return;
+-/* Remove non-existent capabilities */
+-#define NORM_CAPS(v) (v.cap[CAP_TO_INDEX(CAP_LAST_CAP)] &= \
+-				CAP_TO_MASK(CAP_LAST_CAP + 1) - 1)
 -
-+	/* If the event is still queued, we have a problem... */
-+	WARN_ON(!list_empty(&event->list));
- 	group->ops->free_event(event);
- }
+ static inline void task_cap(struct seq_file *m, struct task_struct *p)
+ {
+ 	const struct cred *cred;
+@@ -319,11 +315,6 @@ static inline void task_cap(struct seq_f
+ 	cap_bset	= cred->cap_bset;
+ 	rcu_read_unlock();
  
-@@ -125,6 +126,21 @@ queue:
- }
+-	NORM_CAPS(cap_inheritable);
+-	NORM_CAPS(cap_permitted);
+-	NORM_CAPS(cap_effective);
+-	NORM_CAPS(cap_bset);
+-
+ 	render_cap_t(m, "CapInh:\t", &cap_inheritable);
+ 	render_cap_t(m, "CapPrm:\t", &cap_permitted);
+ 	render_cap_t(m, "CapEff:\t", &cap_effective);
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -78,8 +78,11 @@ extern const kernel_cap_t __cap_init_eff
+ # error Fix up hand-coded capability macro initializers
+ #else /* HAND-CODED capability initializers */
  
- /*
-+ * Remove @event from group's notification queue. It is the responsibility of
-+ * the caller to destroy the event.
-+ */
-+void fsnotify_remove_event(struct fsnotify_group *group,
-+			   struct fsnotify_event *event)
-+{
-+	mutex_lock(&group->notification_mutex);
-+	if (!list_empty(&event->list)) {
-+		list_del_init(&event->list);
-+		group->q_len--;
-+	}
-+	mutex_unlock(&group->notification_mutex);
-+}
++#define CAP_LAST_U32			((_KERNEL_CAPABILITY_U32S) - 1)
++#define CAP_LAST_U32_VALID_MASK		(CAP_TO_MASK(CAP_LAST_CAP + 1) -1)
 +
-+/*
-  * Remove and return the first event from the notification list.  It is the
-  * responsibility of the caller to destroy the obtained event
-  */
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -326,6 +326,8 @@ extern int fsnotify_add_notify_event(str
- 				     struct fsnotify_event *event,
- 				     int (*merge)(struct list_head *,
- 						  struct fsnotify_event *));
-+/* Remove passed event from groups notification queue */
-+extern void fsnotify_remove_event(struct fsnotify_group *group, struct fsnotify_event *event);
- /* true if the group notification queue is empty */
- extern bool fsnotify_notify_queue_is_empty(struct fsnotify_group *group);
- /* return, but do not dequeue the first event on the notification queue */
+ # define CAP_EMPTY_SET    ((kernel_cap_t){{ 0, 0 }})
+-# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, ~0 }})
++# define CAP_FULL_SET     ((kernel_cap_t){{ ~0, CAP_LAST_U32_VALID_MASK }})
+ # define CAP_FS_SET       ((kernel_cap_t){{ CAP_FS_MASK_B0 \
+ 				    | CAP_TO_MASK(CAP_LINUX_IMMUTABLE), \
+ 				    CAP_FS_MASK_B1 } })
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1677,7 +1677,7 @@ void audit_log_cap(struct audit_buffer *
+ 	audit_log_format(ab, " %s=", prefix);
+ 	CAP_FOR_EACH_U32(i) {
+ 		audit_log_format(ab, "%08x",
+-				 cap->cap[(_KERNEL_CAPABILITY_U32S-1) - i]);
++				 cap->cap[CAP_LAST_U32 - i]);
+ 	}
+ }
+ 
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -258,6 +258,10 @@ SYSCALL_DEFINE2(capset, cap_user_header_
+ 		i++;
+ 	}
+ 
++	effective.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	new = prepare_creds();
+ 	if (!new)
+ 		return -ENOMEM;
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -421,6 +421,9 @@ int get_vfs_caps_from_disk(const struct
+ 		cpu_caps->inheritable.cap[i] = le32_to_cpu(caps.data[i].inheritable);
+ 	}
+ 
++	cpu_caps->permitted.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++	cpu_caps->inheritable.cap[CAP_LAST_U32] &= CAP_LAST_U32_VALID_MASK;
++
+ 	return 0;
+ }
+ 
 
 
