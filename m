@@ -1,283 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaIOOwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 10:52:14 -0400
-Received: from bastet.se.axis.com ([195.60.68.11]:37302 "EHLO
-	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaIOOwL (ORCPT
+	id S1752880AbaIOOxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 10:53:24 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34429 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979AbaIOOxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 10:52:11 -0400
-Date: Mon, 15 Sep 2014 16:52:03 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com,
-        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
-Subject: Re: Status of 'cris' architecture support in Linux kernel
-Message-ID: <20140915145203.GK4659@axis.com>
-References: <20140831175010.GA15408@roeck-us.net>
+	Mon, 15 Sep 2014 10:53:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140831175010.GA15408@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140915003015.GF2160@bbox>
+References: <1409794786-10951-1-git-send-email-minchan@kernel.org>
+ <1409794786-10951-3-git-send-email-minchan@kernel.org> <CALZtONCortZodFfVU5-oXUdGShhjFOg+FesxMFCdsyhsnnkmZw@mail.gmail.com>
+ <20140915003015.GF2160@bbox>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Mon, 15 Sep 2014 10:53:01 -0400
+X-Google-Sender-Auth: GGkvNf91o0f-pDAZfK6X6GN2Zh0
+Message-ID: <CALZtONBghSTAbgXLrgmNV+EEKaJnx96TRuXorM-J_JFEKC88=Q@mail.gmail.com>
+Subject: Re: [RFC 2/3] mm: add swap_get_free hint for zram
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+On Sun, Sep 14, 2014 at 8:30 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Sat, Sep 13, 2014 at 03:01:47PM -0400, Dan Streetman wrote:
+>> On Wed, Sep 3, 2014 at 9:39 PM, Minchan Kim <minchan@kernel.org> wrote:
+>> > VM uses nr_swap_pages as one of information when it does
+>> > anonymous reclaim so that VM is able to throttle amount of swap.
+>> >
+>> > Normally, the nr_swap_pages is equal to freeable space of swap disk
+>> > but for zram, it doesn't match because zram can limit memory usage
+>> > by knob(ie, mem_limit) so although VM can see lots of free space
+>> > from zram disk, zram can make fail intentionally once the allocated
+>> > space is over to limit. If it happens, VM should notice it and
+>> > stop reclaimaing until zram can obtain more free space but there
+>> > is a good way to do at the moment.
+>> >
+>> > This patch adds new hint SWAP_GET_FREE which zram can return how
+>> > many of freeable space it has. With using that, this patch adds
+>> > __swap_full which returns true if the zram is full and substract
+>> > remained freeable space of the zram-swap from nr_swap_pages.
+>> > IOW, VM sees there is no more swap space of zram so that it stops
+>> > anonymous reclaiming until swap_entry_free free a page and increase
+>> > nr_swap_pages again.
+>> >
+>> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+>> > ---
+>> >  include/linux/blkdev.h |  1 +
+>> >  mm/swapfile.c          | 45 +++++++++++++++++++++++++++++++++++++++++++--
+>> >  2 files changed, 44 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+>> > index 17437b2c18e4..c1199806e0f1 100644
+>> > --- a/include/linux/blkdev.h
+>> > +++ b/include/linux/blkdev.h
+>> > @@ -1611,6 +1611,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+>> >
+>> >  enum swap_blk_hint {
+>> >         SWAP_SLOT_FREE,
+>> > +       SWAP_GET_FREE,
+>> >  };
+>> >
+>> >  struct block_device_operations {
+>> > diff --git a/mm/swapfile.c b/mm/swapfile.c
+>> > index 4bff521e649a..72737e6dd5e5 100644
+>> > --- a/mm/swapfile.c
+>> > +++ b/mm/swapfile.c
+>> > @@ -484,6 +484,22 @@ new_cluster:
+>> >         *scan_base = tmp;
+>> >  }
+>> >
+>> > +static bool __swap_full(struct swap_info_struct *si)
+>> > +{
+>> > +       if (si->flags & SWP_BLKDEV) {
+>> > +               long free;
+>> > +               struct gendisk *disk = si->bdev->bd_disk;
+>> > +
+>> > +               if (disk->fops->swap_hint)
+>> > +                       if (!disk->fops->swap_hint(si->bdev,
+>> > +                                               SWAP_GET_FREE,
+>> > +                                               &free))
+>> > +                               return free <= 0;
+>> > +       }
+>> > +
+>> > +       return si->inuse_pages == si->pages;
+>> > +}
+>> > +
+>> >  static unsigned long scan_swap_map(struct swap_info_struct *si,
+>> >                                    unsigned char usage)
+>> >  {
+>> > @@ -583,11 +599,21 @@ checks:
+>> >         if (offset == si->highest_bit)
+>> >                 si->highest_bit--;
+>> >         si->inuse_pages++;
+>> > -       if (si->inuse_pages == si->pages) {
+>> > +       if (__swap_full(si)) {
+>>
+>> This check is done after an available offset has already been
+>> selected.  So if the variable-size blkdev is full at this point, then
+>> this is incorrect, as swap will try to store a page at the current
+>> selected offset.
+>
+> So the result is just fail of a write then what happens?
+> Page become redirty and keep it in memory so there is no harm.
 
-Sorry for not answering earlier, like some have said in
-the thread followups, I have been on parental leave for quite some time.
+Happening once, it's not a big deal.  But it's not as good as not
+happening at all.
 
-On Sun, Aug 31, 2014 at 10:50:10AM -0700, Guenter Roeck wrote:
-> The idea was to create a crisv32 kernel and initramfs to work with qemu
-> for the ongoing Linux kernel test project.
+>
+>>
+>> > +               struct gendisk *disk = si->bdev->bd_disk;
+>> > +
+>> >                 si->lowest_bit = si->max;
+>> >                 si->highest_bit = 0;
+>> >                 spin_lock(&swap_avail_lock);
+>> >                 plist_del(&si->avail_list, &swap_avail_head);
+>> > +               /*
+>> > +                * If zram is full, it decreases nr_swap_pages
+>> > +                * for stopping anonymous page reclaim until
+>> > +                * zram has free space. Look at swap_entry_free
+>> > +                */
+>> > +               if (disk->fops->swap_hint)
+>>
+>> Simply checking for the existence of swap_hint isn't enough to know
+>> we're using zram...
+>
+> Yes but acutally the hint have been used for only zram for several years.
+> If other user is coming in future, we would add more checks if we really
+> need it at that time.
+> Do you have another idea?
 
-A very ambitious goal. :-)
+Well if this hint == zram just rename it zram.  Especially if it's now
+going to be explicitly used to mean it == zram.  But I don't think
+that is necessary.
 
-> After spending a number of days (and nights) on it, the results don't look
-> very encouraging.
-> 
-> My overall conclusion is that 'cris' architecture support in the Linux kernel
-> is in bad shape, does not work anymore, and would require substantial effort
-> to get it into working state.
+>
+>>
+>> > +                       atomic_long_sub(si->pages - si->inuse_pages,
+>> > +                               &nr_swap_pages);
+>> >                 spin_unlock(&swap_avail_lock);
+>> >         }
+>> >         si->swap_map[offset] = usage;
+>> > @@ -796,6 +822,7 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>> >
+>> >         /* free if no reference */
+>> >         if (!usage) {
+>> > +               struct gendisk *disk = p->bdev->bd_disk;
+>> >                 dec_cluster_info_page(p, p->cluster_info, offset);
+>> >                 if (offset < p->lowest_bit)
+>> >                         p->lowest_bit = offset;
+>> > @@ -808,6 +835,21 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>> >                                 if (plist_node_empty(&p->avail_list))
+>> >                                         plist_add(&p->avail_list,
+>> >                                                   &swap_avail_head);
+>> > +                               if ((p->flags & SWP_BLKDEV) &&
+>> > +                                       disk->fops->swap_hint) {
+>>
+>> freeing an entry from a full variable-size blkdev doesn't mean it's
+>> not still full.  In this case with zsmalloc, freeing one handle
+>> doesn't actually free any memory unless it was the only handle left in
+>> its containing zspage, and therefore it's possible that it is still
+>> full at this point.
+>
+> No need to free a zspage in zsmalloc.
+> If we free a page in zspage, it means we have free space in zspage
+> so user can give a chance to user for writing out new page.
 
-Your conclusion is not completely off, but it could be better than it looks. :-)
+That's not actually true, since zsmalloc has 255 different class
+sizes, freeing one page means the next page to be compressed has a
+1/255 chance that it will be the same size as the just-freed page
+(assuming random page compressability).
 
-I'll try to explain the state of the CRIS port as it currently stands:
+>
+>>
+>> > +                                       atomic_long_add(p->pages -
+>> > +                                                       p->inuse_pages,
+>> > +                                                       &nr_swap_pages);
+>> > +                                       /*
+>> > +                                        * reset [highest|lowest]_bit to avoid
+>> > +                                        * scan_swap_map infinite looping if
+>> > +                                        * cached free cluster's index by
+>> > +                                        * scan_swap_map_try_ssd_cluster is
+>> > +                                        * above p->highest_bit.
+>> > +                                        */
+>> > +                                       p->highest_bit = p->max - 1;
+>> > +                                       p->lowest_bit = 1;
+>>
+>> lowest_bit and highest_bit are likely to remain at those extremes for
+>> a long time, until 1 or max-1 is freed and re-allocated.
+>>
+>>
+>> By adding variable-size blkdev support to swap, I don't think
+>> highest_bit can be re-used as a "full" flag anymore.
+>>
+>> Instead, I suggest that you add a "full" flag to struct
+>> swap_info_struct.  Then put a swap_hint GET_FREE check at the top of
+>> scan_swap_map(), and if full simply turn "full" on, remove the
+>> swap_info_struct from the avail list, reduce nr_swap_pages
+>> appropriately, and return failure.  Don't mess with lowest_bit or
+>> highest_bit at all.
+>
+> Could you explain what logic in your suggestion prevent the problem
+> I mentioned(ie, scan_swap_map infinite looping)?
 
-(Background: CRIS port supports 3 different SoC:s, where the CRISv10 is
-older and subsequently less used. The other two are ETRAX FS and ARTPEC-3,
-which in principle share the same CPU-core (CRISv32) but contain some changes to
-the peripheral hardware IPs)
+scan_swap_map would immediately exit since the GET_FREE (or IS_FULL)
+check is done at its start.  And it wouldn't be called again with that
+swap_info_struct until non-full since it is removed from the
+avail_list.
 
-CRISv10 is only supported by me as a hobby project, AXIS does not have any
-current shipping units with this SoC, thus support for this is waning fast.
-QEMU support is not available for this SoC.
-Additionally, newer gcc assumes TLS support, which CRISv10 does not have,
-and older gcc:s yields an ICE (internal compiler error) on newer kernels.
-
-Units with ETRAX FS is no longer actively upgraded by AXIS with newer kernels,
-and I have a problem testing anything other than the AXIS 88 developer board
-(Last relase of the SDK was a couple of years ago with the 2.6.32 kernel IIRC)
-which is not up to date, but at least have a lot in common with ARTPEC-3 and
-so is not so hard to support.
-
-ARTPEC-3 support is not complete as some drivers are not included in upstream
-(ethernet and serial are the most notable ones) but is actually in best shape,
-we have 3.16 booting on real hardware in house.
-
-I'll add the missing drivers and current patches we have locally to a
-git tree on git-hub, I'll get back to you on that.
-
-It is also the ARTPEC-3 SoC that is implemented in QEMU unless I'm mistaken.
-
-> Anyway, below are my individual findings. If there is an ongoing effort to
-> improve cris support in the upstream kernel, specifically support for crisv32,
-> please let me know. I'll be happy to test the resulting kernels.
-
-Thank you for your work, I'll try to add some more information in the hope
-that this will at least help people google for more information.
-
-Feel free to send me an email if you want to pick this up again.
-
-> Thanks,
-> Guenter
-
-> ---------------------
-> 
-> Individual findings:
-> 
-> headers_install
-> 
-> make ARCH=cris INSTALL_HDR_PATH=/tmp headers_install
-> 
-> results in:
-> 
-> ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
-> 	No such file or directory
-> make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
-
-Yes, known error, I believe that Sam Ravnborg's patch will correct this.
-
-On a tangential note, my automatic (minimal) builds does not do
-make install, so I haven't seen this error. :-P
-
-> -----------
-> 
-> Trying to enable architecture specific drivers:
-> 
-> Enabling ETRAX_I2C or ETRAX_STREAMCOPROC results in compile errors.
-> The errors date back as far as 2.6.27 and are thus not the result
-> of later API changes. I did not attempt to enable any other functionality.
-
-Thanks, I don't have these included in my automatic builds,
-and I note that the cryptocop.c which is gated with ETRAX_STREAMCOPROC
-has a large number of changes in our internal tree as compared to upstream.
-
-> -----------
-> 
-> qemu: Attempts to load images in qemu fail.
-> 
-> Command line:
-> 
-> qemu-system-cris -serial stdio -kernel vmlinux -monitor none \
-> 	-nographic -append "console=ttyS0,115200,N,8 rdinit=/sbin/init" \
-> 	-initrd busybox-cris.img
-> 
-> This command yields no output; using arch/cris/boot/Image has the same result.
-> 
-> With arch/cris/boot/zImage, the result is:
-> 
-> Uncompressing Linux...
-
-... which at least indicates that the uncompress code is running...
-
-> 
-> 
-> invalid compressed format (err=1)
-> 
->  -- System halted
-
-... but I believe that the image might need to be massaged a bit
-further to be able to boot in QEMU, however it's been some time since
-I last did this. I'll have to get back to you on this.
-
-> ---
-> 
-> Research shows that there is a working image and root file system at the
-> qemu web site. Further research shows that this image includes code which
-> was never merged upstream. The missing code includes (at least) early console
-> support as well as support for the crisv32 serial interface.
-
-Confirmed, the serial driver isn't upstream.
-
-> After some digging, I found at least some of the code in out-of-tree sources.
-> After adding early console support, there is console output, but the image
-> crashes with the following log message.
-> 
-> ...
-> NET: Registered protocol family 16
-> Switched to clocksource crisv32_rotime
-> Unable to handle kernel NULL pointer dereferenceOops: 0000
-> CPU: 0
-> ERP: c001029e SRP: c00108ce  CCS: 00028008 USP: 00000000 MOF: 00000000
->  r0: c0230660  r1: c1ff3e7c   r2: 00000014  r3: 00000001
->  r4: c1ff3e88  r5: c1ffffff   r6: c0102b94  r7: 00000000
->  r8: c1ff3e58  r9: c1ff3e80  r10: c1ff3e7c r11: c0230660
-> r12: 00000001 r13: 80000200 oR10: c1ff3e7c acr: 00000018
->  sp: c1ff3dd4
->        Data MMU Cause: 00000100
-> Instruction MMU Cause: 00000000
-> Process swapper (pid: 1, stackpage=c1ff1c40)
-> 
-> Stack from c1ff3cbc:
->        c0004a44 c01e84e6 c1ff3e20 c1ff3e28 00000000 c1ffffff c1ff3cf8 c000589c 
->        00000018 00000000 c1ff3dd4 00000000 00000000 00000000 c1ff3e88 c1ff3d04 
->        c0004b6e c0293bb0 c1ff3dcc c0005220 00000000 c0230660 c1ff3e7c 00000014 
-> Call Trace: [<c0004a44>] [<c01e84e6>] [<c000589c>] [<c0004b6e>] [<c0005220>] [<c0102b94>] [<c00fb92c>] 
->        [<c002922c>] [<c00fbd58>] [<c00fb858>] [<c00fbc02>] [<c002922c>] [<c0008896>] [<c0102b94>] [<c00108ce>] 
->        [<c001029e>] [<c0010250>] [<c00be2d6>] [<c00203f4>] [<c00108ce>] [<c00ff4d8>] [<c00b81b4>] [<c00be3b0>] 
->        [<c00ff4d8>] [<c0004236>] [<c00041bc>] [<c00205ae>] [<c00ff4d8>] [<c00203f4>] [<c01e6f22>] [<c01e6f36>] 
->        [<c000547e>] 
-> Code: 04 29 0f 00 43 36 68 30 18 21 14 22 (62) 2a c0 22 32 30 b0 05 0c 21 6f fa 
-> Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-> 
-> ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-> 
-> Manual backtrace:
-> 
-> c0004a44	show_stack
-> c01e84e6	printk
-> c000589c	show_registers
-> c0004b6e	die_if_kernel
-> c0005220	get_mmu_context
-> c0102b94	strcmp
-> c00fb92c	idr_get_empty_slot
-> c002922c	__init_waitqueue_head
-> c00fbd58	ida_get_new_above
-> c00fb858	ida_pre_get
-> c00fbc02	ida_get_new_above
-> c002922c	__init_waitqueue_head
-> c0008896	d_mmu_refill
-> c0102b94	strcmp
-> c00108ce	walk_system_ram_range
-> c001029e	find_next_iomem_res
-> c0010250	find_next_iomem_res
-> c00be2d6	kclist_add_private
-> c00203f4	parse_args
-> c00108ce	walk_system_ram_range
-> c00ff4d8	strcpy
-> c00b81b4	proc_register
-> c00be3b0	kcore_update_ram
-> c00ff4d8	strcpy
-> c0004236	do_one_initcall
-> c00041bc	do_one_initcall
-> c00205ae	parse_args
-> c00ff4d8	strcpy
-> c00203f4	parse_args
-> c01e6f22	kernel_init
-> c01e6f36	kernel_init
-
-No clue on this though...
-
-> ----------------
-> I did not attempt to bisect the problem.
-> 
-> I got an earlier kernel, 2.6.27, to proceed further, though I did not attempt
-> to load initramfs (the kernel had a missing symbol when I tried to enable 
-> initramfs support).
-> 
-> I was able to find the serial driver for crisv32 in an out-of-kernel tree
-> and port it to 2.6.27 to the point where it loads. I did not attempt to do
-> this with the current upstream kernel, as it crashed before it gets to
-> the point of trying to load the driver.
-> 
-> The crisv32 serial driver (or at least the version I found) is far from
-> acceptable for upstream integration and would require major cleanup or even
-> rewrite effort if it was to be merged upstream. The version I found is from
-> a 2.6.26 kernel, while the kernel version at the qemu web site (binary only)
-> is 2.6.33, so the driver I worked with is not the latest version and may
-> have been improved later. However, the result was not published, or I was
-> unable to find it.
-
-Unfortunately, the code quality was the original problem why it
-wasn't upstreamed at the same time as the rest of the port,
-and it still hasn't changed in any markable respect. :-(
-
-> -----------------
-> 
-> Toolchain
-> 
-> Creating a toolchain from upstream sources required a number of patches.
-> 
-> Linux headers:
-> - Fix the basic headers_install problem mentioned above
-> - Export ptrace.h
-> - Some post-processing after installing the headers; specifically,
->   create a couple of symlinks in the headers directory
->   	usr/include/arch-v10/arch -> usr/include/arch [for crisv10]
->   	usr/include/arch-v32/arch -> usr/include/arch [for crisv32]
-> 
-> gcc:
-> - binutils 2.24
-> - uclibc 0.9.33.2
-> - gcc 4.7.4
->   Requires a backport from upstream gcc to compile.
->   Later versions of gcc (4.8.3, 4.9.1) fail with internal compiler errors
->   even after patching.
-
-I'm using gcc 4.7.2, but of course, that is a locally built
-version that might have patches not upstream
-(although I doubt it knowing the gcc CRIS maintainer :-)
-
-> Toolchain was built successfully with buildroot (after adding cris support to
-> it) with above patches / changes.
-
-Thanks again,
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+>
+>>
+>> Then in swap_entry_free(), do something like:
+>>
+>>     dec_cluster_info_page(p, p->cluster_info, offset);
+>>     if (offset < p->lowest_bit)
+>>       p->lowest_bit = offset;
+>> -   if (offset > p->highest_bit) {
+>> -     bool was_full = !p->highest_bit;
+>> +   if (offset > p->highest_bit)
+>>       p->highest_bit = offset;
+>> -     if (was_full && (p->flags & SWP_WRITEOK)) {
+>> +   if (p->full && p->flags & SWP_WRITEOK) {
+>> +     bool is_var_size_blkdev = is_variable_size_blkdev(p);
+>> +     bool blkdev_full = is_variable_size_blkdev_full(p);
+>> +
+>> +     if (!is_var_size_blkdev || !blkdev_full) {
+>> +       if (is_var_size_blkdev)
+>> +         atomic_long_add(p->pages - p->inuse_pages, &nr_swap_pages);
+>> +       p->full = false;
+>>         spin_lock(&swap_avail_lock);
+>>         WARN_ON(!plist_node_empty(&p->avail_list));
+>>         if (plist_node_empty(&p->avail_list))
+>>           plist_add(&p->avail_list,
+>>              &swap_avail_head);
+>>         spin_unlock(&swap_avail_lock);
+>> +     } else if (blkdev_full) {
+>> +       /* still full, so this page isn't actually
+>> +        * available yet to use; once non-full,
+>> +        * pages-inuse_pages will be the correct
+>> +        * number to add (above) since below will
+>> +        * inuse_pages--
+>> +        */
+>> +       atomic_long_dec(&nr_swap_pages);
+>>       }
+>>     }
+>>     atomic_long_inc(&nr_swap_pages);
+>>
+>>
+>>
+>> > @@ -815,7 +857,6 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+>> >                 p->inuse_pages--;
+>> >                 frontswap_invalidate_page(p->type, offset);
+>> >                 if (p->flags & SWP_BLKDEV) {
+>> > -                       struct gendisk *disk = p->bdev->bd_disk;
+>> >                         if (disk->fops->swap_hint)
+>> >                                 disk->fops->swap_hint(p->bdev,
+>> >                                                 SWAP_SLOT_FREE,
+>> > --
+>> > 2.0.0
+>> >
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Kind regards,
+> Minchan Kim
