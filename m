@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733AbaIOU7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 16:59:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54580 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011AbaIOT1D (ORCPT
+	id S1758737AbaIOU7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 16:59:22 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:56474 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734AbaIOU7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 15:27:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qiao Zhou <zhouqiao@marvell.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 078/158] ASoC: pcm: fix dpcm_path_put in dpcm runtime update
-Date: Mon, 15 Sep 2014 12:25:17 -0700
-Message-Id: <20140915192545.236909302@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-References: <20140915192542.872134685@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Sep 2014 16:59:19 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dan Streetman <ddstreet@ieee.org>
+Subject: [PATCH] zsmalloc: simplify init_zspage free obj linking
+Date: Mon, 15 Sep 2014 16:58:50 -0400
+Message-Id: <1410814730-5740-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <20140914232427.GD2160@bbox>
+References: <20140914232427.GD2160@bbox>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+Change zsmalloc init_zspage() logic to iterate through each object on
+each of its pages, checking the offset to verify the object is on the
+current page before linking it into the zspage.
 
-------------------
+The current zsmalloc init_zspage free object linking code has logic
+that relies on there only being one page per zspage when PAGE_SIZE
+is a multiple of class->size.  It calculates the number of objects
+for the current page, and iterates through all of them plus one,
+to account for the assumed partial object at the end of the page.
+While this currently works, the logic can be simplified to just
+link the object at each successive offset until the offset is larger
+than PAGE_SIZE, which does not rely on PAGE_SIZE being a multiple of
+class->size.
 
-From: Qiao Zhou <zhouqiao@marvell.com>
-
-commit 7ed9de76ff342cbd717a9cf897044b99272cb8f8 upstream.
-
-we need to release dapm widget list after dpcm_path_get in
-soc_dpcm_runtime_update. otherwise, there will be potential memory
-leak. add dpcm_path_put to fix it.
-
-Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Cc: Minchan Kim <minchan@kernel.org>
 ---
- sound/soc/soc-pcm.c |    1 +
- 1 file changed, 1 insertion(+)
+ mm/zsmalloc.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/sound/soc/soc-pcm.c
-+++ b/sound/soc/soc-pcm.c
-@@ -2069,6 +2069,7 @@ int soc_dpcm_runtime_update(struct snd_s
- 			dpcm_be_disconnect(fe, SNDRV_PCM_STREAM_PLAYBACK);
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index c4a9157..03aa72f 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -628,7 +628,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 	while (page) {
+ 		struct page *next_page;
+ 		struct link_free *link;
+-		unsigned int i, objs_on_page;
++		unsigned int i = 1;
+ 
+ 		/*
+ 		 * page->index stores offset of first object starting
+@@ -641,14 +641,10 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 
+ 		link = (struct link_free *)kmap_atomic(page) +
+ 						off / sizeof(*link);
+-		objs_on_page = (PAGE_SIZE - off) / class->size;
+ 
+-		for (i = 1; i <= objs_on_page; i++) {
+-			off += class->size;
+-			if (off < PAGE_SIZE) {
+-				link->next = obj_location_to_handle(page, i);
+-				link += class->size / sizeof(*link);
+-			}
++		while ((off += class->size) < PAGE_SIZE) {
++			link->next = obj_location_to_handle(page, i++);
++			link += class->size / sizeof(*link);
  		}
  
-+		dpcm_path_put(&list);
- capture:
- 		/* skip if FE doesn't have capture capability */
- 		if (!fe->cpu_dai->driver->capture.channels_min)
-
+ 		/*
+@@ -660,7 +656,7 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ 		link->next = obj_location_to_handle(next_page, 0);
+ 		kunmap_atomic(link);
+ 		page = next_page;
+-		off = (off + class->size) % PAGE_SIZE;
++		off %= PAGE_SIZE;
+ 	}
+ }
+ 
+-- 
+1.8.3.1
 
