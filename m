@@ -1,266 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495AbaIOVkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 17:40:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40146 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaIOVkM (ORCPT
+	id S1755184AbaIOVop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 17:44:45 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:55841 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaIOVon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 17:40:12 -0400
-Date: Mon, 15 Sep 2014 17:40:09 -0400 (EDT)
-Message-Id: <20140915.174009.1151039353244879675.davem@davemloft.net>
-To: bernhard.thaler@wvnet.at
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, stephen@networkplumber.org, netdev@vger.kernel.org,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, pablo@netfilter.org
-Subject: Re: [PATCH 1/1] bridge: Fix NAT66ed IPv6 packets not being bridged
- correctly
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410816448-4401-1-git-send-email-bernhard.thaler@wvnet.at>
-References: <1410816448-4401-1-git-send-email-bernhard.thaler@wvnet.at>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 15 Sep 2014 14:40:11 -0700 (PDT)
+	Mon, 15 Sep 2014 17:44:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140915211523.GA5481@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+	<e434e839351324641e10cc0a309a5c5f86e196c5.1410810247.git.milosz@adfin.com>
+	<20140915202828.GV7996@ZenIV.linux.org.uk>
+	<20140915211523.GA5481@infradead.org>
+Date: Mon, 15 Sep 2014 17:44:41 -0400
+Message-ID: <CANP1eJFgKOnW7p3fhNAqHQT4gd0AbeFWWDmaKCkiOkB8_U4c_A@mail.gmail.com>
+Subject: Re: [PATCH 1/7] Prepare for adding a new readv/writev with user flags.
+From: Milosz Tanski <milosz@adfin.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernhard Thaler <bernhard.thaler@wvnet.at>
-Date: Mon, 15 Sep 2014 23:27:28 +0200
+I'll redo with the flag inside of kiocb for the next submission.
 
-CC:'ing netfilter-devel and the netfilter maintainer, which is
-probably the primary place this patch should have been submitted.
+On Mon, Sep 15, 2014 at 5:15 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Mon, Sep 15, 2014 at 09:28:28PM +0100, Al Viro wrote:
+>> On Mon, Sep 15, 2014 at 04:20:17PM -0400, Milosz Tanski wrote:
+>> > Plumbing the flags argument through the vfs code so they can be passed down to
+>> > __generic_file_(read/write)_iter function that do the acctual work.
+>>
+>> NAK.  Put these flags into iocb, it'll be less noisy that way.
+>
+> Fine with me.  My initial prototype had it in the iov_iter type field
+> which is another possibility.
+>
+> But if we get rid of the explicit flags field and make it more invisible
+> I'd really like to add a features field struct file_operations where
+> instances can advertize that they support it (and other things like
+> actual AIO support in the future) so that we won't have a situation
+> like with AIO where we can submit I/O but it might actually still block
+> anyway because lots of operations don't support it.
 
-> Ethernet frames are not bridged to correct interface when packets have
-> been NAT66ed; compared to IPv4 logic in code, IPv6 code does not store
-> original address (before NAT) on transmit to determine if packet was
-> NAT66ed on receive to swap addresses back.
-> 
-> Changes added in br_netfilter.c to store original address, compare
-> against it and determine correct output interface. Changes needed in
-> netfilter_bridge.h to store IPv6 address in pre-existing union.
-> Export of ip6_route_input needed to use it in br_netfilter.c.
-> 
-> Problem may only affect systems doing NAT66 and ethernet bridging at
-> the same time. Tested in NAT66 setup on base of an ethernet bridge.
-> 
-> Signed-off-by: Bernhard Thaler <bernhard.thaler@wvnet.at>
-> ---
->  include/linux/netfilter_bridge.h |    2 +
->  net/bridge/br_netfilter.c        |  136 ++++++++++++++++++++++++++++----------
->  net/ipv6/route.c                 |    1 +
->  3 files changed, 105 insertions(+), 34 deletions(-)
-> 
-> diff --git a/include/linux/netfilter_bridge.h b/include/linux/netfilter_bridge.h
-> index 8ab1c27..3a9cdcd 100644
-> --- a/include/linux/netfilter_bridge.h
-> +++ b/include/linux/netfilter_bridge.h
-> @@ -2,6 +2,7 @@
->  #define __LINUX_BRIDGE_NETFILTER_H
->  
->  #include <uapi/linux/netfilter_bridge.h>
-> +#include <uapi/linux/in6.h>
->  
->  
->  enum nf_br_hook_priorities {
-> @@ -79,6 +80,7 @@ static inline unsigned int nf_bridge_pad(const struct sk_buff *skb)
->  struct bridge_skb_cb {
->  	union {
->  		__be32 ipv4;
-> +		struct in6_addr ipv6;
->  	} daddr;
->  };
->  
-> diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
-> index a615264..2ae3888 100644
-> --- a/net/bridge/br_netfilter.c
-> +++ b/net/bridge/br_netfilter.c
-> @@ -35,6 +35,9 @@
->  #include <net/ip.h>
->  #include <net/ipv6.h>
->  #include <net/route.h>
-> +#include <net/ip6_route.h>
-> +#include <net/flow.h>
-> +#include <net/dst.h>
->  
->  #include <asm/uaccess.h>
->  #include "br_private.h"
-> @@ -42,10 +45,18 @@
->  #include <linux/sysctl.h>
->  #endif
->  
-> -#define skb_origaddr(skb)	 (((struct bridge_skb_cb *) \
-> -				 (skb->nf_bridge->data))->daddr.ipv4)
-> -#define store_orig_dstaddr(skb)	 (skb_origaddr(skb) = ip_hdr(skb)->daddr)
-> -#define dnat_took_place(skb)	 (skb_origaddr(skb) != ip_hdr(skb)->daddr)
-> +#define skb_origaddr(skb)		(((struct bridge_skb_cb *)\
-> +					(skb->nf_bridge->data))->daddr.ipv4)
-> +#define skb_origaddr_ipv6(skb)		(((struct bridge_skb_cb *)\
-> +					(skb->nf_bridge->data))->daddr.ipv6)
-> +#define store_orig_dstaddr(skb)		(skb_origaddr(skb) = ip_hdr(skb)->daddr)
-> +#define store_orig_dstaddr_ipv6(skb)	(skb_origaddr_ipv6(skb) = \
-> +					ipv6_hdr(skb)->daddr)
-> +#define dnat_took_place(skb)		(skb_origaddr(skb) != \
-> +					ip_hdr(skb)->daddr)
-> +#define dnat_took_place_ipv6(skb)	(memcmp(&skb_origaddr_ipv6(skb), \
-> +					&(ipv6_hdr(skb)->daddr), \
-> +					sizeof(struct in6_addr)) != 0)
->  
->  #ifdef CONFIG_SYSCTL
->  static struct ctl_table_header *brnf_sysctl_header;
-> @@ -340,36 +351,6 @@ int nf_bridge_copy_header(struct sk_buff *skb)
->  	return 0;
->  }
->  
-> -/* PF_BRIDGE/PRE_ROUTING *********************************************/
-> -/* Undo the changes made for ip6tables PREROUTING and continue the
-> - * bridge PRE_ROUTING hook. */
-> -static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
-> -{
-> -	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
-> -	struct rtable *rt;
-> -
-> -	if (nf_bridge->mask & BRNF_PKT_TYPE) {
-> -		skb->pkt_type = PACKET_OTHERHOST;
-> -		nf_bridge->mask ^= BRNF_PKT_TYPE;
-> -	}
-> -	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
-> -
-> -	rt = bridge_parent_rtable(nf_bridge->physindev);
-> -	if (!rt) {
-> -		kfree_skb(skb);
-> -		return 0;
-> -	}
-> -	skb_dst_set_noref(skb, &rt->dst);
-> -
-> -	skb->dev = nf_bridge->physindev;
-> -	nf_bridge_update_protocol(skb);
-> -	nf_bridge_push_encap_header(skb);
-> -	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
-> -		       br_handle_frame_finish, 1);
-> -
-> -	return 0;
-> -}
-> -
->  /* Obtain the correct destination MAC address, while preserving the original
->   * source MAC address. If we already know this address, we just copy it. If we
->   * don't, we use the neighbour framework to find out. In both cases, we make
-> @@ -527,6 +508,92 @@ bridged_dnat:
->  	return 0;
->  }
->  
-> +/* PF_BRIDGE/PRE_ROUTING *********************************************
-> + * Undo the changes made for ip6tables PREROUTING and continue the
-> + * bridge PRE_ROUTING hook.
-> + */
-> +static int br_nf_pre_routing_finish_ipv6(struct sk_buff *skb)
-> +{
-> +	struct net_device *dev = skb->dev;
-> +	struct ipv6hdr *iph = ipv6_hdr(skb);
-> +	struct nf_bridge_info *nf_bridge = skb->nf_bridge;
-> +	struct rtable *rt;
-> +	struct dst_entry *dst;
-> +	struct flowi6 fl6 = {
-> +		.flowi6_iif = skb->dev->ifindex,
-> +		.daddr = iph->daddr,
-> +		.saddr = iph->saddr,
-> +		.flowlabel = ip6_flowinfo(iph),
-> +		.flowi6_mark = skb->mark,
-> +		.flowi6_proto = iph->nexthdr,
-> +	};
-> +
-> +	if (nf_bridge->mask & BRNF_PKT_TYPE) {
-> +		skb->pkt_type = PACKET_OTHERHOST;
-> +		nf_bridge->mask ^= BRNF_PKT_TYPE;
-> +	}
-> +	nf_bridge->mask ^= BRNF_NF_BRIDGE_PREROUTING;
-> +
-> +	if (dnat_took_place_ipv6(skb)) {
-> +		ip6_route_input(skb);
-> +		/* ip6_route_input is void function,
-> +		 * no int returned as in ip4_route_input
-> +		 * changes value of skb->_skb_refdst) on success
-> +		 */
-> +		if (skb->_skb_refdst == 0) {
-> +			struct in_device *in_dev = __in_dev_get_rcu(dev);
-> +
-> +			if (!in_dev || IN_DEV_FORWARD(in_dev))
-> +				goto free_skb;
-> +
-> +			dst = ip6_route_output(dev_net(dev), skb->sk, &fl6);
-> +			if (!IS_ERR(dst)) {
-> +				/* - Bridged-and-DNAT'ed traffic doesn't
-> +				 *   require ip_forwarding.
-> +				 */
-> +				if (dst->dev == dev) {
-> +					skb_dst_set(skb, dst);
-> +					goto bridged_dnat;
-> +				}
-> +				dst_release(dst);
-> +			}
-> +free_skb:
-> +			kfree_skb(skb);
-> +			return 0;
-> +		} else {
-> +			if (skb_dst(skb)->dev == dev) {
-> +bridged_dnat:
-> +				skb->dev = nf_bridge->physindev;
-> +				nf_bridge_update_protocol(skb);
-> +				nf_bridge_push_encap_header(skb);
-> +				NF_HOOK_THRESH(NFPROTO_BRIDGE,
-> +					       NF_BR_PRE_ROUTING,
-> +					       skb, skb->dev, NULL,
-> +					       br_nf_pre_routing_finish_bridge,
-> +					       1);
-> +				return 0;
-> +			}
-> +			memcpy(eth_hdr(skb)->h_dest, dev->dev_addr, ETH_ALEN);
-> +			skb->pkt_type = PACKET_HOST;
-> +		}
-> +	} else {
-> +		rt = bridge_parent_rtable(nf_bridge->physindev);
-> +		if (!rt) {
-> +			kfree_skb(skb);
-> +			return 0;
-> +		}
-> +		skb_dst_set_noref(skb, &rt->dst);
-> +	}
-> +
-> +	skb->dev = nf_bridge->physindev;
-> +	nf_bridge_update_protocol(skb);
-> +	nf_bridge_push_encap_header(skb);
-> +	NF_HOOK_THRESH(NFPROTO_BRIDGE, NF_BR_PRE_ROUTING, skb, skb->dev, NULL,
-> +		       br_handle_frame_finish, 1);
-> +
-> +	return 0;
-> +}
-> +
->  static struct net_device *brnf_get_logical_dev(struct sk_buff *skb, const struct net_device *dev)
->  {
->  	struct net_device *vlan, *br;
-> @@ -658,6 +725,7 @@ static unsigned int br_nf_pre_routing_ipv6(const struct nf_hook_ops *ops,
->  	if (!setup_pre_routing(skb))
->  		return NF_DROP;
->  
-> +	store_orig_dstaddr_ipv6(skb);
->  	skb->protocol = htons(ETH_P_IPV6);
->  	NF_HOOK(NFPROTO_IPV6, NF_INET_PRE_ROUTING, skb, skb->dev, NULL,
->  		br_nf_pre_routing_finish_ipv6);
-> diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-> index f23fbd2..e328905 100644
-> --- a/net/ipv6/route.c
-> +++ b/net/ipv6/route.c
-> @@ -1017,6 +1017,7 @@ void ip6_route_input(struct sk_buff *skb)
->  
->  	skb_dst_set(skb, ip6_route_input_lookup(net, skb->dev, &fl6, flags));
->  }
-> +EXPORT_SYMBOL(ip6_route_input);
->  
->  static struct rt6_info *ip6_pol_route_output(struct net *net, struct fib6_table *table,
->  					     struct flowi6 *fl6, int flags)
-> -- 
-> 1.7.10.4
-> 
+
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
