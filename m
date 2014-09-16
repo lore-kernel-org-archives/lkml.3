@@ -1,186 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaIPCj0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 22:39:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50422 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725AbaIPCjY (ORCPT
+	id S1754389AbaIPCk4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:40:56 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57612 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807AbaIPCkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 22:39:24 -0400
-Date: Mon, 15 Sep 2014 21:39:22 -0500
-From: Andy Gross <agross@codeaurora.org>
-To: Kiran Padwal <kiran.padwal@smartplayin.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        davidb@codeaurora.org, afaerber@suse.de, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-Message-ID: <20140916023922.GB2386@qualcomm.com>
-References: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
+	Mon, 15 Sep 2014 22:40:55 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 16 Sep 2014 11:41:07 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Seth Jennings <sjennings@variantweb.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] zsmalloc: simplify init_zspage free obj linking
+Message-ID: <20140916024107.GF10912@bbox>
+References: <20140914232427.GD2160@bbox>
+ <1410814730-5740-1-git-send-email-ddstreet@ieee.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1410814730-5740-1-git-send-email-ddstreet@ieee.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 26, 2014 at 05:00:45PM +0530, Kiran Padwal wrote:
-> This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
-> It also adds necessary DT support for i2c eeprom which is present on
-> IFC6410.
+On Mon, Sep 15, 2014 at 04:58:50PM -0400, Dan Streetman wrote:
+> Change zsmalloc init_zspage() logic to iterate through each object on
+> each of its pages, checking the offset to verify the object is on the
+> current page before linking it into the zspage.
 > 
-> Tested on IFC6410 board.
-
-Looks fine
-
+> The current zsmalloc init_zspage free object linking code has logic
+> that relies on there only being one page per zspage when PAGE_SIZE
+> is a multiple of class->size.  It calculates the number of objects
+> for the current page, and iterates through all of them plus one,
+> to account for the assumed partial object at the end of the page.
+> While this currently works, the logic can be simplified to just
+> link the object at each successive offset until the offset is larger
+> than PAGE_SIZE, which does not rely on PAGE_SIZE being a multiple of
+> class->size.
 > 
-> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
-> ---
-> Changes since v2:
->  - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
->  - Removed labes of node.
->  - Used canonical value as "okay" instead of "ok".
->  - Used macros.
-> 
-> Changes since v1:
->  - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
->  - Updated pinmux interrupt.
-> 
->  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
->  arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
->  2 files changed, 80 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> index 7c2441d..ef0857e 100644
-> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
-> @@ -5,6 +5,24 @@
->  	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
->  
->  	soc {
-> +		gsbi@12440000 {
-> +			status = "okay";
-> +			qcom,mode = <GSBI_PROT_I2C>;
-> +
-> +			i2c@12460000 {
-> +				status = "okay";
-> +				clock-frequency = <200000>;
-> +				pinctrl-0 = <&i2c1_pins>;
-> +				pinctrl-names = "default";
-> +
-> +				eeprom: eeprom@52 {
-> +					compatible = "atmel,24c128";
-> +					reg = <0x52>;
-> +					pagesize = <32>;
-> +				};
-
-don't need read only here.  the eeprom is not being used by anything....
-thankfully.
-
-> +			};
-> +		};
-> +
->  		gsbi@16600000 {
->  			status = "ok";
->  			qcom,mode = <GSBI_PROT_I2C_UART>;
-> @@ -12,5 +30,14 @@
->  				status = "ok";
->  			};
->  		};
-> +
-> +		pinmux@800000 {
-> +			i2c1_pins: i2c1 {
-> +				mux {
-> +					pins = "gpio20", "gpio21";
-> +					function = "gsbi1";
-> +				};
-> +			};
-> +		};
->  	};
->  };
-> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> index 92bf793..5dddbf3 100644
-> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
-> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
-> @@ -89,6 +89,17 @@
->  			cpu-offset = <0x80000>;
->  		};
->  
-> +		tlmm_pinmux: pinmux@800000 {
-> +			compatible = "qcom,apq8064-pinctrl";
-> +			reg = <0x800000 0x4000>;
-> +
-> +			gpio-controller;
-> +			#gpio-cells = <2>;
-> +			interrupt-controller;
-> +			#interrupt-cells = <2>;
-> +			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
-> +		};
-> +
->  		acc0: clock-controller@2088000 {
->  			compatible = "qcom,kpss-acc-v1";
->  			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
-> @@ -133,6 +144,48 @@
->  			regulator;
->  		};
->  
-> +		gsbi1: gsbi@12440000 {
-> +			status = "disabled";
-> +			compatible = "qcom,gsbi-v1.0.0";
-> +			reg = <0x12440000 0x100>;
-> +			clocks = <&gcc GSBI1_H_CLK>;
-> +			clock-names = "iface";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +
-> +			i2c1: i2c@12460000 {
-> +				compatible = "qcom,i2c-qup-v1.1.1";
-> +				reg = <0x12460000 0x1000>;
-> +				interrupts = <0 194 IRQ_TYPE_NONE>;
-> +				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
-> +				clock-names = "core", "iface";
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +			};
-> +		};
-> +
-> +		gsbi2: gsbi@12480000 {
-> +			status = "disabled";
-> +			compatible = "qcom,gsbi-v1.0.0";
-> +			reg = <0x12480000 0x100>;
-> +			clocks = <&gcc GSBI2_H_CLK>;
-> +			clock-names = "iface";
-> +			#address-cells = <1>;
-> +			#size-cells = <1>;
-> +			ranges;
-> +
-> +			i2c2: i2c@124a0000 {
-> +				compatible = "qcom,i2c-qup-v1.1.1";
-> +				reg = <0x124a0000 0x1000>;
-> +				interrupts = <0 196 IRQ_TYPE_NONE>;
-> +				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
-> +				clock-names = "core", "iface";
-> +				#address-cells = <1>;
-> +				#size-cells = <0>;
-> +			};
-> +		};
-> +
->  		gsbi7: gsbi@16600000 {
->  			status = "disabled";
->  			compatible = "qcom,gsbi-v1.0.0";
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+> Cc: Minchan Kim <minchan@kernel.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
 -- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Kind regards,
+Minchan Kim
