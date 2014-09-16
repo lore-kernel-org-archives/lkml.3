@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaIPERI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 00:17:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12264 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754018AbaIPERG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 00:17:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="573643673"
-Message-ID: <5417B9BE.1030209@intel.com>
-Date: Mon, 15 Sep 2014 21:17:02 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: "Ren, Qiaowei" <qiaowei.ren@intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
- PR_MPX_UNREGISTER
-References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>	<1410425210-24789-9-git-send-email-qiaowei.ren@intel.com> <20140915010025.5940c946@alan.etchedpixels.co.uk> <9E0BE1322F2F2246BD820DA9FC397ADE017AE183@shsmsx102.ccr.corp.intel.com>
-In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE017AE183@shsmsx102.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754645AbaIPEUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 00:20:45 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:48035 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaIPEUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 00:20:43 -0400
+From: Martin Kelly <martin@martingkelly.com>
+To: x86@kernel.org
+Cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, Martin Kelly <martin@martingkelly.com>,
+        Martin Kelly <martkell@amazon.com>
+Subject: [PATCH] context_tracking: Fix checkpatch warnings
+Date: Mon, 15 Sep 2014 21:20:32 -0700
+Message-Id: <1410841232-24591-1-git-send-email-martin@martingkelly.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 08:20 PM, Ren, Qiaowei wrote:
->> What are the semantics across execve() ?
->> 
-> This will not impact on the semantics of execve(). One runtime
-> library
-> for MPX will be provided (or merged into Glibc), and when the
-> application starts, this runtime will be called to initialize MPX
-> runtime environment, including calling prctl() to notify the kernel to
-> start managing the bounds directories. You can see the discussion
-> about exec(): https://lkml.org/lkml/2014/1/26/199
+checkpatch emits several warnings for context_tracking.c, which are
+fixed in this patch:
 
-I think he's asking what happens to the kernel value at execve() time.
+- No space after "("
+- Lines longer than 80 characters
 
-The short answer is that it is zero'd along with the rest of a new mm.
-It probably _shouldn't_ be, though.  It's actually valid to have a bound
-directory at 0x0.  We probably need to initialize it to -1 instead, and
-that means initializing to -1 at execve() time.
+Signed-off-by: Martin Kelly <martkell@amazon.com>
+---
+ kernel/context_tracking.c | 40 +++++++++++++++++++++-------------------
+ 1 file changed, 21 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 5664985..bf29065 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -54,8 +54,8 @@ void context_tracking_user_enter(void)
+ 	/*
+ 	 * Repeat the user_enter() check here because some archs may be calling
+ 	 * this from asm and if no CPU needs context tracking, they shouldn't
+-	 * go further. Repeat the check here until they support the inline static
+-	 * key check.
++	 * go further. Repeat the check here until they support the inline
++	 * static key check.
+ 	 */
+ 	if (!context_tracking_is_enabled())
+ 		return;
+@@ -75,31 +75,33 @@ void context_tracking_user_enter(void)
+ 	WARN_ON_ONCE(!current->mm);
+ 
+ 	local_irq_save(flags);
+-	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
++	if (__this_cpu_read(context_tracking.state) != IN_USER) {
+ 		if (__this_cpu_read(context_tracking.active)) {
+ 			trace_user_enter(0);
+ 			/*
+-			 * At this stage, only low level arch entry code remains and
+-			 * then we'll run in userspace. We can assume there won't be
+-			 * any RCU read-side critical section until the next call to
+-			 * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
+-			 * on the tick.
++			 * At this stage, only low level arch entry code
++			 * remains and then we'll run in userspace. We can
++			 * assume there won't be any RCU read-side critical
++			 * section until the next call to user_exit() or
++			 * rcu_irq_enter(). Let's remove RCU's dependency on
++			 * the tick.
+ 			 */
+ 			vtime_user_enter(current);
+ 			rcu_user_enter();
+ 		}
+ 		/*
+-		 * Even if context tracking is disabled on this CPU, because it's outside
+-		 * the full dynticks mask for example, we still have to keep track of the
+-		 * context transitions and states to prevent inconsistency on those of
+-		 * other CPUs.
+-		 * If a task triggers an exception in userspace, sleep on the exception
+-		 * handler and then migrate to another CPU, that new CPU must know where
+-		 * the exception returns by the time we call exception_exit().
+-		 * This information can only be provided by the previous CPU when it called
+-		 * exception_enter().
+-		 * OTOH we can spare the calls to vtime and RCU when context_tracking.active
+-		 * is false because we know that CPU is not tickless.
++		 * Even if context tracking is disabled on this CPU, because
++		 * it's outside the full dynticks mask for example, we still
++		 * have to keep track of the context transitions and states to
++		 * prevent inconsistency on those of other CPUs.  If a task
++		 * triggers an exception in userspace, sleep on the exception
++		 * handler and then migrate to another CPU, that new CPU must
++		 * know where the exception returns by the time we call
++		 * exception_exit().  This information can only be provided by
++		 * the previous CPU when it called exception_enter().  OTOH we
++		 * can spare the calls to vtime and RCU when
++		 * context_tracking.active is false because we know that CPU is
++		 * not tickless.
+ 		 */
+ 		__this_cpu_write(context_tracking.state, IN_USER);
+ 	}
+-- 
+2.1.0
+
