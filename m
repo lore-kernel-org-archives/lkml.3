@@ -1,79 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaIPFM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 01:12:26 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:19494 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751108AbaIPFMZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 01:12:25 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Jiang Liu'" <jiang.liu@huawei.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 16 Sep 2014 13:09:30 +0800
-Subject: [RFC] change keep_initrd and free_initrd_mem into .init section
-Thread-Topic: [RFC] change keep_initrd and free_initrd_mem into .init section
-Thread-Index: Ac/RbGU0znnwtjO0SdCctZwc0yijzQ==
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49160E@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752856AbaIPFQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 01:16:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57740 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750938AbaIPFP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 01:15:58 -0400
+Date: Tue, 16 Sep 2014 00:15:29 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Chen <peter.chen@freescale.com>
+CC: Andreas Larsson <andreas@gaisler.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <software@gaisler.com>
+Subject: Re: [PATCH] usb: gadget: udc_core: Use right kobj when calling
+ sysfs_notify
+Message-ID: <20140916051529.GB10498@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1410777748-28090-1-git-send-email-andreas@gaisler.com>
+ <20140916020223.GD3379@peterchendt>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rS8CxjVDS/+yyDmU"
+Content-Disposition: inline
+In-Reply-To: <20140916020223.GD3379@peterchendt>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch change keep_initrd to __initdata section,
-and free_initrd_mem to __init section so that they can be freed by
-free_initmem, free_initrd_mem is only called by free_initrd function,
-so it's safe to free it after use.
+--rS8CxjVDS/+yyDmU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- arch/arm/mm/init.c   | 4 ++--
- arch/arm64/mm/init.c | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Hi,
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 659c75d..907dee1 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -631,9 +631,9 @@ void free_initmem(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static int keep_initrd;
-+static int __initdata keep_initrd;
- 
--void free_initrd_mem(unsigned long start, unsigned long end)
-+void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
- 	if (!keep_initrd) {
- 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 5472c24..7268d57 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -330,9 +330,9 @@ void free_initmem(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static int keep_initrd;
-+static int __initdata keep_initrd;
- 
--void free_initrd_mem(unsigned long start, unsigned long end)
-+void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
- 	if (!keep_initrd)
- 		free_reserved_area((void *)start, (void *)end, 0, "initrd");
--- 
-2.1.0
+On Tue, Sep 16, 2014 at 10:02:25AM +0800, Peter Chen wrote:
+> On Mon, Sep 15, 2014 at 12:42:27PM +0200, Andreas Larsson wrote:
+> > The state attribute is connected to the kobj of the udc, not the gadget.
+> >=20
+> > Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> > ---
+> >  drivers/usb/gadget/udc/udc-core.c |   14 +++++++++++++-
+> >  1 file changed, 13 insertions(+), 1 deletion(-)
+> >=20
+> > diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc=
+/udc-core.c
+> > index b0d9817..37c129a 100644
+> > --- a/drivers/usb/gadget/udc/udc-core.c
+> > +++ b/drivers/usb/gadget/udc/udc-core.c
+> > @@ -109,8 +109,20 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+> >  static void usb_gadget_state_work(struct work_struct *work)
+> >  {
+> >  	struct usb_gadget	*gadget =3D work_to_gadget(work);
+> > +	struct usb_udc		*udc =3D NULL;
+> > +
+> > +	mutex_lock(&udc_lock);
+> > +	list_for_each_entry(udc, &udc_list, list)
+> > +		if (udc->gadget =3D=3D gadget)
+> > +			goto found;
+> > +	mutex_unlock(&udc_lock);
+> > +
+> > +	return;
+> > +
+> > +found:
+> > +	mutex_unlock(&udc_lock);
+> > =20
+> > -	sysfs_notify(&gadget->dev.kobj, NULL, "state");
+> > +	sysfs_notify(&udc->dev.kobj, NULL, "state");
+> >  }
+> > =20
+> >  void usb_gadget_set_state(struct usb_gadget *gadget,
+>=20
+> What's the user mode difference with and without this patch?
+
+poll() will actually wakeup ?
+
+--=20
+balbi
+
+--rS8CxjVDS/+yyDmU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUF8dxAAoJEIaOsuA1yqRE2IAP/20MORsp3qKO0XO6dkjfDUTz
+H7EDYGpkeHZFUViqkbDJHnhtXWuPHU0VWA1SUriDOls13ApwLDVEMnyWJJ50oKgc
+FkwO2UlUUjjdp12WEncxU8f/KyecTzWAxsnWOB024khPeICMj9qZfRQyNz6t8cez
+iFSxKMCZsji5f1CSSeXijA+Z8JyeQKaLNK/xlz09E6Ho6/JhEWKkPJcKDKrvqkpE
+TXxLE5FcUqCUSuyJmtMgV8QAFC2FDm+XXrIWY8hjHxxIKndQOKgqnzK3bh20naGB
+/lN7m/ReQ0cVrUw4CqRznYl8U68I8SytLq03pxJQErd9EjjWBxufGdEAulZz2MO8
+kMU3ZA/M4XLSLSqkyznQsZR7J1pwfVx3Iy7FalrLorhLE4f0HLVsODV4pYgWKsEn
+PzVDbOc9RTh067obplzk2TKhTCPPQj9xVoS1WWfENirzfxmuX2hqu4sIN+s2FvG5
+CXMLjs/NNCKl2iqr+ZKioqNhOoHWvQZ9SVLSK1VAhdlqud4q8QJqKdv3rpOuDdIm
+SPufALKFK10BonTVwtpvx9yAu0MHNux+vCsLvX5uexXTkHLg4J3eBEc9l5i0NOox
+0iN1+M2O1qbM9wcq7NvgctCmkZLow3RbVNC7A+1BeVWOsr4TaYG0XV+ULo09WLcU
+4acNMz4F40vURkjo+WrN
+=78WJ
+-----END PGP SIGNATURE-----
+
+--rS8CxjVDS/+yyDmU--
