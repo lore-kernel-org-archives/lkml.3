@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaIPH3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:29:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16618 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686AbaIPH3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:29:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="603430377"
-Message-ID: <5417E00D.5000108@linux.intel.com>
-Date: Tue, 16 Sep 2014 15:00:29 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753016AbaIPHez (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:34:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39872 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaIPHey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:34:54 -0400
+Date: Tue, 16 Sep 2014 08:34:45 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Shivnandan Kumar <shivnandan.k@samsung.com>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>,
+        "eparis@parisplace.org" <eparis@parisplace.org>,
+        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
+        "selinux@tycho.nsa.gov" <selinux@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpgs ." <cpgs@samsung.com>, Ashish Kalra <ashish.kalra@samsung.com>,
+        Mohammad Irfan Ansari <mohammad.a2@samsung.com>,
+        Rajat Suri <rajat.suri@samsung.com>
+Subject: Re: [PATCH] Security: List corruption occured during file system
+ automation test
+Message-ID: <20140916073445.GW7996@ZenIV.linux.org.uk>
+References: <83.72.04938.152E7145@epcpsbgx1.samsung.com>
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Joerg Roedel <joro@8bytes.org>,
-        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [Patch Part3 V5 5/8] iommu/vt-d: Enhance intel_irq_remapping
- driver to support DMAR unit hotplug
-References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-6-git-send-email-jiang.liu@linux.intel.com> <54164D01.4060003@huawei.com>
-In-Reply-To: <54164D01.4060003@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <83.72.04938.152E7145@epcpsbgx1.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/15 10:20, Yijing Wang wrote:
->> +static void ir_remove_ioapic_hpet_scope(struct intel_iommu *iommu)
->> +{
->> +	int i;
->>  
->> -			ir_parse_one_hpet_scope(scope, iommu);
->> -		}
->> -		start += scope->length;
->> -	}
->> +	for (i = 0; i < MAX_HPET_TBS; i++)
->> +		if (ir_hpet[i].iommu == iommu)
->> +			ir_hpet[i].iommu = NULL;
-> 
-> Hi Gerry, why not reset whole ir_hpe and ir_ioapic data struct?
-Hi Yijing,
-	Thanks for review. Zero is legal for id, bus and devfn in
-struct ioapic_scope and struct hpet_scope. So we use domain field
-as a flag to mark entry valid or invalid and only reset iommu field.
+On Tue, Sep 16, 2014 at 07:10:09AM +0000, Shivnandan Kumar wrote: /
+> <HTML><HEAD><TITLE>Samsung Enterprise Portal mySingle</TITLE> /
 
-Regards!
-Gerry
-> 
-> 
-> 
->>  
->> -	return 0;
->> +	for (i = 0; i < MAX_IO_APICS; i++)
->> +		if (ir_ioapic[i].iommu == iommu)
->> +			ir_ioapic[i].iommu = NULL;
->>  }
->>  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+[snip arseloads of unreadable HTML]
+
+.-.. . .- .-. -. 
+- --- 
+..- ... . 
+.-. . .- -.. .- -... .-.. . 
+..-. --- .-. -- .- - ...
+--..-- 
+.-- .- -. -.- . .-.
+.-.-.-
+...-.- 
