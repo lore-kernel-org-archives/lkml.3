@@ -1,98 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794AbaIPQ7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:59:49 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:29942 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754539AbaIPQ7s (ORCPT
+	id S1754702AbaIPRBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 13:01:09 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40854 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaIPRBH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:59:48 -0400
-X-IronPort-AV: E=Sophos;i="5.04,535,1406584800"; 
-   d="scan'208";a="96122097"
-Message-ID: <54186C82.2040404@gmail.com>
-Date: Tue, 16 Sep 2014 18:59:46 +0200
-From: Brice Goglin <brice.goglin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 16 Sep 2014 13:01:07 -0400
+Message-ID: <54186CCA.6000108@arm.com>
+Date: Tue, 16 Sep 2014 10:00:58 -0700
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Dave Hansen <dave@sr71.net>
-CC: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-        andreas.herrmann3@amd.com, mingo@kernel.org, hpa@linux.intel.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
- "sane"
-References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain>
-In-Reply-To: <20140916032920.GH2840@worktop.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Peter Zijlstra <peterz@infradead.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+CC: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org> <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org> <20140911161517.GA3190@worktop.ger.corp.intel.com> <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com> <20140914194156.GC2832@worktop.localdomain>
+In-Reply-To: <20140914194156.GC2832@worktop.localdomain>
+X-OriginalArrivalTime: 16 Sep 2014 17:01:02.0269 (UTC) FILETIME=[CBAEA6D0:01CFD1CF]
+X-MC-Unique: 114091618010400301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 16/09/2014 05:29, Peter Zijlstra a écrit :
->
->> This also fixes sysfs because CPUs with the same 'physical_package_id'
->> in /sys/devices/system/cpu/cpu*/topology/ are not listed together
->> in the same 'core_siblings_list'.  This violates a statement from
->> Documentation/ABI/testing/sysfs-devices-system-cpu:
+On 14/09/14 12:41, Peter Zijlstra wrote:
+> On Thu, Sep 11, 2014 at 07:26:48PM +0200, Vincent Guittot wrote:
+>> On 11 September 2014 18:15, Peter Zijlstra <peterz@infradead.org> wrote:
+>>> On Tue, Aug 26, 2014 at 01:06:54PM +0200, Vincent Guittot wrote:
+>>>> +static inline int group_has_free_capacity(struct sg_lb_stats *sgs,
+>>>> +                     struct lb_env *env)
+>>>>   {
+>>>> +     if ((sgs->group_capacity_orig * 100) >
+>>>> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+>>>> +             return 1;
+>>>> +
+>>>> +     if (sgs->sum_nr_running < sgs->group_weight)
+>>>> +             return 1;
+>>>>
+>>>> +     return 0;
+>>>> +}
+>>>>
+>>>> +static inline int group_is_overloaded(struct sg_lb_stats *sgs,
+>>>> +                     struct lb_env *env)
+>>>> +{
+>>>> +     if (sgs->sum_nr_running <= sgs->group_weight)
+>>>> +             return 0;
+>>>>
+>>>> +     if ((sgs->group_capacity_orig * 100) <
+>>>> +                     (sgs->group_utilization * env->sd->imbalance_pct))
+>>>> +             return 1;
+>>>>
+>>>> +     return 0;
+>>>>   }
+>>>
+>>> I'm confused about the utilization vs capacity_orig. I see how we should
 >>
->> 	core_siblings: internal kernel map of cpu#'s hardware threads
->> 	within the same physical_package_id.
+>> 1st point is that I should compare utilization vs capacity and not
+>> capacity_orig.
+>> I should have replaced capacity_orig by capacity in the functions
+>> above when i move the utilization statistic from
+>> rq->avg.runnable_avg_sum to cfs.usage_load_avg.
+>> rq->avg.runnable_avg_sum was measuring all activity on the cpu whereas
+>> cfs.usage_load_avg integrates only cfs tasks
 >>
->> 	core_siblings_list: human-readable list of the logical CPU
->> 	numbers within the same physical_package_id as cpu#.
-> No that statement is wrong; it assumes physical_package_id is a good
-> identifier for nodes. Clearly this is no longer true.
+>> With this change, we don't need sgs->group_capacity_orig anymore but
+>> only sgs->group_capacity. So sgs->group_capacity_orig can be removed
+>> as it's no more used in the code as sg_capacity_factor has been
+>> removed
 >
-> The idea is that core_siblings (or rather cpu_core_mask) is a mask of
-> all cores on a node.
+> Yes, but.. so I suppose we need to add DVFS accounting and remove
+> cpufreq from the capacity thing. Otherwise I don't see it make sense.
 
-or rather node_core_mask since it's not clear whether a CPU is a package
-or a die or a node or whatever?
+My understanding is that uArch scaling of capacacity_orig (therefore of 
+capacity too) is done by calling arch_scale_cpu_capacity and frequency 
+scaling for capacity is done by calling arch_scale_freq_capacity in 
+update_cpu_capacity. I understand that this patch-set does not provide 
+an implementation of arch_scale_freq_capacity though.
 
-Aside from the bad naming, I fail to see why core_siblings couldn't be
-package-wide.
+The uArch and frequency scaling of load & utilization will be added 
+later. I know that Morten is currently working on a 'uArch and frequency 
+invariant load & utilization tracking' patch-set.
 
-Node-wide masks are already in /sys/devices/system/node/node*/cpumap
+Although I don't know exactly what you mean by DVFS accounting and 
+remove cpufreq from the capacity here.
 
->> The sysfs effects here cause an issue with the hwloc tool where
->> it gets confused and thinks there are more sockets than are
->> physically present.
-> Meh, so then we need another mask.
+-- Dietmar
 
-Note that AMD tried to add a "cpu_node" mask back in 2009 for the same
-reason for their 6xxx CPUs but it was rejected :/
-https://lkml.org/lkml/2009/6/3/244
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
->> diff -puN arch/x86/kernel/smpboot.c~hsw-cod-is-sane arch/x86/kernel/smpboot.c
->> --- a/arch/x86/kernel/smpboot.c~hsw-cod-is-sane	2014-09-15 14:56:20.012314468 -0700
->> +++ b/arch/x86/kernel/smpboot.c	2014-09-15 14:58:58.837506644 -0700
->> @@ -344,10 +344,13 @@ static bool match_llc(struct cpuinfo_x86
->>  static bool match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
->>  {
->>  	if (c->phys_proc_id == o->phys_proc_id) {
->> -		if (cpu_has(c, X86_FEATURE_AMD_DCM))
->> -			return true;
->> -
->> -		return topology_sane(c, o, "mc");
->> +		/*
->> +		 * We used to enforce that 'c' and 'o' be on the
->> +		 * same node, but AMD's DCM and Intel's Cluster-
->> +		 * on-Die (CoD) support both have physical
->> +		 * processors that span NUMA nodes.
->> +		 */
->> +		return true;
->>  	}
->>  	return false;
->>  }
-> This is wrong (and I suppose the AMD case was already wrong). That
-> function is supposed to match a multi-core group which is very much
-> supposed to be smaller-or-equal to a node, not spanning nodes.
-
-Well, even if it's wrong, it matches what the sysfs doc says. We have
-been using this ABI in userspace tools for years and it always properly
-detected AMD CPUs. So if you want to break things, please remove
-core_siblings entirely and add new well-defined package-wide and
-node-wide masks :/
-
-Brice
 
