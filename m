@@ -1,148 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbaIPUTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:19:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53725 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197AbaIPUTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:19:05 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>, Robert Tivy <rtivy@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCHv2 1/2] remoteproc: use a flag to detect the presence of IOMMU
-Date: Tue, 16 Sep 2014 15:18:37 -0500
-Message-ID: <1410898718-10828-2-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410898718-10828-1-git-send-email-s-anna@ti.com>
-References: <1410898718-10828-1-git-send-email-s-anna@ti.com>
+	id S1754937AbaIPUVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:21:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57390 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaIPUVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:21:40 -0400
+Message-ID: <54189BCE.2010206@canonical.com>
+Date: Tue, 16 Sep 2014 16:21:34 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
+ mmio
+References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com>	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>	<52D01D82.5070202@canonical.com> <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The remoteproc driver core currently relies on iommu_present() on
-the bus the device is on, to perform MMU management. However, this
-logic doesn't scale for multi-arch, especially for processors that
-do not have an IOMMU. Replace this logic instead by using a h/w
-capability flag for the presence of IOMMU in the rproc structure.
+On 01/10/2014 12:13 PM, Yinghai Lu wrote:
+> On Fri, Jan 10, 2014 at 8:19 AM, Joseph Salisbury
+> <joseph.salisbury@canonical.com> wrote:
+>> On 12/11/2013 02:55 PM, Yinghai Lu wrote:
+>>> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
+>>> <joseph.salisbury@canonical.com> wrote:
+>>>> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
+>>>>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>>>>> That doesn't answer my question at all.
+>>>>>>
+>>>>>> I understand that this change makes it so Joseph doesn't have to use
+>>>>>> "pci=realloc=off".  But why should auto-reallocation be limited to
+>>>>>> buses that have resources above 4GB?  That doesn't make any sense.
+>>>>>>
+>>>>>> We should fix the reallocation code so it can deal with this case.  If
+>>>>>> there's not enough space for everything, obviously we have to leave
+>>>>>> something unassigned.  A ROM BAR is a good candidate for leaving
+>>>>>> unassigned, because most of the time we can get along without it.
+>>>>> Yes, that is ideal and not that simple.
+>>>>> but that would be hard to backport to old kernels.
+>>>>>
+>>>>> BTW, Joseph, can you try
+>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>>>>> for-pci-3.14
+>>>>> with pci=realloc=on
+>>>>>
+>>>>> on that system?
+>>>>>
+>>>>> Thanks
+>>>>>
+>>>>> Yinghai
+>>>> I noticed there was some back and forth on this thread.  Do you still
+>>>> want me to test this version, Yinghai?
+>>> Yes, if that works, we would not need to put the patch in upstream for limiting
+>>> realloc auto scope.
+>>>
+>> Another user has confirmed that at test kernel from your branch[0] does
+>> resolve the bug.
+> Hi, Joe,
+>
+> Bjorn does not want to limit auto realloc, so this patch can not make
+> to upstream at this point.
+>
+> so we may have to ask user to append "pci=realloc=off" before we find
+> more smart way to realloc
+> resource.
+>
+> Thanks
+>
+> Yinghai
 
-This issue is seen on OMAP platforms when trying to add a remoteproc
-driver for a small Cortex M3 called the WkupM3 used for suspend /
-resume management on TI AM335/AM437x SoCs. This processor does not
-have an MMU. Same is the case with another processor subsystem
-PRU-ICSS on AM335/AM437x. All these are platform devices, and the
-current iommu_present check will not scale for the same kernel image
-to support OMAP4/OMAP5 and AM335/AM437x.
+Hi Yinghai,
 
-The existing platform implementation drivers - OMAP remoteproc, STE
-Modem remoteproc and DA8xx remoteproc, are updated as well to properly
-configure the newly added rproc field.
+A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
+is similar to the original bug[1] we discussed.
 
-Cc: Robert Tivy <rtivy@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
-v2:
-- set the field explicitly in all existing remoteproc platform drivers
-- update patch description
+Just wondering if there have been any additional ideas on realloc since
+this was last discussed?
 
- drivers/remoteproc/da8xx_remoteproc.c |  1 +
- drivers/remoteproc/omap_remoteproc.c  |  5 +++++
- drivers/remoteproc/remoteproc_core.c  | 15 ++-------------
- drivers/remoteproc/ste_modem_rproc.c  |  1 +
- include/linux/remoteproc.h            |  2 ++
- 5 files changed, 11 insertions(+), 13 deletions(-)
+Thanks,
 
-diff --git a/drivers/remoteproc/da8xx_remoteproc.c b/drivers/remoteproc/da8xx_remoteproc.c
-index 3841b98..9fdc0af 100644
---- a/drivers/remoteproc/da8xx_remoteproc.c
-+++ b/drivers/remoteproc/da8xx_remoteproc.c
-@@ -224,6 +224,7 @@ static int da8xx_rproc_probe(struct platform_device *pdev)
- 
- 	drproc = rproc->priv;
- 	drproc->rproc = rproc;
-+	rproc->has_iommu = false;
- 
- 	platform_set_drvdata(pdev, rproc);
- 
-diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
-index 5168972..b21ce95 100644
---- a/drivers/remoteproc/omap_remoteproc.c
-+++ b/drivers/remoteproc/omap_remoteproc.c
-@@ -199,6 +199,11 @@ static int omap_rproc_probe(struct platform_device *pdev)
- 
- 	oproc = rproc->priv;
- 	oproc->rproc = rproc;
-+	/*
-+	 * All existing OMAP IPU and DSP processors do have an MMU, and
-+	 * are expected to use MMU, so this statement suffices.
-+	 */
-+	rproc->has_iommu = true;
- 
- 	platform_set_drvdata(pdev, rproc);
- 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 3cd85a6..11cdb11 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -94,19 +94,8 @@ static int rproc_enable_iommu(struct rproc *rproc)
- 	struct device *dev = rproc->dev.parent;
- 	int ret;
- 
--	/*
--	 * We currently use iommu_present() to decide if an IOMMU
--	 * setup is needed.
--	 *
--	 * This works for simple cases, but will easily fail with
--	 * platforms that do have an IOMMU, but not for this specific
--	 * rproc.
--	 *
--	 * This will be easily solved by introducing hw capabilities
--	 * that will be set by the remoteproc driver.
--	 */
--	if (!iommu_present(dev->bus)) {
--		dev_dbg(dev, "iommu not found\n");
-+	if (!rproc->has_iommu) {
-+		dev_dbg(dev, "iommu not present\n");
- 		return 0;
- 	}
- 
-diff --git a/drivers/remoteproc/ste_modem_rproc.c b/drivers/remoteproc/ste_modem_rproc.c
-index c4ac910..c42a32e 100644
---- a/drivers/remoteproc/ste_modem_rproc.c
-+++ b/drivers/remoteproc/ste_modem_rproc.c
-@@ -289,6 +289,7 @@ static int sproc_probe(struct platform_device *pdev)
- 	sproc = rproc->priv;
- 	sproc->mdev = mdev;
- 	sproc->rproc = rproc;
-+	rproc->has_iommu = false;
- 	mdev->drv_data = sproc;
- 
- 	/* Provide callback functions to modem device */
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 9e7e745..78b8a9b 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -404,6 +404,7 @@ enum rproc_crash_type {
-  * @table_ptr: pointer to the resource table in effect
-  * @cached_table: copy of the resource table
-  * @table_csum: checksum of the resource table
-+ * @has_iommu: flag to indicate if remote processor is behind an MMU
-  */
- struct rproc {
- 	struct klist_node node;
-@@ -435,6 +436,7 @@ struct rproc {
- 	struct resource_table *table_ptr;
- 	struct resource_table *cached_table;
- 	u32 table_csum;
-+	bool has_iommu;
- };
- 
- /* we currently support only two vrings per rvdev */
--- 
-2.0.4
+Joe
 
+
+[0] http://pad.lv/1363313
+[1] http://pad.lv/1245938
