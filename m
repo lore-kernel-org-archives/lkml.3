@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaIPJZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 05:25:24 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:49880 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaIPJZW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 05:25:22 -0400
+	id S1753270AbaIPJaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 05:30:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57310 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732AbaIPJaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 05:30:08 -0400
+Date: Tue, 16 Sep 2014 11:30:00 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-pm@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        devicetree@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v6 0/8] charger/mfd: max14577: Add support for MAX77836
+Message-ID: <20140916093000.GA31655@earth.universe>
+References: <1410504840-23543-1-git-send-email-k.kozlowski@samsung.com>
+ <20140915225220.GH25162@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <5417FA0F.1030403@huawei.com>
-References: <5417FA0F.1030403@huawei.com>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Tue, 16 Sep 2014 17:24:41 +0800
-Message-ID: <CAHz2CGUSkb08futic+OiWz4zZ==zNRsVLR7EfCr5Wt2eeYxgCw@mail.gmail.com>
-Subject: Re: [PATCH] Documentation/memory-barriers.txt: match table to its
- comment followed
-To: Yao Dongdong <yaodongdong@huawei.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
+Content-Disposition: inline
+In-Reply-To: <20140915225220.GH25162@lee--X1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+--W/nzBZO5zC0uMSeA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi,
 
-Some one has submitted a patch addressing this issue a few days ago.
-The patch is now being cooked in the paulk's tree now, IIRC.
+On Mon, Sep 15, 2014 at 11:52:20PM +0100, Lee Jones wrote:
+> On Fri, 12 Sep 2014, Krzysztof Kozlowski wrote:
+> > This is a sixth version of patches adding support for
+> > MAX77836 device to the max14577 drivers.
+> >=20
+> > This patchset has been on the lists for quite long time and was already
+> > reviewed by all necessary maintainers except power supply.
+> > I need acks from power supply subsystem (patches: 3, 5-8).
+>=20
+> Give this set a few more days for the Power guys to respond.  If they
+> don't, ping me and I will just apply the set.
 
-Thanks,
-Jianyu Zhan
+Acked-By: Sebastian Reichel <sre@kernel.org>
 
+-- Sebastian
 
-On Tue, Sep 16, 2014 at 4:51 PM, Yao Dongdong <yaodongdong@huawei.com> wrote:
-> The table shows CPU2's sequence of events as "x = B; y = A;", but its comment followed
-> described as "x = A; y = B;".
->
-> Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
-> ---
->  Documentation/memory-barriers.txt | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-> index a4de88f..9a46bbe 100644
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -115,8 +115,8 @@ For example, consider the following sequence of events:
->         CPU 1           CPU 2
->         =============== ===============
->         { A == 1; B == 2 }
-> -       A = 3;          x = B;
-> -       B = 4;          y = A;
-> +       A = 3;          x = A;
-> +       B = 4;          y = B;
->
->  The set of accesses as seen by the memory system in the middle can be arranged
->  in 24 different combinations:
-> --
-> 1.8.0.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--W/nzBZO5zC0uMSeA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUGAMYAAoJENju1/PIO/qac50P/3csfMvdBoikhV+JQWXFVTN9
+6P5fFBSQb2OG4GhE44vjRt2vLWOkjyOb4ohHTTgPrYXexsm+l87k1OmTloIXNScr
+Mfeiv9RtUYRgpY2TgOXrYbKKtX4QmSYqRB3SNrlH6IeyStQaKeDPRl0MtkuBtMBu
+/D8Coq2F5GvmKe53Faiv0ulbcyvuFesajy6zBHhvvZet1RTPDz2ixBG1bm4B84Nj
+Xk5FJzhgfGYag6kFr8Zv7uIKTVMz2dAncdnRiS5jH2TanFaZt1p4WA4E8okqp0gN
+7xSkbj2T1WxQJt6r4RYPs6bjcQZ+cVj7VvrGFNJaB0IW2jOg+tOh+sm4FIAW106c
+U7NYR/mHXTahVlI3ZGpVWKKH0Kfv9ceEGHp54V4nPBfF5D5JPgpPZFpMBqZt/ARQ
+mInE6lxR5L99zu8d+NfYWjyRi3vip4ZrTJzuEu6WV4okPpJxI09PgjYT/PruQjX8
+llAPuBqpvUoPNOYedmsHYUzj2lRLRNMt8OBPNGhwfKnU+t/X/rb20A7chgatwC6m
+VGNJ2V7I4+injByz0ImLnHAyaroJ8+oHVw+ee59LZBcaTBbriom+QUDRf/XXCi4n
+33SPeR0FXmoC23GfAHgR2F0nR+GVPax5ZaPMz6dWlnq3joWufbofDpW0RqEeLDwS
+B43dc0Gw+jlplFJ8q0aM
+=Wz+R
+-----END PGP SIGNATURE-----
+
+--W/nzBZO5zC0uMSeA--
