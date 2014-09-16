@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaIPCeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 22:34:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:48897 "EHLO ozlabs.org"
+	id S1754681AbaIPCeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:34:17 -0400
+Received: from ozlabs.org ([103.22.144.67]:40786 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577AbaIPCeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754588AbaIPCeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Sep 2014 22:34:14 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Amit Shah <amit.shah@redhat.com>
-Cc: Amos Kong <akong@redhat.com>
-Subject: [PULL] virtio fixes
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, mst@redhat.com
+Subject: Re: [PATCH 1/3] virtio_net: pass well-formed sgs to virtqueue_add_*()
+In-Reply-To: <20140913.125341.1440485569100220563.davem@davemloft.net>
+References: <1410396458-1165-2-git-send-email-rusty@rustcorp.com.au> <20140912.175440.1013837932148725302.davem@davemloft.net> <87ioksgjt8.fsf@rustcorp.com.au> <20140913.125341.1440485569100220563.davem@davemloft.net>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 16 Sep 2014 10:34:48 +0930
-Message-ID: <87sijsfk9b.fsf@rustcorp.com.au>
+Date: Tue, 16 Sep 2014 10:18:15 +0930
+Message-ID: <87wq94fl0w.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7ec62d421bdf29cb31101ae2689f7f3a9906289a:
+David Miller <davem@davemloft.net> writes:
+> From: Rusty Russell <rusty@rustcorp.com.au>
+> Date: Sat, 13 Sep 2014 15:10:03 +0930
+>
+>> David Miller <davem@davemloft.net> writes:
+>>> Do you guys want me to take this series directly into net-next?
+>> 
+>> Actually, yes.  Since I'm going to be travelling, that makes it much
+>> easier for me.  And no other patches I have depend on it.
+>
+> Series applied, but can you be more careful when you hand edit patches
+> or whatever you are doing that puts space characters at the beginning
+> of lines before TAB characters?
+>
+> GIT flags this immediately, so even if you are hella lazy just feeding
+> your patches into "git am" will show this.
 
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs (2014-09-10 14:04:17 -0700)
+Hmm, that was weird, thanks for the warning.  This patch is pretty old,
+so maybe I did hand-hack it at one stage.
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/fixes-for-linus
-
-for you to fetch changes up to f49819560f53b7f3a596a8ea2e6764dc86695b62:
-
-  virtio-rng: skip reading when we start to remove the device (2014-09-11 22:28:38 +0930)
-
-----------------------------------------------------------------
-virtio-rng corner case fixes, with cc:stable.
-Survived a few days in linux-next.
-
-----------------------------------------------------------------
-Amos Kong (2):
-      virtio-rng: fix stuck of hot-unplugging busy device
-      virtio-rng: skip reading when we start to remove the device
-
- drivers/char/hw_random/virtio-rng.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Cheers,
+Rusty.
