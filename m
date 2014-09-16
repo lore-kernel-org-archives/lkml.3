@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854AbaIPHFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:05:22 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:43038 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaIPHFU (ORCPT
+	id S1753189AbaIPHFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:05:25 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:35493 "EHLO
+	homiemail-a9.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752636AbaIPHFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:05:20 -0400
-Date: Tue, 16 Sep 2014 09:05:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Dave Hansen <dave@sr71.net>,
-        linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-        andreas.herrmann3@amd.com, hpa@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
- "sane"
-Message-ID: <20140916070515.GA20916@gmail.com>
-References: <20140915222641.D640BD8A@viggo.jf.intel.com>
- <20140916032920.GH2840@worktop.localdomain>
- <20140916013845.390833b9@as>
- <20140916064403.GC14807@gmail.com>
- <20140916020300.5013b8f0@as>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916020300.5013b8f0@as>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 16 Sep 2014 03:05:22 -0400
+Message-ID: <1410883441.4630.9.camel@linux-t7sj.site>
+Subject: Re: [PATCH 1/7] selftests: add header file for test exit code
+ defines
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        felipensp@gmail.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 16 Sep 2014 18:04:01 +0200
+In-Reply-To: <1410820442-8774-2-git-send-email-shuahkh@osg.samsung.com>
+References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
+	 <1410820442-8774-2-git-send-email-shuahkh@osg.samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-
-> On Tue, 16 Sep 2014 08:44:03 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
+On Mon, 2014-09-15 at 16:33 -0600, Shuah Khan wrote:
+> Add a new header file that defines exit codes for individual
+> tests to use to communicate test results. These defines are
+> intended to provide a common and uniform way for selftests
+> to report results. pass/fail/xfail/xpass/skip/unsupported
+> are defined.
 > 
-> > 
-> > * Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> > 
-> > > On Tue, 16 Sep 2014 05:29:20 +0200
-> > > Peter Zijlstra <peterz@infradead.org> wrote:
-> > > 
-> > > > On Mon, Sep 15, 2014 at 03:26:41PM -0700, Dave Hansen wrote:
-> > > > > 
-> > > > > I'm getting the spew below when booting with Haswell (Xeon 
-> > > > > E5-2699) CPUs and the "Cluster-on-Die" (CoD) feature 
-> > > > > enabled in the BIOS.
-> > > > 
-> > > > What is that cluster-on-die thing? I've heard it before but 
-> > > > never could find anything on it.
-> > > 
-> > > Each CPU has 2.5MB of L3 connected together in a ring that 
-> > > makes it all act like a single shared cache. The HW tries 
-> > > to place the data so it's closest to the CPU that uses it. 
-> > > On the larger processors there are two rings with an 
-> > > interconnect between them that adds latency if a cache 
-> > > fetch has to cross that. CoD breaks that connection and 
-> > > effectively gives you two nodes on one die.
-> > 
-> > Note that that's not really a 'NUMA node' in the way lots of 
-> > places in the kernel assume it: permanent placement assymetry 
-> > (and access cost assymetry) of RAM.
-> > 
-> > It's a new topology construct that needs new handling (and 
-> > probably a new mask): Non Uniform Cache Architecture (NUCA) 
-> > or so.
+> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+> ---
+>  tools/testing/selftests/kselftest.h | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>  create mode 100644 tools/testing/selftests/kselftest.h
 > 
-> Hmm, looking closer at the diagram, each ring has its own 
-> memory controller, so it really is NUMA if you break the 
-> interconnect between that caches.
+> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
+> new file mode 100644
+> index 0000000..1b1c9cb
+> --- /dev/null
+> +++ b/tools/testing/selftests/kselftest.h
+> @@ -0,0 +1,20 @@
+> +/*
+> + * kselftest.h - kselftest framework return codes to include from
+> + *		 selftests.
+> + *
+> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
+> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+> + *
+> + * This file is released under the GPLv2.
+> + */
+> +#ifndef __KSELFTEST_H
+> +#define __KSELFTEST_H
+> +
+> +#define	EXIT_PASS		0
+> +#define	EXIT_FAIL		1
+> +#define	EXIT_XFAIL		2
+> +#define	EXIT_XPASS		3
+> +#define	EXIT_SKIP		4
+> +#define	EXIT_UNSUPPORTED	EXIT_SKIP
 
-Fair enough, I only went by the description.
+Looks to me like a potential name clashes here.
 
-Thanks,
+What's the difference between XFAIL/XPASS and regular FAIL/PASS (I don't
+see the former used in patchset either, only PASS/FAIL)? What's the
+purpose of EXIT_SKIP? I think overall these should be commented.
 
-	Ingo
+Also, in the bigger picture, I'm guessing you have a reason for not
+recycling errno and inventing your own exit codes... How do you plan on
+using these? In addition I'm seeing things like:
+
+-       exit(EXIT_FAILURE);
++       exit(EXIT_FAIL);
+
+which isn't a very good idea in general.
+
