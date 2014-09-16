@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523AbaIPOm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:42:56 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52081 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaIPOmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:42:54 -0400
-Date: Tue, 16 Sep 2014 16:42:52 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140916144252.GB32118@x4>
-References: <20140914050905.GA296@x4>
- <20140914055450.GB296@x4>
- <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
- <20140915163740.GA12408@x4>
- <20140916105547.GA1205@quack.suse.cz>
+	id S1754597AbaIPOn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:43:28 -0400
+Received: from mail-bn1on0079.outbound.protection.outlook.com ([157.56.110.79]:61830
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754568AbaIPOnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 10:43:25 -0400
+Date: Tue, 16 Sep 2014 09:22:43 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Weike Chen <alvin.chen@intel.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 1/4 v4] GPIO: gpio-dwapb: Enable platform driver binding
+ to MFD driver
+In-Reply-To: <1410859335-11080-2-git-send-email-alvin.chen@intel.com>
+Message-ID: <alpine.DEB.2.02.1409160921020.4740@atx-linux-37>
+References: <1410859335-11080-1-git-send-email-alvin.chen@intel.com> <1410859335-11080-2-git-send-email-alvin.chen@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916105547.GA1205@quack.suse.cz>
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: CO1PR06CA051.namprd06.prod.outlook.com (10.242.160.41) To
+ BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03361FCC43
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(189002)(199003)(101416001)(90102001)(46406003)(95666004)(69596002)(20776003)(85852003)(66066001)(50986999)(23726002)(77096002)(81156004)(105586002)(54356999)(31966008)(42186005)(86152002)(110136001)(76176999)(87976001)(99396002)(50466002)(107046002)(85306004)(64706001)(97736003)(92566001)(4396001)(83072002)(76482001)(53416004)(33716001)(102836001)(21056001)(83322001)(79102003)(77982003)(86362001)(47776003)(92726001)(74502003)(81542003)(106356001)(81342003)(46102003)(74662003)(80022003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB314;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
-the string "[sched_delayed] " before the actual message.
-However it doesn't take into account the KERN_* prefix of the message,
-that now ends up in the middle of the output:
+On Tue, 16 Sep 2014, Weike Chen wrote:
 
- [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
+One more:
 
-Fix this by just getting rid of the "[sched_delayed] " scnprintf().
+> +
+> +		/*
+> +		 * Only port A can provide interrupts in all configurations of
+> +		 * the IP.
+> +		 */
+> +		if (pp->idx == 0 &&
+> +		    of_property_read_bool(port_np, "interrupt-controller")) {
+> +			pp->irq = irq_of_parse_and_map(port_np, 0);
+> +			if (!pp->irq) {
+> +				dev_warn(dev, "no irq for bank %s\n",
+> +					 port_np->full_name);
+> +			}
+> +		} else {
+> +			pp->irq	= 0;
+> +		}
 
-Acked-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+The else clause is not needed since pp->irq == 0 already, right?
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 1ce770687ea8..f85994b58934 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	 * The printf needs to come first; we need the syslog
- 	 * prefix which might be passed-in as a parameter.
- 	 */
--	if (in_sched)
--		text_len = scnprintf(text, sizeof(textbuf),
--				     KERN_WARNING "[sched_delayed] ");
--
--	text_len += vscnprintf(text + text_len,
--			       sizeof(textbuf) - text_len, fmt, args);
-+	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
- 
- 	/* mark and strip a trailing newline */
- 	if (text_len && text[text_len-1] == '\n') {
--- 
-Markus
+Alan
+
+> +
+> +		pp->irq_shared	= false;
+> +		pp->gpio_base	= -1;
+> +		pp->name	= port_np->full_name;
+> +	}
+> +
+> +	return pdata;
+> +}
