@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739AbaIPQqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:46:33 -0400
-Received: from www.sr71.net ([198.145.64.142]:50410 "EHLO blackbird.sr71.net"
+	id S1754533AbaIPQsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:48:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8022 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462AbaIPQqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:46:32 -0400
-Message-ID: <54186966.3010901@sr71.net>
-Date: Tue, 16 Sep 2014 09:46:30 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753393AbaIPQsT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 12:48:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <23655.1410874187@warthog.procyon.org.uk>
+References: <23655.1410874187@warthog.procyon.org.uk>
+To: James Morris <jmorris@namei.org>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] KEYS: Fixes for keyrings
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        borislav.petkov@amd.com, andreas.herrmann3@amd.com,
-        hpa@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
- "sane"
-References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain> <20140916013845.390833b9@as> <20140916064403.GC14807@gmail.com> <20140916020300.5013b8f0@as> <20140916160134.GB2848@worktop.localdomain>
-In-Reply-To: <20140916160134.GB2848@worktop.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <31999.1410886091.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Sep 2014 17:48:11 +0100
+Message-ID: <32000.1410886091@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 09:01 AM, Peter Zijlstra wrote:
-> On Tue, Sep 16, 2014 at 02:03:00AM -0500, Chuck Ebbert wrote:
->> Hmm, looking closer at the diagram, each ring has its own memory controller, so
->> it really is NUMA if you break the interconnect between that caches.
+David Howells <dhowells@redhat.com> wrote:
+
 > 
-> How does it do that? Does it split the DIMM slots in two as well, with
-> half for the one node and the other half for the other? Or will both
-> 'nodes' share the same local memory?
+> Can you please pull these fixes and send them on upstream:
+> 
+>  (1) Reinstate the production of EPERM for key types beginning with '.' in
+>      requests from userspace.
+> 
+>  (2) Tidy up the cleanup of PKCS#7 message signed information blocks and fix a
+>      bug this made more obvious.
 
-I the diagrams in here are accurate in describing the rings:
+Please ignore this pull request.  To make things easier, I've rebased on the
+most recent common ancestor of linus/master and security/next so that you can
+pull it into both.  I'll issue another pull request.
 
-http://www.enterprisetech.com/2014/09/08/intel-ups-performance-ante-haswell-xeon-chips/
-
-The "nodes" each get their own memory controller and exclusive set of DIMMs.
+David
