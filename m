@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaIPPfO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:35:14 -0400
-Received: from plane.gmane.org ([80.91.229.3]:41904 "EHLO plane.gmane.org"
+	id S1754179AbaIPPkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:40:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63605 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787AbaIPPfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:35:13 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Andras Kovacs <neoteny@freemail.hu>
-Subject: Question re: blk-mq and UFS driver
-Date: Tue, 16 Sep 2014 15:28:06 +0000 (UTC)
-Message-ID: <loom.20140916T172224-80@post.gmane.org>
-Mime-Version: 1.0
+	id S1751540AbaIPPkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 11:40:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="386886578"
+Date: Tue, 16 Sep 2014 20:44:57 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM: Add helper to mark last busy and autosuspend
+Message-ID: <20140916151457.GQ3131@intel.com>
+References: <1410864231-10334-1-git-send-email-subhransu.s.prusty@intel.com>
+ <Pine.LNX.4.44L0.1409161024580.1166-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 24.68.136.144 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0)
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1409161024580.1166-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Sep 16, 2014 at 10:27:53AM -0400, Alan Stern wrote:
+> On Tue, 16 Sep 2014, Subhransu S. Prusty wrote:
+> 
+> > pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
+> > in quite a lot of places. Add a helper for these.
+> > 
+> > Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
+> > ---
+> >  include/linux/pm_runtime.h | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> > index 367f49b..256ec50 100644
+> > --- a/include/linux/pm_runtime.h
+> > +++ b/include/linux/pm_runtime.h
+> > @@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
+> >  	__pm_runtime_use_autosuspend(dev, false);
+> >  }
+> >  
+> > +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
+> > +{
+> > +	pm_runtime_mark_last_busy(dev);
+> > +	return pm_runtime_put_autosuspend(dev);
+> > +}
+> > +
+> >  #endif
+> 
+> What's the advantage?  Removing a few bytes of source code?  There will 
+> no change to the object code.  (Not to mention that your patch didn't 
+> actually change _any_ of the places where both routines get called!)
+Yes we didnt change users, as we need this for one of our drivers we are
+trying to push.
 
-Is it true that the blk-mq code is entirely transparent to low level drivers
-(in particular to the UFS driver, ufshcd.c and associated files)? Or are
-there any changes which have to be made to the UFS driver to take advantage
-of the performance improvements flowing from the blk-mq code?
+> Besides, if you're going to make an addition to the runtime PM API like 
+> this, then you also have to update Documentation/power/runtime_pm.txt.
+Sure if you folks are okay we can send update with Documentaion patch too
 
-Any pointer would be greatly appreciated.
-
-
+-- 
+~Vinod
