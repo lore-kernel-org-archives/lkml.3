@@ -1,586 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaIPM25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 08:28:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21085 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968AbaIPM2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 08:28:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
-   d="scan'208";a="573795126"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC PATCH v2 01/16] ACPI: Add support for device specific properties
-Date: Tue, 16 Sep 2014 14:52:32 +0300
-Message-Id: <1410868367-11056-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1753766AbaIPMgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 08:36:45 -0400
+Received: from smtp89.iad3a.emailsrvr.com ([173.203.187.89]:39837 "EHLO
+	smtp89.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752968AbaIPMgn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 08:36:43 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Date: Tue, 16 Sep 2014 08:36:41 -0400 (EDT)
+Subject: Re: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+From: kiran.padwal@smartplayin.com
+To: "Andy Gross" <agross@codeaurora.org>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davidb@codeaurora.org, afaerber@suse.de, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain;charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Importance: Normal
+X-Priority: 3 (Normal)
+X-Type: plain
+In-Reply-To: <20140916023922.GB2386@qualcomm.com>
+References: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com> 
+ <20140916023922.GB2386@qualcomm.com>
+Message-ID: <1410871001.891126377@apps.rackspace.com>
+X-Mailer: webmail7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device Tree is used in many embedded systems to describe the system
-configuration to the OS. It supports attaching properties or name-value
-pairs to the devices it describe. With these properties one can pass
-additional information to the drivers that would not be available
-otherwise.
 
-ACPI is another configuration mechanism (among other things) typically
-seen, but not limited to, x86 machines. ACPI allows passing arbitrary
-data from methods but there has not been mechanism equivalent to Device
-Tree until the introduction of _DSD in the recent publication of the
-ACPI 5.1 specification.
 
-In order to facilitate ACPI usage in systems where Device Tree is
-typically used, it would be beneficial to standardize a way to retrieve
-Device Tree style properties from ACPI devices, which is what we do in
-this patch.
+On Monday, September 15, 2014 10:39pm, "Andy Gross" <agross@codeaurora.org> said:
 
-If a given device described in ACPI namespace wants to export properties it
-must implement _DSD method (Device Specific Data, introduced with ACPI 5.1)
-that returns the properties in a package of packages. For example:
+> On Tue, Aug 26, 2014 at 05:00:45PM +0530, Kiran Padwal wrote:
+>> This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
+>> It also adds necessary DT support for i2c eeprom which is present on
+>> IFC6410.
+>>
+>> Tested on IFC6410 board.
+> 
+> Looks fine
 
-	Name (_DSD, Package () {
-		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-		Package () {
-			Package () {"name1", <VALUE1>},
-			Package () {"name2", <VALUE2>},
-			...
-		}
-	})
+Thanks for review.
 
-The UUID reserved for properties is daffd814-6eba-4d8c-8a91-bc9bbf4aa301
-and is documented in the ACPI 5.1 companion document called "_DSD
-Implementation Guide" [1], [2].
+> 
+>>
+>> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+>> ---
+>> Changes since v2:
+>>  - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
+>>  - Removed labes of node.
+>>  - Used canonical value as "okay" instead of "ok".
+>>  - Used macros.
+>>
+>> Changes since v1:
+>>  - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
+>>  - Updated pinmux interrupt.
+>>
+>>  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
+>>  arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
+>>  2 files changed, 80 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+>> b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+>> index 7c2441d..ef0857e 100644
+>> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+>> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+>> @@ -5,6 +5,24 @@
+>>  	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
+>>
+>>  	soc {
+>> +		gsbi@12440000 {
+>> +			status = "okay";
+>> +			qcom,mode = <GSBI_PROT_I2C>;
+>> +
+>> +			i2c@12460000 {
+>> +				status = "okay";
+>> +				clock-frequency = <200000>;
+>> +				pinctrl-0 = <&i2c1_pins>;
+>> +				pinctrl-names = "default";
+>> +
+>> +				eeprom: eeprom@52 {
+>> +					compatible = "atmel,24c128";
+>> +					reg = <0x52>;
+>> +					pagesize = <32>;
+>> +				};
+> 
+> don't need read only here.  the eeprom is not being used by anything....
+> thankfully.
+> 
+>> +			};
+>> +		};
+>> +
+>>  		gsbi@16600000 {
+>>  			status = "ok";
+>>  			qcom,mode = <GSBI_PROT_I2C_UART>;
+>> @@ -12,5 +30,14 @@
+>>  				status = "ok";
+>>  			};
+>>  		};
+>> +
+>> +		pinmux@800000 {
+>> +			i2c1_pins: i2c1 {
+>> +				mux {
+>> +					pins = "gpio20", "gpio21";
+>> +					function = "gsbi1";
+>> +				};
+>> +			};
+>> +		};
+>>  	};
+>>  };
+>> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi
+>> b/arch/arm/boot/dts/qcom-apq8064.dtsi
+>> index 92bf793..5dddbf3 100644
+>> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
+>> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+>> @@ -89,6 +89,17 @@
+>>  			cpu-offset = <0x80000>;
+>>  		};
+>>
+>> +		tlmm_pinmux: pinmux@800000 {
+>> +			compatible = "qcom,apq8064-pinctrl";
+>> +			reg = <0x800000 0x4000>;
+>> +
+>> +			gpio-controller;
+>> +			#gpio-cells = <2>;
+>> +			interrupt-controller;
+>> +			#interrupt-cells = <2>;
+>> +			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
+>> +		};
+>> +
+>>  		acc0: clock-controller@2088000 {
+>>  			compatible = "qcom,kpss-acc-v1";
+>>  			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
+>> @@ -133,6 +144,48 @@
+>>  			regulator;
+>>  		};
+>>
+>> +		gsbi1: gsbi@12440000 {
+>> +			status = "disabled";
+>> +			compatible = "qcom,gsbi-v1.0.0";
+>> +			reg = <0x12440000 0x100>;
+>> +			clocks = <&gcc GSBI1_H_CLK>;
+>> +			clock-names = "iface";
+>> +			#address-cells = <1>;
+>> +			#size-cells = <1>;
+>> +			ranges;
+>> +
+>> +			i2c1: i2c@12460000 {
+>> +				compatible = "qcom,i2c-qup-v1.1.1";
+>> +				reg = <0x12460000 0x1000>;
+>> +				interrupts = <0 194 IRQ_TYPE_NONE>;
+>> +				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
+>> +				clock-names = "core", "iface";
+>> +				#address-cells = <1>;
+>> +				#size-cells = <0>;
+>> +			};
+>> +		};
+>> +
+>> +		gsbi2: gsbi@12480000 {
+>> +			status = "disabled";
+>> +			compatible = "qcom,gsbi-v1.0.0";
+>> +			reg = <0x12480000 0x100>;
+>> +			clocks = <&gcc GSBI2_H_CLK>;
+>> +			clock-names = "iface";
+>> +			#address-cells = <1>;
+>> +			#size-cells = <1>;
+>> +			ranges;
+>> +
+>> +			i2c2: i2c@124a0000 {
+>> +				compatible = "qcom,i2c-qup-v1.1.1";
+>> +				reg = <0x124a0000 0x1000>;
+>> +				interrupts = <0 196 IRQ_TYPE_NONE>;
+>> +				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
+>> +				clock-names = "core", "iface";
+>> +				#address-cells = <1>;
+>> +				#size-cells = <0>;
+>> +			};
+>> +		};
+>> +
+>>  		gsbi7: gsbi@16600000 {
+>>  			status = "disabled";
+>>  			compatible = "qcom,gsbi-v1.0.0";
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
 
-We add several helper functions that can be used to extract these
-properties and convert them to different Linux data types.
-
-The ultimate goal is that we only have one device property API that
-retrieves the requested properties from Device Tree or from ACPI
-transparent to the caller.
-
-[1] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-[2] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-
-Reviewed-by: Hanjun Guo <hanjun.guo@linaro.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/acpi/Makefile   |   1 +
- drivers/acpi/internal.h |   6 +
- drivers/acpi/property.c | 364 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/scan.c     |   2 +
- include/acpi/acpi_bus.h |   7 +
- include/linux/acpi.h    |  40 ++++++
- 6 files changed, 420 insertions(+)
- create mode 100644 drivers/acpi/property.c
-
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index 505d4d79fe3e..ba2cafe18fe4 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -46,6 +46,7 @@ acpi-y				+= acpi_pnp.o
- acpi-y				+= power.o
- acpi-y				+= event.o
- acpi-y				+= sysfs.o
-+acpi-y				+= property.o
- acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
- acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
- acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 4c5cf77e7576..e34290c7af9f 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -181,4 +181,10 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev);
- bool acpi_osi_is_win8(void);
- #endif
- 
-+/*--------------------------------------------------------------------------
-+				Device properties
-+  -------------------------------------------------------------------------- */
-+void acpi_init_properties(struct acpi_device *adev);
-+void acpi_free_properties(struct acpi_device *adev);
-+
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
-new file mode 100644
-index 000000000000..c4a3e800e82c
---- /dev/null
-+++ b/drivers/acpi/property.c
-@@ -0,0 +1,364 @@
-+/*
-+ * ACPI device specific properties support.
-+ *
-+ * Copyright (C) 2014, Intel Corporation
-+ * All rights reserved.
-+ *
-+ * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *          Darren Hart <dvhart@linux.intel.com>
-+ *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/device.h>
-+#include <linux/export.h>
-+
-+#include "internal.h"
-+
-+/* ACPI _DSD device properties UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
-+static const u8 prp_uuid[16] = {
-+	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
-+	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
-+};
-+
-+static bool acpi_property_value_ok(const union acpi_object *value)
-+{
-+	int j;
-+
-+	/*
-+	 * The value must be an integer, a string, a reference, or a package
-+	 * whose every element must be an integer, a string, or a reference.
-+	 */
-+	switch (value->type) {
-+	case ACPI_TYPE_INTEGER:
-+	case ACPI_TYPE_STRING:
-+	case ACPI_TYPE_LOCAL_REFERENCE:
-+		return true;
-+
-+	case ACPI_TYPE_PACKAGE:
-+		for (j = 0; j < value->package.count; j++)
-+			switch (value->package.elements[j].type) {
-+			case ACPI_TYPE_INTEGER:
-+			case ACPI_TYPE_STRING:
-+			case ACPI_TYPE_LOCAL_REFERENCE:
-+				continue;
-+
-+			default:
-+				return false;
-+			}
-+
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static bool acpi_properties_format_valid(const union acpi_object *properties)
-+{
-+	int i;
-+
-+	for (i = 0; i < properties->package.count; i++) {
-+		const union acpi_object *property;
-+
-+		property = &properties->package.elements[i];
-+		/*
-+		 * Only two elements allowed, the first one must be a string and
-+		 * the second one has to satisfy certain conditions.
-+		 */
-+		if (property->package.count != 2
-+		    || property->package.elements[0].type != ACPI_TYPE_STRING
-+		    || !acpi_property_value_ok(&property->package.elements[1]))
-+			return false;
-+	}
-+	return true;
-+}
-+
-+void acpi_init_properties(struct acpi_device *adev)
-+{
-+	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
-+	const union acpi_object *desc;
-+	acpi_status status;
-+	int i;
-+
-+	status = acpi_evaluate_object_typed(adev->handle, "_DSD", NULL, &buf,
-+					    ACPI_TYPE_PACKAGE);
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	desc = buf.pointer;
-+	if (desc->package.count % 2)
-+		goto fail;
-+
-+	/* Look for the device properties UUID. */
-+	for (i = 0; i < desc->package.count; i += 2) {
-+		const union acpi_object *uuid, *properties;
-+
-+		uuid = &desc->package.elements[i];
-+		properties = &desc->package.elements[i + 1];
-+
-+		/*
-+		 * The first element must be a UUID and the second one must be
-+		 * a package.
-+		 */
-+		if (uuid->type != ACPI_TYPE_BUFFER || uuid->buffer.length != 16
-+		    || properties->type != ACPI_TYPE_PACKAGE)
-+			break;
-+
-+		if (memcmp(uuid->buffer.pointer, prp_uuid, sizeof(prp_uuid)))
-+			continue;
-+
-+		/*
-+		 * We found the matching UUID. Now validate the format of the
-+		 * package immediately following it.
-+		 */
-+		if (!acpi_properties_format_valid(properties))
-+			break;
-+
-+		adev->data.pointer = buf.pointer;
-+		adev->data.properties = properties;
-+		return;
-+	}
-+
-+ fail:
-+	dev_warn(&adev->dev, "Returned _DSD data is not valid, skipping\n");
-+	ACPI_FREE(buf.pointer);
-+}
-+
-+void acpi_free_properties(struct acpi_device *adev)
-+{
-+	ACPI_FREE((void *)adev->data.pointer);
-+	adev->data.pointer = NULL;
-+	adev->data.properties = NULL;
-+}
-+
-+/**
-+ * acpi_dev_get_property - return an ACPI property with given name
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @type: Expected property type
-+ * @obj: Location to store the property value (if not %NULL)
-+ *
-+ * Look up a property with @name and store a pointer to the resulting ACPI
-+ * object at the location pointed to by @obj if found.
-+ *
-+ * Callers must not attempt to free the returned objects.  These objects will be
-+ * freed by the ACPI core automatically during the removal of @adev.
-+ *
-+ * Return: %0 if property with @name has been found (success),
-+ *         %-EINVAL if the arguments are invalid,
-+ *         %-ENODATA if the property doesn't exist,
-+ *         %-EPROTO if the property value type doesn't match @type.
-+ */
-+int acpi_dev_get_property(struct acpi_device *adev, const char *name,
-+			  acpi_object_type type, const union acpi_object **obj)
-+{
-+	const union acpi_object *properties;
-+	int i;
-+
-+	if (!adev || !name)
-+		return -EINVAL;
-+
-+	if (!adev->data.pointer || !adev->data.properties)
-+		return -ENODATA;
-+
-+	properties = adev->data.properties;
-+	for (i = 0; i < properties->package.count; i++) {
-+		const union acpi_object *propname, *propvalue;
-+		const union acpi_object *property;
-+
-+		property = &properties->package.elements[i];
-+
-+		propname = &property->package.elements[0];
-+		propvalue = &property->package.elements[1];
-+
-+		if (!strcmp(name, propname->string.pointer)) {
-+			if (type != ACPI_TYPE_ANY && propvalue->type != type)
-+				return -EPROTO;
-+			else if (obj)
-+				*obj = propvalue;
-+
-+			return 0;
-+		}
-+	}
-+	return -ENODATA;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property);
-+
-+/**
-+ * acpi_dev_get_property_array - return an ACPI array property with given name
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @type: Expected type of array elements
-+ * @obj: Location to store a pointer to the property value (if not NULL)
-+ *
-+ * Look up an array property with @name and store a pointer to the resulting
-+ * ACPI object at the location pointed to by @obj if found.
-+ *
-+ * Callers must not attempt to free the returned objects.  Those objects will be
-+ * freed by the ACPI core automatically during the removal of @adev.
-+ *
-+ * Return: %0 if array property (package) with @name has been found (success),
-+ *         %-EINVAL if the arguments are invalid,
-+ *         %-ENODATA if the property doesn't exist,
-+ *         %-EPROTO if the property is not a package or the type of its elements
-+ *           doesn't match @type.
-+ */
-+int acpi_dev_get_property_array(struct acpi_device *adev, const char *name,
-+				acpi_object_type type,
-+				const union acpi_object **obj)
-+{
-+	const union acpi_object *prop;
-+	int ret, i;
-+
-+	ret = acpi_dev_get_property(adev, name, ACPI_TYPE_PACKAGE, &prop);
-+	if (ret)
-+		return ret;
-+
-+	if (type != ACPI_TYPE_ANY) {
-+		/* Check that all elements are of correct type. */
-+		for (i = 0; i < prop->package.count; i++)
-+			if (prop->package.elements[i].type != type)
-+				return -EPROTO;
-+	}
-+	if (obj)
-+		*obj = prop;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property_array);
-+
-+/**
-+ * acpi_dev_get_property_reference - returns handle to the referenced object
-+ * @adev: ACPI device to get property
-+ * @name: Name of the property
-+ * @size_prop: Name of the "size" property in referenced object
-+ * @index: Index of the reference to return
-+ * @args: Location to store the returned reference with optional arguments
-+ *
-+ * Find property with @name, verifify that it is a package containing at least
-+ * one object reference and if so, store the ACPI device object pointer to the
-+ * target object in @args->adev.
-+ *
-+ * If the reference includes arguments (@size_prop is not %NULL) follow the
-+ * reference and check whether or not there is an integer property @size_prop
-+ * under the target object and if so, whether or not its value matches the
-+ * number of arguments that follow the reference.  If there's more than one
-+ * reference in the property value package, @index is used to select the one to
-+ * return.
-+ *
-+ * Return: %0 on success, negative error code on failure.
-+ */
-+int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
-+				    const char *size_prop, size_t index,
-+				    struct acpi_reference_args *args)
-+{
-+	const union acpi_object *element, *end;
-+	const union acpi_object *obj;
-+	struct acpi_device *device;
-+	int ret, idx = 0;
-+
-+	ret = acpi_dev_get_property(adev, name, ACPI_TYPE_ANY, &obj);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * The simplest case is when the value is a single reference.  Just
-+	 * return that reference then.
-+	 */
-+	if (obj->type == ACPI_TYPE_LOCAL_REFERENCE) {
-+		if (size_prop || index)
-+			return -EINVAL;
-+
-+		ret = acpi_bus_get_device(obj->reference.handle, &device);
-+		if (ret)
-+			return ret;
-+
-+		args->adev = device;
-+		args->nargs = 0;
-+		return 0;
-+	}
-+
-+	/*
-+	 * If it is not a single reference, then it is a package of
-+	 * references followed by number of ints as follows:
-+	 *
-+	 *  Package () { REF, INT, REF, INT, INT }
-+	 *
-+	 * The index argument is then used to determine which reference
-+	 * the caller wants (along with the arguments).
-+	 */
-+	if (obj->type != ACPI_TYPE_PACKAGE || index >= obj->package.count)
-+		return -EPROTO;
-+
-+	element = obj->package.elements;
-+	end = element + obj->package.count;
-+
-+	while (element < end) {
-+		u32 nargs, i;
-+
-+		if (element->type != ACPI_TYPE_LOCAL_REFERENCE)
-+			return -EPROTO;
-+
-+		ret = acpi_bus_get_device(element->reference.handle, &device);
-+		if (ret)
-+			return -ENODEV;
-+
-+		element++;
-+		nargs = 0;
-+
-+		if (size_prop) {
-+			const union acpi_object *prop;
-+
-+			/*
-+			 * Find out how many arguments the refenced object
-+			 * expects by reading its size_prop property.
-+			 */
-+			ret = acpi_dev_get_property(device, size_prop,
-+						    ACPI_TYPE_INTEGER, &prop);
-+			if (ret)
-+				return ret;
-+
-+			nargs = prop->integer.value;
-+			if (nargs > MAX_ACPI_REFERENCE_ARGS
-+			    || element + nargs > end)
-+				return -EPROTO;
-+
-+			/*
-+			 * Skip to the start of the arguments and verify
-+			 * that they all are in fact integers.
-+			 */
-+			for (i = 0; i < nargs; i++)
-+				if (element[i].type != ACPI_TYPE_INTEGER)
-+					return -EPROTO;
-+		} else {
-+			/* assume following integer elements are all args */
-+			for (i = 0; element + i < end; i++) {
-+				int type = element[i].type;
-+
-+				if (type == ACPI_TYPE_INTEGER)
-+					nargs++;
-+				else if (type == ACPI_TYPE_LOCAL_REFERENCE)
-+					break;
-+				else
-+					return -EPROTO;
-+			}
-+		}
-+
-+		if (idx++ == index) {
-+			args->adev = device;
-+			args->nargs = nargs;
-+			for (i = 0; i < nargs; i++)
-+				args->args[i] = element[i].integer.value;
-+
-+			return 0;
-+		}
-+
-+		element += nargs;
-+	}
-+
-+	return -EPROTO;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dev_get_property_reference);
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index d5e6ac5042d8..f4aabf9c0aad 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -884,6 +884,7 @@ static void acpi_device_release(struct device *dev)
- {
- 	struct acpi_device *acpi_dev = to_acpi_device(dev);
- 
-+	acpi_free_properties(acpi_dev);
- 	acpi_free_pnp_ids(&acpi_dev->pnp);
- 	acpi_free_power_resources_lists(acpi_dev);
- 	kfree(acpi_dev);
-@@ -1888,6 +1889,7 @@ void acpi_init_device_object(struct acpi_device *device, acpi_handle handle,
- 	acpi_set_device_status(device, sta);
- 	acpi_device_get_busid(device);
- 	acpi_set_pnp_ids(handle, &device->pnp, type);
-+	acpi_init_properties(device);
- 	acpi_bus_get_flags(device);
- 	device->flags.match_driver = false;
- 	device->flags.initialized = true;
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index c1c9de19edbe..620b4f89c87b 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -337,6 +337,12 @@ struct acpi_device_physical_node {
- 	bool put_online:1;
- };
- 
-+/* ACPI Device Specific Data (_DSD) */
-+struct acpi_device_data {
-+	const union acpi_object *pointer;
-+	const union acpi_object *properties;
-+};
-+
- /* Device */
- struct acpi_device {
- 	int device_type;
-@@ -353,6 +359,7 @@ struct acpi_device {
- 	struct acpi_device_wakeup wakeup;
- 	struct acpi_device_perf performance;
- 	struct acpi_device_dir dir;
-+	struct acpi_device_data data;
- 	struct acpi_scan_handler *handler;
- 	struct acpi_hotplug_context *hp;
- 	struct acpi_driver *driver;
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 807cbc46d73e..104321d994f5 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -660,4 +660,44 @@ do {									\
- #endif
- #endif
- 
-+/* Device properties */
-+
-+#define MAX_ACPI_REFERENCE_ARGS	8
-+struct acpi_reference_args {
-+	struct acpi_device *adev;
-+	size_t nargs;
-+	u64 args[MAX_ACPI_REFERENCE_ARGS];
-+};
-+
-+#ifdef CONFIG_ACPI
-+int acpi_dev_get_property(struct acpi_device *adev, const char *name,
-+			  acpi_object_type type, const union acpi_object **obj);
-+int acpi_dev_get_property_array(struct acpi_device *adev, const char *name,
-+				acpi_object_type type,
-+				const union acpi_object **obj);
-+int acpi_dev_get_property_reference(struct acpi_device *adev, const char *name,
-+				    const char *cells_name, size_t index,
-+				    struct acpi_reference_args *args);
-+#else
-+static inline int acpi_dev_get_property(struct acpi_device *adev,
-+					const char *name, acpi_object_type type,
-+					const union acpi_object **obj)
-+{
-+	return -ENXIO;
-+}
-+static inline int acpi_dev_get_property_array(struct acpi_device *adev,
-+					      const char *name,
-+					      acpi_object_type type,
-+					      const union acpi_object **obj)
-+{
-+	return -ENXIO;
-+}
-+static inline int acpi_dev_get_property_reference(struct acpi_device *adev,
-+				const char *name, const char *cells_name,
-+				size_t index, struct acpi_reference_args *args)
-+{
-+	return -ENXIO;
-+}
-+#endif
-+
- #endif	/*_LINUX_ACPI_H*/
--- 
-2.1.0
 
