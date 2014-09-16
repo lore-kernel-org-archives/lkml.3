@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaIPQSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:18:07 -0400
-Received: from smtprelay0026.hostedemail.com ([216.40.44.26]:50233 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754583AbaIPQSF (ORCPT
+	id S1754715AbaIPQSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:18:16 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:33524 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469AbaIPQSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:18:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3868:3870:3871:3872:3873:4321:5007:7652:8957:10004:10400:10848:11658:11914:12517:12519:12740:13069:13095:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: snail61_292ac598e2525
-X-Filterd-Recvd-Size: 1611
-Message-ID: <1410884281.16519.2.camel@joe-AO725>
-Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Sep 2014 09:18:01 -0700
-In-Reply-To: <20140916160759.GJ12361@n2100.arm.linux.org.uk>
-References: <cover.1410632834.git.joe@perches.com>
-	 <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
-	 <20140915155656.GA29744@arm.com>
-	 <20140916160759.GJ12361@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Sep 2014 12:18:12 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-cc-541862c1b31e
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH] ARM: dts: mmp2: Fix typo in max8925 compatible property
+Date: Tue, 16 Sep 2014 18:18:02 +0200
+Message-id: <1410884282-18041-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e/4Zd2DSRIhBj9niFvMP3KO1aL/zUJW
+	iwvrzC3OvVrJaPH6haHFpsfXWC0u75rDZnH7Mq/F0usXmSwmTF/LYtG69wi7A7fHmnlrGD1a
+	mnvYPC739TJ57Jx1l91j5fIvbB6bVnWyeWxeUu/Rt2UVo8fnTXIBnFFcNimpOZllqUX6dglc
+	GR/2XmctmMFWceVlD3MDYzNrFyMnh4SAicSh642MELaYxIV769lAbCGBpYwSL5rLuhi5gOw+
+	JonDW54xgyTYBIwlNi9fwgaSEBE4wyTx49FDsG5mgTiJ3h1zmEBsYQEPiUMrd7OD2CwCqhLP
+	p80Cq+EVcJfYNXcL1GY5iZPHJrNOYORewMiwilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMk
+	3L7uYFx6zOoQowAHoxIPb8Y/8RAh1sSy4srcQ4wSHMxKIrw/fCVChHhTEiurUovy44tKc1KL
+	DzEycXBKNTDufTblGn/dkwOX9R8n5BrJn40/MyWS5yTT7gK36N3P42RXl69/xPy93+yu0bU9
+	ysfOpGx8Zpxw6L3IstvRizeXZwW1rBQ/HmlytcO9X3Zr1k5TE8tF4iGcD9Vu/Jjf/VHi+5zn
+	hffk7e487g6r+XR5b+m6sKfLzug/YfFXOs+1eLd6dOP9/Nc1SizFGYmGWsxFxYkA8IzkXRUC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-16 at 17:07 +0100, Russell King - ARM Linux wrote:
-> any chance you could add a KernelVersion: tag somewhere in the
-> commit message and throw it at patches@arm.linux.org.uk so it doesn't
-> get lost?
+Fix typo in the compatible property for max8925 MFD driver. The proper
+compatible as in Documentation and driver is 'maxim,max8925'.
 
-There are no commit logs with a KernelVersion: tag
-in all of git history.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ arch/arm/boot/dts/mmp2-brownstone.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What do you think a KernelVersion: tag is and what
-would it be used for?
-
+diff --git a/arch/arm/boot/dts/mmp2-brownstone.dts b/arch/arm/boot/dts/mmp2-brownstone.dts
+index 7f70a39459f6..29eeb465f99c 100644
+--- a/arch/arm/boot/dts/mmp2-brownstone.dts
++++ b/arch/arm/boot/dts/mmp2-brownstone.dts
+@@ -30,7 +30,7 @@
+ 			twsi1: i2c@d4011000 {
+ 				status = "okay";
+ 				pmic: max8925@3c {
+-					compatible = "maxium,max8925";
++					compatible = "maxim,max8925";
+ 					reg = <0x3c>;
+ 					interrupts = <1>;
+ 					interrupt-parent = <&intcmux4>;
+-- 
+1.9.1
 
