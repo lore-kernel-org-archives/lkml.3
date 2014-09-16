@@ -1,40 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305AbaIPU30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:29:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57954 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027AbaIPU3Z (ORCPT
+	id S1755356AbaIPU3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:29:38 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:56206 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027AbaIPU3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:29:25 -0400
-Date: Tue, 16 Sep 2014 16:29:23 -0400 (EDT)
-Message-Id: <20140916.162923.605101746131407931.davem@davemloft.net>
-To: nhorman@tuxdriver.com
-Cc: mroos@linux.ee, klassert@mathematik.tu-chemnitz.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: bisected regression: 3c59x corrupts packets in 3.17-rc5
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140916101704.GA3792@hmsreliant.think-freely.org>
-References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
-	<20140916101704.GA3792@hmsreliant.think-freely.org>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 16 Sep 2014 13:29:24 -0700 (PDT)
+	Tue, 16 Sep 2014 16:29:35 -0400
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>, "David S . Miller" <davem@davemloft.net>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm64: bpf: add 'load 64-bit immediate' instruction
+Date: Tue, 16 Sep 2014 13:29:23 -0700
+Message-Id: <1410899363-27635-1-git-send-email-zlim.lnx@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410892655-17818-1-git-send-email-zlim.lnx@gmail.com>
+References: <1410892655-17818-1-git-send-email-zlim.lnx@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
-Date: Tue, 16 Sep 2014 06:17:04 -0400
+Hi Catalin, Will,
 
-> I'm guessing the above change has uncovered another bug,
+Please consider applying this after -rc1 as well. [1]
 
-Neil, read your patch carefully, I think it added the bug.
+Let me know how you prefer to handle these patches and I can repost
+as necessary.
 
-The ->page_offset of the frag gets applied two times.
+Thanks,
+z
 
-skb_dma_map_frag() already takes frag->page_offset into consideration,
-you then pass it in as the 'offset' argument and it then gets added to
-itself to compute th final offset.
+[1] https://lkml.org/lkml/2014/9/16/418
+>8------------------------------------------------------8<
+
+Commit 02ab695bb37e (net: filter: add "load 64-bit immediate" eBPF
+instruction) introduced a new eBPF instruction. Let's add support
+for this for arm64 as well.
+
+Our arm64 eBPF JIT compiler now passes the new "load 64-bit
+immediate" test case introduced in the same commit 02ab695bb37e.
+
+Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Alexei Starovoitov <ast@plumgrid.com>
+---
+ arch/arm64/net/bpf_jit_comp.c | 31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
+index 80cc769..618d2cd 100644
+--- a/arch/arm64/net/bpf_jit_comp.c
++++ b/arch/arm64/net/bpf_jit_comp.c
+@@ -205,6 +205,12 @@ static void build_epilogue(struct jit_ctx *ctx)
+ 	emit(A64_RET(A64_LR), ctx);
+ }
+ 
++/* JITs an eBPF instruction.
++ * Returns:
++ * 0  - successfully JITed an 8-byte eBPF instruction.
++ * >0 - successfully JITed a 16-byte eBPF instruction.
++ * <0 - failed to JIT.
++ */
+ static int build_insn(const struct bpf_insn *insn, struct jit_ctx *ctx)
+ {
+ 	const u8 code = insn->code;
+@@ -464,6 +470,27 @@ emit_cond_jmp:
+ 		emit(A64_B(jmp_offset), ctx);
+ 		break;
+ 
++	/* dst = imm64 */
++	case BPF_LD | BPF_IMM | BPF_DW:
++	{
++		const struct bpf_insn insn1 = insn[1];
++		u64 imm64;
++
++		if (insn1.code != 0 || insn1.src_reg != 0 ||
++		    insn1.dst_reg != 0 || insn1.off != 0) {
++			/* Note: verifier in BPF core must catch invalid
++			 * instructions.
++			 */
++			pr_err_once("Invalid BPF_LD_IMM64 instruction\n");
++			return -EINVAL;
++		}
++
++		imm64 = (u64)insn1.imm << 32 | imm;
++		emit_a64_mov_i64(dst, imm64, ctx);
++
++		return 1;
++	}
++
+ 	/* LDX: dst = *(size *)(src + off) */
+ 	case BPF_LDX | BPF_MEM | BPF_W:
+ 	case BPF_LDX | BPF_MEM | BPF_H:
+@@ -615,6 +642,10 @@ static int build_body(struct jit_ctx *ctx)
+ 			ctx->offset[i] = ctx->idx;
+ 
+ 		ret = build_insn(insn, ctx);
++		if (ret > 0) {
++			i++;
++			continue;
++		}
+ 		if (ret)
+ 			return ret;
+ 	}
+-- 
+1.9.1
+
