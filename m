@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234AbaIPT7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:59:40 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:54000 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853AbaIPT7i (ORCPT
+	id S1755564AbaIPUAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:00:45 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:33202 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbaIPUAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:59:38 -0400
+	Tue, 16 Sep 2014 16:00:43 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Jiri Kosina <trivial@kernel.org>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH trivial] PM / Domains: Spelling s/domian/domain/
-Date: Tue, 16 Sep 2014 21:59:39 +0200
-Message-Id: <1410897579-28240-1-git-send-email-geert+renesas@glider.be>
+To: Tomas Winkler <tomas.winkler@intel.com>, Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH trivial] mei: Spelling s/domian/domain/, s/stucture/structure/
+Date: Tue, 16 Sep 2014 22:00:47 +0200
+Message-Id: <1410897647-28308-1-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,31 +20,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- drivers/base/power/domain.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/misc/mei/pci-me.c  | 4 ++--
+ drivers/misc/mei/pci-txe.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index cf4651a15a5753e5..e6a11ca3ce2634ab 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -1833,7 +1833,7 @@ int pm_genpd_name_detach_cpuidle(const char *name)
- /* Default device callbacks for generic PM domains. */
- 
- /**
-- * pm_genpd_default_save_state - Default "save device state" for PM domians.
-+ * pm_genpd_default_save_state - Default "save device state" for PM domains.
-  * @dev: Device to handle.
-  */
- static int pm_genpd_default_save_state(struct device *dev)
-@@ -1856,7 +1856,7 @@ static int pm_genpd_default_save_state(struct device *dev)
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index a0e9422b55a26aa9..959c313d84a73318 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -424,7 +424,7 @@ static int mei_me_pm_runtime_resume(struct device *device)
  }
  
  /**
-- * pm_genpd_default_restore_state - Default PM domians "restore device state".
-+ * pm_genpd_default_restore_state - Default PM domains "restore device state".
-  * @dev: Device to handle.
+- * mei_me_set_pm_domain - fill and set pm domian stucture for device
++ * mei_me_set_pm_domain - fill and set pm domain structure for device
+  *
+  * @dev: mei_device
   */
- static int pm_genpd_default_restore_state(struct device *dev)
+@@ -444,7 +444,7 @@ static inline void mei_me_set_pm_domain(struct mei_device *dev)
+ }
+ 
+ /**
+- * mei_me_unset_pm_domain - clean pm domian stucture for device
++ * mei_me_unset_pm_domain - clean pm domain structure for device
+  *
+  * @dev: mei_device
+  */
+diff --git a/drivers/misc/mei/pci-txe.c b/drivers/misc/mei/pci-txe.c
+index 19de57368b7a2e88..74727dda51c1ba97 100644
+--- a/drivers/misc/mei/pci-txe.c
++++ b/drivers/misc/mei/pci-txe.c
+@@ -371,7 +371,7 @@ static int mei_txe_pm_runtime_resume(struct device *device)
+ }
+ 
+ /**
+- * mei_txe_set_pm_domain - fill and set pm domian stucture for device
++ * mei_txe_set_pm_domain - fill and set pm domain structure for device
+  *
+  * @dev: mei_device
+  */
+@@ -391,7 +391,7 @@ static inline void mei_txe_set_pm_domain(struct mei_device *dev)
+ }
+ 
+ /**
+- * mei_txe_unset_pm_domain - clean pm domian stucture for device
++ * mei_txe_unset_pm_domain - clean pm domain structure for device
+  *
+  * @dev: mei_device
+  */
 -- 
 1.9.1
 
