@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403AbaIPUy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:54:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58390 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaIPUyz (ORCPT
+	id S1755644AbaIPUz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:55:29 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:36450 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402AbaIPUwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:54:55 -0400
-Date: Tue, 16 Sep 2014 16:54:52 -0400 (EDT)
-Message-Id: <20140916.165452.1747695341192703967.davem@davemloft.net>
-To: ast@plumgrid.com
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, luto@amacapital.net,
-        dborkman@redhat.com, hannes@stressinduktion.org, chema@google.com,
-        edumazet@google.com, a.p.zijlstra@chello.nl, pablo@netfilter.org,
-        hpa@zytor.com, akpm@linux-foundation.org, keescook@chromium.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v12 net-next 03/11] bpf: add
- lookup/update/delete/iterate methods to BPF maps
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
-References: <1410808721-27493-4-git-send-email-ast@plumgrid.com>
-	<20140916.151606.448751391205382097.davem@davemloft.net>
-	<CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 16 Sep 2014 13:54:54 -0700 (PDT)
+	Tue, 16 Sep 2014 16:52:16 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 15/22] Input: edt-ft5x06 - Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:29 +0200
+Message-Id: <1410900696-6481-16-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Tue, 16 Sep 2014 13:44:12 -0700
+The kernel used to contain two functions for length-delimited,
+case-insensitive string comparison, strnicmp with correct semantics
+and a slightly buggy strncasecmp. The latter is the POSIX name, so
+strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
+for the new strncasecmp to avoid breaking existing users.
 
-> the union indeed changes alignment from patch #1 to #3,
-> but, imo, it is not a problem, since kernel does:
+To allow the compat wrapper strnicmp to be removed at some point in
+the future, and to avoid the extra indirection cost, do
+s/strnicmp/strncasecmp/g.
 
-It changes the alignment of the datastructures in userspace.
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/input/touchscreen/edt-ft5x06.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> I haven't thought of 'aligned_u64' for this case.
-> For counters and masks it would be perfect, but here user is
-> passing real pointers to key and value, so they have to
-> be 'void __user *', otherwise user would need to type cast
-> them, which I want to avoid.
+diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
+index 8857d5b..ee3434f 100644
+--- a/drivers/input/touchscreen/edt-ft5x06.c
++++ b/drivers/input/touchscreen/edt-ft5x06.c
+@@ -812,7 +812,7 @@ static int edt_ft5x06_ts_identify(struct i2c_client *client,
+ 	/* if we find something consistent, stay with that assumption
+ 	 * at least M09 won't send 3 bytes here
+ 	 */
+-	if (!(strnicmp(rdbuf + 1, "EP0", 3))) {
++	if (!(strncasecmp(rdbuf + 1, "EP0", 3))) {
+ 		tsdata->version = M06;
+ 
+ 		/* remove last '$' end marker */
+-- 
+2.0.4
 
-The cost of the compat layer must be considered and weighted
-against this cast, which I think is really no big deal.
-
-> I think compat layer is a better option.
-
-It's overhead you'll have to support forever, I think you should
-reconsider.
-
-All of the "ugly casting" will be hidden, or can be hidden, in the
-syscall wrappers and/or interfaces in userspace.
