@@ -1,100 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaIPHo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:44:28 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:56771 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaIPHo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:44:26 -0400
-Date: Tue, 16 Sep 2014 09:44:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org
-Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
-Message-ID: <20140916074421.GA21295@gmail.com>
-References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com>
- <1410522513-1045-3-git-send-email-pawel.moll@arm.com>
- <54132F63.1010401@gmail.com>
- <20140912204444.GA11199@kernel.org>
- <5415B790.5010607@gmail.com>
+	id S1753219AbaIPHoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:44:39 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:36786 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752968AbaIPHoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:44:37 -0400
+Message-ID: <5417EA5C.3090405@mev.co.uk>
+Date: Tue, 16 Sep 2014 08:44:28 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+Organization: MEV Ltd
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5415B790.5010607@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Hartley Sweeten <HartleyS@visionengravers.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/11] staging: comedi: move comedi_fc functionality into
+ core
+References: <1410785167-28506-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D8825FA1BE3@P3PWEX4MB008.ex4.secureserver.net>
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825FA1BE3@P3PWEX4MB008.ex4.secureserver.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 15/09/14 19:21, Hartley Sweeten wrote:
+> On Monday, September 15, 2014 5:46 AM, Ian Abbott wrote:
+>> The "comedi_fc" module contains a few functions for use by several
+>> low-level comedi drivers.  Since they are used by quite a few drivers,
+>> it seems useful to migrate their functionality to the core "comedi"
+>> module, renaming them in the process, while keeping the original
+>> function names in "drivers/comedi_fc.h" available for now.  This set of
+>> patches accomplishes that.
+>>
+>> The next stages after this will be to migrate the remaining inline
+>> functions from "drivers/comedi_fc.h" (possibly making them externally
+>> exported functions, although they are rather short), and then to update
+>> the low-level drivers to call the functions with the new names,
+>> eliminating the need to include "comedi_fc.h".  Then
+>> "drivers/comedi_fc.h" can be removed as well.
+>>
+>> Note that PATCH 10 has a couple of checkpatch warnings due to
+>> changing an existing block comment in non-standard block-comment style.
+>>
+>> PATCH 11 has a checkpatch warning to check whether MAINTAINERS needs
+>> updating.  It doesn't.
+>>
+>> PATCH 11 might conflict with some other patch series that haven't been
+>> committed yet.
+>>
+>> 01) staging: comedi: add comedi_bytes_per_scan()
+>> 02) staging: comedi: comedi_fc: use comedi_bytes_per_scan()
+>> 03) staging: comedi: add comedi_inc_scan_progress()
+>> 04) staging: comedi: comedi_fc: use comedi_inc_scan_progress()
+>> 05) staging: comedi: add comedi_handle_events()
+>> 06) staging: comedi: comedi_fc: cfc_write_array_to_buffer() data is
+>>      const
+>> 07) staging: comedi: add comedi_write_array_to_buffer()
+>> 08) staging: comedi: comedi_fc.h: use comedi_write_array_to_buffer()
+>> 09) staging: comedi: add comedi_read_array_from_buffer()
+>> 10) staging: comedi: migrate copyrights from "comedi_fc.c"
+>> 11) staging: comedi: remove comedi_fc module
+>>
+>>   drivers/staging/comedi/Kconfig             |  31 -------
+>>   drivers/staging/comedi/comedi_buf.c        |  66 +++++++++++++++
+>>   drivers/staging/comedi/comedidev.h         |  11 +++
+>>   drivers/staging/comedi/drivers.c           |  95 +++++++++++++++++++++
+>>   drivers/staging/comedi/drivers/Makefile    |   1 -
+>>   drivers/staging/comedi/drivers/comedi_fc.c | 132 -----------------------------
+>>   drivers/staging/comedi/drivers/comedi_fc.h |  40 ++++++---
+>>   7 files changed, 201 insertions(+), 175 deletions(-)
+>
+> Ian,
+>
+> Other than I think the comedi_fc.c functions should be migrated to
+> comedi_buf.c instead of drivers.c I have not problems with this.
 
-* David Ahern <dsahern@gmail.com> wrote:
+I think it's debatable. The only one of the three functions you 
+mentioned that touches the buffer is comedi_inc_scan_progress(), and I'd 
+rather keep that with comedi_bytes_per_scan().
 
-> On 9/12/14, 2:44 PM, Arnaldo Carvalho de Melo wrote:
-> >Em Fri, Sep 12, 2014 at 10:37:39AM -0700, David Ahern escreveu:
-> >>On 9/12/14, 4:48 AM, Pawel Moll wrote:
-> >>>This patch adds a PERF_COUNT_SW_MARKER event type, which
-> >>>can be requested by user and a PERF_EVENT_IOC_MARKER
-> >>>ioctl command which will inject an event of said type into
-> >>>the perf buffer. The ioctl can take a zero-terminated
-> >>>string argument, similar to tracing_marker in ftrace,
-> >>>which will be kept in the "raw" field of the sample.
-> >>>
-> >>>The main use case for this is synchronisation of
-> >>>performance data generated in user space with the perf
-> >>>stream coming from the kernel. For example, the marker
-> >>>can be inserted by a JIT engine after it generated
-> >>>portion of the code, but before the code is executed
-> >>>for the first time, allowing the post-processor to
-> >>>pick the correct debugging information. Other example
-> >>>is a system profiling tool taking data from other
-> >>>sources than just perf, which generates a marker
-> >>>at the beginning at at the end of the session
-> >>>(also possibly periodically during the session) to
-> >>>synchronise kernel timestamps with clock values
-> >>>obtained in userspace (gtod or raw_monotonic).
-> >>
-> >>Seems really similar to what I proposed in the past:
-> >>
-> >>https://lkml.org/lkml/2011/2/27/159
-> >>
-> >>Which was rejected.
-> >
-> >I took a look at that thread, but just barely, emphasis on that.
-> >
-> >Injecting something from userspace, a la ftrace, seems to be something,
-> >as tglx mentioned, "buried" in that patchset.
-> 
-> Thomas object to an ioctl buried deep in a patch -- newbie 
-> mistake.
-> 
-> Peter objected to the ioctl https://lkml.org/lkml/2011/3/1/229
-> 
-> It was not userspace injecting random data into the stream but 
-> rather forcing the sample to be generated and added to the 
-> stream.
+> And, patch 11 does have a conflict with your "... use dma_alloc_coherent..."
+> patches.
 
-I think adding an ioctl to inject user-provided data into the 
-event stream is sensible, as long as there's a separate 'user 
-generated data' event for it, etc.
+Yes, I'll have to fix up one or the other, depending which gets applied 
+first (unless git can magically sort it out with a three way merge).
 
-The main usecase I could see would be to introduce a 
-perf_printf() variant, supported by 'perf trace' by default, to 
-add various tracable printouts to apps.
+> But,
+>
+> Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>
 
-Timestamps generated by apps would be another usecase. It would 
-probably be wise to add a 32-bit (or 64-bit) message type ID, 
-plus a length field, with a message type registry somewhere in 
-tools/perf/ (and reference implementation for each new subtype), 
-to keep things organized yet flexible going forward.
+Thanks!
 
-Thanks,
-
-	Ingo
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
