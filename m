@@ -1,156 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243AbaIPDex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 23:34:53 -0400
-Received: from mail-bn1bon0131.outbound.protection.outlook.com ([157.56.111.131]:63538
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753347AbaIPDew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 23:34:52 -0400
-Date: Tue, 16 Sep 2014 11:41:24 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
- i.mx6dl
-Message-ID: <20140916034123.GA20800@Robin-OptiPlex-780>
-References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
- <1410774073.3314.1.camel@pengutronix.de>
+	id S1754741AbaIPDfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 23:35:19 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51219 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754407AbaIPDfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 23:35:17 -0400
+Date: Tue, 16 Sep 2014 12:33:33 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net
+Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgap: use schedule_timeout_interruptible() instead
+ of dgap_ms_sleep()
+Message-ID: <20140916033333.GA26821@devel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410774073.3314.1.camel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51444003)(189002)(51704005)(199003)(83072002)(92566001)(104016003)(31966008)(85852003)(76176999)(84676001)(50986999)(54356999)(107046002)(81156004)(19580405001)(110136001)(26826002)(21056001)(95666004)(99396002)(46406003)(33716001)(69596002)(44976005)(15975445006)(76482001)(15202345003)(47776003)(90102001)(4396001)(68736004)(87936001)(33656002)(92726001)(83322001)(19580395003)(102836001)(105606002)(64706001)(50466002)(20776003)(23726002)(85306004)(6806004)(106466001)(97736003)(83506001)(97756001)(80022003)(46102003)(77982003)(74662003)(74502003)(79102003)(81542003)(81342003)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB348;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB348;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yibin.gong@freescale.com; 
-X-OriginatorOrg: freescale.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lucas,
-  I understood your concern,but looks we have to break old DT. Our old DT
-support SPI DMA on i.mx6q/dl(v2,b3810c3dc1bcbc6a), but the DMA support patch
-for SPI driver is still in reviewing(v6). So the violation you mentioned comes
-if someone use the DT during the time(from v2 to spi driver patch upstreamed).
-  The different behaviors on different chips(only i.mxdl can't pass strength
-test) are just found from last month, this is why I sent the patch for disable
-SPI DMA support on i.mx6dl during I sent v6 patch for spi driver. I think that's
-make sense, because DTs are also in development, new difference between different
-chips maybe found in the future although they share the same IP....
-  Yes, I can check cpu type by looking at DT in spi driver, but it's not nice.
-So I'm afraid that we have to break the old DTs in the gap between the two
-levels patch accepted cycle.
+Using schedule_timeout_interruptible() is exactly same as
+setting a status of current process and calling  schedule_timeout().
 
-On Mon, Sep 15, 2014 at 11:41:13AM +0200, Lucas Stach wrote:
-> Am Mittwoch, den 10.09.2014, 13:30 +0800 schrieb Robin Gong:
-> > There is one weird data in rxfifo after one full rx/tx transfer
-> > done sometimes. It looks a design issue and hard to workaround
-> > totally, so disable dma functhion here. And will re-enable it
-> > once the root cause found.
-> > 
-> Sorry, I'm late to this as Shawn seems to already have picked up this
-> patch, but this isn't the right way to fix the problem.
-> 
-> We made it clear at kernel summit last year that we try to not break
-> existing DTs as booting a new kernel with an old DT is a valid use case.
-> While you don't strictly violate this rule what you do here is only
-> fixing systems booting with a new DT while leaving others broken.
-> 
-> If you are working around a hardware problem please disable DMA support
-> in the driver. This will also allow you to enable it again, if you find
-> another workaround without touching the DT again.
-> 
-> So this patch gets a NAK from me.
-> 
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
-> > ---
-> >  arch/arm/boot/dts/imx6q.dtsi   | 20 ++++++++++++++++++++
-> >  arch/arm/boot/dts/imx6qdl.dtsi |  8 --------
-> >  2 files changed, 20 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-> > index e9f3646..8d5d33b 100644
-> > --- a/arch/arm/boot/dts/imx6q.dtsi
-> > +++ b/arch/arm/boot/dts/imx6q.dtsi
-> > @@ -291,6 +291,26 @@
-> >  	};
-> >  };
-> >  
-> > +&ecspi1 {
-> > +	dmas = <&sdma 3 7 1>, <&sdma 4 7 2>;
-> > +	dma-names = "rx", "tx";
-> > +};
-> > +
-> > +&ecspi2 {
-> > +	dmas = <&sdma 5 7 1>, <&sdma 6 7 2>;
-> > +	dma-names = "rx", "tx";
-> > +};
-> > +
-> > +&ecspi3 {
-> > +	dmas = <&sdma 7 7 1>, <&sdma 8 7 2>;
-> > +	dma-names = "rx", "tx";
-> > +};
-> > +
-> > +&ecspi4 {
-> > +	dmas = <&sdma 9 7 1>, <&sdma 10 7 2>;
-> > +	dma-names = "rx", "tx";
-> > +};
-> > +
-> >  &mipi_dsi {
-> >  	port@2 {
-> >  		reg = <2>;
-> > diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-> > index 70d7207..f696546 100644
-> > --- a/arch/arm/boot/dts/imx6qdl.dtsi
-> > +++ b/arch/arm/boot/dts/imx6qdl.dtsi
-> > @@ -210,8 +210,6 @@
-> >  					clocks = <&clks IMX6QDL_CLK_ECSPI1>,
-> >  						 <&clks IMX6QDL_CLK_ECSPI1>;
-> >  					clock-names = "ipg", "per";
-> > -					dmas = <&sdma 3 7 1>, <&sdma 4 7 2>;
-> > -					dma-names = "rx", "tx";
-> >  					status = "disabled";
-> >  				};
-> >  
-> > @@ -224,8 +222,6 @@
-> >  					clocks = <&clks IMX6QDL_CLK_ECSPI2>,
-> >  						 <&clks IMX6QDL_CLK_ECSPI2>;
-> >  					clock-names = "ipg", "per";
-> > -					dmas = <&sdma 5 7 1>, <&sdma 6 7 2>;
-> > -					dma-names = "rx", "tx";
-> >  					status = "disabled";
-> >  				};
-> >  
-> > @@ -238,8 +234,6 @@
-> >  					clocks = <&clks IMX6QDL_CLK_ECSPI3>,
-> >  						 <&clks IMX6QDL_CLK_ECSPI3>;
-> >  					clock-names = "ipg", "per";
-> > -					dmas = <&sdma 7 7 1>, <&sdma 8 7 2>;
-> > -					dma-names = "rx", "tx";
-> >  					status = "disabled";
-> >  				};
-> >  
-> > @@ -252,8 +246,6 @@
-> >  					clocks = <&clks IMX6QDL_CLK_ECSPI4>,
-> >  						 <&clks IMX6QDL_CLK_ECSPI4>;
-> >  					clock-names = "ipg", "per";
-> > -					dmas = <&sdma 9 7 1>, <&sdma 10 7 2>;
-> > -					dma-names = "rx", "tx";
-> >  					status = "disabled";
-> >  				};
-> >  
-> 
-> -- 
-> Pengutronix e.K.             | Lucas Stach                 |
-> Industrial Linux Solutions   | http://www.pengutronix.de/  |
-> 
+Removes dgap_ms_sleep(), because this function is used
+only when closing tty channel on dgap_tty_close().
+And also removes ch_close_delay that is always set to 250
+on dgap_tty_init().
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ drivers/staging/dgap/dgap.c |   36 ++++++------------------------------
+ drivers/staging/dgap/dgap.h |    3 ---
+ 2 files changed, 6 insertions(+), 33 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
+index 67da1d5..8aff0de 100644
+--- a/drivers/staging/dgap/dgap.c
++++ b/drivers/staging/dgap/dgap.c
+@@ -180,7 +180,6 @@ static char *dgap_create_config_string(struct board_t *bd, char *string);
+ static uint dgap_config_get_useintr(struct board_t *bd);
+ static uint dgap_config_get_altpin(struct board_t *bd);
+ 
+-static int dgap_ms_sleep(ulong ms);
+ static void dgap_do_bios_load(struct board_t *brd, const u8 *ubios, int len);
+ static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
+ #ifdef DIGI_CONCENTRATORS_SUPPORTED
+@@ -1200,26 +1199,6 @@ static void dgap_init_globals(void)
+ 
+ /************************************************************************
+  *
+- * Utility functions
+- *
+- ************************************************************************/
+-
+-/*
+- * dgap_ms_sleep()
+- *
+- * Put the driver to sleep for x ms's
+- *
+- * Returns 0 if timed out, !0 (showing signal) if interrupted by a signal.
+- */
+-static int dgap_ms_sleep(ulong ms)
+-{
+-	current->state = TASK_INTERRUPTIBLE;
+-	schedule_timeout((ms * HZ) / 1000);
+-	return signal_pending(current);
+-}
+-
+-/************************************************************************
+- *
+  * TTY Initialization/Cleanup Functions
+  *
+  ************************************************************************/
+@@ -1462,9 +1441,6 @@ static int dgap_tty_init(struct board_t *brd)
+ 		ch->ch_tstart = 0;
+ 		ch->ch_rstart = 0;
+ 
+-		/* .25 second delay */
+-		ch->ch_close_delay = 250;
+-
+ 		/*
+ 		 * Set queue water marks, interrupt mask,
+ 		 * and general tty parameters.
+@@ -2297,12 +2273,12 @@ static void dgap_tty_close(struct tty_struct *tty, struct file *file)
+ 			 * Go to sleep to ensure RTS/DTR
+ 			 * have been dropped for modems to see it.
+ 			 */
+-			if (ch->ch_close_delay) {
+-				spin_unlock_irqrestore(&ch->ch_lock,
+-						       lock_flags);
+-				dgap_ms_sleep(ch->ch_close_delay);
+-				spin_lock_irqsave(&ch->ch_lock, lock_flags);
+-			}
++			spin_unlock_irqrestore(&ch->ch_lock,
++					lock_flags);
++			/* .25 second delay for dropping RTS/DTR */
++			schedule_timeout_interruptible(msecs_to_jiffies(250));
++			signal_pending(current);
++			spin_lock_irqsave(&ch->ch_lock, lock_flags);
+ 		}
+ 
+ 		ch->pscan_state = 0;
+diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
+index a0307b9..ba05c65 100644
+--- a/drivers/staging/dgap/dgap.h
++++ b/drivers/staging/dgap/dgap.h
+@@ -982,9 +982,6 @@ struct channel_t {
+ 	u32 ch_open_count;		/* open count			*/
+ 	u32	ch_flags;		/* Channel flags                */
+ 
+-	u32	ch_close_delay;		/* How long we should drop      */
+-					/* RTS/DTR for                  */
+-
+ 	u32	ch_cpstime;		/* Time for CPS calculations    */
+ 
+ 	tcflag_t ch_c_iflag;		/* channel iflags               */
+-- 
+1.7.1
+
