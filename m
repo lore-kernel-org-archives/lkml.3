@@ -1,74 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaIPNWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:22:35 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:61709 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295AbaIPNWe (ORCPT
+	id S1754065AbaIPNWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:22:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53284 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaIPNWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 09:22:34 -0400
-Date: Tue, 16 Sep 2014 15:22:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Nadav Amit <namit@cs.technion.ac.il>
-Cc: pbonzini@redhat.com, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        x86@kernel.org, kvm@vger.kernel.org, nadav.amit@gmail.com,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 0/3] x86: structs for cpuid info in x86
-Message-ID: <20140916132226.GA13726@gmail.com>
-References: <1410870160-28845-1-git-send-email-namit@cs.technion.ac.il>
+	Tue, 16 Sep 2014 09:22:36 -0400
+Date: Tue, 16 Sep 2014 14:22:30 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: davem@davemloft.net, paulmck@linux.vnet.ibm.com,
+        john.r.fastabend@intel.com, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] rhashtable: Per bucket locks & expansion/shrinking
+ in work queue
+Message-ID: <20140916132230.GA3831@casper.infradead.org>
+References: <cover.1410782841.git.tgraf@suug.ch>
+ <fe862eb8add076215918a0def9c3bd4fe8a104c7.1410782841.git.tgraf@suug.ch>
+ <1410794580.7106.168.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410870160-28845-1-git-send-email-namit@cs.technion.ac.il>
+In-Reply-To: <1410794580.7106.168.camel@edumazet-glaptop2.roam.corp.google.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/15/14 at 08:23am, Eric Dumazet wrote:
+> You need to roundup to next power of two.
 
-* Nadav Amit <namit@cs.technion.ac.il> wrote:
-
-> The code that deals with x86 cpuid fields is hard to follow since it performs
-> many bit operations and does not refer to cpuid field explicitly.  To
-> eliminate the need of openning a spec whenever dealing with cpuid fields, this
-> patch-set introduces structs that reflect the various cpuid functions.
-> 
-> Thanks for reviewing the patch-set.
-> 
-> Nadav Amit (3):
->   x86: Adding structs to reflect cpuid fields
->   x86: Use new cpuid structs in cpuid functions
->   KVM: x86: Using cpuid structs in KVM
-> 
->  arch/x86/include/asm/cpuid_def.h | 163 +++++++++++++++++++++++++++++++++++++++
->  arch/x86/kernel/cpu/common.c     |  56 ++++++++------
->  arch/x86/kvm/cpuid.c             |  36 +++++----
->  3 files changed, 219 insertions(+), 36 deletions(-)
->  create mode 100644 arch/x86/include/asm/cpuid_def.h
-
-I personally like bitfields in theory (they provide type clarity 
-and abstract robustness, compared to open-coded bitmask numeric 
-literals that are often used in cpuid using code, obfuscating 
-cpuid usage), with the big caveat that for many years I didn't 
-like bitfields in practice: older versions of GCC did a really 
-poor job of optimizing them.
-
-So such a series would only be acceptable if it's demonstrated 
-that both 'latest' and 'reasonably old' GCC versions do a good 
-job in that department, compared to the old open-coded bitmask 
-ops ...
-
-Comparing the 'size vmlinux' output of before/after kernels would 
-probably be a good start in seeing the impact of such a change.
-
-If those results are positive then this technique could be 
-propagated to all cpuid using code in arch/x86/, of which
-there's plenty.
-
-Thanks,
-
-	Ingo
+Fixed, thanks!
