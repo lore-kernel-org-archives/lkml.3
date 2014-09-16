@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaIPXC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:02:26 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59045 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098AbaIPXCY (ORCPT
+	id S1754193AbaIPXDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:03:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57813 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbaIPXDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:02:24 -0400
-Date: Tue, 16 Sep 2014 16:01:41 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND] mfd: max14577: Don't pass IRQ domain to mfd_add_devices
-Message-ID: <20140916230141.GT25162@lee--X1>
-References: <1409912110-18120-1-git-send-email-k.kozlowski@samsung.com>
+	Tue, 16 Sep 2014 19:03:20 -0400
+Message-ID: <5418C1C7.90404@wwwdotorg.org>
+Date: Tue, 16 Sep 2014 17:03:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409912110-18120-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Tegra xHCI support
+References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>	<CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>	<CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com>	<CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>	<54172B3F.9030901@wwwdotorg.org>	<CAL1qeaEK=C4j+G5CA_91xJNe25d=-y47EyZAYnaMh46fNYVDAw@mail.gmail.com>	<54185698.7020600@wwwdotorg.org>	<CAL1qeaGf6JSuq=ekZY7Pp2zSAB0+0S9fZ70xWpct2MJ=pTSmug@mail.gmail.com>	<5418BC5C.5020108@wwwdotorg.org> <CAL1qeaHSFjUbvFCg=CBvps1WUxff4fXYik0zMLaC0YBg0ArOvA@mail.gmail.com>
+In-Reply-To: <CAL1qeaHSFjUbvFCg=CBvps1WUxff4fXYik0zMLaC0YBg0ArOvA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Sep 2014, Krzysztof Kozlowski wrote:
+On 09/16/2014 04:51 PM, Andrew Bresticker wrote:
+> On Tue, Sep 16, 2014 at 3:40 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 09/16/2014 10:57 AM, Andrew Bresticker wrote:
+>>> On Tue, Sep 16, 2014 at 8:26 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>>> The XHCI driver can't load its firmware unless it's a module; if I make it
+>>>> built-in, it fails immediately with error -2 during "Direct firmware
+>>>> loading". The driver needs to work with either immediate or deferred
+>>>> firmware loading.
+>>>
+>>>
+>>> If you want the driver to be built-in, you'll either need to build the
+>>> firmware in as well (i.e. EXTRA_FIRMWARE) or enable
+>>> FW_LOADER_USER_HELPER_FALLBACK to load with userspace/uevent (though
+>>> apparently this is deprecated).
+>>
+>>
+>> Hmm. I didn't have to do that for the Atmel touchpad driver to work, but
+>> perhaps it's just ignoring a firmware loading error, and continuing with
+>> whatever is in the device's flash already.
+>>
+>> It seems odd that such a fundamental feature would require a deprecated
+>> Kconfig option. Is there some replacement that does the same thing that
+>> isn't deprecated? The Kconfig help for the option doesn't say anything
+>> useful...
+>>
+>> Oh, this option doesn't actually seem to work. I see the following in dmesg:
+>>
+>>> [root@swarren-dt ~]# dmesg|grep -i -e xhci -e firmware
+>>> [    1.461773] xhci-tegra 70090000.usb: Failed to get supply 'avddio-pex':
+>>> -517
+>>> [    1.468930] platform 70090000.usb: Driver xhci-tegra requests probe
+>>> deferral
+>>> [    2.567966] xhci-tegra 70090000.usb: Direct firmware load for
+>>> nvidia/tegra124/xusb.bin failed with error -2
+>>> [    2.577786] xhci-tegra 70090000.usb: Falling back to user helper
+>>
+>>
+>> ... but:
+>>
+>> [root@swarren-dt ~]# lsusb
+>> unable to initialize libusb: -99
+>>
+>> Perhaps systemd-udevd doesn't implement firmware loading; is it user-space
+>> udev that's deprecated implementing user-space firmware loading, rather than
+>> the kernel deprecating support for calling out to user space?
+>
+> I believe it is userspace udev that has deprecated user firmware
+> loading.  The kernel still does call out to userspace.  Alternatively,
+> you could use the firmware_class loading interface described in
+> Documentation/firmware_class/README, but that kind of sucks too.
+>
+>> This sucks, because now I can't just TFTP boot kernels but somehow have to
+>> get updated kernel modules onto my device every time before testing a new
+>> kernel build.
+>
+> Yeah... it does.  I get around this by building the firmware into the
+> kernel image (i.e. CONFIG_EXTRA_FIRMWARE), which is also your only
+> option if the root device happens to be on USB.  Unfortunately, I'm
+> not aware of any other alternatives.
 
-> The max14577 MFD cells do not have any resources so the IRQ domain
-> passed to mfd_add_devices is not used.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/max14577.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-
-Applied, thanks.
-
-> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-> index 4a5e885383f8..ba2ac9c10b12 100644
-> --- a/drivers/mfd/max14577.c
-> +++ b/drivers/mfd/max14577.c
-> @@ -372,8 +372,7 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
->  	}
->  
->  	ret = mfd_add_devices(max14577->dev, -1, mfd_devs,
-> -			mfd_devs_size, NULL, 0,
-> -			regmap_irq_get_domain(max14577->irq_data));
-> +			mfd_devs_size, NULL, 0, NULL);
->  	if (ret < 0)
->  		goto err_mfd;
->  
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Ah right, CONFIG_EXTRA_FIRMWARE does work, although it's not something I 
+can put into tegra_defconfig for people. I suppose we'll have to make it 
+=m in tegra_defconfig, and anyone who wants to build it in will have to 
+carry a local patch to add the firmware to their kernel source tree. At 
+least with "git add" of the firmware, it won't disappear from disk upon 
+"git clean ...".
