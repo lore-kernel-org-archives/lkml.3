@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaIPSyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:54:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35951 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755154AbaIPSyo (ORCPT
+	id S1754970AbaIPS7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:59:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40762 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594AbaIPS7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:54:44 -0400
-Date: Tue, 16 Sep 2014 19:54:39 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: "heiko@sntech.de" <heiko@sntech.de>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "sonnyrao@chromium.org" <sonnyrao@chromium.org>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        "cf@rock-chips.com" <cf@rock-chips.com>,
-        "xjq@rock-chips.com" <xjq@rock-chips.com>,
-        "hj@rock-chips.com" <hj@rock-chips.com>,
-        "huangtao@rock-chips.com" <huangtao@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jason Cooper <jason@lakedaemon.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] Documentation: dt-bindings: add dt binding info
- for rk3288-smp
-Message-ID: <20140916185439.GF14191@leverpostej>
-References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com>
- <1410864271-9277-2-git-send-email-kever.yang@rock-chips.com>
+	Tue, 16 Sep 2014 14:59:06 -0400
+Date: Tue, 16 Sep 2014 11:58:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 000/158] 3.16.3-stable review
+Message-ID: <20140916185816.GA26133@kroah.com>
+References: <20140915192542.872134685@linuxfoundation.org>
+ <5418844A.6050504@osg.samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410864271-9277-2-git-send-email-kever.yang@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5418844A.6050504@osg.samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 11:44:28AM +0100, Kever Yang wrote:
-> This add documentation for rk3288 smp dt binding
+On Tue, Sep 16, 2014 at 12:41:14PM -0600, Shuah Khan wrote:
+> On 09/15/2014 01:23 PM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.16.3 release.
+> > There are 158 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Wed Sep 17 19:25:26 UTC 2014.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.3-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
 > 
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
-> 
-> Changes in v2:
-> - add documentation
-> 
->  Documentation/devicetree/bindings/arm/cpus.txt | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/cpus.txt b/Documentation/devicetree/bindings/arm/cpus.txt
-> index 298e2f6..4b46233 100644
-> --- a/Documentation/devicetree/bindings/arm/cpus.txt
-> +++ b/Documentation/devicetree/bindings/arm/cpus.txt
-> @@ -195,6 +195,7 @@ nodes to be present and contain the properties described below.
->  			    "qcom,kpss-acc-v1"
->  			    "qcom,kpss-acc-v2"
->  			    "rockchip,rk3066-smp"
-> +			    "rockchip,rk3288-smp"
+> Compiled and booted on my test system. No dmesg regressions.
 
-How do these differ?
+Thanks for testing all 3 of these and letting me know.
 
-What does "rockchip,rk3288-smp" mean exactly?
-
-Presumably other nodes / properties are required?
-
-Mark.
+greg k-h
