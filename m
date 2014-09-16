@@ -1,92 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813AbaIPKUR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:20:17 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:45154 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752803AbaIPKUP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:20:15 -0400
-Date: Tue, 16 Sep 2014 12:16:47 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: a case for a common efuse API?
-Message-ID: <20140916101647.GC9948@lukather>
-References: <53BC4DD7.20906@codeaurora.org>
- <20140709083509.GQ13423@lukather>
- <53BDD0F3.7040906@codeaurora.org>
- <20140710142616.GD27469@lukather>
- <54121B2C.5090702@codeaurora.org>
+	id S1753380AbaIPKcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:32:35 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:36673 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851AbaIPKce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 06:32:34 -0400
+Date: Tue, 16 Sep 2014 13:32:31 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Neil Horman <nhorman@tuxdriver.com>
+cc: Steffen Klassert <steffen@klassert.de>, netdev@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: bisected regression: 3c59x corrupts packets in 3.17-rc5
+In-Reply-To: <20140916101704.GA3792@hmsreliant.think-freely.org>
+Message-ID: <alpine.LRH.2.11.1409161327110.24403@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee> <20140916101704.GA3792@hmsreliant.think-freely.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OROCMA9jn6tkzFBc"
-Content-Disposition: inline
-In-Reply-To: <54121B2C.5090702@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[ Fixed Steffen Klasserts bouncing email address as per the bounce message ]
 
---OROCMA9jn6tkzFBc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > Somewhere between 3.17.0-rc3 and 3.17.0-rc5 I started seeing dropped ssh 
+> > connections to a couple of test servers with dual AthlonMP (32-bit) and 
+> > 3C90x family of NICs (3Com Corporation 3c980-C 10/100baseTX NIC 
+> > [Python-T] (rev 78) in one server and 3Com Corporation 3c905C-TX/TX-M 
+> > [Tornado] (rev 78) in the other server). Bisect leads to the following 
+> > commit:
+> > 
+> > 98ea232cf63961fad734cc8c5e07e8915ec73073 is the first bad commit
+> > commit 98ea232cf63961fad734cc8c5e07e8915ec73073
+> > Author: Neil Horman <nhorman@tuxdriver.com>
+> > Date:   Thu Sep 4 06:13:38 2014 -0400
+> > 
+> >     3c59x: avoid panic in boomerang_start_xmit when finding page address:
+> >     ...
+> > 
+> I'm guessing the above change has uncovered another bug, mostly likely an
+> exhaustion of dma space on your system.  Nothing in the transmit path there does
+> any error checking for successful dma mapping, which it really should.  I'd be
+> willing to be that any dma mapping error leads to a leak in the mapping table.
+> Does your system have an iommu, or does it use swiotlb?  If its the latter, can
+> you increase the swiotlb table space and see if that relieves the problem?  In
+> the interim, I'll start adding some error checking to the transmit path.
 
-Hi Stephen,
+# CONFIG_IOMMU_SUPPORT is not set
 
-On Thu, Sep 11, 2014 at 02:59:08PM -0700, Stephen Boyd wrote:
-> On 07/10/14 07:26, Maxime Ripard wrote:
-> >
-> > I guess that the kind of things we could discuss after posting these
-> > patches, but yep, it looks reasonnable.
-> >
-> > I'll try to get things a bit cleaner, and post them in the next days.
-> >
->=20
-> I never saw anything. Did you do any cleaning/posting? I'm going to try
-> it out today/tomorrow to see if it can make some things cleaner.
+nothing matching iommu or iotlb in dmesg. I thought the system does not 
+have any - K7 CPUs and AMD 760MP chipset with normal AGP gart.
 
-Sorry, I never got any time to put things in shape besides rebasing.
+[    3.763519] agpgart-amdk7 0000:00:00.0: AMD 760MP chipset
+[    3.782995] agpgart-amdk7 0000:00:00.0: AGP aperture is 64M @ 0xf8000000
 
-Feel free to pick up the work.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---OROCMA9jn6tkzFBc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUGA4PAAoJEBx+YmzsjxAg378P/240u56bFmIO0lVNiom8uTSI
-pIYuHkQuoG/bSoSfkPgIQhADAsFO8XPuu5/R4oX2AgU1YTro51K/wqAAyrJZxBfk
-OEhrN0HTiSde2Z6HewnK4wVlq/7Tia4zvST1ea40iUxHpT2VdjyVAO5AyDQAIpCs
-t2Cv9A+atbrGzll4V4tIUNmi3spKdVQ2uAOYne3xMRs8zwEeS+N2KDbu6N/03wH8
-JKllkq0ECWOW0Op7GatAHzOOVJXDMvR2FBvjLcfE8Atx9XRXNXak+gso2TPptkFc
-wawXBGh2s0NzP1X6NUyxwTw8yyvIuewjsqUBvc8jzJO5zpn+Eim0aEz8wwMrVDQw
-FXIGZzOV/x5qhESVd8/bknT/dP4xQ+ulZOMe+jOK/G3NtLviplJy2nBp+z6hwD0i
-fdeOTs/mGp3GH2sNoWxxFq+SnOgknrsi8EyL2HP3ZQj2lAtSMJotaMXyHT/1dWyd
-ehB0uGVue5FRPyALPmPpQS4j1+6QZufYyYTSUosAsU7JidcWVb/7ihdiZxCfueI7
-JGKZJREO6m6fFG3aBkXZtNLW8ADciIOOpqSiaq+n1sC+lO/a9hOQ7pf7T5DZ7Pge
-VL6regEdSe1hyAf1DEEGXgGWs5KkBpLI8zYgrIgk81QKW5uYLgFA4VSFxUvCK1BK
-ULWzrifChHxoIn0syLPv
-=ZqAQ
------END PGP SIGNATURE-----
-
---OROCMA9jn6tkzFBc--
+-- 
+Meelis Roos (mroos@linux.ee)
