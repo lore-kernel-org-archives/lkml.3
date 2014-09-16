@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918AbaIPS2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:28:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45567 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623AbaIPS2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:28:47 -0400
-Date: Tue, 16 Sep 2014 11:28:20 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Sonny Rao <sonnyrao@chromium.org>, axel.lin@ingics.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140916182820.GV7960@sirena.org.uk>
-References: <1410888174-8279-1-git-send-email-dianders@chromium.org>
+	id S1754940AbaIPSaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:30:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53586 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754250AbaIPSaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 14:30:01 -0400
+Message-ID: <54188179.7010705@redhat.com>
+Date: Tue, 16 Sep 2014 20:29:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aDKukjHEfhu1+b5Q"
-Content-Disposition: inline
-In-Reply-To: <1410888174-8279-1-git-send-email-dianders@chromium.org>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: rk808: Add function for ramp delay for
- buck1/buck2
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andres Lagar-Cavilla <andreslc@google.com>
+CC: Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>	<54184078.4070505@redhat.com> <CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
+In-Reply-To: <CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 16/09/2014 18:52, Andres Lagar-Cavilla ha scritto:
+> Was this:
+> 
+>         down_read(&mm->mmap_sem);
+>         npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
+>         up_read(&mm->mmap_sem);
+> 
+> the intention rather than get_user_pages_fast?
 
---aDKukjHEfhu1+b5Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I meant the intention of the original author, not yours.
 
-On Tue, Sep 16, 2014 at 10:22:54AM -0700, Doug Anderson wrote:
-> On rk808 buck1 and buck2 have programmable ramp delays.  Let's add a
-> function to allow a client of rk808 to set them.
+> By that point in the call chain I felt comfortable dropping the _fast.
+> All paths that get there have already tried _fast (and some have tried
+> _NOWAIT).
 
-Applied, thanks.
+Yes, understood.
 
---aDKukjHEfhu1+b5Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>     I think a first patch should introduce kvm_get_user_page_retry ("Retry a
+>     fault after a gup with FOLL_NOWAIT.") and the second would add
+>     FOLL_TRIED ("This properly relinquishes mmap semaphore if the
+>     filemap/swap has to wait on page lock (and retries the gup to completion
+>     after that").
+> 
+> That's not what FOLL_TRIED does. The relinquishing of mmap semaphore is
+> done by this patch minus the FOLL_TRIED bits. FOLL_TRIED will let the
+> fault handler (e.g. filemap) know that we've been there and waited on
+> the IO already, so in the common case we won't need to redo the IO.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Yes, that's not what FOLL_TRIED does.  But it's the difference between
+get_user_pages and kvm_get_user_page_retry, right?
 
-iQEcBAEBAgAGBQJUGIFBAAoJECTWi3JdVIfQ1+0H/0CY1YMXbU+mviryzCW8rAZz
-e9pQMKKVOA2OiakR4s1NfNMNyFzxwNMUqCmubj4k8n842egD8OOWcH2ergENU0S0
-bhBzd3iTutS7dFDZZx1mIOKdF8n3et3SCAiUydZuxGdUBLl5ODF66P7Ymp4FUEzU
-M1lt2+5Nfcy5nOallPKZard66GC3kJmu67sDWHfsD3iOAq816lRed78B1YbfteRo
-3Jl/lr/pjdsNt1pHM+g+lQlOIDu1BfOKTON+PMA8DdUqfokH7YnlDOB/ZjSaLwMW
-Ee93dGHZs6MQmCrC7xemLk+G7egtRbprOUHZP7+tcdtZczLf0ndmZrkhMtSUatM=
-=Q2KN
------END PGP SIGNATURE-----
-
---aDKukjHEfhu1+b5Q--
+Paolo
