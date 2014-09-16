@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026AbaIPUfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:35:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45133 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753316AbaIPUfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:35:20 -0400
-Date: Tue, 16 Sep 2014 22:35:10 +0200
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, Jan Kara <jack@suse.cz>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140916203510.GF1205@quack.suse.cz>
-References: <20140914050905.GA296@x4>
- <20140914055450.GB296@x4>
- <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
- <20140915163740.GA12408@x4>
- <20140916105547.GA1205@quack.suse.cz>
- <20140916144252.GB32118@x4>
- <20140916111331.14303381@gandalf.local.home>
+	id S1753293AbaIPUj7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:39:59 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58372 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbaIPUjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:39:54 -0400
+Date: Tue, 16 Sep 2014 15:39:52 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Jack Pham <jackp@codeaurora.org>
+Cc: Felipe Balbi <balbi@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-usb@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Subject: Re: [Patch v9 3/3] phy: Add Qualcomm DWC3 HS/SS PHY driver
+Message-ID: <20140916203952.GA31819@qualcomm.com>
+References: <1410550088-8754-1-git-send-email-agross@codeaurora.org>
+ <1410550088-8754-4-git-send-email-agross@codeaurora.org>
+ <20140916182752.GB19101@usblab-sd-06.qualcomm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140916111331.14303381@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140916182752.GB19101@usblab-sd-06.qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-09-14 11:13:31, Steven Rostedt wrote:
-> On Tue, 16 Sep 2014 16:42:52 +0200
-> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+On Tue, Sep 16, 2014 at 11:27:52AM -0700, Jack Pham wrote:
+> Hi Andy,
 > 
-> > commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
-> > the string "[sched_delayed] " before the actual message.
-> > However it doesn't take into account the KERN_* prefix of the message,
-> > that now ends up in the middle of the output:
-> > 
-> >  [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
-> > 
-> > Fix this by just getting rid of the "[sched_delayed] " scnprintf().
+> On Fri, Sep 12, 2014 at 02:28:08PM -0500, Andy Gross wrote:
+> > +static int qcom_dwc3_hs_phy_init(struct qcom_dwc3_usb_phy *phy_dwc3)
+> > +{
+> > +	u32 val;
+> > +
+> > +	/*
+> > +	 * HSPHY Initialization: Enable UTMI clock, select 19.2MHz fsel
+> > +	 * enable clamping, and disable RETENTION (power-on default is ENABLED)
+> > +	 */
+> > +	val = HSUSB_CTRL_DPSEHV_CLAMP | HSUSB_CTRL_DMSEHV_CLAMP |
+> > +		HSUSB_CTRL_RETENABLEN  | HSUSB_CTRL_COMMONONN |
+> > +		HSUSB_CTRL_OTGSESSVLD_CLAMP | HSUSB_CTRL_ID_HV_CLAMP |
+> > +		HSUSB_CTRL_DPSEHV_CLAMP | HSUSB_CTRL_UTMI_OTG_VBUS_VALID |
+> > +		HSUSB_CTRL_UTMI_CLK_EN | HSUSB_CTRL_CLAMP_EN | 0x70;
+> > +
+> > +	/* use core clock if external reference is not present */
+> > +	if (!phy_dwc3->xo_clk)
+> > +		val |= HSUSB_CTRL_USE_CLKCORE;
+> > +
+> > +	writel(val, phy_dwc3->base + HSUSB_PHY_CTRL_REG);
+> > +	usleep_range(2000, 2200);
+> > +
+> > +	/* Disable (bypass) VBUS and ID filters */
+> > +	writel(HSUSB_GCFG_XHCI_REV, phy_dwc3->base + QSCRATCH_GENERAL_CFG);
 > 
-> I prefer the "[sched_delayed]" output. It lets us know that the output
-> did not come out immediately, which is important sometimes during
-> debugging. Otherwise it can confuse people, as printk is suppose to be
-> a blocking write.
-  This is a common misconception about printk. It isn't a blocking write
-for ten years or more. If there happens to be someone else printing to
-console, the difference between printk() and printk_deferred() is
-marginal - it used to be bigger when scheduler had its own buffer but these
-days message is inserted in the kernel ring buffer immediately. That's why
-I don't think the prefix is useful anymore.
+> Is this comment accurate? I believe this bit forces the IP to behave in
+> XHCI rev 1.0. In which case, shouldn't it be done in the glue driver?
 
-> Can we instead fix the bug instead of nuking the output? That is, move
-> the KERN_* prefix before the "[sched_delayed]" message? I don't think
-> it would be that hard. If you want, I'll write that patch (probably
-> take me 20 minutes at most), but I'm just coming back from medical
-> leave so I prefer not to.
-  Glad to see you back! I'm not opposed to moving the prefix but it doesn't
-seem worth the effort...
+I'll double check.  I was taking the bit values and converting them to names.
+If this is doing that, then I'll move it to the glue.
 
-								Honza
 
-> > Acked-by: Jan Kara <jack@suse.cz>
-> > Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> > 
-> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> > index 1ce770687ea8..f85994b58934 100644
-> > --- a/kernel/printk/printk.c
-> > +++ b/kernel/printk/printk.c
-> > @@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
-> >  	 * The printf needs to come first; we need the syslog
-> >  	 * prefix which might be passed-in as a parameter.
-> >  	 */
-> > -	if (in_sched)
-> > -		text_len = scnprintf(text, sizeof(textbuf),
-> > -				     KERN_WARNING "[sched_delayed] ");
-> > -
-> > -	text_len += vscnprintf(text + text_len,
-> > -			       sizeof(textbuf) - text_len, fmt, args);
-> > +	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
-> >  
-> >  	/* mark and strip a trailing newline */
-> >  	if (text_len && text[text_len-1] == '\n') {
-> 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
