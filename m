@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaIPT4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:56:32 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:7342 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbaIPT42 (ORCPT
+	id S1755451AbaIPT4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:56:42 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:11229 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755385AbaIPT4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:56:28 -0400
+	Tue, 16 Sep 2014 15:56:37 -0400
 X-IronPort-AV: E=Sophos;i="5.04,535,1406617200"; 
-   d="scan'208";a="45743442"
+   d="scan'208";a="45908768"
 From: Jonathan Richardson <jonathar@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -22,265 +22,256 @@ CC: <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         Jonathan Richardson <jonathar@broadcom.com>
-Subject: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Tue, 16 Sep 2014 12:58:12 -0700
-Message-ID: <1410897497-27527-2-git-send-email-jonathar@broadcom.com>
+Subject: [PATCH 5/6] ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+Date: Tue, 16 Sep 2014 12:58:16 -0700
+Message-ID: <1410897497-27527-6-git-send-email-jonathar@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
 References: <Jonathan Richardson <jonathar@broadcom.com>
  <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
-
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
 Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
 Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
 ---
- arch/arm/mach-bcm/Kconfig            |   34 +++++++
- arch/arm/mach-bcm/Makefile           |    3 +
- arch/arm/mach-bcm/board_bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++
- 3 files changed, 203 insertions(+)
- create mode 100644 arch/arm/mach-bcm/board_bcm_cygnus.c
+ arch/arm/configs/bcm_cygnus_defconfig |  223 +++++++++++++++++++++++++++++++++
+ 1 file changed, 223 insertions(+)
+ create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index fc93800..58e0f20 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -5,6 +5,40 @@ menuconfig ARCH_BCM
- 
- if ARCH_BCM
- 
-+config ARCH_BCM_IPROC
-+	bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_SCU if SMP
-+	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_CLK
-+	select CLKSRC_OF
-+	select CLKSRC_MMIO
-+	select LOCAL_TIMERS if SMP
-+	select GENERIC_CLOCKEVENTS_BUILD
-+	select GENERIC_CLOCKEVENTS
-+	select ARM_GLOBAL_TIMER
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
-+	select PINCTRL
-+	select DEBUG_UART_8250
-+	help
-+	  This enables support for systems based on Broadcom IPROC architected SoCs.
-+	  The IPROC complex contains one or more ARM CPUs along with common
-+	  core periperals. Application specific SoCs are created by adding a
-+	  uArchitecture containing peripherals outside of the IPROC complex.
-+	  Currently supported SoCs are Cygnus.
-+
-+menu "iProc SoC based Machine types"
-+	depends on ARCH_BCM_IPROC
-+
-+	config ARCH_BCM_CYGNUS
-+		bool "Support Broadcom Cygnus board"
-+		select USB_ARCH_HAS_EHCI if USB_SUPPORT
-+		help
-+		  Support for Broadcom Cygnus SoC.
-+endmenu
-+
- config ARCH_BCM_MOBILE
- 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index b19a396..dd14a10 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,6 +10,9 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
-+# Cygnus
-+obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  board_bcm_cygnus.o
-+
- # BCM281XX
- obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-diff --git a/arch/arm/mach-bcm/board_bcm_cygnus.c b/arch/arm/mach-bcm/board_bcm_cygnus.c
+diff --git a/arch/arm/configs/bcm_cygnus_defconfig b/arch/arm/configs/bcm_cygnus_defconfig
 new file mode 100644
-index 0000000..d67555a
+index 0000000..effed85
 --- /dev/null
-+++ b/arch/arm/mach-bcm/board_bcm_cygnus.c
-@@ -0,0 +1,166 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License version 2, available at
-+ * http://www.broadcom.com/licenses/GPLv2.php (the "GPL").
-+ */
-+
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/clocksource.h>
-+#include <linux/clk-provider.h>
-+#include <linux/delay.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/proc-fns.h>
-+#include <asm/hardware/cache-l2x0.h>
-+
-+#define CRMU_MAIL_BOX1      0x03024028
-+#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
-+
-+/* CRU_RESET register */
-+static void * __iomem crmu_mail_box1_reg;
-+
-+#ifdef CONFIG_NEON
-+
-+#define CRU_BASE                  0x1800e000
-+#define CRU_SIZE                  0x34
-+#define CRU_CONTROL_OFFSET        0x0
-+#define CRU_PWRDWN_EN_OFFSET      0x4
-+#define CRU_PWRDWN_STATUS_OFFSET  0x8
-+#define CRU_NEON0_HW_RESET  6
-+#define CRU_CLAMP_ON_NEON0  20
-+#define CRU_PWRONIN_NEON0   21
-+#define CRU_PWRONOUT_NEON0  21
-+#define CRU_PWROKIN_NEON0   22
-+#define CRU_PWROKOUT_NEON0  22
-+#define CRU_STATUS_DELAY_NS 500
-+#define CRU_MAX_RETRY_COUNT 10
-+#define CRU_RETRY_INTVL_US  1
-+
-+/* Power up the NEON/VFPv3 block. */
-+static void bcm_cygnus_powerup_neon(void)
-+{
-+	void * __iomem cru_base = ioremap_nocache(CRU_BASE, CRU_SIZE);
-+	u32 reg, i;
-+
-+	BUG_ON(!cru_base);
-+
-+	/* De-assert the neon hardware block reset */
-+	reg = readl(cru_base + CRU_CONTROL_OFFSET);
-+	reg &= ~(1 << CRU_NEON0_HW_RESET);
-+	writel(reg, cru_base + CRU_CONTROL_OFFSET);
-+
-+	/* Assert the power ON register bit */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg |= (1 << CRU_PWRONIN_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
-+
-+	/*
-+	 * Wait up to 10 usec in 1 usec increments for the
-+	 * status register to acknowledge the power ON assert
-+	 */
-+	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
-+		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
-+		if (reg & CRU_PWRONOUT_NEON0)
-+			break;
-+
-+		udelay(CRU_RETRY_INTVL_US);
-+	}
-+
-+	if (i == CRU_MAX_RETRY_COUNT)
-+		panic("NEON power ON register not acknowledged\n");
-+
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
-+
-+	/* Assert the power OK register bit */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg |= (1 << CRU_PWROKIN_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
-+
-+	/*
-+	 * Wait up to 10 usec in 1 usec increments for the
-+	 * status register to acknowledge the power OK assert
-+	 */
-+	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
-+		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
-+		if (reg & CRU_PWROKOUT_NEON0)
-+			break;
-+
-+		udelay(CRU_RETRY_INTVL_US);
-+	}
-+
-+	if (i == CRU_MAX_RETRY_COUNT)
-+		panic("NEON power OK register not acknowledged\n");
-+
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
-+
-+	/* Set the logic clamp for the neon block */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg &= ~(1 << CRU_CLAMP_ON_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
-+
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
-+
-+	/* Reset the neon hardware block */
-+	reg = readl(cru_base + CRU_CONTROL_OFFSET);
-+	reg |= (1 << CRU_NEON0_HW_RESET);
-+	writel(reg, cru_base + CRU_CONTROL_OFFSET);
-+
-+	iounmap(cru_base);
-+}
-+#endif /* CONFIG_NEON */
-+
-+static void __init bcm_cygnus_timer_init(void)
-+{
-+	/* Initialize all clocks declared in device tree */
-+	of_clk_init(NULL);
-+
-+	clocksource_of_init();
-+}
-+
-+static void __init bcm_cygnus_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+
-+	l2x0_of_init(0, ~0UL);
-+
-+	crmu_mail_box1_reg = ioremap_nocache(CRMU_MAIL_BOX1, SZ_4);
-+	BUG_ON(!crmu_mail_box1_reg);
-+
-+#ifdef CONFIG_NEON
-+	bcm_cygnus_powerup_neon();
-+#endif
-+}
-+
-+/*
-+ * Reset the system
-+ */
-+void bcm_cygnus_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	/* Send reset command to M0 via Mailbox. */
-+	writel(CRMU_SOFT_RESET_CMD, crmu_mail_box1_reg);
-+	iounmap(crmu_mail_box1_reg);
-+
-+	/* Wait for M0 to reset the chip. */
-+	while (1)
-+		cpu_do_idle();
-+}
-+
-+static const char const *bcm_cygnus_dt_compat[] = {
-+	"brcm,cygnus",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-+	.init_machine = bcm_cygnus_init,
-+	.map_io = debug_ll_io_init,
-+	.init_time = bcm_cygnus_timer_init,
-+	.dt_compat = bcm_cygnus_dt_compat,
-+	.restart   = bcm_cygnus_restart
-+MACHINE_END
++++ b/arch/arm/configs/bcm_cygnus_defconfig
+@@ -0,0 +1,223 @@
++CONFIG_KERNEL_XZ=y
++# CONFIG_SWAP is not set
++CONFIG_SYSVIPC=y
++CONFIG_IRQ_DOMAIN_DEBUG=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=19
++CONFIG_CGROUPS=y
++CONFIG_CGROUP_FREEZER=y
++CONFIG_CGROUP_DEVICE=y
++CONFIG_CGROUP_CPUACCT=y
++CONFIG_RESOURCE_COUNTERS=y
++CONFIG_CGROUP_SCHED=y
++CONFIG_BLK_CGROUP=y
++CONFIG_NAMESPACES=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_EMBEDDED=y
++CONFIG_PERF_EVENTS=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_PARTITION_ADVANCED=y
++CONFIG_ARCH_BCM=y
++CONFIG_ARCH_BCM_IPROC=y
++CONFIG_ARCH_BCM_CYGNUS=y
++CONFIG_ARM_THUMBEE=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++# CONFIG_COMPACTION is not set
++# CONFIG_ATAGS is not set
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_CPU_IDLE=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_MROUTE=y
++CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
++CONFIG_SYN_COOKIES=y
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_TCP_CONG_ADVANCED=y
++# CONFIG_TCP_CONG_BIC is not set
++# CONFIG_TCP_CONG_WESTWOOD is not set
++# CONFIG_TCP_CONG_HTCP is not set
++CONFIG_IPV6=y
++# CONFIG_INET6_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET6_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET6_XFRM_MODE_BEET is not set
++# CONFIG_IPV6_SIT is not set
++CONFIG_IPV6_MULTIPLE_TABLES=y
++CONFIG_IPV6_SUBTREES=y
++CONFIG_IPV6_MROUTE=y
++CONFIG_NETFILTER=y
++# CONFIG_BRIDGE_NETFILTER is not set
++CONFIG_NF_CONNTRACK=y
++# CONFIG_NF_CONNTRACK_PROCFS is not set
++CONFIG_NF_CONNTRACK_FTP=y
++CONFIG_NF_CONNTRACK_IPV4=y
++CONFIG_IP_NF_IPTABLES=y
++CONFIG_IP_NF_FILTER=y
++CONFIG_IP_NF_TARGET_REJECT=y
++CONFIG_NF_NAT_IPV4=y
++CONFIG_IP_NF_TARGET_MASQUERADE=y
++CONFIG_IP_NF_TARGET_REDIRECT=y
++CONFIG_IP_NF_MANGLE=y
++CONFIG_IP_NF_RAW=y
++CONFIG_NF_CONNTRACK_IPV6=y
++CONFIG_IP6_NF_IPTABLES=y
++CONFIG_IP6_NF_MATCH_AH=y
++CONFIG_IP6_NF_MATCH_EUI64=y
++CONFIG_IP6_NF_MATCH_FRAG=y
++CONFIG_IP6_NF_MATCH_OPTS=y
++CONFIG_IP6_NF_MATCH_IPV6HEADER=y
++CONFIG_IP6_NF_MATCH_MH=y
++CONFIG_IP6_NF_MATCH_RT=y
++CONFIG_IP6_NF_FILTER=y
++CONFIG_IP6_NF_TARGET_REJECT=y
++CONFIG_IP6_NF_MANGLE=y
++CONFIG_IP6_NF_RAW=y
++CONFIG_BRIDGE=y
++# CONFIG_BRIDGE_IGMP_SNOOPING is not set
++CONFIG_VLAN_8021Q=y
++CONFIG_NET_SCHED=y
++CONFIG_NET_SCH_FQ_CODEL=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_NAND=y
++CONFIG_MTD_UBI=y
++# CONFIG_BLK_DEV is not set
++CONFIG_SCSI=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_SCSI_MULTI_LUN=y
++CONFIG_NETDEVICES=y
++# CONFIG_NET_CADENCE is not set
++# CONFIG_NET_VENDOR_CIRRUS is not set
++# CONFIG_NET_VENDOR_FARADAY is not set
++# CONFIG_NET_VENDOR_INTEL is not set
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++# CONFIG_NET_VENDOR_SEEQ is not set
++# CONFIG_NET_VENDOR_SMSC is not set
++# CONFIG_NET_VENDOR_STMICRO is not set
++# CONFIG_NET_VENDOR_WIZNET is not set
++CONFIG_PHYLIB=y
++CONFIG_BROADCOM_PHY=y
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_KEYBOARD_ATKBD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_SERIO is not set
++# CONFIG_LEGACY_PTYS is not set
++CONFIG_SERIAL_8250=y
++# CONFIG_SERIAL_8250_DEPRECATED_OPTIONS is not set
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_NR_UARTS=2
++CONFIG_SERIAL_8250_RUNTIME_UARTS=2
++CONFIG_SERIAL_8250_DW=y
++CONFIG_SERIAL_OF_PLATFORM=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
++# CONFIG_I2C_HELPER_AUTO is not set
++CONFIG_I2C_SMBUS=y
++CONFIG_SPI=y
++CONFIG_SPI_PL022=y
++CONFIG_SPI_SPIDEV=y
++CONFIG_GPIO_SYSFS=y
++# CONFIG_HWMON is not set
++CONFIG_WATCHDOG=y
++CONFIG_ARM_SP805_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_ARMCLCD=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++# CONFIG_LCD_CLASS_DEVICE is not set
++CONFIG_BACKLIGHT_CLASS_DEVICE=y
++# CONFIG_BACKLIGHT_GENERIC is not set
++CONFIG_BACKLIGHT_PWM=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_DYNAMIC_MINORS=y
++CONFIG_SND_VERBOSE_PRINTK=y
++CONFIG_SND_DEBUG=y
++CONFIG_SND_USB_AUDIO=y
++CONFIG_SND_SOC=y
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_ROOT_HUB_TT=y
++CONFIG_USB_EHCI_HCD_PLATFORM=y
++CONFIG_USB_STORAGE=y
++CONFIG_MMC=y
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_PWM=y
++CONFIG_EXT4_FS=y
++CONFIG_MSDOS_FS=y
++CONFIG_VFAT_FS=y
++CONFIG_NTFS_FS=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_POSIX_ACL=y
++CONFIG_UBIFS_FS=y
++CONFIG_NFS_FS=y
++CONFIG_ROOT_NFS=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_NLS_UTF8=y
++CONFIG_DYNAMIC_DEBUG=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_INFO_REDUCED=y
++CONFIG_STRIP_ASM_SYMS=y
++CONFIG_DEBUG_FS=y
++CONFIG_MAGIC_SYSRQ=y
++CONFIG_DEBUG_OBJECTS=y
++CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
++CONFIG_SLUB_DEBUG_ON=y
++CONFIG_DEBUG_MEMORY_INIT=y
++CONFIG_DEBUG_SHIRQ=y
++CONFIG_DETECT_HUNG_TASK=y
++CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=110
++CONFIG_BOOTPARAM_HUNG_TASK_PANIC=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_SCHEDSTATS=y
++CONFIG_DEBUG_RT_MUTEXES=y
++CONFIG_PROVE_LOCKING=y
++CONFIG_DEBUG_ATOMIC_SLEEP=y
++# CONFIG_DEBUG_BUGVERBOSE is not set
++CONFIG_DEBUG_SG=y
++CONFIG_DEBUG_NOTIFIERS=y
++CONFIG_DEBUG_CREDENTIALS=y
++CONFIG_PROVE_RCU=y
++CONFIG_DEBUG_USER=y
++CONFIG_DEBUG_LL=y
++CONFIG_DEBUG_LL_UART_8250=y
++CONFIG_DEBUG_UART_PHYS=0x18023000
++CONFIG_DEBUG_UART_VIRT=0xf1023000
++CONFIG_EARLY_PRINTK=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
 -- 
 1.7.9.5
 
