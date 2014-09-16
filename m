@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbaIPO1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:27:55 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33684 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753527AbaIPO1y (ORCPT
+	id S1754458AbaIPObi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:31:38 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33745 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873AbaIPObh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:27:54 -0400
-Date: Tue, 16 Sep 2014 10:27:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>
-cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <vinod.koul@intel.com>
-Subject: Re: [PATCH] PM: Add helper to mark last busy and autosuspend
-In-Reply-To: <1410864231-10334-1-git-send-email-subhransu.s.prusty@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1409161024580.1166-100000@iolanthe.rowland.org>
+	Tue, 16 Sep 2014 10:31:37 -0400
+Date: Tue, 16 Sep 2014 10:31:22 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Steffen Klassert <steffen@klassert.de>, netdev@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: bisected regression: 3c59x corrupts packets in 3.17-rc5
+Message-ID: <20140916143122.GD3792@hmsreliant.think-freely.org>
+References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
+ <20140916101704.GA3792@hmsreliant.think-freely.org>
+ <alpine.LRH.2.11.1409161327110.24403@adalberg.ut.ee>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.11.1409161327110.24403@adalberg.ut.ee>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, Subhransu S. Prusty wrote:
-
-> pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
-> in quite a lot of places. Add a helper for these.
+On Tue, Sep 16, 2014 at 01:32:31PM +0300, Meelis Roos wrote:
+> [ Fixed Steffen Klasserts bouncing email address as per the bounce message ]
 > 
-> Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
-> ---
->  include/linux/pm_runtime.h | 6 ++++++
->  1 file changed, 6 insertions(+)
+> > > Somewhere between 3.17.0-rc3 and 3.17.0-rc5 I started seeing dropped ssh 
+> > > connections to a couple of test servers with dual AthlonMP (32-bit) and 
+> > > 3C90x family of NICs (3Com Corporation 3c980-C 10/100baseTX NIC 
+> > > [Python-T] (rev 78) in one server and 3Com Corporation 3c905C-TX/TX-M 
+> > > [Tornado] (rev 78) in the other server). Bisect leads to the following 
+> > > commit:
+> > > 
+> > > 98ea232cf63961fad734cc8c5e07e8915ec73073 is the first bad commit
+> > > commit 98ea232cf63961fad734cc8c5e07e8915ec73073
+> > > Author: Neil Horman <nhorman@tuxdriver.com>
+> > > Date:   Thu Sep 4 06:13:38 2014 -0400
+> > > 
+> > >     3c59x: avoid panic in boomerang_start_xmit when finding page address:
+> > >     ...
+> > > 
+> > I'm guessing the above change has uncovered another bug, mostly likely an
+> > exhaustion of dma space on your system.  Nothing in the transmit path there does
+> > any error checking for successful dma mapping, which it really should.  I'd be
+> > willing to be that any dma mapping error leads to a leak in the mapping table.
+> > Does your system have an iommu, or does it use swiotlb?  If its the latter, can
+> > you increase the swiotlb table space and see if that relieves the problem?  In
+> > the interim, I'll start adding some error checking to the transmit path.
 > 
-> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-> index 367f49b..256ec50 100644
-> --- a/include/linux/pm_runtime.h
-> +++ b/include/linux/pm_runtime.h
-> @@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
->  	__pm_runtime_use_autosuspend(dev, false);
->  }
->  
-> +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
-> +{
-> +	pm_runtime_mark_last_busy(dev);
-> +	return pm_runtime_put_autosuspend(dev);
-> +}
-> +
->  #endif
+> # CONFIG_IOMMU_SUPPORT is not set
+> 
+> nothing matching iommu or iotlb in dmesg. I thought the system does not 
+> have any - K7 CPUs and AMD 760MP chipset with normal AGP gart.
+> 
+> [    3.763519] agpgart-amdk7 0000:00:00.0: AMD 760MP chipset
+> [    3.782995] agpgart-amdk7 0000:00:00.0: AGP aperture is 64M @ 0xf8000000
+> 
+Then I think you are likely very lmiited in how much DMA memory you can map (may
+be limited to ZONE_DMA), which is likely from where this problem is stemming.
+Try adding swiotlb= setup to the kernel command line and play with the size to
+see if you can avoid the problem.  I also have a patch I'm sending you to test.
 
-What's the advantage?  Removing a few bytes of source code?  There will 
-no change to the object code.  (Not to mention that your patch didn't 
-actually change _any_ of the places where both routines get called!)
+Neil
 
-Besides, if you're going to make an addition to the runtime PM API like 
-this, then you also have to update Documentation/power/runtime_pm.txt.
-
-Alan Stern
-
+> -- 
+> Meelis Roos (mroos@linux.ee)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
