@@ -1,103 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525AbaIPAVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:21:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10904 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758189AbaIPAT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:19:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,531,1406617200"; 
-   d="scan'208";a="600070661"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com
-Subject: Implement lbr-as-callgraph v9
-Date: Mon, 15 Sep 2014 16:54:25 -0700
-Message-Id: <1410825273-7054-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1758068AbaIPAW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:22:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42722 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883AbaIPAWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:22:54 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
+Subject: [PATCH v2] tty: serial: msm: Add earlycon support
+Date: Mon, 15 Sep 2014 17:22:51 -0700
+Message-Id: <1410826971-2943-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Just a repost after a rebase]
-[Even more review feedback and some bugs addressed.]
-[Only port to changes in perf/core. No other changes.]
-[Rebase to latest perf/core]
-[Another rebase. No changes]
+Add support for DT based and command line based early console on platforms
+with the msm serial hardware.
 
-This patchkit implements lbr-as-callgraphs in per freport,
-as an alternative way to present LBR information.
+Cc: Rob Herring <robh@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-Current perf report does a histogram over the branch edges,
-which is useful to look at basic blocks, but doesn't tell
-you anything about the larger control flow behaviour.
+Changes since v1:
+ * Add kernel commandline support
 
-This patchkit adds a new option --branch-history that
-adds the branch paths to the callgraph history instead.
+ Documentation/kernel-parameters.txt | 12 ++++++
+ drivers/tty/serial/Kconfig          |  1 +
+ drivers/tty/serial/msm_serial.c     | 74 +++++++++++++++++++++++++++++++------
+ 3 files changed, 75 insertions(+), 12 deletions(-)
 
-This allows to reason about individual branch paths leading
-to specific samples.
-
-Also available at
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc perf/lbr-callgraph4
-
-v2:
-- rebased on perf/core
-- fix various issues
-- rename the option to --branch-history
-- various fixes to display the information more concise
-v3:
-- White space changes
-- Consolidate some patches
-- Update some descriptions
-v4:
-- Fix various display problems
-- Unknown srcline is now printed as symbol+offset
-- Refactor some code to address review feedback
-- Merge with latest tip
-- Fix missing srcline display in stdio hist output.
-v5:
-- Rename functions
-- Fix gtk build problem
-- Fix crash without -g
-- Improve error messages
-- Improve srcline display in various ways
-v6:
-- Port to latest perf/core
-v7:
-- Really port to latest perf/core
-v8:
-- Rebased on 3.16-rc1
-v9:
-- Rebase on 3.17-rc* tip/perf/core
-
-
-Example output:
-
-    % perf record -b -g ./tsrc/tcall
-    [ perf record: Woken up 1 times to write data ]
-    [ perf record: Captured and wrote 0.044 MB perf.data (~1923 samples) ]
-    % perf report --branch-history
-    ...
-        54.91%  tcall.c:6  [.] f2                      tcall
-                |
-                |--65.53%-- f2 tcall.c:5
-                |          |
-                |          |--70.83%-- f1 tcall.c:11
-                |          |          f1 tcall.c:10
-                |          |          main tcall.c:18
-                |          |          main tcall.c:18
-                |          |          main tcall.c:17
-                |          |          main tcall.c:17
-                |          |          f1 tcall.c:13
-                |          |          f1 tcall.c:13
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:12
-                |          |          f1 tcall.c:12
-                |          |          f2 tcall.c:7
-                |          |          f2 tcall.c:5
-                |          |          f1 tcall.c:11
-
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 5ae8608ca9f5..22302931e9d4 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -936,6 +936,18 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			must already be setup and configured. Options are not
+ 			yet supported.
+ 
++		msm_serial,<addr>
++			Start an early, polled-mode console on an msm serial
++			port at the specified address. The serial port
++			must already be setup and configured. Options are not
++			yet supported.
++
++		msm_serial_dm,<addr>
++			Start an early, polled-mode console on an msm serial
++			dm port at the specified address. The serial port
++			must already be setup and configured. Options are not
++			yet supported.
++
+ 		smh	Use ARM semihosting calls for early console.
+ 
+ 	earlyprintk=	[X86,SH,BLACKFIN,ARM,M68k]
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 81f6ee7d4223..d609d605f712 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1070,6 +1070,7 @@ config SERIAL_MSM_CONSOLE
+ 	bool "MSM serial console support"
+ 	depends on SERIAL_MSM=y
+ 	select SERIAL_CORE_CONSOLE
++	select SERIAL_EARLYCON
+ 
+ config SERIAL_MSM_HS
+ 	tristate "MSM UART High Speed: Serial Driver"
+diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
+index 4f9640d0b1bb..4b6c78331a64 100644
+--- a/drivers/tty/serial/msm_serial.c
++++ b/drivers/tty/serial/msm_serial.c
+@@ -845,22 +845,15 @@ static inline struct uart_port *get_port_from_line(unsigned int line)
+ }
+ 
+ #ifdef CONFIG_SERIAL_MSM_CONSOLE
+-static void msm_console_write(struct console *co, const char *s,
+-			      unsigned int count)
++static void __msm_console_write(struct uart_port *port, const char *s,
++				unsigned int count, bool is_uartdm)
+ {
+ 	int i;
+-	struct uart_port *port;
+-	struct msm_port *msm_port;
+ 	int num_newlines = 0;
+ 	bool replaced = false;
+ 	void __iomem *tf;
+ 
+-	BUG_ON(co->index < 0 || co->index >= UART_NR);
+-
+-	port = get_port_from_line(co->index);
+-	msm_port = UART_TO_MSM(port);
+-
+-	if (msm_port->is_uartdm)
++	if (is_uartdm)
+ 		tf = port->membase + UARTDM_TF;
+ 	else
+ 		tf = port->membase + UART_TF;
+@@ -872,7 +865,7 @@ static void msm_console_write(struct console *co, const char *s,
+ 	count += num_newlines;
+ 
+ 	spin_lock(&port->lock);
+-	if (msm_port->is_uartdm)
++	if (is_uartdm)
+ 		reset_dm_count(port, count);
+ 
+ 	i = 0;
+@@ -881,7 +874,7 @@ static void msm_console_write(struct console *co, const char *s,
+ 		unsigned int num_chars;
+ 		char buf[4] = { 0 };
+ 
+-		if (msm_port->is_uartdm)
++		if (is_uartdm)
+ 			num_chars = min(count - i, (unsigned int)sizeof(buf));
+ 		else
+ 			num_chars = 1;
+@@ -910,6 +903,20 @@ static void msm_console_write(struct console *co, const char *s,
+ 	spin_unlock(&port->lock);
+ }
+ 
++static void msm_console_write(struct console *co, const char *s,
++			      unsigned int count)
++{
++	struct uart_port *port;
++	struct msm_port *msm_port;
++
++	BUG_ON(co->index < 0 || co->index >= UART_NR);
++
++	port = get_port_from_line(co->index);
++	msm_port = UART_TO_MSM(port);
++
++	__msm_console_write(port, s, count, msm_port->is_uartdm);
++}
++
+ static int __init msm_console_setup(struct console *co, char *options)
+ {
+ 	struct uart_port *port;
+@@ -952,6 +959,49 @@ static int __init msm_console_setup(struct console *co, char *options)
+ 	return uart_set_options(port, co, baud, parity, bits, flow);
+ }
+ 
++static void
++msm_serial_early_write(struct console *con, const char *s, unsigned n)
++{
++	struct earlycon_device *dev = con->data;
++
++	__msm_console_write(&dev->port, s, n, false);
++}
++
++static int __init
++msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
++{
++	if (!device->port.membase)
++		return -ENODEV;
++
++	device->con->write = msm_serial_early_write;
++	return 0;
++}
++EARLYCON_DECLARE(msm_serial, msm_serial_early_console_setup);
++OF_EARLYCON_DECLARE(msm_serial, "qcom,msm-uart",
++		    msm_serial_early_console_setup);
++
++static void
++msm_serial_early_write_dm(struct console *con, const char *s, unsigned n)
++{
++	struct earlycon_device *dev = con->data;
++
++	__msm_console_write(&dev->port, s, n, true);
++}
++
++static int __init
++msm_serial_early_console_setup_dm(struct earlycon_device *device,
++				  const char *opt)
++{
++	if (!device->port.membase)
++		return -ENODEV;
++
++	device->con->write = msm_serial_early_write_dm;
++	return 0;
++}
++EARLYCON_DECLARE(msm_serial_dm, msm_serial_early_console_setup_dm);
++OF_EARLYCON_DECLARE(msm_serial_dm, "qcom,msm-uartdm",
++		    msm_serial_early_console_setup_dm);
++
+ static struct uart_driver msm_uart_driver;
+ 
+ static struct console msm_console = {
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
