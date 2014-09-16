@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaIPKcf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:32:35 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:36673 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851AbaIPKce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:32:34 -0400
-Date: Tue, 16 Sep 2014 13:32:31 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Neil Horman <nhorman@tuxdriver.com>
-cc: Steffen Klassert <steffen@klassert.de>, netdev@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: bisected regression: 3c59x corrupts packets in 3.17-rc5
-In-Reply-To: <20140916101704.GA3792@hmsreliant.think-freely.org>
-Message-ID: <alpine.LRH.2.11.1409161327110.24403@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee> <20140916101704.GA3792@hmsreliant.think-freely.org>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1753489AbaIPKkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:40:36 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:58727 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752933AbaIPKke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 06:40:34 -0400
+X-IronPort-AV: E=Sophos;i="5.04,534,1406563200"; 
+   d="scan'208";a="36022242"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
+        <jan.kiszka@web.de>, <pbonzini@redhat.com>
+CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
+        <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
+Subject: [PATCH v6 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
+Date: Tue, 16 Sep 2014 18:41:56 +0800
+Message-ID: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.71]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Fixed Steffen Klasserts bouncing email address as per the bounce message ]
+ept identity pagetable and apic access page in kvm are pinned in memory.
+As a result, they cannot be migrated/hot-removed.
 
-> > Somewhere between 3.17.0-rc3 and 3.17.0-rc5 I started seeing dropped ssh 
-> > connections to a couple of test servers with dual AthlonMP (32-bit) and 
-> > 3C90x family of NICs (3Com Corporation 3c980-C 10/100baseTX NIC 
-> > [Python-T] (rev 78) in one server and 3Com Corporation 3c905C-TX/TX-M 
-> > [Tornado] (rev 78) in the other server). Bisect leads to the following 
-> > commit:
-> > 
-> > 98ea232cf63961fad734cc8c5e07e8915ec73073 is the first bad commit
-> > commit 98ea232cf63961fad734cc8c5e07e8915ec73073
-> > Author: Neil Horman <nhorman@tuxdriver.com>
-> > Date:   Thu Sep 4 06:13:38 2014 -0400
-> > 
-> >     3c59x: avoid panic in boomerang_start_xmit when finding page address:
-> >     ...
-> > 
-> I'm guessing the above change has uncovered another bug, mostly likely an
-> exhaustion of dma space on your system.  Nothing in the transmit path there does
-> any error checking for successful dma mapping, which it really should.  I'd be
-> willing to be that any dma mapping error leads to a leak in the mapping table.
-> Does your system have an iommu, or does it use swiotlb?  If its the latter, can
-> you increase the swiotlb table space and see if that relieves the problem?  In
-> the interim, I'll start adding some error checking to the transmit path.
+But actually they don't need to be pinned in memory.
 
-# CONFIG_IOMMU_SUPPORT is not set
+[For ept identity page]
+Just do not pin it. When it is migrated, guest will be able to find the
+new page in the next ept violation.
 
-nothing matching iommu or iotlb in dmesg. I thought the system does not 
-have any - K7 CPUs and AMD 760MP chipset with normal AGP gart.
+[For apic access page]
+The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+for each vcpu in addition.
 
-[    3.763519] agpgart-amdk7 0000:00:00.0: AMD 760MP chipset
-[    3.782995] agpgart-amdk7 0000:00:00.0: AGP aperture is 64M @ 0xf8000000
+NOTE: Tested with -cpu xxx,-x2apic option.
+      But since nested vm pins some other pages in memory, if user uses nested
+      vm, memory hot-remove will not work.
+
+Change log v5 -> v6:
+1. Patch 1/6 has been applied by Paolo Bonzini <pbonzini@redhat.com>, just resend it.
+2. Simplify comment in alloc_identity_pagetable() and add a BUG_ON() in patch 2/6.
+3. Move err initialization forward in patch 3/6.
+4. Rename vcpu_reload_apic_access_page() to kvm_vcpu_reload_apic_access_page() and 
+   use it instead of kvm_reload_apic_access_page() in nested_vmx_vmexit() in patch 5/6.
+5. Reuse kvm_vcpu_reload_apic_access_page() in prepare_vmcs02() and vmx_vcpu_reset() in patch 6/6.
+6. Remove original patch 7 since we are not able to handle the situation in nested vm.
+
+Tang Chen (6):
+  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
+  kvm: Remove ept_identity_pagetable from struct kvm_arch.
+  kvm: Make init_rmode_identity_map() return 0 on success.
+  kvm, mem-hotplug: Reload L1' apic access page on migration in
+    vcpu_enter_guest().
+  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
+    running.
+  kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
+
+ arch/x86/include/asm/kvm_host.h |  5 ++-
+ arch/x86/kvm/svm.c              |  9 +++-
+ arch/x86/kvm/vmx.c              | 95 +++++++++++++++++++++++------------------
+ arch/x86/kvm/x86.c              | 25 +++++++++--
+ include/linux/kvm_host.h        |  2 +
+ virt/kvm/kvm_main.c             | 12 ++++++
+ 6 files changed, 99 insertions(+), 49 deletions(-)
 
 -- 
-Meelis Roos (mroos@linux.ee)
+1.8.3.1
+
