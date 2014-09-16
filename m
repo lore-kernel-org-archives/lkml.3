@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaIPHqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:46:34 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:35811 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753318AbaIPHqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:46:32 -0400
-Message-ID: <1410853589.30351.12.camel@iivanov-dev>
-Subject: Re: [PATCH RESEND] thermal: Add QPNP PMIC temperature alarm driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Date: Tue, 16 Sep 2014 10:46:29 +0300
-In-Reply-To: <20140915153052.GB27076@developer>
-References: <1410793383-30097-1-git-send-email-iivanov@mm-sol.com>
-	 <20140915153052.GB27076@developer>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753378AbaIPHs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:48:27 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:52898 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360AbaIPHs0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:48:26 -0400
+Date: Tue, 16 Sep 2014 09:48:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Davidlohr Bueso <dave@stgolabs.net>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org, dbueso@suse.de
+Subject: Re: [PATCH 2/2] locking/rwsem-spinlock: Cleanup down_read()
+Message-ID: <20140916074821.GA21542@gmail.com>
+References: <1410500066-5909-1-git-send-email-dave@stgolabs.net>
+ <1410500066-5909-2-git-send-email-dave@stgolabs.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410500066-5909-2-git-send-email-dave@stgolabs.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi, 
+* Davidlohr Bueso <dave@stgolabs.net> wrote:
 
-On Mon, 2014-09-15 at 11:30 -0400, Eduardo Valentin wrote:
-> Hey Ivan,
+> ... when returning from a successful lock acquisition. The horror!
 > 
-> Please give us at least a two weeks time frame before resending your
-> patches.
+> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> ---
+>  kernel/locking/rwsem-spinlock.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
+> diff --git a/kernel/locking/rwsem-spinlock.c b/kernel/locking/rwsem-spinlock.c
+> index 2c93571..07e456c 100644
+> --- a/kernel/locking/rwsem-spinlock.c
+> +++ b/kernel/locking/rwsem-spinlock.c
+> @@ -130,7 +130,7 @@ void __sched __down_read(struct rw_semaphore *sem)
+>  		/* granted */
+>  		sem->count++;
+>  		raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+> -		goto out;
+> +		return;
+>  	}
+>  
+>  	tsk = current;
+> @@ -155,8 +155,6 @@ void __sched __down_read(struct rw_semaphore *sem)
+>  	}
+>  
+>  	tsk->state = TASK_RUNNING;
+> - out:
+> -	;
+>  }
 
-Sure, I just wanted to add MSM mail list, sorry.
+It following an existing 'out' pattern found elsewhere in the 
+file - I don't think there's much wrong about that per se - 
+especially in locking code we try to not return from the middle 
+of the flow.
 
-> > +
-> > +Optional properties:
-> > +- label:           A string used as a descriptive name for this thermal
-> > +                   device. This name should be 19 characters or less.
-> 
-> This is a driver specific property and must be properly named as such.
-> Please read the the DT documentation.
+Thanks,
 
-I believe that it is standard property. Section 6.1.2.3 label. I could
-drop this property. Node name should be enough descriptive, already.
-
-> 
-> More specifically, we already have standardized and discussed way of
-> describing thermal zones in DT, including their names. Please read
-> Documentation/devicetree/bindings/thermal/thermal.txt 
-> 
-> > +- io-channels:     Should contain IIO channel specifier
-> > +- io-channel-names: "thermal". The ADC channel for temperature reading.
-> > +
-> > +Example:
-> > +
-> > +	thermal-alarm@2400 {
-> > +		compatible = "qcom,qpnp-temp-alarm";
-> > +		reg = <0x2400>;
-> > +		interrupts = <0 0x24 0 IRQ_TYPE_EDGE_RISING>;
-> > +		label = "pm8941_tz";
-> > +		io-channels = <&pm8941_vadc VADC_DIE_TEMP>;
-> > +		io-channel-names = "thermal";
-> > +	};
-
-<snip>
-
-> > +++ b/drivers/thermal/qpnp-temp-alarm.c
-> > @@ -0,0 +1,519 @@
-> > +/*
-> > + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
-> > + *
-> 
-> Is it really the Linux Foundation? Or would it be QC/Codeaurora copyrights here?
-
-Yes, it is Linux Foundation. Downstream driver on this which driver is
-based is also Linux Foundation copyrighted.
-
-<snip>
-
-> > +
-> > +	rc = devm_request_irq(chip->dev, chip->irq, qpnp_tm_isr,
-> > +			      IRQF_TRIGGER_RISING, chip->tm_name, chip);
-> > +	if (rc < 0)
-> > +		thermal_zone_device_unregister(chip->tz_dev);
-> > +
-> 
-> This thermal driver does not bind to any cooling device?
-
-This driver monitor temperature of the external PMIC chip, accessed over
-SPMI bus. I am not aware of way how to cool this chip.
-
-> 
-> > +	return rc;
-> > +}
-> > +
-
-Regards,
-Ivan
-
+	Ingo
