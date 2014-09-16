@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297AbaIPBiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:38:07 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:3459 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754584AbaIPBiF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:38:05 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Date: Tue, 16 Sep 2014 09:34:49 +0800
-Subject: [RFC v3] arm:extend the reserved mrmory for initrd to be page
- aligned
-Thread-Topic: [RFC v3] arm:extend the reserved mrmory for initrd to be page
- aligned
-Thread-Index: Ac/RTmegzKLfxnudTH+lcS457OIJMg==
-Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49160A@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755763AbaIPBni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:43:38 -0400
+Received: from mail-bn1bn0107.outbound.protection.outlook.com ([157.56.110.107]:44226
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754081AbaIPBng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 21:43:36 -0400
+Date: Tue, 16 Sep 2014 09:43:06 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lucas Stach <l.stach@pengutronix.de>
+CC: Robin Gong <b38343@freescale.com>, <kernel@pengutronix.de>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+Message-ID: <20140916014304.GA23450@dragon>
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+ <1410774073.3314.1.camel@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410774073.3314.1.camel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(24454002)(199003)(97756001)(76176999)(97736003)(95666004)(83072002)(86362001)(85852003)(33656002)(33716001)(83506001)(44976005)(6806004)(57986006)(74502001)(46102002)(81542002)(81342002)(80022002)(31966008)(21056001)(74662001)(90102001)(77982001)(46406003)(92566001)(50986999)(105606002)(64706001)(68736004)(110136001)(54356999)(92726001)(23726002)(102836001)(79102001)(87936001)(26826002)(106466001)(50466002)(83322001)(4396001)(84676001)(20776003)(99396002)(104016003)(85306004)(107046002)(76482001)(47776003)(32563001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB038;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03361FCC43
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Shawn.Guo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch extend the start and end address of initrd to be page aligned,
-so that we can free all memory including the un-page aligned head or tail
-page of initrd, if the start or end address of initrd are not page
-aligned, the page can't be freed by free_initrd_mem() function.
+On Mon, Sep 15, 2014 at 11:41:13AM +0200, Lucas Stach wrote:
+> Am Mittwoch, den 10.09.2014, 13:30 +0800 schrieb Robin Gong:
+> > There is one weird data in rxfifo after one full rx/tx transfer
+> > done sometimes. It looks a design issue and hard to workaround
+> > totally, so disable dma functhion here. And will re-enable it
+> > once the root cause found.
+> > 
+> Sorry, I'm late to this as Shawn seems to already have picked up this
+> patch, but this isn't the right way to fix the problem.
+> 
+> We made it clear at kernel summit last year that we try to not break
+> existing DTs as booting a new kernel with an old DT is a valid use case.
+> While you don't strictly violate this rule what you do here is only
+> fixing systems booting with a new DT while leaving others broken.
+> 
+> If you are working around a hardware problem please disable DMA support
+> in the driver. This will also allow you to enable it again, if you find
+> another workaround without touching the DT again.
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- arch/arm/mm/init.c   | 5 +++++
- arch/arm64/mm/init.c | 8 +++++++-
- 2 files changed, 12 insertions(+), 1 deletion(-)
+Okay, it's a valid point.  Patch dropped.
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 659c75d..9221645 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -636,6 +636,11 @@ static int keep_initrd;
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
- 	if (!keep_initrd) {
-+		if (start == initrd_start)
-+			start = round_down(start, PAGE_SIZE);
-+		if (end == initrd_end)
-+			end = round_up(end, PAGE_SIZE);
-+
- 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
- 		free_reserved_area((void *)start, (void *)end, -1, "initrd");
- 	}
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 5472c24..c5512f6 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -334,8 +334,14 @@ static int keep_initrd;
- 
- void free_initrd_mem(unsigned long start, unsigned long end)
- {
--	if (!keep_initrd)
-+	if (!keep_initrd) {
-+		if (start == initrd_start)
-+			start = round_down(start, PAGE_SIZE);
-+		if (end == initrd_end)
-+			end = round_up(end, PAGE_SIZE);
-+
- 		free_reserved_area((void *)start, (void *)end, 0, "initrd");
-+	}
- }
- 
- static int __init keepinitrd_setup(char *__unused)
--- 
-2.1.0
+Shawn
