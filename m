@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaIPGQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 02:16:39 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40693 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaIPGQh (ORCPT
+	id S1753214AbaIPGbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 02:31:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22749 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753106AbaIPGbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 02:16:37 -0400
-Date: Tue, 16 Sep 2014 15:16:30 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Greg Thelen <gthelen@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
-Message-ID: <20140916061630.GE805@mtj.dyndns.org>
-References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
- <20140912171809.GA24469@dhcp22.suse.cz>
- <20140912175516.GB6298@mtj.dyndns.org>
- <20140912144326.a8d5153d7c91d220ea89924a@linux-foundation.org>
+	Tue, 16 Sep 2014 02:31:34 -0400
+Date: Tue, 16 Sep 2014 09:31:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: lidza.louina@gmail.com, markh@compro.net, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: dgap: use schedule_timeout_interruptible()
+ instead of dgap_ms_sleep()
+Message-ID: <20140916063115.GF17875@mwanda>
+References: <20140916033333.GA26821@devel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140912144326.a8d5153d7c91d220ea89924a@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140916033333.GA26821@devel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On Tue, Sep 16, 2014 at 12:33:33PM +0900, Daeseok Youn wrote:
+> @@ -2297,12 +2273,12 @@ static void dgap_tty_close(struct tty_struct *tty, struct file *file)
+>  			 * Go to sleep to ensure RTS/DTR
+>  			 * have been dropped for modems to see it.
+>  			 */
+> -			if (ch->ch_close_delay) {
+> -				spin_unlock_irqrestore(&ch->ch_lock,
+> -						       lock_flags);
+> -				dgap_ms_sleep(ch->ch_close_delay);
+> -				spin_lock_irqsave(&ch->ch_lock, lock_flags);
+> -			}
+> +			spin_unlock_irqrestore(&ch->ch_lock,
+> +					lock_flags);
+> +			/* .25 second delay for dropping RTS/DTR */
+> +			schedule_timeout_interruptible(msecs_to_jiffies(250));
+> +			signal_pending(current);
 
-On Fri, Sep 12, 2014 at 02:43:26PM -0700, Andrew Morton wrote:
-> 17 files changed, 51 insertions(+), 761 deletions(-)
-> 
-> Sob.
-> 
-> Is there a convenient way of disabling the whole thing and adding a
-> please-tell-us printk?  If nobody tells us for a year or two then zap.
+There is no point in calling signal_pending() if you don't care about
+the return value.
 
-Given that we're in the process of implementing the v2 interface, I
-don't think it'd be wise to perturb v1 interface at this point.  We're
-gonna have to carry around v1 code for quite some time anyway and I
-don't think carrying the tcp code would make whole lot of difference
-given that the code is likely to stay static from now on.
+> +			spin_lock_irqsave(&ch->ch_lock, lock_flags);
+>  		}
+>  
 
-Thanks.
-
--- 
-tejun
+regards,
+dan carpenter
