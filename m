@@ -1,198 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007AbaIPURr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:17:47 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:36201 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbaIPURq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:17:46 -0400
+	id S1755278AbaIPUTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:19:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48306 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691AbaIPUTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:19:05 -0400
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Dave Gerlach <d-gerlach@ti.com>, Robert Tivy <rtivy@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
+Subject: [PATCHv2 2/2] remoteproc: add support to handle internal memories
+Date: Tue, 16 Sep 2014 15:18:38 -0500
+Message-ID: <1410898718-10828-3-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410898718-10828-1-git-send-email-s-anna@ti.com>
+References: <1410898718-10828-1-git-send-email-s-anna@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1410864271-9277-3-git-send-email-kever.yang@rock-chips.com>
-References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com> <1410864271-9277-3-git-send-email-kever.yang@rock-chips.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Tue, 16 Sep 2014 13:17:25 -0700
-X-Google-Sender-Auth: Htjxc4PIJEzrNnwpQ3HboFtn2U4
-Message-ID: <CAPz6YkVqhO6kJtySB7MrCYzVLgjViKLO3c_HgS_NVxt3-=SJew@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] ARM: rockchip: add basic smp support for rk3288
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Douglas Anderson <dianders@chromium.org>,
-        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, hj@rock-chips.com,
-        huangtao@rock-chips.com, Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 3:44 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch add basic rk3288 smp support, cpu 1~3 are in wfe state
-> when get into kernel.
->
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
-> Changes in v2:
-> - use rk3288_boot_secondary instead ofsmp_boot_secondary
-> - discards the power domain operation
-> - handle the per cpu starup when actived by 'sev'
->
->  arch/arm/mach-rockchip/core.h    |  1 +
->  arch/arm/mach-rockchip/headsmp.S | 14 +++++++++
->  arch/arm/mach-rockchip/platsmp.c | 63 ++++++++++++++++++++++++++++++++++++----
->  3 files changed, 72 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
-> index 39bca96..13de05a 100644
-> --- a/arch/arm/mach-rockchip/core.h
-> +++ b/arch/arm/mach-rockchip/core.h
-> @@ -18,3 +18,4 @@ extern char rockchip_secondary_trampoline_end;
->
->  extern unsigned long rockchip_boot_fn;
->  extern void rockchip_secondary_startup(void);
-> +extern void rk3288_secondary_startup(void);
-> diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
-> index 73206e3..bacdb56 100644
-> --- a/arch/arm/mach-rockchip/headsmp.S
-> +++ b/arch/arm/mach-rockchip/headsmp.S
-> @@ -20,6 +20,20 @@ ENTRY(rockchip_secondary_startup)
->         b       secondary_startup
->  ENDPROC(rockchip_secondary_startup)
->
-> +ENTRY(rk3288_secondary_startup)
-> +       mrc p15, 0, r0, c0, c0, 5
-> +       mov r2, #3
-> +       and r0, r0, r2
-> +       ldr r1, =0xff700000
-> +       ldr r1, [r1]
-> +       cmp r0, r1
-> +       beq 2f
-> +       ldr r2, =0xfffd0000
-> +       mov pc, r2
-> +2:
-> +       b       secondary_startup
-> +ENDPROC(rk3288_secondary_startup)
+A remote processor may need to load certain firmware sections into
+internal memories (eg: RAM at L1 or L2 levels) for performance or
+other reasons. Introduce a new resource type (RSC_INTMEM) and add
+an associated handler function to handle such memories. The handler
+creates a kernel mapping for the resource's 'pa' (physical address).
 
-Comments on what's going on here would be nice.
-It looks like what you're doing is checking to see whether this CPU is
-the one that is supposed to wake up or not, but looking at sram
-(written by the C code below), and this isn't the correct CPU then go
-back to boot rom?  Since we read in int-mem from the device-tree it
-would also probably be good to make that ldr r1, 0xff700000 reference
-the sram_base_addr variable rather than hard coding here.
+Note that no iommu mapping is performed for this resource, as the
+resource is primarily used to represent physical internal memories.
+If the internal memory region can only be accessed through an iommu,
+a devmem resource entry should be used instead.
 
-> +
->  ENTRY(rockchip_secondary_trampoline)
->         ldr     pc, 1f
->  ENDPROC(rockchip_secondary_trampoline)
-> diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
-> index 189684f..022a01d 100644
-> --- a/arch/arm/mach-rockchip/platsmp.c
-> +++ b/arch/arm/mach-rockchip/platsmp.c
-> @@ -60,7 +60,7 @@ static void pmu_set_power_domain(int pd, bool on)
->   * Handling of CPU cores
->   */
->
-> -static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
-> +static int __cpuinit rk3066_boot_secondary(unsigned int cpu,
->                                              struct task_struct *idle)
->  {
->         if (!sram_base_addr || !pmu_base_addr) {
-> @@ -80,6 +80,28 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
->         return 0;
->  }
->
-> +static int __cpuinit rk3288_boot_secondary(unsigned int cpu,
-> +                                            struct task_struct *idle)
-> +{
-> +       if (!sram_base_addr) {
-> +               pr_err("%s: sram missing for cpu boot\n", __func__);
-> +               return -ENXIO;
-> +       }
-> +
-> +       if (cpu >= ncores) {
-> +               pr_err("%s: cpu %d outside maximum number of cpus %d\n",
-> +                                                       __func__, cpu, ncores);
-> +               return -ENXIO;
-> +       }
-> +       /* start the core */
-> +       writel(virt_to_phys(rk3288_secondary_startup), sram_base_addr + 8);
-> +       writel(0xDEADBEAF, sram_base_addr + 4);
-> +       writel(cpu, sram_base_addr + 0);
+Signed-off-by: Robert Tivy <rtivy@ti.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+v2:
+- fixed a minor checkpatch warning
 
-I guess the boot rom is looking for 0xDEADBEEF here at sram_base_addr
-+ 4, but the cpu itself will be looking at sram_base_addr + 0.
-Again, might be good to somehow document what the protocol is.
+ drivers/remoteproc/remoteproc_core.c | 83 +++++++++++++++++++++++++++++++++++-
+ include/linux/remoteproc.h           | 43 ++++++++++++++++++-
+ 2 files changed, 124 insertions(+), 2 deletions(-)
 
-> +       dsb_sev();
-> +
-> +       return 0;
-> +}
-> +
->  /**
->   * rockchip_smp_prepare_sram - populate necessary sram block
->   * Starting cores execute the code residing at the start of the on-chip sram
-> @@ -125,7 +147,7 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
->         return 0;
->  }
->
-> -static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
-> +static void __init rk3066_smp_prepare_cpus(unsigned int max_cpus)
->  {
->         struct device_node *node;
->         unsigned int i;
-> @@ -194,12 +216,41 @@ static void rockchip_cpu_die(unsigned int cpu)
->  }
->  #endif
->
-> -static struct smp_operations rockchip_smp_ops __initdata = {
-> -       .smp_prepare_cpus       = rockchip_smp_prepare_cpus,
-> -       .smp_boot_secondary     = rockchip_boot_secondary,
-> +static void __init rk3288_smp_prepare_cpus(unsigned int max_cpus)
-> +{
-> +       struct device_node *node;
-> +
-> +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-smp-sram");
-> +       if (!node) {
-> +               pr_err("%s: could not find sram dt node\n", __func__);
-> +               return;
-> +       }
-> +
-> +       sram_base_addr = of_iomap(node, 0);
-> +       if (!sram_base_addr) {
-> +               pr_err("%s: could not map pmu registers\n", __func__);
-> +               return;
-> +       }
-> +
-> +       ncores = 4;
-> +}
-> +
-> +static struct smp_operations rockchip3066_smp_ops __initdata = {
-> +       .smp_prepare_cpus       = rk3066_smp_prepare_cpus,
-> +       .smp_boot_secondary     = rk3066_boot_secondary,
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +       .cpu_kill               = rockchip_cpu_kill,
-> +       .cpu_die                = rockchip_cpu_die,
-> +#endif
-> +};
-> +CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip3066_smp_ops);
-> +
-> +static struct smp_operations rockchip3288_smp_ops __initdata = {
-> +       .smp_prepare_cpus       = rk3288_smp_prepare_cpus,
-> +       .smp_boot_secondary     = rk3288_boot_secondary,
->  #ifdef CONFIG_HOTPLUG_CPU
->         .cpu_kill               = rockchip_cpu_kill,
->         .cpu_die                = rockchip_cpu_die,
->  #endif
->  };
-> -CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip_smp_ops);
-> +CPU_METHOD_OF_DECLARE(rk3288_smp, "rockchip,rk3288-smp", &rockchip3288_smp_ops);
-> --
-> 1.9.1
->
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 11cdb11..1d668e5 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -664,6 +664,82 @@ free_carv:
+ 	return ret;
+ }
+ 
++/**
++ * rproc_handle_intmem() - handle internal memory resource entry
++ * @rproc: rproc handle
++ * @rsc: the intmem resource entry
++ * @offset: offset of the resource data in resource table
++ * @avail: size of available data (for image validation)
++ *
++ * This function will handle firmware requests for mapping a memory region
++ * internal to a remote processor into kernel. It neither allocates any
++ * physical pages, nor performs any iommu mapping, as this resource entry
++ * is primarily used for representing physical internal memories. If the
++ * internal memory region can only be accessed through an iommu, please
++ * use a devmem resource entry.
++ *
++ * These resource entries should be grouped near the carveout entries in
++ * the firmware's resource table, as other firmware entries might request
++ * placing other data objects inside these memory regions (e.g. data/code
++ * segments, trace resource entries, ...).
++ */
++static int rproc_handle_intmem(struct rproc *rproc, struct fw_rsc_intmem *rsc,
++			       int offset, int avail)
++{
++	struct rproc_mem_entry *intmem;
++	struct device *dev = &rproc->dev;
++	void *va;
++	int ret;
++
++	if (sizeof(*rsc) > avail) {
++		dev_err(dev, "intmem rsc is truncated\n");
++		return -EINVAL;
++	}
++
++	if (rsc->version != 1) {
++		dev_err(dev, "intmem rsc version %d is not supported\n",
++			rsc->version);
++		return -EINVAL;
++	}
++
++	if (rsc->reserved) {
++		dev_err(dev, "intmem rsc has non zero reserved bytes\n");
++		return -EINVAL;
++	}
++
++	dev_dbg(dev, "intmem rsc: da 0x%x, pa 0x%x, len 0x%x\n",
++		rsc->da, rsc->pa, rsc->len);
++
++	intmem = kzalloc(sizeof(*intmem), GFP_KERNEL);
++	if (!intmem)
++		return -ENOMEM;
++
++	va = (__force void *)ioremap_nocache(rsc->pa, rsc->len);
++	if (!va) {
++		dev_err(dev, "ioremap_nocache err: %d\n", rsc->len);
++		ret = -ENOMEM;
++		goto free_intmem;
++	}
++
++	dev_dbg(dev, "intmem mapped pa 0x%x of len 0x%x into kernel va %p\n",
++		rsc->pa, rsc->len, va);
++
++	intmem->va = va;
++	intmem->len = rsc->len;
++	intmem->dma = rsc->pa;
++	intmem->da = rsc->da;
++	intmem->priv = (void *)1;    /* prevents freeing */
++
++	/* reuse the rproc->carveouts list, so that loading is automatic */
++	list_add_tail(&intmem->node, &rproc->carveouts);
++
++	return 0;
++
++free_intmem:
++	kfree(intmem);
++	return ret;
++}
++
+ static int rproc_count_vrings(struct rproc *rproc, struct fw_rsc_vdev *rsc,
+ 			      int offset, int avail)
+ {
+@@ -681,6 +757,7 @@ static rproc_handle_resource_t rproc_loading_handlers[RSC_LAST] = {
+ 	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
+ 	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
+ 	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
++	[RSC_INTMEM] = (rproc_handle_resource_t)rproc_handle_intmem,
+ 	[RSC_VDEV] = NULL, /* VDEVs were handled upon registrarion */
+ };
+ 
+@@ -768,7 +845,11 @@ static void rproc_resource_cleanup(struct rproc *rproc)
+ 
+ 	/* clean up carveout allocations */
+ 	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
+-		dma_free_coherent(dev->parent, entry->len, entry->va, entry->dma);
++		if (!entry->priv)
++			dma_free_coherent(dev->parent, entry->len, entry->va,
++					  entry->dma);
++		else
++			iounmap((__force void __iomem *)entry->va);
+ 		list_del(&entry->node);
+ 		kfree(entry);
+ 	}
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index 78b8a9b..2a25ee8 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -100,6 +100,7 @@ struct fw_rsc_hdr {
+  *		    the remote processor will be writing logs.
+  * @RSC_VDEV:       declare support for a virtio device, and serve as its
+  *		    virtio header.
++ * @RSC_INTMEM:     request to map into kernel an internal memory region.
+  * @RSC_LAST:       just keep this one at the end
+  *
+  * For more details regarding a specific resource type, please see its
+@@ -115,7 +116,8 @@ enum fw_resource_type {
+ 	RSC_DEVMEM	= 1,
+ 	RSC_TRACE	= 2,
+ 	RSC_VDEV	= 3,
+-	RSC_LAST	= 4,
++	RSC_INTMEM	= 4,
++	RSC_LAST	= 5,
+ };
+ 
+ #define FW_RSC_ADDR_ANY (0xFFFFFFFFFFFFFFFF)
+@@ -306,6 +308,45 @@ struct fw_rsc_vdev {
+ } __packed;
+ 
+ /**
++ * struct fw_rsc_intmem - internal memory publishing request
++ * @version: version for this resource type (must be one)
++ * @da: device address
++ * @pa: physical address
++ * @len: length (in bytes)
++ * @reserved: reserved (must be zero)
++ * @name: human-readable name of the region being published
++ *
++ * This resource entry allows a remote processor to publish an internal
++ * memory region to the host. This resource type allows a remote processor
++ * to publish the whole or just a portion of certain internal memories,
++ * while it owns and manages any unpublished portion (eg: a shared L1
++ * memory that can be split configured as RAM and/or cache). This is
++ * primarily provided to allow a host to load code/data into internal
++ * memories, the memory for which is neither allocated nor required to
++ * be mapped into an iommu.
++ *
++ * @da should specify the required address as accessible by the device
++ * without going through an iommu, @pa should specify the physical address
++ * for the region as seen on the bus, @len should specify the size of the
++ * memory region. As always, @name may (optionally) contain a human readable
++ * name of this mapping (mainly for debugging purposes). The @version field
++ * is added for future scalability, and should be 1 for now.
++ *
++ * Note: at this point we just "trust" these intmem entries to contain valid
++ * physical bus addresses. these are not currently intended to be managed
++ * as host-controlled heaps, as it is much better to do that from the remote
++ * processor side.
++ */
++struct fw_rsc_intmem {
++	u32 version;
++	u32 da;
++	u32 pa;
++	u32 len;
++	u32 reserved;
++	u8 name[32];
++} __packed;
++
++/**
+  * struct rproc_mem_entry - memory entry descriptor
+  * @va:	virtual address
+  * @dma: dma address
+-- 
+2.0.4
+
