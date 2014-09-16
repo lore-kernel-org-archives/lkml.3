@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaIPVXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:23:30 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:59146 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456AbaIPVX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:23:28 -0400
+	id S1753940AbaIPVXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:23:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49644 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752801AbaIPVXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 17:23:52 -0400
+Message-ID: <5418AA54.9010704@zytor.com>
+Date: Tue, 16 Sep 2014 14:23:32 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-In-Reply-To: <20140916.165452.1747695341192703967.davem@davemloft.net>
-References: <1410808721-27493-4-git-send-email-ast@plumgrid.com>
-	<20140916.151606.448751391205382097.davem@davemloft.net>
-	<CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
-	<20140916.165452.1747695341192703967.davem@davemloft.net>
-Date: Tue, 16 Sep 2014 14:23:27 -0700
-Message-ID: <CAMEtUuzy0Hvjr0f4XBrH+FAxaKD7aijnYzDe3-MPrGWe6+MD4Q@mail.gmail.com>
-Subject: Re: [PATCH v12 net-next 03/11] bpf: add lookup/update/delete/iterate
- methods to BPF maps
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: David Miller <davem@davemloft.net>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>
+CC: Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [3.13.y.z extended stable] Linux 3.13.11.7 stable review
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com> <20140916000309.GA8853@kroah.com> <54178FEB.3000606@canonical.com> <20140916012609.GB29475@kroah.com> <5418548B.9080609@canonical.com> <20140916181310.GB24080@kroah.com>
+In-Reply-To: <20140916181310.GB24080@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 1:54 PM, David Miller <davem@davemloft.net> wrote:
->
-> The cost of the compat layer must be considered and weighted
-> against this cast, which I think is really no big deal.
->
->> I think compat layer is a better option.
->
-> It's overhead you'll have to support forever, I think you should
-> reconsider.
->
-> All of the "ugly casting" will be hidden, or can be hidden, in the
-> syscall wrappers and/or interfaces in userspace.
+On 09/16/2014 11:13 AM, Greg KH wrote:
+> 
+> By the "trailing digit", i.e. ".y", only.  It's just an aditional
+> number, not a "vendor version mark", like most packaging systems all
+> incorporate to show obviously that there is a difference from the
+> "upstream" release here.
+> 
+>> I _want_ the consumer to be aware of where they have acquired their
+>> kernel sources (as if the git URL is insufficient). Frankly, if the
+>> version is an _enduring_ source of confusion, then perhaps the
+>> consumer should seek other endeavors.
+> 
+> You are really trying to use the "if the user is so dumb to understand,
+> they should just go away" argument here?  I value our users more than
+> that, they are the only reason we will survive over time.  You will not
+> succeed by going around calling them names.
+> 
 
-ahh, ok. I thought you're strongly against any type of casts.
-In such case I can get rid of 'union bpf_attr' as well and simply
-define a struct per command, then syscall will look like:
-sys_bpf(int cmd, void __user *attr, unsigned int size);
-and uapi/linux/bpf.h will have:
-struct bpf_prog_load_attr { /* for BPF_PROG_LOAD cmd */
-    __u32 prog_type;
-    __u32 insn_cnt;
-    __aligned_u64 insns;
-    __aligned_u64 license;
-    __u32 log_level;
-    __u32 log_size;
-    __aligned_u64 log_buf;
-};
-and similar for other commands.
-no compat layer and type checking will be done
-by syscall wrappers. Ok?
+It is worth noting that we have a long-standing convention for these
+sort of things.  It looks like x.y[.z]-XXn where XX is two or three
+letters, e.g. 3.13.11-km7.
+
+	-hpa
+
+
