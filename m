@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370AbaIPUIz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:08:55 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34505 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751691AbaIPUIy (ORCPT
+	id S1754750AbaIPUJD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:09:03 -0400
+Received: from smtprelay0116.hostedemail.com ([216.40.44.116]:43188 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751691AbaIPUI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:08:54 -0400
-Message-ID: <541898C7.6070508@hurleysoftware.com>
-Date: Tue, 16 Sep 2014 16:08:39 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Tim Chen <tim.c.chen@linux.intel.com>,
-        Davidlohr Bueso <dbueso@suse.de>
-CC: linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v2] locking/rwsem: Avoid double checking before try acquiring
- write lock
-References: <1410894118.2447.4.camel@j-VirtualBox>
-In-Reply-To: <1410894118.2447.4.camel@j-VirtualBox>
-Content-Type: text/plain; charset=utf-8
+	Tue, 16 Sep 2014 16:08:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2560:2563:2682:2685:2693:2828:2859:2892:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6119:6248:7652:7875:7903:8957:9010:9025:10004:10400:10450:10455:10848:11232:11658:11914:12043:12050:12295:12517:12519:12679:12740:13069:13072:13095:13311:13357:13891:14096:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: ants17_13e1996bdb423
+X-Filterd-Recvd-Size: 2922
+Message-ID: <1410898135.16519.14.camel@joe-AO725>
+Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Sep 2014 13:08:55 -0700
+In-Reply-To: <20140916195737.GO12361@n2100.arm.linux.org.uk>
+References: <cover.1410632834.git.joe@perches.com>
+	 <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+	 <20140915155656.GA29744@arm.com>
+	 <20140916160759.GJ12361@n2100.arm.linux.org.uk>
+	 <1410884281.16519.2.camel@joe-AO725>
+	 <20140916195737.GO12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-On 09/16/2014 03:01 PM, Jason Low wrote:
-> Commit 9b0fc9c09f1b checks for if there are known active lockers in
-> order to avoid write trylocking using expensive cmpxchg() when it
-> likely wouldn't get the lock.
+On Tue, 2014-09-16 at 20:57 +0100, Russell King - ARM Linux wrote:
+> On Tue, Sep 16, 2014 at 09:18:01AM -0700, Joe Perches wrote:
+> > On Tue, 2014-09-16 at 17:07 +0100, Russell King - ARM Linux wrote:
+> > > any chance you could add a KernelVersion: tag somewhere in the
+> > > commit message and throw it at patches@arm.linux.org.uk so it doesn't
+> > > get lost?
+> > 
+> > There are no commit logs with a KernelVersion: tag
+> > in all of git history.
 > 
-> However, a subsequent patch was added such that we directly check for
-> sem->count == RWSEM_WAITING_BIAS right before trying that cmpxchg().
-> Thus, commit 9b0fc9c09f1b now just adds extra overhead. This patch
-> deletes it.
-
-It would be better to just not reload sem->count, and check the parameter
-count == RWSEM_WAITING_BIAS instead. The count parameter is a very recent
-load of sem->count (one of which is the latest exclusive read from an
-atomic operation), so likely to be just as accurate as a reload of
-sem->count without causing more cache line contention.
-
-Regards,
-Peter Hurley
-
-> Also, add a comment on why we do an "extra check" of sem->count before
-> the cmpxchg().
+> Right, that's not it's purpose.
 > 
-> Signed-off-by: Jason Low <jason.low2@hp.com>
-> ---
->  kernel/locking/rwsem-xadd.c |   24 +++++++++++++-----------
->  1 files changed, 13 insertions(+), 11 deletions(-)
+> > What do you think a KernelVersion: tag is and what
+> > would it be used for?
 > 
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index d6203fa..63d3ef2 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -247,18 +247,20 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
->  	return sem;
->  }
->  
-> -static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
-> +static inline bool rwsem_try_write_lock(struct rw_semaphore *sem)
->  {
-> -	if (!(count & RWSEM_ACTIVE_MASK)) {
-> -		/* try acquiring the write lock */
-> -		if (sem->count == RWSEM_WAITING_BIAS &&
-> -		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> -			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> -			if (!list_is_singular(&sem->wait_list))
-> -				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> -			return true;
-> -		}
-> +	/*
-> +	 * Try acquiring the write lock. Check sem->count first
-> +	 * in order to reduce unnecessary expensive cmpxchg() operations.
-> +	 */
-> +	if (sem->count == RWSEM_WAITING_BIAS &&
-> +	    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> +		    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> +		if (!list_is_singular(&sem->wait_list))
-> +			rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> +		return true;
->  	}
-> +
->  	return false;
->  }
->  
-> @@ -446,7 +448,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  	/* wait until we successfully acquire the lock */
->  	set_current_state(TASK_UNINTERRUPTIBLE);
->  	while (true) {
-> -		if (rwsem_try_write_lock(count, sem))
-> +		if (rwsem_try_write_lock(sem))
->  			break;
->  		raw_spin_unlock_irq(&sem->wait_lock);
->  
-> 
+> It's for that email address to know which kernel version the patch
+> was generated against, which is useful information when I come to
+> apply it.  It gets filtered out from the commit message.  It can go
+> anywhere, even below the -- line.
+
+> If you don't want to cooperate, you will have to rely on my notoriously
+> bad email skills to scan the mailing list for random patches to apply
+> some time (maybe days or even weeks) later after you send your message.
+> Which just won't happen.  It's why I wrote scripts which are some 20
+> years old to solve my bad email patch handling skills.
+
+I received your patchbot's reply about 15 minutes
+before you sent this.
+
+I suggest you might move one year to patchwork
+(ie: https://patchwork.kernel.org/project/linux-arm-kernel/list/)
+and adapt that as necessary, but whatever works
+for you.
+
+btw:
+
+patches@arm.linux.org.uk is not documented at all
+in the kernel sources.  You could fix that if you
+want other people to know what you do.
+
 
