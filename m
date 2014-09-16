@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800AbaIPU6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:58:34 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:36582 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052AbaIPUwE (ORCPT
+	id S1755846AbaIPU6v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:58:51 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:57807 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755145AbaIPUwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:52:04 -0400
+	Tue, 16 Sep 2014 16:52:03 -0400
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: [PATCH 06/22] ocfs2: Replace strnicmp with strncasecmp
-Date: Tue, 16 Sep 2014 22:51:20 +0200
-Message-Id: <1410900696-6481-7-git-send-email-linux@rasmusvillemoes.dk>
+        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org
+Subject: [PATCH 05/22] cifs: Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:19 +0200
+Message-Id: <1410900696-6481-6-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
 References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
@@ -32,49 +32,60 @@ To allow the compat wrapper strnicmp to be removed at some point in
 the future, and to avoid the extra indirection cost, do
 s/strnicmp/strncasecmp/g.
 
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
+Cc: Steve French <sfrench@samba.org>
+Cc: linux-cifs@vger.kernel.org
+Cc: samba-technical@lists.samba.org
 Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- fs/ocfs2/cluster/heartbeat.c | 2 +-
- fs/ocfs2/cluster/masklog.c   | 6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ fs/cifs/cifs_dfs_ref.c | 6 +++---
+ fs/cifs/connect.c      | 4 ++--
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
-index 7303929..eec35c2 100644
---- a/fs/ocfs2/cluster/heartbeat.c
-+++ b/fs/ocfs2/cluster/heartbeat.c
-@@ -2244,7 +2244,7 @@ ssize_t o2hb_heartbeat_group_mode_store(struct o2hb_heartbeat_group *group,
- 		return -EINVAL;
+diff --git a/fs/cifs/cifs_dfs_ref.c b/fs/cifs/cifs_dfs_ref.c
+index 58df174..b8602f1 100644
+--- a/fs/cifs/cifs_dfs_ref.c
++++ b/fs/cifs/cifs_dfs_ref.c
+@@ -195,15 +195,15 @@ char *cifs_compose_mount_options(const char *sb_mountdata,
+ 		else
+ 			noff = tkn_e - (sb_mountdata + off) + 1;
  
- 	for (i = 0; i < O2HB_HEARTBEAT_NUM_MODES; ++i) {
--		if (strnicmp(page, o2hb_heartbeat_mode_desc[i], len))
-+		if (strncasecmp(page, o2hb_heartbeat_mode_desc[i], len))
+-		if (strnicmp(sb_mountdata + off, "unc=", 4) == 0) {
++		if (strncasecmp(sb_mountdata + off, "unc=", 4) == 0) {
+ 			off += noff;
  			continue;
+ 		}
+-		if (strnicmp(sb_mountdata + off, "ip=", 3) == 0) {
++		if (strncasecmp(sb_mountdata + off, "ip=", 3) == 0) {
+ 			off += noff;
+ 			continue;
+ 		}
+-		if (strnicmp(sb_mountdata + off, "prefixpath=", 11) == 0) {
++		if (strncasecmp(sb_mountdata + off, "prefixpath=", 11) == 0) {
+ 			off += noff;
+ 			continue;
+ 		}
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 8a9fded..48e079e 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1705,7 +1705,7 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 				goto cifs_parse_mount_err;
+ 			}
  
- 		ret = o2hb_global_heartbeat_mode_set(i);
-diff --git a/fs/ocfs2/cluster/masklog.c b/fs/ocfs2/cluster/masklog.c
-index 07ac24f..af7598b 100644
---- a/fs/ocfs2/cluster/masklog.c
-+++ b/fs/ocfs2/cluster/masklog.c
-@@ -49,13 +49,13 @@ static ssize_t mlog_mask_show(u64 mask, char *buf)
+-			 if (strnicmp(string, "default", 7) != 0) {
++			 if (strncasecmp(string, "default", 7) != 0) {
+ 				vol->iocharset = kstrdup(string,
+ 							 GFP_KERNEL);
+ 				if (!vol->iocharset) {
+@@ -1777,7 +1777,7 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 			if (string == NULL)
+ 				goto out_nomem;
  
- static ssize_t mlog_mask_store(u64 mask, const char *buf, size_t count)
- {
--	if (!strnicmp(buf, "allow", 5)) {
-+	if (!strncasecmp(buf, "allow", 5)) {
- 		__mlog_set_u64(mask, mlog_and_bits);
- 		__mlog_clear_u64(mask, mlog_not_bits);
--	} else if (!strnicmp(buf, "deny", 4)) {
-+	} else if (!strncasecmp(buf, "deny", 4)) {
- 		__mlog_set_u64(mask, mlog_not_bits);
- 		__mlog_clear_u64(mask, mlog_and_bits);
--	} else if (!strnicmp(buf, "off", 3)) {
-+	} else if (!strncasecmp(buf, "off", 3)) {
- 		__mlog_clear_u64(mask, mlog_not_bits);
- 		__mlog_clear_u64(mask, mlog_and_bits);
- 	} else
+-			if (strnicmp(string, "1", 1) == 0) {
++			if (strncasecmp(string, "1", 1) == 0) {
+ 				/* This is the default */
+ 				break;
+ 			}
 -- 
 2.0.4
 
