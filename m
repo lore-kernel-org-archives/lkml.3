@@ -1,114 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356AbaIPU3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:29:38 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:56206 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027AbaIPU3f (ORCPT
+	id S1754656AbaIPUeg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:34:36 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:37229 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840AbaIPUef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:29:35 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, "David S . Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm64: bpf: add 'load 64-bit immediate' instruction
-Date: Tue, 16 Sep 2014 13:29:23 -0700
-Message-Id: <1410899363-27635-1-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410892655-17818-1-git-send-email-zlim.lnx@gmail.com>
-References: <1410892655-17818-1-git-send-email-zlim.lnx@gmail.com>
+	Tue, 16 Sep 2014 16:34:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <x49sijrxt1f.fsf@segfault.boston.devel.redhat.com>
+References: <cover.1410810247.git.milosz@adfin.com>
+	<x49sijrxt1f.fsf@segfault.boston.devel.redhat.com>
+Date: Tue, 16 Sep 2014 16:34:33 -0400
+Message-ID: <CANP1eJF_LjNVeD838D-H=005jtGTvGY=h5wPZBHfT6Z9iuKK_g@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+From: Milosz Tanski <milosz@adfin.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin, Will,
+Jeff,
 
-Please consider applying this after -rc1 as well. [1]
+Which git repository do the man pages live in?
 
-Let me know how you prefer to handle these patches and I can repost
-as necessary.
+- Milosz
 
-Thanks,
-z
+On Tue, Sep 16, 2014 at 3:30 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> writes:
+>
+>> This patcheset introduces an ability to perform a non-blocking read from
+>> regular files in buffered IO mode. This works by only for those filesystems
+>> that have data in the page cache.
+>>
+>> It does this by introducing new syscalls new syscalls readv2/writev2 and
+>> preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
+>> syscalls that accept an extra flag argument (O_NONBLOCK).
+>>
+>> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
+>> perform buffered IO operations. They submit the work form another thread
+>> that performs network IO and epoll or other threads that perform CPU work. This
+>> leads to increased latency for processing, esp. in the case of data that's
+>> already cached in the page cache.
+>>
+>> With the new interface the applications will now be able to fetch the data in
+>> their network / cpu bound thread(s) and only defer to a threadpool if it's not
+>> there. In our own application (VLDB) we've observed a decrease in latency for
+>> "fast" request by avoiding unnecessary queuing and having to swap out current
+>> tasks in IO bound work threads.
+>>
+>> I have co-developed these changes with Christoph Hellwig, a whole lot of his
+>> fixes went into the first patch in the series (were squashed with his
+>> approval).
+>>
+>> I am going to post the perf report in a reply-to to this RFC.
+>
+> You can send the performance data along with the patch series, no need to
+> separate it off in a reply.
+>
+> One additional patch I'd like to see is a man page update.  That would
+> help clarify exactly what you're trying to accomplish.
+>
+> I look forward to v2!
+>
+> Cheers,
+> Jeff
 
-[1] https://lkml.org/lkml/2014/9/16/418
->8------------------------------------------------------8<
 
-Commit 02ab695bb37e (net: filter: add "load 64-bit immediate" eBPF
-instruction) introduced a new eBPF instruction. Let's add support
-for this for arm64 as well.
 
-Our arm64 eBPF JIT compiler now passes the new "load 64-bit
-immediate" test case introduced in the same commit 02ab695bb37e.
-
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>
----
- arch/arm64/net/bpf_jit_comp.c | 31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
-
-diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
-index 80cc769..618d2cd 100644
---- a/arch/arm64/net/bpf_jit_comp.c
-+++ b/arch/arm64/net/bpf_jit_comp.c
-@@ -205,6 +205,12 @@ static void build_epilogue(struct jit_ctx *ctx)
- 	emit(A64_RET(A64_LR), ctx);
- }
- 
-+/* JITs an eBPF instruction.
-+ * Returns:
-+ * 0  - successfully JITed an 8-byte eBPF instruction.
-+ * >0 - successfully JITed a 16-byte eBPF instruction.
-+ * <0 - failed to JIT.
-+ */
- static int build_insn(const struct bpf_insn *insn, struct jit_ctx *ctx)
- {
- 	const u8 code = insn->code;
-@@ -464,6 +470,27 @@ emit_cond_jmp:
- 		emit(A64_B(jmp_offset), ctx);
- 		break;
- 
-+	/* dst = imm64 */
-+	case BPF_LD | BPF_IMM | BPF_DW:
-+	{
-+		const struct bpf_insn insn1 = insn[1];
-+		u64 imm64;
-+
-+		if (insn1.code != 0 || insn1.src_reg != 0 ||
-+		    insn1.dst_reg != 0 || insn1.off != 0) {
-+			/* Note: verifier in BPF core must catch invalid
-+			 * instructions.
-+			 */
-+			pr_err_once("Invalid BPF_LD_IMM64 instruction\n");
-+			return -EINVAL;
-+		}
-+
-+		imm64 = (u64)insn1.imm << 32 | imm;
-+		emit_a64_mov_i64(dst, imm64, ctx);
-+
-+		return 1;
-+	}
-+
- 	/* LDX: dst = *(size *)(src + off) */
- 	case BPF_LDX | BPF_MEM | BPF_W:
- 	case BPF_LDX | BPF_MEM | BPF_H:
-@@ -615,6 +642,10 @@ static int build_body(struct jit_ctx *ctx)
- 			ctx->offset[i] = ctx->idx;
- 
- 		ret = build_insn(insn, ctx);
-+		if (ret > 0) {
-+			i++;
-+			continue;
-+		}
- 		if (ret)
- 			return ret;
- 	}
 -- 
-1.9.1
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
 
+p: 646-253-9055
+e: milosz@adfin.com
