@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaIPB5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:57:08 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47080 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895AbaIPB5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:57:06 -0400
-Message-ID: <541798E7.6010508@roeck-us.net>
-Date: Mon, 15 Sep 2014 18:56:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755519AbaIPCCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:02:37 -0400
+Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:30008
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753471AbaIPCCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 22:02:35 -0400
+Date: Tue, 16 Sep 2014 10:02:25 +0800
+From: Peter Chen <peter.chen@freescale.com>
+To: Andreas Larsson <andreas@gaisler.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <software@gaisler.com>
+Subject: Re: [PATCH] usb: gadget: udc_core: Use right kobj when calling
+ sysfs_notify
+Message-ID: <20140916020223.GD3379@peterchendt>
+References: <1410777748-28090-1-git-send-email-andreas@gaisler.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 000/158] 3.16.3-stable review
-References: <20140915192542.872134685@linuxfoundation.org>
-In-Reply-To: <20140915192542.872134685@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.541798F1.0006,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 20
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1410777748-28090-1-git-send-email-andreas@gaisler.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(199003)(189002)(33656002)(107046002)(97736003)(76482001)(44976005)(106466001)(104016003)(81542002)(81342002)(80022002)(77982002)(74662002)(79102002)(74502002)(20776003)(575784001)(95666004)(31966008)(64706001)(105606002)(50466002)(19580405001)(85306004)(6806004)(47776003)(19580395003)(92726001)(33716001)(23726002)(21056001)(86362001)(87936001)(76176999)(83322001)(83072002)(110136001)(46406003)(83506001)(85852003)(68736004)(90102001)(50986999)(26826002)(102836001)(57986006)(97756001)(46102002)(84676001)(92566001)(99396002)(54356999)(4396001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB270;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03361FCC43
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Peter.Chen@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/15/2014 12:23 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.16.3 release.
-> There are 158 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Sep 17 19:25:26 UTC 2014.
-> Anything received after that time might be too late.
->
+On Mon, Sep 15, 2014 at 12:42:27PM +0200, Andreas Larsson wrote:
+> The state attribute is connected to the kobj of the udc, not the gadget.
+> 
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> ---
+>  drivers/usb/gadget/udc/udc-core.c |   14 +++++++++++++-
+>  1 file changed, 13 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
+> index b0d9817..37c129a 100644
+> --- a/drivers/usb/gadget/udc/udc-core.c
+> +++ b/drivers/usb/gadget/udc/udc-core.c
+> @@ -109,8 +109,20 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+>  static void usb_gadget_state_work(struct work_struct *work)
+>  {
+>  	struct usb_gadget	*gadget = work_to_gadget(work);
+> +	struct usb_udc		*udc = NULL;
+> +
+> +	mutex_lock(&udc_lock);
+> +	list_for_each_entry(udc, &udc_list, list)
+> +		if (udc->gadget == gadget)
+> +			goto found;
+> +	mutex_unlock(&udc_lock);
+> +
+> +	return;
+> +
+> +found:
+> +	mutex_unlock(&udc_lock);
+>  
+> -	sysfs_notify(&gadget->dev.kobj, NULL, "state");
+> +	sysfs_notify(&udc->dev.kobj, NULL, "state");
+>  }
+>  
+>  void usb_gadget_set_state(struct usb_gadget *gadget,
 
-Build results:
-	total: 136 pass: 136 fail: 0
+What's the user mode difference with and without this patch?
 
-Qemu test results:
-	total: 24 pass: 24 fail: 0
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+-- 
+Best Regards,
+Peter Chen
