@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaIPVEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:04:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:32784 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501AbaIPVES (ORCPT
+	id S1754915AbaIPVEp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:04:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55754 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693AbaIPVEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:04:18 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>
-Subject: [Patch v2] clk: qcom: Add IPQ8064 PLL required for USB
-Date: Tue, 16 Sep 2014 16:04:12 -0500
-Message-Id: <1410901452-13519-1-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 16 Sep 2014 17:04:43 -0400
+Date: Tue, 16 Sep 2014 14:04:41 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
+Message-ID: <20140916210441.GC24591@infradead.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+ <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com>
+ <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the PLL0 that is required for the USB clocks to work properly.
+On Tue, Sep 16, 2014 at 03:27:41PM -0400, Jeff Moyer wrote:
+> Christoph Hellwig <milosz@adfin.com> writes:
+> 
+> Hrm, you're not Christoph...
+> 
+> > Acked-by: Milosz Tanski <milosz@adfin.com>
+> > ---
+> >  fs/ceph/file.c    |    2 ++
+> >  fs/cifs/file.c    |    6 ++++++
+> >  fs/nfs/file.c     |    5 ++++-
+> >  fs/ocfs2/file.c   |    6 ++++++
+> >  fs/pipe.c         |    3 ++-
+> >  fs/read_write.c   |   17 +++++++++++------
+> >  fs/xfs/xfs_file.c |    4 ++++
+> >  mm/shmem.c        |    4 ++++
+> >  8 files changed, 39 insertions(+), 8 deletions(-)
+> >
+> > diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+> > index 4776257..b62e3a5 100644
+> > --- a/fs/ceph/file.c
+> > +++ b/fs/ceph/file.c
+> > @@ -808,6 +808,8 @@ again:
+> >  	if ((got & (CEPH_CAP_FILE_CACHE|CEPH_CAP_FILE_LAZYIO)) == 0 ||
+> >  	    (iocb->ki_filp->f_flags & O_DIRECT) ||
+> >  	    (fi->flags & CEPH_F_SYNC)) {
+> > +		if (flags & O_NONBLOCK)
+> > +			return -EAGAIN;
+> 
+> Again, the right return value for the O_DIRECT case is EINVAL.
 
-Changes in v2: Correct table to only use pll0_vote
-
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- drivers/clk/qcom/gcc-ipq806x.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/clk/qcom/gcc-ipq806x.c b/drivers/clk/qcom/gcc-ipq806x.c
-index 4032e51..193b7c4 100644
---- a/drivers/clk/qcom/gcc-ipq806x.c
-+++ b/drivers/clk/qcom/gcc-ipq806x.c
-@@ -32,6 +32,33 @@
- #include "clk-branch.h"
- #include "reset.h"
- 
-+static struct clk_pll pll0 = {
-+	.l_reg = 0x30c4,
-+	.m_reg = 0x30c8,
-+	.n_reg = 0x30cc,
-+	.config_reg = 0x30d4,
-+	.mode_reg = 0x30c0,
-+	.status_reg = 0x30d8,
-+	.status_bit = 16,
-+	.clkr.hw.init = &(struct clk_init_data){
-+		.name = "pll0",
-+		.parent_names = (const char *[]){ "pxo" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_ops,
-+	},
-+};
-+
-+static struct clk_regmap pll0_vote = {
-+	.enable_reg = 0x34c0,
-+	.enable_mask = BIT(0),
-+	.hw.init = &(struct clk_init_data){
-+		.name = "pll0_vote",
-+		.parent_names = (const char *[]){ "pll0" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_vote_ops,
-+	},
-+};
-+
- static struct clk_pll pll3 = {
- 	.l_reg = 0x3164,
- 	.m_reg = 0x3168,
-@@ -154,7 +181,7 @@ static const u8 gcc_pxo_pll8_pll0[] = {
- static const char *gcc_pxo_pll8_pll0_map[] = {
- 	"pxo",
- 	"pll8_vote",
--	"pll0",
-+	"pll0_vote",
- };
- 
- static struct freq_tbl clk_tbl_gsbi_uart[] = {
-@@ -2133,6 +2160,8 @@ static struct clk_branch usb_fs1_h_clk = {
- };
- 
- static struct clk_regmap *gcc_ipq806x_clks[] = {
-+	[PLL0] = &pll0.clkr,
-+	[PLL0_VOTE] = &pll0_vote,
- 	[PLL3] = &pll3.clkr,
- 	[PLL8] = &pll8.clkr,
- 	[PLL8_VOTE] = &pll8_vote,
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Is it?  We define -EAGAIN as it would block, which is defintively true
+for O_DIRECT reads.
