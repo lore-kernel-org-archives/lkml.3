@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282AbaIPPk4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:40:56 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:47874 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743AbaIPPky (ORCPT
+	id S1754261AbaIPPsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:48:45 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:34215 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884AbaIPPsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:40:54 -0400
-Date: Tue, 16 Sep 2014 09:40:49 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatxjain@gmail.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Yang <weiyang@linux.vnet.ibm.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Josh Logan <joshtlogan@gmail.com>
-Subject: Re: [PATCH v2] pci/probe: Enable CRS for root port if it is supported
-Message-ID: <20140916154049.GA832@google.com>
-References: <53FFA54D.9000907@gmail.com>
- <CAErSpo5_WMUmnTHpPZt+j04VZoiW1pthQoGV90A5BDQpQgjwOQ@mail.gmail.com>
- <54065208.3080309@gmail.com>
- <20140909053808.GQ8080@google.com>
- <CAA93t1rHu+bfJNKfCws=-ezxAOuRJsLQb4n=eVhZha0iW+oSYA@mail.gmail.com>
+	Tue, 16 Sep 2014 11:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA93t1rHu+bfJNKfCws=-ezxAOuRJsLQb4n=eVhZha0iW+oSYA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140914185631.GB18506@kroah.com>
+References: <20140914100545.3745.23394.stgit@localhost> <20140914153832.GC4064@kroah.com>
+ <5415D10E.90809@yandex.ru> <20140914173919.GA10059@kroah.com>
+ <5415D8FA.8040305@yandex.ru> <20140914181353.GA12497@kroah.com>
+ <5415E00E.1000706@yandex.ru> <20140914185631.GB18506@kroah.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Tue, 16 Sep 2014 12:40:16 -0300
+Message-ID: <CAKi4VAL5q=ptxeOE0OjG69EdjAXohPSN1ipVUipK+9JPahEE0g@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Implement /proc/built-in file similar to /proc/modules
+To: Kirill Tkhai <tkhai@yandex.ru>, Greg KH <gregkh@linuxfoundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, arnd@arndb.de, linux-kbuild@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, oleg <oleg@redhat.com>,
+        grant.likely@secretlab.ca, ebiederm@xmission.com,
+        Andrew Morton <akpm@linux-foundation.org>, ktkhai@parallels.com,
+        sam@ravnborg.org, linux-modules <linux-modules@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 10:10:20PM -0700, Rajat Jain wrote:
-> Hi Bjorn,
-> 
-> On Mon, Sep 8, 2014 at 10:38 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > On Tue, Sep 02, 2014 at 04:26:00PM -0700, Rajat Jain wrote:
-> >>
-> >> As per the PCIe spec, an endpoint may return the configuration cycles
-> >> with CRS if it is not yet fully ready to be accessed. If the CRS visibility
-> >> is not enabled at the root port, the spec leaves the retry behaviour open
-> >> to implementation in such a case. The Intel root ports have chosen to retry
-> >> endlessly in this situation. Thus, the root controller may "hang" (repeatedly
-> >> retrying the configuration requests until it gets a status other than CRS) if
-> >> a device returns CRS for a long time. This can cause a broken endpoint to bring
-> >> down the whole PCI hierarchy.
-> >>
-> >> This was recently known to cause problems on Intel systems and
-> >> was discussed here:
-> >> http://marc.info/?t=140926298500002&r=1&w=2
-> >>
-> >> Ref1:
-> >> https://www.pcisig.com/specifications/pciexpress/ECN_CRS_Software_Visibility_No27.pdf
-> >>
-> >> Ref2:
-> >> PCIe spec V3.0, pg119, pg127 for "Configuration Request Retry Status"
-> >>
-> >> Thus enable the CRS visibility for the root ports that support it. This
-> >> patch reverts the following commit, but enables CRS visibility only
-> >> when the root port supports it:
-> >>
-> >> ad7edfe04908 ("[PCI] Do not enable CRS Software Visibility by default")
-> >>
-> >> (Linus' response: http://marc.info/?l=linux-pci&m=140968622520192&w=2)
-> >>
-> >> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> >> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> >> Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> >
-> > I put this and the "only look at Vendor ID" patch on a pci/enumeration
-> > branch [1].  I rewrote the changelogs to reflect my understanding of what's
-> > going on, so probably the real truth is somewhere between your original and
-> > mine.  Let me know what should be fixed.
-> >
-> > We should figure out an easy way for Josh to test these.  Ideally, he could
-> > test the second patch by itself first, then both together.
-> 
-> OK, Josh and I tested this over the last week on his HW (the HW that
-> had originally reported the problem). Somehow his hardware does not
-> show the problem in ANY case. I tried the following, and the original
-> issue (vendor id = 1) was never seen:
-> 
-> 1) 3.17-rc2 (has CRS disabled)
-> 2) 3.17-rc2 + Enable CRS
-> 3) 3.17-rc2 + Enable CRS + Ignore Device ID
-> 
-> The Device always returned the correct Vendor ID and Device ID in all
-> cases. Thus even enabling CRS does not make his system fail in anyway.
+On Sun, Sep 14, 2014 at 3:56 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Sep 14, 2014 at 10:35:58PM +0400, Kirill Tkhai wrote:
+>>
+>> It's just an unification with /proc/modules. Why should we do any
+>> difference between external and built-in modules? It's the same,
+>> it's similar, it's better to parse when they can be shown similar.
+>
+> /proc/modules is for loaded modules, and it includes lots of information
+> that tools rely on.  It is also a very old file, no new
+> non-process-related proc/ files should be created anymore.  It's been
+> that way since sysfs was created (and one of the reasons for sysfs.)
 
-Thanks a lot for all the work to dig out the board and test it.  I really
-appreciate it.
 
-My inclination is to apply both patches.  It doesn't seem strictly
-necessary to ignore the device ID on this platform, but I don't think we
-gain anything by verifying that device ID == 0xffff except confirming spec
-compliance.
+Yeah. And let me add that kmod treats /proc/modules as deprecated.
+It's way nicer to get the information from sysfs. See
+https://git.kernel.org/cgit/utils/kernel/kmod/kmod.git/tree/README#n116
 
-We *could* put more effort into reproducing the original problem, e.g.,
-by building v2.6.24-rc1, where this problem was originally reported, and
-(hopefully) reproducing it there, then figuring out where it got fixed
-along the way.  But I'm not sure it's worth the effort.
+>> > No, they want the functionality that a module provides, not the module
+>> > name, or some random configuation option.
+>> >
+>> > It seems like you are trying to solve a problem that isn't there.  What
+>> > program is broken right now that this new proc file (or sysfs directory)
+>> > would fix?
+>>
+>> The initial reason was I'm building custom kernels for more than 10
+>> years (not so long, I agree), and every boot I see a big list of modules
+>> from distribution /etc/module, which can't be autoloaded. I prefer to
+>> build drivers in kernel. I tried to find is there a way for userspace to
+>> understand that a module are present, but there is no a way. So this is
+>> a reason.
 
-Bjorn
+you're probably using ancient userspace. kmod checks the
+modules.builtin file generated by the kernel buildsys so "modprobe
+buitin-module" doesn't return an error.
+
+> Again, focus on kernel functionality, not module names or config
+> options, and you should be fine.
+
+Yeah... and if you do this way you may not even bother about the
+module itself. See the output of "kmod static-nodes". These nodes are
+created by init even if the module itself is not loaded. The right
+module will be loaded when the node is first accessed. And that
+includes the "loop" module you mention.
+
+$ kmod static-nodes | grep -A3 loop
+Module: loop
+        Device node: /dev/loop-control
+                Type: character device
+                Major: 10
+                Minor: 237
+
+-- 
+
+Lucas De Marchi
