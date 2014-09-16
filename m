@@ -1,248 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964AbaIPFYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 01:24:38 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.150]:59276 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750812AbaIPFYg (ORCPT
+	id S1752988AbaIPF3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 01:29:17 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28887 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750875AbaIPF3O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 01:24:36 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-15.tower-178.messagelabs.com!1410845074!39660433!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Tue, 16 Sep 2014 07:24:34 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH v3] tty: serial: men_z135_uart: Fix driver for changes in hardware
-Date: Tue, 16 Sep 2014 07:24:28 +0200
-Message-ID: <1410845068-2954-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.9.1
+	Tue, 16 Sep 2014 01:29:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
+   d="scan'208";a="591820503"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Hanjun Guo <guohanjun@huawei.com>
+CC: "jcm@redhat.com" <jcm@redhat.com>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Will Deacon <Will.Deacon@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Charles Garcia-Tobin" <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time
+ tables
+Thread-Topic: [PATCH v3 02/17] ARM64 / ACPI: Get RSDP and ACPI boot-time
+ tables
+Thread-Index: AQHPzUFgtEk74o72jEmY9jyDIiqoOZwDQKoQ
+Date: Tue, 16 Sep 2014 05:29:06 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802671B1F@SHSMSX101.ccr.corp.intel.com>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+	<1409583475-6978-3-git-send-email-hanjun.guo@linaro.org>
+	<20140909162648.GE2910@arm.com> <540F2DCF.1010104@redhat.com>
+	<20140909171541.GD3896@leverpostej>
+	<20140909175010.GF4948@e102568-lin.cambridge.arm.com>
+	<540F4155.4090200@arm.com> <540F4FCF.1090508@redhat.com>
+	<5410326F.8080104@huawei.com> <20140910123352.GA31237@localhost>
+ <20140910215130.6D448C411AA@trevor.secretlab.ca>
+In-Reply-To: <20140910215130.6D448C411AA@trevor.secretlab.ca>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-16z135 IP Core has changed so the driver needs to be updated to respect
-these changes. The following changes have been made:
+Hi,
 
-* Don't invert the 16z135 modem status register when reading.
-* Add module parameter to configure the (baud rate dependent) RX timeout.
-  Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
-* Enable the handling of UART core's automatic flow control feature.
-  When AFE is active disable generation of modem status IRQs.
-* Rework the handling of IRQs to be conform with newer FPGA versions and
-  take precautions not to miss an interrupt because of the destructive read
-  of the IIR register.
-* Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not
-  stat_reg[7:0]
+> From: Grant Likely [mailto:glikely@secretlab.ca] On Behalf Of Grant Likely
+> Sent: Thursday, September 11, 2014 5:52 AM
+> 
+> On Wed, 10 Sep 2014 13:33:52 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Wed, Sep 10, 2014 at 12:13:51PM +0100, Hanjun Guo wrote:
+> > > On 2014/9/10 3:06, Jon Masters wrote:
+> > > > On 09/09/2014 02:05 PM, Sudeep Holla wrote:
+> > > >> On 09/09/14 18:50, Lorenzo Pieralisi wrote:
+> > > >>> On Tue, Sep 09, 2014 at 06:15:41PM +0100, Mark Rutland wrote:
+> > > >>>> On Tue, Sep 09, 2014 at 05:41:51PM +0100, Jon Masters wrote:
+> > > >>>>> On 09/09/2014 12:26 PM, Catalin Marinas wrote:
+> > > >>>>>> On Mon, Sep 01, 2014 at 03:57:40PM +0100, Hanjun Guo wrote:
+> > > >>>>>>> diff --git a/arch/arm64/include/asm/acenv.h b/arch/arm64/include/asm/acenv.h
+> > > >>>>>>> new file mode 100644
+> > > >>>>>>> index 0000000..3899ee6
+> > > >>>>>>> --- /dev/null
+> > > >>>>>>> +++ b/arch/arm64/include/asm/acenv.h
+> > > >>>>>>> @@ -0,0 +1,18 @@
+> > > >>>>>>> +/*
+> > > >>>>>>> + * ARM64 specific ACPICA environments and implementation
+> > > >>>>>>> + *
+> > > >>>>>>> + * Copyright (C) 2014, Linaro Ltd.
+> > > >>>>>>> + *   Author: Hanjun Guo <hanjun.guo@linaro.org>
+> > > >>>>>>> + *   Author: Graeme Gregory <graeme.gregory@linaro.org>
+> > > >>>>>>> + *
+> > > >>>>>>> + * This program is free software; you can redistribute it and/or modify
+> > > >>>>>>> + * it under the terms of the GNU General Public License version 2 as
+> > > >>>>>>> + * published by the Free Software Foundation.
+> > > >>>>>>> + */
+> > > >>>>>>> +
+> > > >>>>>>> +#ifndef _ASM_ACENV_H
+> > > >>>>>>> +#define _ASM_ACENV_H
+> > > >>>>>>> +
+> > > >>>>>>> +#define ACPI_FLUSH_CPU_CACHE() WARN_ONCE(1, "Not currently supported on ARM64")
+> > > >>>>>>
+> > > >>>>>> Does this mean that it will be supported at some point? Looking at the
+> > > >>>>>> places where this function is called, I don't really see how this would
+> > > >>>>>> ever work on ARM. Which means that we add such macro just to be able to
+> > > >>>>>> compile code that would never be used on arm64. I would rather see the
+> > > >>>>>> relevant ACPI files only compiled on x86/IA-64 rather than arm64.
+> > > >>>>>
+> > > >>>>> That specific cache behavior is a part of e.g. ACPI C3 state support
+> > > >>>>> (e.g. ACPI5.1 8.1.4 Processor Power State C3).
+> > > >>>>
+> > > >>>> Per table 5-35, if neither WBINVD or WBINVD_FLUSH are set in the FADT,
+> > > >>>> we don't get S1, S2, or S3 states either.
+> > > >>>>
+> > > >>>>> As you note, it's not going to work on 64-bit ARM as it does on x86,
+> > > >>>>> but it's optional to implement C3 and early 64-bit ARM systems should
+> > > >>>>> not report Wbindv flags in the FADT anyway.
+> > > >>>>
+> > > >>>> Unless the arm cache architecture changes, I wouldn't expect any 64-bit
+> > > >>>> ARM system to set either of the WBINVD flags.
+> > > >>>>
+> > > >>>>> They can also set FADT.P_LVL3_LAT > 1000, which has the effect of
+> > > >>>>> disabling C3 support, while also allowing for use of _CST objects to
+> > > >>>>> define more flexible C-States later on.
+> > > >>>>
+> > > >>>> It sounds like we should be sanity checking these in the arm64 ACPI code
+> > > >>>> for the moment. I don't want us to discover that current platforms
+> > > >>>> report the wrong thing only when new platforms come out that might
+> > > >>>> actually report things correctly.
+> > > >>>
+> > > >>> I think that the kernel must ignore most of the stuff mentioned above
+> > > >>> in HW_REDUCED_ACPI mode. And to be frank I still think that the problem
+> > > >>> is not even there. The problem is trying to compile code that basically
+> > > >>> has no defined behaviour - ie it is unspecified - on ARM64, that's what
+> > > >>> Catalin pointed out.
+> > > >>>
+> > > >>> I understand it is compiled in by default on x86, but that's not a reason
+> > > >>> why we should add empty hooks all over the place to compile code that
+> > > >>> does not stand a chance to be doing anything sensible apart from
+> > > >>> returning an error code, in the best case scenario.
+> > > >>>
+> > > >>
+> > > >> I had pointed out this earlier, even if we make it compile there's
+> > > >> every possibility that it can blow up if some vendor adds S- states
+> > > >> to their ACPI tables. One clear reason why it could blow up is:
+> > > >>
+> > > >> "
+> > > >>       /* This violates the spec but is required for bug compatibility. */
+> > > >>       acpi_write_bit_register(ACPI_BITREG_SCI_ENABLE, 1);
+> > > >> "
+> > > >>
+> > > >> I don't think this can ever work on ARM platforms. So better to fix it
+> > > >> properly.
+> >
+> > Agree.
+> >
+> > > > How do you want to proceed? I'm not sure it should be !HW_REDUCED_MODE
+> > > > for the cache behavior, because an embedded x86 box would still probably
+> > > > define those, but removing the hooks on ARM may make sense.
+> > >
+> > > As Graeme said in the reply, for sleep we are doing the same thing as
+> > > ia64 in stubbing out the functions,
+> >
+> > Sorry, that's not really an argument.
+> >
+> > > and before that we are trying to remove
+> > > the hooks on ARM by introducing more stubs and making things more complicated.
+> >
+> > I still think you can make things simpler by not compiling the code
+> > in question because we'll never implement such hooks on arm64, they
+> > don't make sense from an architecture perspective (whole cache flushing
+> > with MMU enabled cannot be done).
+> >
+> > > I agree that we should rework the ACPI core to make sleep/cache related
+> > > stuff compatible with ARM, but I think we may not do this in one go, it will
+> > > need incremental changes over the next couple of years as real hardware
+> > > starts to appear and we finalise the standards to support this.
+> > >
+> > > Now, as we list in the arm-acpi.txt doc, power management of sleep states
+> > > and CPU power/frequency control are not well defined in ACPI spec for ARM,
+> > > we need some time to finalize the standard and then we know how to implement
+> > > that in a good shape.
+> > >
+> > > ACPI 5.1 already fixed lots missing features for ARM64 and provide the
+> > > fundamental needs to bring up the basic system for ARM server, power
+> > > management is not critical at now, so why not fix/implement it later?
+> >
+> > I don't have a problem with implementing (rather than fixing) power
+> > management later, once the ACPI spec covers it. But the point a few of
+> > us were trying to make is that even when ACPI spec is updated, the
+> > current power management code and hooks still won't make sense on ARM.
+> > The best is to avoid compiling it for ARM now and look at refactoring it
+> > later to accommodate ARM ACPI.
+> 
+> I disagree strongly here. We're talking about a library of code that is
+> working on x86 and ia64, but hasn't been tuned for ARM. Trying to
+> refactor it first, and then get it compiling for ARM is entirely the
+> wrong way around. The best way to get that code refactored for
+> ARM is to get it compiling first, and then refactor it to remove the
+> unnecessary stubs. That makes it a whole lot easier to make the
+> arguements about why the changes are needed. Otherwise it just shows
+> churn on the ACPICA side without any evidence of why the change is
+> good. Trying to refactor first also has the risk of breaking things
+> that work now in the name of "refactoring" and not being able to easily
+> bisect it for ARM. That's just madness.
+> 
+> Aside from a slightly larger kernel, there is no downside to using
+> stubs for now.
+> 
+> Getting things working is the first step. Then we've got a good base to
+> launch the refactoring from.
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
-Changes to v1:
-Incorporated comments of Jiri Slaby:
+IMO, it is not a good timing to talk about ACPICA sleep code refactoring.
+The current power management code and hooks also don't make sense to Intel platforms.
+The proof is the Xen hooks which is currently implemented in the hackish style.
+In order to cleanup such Xen hooks, the sleep code need to be refactored.
 
-* Timeout value is documented in module parameter description
-* rx_timeout variable is uint
-* Changed IRQ handled variable to bool
-* Changed if statement for RDA or CTI IRQ
+IMO, you may have things proceeded without doing any changes to the sleep code.
+When the power management requirement for ARM is fixed, you can also introduce hackish code to support it.
+And from that point, we may be able to provide a well-shaped refactoring work.
 
-Changes to v2:
-Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not stat_reg[7:0]
-
-
- drivers/tty/serial/men_z135_uart.c | 98 +++++++++++++++++++++++---------------
- 1 file changed, 60 insertions(+), 38 deletions(-)
-
-diff --git a/drivers/tty/serial/men_z135_uart.c b/drivers/tty/serial/men_z135_uart.c
-index 30e9e60..29fee69 100644
---- a/drivers/tty/serial/men_z135_uart.c
-+++ b/drivers/tty/serial/men_z135_uart.c
-@@ -34,12 +34,11 @@
- #define MEN_Z135_CONF_REG		0x808
- #define MEN_Z135_UART_FREQ		0x80c
- #define MEN_Z135_BAUD_REG		0x810
--#define MENZ135_TIMEOUT			0x814
-+#define MEN_Z135_TIMEOUT		0x814
-
- #define MEN_Z135_MEM_SIZE		0x818
-
--#define IS_IRQ(x) ((x) & 1)
--#define IRQ_ID(x) (((x) >> 1) & 7)
-+#define IRQ_ID(x) ((x) & 0x1f)
-
- #define MEN_Z135_IER_RXCIEN BIT(0)		/* RX Space IRQ */
- #define MEN_Z135_IER_TXCIEN BIT(1)		/* TX Space IRQ */
-@@ -94,11 +93,11 @@
- #define MEN_Z135_LSR_TEXP BIT(6)
- #define MEN_Z135_LSR_RXFIFOERR BIT(7)
-
--#define MEN_Z135_IRQ_ID_MST 0
--#define MEN_Z135_IRQ_ID_TSA 1
--#define MEN_Z135_IRQ_ID_RDA 2
--#define MEN_Z135_IRQ_ID_RLS 3
--#define MEN_Z135_IRQ_ID_CTI 6
-+#define MEN_Z135_IRQ_ID_RLS BIT(0)
-+#define MEN_Z135_IRQ_ID_RDA BIT(1)
-+#define MEN_Z135_IRQ_ID_CTI BIT(2)
-+#define MEN_Z135_IRQ_ID_TSA BIT(3)
-+#define MEN_Z135_IRQ_ID_MST BIT(4)
-
- #define LCR(x) (((x) >> MEN_Z135_LCR_SHIFT) & 0xff)
-
-@@ -118,6 +117,11 @@ static int align;
- module_param(align, int, S_IRUGO);
- MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
-
-+static uint rx_timeout;
-+module_param(rx_timeout, uint, S_IRUGO);
-+MODULE_PARM_DESC(rx_timeout, "RX timeout. "
-+		"Timeout in seconds = (timeout_reg * baud_reg * 4) / freq_reg");
-+
- struct men_z135_port {
- 	struct uart_port port;
- 	struct mcb_device *mdev;
-@@ -180,12 +184,14 @@ static inline void men_z135_reg_clr(struct men_z135_port *uart,
-  */
- static void men_z135_handle_modem_status(struct men_z135_port *uart)
- {
--	if (uart->stat_reg & MEN_Z135_MSR_DDCD)
-+	u8 msr = (uart->stat_reg >> 8) & 0xff;
-+
-+	if (msr & MEN_Z135_MSR_DDCD)
- 		uart_handle_dcd_change(&uart->port,
--				uart->stat_reg & ~MEN_Z135_MSR_DCD);
--	if (uart->stat_reg & MEN_Z135_MSR_DCTS)
-+				msr & ~MEN_Z135_MSR_DCD);
-+	if (msr & MEN_Z135_MSR_DCTS)
- 		uart_handle_cts_change(&uart->port,
--				uart->stat_reg & ~MEN_Z135_MSR_CTS);
-+				msr & ~MEN_Z135_MSR_CTS);
- }
-
- static void men_z135_handle_lsr(struct men_z135_port *uart)
-@@ -373,43 +379,47 @@ out:
-  * @irq: The IRQ number
-  * @data: Pointer to UART port
-  *
-- * Check IIR register to see which tasklet to start.
-+ * Check IIR register to find the cause of the interrupt and handle it.
-+ * It is possible that multiple interrupts reason bits are set and reading
-+ * the IIR is a destructive read, so we always need to check for all possible
-+ * interrupts and handle them.
-  */
- static irqreturn_t men_z135_intr(int irq, void *data)
- {
- 	struct men_z135_port *uart = (struct men_z135_port *)data;
- 	struct uart_port *port = &uart->port;
-+	bool handled = false;
- 	int irq_id;
-
- 	uart->stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
--	/* IRQ pending is low active */
--	if (IS_IRQ(uart->stat_reg))
--		return IRQ_NONE;
--
- 	irq_id = IRQ_ID(uart->stat_reg);
--	switch (irq_id) {
--	case MEN_Z135_IRQ_ID_MST:
--		men_z135_handle_modem_status(uart);
--		break;
--	case MEN_Z135_IRQ_ID_TSA:
--		men_z135_handle_tx(uart);
--		break;
--	case MEN_Z135_IRQ_ID_CTI:
--		dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
--		/* Fallthrough */
--	case MEN_Z135_IRQ_ID_RDA:
--		/* Reading data clears RX IRQ */
--		men_z135_handle_rx(uart);
--		break;
--	case MEN_Z135_IRQ_ID_RLS:
-+
-+	if (!irq_id)
-+		goto out;
-+
-+	if (irq_id & MEN_Z135_IRQ_ID_RLS) {
- 		men_z135_handle_lsr(uart);
--		break;
--	default:
--		dev_warn(&uart->mdev->dev, "Unknown IRQ id %d\n", irq_id);
--		return IRQ_NONE;
-+		handled = true;
- 	}
-
--	return IRQ_HANDLED;
-+	if (irq_id & (MEN_Z135_IRQ_ID_RDA | MEN_Z135_IRQ_ID_CTI)) {
-+		if (irq_id & MEN_Z135_IRQ_ID_CTI)
-+			dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
-+		men_z135_handle_rx(uart);
-+		handled = true;
-+	}
-+
-+	if (irq_id & MEN_Z135_IRQ_ID_TSA) {
-+		men_z135_handle_tx(uart);
-+		handled = true;
-+	}
-+
-+	if (irq_id & MEN_Z135_IRQ_ID_MST) {
-+		men_z135_handle_modem_status(uart);
-+		handled = true;
-+	}
-+out:
-+	return IRQ_RETVAL(handled);
- }
-
- /**
-@@ -495,7 +505,7 @@ static unsigned int men_z135_get_mctrl(struct uart_port *port)
-
- 	stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
-
--	msr = ~((stat_reg >> 8) & 0xff);
-+	msr = (stat_reg >> 8) & 0xff;
-
- 	if (msr & MEN_Z135_MSR_CTS)
- 		mctrl |= TIOCM_CTS;
-@@ -584,6 +594,9 @@ static int men_z135_startup(struct uart_port *port)
-
- 	iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
-
-+	if (rx_timeout)
-+		iowrite32(rx_timeout, port->membase + MEN_Z135_TIMEOUT);
-+
- 	return 0;
- }
-
-@@ -603,6 +616,7 @@ static void men_z135_set_termios(struct uart_port *port,
- 				struct ktermios *termios,
- 				struct ktermios *old)
- {
-+	struct men_z135_port *uart = to_men_z135(port);
- 	unsigned int baud;
- 	u32 conf_reg;
- 	u32 bd_reg;
-@@ -643,6 +657,14 @@ static void men_z135_set_termios(struct uart_port *port,
- 	} else
- 		lcr |= MEN_Z135_PAR_DIS << MEN_Z135_PEN_SHIFT;
-
-+	if (termios->c_cflag & CRTSCTS) {
-+		conf_reg |= MEN_Z135_MCR_RCFC;
-+		men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
-+	} else {
-+		conf_reg &= ~MEN_Z135_MCR_RCFC;
-+		men_z135_reg_set(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
-+	}
-+
- 	termios->c_cflag &= ~CMSPAR; /* Mark/Space parity is not supported */
-
- 	conf_reg |= lcr << MEN_Z135_LCR_SHIFT;
---
-1.9.1
+Best regards
+-Lv
