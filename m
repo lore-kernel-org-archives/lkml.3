@@ -1,135 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaIPOcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:32:43 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33778 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228AbaIPOcl (ORCPT
+	id S1754404AbaIPOe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:34:59 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62491 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884AbaIPOe5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:32:41 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: netdev@vger.kernel.org
-Cc: Meelis Roos <mroos@linux.ee>, linux-kernel@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [RFC PATCH] 3c59x: Add dma error checking and recovery
-Date: Tue, 16 Sep 2014 10:32:17 -0400
-Message-Id: <1410877937-27487-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <20140916101704.GA3792@hmsreliant.think-freely.org>
-References: <20140916101704.GA3792@hmsreliant.think-freely.org>
-X-Spam-Score: -2.9 (--)
+	Tue, 16 Sep 2014 10:34:57 -0400
+Content-Type: text/plain;
+	charset=gb2312
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default 'screen_info" for fixing compiling break
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+X-Mailer: iPad Mail (11D257)
+In-Reply-To: <54181810.1060105@monstr.eu>
+Date: Tue, 16 Sep 2014 22:34:52 +0800
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <rob.herring@calxeda.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6C301F81-7F63-4DB5-88EE-F5D481E04B83@gmail.com>
+References: <541552B8.8020807@gmail.com> <CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com> <541559C2.8070703@gmail.com> <5418019E.1010202@monstr.eu> <CAMuHMdWnZVi9rXzmOxsuwMeUcCvW_CH0bi_KuYiCNcp3JQHhLA@mail.gmail.com> <54181810.1060105@monstr.eu>
+To: "monstr@monstr.eu" <monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Noted that 3c59x has no checks on transmit for failed DMA mappings, and no
-ability to unmap fragments when a single map fails in the middle of a transmit.
-This patch provides error checking to ensure that dma mappings work properly,
-and unrolls an skb mapping if a fragmented skb transmission has a mapping
-failure to prevent leaks.
+Thank all of your work. And I also try some patches for microblaze compiler,
+hope I  can finish within this month (already got much help from related gcc
+maintainer). And next month, I shall start Qemu for microblaze.
 
-Please test this patch out.  It may fix the problem your experiencing, and, if
-you enable dynamic debug in the driver, it will certainly confirm that is the
-problem you are experiencing.
+Thanks again.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
----
- drivers/net/ethernet/3com/3c59x.c | 50 ++++++++++++++++++++++++++++++++-------
- 1 file changed, 41 insertions(+), 9 deletions(-)
+发自我的 iPad
 
-diff --git a/drivers/net/ethernet/3com/3c59x.c b/drivers/net/ethernet/3com/3c59x.c
-index 3fe45c7..5621dab 100644
---- a/drivers/net/ethernet/3com/3c59x.c
-+++ b/drivers/net/ethernet/3com/3c59x.c
-@@ -2129,6 +2129,7 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	int entry = vp->cur_tx % TX_RING_SIZE;
- 	struct boom_tx_desc *prev_entry = &vp->tx_ring[(vp->cur_tx-1) % TX_RING_SIZE];
- 	unsigned long flags;
-+	dma_addr_t dma_addr;
- 
- 	if (vortex_debug > 6) {
- 		pr_debug("boomerang_start_xmit()\n");
-@@ -2163,24 +2164,48 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			vp->tx_ring[entry].status = cpu_to_le32(skb->len | TxIntrUploaded | AddTCPChksum | AddUDPChksum);
- 
- 	if (!skb_shinfo(skb)->nr_frags) {
--		vp->tx_ring[entry].frag[0].addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data,
--										skb->len, PCI_DMA_TODEVICE));
-+		dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data, skb->len,
-+					  PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
-+			goto out_dma_err;
-+
-+		vp->tx_ring[entry].frag[0].addr = cpu_to_le32(dma_addr);
- 		vp->tx_ring[entry].frag[0].length = cpu_to_le32(skb->len | LAST_FRAG);
- 	} else {
- 		int i;
- 
--		vp->tx_ring[entry].frag[0].addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data,
--										skb_headlen(skb), PCI_DMA_TODEVICE));
-+		dma_addr = pci_map_single(VORTEX_PCI(vp), skb->data,
-+					  skb_headlen(skb), PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
-+			goto out_dma_err;
-+
-+		vp->tx_ring[entry].frag[0].addr = cpu_to_le32(dma_addr);
- 		vp->tx_ring[entry].frag[0].length = cpu_to_le32(skb_headlen(skb));
- 
- 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
- 			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
- 
-+			dma_addr = skb_frag_dma_map(&VORTEX_PCI(vp)->dev, frag,
-+						    frag->page_offset,
-+						    frag->size,
-+						    DMA_TO_DEVICE);
-+			if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr)) {
-+				for(i = i-1; i >= 0; i--)
-+					dma_unmap_page(&VORTEX_PCI(vp)->dev,
-+						       le32_to_cpu(vp->tx_ring[entry].frag[i+1].addr),
-+						       le32_to_cpu(vp->tx_ring[entry].frag[i+1].length),
-+						       DMA_TO_DEVICE);
-+
-+				pci_unmap_single(VORTEX_PCI(vp),
-+						 le32_to_cpu(vp->tx_ring[entry].frag[0].addr),
-+						 le32_to_cpu(vp->tx_ring[entry].frag[0].length),
-+						 PCI_DMA_TODEVICE);
-+
-+				goto out_dma_err;
-+			}
-+
- 			vp->tx_ring[entry].frag[i+1].addr =
--					cpu_to_le32(skb_frag_dma_map(
--						&VORTEX_PCI(vp)->dev,
--						frag,
--						frag->page_offset, frag->size, DMA_TO_DEVICE));
-+						cpu_to_le32(dma_addr);
- 
- 			if (i == skb_shinfo(skb)->nr_frags-1)
- 					vp->tx_ring[entry].frag[i+1].length = cpu_to_le32(skb_frag_size(frag)|LAST_FRAG);
-@@ -2189,7 +2214,10 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		}
- 	}
- #else
--	vp->tx_ring[entry].addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
-+	dma_addr = cpu_to_le32(pci_map_single(VORTEX_PCI(vp), skb->data, skb->len, PCI_DMA_TODEVICE));
-+	if (dma_mapping_error(&VORTEX_PCI(vp)->dev, dma_addr))
-+		goto out_dma_err;
-+	vp->tx_ring[entry].addr = cpu_to_le32(dma_addr);
- 	vp->tx_ring[entry].length = cpu_to_le32(skb->len | LAST_FRAG);
- 	vp->tx_ring[entry].status = cpu_to_le32(skb->len | TxIntrUploaded);
- #endif
-@@ -2217,7 +2245,11 @@ boomerang_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	skb_tx_timestamp(skb);
- 	iowrite16(DownUnstall, ioaddr + EL3_CMD);
- 	spin_unlock_irqrestore(&vp->lock, flags);
-+out:
- 	return NETDEV_TX_OK;
-+out_dma_err:
-+	dev_err(&VORTEX_PCI(vp)->dev, "Error mapping dma buffer\n");
-+	goto out; 
- }
- 
- /* The interrupt handler does all of the Rx thread work and cleans up
--- 
-1.9.3
+在 2014年9月16日，下午6:59，Michal Simek <monstr@monstr.eu> 写道：
 
+>>>> Welcome the related microblaze maintainers ideas for it
+>>> 
+>>> Is this is just about VGA or video console in general?
+>>> There is xilinx FB driver and other FB are around too.
+>> 
+>> These days screen_info is only used by:
+>>  - vgacon,
+>>  - dummycon on ARM,
+>>  - a few fb drivers (efifb, intelfbdrv,sis, vesafb, and vga16fb).
+>> 
+>> E.g. m68k doesn't have it.
+> 
+> ok. IRC I think I remember one non mainline FB driver which required it too.
+> It breaks nothing for me that's why no problem to apply it.
