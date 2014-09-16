@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaIPLnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:43:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53291 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824AbaIPLnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:43:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
-   d="scan'208";a="603517414"
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Subject: [PATCH] regmap: cache: Do not fail silently from regcache_sync calls
-Date: Tue, 16 Sep 2014 14:04:14 +0300
-Message-Id: <1410865454-30102-1-git-send-email-jarkko.nikula@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1753872AbaIPLou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:44:50 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:35513 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971AbaIPLos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 07:44:48 -0400
+Message-ID: <541822AA.6060200@redhat.com>
+Date: Tue, 16 Sep 2014 13:44:42 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>, gleb@kernel.org, mtosatti@redhat.com,
+        nadav.amit@gmail.com, jan.kiszka@web.de
+CC: kvm@vger.kernel.org, laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        guz.fnst@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable
+ and apic access page.
+References: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call stack of regcache_sync calls may not emit any error message even if
-operation was cancelled due an error in I/O driver. One such a silent error
-is for instance if I2C bus driver doesn't receive ACK from the I2C device
-and returns -EREMOTEIO.
+Il 16/09/2014 12:41, Tang Chen ha scritto:
+> ept identity pagetable and apic access page in kvm are pinned in memory.
+> As a result, they cannot be migrated/hot-removed.
+> 
+> But actually they don't need to be pinned in memory.
+> 
+> [For ept identity page]
+> Just do not pin it. When it is migrated, guest will be able to find the
+> new page in the next ept violation.
+> 
+> [For apic access page]
+> The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
+> When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
+> for each vcpu in addition.
+> 
+> NOTE: Tested with -cpu xxx,-x2apic option.
+>       But since nested vm pins some other pages in memory, if user uses nested
+>       vm, memory hot-remove will not work.
+> 
+> Change log v5 -> v6:
+> 1. Patch 1/6 has been applied by Paolo Bonzini <pbonzini@redhat.com>, just resend it.
+> 2. Simplify comment in alloc_identity_pagetable() and add a BUG_ON() in patch 2/6.
+> 3. Move err initialization forward in patch 3/6.
+> 4. Rename vcpu_reload_apic_access_page() to kvm_vcpu_reload_apic_access_page() and 
+>    use it instead of kvm_reload_apic_access_page() in nested_vmx_vmexit() in patch 5/6.
+> 5. Reuse kvm_vcpu_reload_apic_access_page() in prepare_vmcs02() and vmx_vcpu_reset() in patch 6/6.
+> 6. Remove original patch 7 since we are not able to handle the situation in nested vm.
 
-Since many users of regcache_sync() don't check and print the error there is
-no any indication that HW registers are potentially out of sync.
+I'll push 1-3 soon to kvm/queue.  I think v7 will be good. :)
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
----
-I noticed this silent failure when doing commit f4821e8e8e95
-("ASoC: rt5640: Do not allow regmap to use bulk read-write operations") but
-forgot to send a patch. I was thinking should the error prints be in lower
-level, e.g. _regmap_raw_write, but maybe it's good to have sync errors
-printed explicitly?
----
- drivers/base/regmap/regcache.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index 5617da6dc898..f1280dc356d0 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -269,8 +269,11 @@ static int regcache_default_sync(struct regmap *map, unsigned int min,
- 		map->cache_bypass = 1;
- 		ret = _regmap_write(map, reg, val);
- 		map->cache_bypass = 0;
--		if (ret)
-+		if (ret) {
-+			dev_err(map->dev, "Unable to sync register %#x. %d\n",
-+				reg, ret);
- 			return ret;
-+		}
- 		dev_dbg(map->dev, "Synced register %#x, value %#x\n", reg, val);
- 	}
- 
-@@ -615,8 +618,11 @@ static int regcache_sync_block_single(struct regmap *map, void *block,
- 		ret = _regmap_write(map, regtmp, val);
- 
- 		map->cache_bypass = 0;
--		if (ret != 0)
-+		if (ret != 0) {
-+			dev_err(map->dev, "Unable to sync register %#x. %d\n",
-+				regtmp, ret);
- 			return ret;
-+		}
- 		dev_dbg(map->dev, "Synced register %#x, value %#x\n",
- 			regtmp, val);
- 	}
-@@ -641,6 +647,9 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
- 	map->cache_bypass = 1;
- 
- 	ret = _regmap_raw_write(map, base, *data, count * val_bytes);
-+	if (ret)
-+		dev_err(map->dev, "Unable to sync registers %#x-%#x. %d\n",
-+			base, cur - map->reg_stride, ret);
- 
- 	map->cache_bypass = 0;
- 
--- 
-2.1.0
-
+Paolo
