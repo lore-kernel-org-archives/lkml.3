@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaIPEQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 00:16:34 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54088 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaIPEQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 00:16:32 -0400
-From: Martin Kelly <martin@martingkelly.com>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, klmckinney1@gmail.com, mail@beyermatthias.de,
-        linux-kernel@vger.kernel.org, Martin Kelly <martin@martingkelly.com>,
-        Martin Kelly <martkell@amazon.com>
-Subject: [PATCH] Staging/bcm: Fix whitespace/comments in Ioctl.h
-Date: Mon, 15 Sep 2014 21:16:15 -0700
-Message-Id: <1410840975-24388-1-git-send-email-martin@martingkelly.com>
-X-Mailer: git-send-email 2.1.0
+	id S1754559AbaIPERI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 00:17:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12264 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754018AbaIPERG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 00:17:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
+   d="scan'208";a="573643673"
+Message-ID: <5417B9BE.1030209@intel.com>
+Date: Mon, 15 Sep 2014 21:17:02 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: "Ren, Qiaowei" <qiaowei.ren@intel.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>	<1410425210-24789-9-git-send-email-qiaowei.ren@intel.com> <20140915010025.5940c946@alan.etchedpixels.co.uk> <9E0BE1322F2F2246BD820DA9FC397ADE017AE183@shsmsx102.ccr.corp.intel.com>
+In-Reply-To: <9E0BE1322F2F2246BD820DA9FC397ADE017AE183@shsmsx102.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup whitespace and comments in Ioctl.h in a few ways:
-- > 80 character cleanup
-- Comment clarification
-- More consistent vertical alignment
+On 09/15/2014 08:20 PM, Ren, Qiaowei wrote:
+>> What are the semantics across execve() ?
+>> 
+> This will not impact on the semantics of execve(). One runtime
+> library
+> for MPX will be provided (or merged into Glibc), and when the
+> application starts, this runtime will be called to initialize MPX
+> runtime environment, including calling prctl() to notify the kernel to
+> start managing the bounds directories. You can see the discussion
+> about exec(): https://lkml.org/lkml/2014/1/26/199
 
-Signed-off-by: Martin Kelly <martkell@amazon.com>
----
- drivers/staging/bcm/Ioctl.h | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+I think he's asking what happens to the kernel value at execve() time.
 
-diff --git a/drivers/staging/bcm/Ioctl.h b/drivers/staging/bcm/Ioctl.h
-index 797f862..fa5f867 100644
---- a/drivers/staging/bcm/Ioctl.h
-+++ b/drivers/staging/bcm/Ioctl.h
-@@ -87,9 +87,9 @@ struct bcm_user_thread_req {
- #define IOCTL_BCM_FLASH2X_SECTION_WRITE		_IOW(BCM_IOCTL, 0x866, int)
- #define IOCTL_BCM_GET_FLASH2X_SECTION_BITMAP	_IOR(BCM_IOCTL, 0x867, int)
- #define IOCTL_BCM_SET_ACTIVE_SECTION		_IOW(BCM_IOCTL, 0x868, int)
--#define	IOCTL_BCM_IDENTIFY_ACTIVE_SECTION	_IO(BCM_IOCTL, 0x869)
-+#define IOCTL_BCM_IDENTIFY_ACTIVE_SECTION	_IO(BCM_IOCTL, 0x869)
- #define IOCTL_BCM_COPY_SECTION			_IOW(BCM_IOCTL, 0x870, int)
--#define	IOCTL_BCM_GET_FLASH_CS_INFO		_IOR(BCM_IOCTL, 0x871, int)
-+#define IOCTL_BCM_GET_FLASH_CS_INFO		_IOR(BCM_IOCTL, 0x871, int)
- #define IOCTL_BCM_SELECT_DSD			_IOW(BCM_IOCTL, 0x872, int)
- #define IOCTL_BCM_NVM_RAW_READ			_IOR(BCM_IOCTL, 0x875, int)
- #define IOCTL_BCM_CNTRLMSG_MASK			_IOW(BCM_IOCTL, 0x874, int)
-@@ -130,7 +130,7 @@ struct bcm_bulk_wrm_buffer {
- };
- 
- enum bcm_flash2x_section_val {
--	NO_SECTION_VAL = 0, /* no section is chosen when absolute offset is given for RD/WR */
-+	NO_SECTION_VAL = 0, /* no section chosen when absolute offset is given for RD/WR */
- 	ISO_IMAGE1,
- 	ISO_IMAGE2,
- 	DSD0,
-@@ -152,11 +152,11 @@ enum bcm_flash2x_section_val {
-  * Structure used for READ/WRITE Flash Map2.x
-  */
- struct bcm_flash2x_readwrite {
--	enum bcm_flash2x_section_val Section; /* which section has to be read/written */
--	u32 offset;	     /* Offset within Section. */
--	u32 numOfBytes;	     /* NOB from the offset */
-+	enum bcm_flash2x_section_val Section; /* section to be read/written */
-+	u32 offset; /* offset within section. */
-+	u32 numOfBytes; /* number of bytes from the offset */
- 	u32 bVerify;
--	void __user *pDataBuff;	     /* Buffer for reading/writing */
-+	void __user *pDataBuff; /* buffer for reading/writing */
- };
- 
- /*
-@@ -207,20 +207,20 @@ struct bcm_time_elapsed {
- };
- 
- enum {
--	WIMAX_IDX = 0,  /* To access WiMAX chip GPIO's for GPIO_MULTI_INFO or GPIO_MULTI_MODE */
--	HOST_IDX,	/* To access Host chip GPIO's for GPIO_MULTI_INFO or GPIO_MULTI_MODE */
-+	WIMAX_IDX = 0, /* To access WiMAX chip GPIO's for GPIO_MULTI_INFO or GPIO_MULTI_MODE */
-+	HOST_IDX, /* To access Host chip GPIO's for GPIO_MULTI_INFO or GPIO_MULTI_MODE */
- 	MAX_IDX
- };
- 
- struct bcm_gpio_multi_info {
- 	unsigned int uiGPIOCommand; /* 1 for set and 0 for get */
--	unsigned int uiGPIOMask;    /* set the correspondig bit to 1 to access GPIO */
--	unsigned int uiGPIOValue;   /* 0 or 1; value to be set when command is 1. */
-+	unsigned int uiGPIOMask; /* set the corresponding bit to 1 to access GPIO */
-+	unsigned int uiGPIOValue; /* 0 or 1; value to be set when command is 1. */
- } __packed;
- 
- struct bcm_gpio_multi_mode {
--	unsigned int uiGPIOMode;    /* 1 for OUT mode, 0 for IN mode */
--	unsigned int uiGPIOMask;    /* GPIO mask to set mode */
-+	unsigned int uiGPIOMode; /* 1 for OUT mode, 0 for IN mode */
-+	unsigned int uiGPIOMask; /* GPIO mask to set mode */
- } __packed;
- 
- #endif
--- 
-2.1.0
-
+The short answer is that it is zero'd along with the rest of a new mm.
+It probably _shouldn't_ be, though.  It's actually valid to have a bound
+directory at 0x0.  We probably need to initialize it to -1 instead, and
+that means initializing to -1 at execve() time.
