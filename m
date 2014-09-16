@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaIPWhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:37:31 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41491 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaIPWha (ORCPT
+	id S1753399AbaIPWkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:40:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37099 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaIPWkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:37:30 -0400
-Message-ID: <5418BBAB.6040508@linaro.org>
-Date: Tue, 16 Sep 2014 23:37:31 +0100
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 16 Sep 2014 18:40:14 -0400
+Message-ID: <5418BC5C.5020108@wwwdotorg.org>
+Date: Tue, 16 Sep 2014 16:40:28 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v8 6/9] arm: netx: Migrate DEBUG_LL macros to shared directory
-References: <1404127855-30459-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-1-git-send-email-daniel.thompson@linaro.org>	 <1408459715-10151-7-git-send-email-daniel.thompson@linaro.org> <1410798874.31130.57.camel@x220> <54175E87.2070509@linaro.org>
-In-Reply-To: <54175E87.2070509@linaro.org>
-Content-Type: text/plain; charset=utf-8
+To: Andrew Bresticker <abrestic@chromium.org>
+CC: Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Tegra xHCI support
+References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>	<CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>	<CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>	<CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>	<CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>	<CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com>	<CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>	<54172B3F.9030901@wwwdotorg.org>	<CAL1qeaEK=C4j+G5CA_91xJNe25d=-y47EyZAYnaMh46fNYVDAw@mail.gmail.com>	<54185698.7020600@wwwdotorg.org> <CAL1qeaGf6JSuq=ekZY7Pp2zSAB0+0S9fZ70xWpct2MJ=pTSmug@mail.gmail.com>
+In-Reply-To: <CAL1qeaGf6JSuq=ekZY7Pp2zSAB0+0S9fZ70xWpct2MJ=pTSmug@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/14 22:47, Daniel Thompson wrote:
-> On 15/09/14 17:34, Paul Bolle wrote:
->> On Tue, 2014-08-19 at 15:48 +0100, Daniel Thompson wrote:
->>> As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
->>> which default to UART1 but allow a user to configure UART2 or UART3.
->>> We also introduce symbolic names for the registers and flags.
+On 09/16/2014 10:57 AM, Andrew Bresticker wrote:
+> On Tue, Sep 16, 2014 at 8:26 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 09/15/2014 01:30 PM, Andrew Bresticker wrote:
 >>>
->>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
->>> Cc: linux-arm-kernel@lists.infradead.org
+>>> On Mon, Sep 15, 2014 at 11:09 AM, Stephen Warren <swarren@wwwdotorg.org>
+>>> wrote:
+>>>>
+>>>> On 09/15/2014 11:06 AM, Andrew Bresticker wrote:
+>>>>>
+>>>>> On Mon, Sep 15, 2014 at 12:00 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net>
+>>>>> wrote:
+>>>>>>
+>>>>>> On 12 September 2014 18:37, Andrew Bresticker <abrestic@chromium.org>
+>>>>>> wrote:
+>>>>>>>
+>>>>>>> On Tue, Sep 9, 2014 at 1:21 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net>
+>>>>>>> wrote:
+>>>>>>>>
+>>>>>>>> On 8 September 2014 18:22, Andrew Bresticker <abrestic@chromium.org>
+>>>>>>>> wrote:
+>>>>>>>>>
+>>>>>>>>> On Mon, Sep 8, 2014 at 8:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net>
+>>>>>>>>> wrote:
+>>>>>>>>>>
+>>>>>>>>>> On 2 September 2014 23:34, Andrew Bresticker
+>>>>>>>>>> <abrestic@chromium.org> wrote:
+>>>>>>>>>>>
+>>>>>>>>>>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0
+>>>>>>>>>>> and
+>>>>>>>>>>> USB3.0 memory sticks and ethernet dongles using controller
+>>>>>>>>>>> firmware
+>>>>>>>>>>> recently posted by Andrew Chew [2].
 >>
->> This patch landed in today's linux-next, as 880fa9b6fd73 ("ARM: 8144/1:
->> netx: Migrate DEBUG_LL macros to shared directory").
+>> ...
+>>>>>
+>>>>> Stephen, Thierry, have either of you had a chance to test this series?
+>>>>
+>>>>
+>>>> I haven't had a chance to yet. I just went to try it out, and found that it
+>>>> depends on a whole slew of other patches that I don't have. Is there a git
+>>>> branch somewhere to save me having to track down all the dependencies?
+>>>
+>>> Yes, Tomeu has the branch he used for testing here:
+>>> http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=3.17rc4-xhci
 >>
->>> [...]
->>> --- a/arch/arm/Kconfig.debug
->>> +++ b/arch/arm/Kconfig.debug
->>> @@ -447,6 +447,14 @@ choice
->>>  		  Say Y here if you want kernel low-level debugging support
->>>  		  on Vybrid based platforms.
->>>  
->>> +	config DEBUG_NETX_UART
->>> +		bool "Kernel low-level debugging messages via NetX UART"
->>> +		depends on ARCH_NETX
->>> +		select DEBUG_UART_NETX
+>> Hmm. That git server was quite reluctant to cough up its bits, but it did
+>> eventually.
 >>
->> There's no Kconfig symbol DEBUG_UART_NETX in next-20140915. So in
->> linux-next this is currently a nop. Is this symbol queued somewhere?
-> 
-> No. The symbol isn't queued anywhere.
-> 
-> DEBUG_UART_NETX is a config value that existed transiently when I wrote
-> the patch and I didn't clean it up properly. I suspect its visual
-> similarity to DEBUG_NETX_UART means it didn't jump out when I self reviewed.
-> 
-> Thanks for raising this. I will share a patch to remove this.
+>>> You'll also need the firmware Andrew Chew posted:
+>>> https://patchwork.ozlabs.org/patch/384013/
+>>
+>> The XHCI driver can't load its firmware unless it's a module; if I make it
+>> built-in, it fails immediately with error -2 during "Direct firmware
+>> loading". The driver needs to work with either immediate or deferred
+>> firmware loading.
+>
+> If you want the driver to be built-in, you'll either need to build the
+> firmware in as well (i.e. EXTRA_FIRMWARE) or enable
+> FW_LOADER_USER_HELPER_FALLBACK to load with userspace/uevent (though
+> apparently this is deprecated).
 
-I was just finalizing this and, since it was on my screen anyway, took
-another look at my assembler changes.
+Hmm. I didn't have to do that for the Atmel touchpad driver to work, but 
+perhaps it's just ignoring a firmware loading error, and continuing with 
+whatever is in the device's flash already.
 
-They are broken! Rather than initializing \rp and \rv as they are
-supposed to they set \rp to two different values leaving \rv uninitialized.
+It seems odd that such a fundamental feature would require a deprecated 
+Kconfig option. Is there some replacement that does the same thing that 
+isn't deprecated? The Kconfig help for the option doesn't say anything 
+useful...
 
-This I will also fix.
+Oh, this option doesn't actually seem to work. I see the following in dmesg:
 
+> [root@swarren-dt ~]# dmesg|grep -i -e xhci -e firmware
+> [    1.461773] xhci-tegra 70090000.usb: Failed to get supply 'avddio-pex': -517
+> [    1.468930] platform 70090000.usb: Driver xhci-tegra requests probe deferral
+> [    2.567966] xhci-tegra 70090000.usb: Direct firmware load for nvidia/tegra124/xusb.bin failed with error -2
+> [    2.577786] xhci-tegra 70090000.usb: Falling back to user helper
 
-Daniel.
+... but:
+
+[root@swarren-dt ~]# lsusb
+unable to initialize libusb: -99
+
+Perhaps systemd-udevd doesn't implement firmware loading; is it 
+user-space udev that's deprecated implementing user-space firmware 
+loading, rather than the kernel deprecating support for calling out to 
+user space?
+
+This sucks, because now I can't just TFTP boot kernels but somehow have 
+to get updated kernel modules onto my device every time before testing a 
+new kernel build. That's a huge time-sink, unless I work out NFS root, 
+which probably isn't properly or easily supported by any distro.
