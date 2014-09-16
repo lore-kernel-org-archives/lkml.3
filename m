@@ -1,101 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880AbaIPLrA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:47:00 -0400
-Received: from mail-bn1bon0137.outbound.protection.outlook.com ([157.56.111.137]:54592
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752824AbaIPLq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:46:59 -0400
-From: Shengjiu Wang <shengjiu.wang@freescale.com>
-To: <timur@tabi.org>, <nicoleotsuka@gmail.com>, <Li.Xiubo@freescale.com>,
-        <lgirdwood@gmail.com>, <broonie@kernel.org>, <perex@perex.cz>,
-        <tiwai@suse.de>
-CC: <alsa-devel@alsa-project.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: fsl_spdif: don't change the root clock rate of spdif in driver
-Date: Tue, 16 Sep 2014 19:46:34 +0800
-Message-ID: <1410867994-32138-1-git-send-email-shengjiu.wang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(84676001)(48376002)(6806004)(33646002)(68736004)(93916002)(90102001)(104166001)(4396001)(87936001)(104016003)(77982003)(79102003)(19580395003)(2201001)(81342003)(64706001)(80022003)(21056001)(74502003)(74662003)(77156001)(46102003)(47776003)(81542003)(44976005)(105606002)(76482001)(50986999)(31966008)(106466001)(85852003)(20776003)(95666004)(88136002)(83322001)(85306004)(97736003)(102836001)(36756003)(26826002)(92566001)(62966002)(99396002)(107046002)(87286001)(83072002)(86362001)(19580405001)(50466002)(92726001)(50226001)(89996001)(229853001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0611;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1753941AbaIPLrq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:47:46 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:52269 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbaIPLro (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 07:47:44 -0400
+From: Jeff Layton <jeff.layton@primarydata.com>
+X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
+Date: Tue, 16 Sep 2014 07:47:41 -0400
+To: NeilBrown <neilb@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Jeff Layton <jeff.layton@primarydata.com>
+Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
+Message-ID: <20140916074741.1de870c5@tlielax.poochiereds.net>
+In-Reply-To: <20140916051911.22257.24658.stgit@notabene.brown>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=shengjiu.wang@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spdif root clock may be used by other module or defined with
-CLK_SET_RATE_GATE, so we can't change the clock rate in driver.
-In this patch remove the clk_set_rate and clk_round_rate to protect the
-clock.
+On Tue, 16 Sep 2014 15:31:34 +1000
+NeilBrown <neilb@suse.de> wrote:
 
-Signed-off-by: Shengjiu Wang <shengjiu.wang@freescale.com>
----
- sound/soc/fsl/fsl_spdif.c |   24 ++----------------------
- 1 file changed, 2 insertions(+), 22 deletions(-)
+> Because nfs_release_page() submits a 'COMMIT' nfs request and waits
+> for it to complete, and does this during memory reclaim, it is
+> susceptible to deadlocks if memory allocation happens anywhere in
+> sending the COMMIT message.  If the NFS server is on the same host
+> (i.e. loop-back NFS), then any memory allocations in the NFS server
+> can also cause deadlocks.
+> 
+> nfs_release_page() already has some code to avoid deadlocks in some
+> circumstances, but these are not sufficient for loopback NFS.
+> 
+> This patch set changes the approach to deadlock avoidance.  Rather
+> than detecting cases that could deadlock and avoiding the COMMIT, it
+> always tries the COMMIT, but only waits a short time (1 second).
+> This avoid any deadlock possibility at the expense of not waiting
+> longer than 1 second even if no deadlock is pending.
+> 
+> nfs_release_page() does not *need* to wait longer - all callers that
+> matter handle a failure gracefully - they move on to other pages.
+> 
+> This set:
+>  - adds some "_timeout()" functions to "wait_on_bit".  Only a
+>    wait_on_page version is actually used.
+>  - exports page wake_up support.  NFS knows that the COMMIT is complete
+>    when PG_private is clear.  So nfs_release_page will use
+>    wait_on_page_bit_killable_timeout to wait for the bit to clear,
+>    and needs access to wake_up_page()
+>  - changes nfs_release_page() to use
+>     wait_on_page_bit_killable_timeout()
+>  - removes the other deadlock avoidance mechanisms from
+>    nfs_release_page, so that PF_FSTRANS is again only used
+>    by XFS.
+> 
+> As such, it needs buy-in from sched people, mm people, and NFS people.
+> Assuming I get that buy-in, suggests for how these patches can flow
+> into mainline would be appreciated ... I daren't hope they can all go
+> in through one tree....
+> 
+> Thanks,
+> NeilBrown
+> 
+> 
+> ---
+> 
+> NeilBrown (4):
+>       SCHED: add some "wait..on_bit...timeout()" interfaces.
+>       MM: export page_wakeup functions
+>       NFS: avoid deadlocks with loop-back mounted NFS filesystems.
+>       NFS/SUNRPC: Remove other deadlock-avoidance mechanisms in nfs_release_page()
+> 
+> 
+>  fs/nfs/file.c                   |   22 ++++++++++++----------
+>  fs/nfs/write.c                  |    2 ++
+>  include/linux/pagemap.h         |   12 ++++++++++--
+>  include/linux/wait.h            |    5 ++++-
+>  kernel/sched/wait.c             |   36 ++++++++++++++++++++++++++++++++++++
+>  mm/filemap.c                    |   21 +++++++++++++++------
+>  net/sunrpc/sched.c              |    2 --
+>  net/sunrpc/xprtrdma/transport.c |    2 --
+>  net/sunrpc/xprtsock.c           |   10 ----------
+>  9 files changed, 79 insertions(+), 33 deletions(-)
+> 
 
-diff --git a/sound/soc/fsl/fsl_spdif.c b/sound/soc/fsl/fsl_spdif.c
-index 70acfe4..f2e4595 100644
---- a/sound/soc/fsl/fsl_spdif.c
-+++ b/sound/soc/fsl/fsl_spdif.c
-@@ -377,7 +377,6 @@ static int spdif_set_sample_rate(struct snd_pcm_substream *substream,
- 	unsigned long csfs = 0;
- 	u32 stc, mask, rate;
- 	u8 clk, txclk_df, sysclk_df;
--	int ret;
- 
- 	switch (sample_rate) {
- 	case 32000:
-@@ -419,21 +418,6 @@ static int spdif_set_sample_rate(struct snd_pcm_substream *substream,
- 
- 	sysclk_df = spdif_priv->sysclk_df[rate];
- 
--	/* Don't mess up the clocks from other modules */
--	if (clk != STC_TXCLK_SPDIF_ROOT)
--		goto clk_set_bypass;
--
--	/*
--	 * The S/PDIF block needs a clock of 64 * fs * txclk_df.
--	 * So request 64 * fs * (txclk_df + 1) to get rounded.
--	 */
--	ret = clk_set_rate(spdif_priv->txclk[rate], 64 * sample_rate * (txclk_df + 1));
--	if (ret) {
--		dev_err(&pdev->dev, "failed to set tx clock rate\n");
--		return ret;
--	}
--
--clk_set_bypass:
- 	dev_dbg(&pdev->dev, "expected clock rate = %d\n",
- 			(64 * sample_rate * txclk_df * sysclk_df));
- 	dev_dbg(&pdev->dev, "actual clock rate = %ld\n",
-@@ -1056,7 +1040,7 @@ static u32 fsl_spdif_txclk_caldiv(struct fsl_spdif_priv *spdif_priv,
- {
- 	const u32 rate[] = { 32000, 44100, 48000, 96000, 192000 };
- 	bool is_sysclk = clk == spdif_priv->sysclk;
--	u64 rate_ideal, rate_actual, sub;
-+	u64 rate_actual, sub;
- 	u32 sysclk_dfmin, sysclk_dfmax;
- 	u32 txclk_df, sysclk_df, arate;
- 
-@@ -1066,11 +1050,7 @@ static u32 fsl_spdif_txclk_caldiv(struct fsl_spdif_priv *spdif_priv,
- 
- 	for (sysclk_df = sysclk_dfmin; sysclk_df <= sysclk_dfmax; sysclk_df++) {
- 		for (txclk_df = 1; txclk_df <= 128; txclk_df++) {
--			rate_ideal = rate[index] * (txclk_df + 1) * 64;
--			if (round)
--				rate_actual = clk_round_rate(clk, rate_ideal);
--			else
--				rate_actual = clk_get_rate(clk);
-+			rate_actual = clk_get_rate(clk);
- 
- 			arate = rate_actual / 64;
- 			arate /= txclk_df * sysclk_df;
+On balance, I like the NFS parts of this set -- particular the fact
+that we get rid of the PF_FSTRANS abortion, and simplify the code quite
+a bit. My only real concern is that you could end up stalling in this
+code in situations where you really can't release the page.
+
+For instance, suppose you're trying to reconnect the socket to the
+server (a'la xs_tcp_setup_socket). The VM is low on memory and tries to
+release a page that needs that socket in order to issue a COMMIT. That
+situation is going to end up with the page unable to be released, but
+you'll still wait 1s before returning. If the VM tries to release a
+bunch of pages like this, then those waits could add up.
+
+Also, we call things like invalidate_complete_page2 from the cache
+invalidation code. Will we end up with potential problems now that we
+have a stronger possibility that a page might not be freeable when it
+calls releasepage? (no idea on this -- I'm just spitballing)
+
 -- 
-1.7.9.5
-
+Jeff Layton <jlayton@primarydata.com>
