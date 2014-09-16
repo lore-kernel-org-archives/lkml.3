@@ -1,60 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaIPUNt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:13:49 -0400
-Received: from mail-bn1bon0146.outbound.protection.outlook.com ([157.56.111.146]:13502
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752098AbaIPUNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:13:48 -0400
-X-WSS-ID: 0NC0ENS-08-IZS-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <herrmann.der.user@googlemail.com>, <linux@roeck-us.net>,
-        <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <boris.ostrovsky@oracle.com>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH V2 2/2] hwmon, fam15h_power: Add support for two more processors
-Date: Tue, 16 Sep 2014 14:58:16 -0500
-Message-ID: <1410897496-2600-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 2.0.2
+	id S1755007AbaIPURr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:17:47 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:36201 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817AbaIPURq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:17:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(20776003)(50226001)(101416001)(62966002)(19580405001)(50466002)(21056001)(68736004)(95666004)(92726001)(85852003)(90102001)(84676001)(89996001)(31966008)(47776003)(48376002)(107046002)(229853001)(50986999)(53416004)(99396002)(87286001)(83322001)(104166001)(81342003)(102836001)(85306004)(77156001)(83072002)(2201001)(64706001)(36756003)(86362001)(4396001)(105586002)(44976005)(92566001)(19580395003)(74662003)(46102003)(74502003)(87936001)(79102003)(97736003)(80022003)(88136002)(93916002)(77096002)(77982003)(81542003)(76482001)(106466001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB489;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <1410864271-9277-3-git-send-email-kever.yang@rock-chips.com>
+References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com> <1410864271-9277-3-git-send-email-kever.yang@rock-chips.com>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Tue, 16 Sep 2014 13:17:25 -0700
+X-Google-Sender-Auth: Htjxc4PIJEzrNnwpQ3HboFtn2U4
+Message-ID: <CAPz6YkVqhO6kJtySB7MrCYzVLgjViKLO3c_HgS_NVxt3-=SJew@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] ARM: rockchip: add basic smp support for rk3288
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Douglas Anderson <dianders@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, hj@rock-chips.com,
+        huangtao@rock-chips.com, Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fam16h,M30h(Mullins) and Fam15hM30h(Kaveri) processors can
-report 'power_crit' value. So, adding their respective device ids.
+On Tue, Sep 16, 2014 at 3:44 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> This patch add basic rk3288 smp support, cpu 1~3 are in wfe state
+> when get into kernel.
+>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+> Changes in v2:
+> - use rk3288_boot_secondary instead ofsmp_boot_secondary
+> - discards the power domain operation
+> - handle the per cpu starup when actived by 'sev'
+>
+>  arch/arm/mach-rockchip/core.h    |  1 +
+>  arch/arm/mach-rockchip/headsmp.S | 14 +++++++++
+>  arch/arm/mach-rockchip/platsmp.c | 63 ++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 72 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
+> index 39bca96..13de05a 100644
+> --- a/arch/arm/mach-rockchip/core.h
+> +++ b/arch/arm/mach-rockchip/core.h
+> @@ -18,3 +18,4 @@ extern char rockchip_secondary_trampoline_end;
+>
+>  extern unsigned long rockchip_boot_fn;
+>  extern void rockchip_secondary_startup(void);
+> +extern void rk3288_secondary_startup(void);
+> diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
+> index 73206e3..bacdb56 100644
+> --- a/arch/arm/mach-rockchip/headsmp.S
+> +++ b/arch/arm/mach-rockchip/headsmp.S
+> @@ -20,6 +20,20 @@ ENTRY(rockchip_secondary_startup)
+>         b       secondary_startup
+>  ENDPROC(rockchip_secondary_startup)
+>
+> +ENTRY(rk3288_secondary_startup)
+> +       mrc p15, 0, r0, c0, c0, 5
+> +       mov r2, #3
+> +       and r0, r0, r2
+> +       ldr r1, =0xff700000
+> +       ldr r1, [r1]
+> +       cmp r0, r1
+> +       beq 2f
+> +       ldr r2, =0xfffd0000
+> +       mov pc, r2
+> +2:
+> +       b       secondary_startup
+> +ENDPROC(rk3288_secondary_startup)
 
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
----
- drivers/hwmon/fam15h_power.c | 2 ++
- 1 file changed, 2 insertions(+)
+Comments on what's going on here would be nice.
+It looks like what you're doing is checking to see whether this CPU is
+the one that is supposed to wake up or not, but looking at sram
+(written by the C code below), and this isn't the correct CPU then go
+back to boot rom?  Since we read in int-mem from the device-tree it
+would also probably be good to make that ldr r1, 0xff700000 reference
+the sram_base_addr variable rather than hard coding here.
 
-diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
-index 4ee0126..fcdbde4 100644
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -232,7 +232,9 @@ static int fam15h_power_probe(struct pci_dev *pdev,
- 
- static const struct pci_device_id fam15h_power_id_table[] = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F4) },
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F3) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
--- 
-2.0.2
+> +
+>  ENTRY(rockchip_secondary_trampoline)
+>         ldr     pc, 1f
+>  ENDPROC(rockchip_secondary_trampoline)
+> diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
+> index 189684f..022a01d 100644
+> --- a/arch/arm/mach-rockchip/platsmp.c
+> +++ b/arch/arm/mach-rockchip/platsmp.c
+> @@ -60,7 +60,7 @@ static void pmu_set_power_domain(int pd, bool on)
+>   * Handling of CPU cores
+>   */
+>
+> -static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+> +static int __cpuinit rk3066_boot_secondary(unsigned int cpu,
+>                                              struct task_struct *idle)
+>  {
+>         if (!sram_base_addr || !pmu_base_addr) {
+> @@ -80,6 +80,28 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+>         return 0;
+>  }
+>
+> +static int __cpuinit rk3288_boot_secondary(unsigned int cpu,
+> +                                            struct task_struct *idle)
+> +{
+> +       if (!sram_base_addr) {
+> +               pr_err("%s: sram missing for cpu boot\n", __func__);
+> +               return -ENXIO;
+> +       }
+> +
+> +       if (cpu >= ncores) {
+> +               pr_err("%s: cpu %d outside maximum number of cpus %d\n",
+> +                                                       __func__, cpu, ncores);
+> +               return -ENXIO;
+> +       }
+> +       /* start the core */
+> +       writel(virt_to_phys(rk3288_secondary_startup), sram_base_addr + 8);
+> +       writel(0xDEADBEAF, sram_base_addr + 4);
+> +       writel(cpu, sram_base_addr + 0);
 
+I guess the boot rom is looking for 0xDEADBEEF here at sram_base_addr
++ 4, but the cpu itself will be looking at sram_base_addr + 0.
+Again, might be good to somehow document what the protocol is.
+
+> +       dsb_sev();
+> +
+> +       return 0;
+> +}
+> +
+>  /**
+>   * rockchip_smp_prepare_sram - populate necessary sram block
+>   * Starting cores execute the code residing at the start of the on-chip sram
+> @@ -125,7 +147,7 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
+>         return 0;
+>  }
+>
+> -static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
+> +static void __init rk3066_smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>         struct device_node *node;
+>         unsigned int i;
+> @@ -194,12 +216,41 @@ static void rockchip_cpu_die(unsigned int cpu)
+>  }
+>  #endif
+>
+> -static struct smp_operations rockchip_smp_ops __initdata = {
+> -       .smp_prepare_cpus       = rockchip_smp_prepare_cpus,
+> -       .smp_boot_secondary     = rockchip_boot_secondary,
+> +static void __init rk3288_smp_prepare_cpus(unsigned int max_cpus)
+> +{
+> +       struct device_node *node;
+> +
+> +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-smp-sram");
+> +       if (!node) {
+> +               pr_err("%s: could not find sram dt node\n", __func__);
+> +               return;
+> +       }
+> +
+> +       sram_base_addr = of_iomap(node, 0);
+> +       if (!sram_base_addr) {
+> +               pr_err("%s: could not map pmu registers\n", __func__);
+> +               return;
+> +       }
+> +
+> +       ncores = 4;
+> +}
+> +
+> +static struct smp_operations rockchip3066_smp_ops __initdata = {
+> +       .smp_prepare_cpus       = rk3066_smp_prepare_cpus,
+> +       .smp_boot_secondary     = rk3066_boot_secondary,
+> +#ifdef CONFIG_HOTPLUG_CPU
+> +       .cpu_kill               = rockchip_cpu_kill,
+> +       .cpu_die                = rockchip_cpu_die,
+> +#endif
+> +};
+> +CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip3066_smp_ops);
+> +
+> +static struct smp_operations rockchip3288_smp_ops __initdata = {
+> +       .smp_prepare_cpus       = rk3288_smp_prepare_cpus,
+> +       .smp_boot_secondary     = rk3288_boot_secondary,
+>  #ifdef CONFIG_HOTPLUG_CPU
+>         .cpu_kill               = rockchip_cpu_kill,
+>         .cpu_die                = rockchip_cpu_die,
+>  #endif
+>  };
+> -CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip_smp_ops);
+> +CPU_METHOD_OF_DECLARE(rk3288_smp, "rockchip,rk3288-smp", &rockchip3288_smp_ops);
+> --
+> 1.9.1
+>
