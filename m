@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaIPHoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:44:39 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:36786 "EHLO mail.mev.co.uk"
+	id S1753313AbaIPHqW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:46:22 -0400
+Received: from mga14.intel.com ([192.55.52.115]:26674 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752968AbaIPHoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:44:37 -0400
-Message-ID: <5417EA5C.3090405@mev.co.uk>
-Date: Tue, 16 Sep 2014 08:44:28 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-Organization: MEV Ltd
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
-MIME-Version: 1.0
-To: Hartley Sweeten <HartleyS@visionengravers.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/11] staging: comedi: move comedi_fc functionality into
- core
-References: <1410785167-28506-1-git-send-email-abbotti@mev.co.uk> <DC148C5AA1CEBA4E87973D432B1C2D8825FA1BE3@P3PWEX4MB008.ex4.secureserver.net>
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825FA1BE3@P3PWEX4MB008.ex4.secureserver.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1752772AbaIPHqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:46:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
+   d="scan'208";a="591873781"
+Message-ID: <1410853522.1280.0.camel@rzhang1-toshiba>
+Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Caesar Wang <caesar.wang@rock-chips.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
+        Chris Zhong <zyw@rock-chips.com>,
+        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        zhaoyifeng <zyf@rock-chips.com>
+Date: Tue, 16 Sep 2014 15:45:22 +0800
+In-Reply-To: <20140911155324.GA27076@developer>
+References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
+	 <1410403012.25559.69.camel@rzhang1-toshiba>
+	 <20140911121842.GB26715@developer> <40514790.Xc34lyFLGa@wuerfel>
+	 <20140911155324.GA27076@developer>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/09/14 19:21, Hartley Sweeten wrote:
-> On Monday, September 15, 2014 5:46 AM, Ian Abbott wrote:
->> The "comedi_fc" module contains a few functions for use by several
->> low-level comedi drivers.  Since they are used by quite a few drivers,
->> it seems useful to migrate their functionality to the core "comedi"
->> module, renaming them in the process, while keeping the original
->> function names in "drivers/comedi_fc.h" available for now.  This set of
->> patches accomplishes that.
->>
->> The next stages after this will be to migrate the remaining inline
->> functions from "drivers/comedi_fc.h" (possibly making them externally
->> exported functions, although they are rather short), and then to update
->> the low-level drivers to call the functions with the new names,
->> eliminating the need to include "comedi_fc.h".  Then
->> "drivers/comedi_fc.h" can be removed as well.
->>
->> Note that PATCH 10 has a couple of checkpatch warnings due to
->> changing an existing block comment in non-standard block-comment style.
->>
->> PATCH 11 has a checkpatch warning to check whether MAINTAINERS needs
->> updating.  It doesn't.
->>
->> PATCH 11 might conflict with some other patch series that haven't been
->> committed yet.
->>
->> 01) staging: comedi: add comedi_bytes_per_scan()
->> 02) staging: comedi: comedi_fc: use comedi_bytes_per_scan()
->> 03) staging: comedi: add comedi_inc_scan_progress()
->> 04) staging: comedi: comedi_fc: use comedi_inc_scan_progress()
->> 05) staging: comedi: add comedi_handle_events()
->> 06) staging: comedi: comedi_fc: cfc_write_array_to_buffer() data is
->>      const
->> 07) staging: comedi: add comedi_write_array_to_buffer()
->> 08) staging: comedi: comedi_fc.h: use comedi_write_array_to_buffer()
->> 09) staging: comedi: add comedi_read_array_from_buffer()
->> 10) staging: comedi: migrate copyrights from "comedi_fc.c"
->> 11) staging: comedi: remove comedi_fc module
->>
->>   drivers/staging/comedi/Kconfig             |  31 -------
->>   drivers/staging/comedi/comedi_buf.c        |  66 +++++++++++++++
->>   drivers/staging/comedi/comedidev.h         |  11 +++
->>   drivers/staging/comedi/drivers.c           |  95 +++++++++++++++++++++
->>   drivers/staging/comedi/drivers/Makefile    |   1 -
->>   drivers/staging/comedi/drivers/comedi_fc.c | 132 -----------------------------
->>   drivers/staging/comedi/drivers/comedi_fc.h |  40 ++++++---
->>   7 files changed, 201 insertions(+), 175 deletions(-)
->
-> Ian,
->
-> Other than I think the comedi_fc.c functions should be migrated to
-> comedi_buf.c instead of drivers.c I have not problems with this.
 
-I think it's debatable. The only one of the three functions you 
-mentioned that touches the buffer is comedi_inc_scan_progress(), and I'd 
-rather keep that with comedi_bytes_per_scan().
+On Thu, 2014-09-11 at 11:53 -0400, Eduardo Valentin wrote:
+> Arnd,
+> 
+> On Thu, Sep 11, 2014 at 02:32:08PM +0200, Arnd Bergmann wrote:
+> > On Thursday 11 September 2014 08:18:43 Eduardo Valentin wrote:
+> > > > As what we want is to make thermal driver have a chance to configure the
+> > > > hardware shutdown registers, I'm thinking if we can do this without
+> > > > representing the hardware shutdown value as a trip point.
+> > > > Say,
+> > > > 1. parse DT, and get the hardware shutdown temperature value, and store
+> > > > it somewhere, e.g. struct __thermal_zone.
+> > > > 2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
+> > > > in thermal_zone_of_sensor_register().
+> > > > 3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
+> > > > thermal_zone_of_sensor_register().
+> > > 
+> > > The only issue I have with the above proposal is that not all platforms
+> > > use DT. Some still boot with boardfiles, for instance. Thus, the
+> > > parameter to configure hardware thermal shutdown needs to be common on
+> > > thermal core, not specific to of-thermal. Do you agree?
+> > 
+> > Do you know of a machine that can't yet be converted to DT and that
+> > needs this driver? In case of rockchips that is certainly not the
+> > case, and we don't care about anybody trying to use board files out
+> > of tree, they can just hack the thermal support as well.
+> 
+> I see. Again, the only concern I have is to produce thermal framework APIs
+> that would be only in the of-thermal. My point is not specific to this
+> patch, or this platform, but with a detail in the above proposal. 
+> 
+> While I agree to have a trip specific to configurable hardware triggered
+> thermal shutdown, I just don't see why it needs to be a feature
+> implemented only via of-thermal. It has to be properly defined in
+> thermal core.
+> 
+> The proposal of of-thermal is not to become a separate/competing thermal
+> framework.
+> 
+Agreed.
+And I think we can have such feature in thermal core.
+But again I don't think we should represent it as an trip point.
+Instead, we can have a separate parameter for
 
-> And, patch 11 does have a conflict with your "... use dma_alloc_coherent..."
-> patches.
+thanks,
+rui
+> > 
+> > 	Arnd
+> 
+> Cheers,
+> 
+> Eduardo
 
-Yes, I'll have to fix up one or the other, depending which gets applied 
-first (unless git can magically sort it out with a three way merge).
 
-> But,
->
-> Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
->
 
-Thanks!
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
