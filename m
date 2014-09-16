@@ -1,95 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbaIPOJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:09:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35167 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbaIPOJv (ORCPT
+	id S1754206AbaIPONl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:13:41 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46926 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393AbaIPONk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:09:51 -0400
-Message-ID: <5418449C.7060808@pengutronix.de>
-Date: Tue, 16 Sep 2014 16:09:32 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 16 Sep 2014 10:13:40 -0400
+Message-ID: <54184580.8040305@oracle.com>
+Date: Tue, 16 Sep 2014 10:13:20 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c:  Cleaning up
- missing null-terminate in conjunction with strncpy
-References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-In-Reply-To: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Andrew Morton <akpm@linuxfoundation.org>
+Subject: Processes hang inside kernel built with gcc5
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-On 09/14/2014 07:31 PM, Rickard Strandqvist wrote:
-> Replacing strncpy with strlcpy to avoid strings that lacks null termina=
-te.
->=20
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital=
-=2Ese>
-> ---
->  drivers/net/can/usb/peak_usb/pcan_usb_core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c b/drivers/net=
-/can/usb/peak_usb/pcan_usb_core.c
-> index 644e6ab..d4fe8ac 100644
-> --- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> +++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-> @@ -830,7 +830,7 @@ static void peak_usb_disconnect(struct usb_interfac=
-e *intf)
->  		char name[IFNAMSIZ];
-> =20
->  		dev->state &=3D ~PCAN_USB_STATE_CONNECTED;
-> -		strncpy(name, netdev->name, IFNAMSIZ);
-> +		strlcpy(name, netdev->name, IFNAMSIZ);
-> =20
->  		unregister_netdev(netdev);
->  		free_candev(netdev);
->=20
+When booting a -next kernel with gcc5 it seems that some processes will hang
+on execution, while others will run just fine.
 
-What about removing the dev_info(), the name array and the str?cpy()
-completely?
+I wasn't able to find exactly what part of the kernel causes this issue, but
+I've bisected gcc and found the offending commit:
+https://gcc.gnu.org/viewcvs/gcc?view=revision&revision=213753
 
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+I've reported this issue to GCC (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63279).
 
 
---uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAlQYRJwACgkQjTAFq1RaXHNFVgCfTa+BDlMUpQkqqLbrm+yAxnKg
-0xEAn0XC/whypEq/c1aDdTX0NPFJY/Vu
-=yOFv
------END PGP SIGNATURE-----
-
---uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC--
+Thanks,
+Sasha
