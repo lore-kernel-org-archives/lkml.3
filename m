@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaIPJmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 05:42:18 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:49522 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaIPJmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 05:42:15 -0400
-Message-ID: <541805E3.6080003@ahsoftware.de>
-Date: Tue, 16 Sep 2014 11:41:55 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1753564AbaIPJn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 05:43:28 -0400
+Received: from sym2.noone.org ([178.63.92.236]:60262 "EHLO sym2.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753350AbaIPJn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 05:43:27 -0400
+Date: Tue, 16 Sep 2014 11:43:21 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH v3 26/29] nios2: ptrace support
+Message-ID: <20140916094321.GA4610@distanz.ch>
+References: <1410168160-3624-1-git-send-email-lftan@altera.com>
+ <1410168160-3624-27-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-To: Robin Gong <b38343@freescale.com>
-CC: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fugang.duan@freescale.com
-Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on i.mx6dl
-References: <1410327012-31185-1-git-send-email-b38343@freescale.com> <5416D26A.4080707@ahsoftware.de> <20140916035204.GB20800@Robin-OptiPlex-780>
-In-Reply-To: <20140916035204.GB20800@Robin-OptiPlex-780>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410168160-3624-27-git-send-email-lftan@altera.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.09.2014 05:52, schrieb Robin Gong:
-> On Mon, Sep 15, 2014 at 01:50:02PM +0200, Alexander Holler wrote:
->> Am 10.09.2014 07:30, schrieb Robin Gong:
->>> There is one weird data in rxfifo after one full rx/tx transfer
->>> done sometimes. It looks a design issue and hard to workaround
->>> totally, so disable dma functhion here. And will re-enable it
->>> once the root cause found.
->>
->> Hmm, I experience problems with DMA too but on uart3. I'm using the same
->> workaround for the uart (I've just commented out the dma entries in the DT).
->> The problem manifests itself here such, that brcm_patchram_plus
->> hangs while uploading the firmware to a BCM4330 connected at uart3
->> (reproducible).
->>
->> So maybe there is a bug in the DMA-engine which not only effects
->> SPI. Or both drivers contain the same error in handling DMA (maybe
->> through c&p).
->> But that's just specualtion from me, I haven't looked further into
->> that problem.
->>
->> Regards,
->>
->> Alexander Holler
-> Thanks for your information share. But my issue should be caused by hardware,
-> since everything is ok if it runs on other i.mx6 chip. Is your board also based
-> on i.mx6 chip? If yes, hope you can raise your issue in freescale community or
-> contact with Andy whose mail address added in CC list fugang.duan@freescale.cm.
-> We have fix some bugs in UART DMA case.
+On 2014-09-08 at 11:22:37 +0200, Ley Foon Tan <lftan@altera.com> wrote:
+> Add ptrace support for nios2.
+> 
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  arch/nios2/include/asm/ptrace.h      |  33 +++++++
+>  arch/nios2/include/uapi/asm/ptrace.h | 120 ++++++++++++++++++++++++
+>  arch/nios2/kernel/ptrace.c           | 176 +++++++++++++++++++++++++++++++++++
+>  3 files changed, 329 insertions(+)
+>  create mode 100644 arch/nios2/include/asm/ptrace.h
+>  create mode 100644 arch/nios2/include/uapi/asm/ptrace.h
+>  create mode 100644 arch/nios2/kernel/ptrace.c
+[...]
+> diff --git a/arch/nios2/kernel/ptrace.c b/arch/nios2/kernel/ptrace.c
+> new file mode 100644
+> index 0000000..bcbf748
+> --- /dev/null
+> +++ b/arch/nios2/kernel/ptrace.c
+[...]
+> +long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
+> +		 unsigned long data)
+> +{
+> +	int ret = -EIO;
+> +
+> +	pr_debug("REQ=%ld: ADDR =0x%lx, DATA=0x%lx)\n", request, addr, data);
+> +
+> +	switch (request) {
+> +	default:
+> +		ret = ptrace_request(child, request, addr, data);
+> +		break;
+> +	}
+> +
+> +	return ret;
+> +}
 
-It's an i.mx6q (Wandboard quad c1) where I have this problem with 
-mainline and much older (but heavily patched freescale 3.10.x based) 
-kernels. A quick web-search suggests that this problem exists since a 
-long time (noticed mainly by people which try to use BT as this seems to 
-be the major use case for high speed serial communication).
+This could be simplified to:
 
-Regards,
-
-Alexander Holler
+long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
+		 unsigned long data)
+{
+	return ptrace_request(child, request, addr, data);
+}
