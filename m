@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaIPP6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:58:16 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33741 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753393AbaIPP6O (ORCPT
+	id S1754628AbaIPP6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:58:22 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:57894 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611AbaIPP6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:58:14 -0400
-Date: Tue, 16 Sep 2014 11:58:13 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Vinod Koul <vinod.koul@intel.com>
-cc: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] PM: Add helper to mark last busy and autosuspend
-In-Reply-To: <20140916151457.GQ3131@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1409161156560.1166-100000@iolanthe.rowland.org>
+	Tue, 16 Sep 2014 11:58:17 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1410857409-24767-1-git-send-email-gautam.vivek@samsung.com>
+References: <1410857409-24767-1-git-send-email-gautam.vivek@samsung.com>
+Date: Tue, 16 Sep 2014 08:58:16 -0700
+X-Google-Sender-Auth: Jl8YwkmnGQ6lpcx3dnq_CeoGJ5M
+Message-ID: <CAD=FV=U4rPsfGkTcSY3OYHPgCFOccaHTjG1qC6WAekOEV09Q7A@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: DTS: correct the capability string for mmc0
+From: Doug Anderson <dianders@chromium.org>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kevin Hilman <khilman@linaro.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, Vinod Koul wrote:
+Vivek,
 
-> On Tue, Sep 16, 2014 at 10:27:53AM -0400, Alan Stern wrote:
-> > On Tue, 16 Sep 2014, Subhransu S. Prusty wrote:
-> > 
-> > > pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
-> > > in quite a lot of places. Add a helper for these.
-> > > 
-> > > Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
-> > > ---
-> > >  include/linux/pm_runtime.h | 6 ++++++
-> > >  1 file changed, 6 insertions(+)
-> > > 
-> > > diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-> > > index 367f49b..256ec50 100644
-> > > --- a/include/linux/pm_runtime.h
-> > > +++ b/include/linux/pm_runtime.h
-> > > @@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
-> > >  	__pm_runtime_use_autosuspend(dev, false);
-> > >  }
-> > >  
-> > > +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
-> > > +{
-> > > +	pm_runtime_mark_last_busy(dev);
-> > > +	return pm_runtime_put_autosuspend(dev);
-> > > +}
-> > > +
-> > >  #endif
-> > 
-> > What's the advantage?  Removing a few bytes of source code?  There will 
-> > no change to the object code.  (Not to mention that your patch didn't 
-> > actually change _any_ of the places where both routines get called!)
-> Yes we didnt change users, as we need this for one of our drivers we are
-> trying to push.
+On Tue, Sep 16, 2014 at 1:50 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>
+> MMC capability for HS200 is parsed in mmc/core/host.c as
+> dts string "mmc-hs200-1_8v".
+>
+> This patch corrects the dts string for Exynos5420 based peach-pit
+> and Exynos5800 based peach-pi boards.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+>
+> Hi Kukjin,
+>
+> As commented by Doug earlier for this patch, the two patches required
+>   -- mmc: dw_mmc: Make sure we don't get stuck when we get an error
+>   -- mmc: dw_mmc: change to use recommended reset procedure
+> are now merged in upstream.
+> So you can go ahead and pick this change.
+>
+>  arch/arm/boot/dts/exynos5420-peach-pit.dts |    2 +-
+>  arch/arm/boot/dts/exynos5800-peach-pi.dts  |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
-Why do you need it?  Just change your driver to call
-
-	pm_runtime_mark_last_busy(dev);
-	pm_runtime_put_autosuspend(dev);
-
-instead of
-
-	pm_runtime_last_busy_and_autosuspend(dev);
-
-Or create a subroutine in your driver to do this.
-
-Alan Stern
-
+Reviewed-by: Doug Anderson <dianders@chromium.org>
