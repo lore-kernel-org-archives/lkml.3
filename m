@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaIPKRW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:17:22 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59192 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728AbaIPKRU (ORCPT
+	id S1753570AbaIPKRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:17:45 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:51016 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753489AbaIPKRo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:17:20 -0400
-Date: Tue, 16 Sep 2014 06:17:04 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
-        netdev@vger.kernel.org,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: bisected regression: 3c59x corrupts packets in 3.17-rc5
-Message-ID: <20140916101704.GA3792@hmsreliant.think-freely.org>
-References: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
+	Tue, 16 Sep 2014 06:17:44 -0400
+X-IronPort-AV: E=Sophos;i="5.04,534,1406563200"; 
+   d="scan'208";a="36021424"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+Subject: [PATCH v2 0/2] ns, procfs: pid conversion between ns and showing pidns hierarchy
+Date: Tue, 16 Sep 2014 18:17:25 +0800
+Message-ID: <1410862647-14213-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1409160209280.21050@adalberg.ut.ee>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-Score: -2.9 (--)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 02:14:54AM +0300, Meelis Roos wrote:
-> Somewhere between 3.17.0-rc3 and 3.17.0-rc5 I started seeing dropped ssh 
-> connections to a couple of test servers with dual AthlonMP (32-bit) and 
-> 3C90x family of NICs (3Com Corporation 3c980-C 10/100baseTX NIC 
-> [Python-T] (rev 78) in one server and 3Com Corporation 3c905C-TX/TX-M 
-> [Tornado] (rev 78) in the other server). Bisect leads to the following 
-> commit:
-> 
-> 98ea232cf63961fad734cc8c5e07e8915ec73073 is the first bad commit
-> commit 98ea232cf63961fad734cc8c5e07e8915ec73073
-> Author: Neil Horman <nhorman@tuxdriver.com>
-> Date:   Thu Sep 4 06:13:38 2014 -0400
-> 
->     3c59x: avoid panic in boomerang_start_xmit when finding page address:
->     ...
-> 
-> -- 
-> Meelis Roos (mroos@linux.ee)
-> 
-I'm guessing the above change has uncovered another bug, mostly likely an
-exhaustion of dma space on your system.  Nothing in the transmit path there does
-any error checking for successful dma mapping, which it really should.  I'd be
-willing to be that any dma mapping error leads to a leak in the mapping table.
-Does your system have an iommu, or does it use swiotlb?  If its the latter, can
-you increase the swiotlb table space and see if that relieves the problem?  In
-the interim, I'll start adding some error checking to the transmit path.
+This series will expose pid inside containers
+via procfs.
+Also show the hierarchy of pid namespcae.
+Then we could know how pid looks inside a container
+and their ns relationships.
 
-Neil
+v2: use a procfs text file instead of dirs
+    to show the hierarchy of pid namespace
+
+
+Chen Hanxiao (2):
+  procfs: show hierarchy of pid namespace
+  /proc/PID/status: show all sets of pid according to ns
+
+ fs/proc/Kconfig           |   6 ++
+ fs/proc/Makefile          |   1 +
+ fs/proc/array.c           |  17 ++++
+ fs/proc/pidns_hierarchy.c | 195 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 219 insertions(+)
+ create mode 100644 fs/proc/pidns_hierarchy.c
+
+-- 
+1.9.0
 
