@@ -1,178 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaIPDlB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 23:41:01 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38087 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904AbaIPDk6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 23:40:58 -0400
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8G3eqWV022067, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>
-Subject: [PATCH net] r8169: adjust __rtl8169_set_features
-Date: Tue, 16 Sep 2014 11:40:47 +0800
-Message-ID: <1394712342-15778-42-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20140916000321.GA19564@electric-eye.fr.zoreil.com>
-References: <20140916000321.GA19564@electric-eye.fr.zoreil.com>
+	id S1754394AbaIPDpk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 23:45:40 -0400
+Received: from mail-bn1on0135.outbound.protection.outlook.com ([157.56.110.135]:20160
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753541AbaIPDpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 23:45:39 -0400
+Date: Tue, 16 Sep 2014 11:52:05 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Alexander Holler <holler@ahsoftware.de>
+CC: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <fugang.duan@freescale.com>
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on
+ i.mx6dl
+Message-ID: <20140916035204.GB20800@Robin-OptiPlex-780>
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com>
+ <5416D26A.4080707@ahsoftware.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.44]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5416D26A.4080707@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(24454002)(51704005)(189002)(46406003)(50466002)(97756001)(87936001)(76482001)(106466001)(4396001)(31966008)(102836001)(95666004)(85306004)(33656002)(105606002)(46102003)(77982003)(79102003)(81342003)(19580395003)(80022003)(74502003)(81542003)(74662003)(21056001)(44976005)(110136001)(107046002)(90102001)(20776003)(85852003)(97736003)(83322001)(104016003)(83072002)(23726002)(92566001)(99396002)(26826002)(76176999)(33716001)(54356999)(84676001)(47776003)(68736004)(64706001)(50986999)(83506001)(19580405001)(6806004)(92726001)(32563001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB352;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03361FCC43
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=yibin.gong@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the "changed" test in __rtl8169_set_features(). Instead, do
-simple test in rtl8169_set_features().
-
-Set the RxChkSum and RxVlan through __rtl8169_set_features() in
-rtl_open().
-
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 74 +++++++++++++++++-------------------
- 1 file changed, 34 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 7a7860a..ef2cee5 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1783,33 +1783,31 @@ static void __rtl8169_set_features(struct net_device *dev,
- 				   netdev_features_t features)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
--	netdev_features_t changed = features ^ dev->features;
- 	void __iomem *ioaddr = tp->mmio_addr;
-+	u32 rx_config;
- 
--	if (!(changed & (NETIF_F_RXALL | NETIF_F_RXCSUM |
--			 NETIF_F_HW_VLAN_CTAG_RX)))
--		return;
-+	rx_config = RTL_R32(RxConfig);
-+	if (features & NETIF_F_RXALL)
-+		rx_config |= (AcceptErr | AcceptRunt);
-+	else
-+		rx_config &= ~(AcceptErr | AcceptRunt);
- 
--	if (changed & (NETIF_F_RXCSUM | NETIF_F_HW_VLAN_CTAG_RX)) {
--		if (features & NETIF_F_RXCSUM)
--			tp->cp_cmd |= RxChkSum;
--		else
--			tp->cp_cmd &= ~RxChkSum;
-+	RTL_W32(RxConfig, rx_config);
- 
--		if (features & NETIF_F_HW_VLAN_CTAG_RX)
--			tp->cp_cmd |= RxVlan;
--		else
--			tp->cp_cmd &= ~RxVlan;
-+	if (features & NETIF_F_RXCSUM)
-+		tp->cp_cmd |= RxChkSum;
-+	else
-+		tp->cp_cmd &= ~RxChkSum;
- 
--		RTL_W16(CPlusCmd, tp->cp_cmd);
--		RTL_R16(CPlusCmd);
--	}
--	if (changed & NETIF_F_RXALL) {
--		int tmp = (RTL_R32(RxConfig) & ~(AcceptErr | AcceptRunt));
--		if (features & NETIF_F_RXALL)
--			tmp |= (AcceptErr | AcceptRunt);
--		RTL_W32(RxConfig, tmp);
--	}
-+	if (features & NETIF_F_HW_VLAN_CTAG_RX)
-+		tp->cp_cmd |= RxVlan;
-+	else
-+		tp->cp_cmd &= ~RxVlan;
-+
-+	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
-+
-+	RTL_W16(CPlusCmd, tp->cp_cmd);
-+	RTL_R16(CPlusCmd);
- }
- 
- static int rtl8169_set_features(struct net_device *dev,
-@@ -1817,8 +1815,11 @@ static int rtl8169_set_features(struct net_device *dev,
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
- 
-+	features &= NETIF_F_RXALL | NETIF_F_RXCSUM | NETIF_F_HW_VLAN_CTAG_RX;
-+
- 	rtl_lock_work(tp);
--	__rtl8169_set_features(dev, features);
-+	if (features ^ dev->features);
-+		__rtl8169_set_features(dev, features);
- 	rtl_unlock_work(tp);
- 
- 	return 0;
-@@ -6707,12 +6708,7 @@ static int rtl_open(struct net_device *dev)
- 
- 	rtl8169_init_phy(dev, tp);
- 
--	if (dev->features & NETIF_F_HW_VLAN_CTAG_RX)
--		tp->cp_cmd |= RxVlan;
--	else
--		tp->cp_cmd &= ~RxVlan;
--
--	RTL_W16(CPlusCmd, tp->cp_cmd);
-+	__rtl8169_set_features(dev, dev->features);
- 
- 	rtl_pll_power_up(tp);
- 
-@@ -7123,8 +7119,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
- 	}
- }
- 
--static int
--rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
-+static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	const struct rtl_cfg_info *cfg = rtl_cfg_infos + ent->driver_data;
- 	const unsigned int region = cfg->region;
-@@ -7199,7 +7194,7 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		goto err_out_mwi_2;
- 	}
- 
--	tp->cp_cmd = RxChkSum;
-+	tp->cp_cmd = 0;
- 
- 	if ((sizeof(dma_addr_t) > 4) &&
- 	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) && use_dac) {
-@@ -7240,13 +7235,6 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 
- 	pci_set_master(pdev);
- 
--	/*
--	 * Pretend we are using VLANs; This bypasses a nasty bug where
--	 * Interrupts stop flowing on high load on 8110SCd controllers.
--	 */
--	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
--		tp->cp_cmd |= RxVlan;
--
- 	rtl_init_mdio_ops(tp);
- 	rtl_init_pll_power_ops(tp);
- 	rtl_init_jumbo_ops(tp);
-@@ -7307,8 +7295,14 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO |
- 		NETIF_F_HIGHDMA;
- 
-+	tp->cp_cmd |= RxChkSum | RxVlan;
-+
-+	/*
-+	 * Pretend we are using VLANs; This bypasses a nasty bug where
-+	 * Interrupts stop flowing on high load on 8110SCd controllers.
-+	 */
- 	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
--		/* 8110SCd requires hardware Rx VLAN - disallow toggling */
-+		/* Disallow toggling */
- 		dev->hw_features &= ~NETIF_F_HW_VLAN_CTAG_RX;
- 
- 	if (tp->txd_version == RTL_TD_0)
--- 
-1.9.3
-
+On Mon, Sep 15, 2014 at 01:50:02PM +0200, Alexander Holler wrote:
+> Am 10.09.2014 07:30, schrieb Robin Gong:
+> >There is one weird data in rxfifo after one full rx/tx transfer
+> >done sometimes. It looks a design issue and hard to workaround
+> >totally, so disable dma functhion here. And will re-enable it
+> >once the root cause found.
+> 
+> Hmm, I experience problems with DMA too but on uart3. I'm using the same
+> workaround for the uart (I've just commented out the dma entries in the DT).
+> The problem manifests itself here such, that brcm_patchram_plus
+> hangs while uploading the firmware to a BCM4330 connected at uart3
+> (reproducible).
+> 
+> So maybe there is a bug in the DMA-engine which not only effects
+> SPI. Or both drivers contain the same error in handling DMA (maybe
+> through c&p).
+> But that's just specualtion from me, I haven't looked further into
+> that problem.
+> 
+> Regards,
+> 
+> Alexander Holler
+Thanks for your information share. But my issue should be caused by hardware,
+since everything is ok if it runs on other i.mx6 chip. Is your board also based
+on i.mx6 chip? If yes, hope you can raise your issue in freescale community or
+contact with Andy whose mail address added in CC list fugang.duan@freescale.cm.
+We have fix some bugs in UART DMA case.
