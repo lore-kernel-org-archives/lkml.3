@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaIPNwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:52:03 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:39414 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817AbaIPNwB (ORCPT
+	id S1754195AbaIPNxw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:53:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46366 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753809AbaIPNxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 09:52:01 -0400
-Message-ID: <54184078.4070505@redhat.com>
-Date: Tue, 16 Sep 2014 15:51:52 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 16 Sep 2014 09:53:51 -0400
+Date: Tue, 16 Sep 2014 15:53:47 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
+        stern@rowland.harvard.edu, yoshihiro.shimoda.uh@renesas.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 4/9] usb: rename phy to usb_phy in HCD
+Message-ID: <20140916135347.GC4869@kwain>
+References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1410777309-12552-5-git-send-email-antoine.tenart@free-electrons.com>
+ <54172B42.1060606@cogentembedded.com>
 MIME-Version: 1.0
-To: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-In-Reply-To: <1410811885-17267-1-git-send-email-andreslc@google.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <54172B42.1060606@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 15/09/2014 22:11, Andres Lagar-Cavilla ha scritto:
-> +	if (!locked) {
-> +		BUG_ON(npages != -EBUSY);
+On Mon, Sep 15, 2014 at 09:09:06PM +0300, Sergei Shtylyov wrote:
+> On 9/15/2014 1:35 PM, Antoine Tenart wrote:
+> 
+> >The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+> >modifications are done in all drivers accessing it.
+> 
+> >Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> >Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> >---
+> >  drivers/usb/chipidea/host.c   |  2 +-
+> >  drivers/usb/core/hcd.c        | 20 ++++++++++----------
+> >  drivers/usb/core/hub.c        |  8 ++++----
+> >  drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
+> >  drivers/usb/host/ehci-hub.c   |  2 +-
+> >  drivers/usb/host/ehci-msm.c   |  4 ++--
+> >  drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
+> >  drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
+> >  drivers/usb/misc/lvstest.c    |  8 ++++----
+> 
+>    I have already re-posted this patch (adding it to my generic PHY
+> patch to form a short series) with this file added, and CC'ed you. I
+> haven't heard any protest (perhaps I missed it?), why reiterate with
+> this patch instead of basing the patchset on my most recent posting?
 
-VM_BUG_ON perhaps?
+Well, I can only return the question.
 
-> @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
->  		npages = get_user_page_nowait(current, current->mm,
->  					      addr, write_fault, page);
->  		up_read(&current->mm->mmap_sem);
-> -	} else
-> -		npages = get_user_pages_fast(addr, 1, write_fault,
-> -					     page);
-> +	} else {
-> +		/*
-> +		 * By now we have tried gup_fast, and possible async_pf, and we
-> +		 * are certainly not atomic. Time to retry the gup, allowing
-> +		 * mmap semaphore to be relinquished in the case of IO.
-> +		 */
-> +		npages = kvm_get_user_page_retry(current, current->mm, addr,
-> +						 write_fault, page);
+Anyway, this is not really important. I'll let the maintainers decide
+which series they want this patch in, and I'll make the needed
+modifications if needed.
 
-This is a separate logical change.  Was this:
+Antoine
 
-	down_read(&mm->mmap_sem);
-	npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
-	up_read(&mm->mmap_sem);
-
-the intention rather than get_user_pages_fast?
-
-I think a first patch should introduce kvm_get_user_page_retry ("Retry a
-fault after a gup with FOLL_NOWAIT.") and the second would add
-FOLL_TRIED ("This properly relinquishes mmap semaphore if the
-filemap/swap has to wait on page lock (and retries the gup to completion
-after that").
-
-Apart from this, the patch looks good.  The mm/ parts are minimal, so I
-think it's best to merge it through the KVM tree with someone's Acked-by.
-
-Paolo
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
