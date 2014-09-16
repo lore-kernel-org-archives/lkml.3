@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaIPUp3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:45:29 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39226 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819AbaIPUp0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:45:26 -0400
-Date: Tue, 16 Sep 2014 16:33:01 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
-        open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-Message-ID: <20140916203300.GD3622@tuxdriver.com>
-References: <CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
- <1409916824.7832.20.camel@x220>
- <CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
- <20140909182734.GJ29412@tuxdriver.com>
- <CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
- <541037D2.7060007@gmail.com>
- <CAHNKnsTtqz10c=vV-f10awLanYZzom3kJ1cO5xgTGs-t3O9NYg@mail.gmail.com>
- <20140911192146.GC22872@tuxdriver.com>
- <20140915184546.GB3891@tuxdriver.com>
- <1410899219.31130.81.camel@x220>
+	id S1753187AbaIPUuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:50:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9606 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750811AbaIPUuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:50:14 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+References: <cover.1410810247.git.milosz@adfin.com>
+	<x49sijrxt1f.fsf@segfault.boston.devel.redhat.com>
+	<CANP1eJF_LjNVeD838D-H=005jtGTvGY=h5wPZBHfT6Z9iuKK_g@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Sep 2014 16:49:31 -0400
+In-Reply-To: <CANP1eJF_LjNVeD838D-H=005jtGTvGY=h5wPZBHfT6Z9iuKK_g@mail.gmail.com>
+	(Milosz Tanski's message of "Tue, 16 Sep 2014 16:34:33 -0400")
+Message-ID: <x49ioknuw84.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410899219.31130.81.camel@x220>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 10:26:59PM +0200, Paul Bolle wrote:
-> On Mon, 2014-09-15 at 14:45 -0400, John W. Linville wrote:
-> > FYI -- Sergey posted a series to linux-mips on 14 September 2014 that
-> > touches the symbol in question.  For whatever reason, it is posted
-> > there as RFC.
-> 
-> Thanks for passing that on.
-> 
-> > Does this satisfy the interested parties??
-> 
-> In case I qualify as an interested party: resolving this by, in short,
-> making AHB support actually buildable is of course the preferable
-> solution. 
-> 
-> Whether or not we should drop my patch while waiting for that series to
-> land in linux-next is not my call. But if it hasn't landed by, say,
-> about the time v3.18-rc3 is released I might raise this issue again.
-> 
-> I must say that I'm a bit puzzled why people have resisted this rather
-> small cleanup for years. How did having unbuildable AHB support in
-> mainline benefit anyone? Couldn't the revert of this cleanup also be
-> handled out of tree? Note that the revert is only "6 files changed, 3
-> insertions(+), 294 deletions(-)", while the series is "39 files changed,
-> 3911 insertions(+), 10 deletions(-)".
+Milosz Tanski <milosz@adfin.com> writes:
 
-I think it got added with the notion that the code was "coming soon".
-As you have tried to remove it, the "coming soon" refrain continued.
+> Jeff,
+>
+> Which git repository do the man pages live in?
 
-I'm still inclined to merge your patch.  An RFC series posted to
-another mailing list doesn't really change my mind.
+Hi, Milosz,
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+The download page is here:
+https://www.kernel.org/doc/man-pages/download.html
+
+And the git clone command is:
+$ git clone http://git.kernel.org/pub/scm/docs/man-pages/man-pages
+
+Cheers,
+Jeff
