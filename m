@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016AbaIPHez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:34:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39872 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaIPHey (ORCPT
+	id S1753119AbaIPHhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:37:43 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:34680 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740AbaIPHhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:34:54 -0400
-Date: Tue, 16 Sep 2014 08:34:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Shivnandan Kumar <shivnandan.k@samsung.com>
-Cc: Stephen Smalley <sds@tycho.nsa.gov>,
-        "eparis@parisplace.org" <eparis@parisplace.org>,
-        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
-        "selinux@tycho.nsa.gov" <selinux@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpgs ." <cpgs@samsung.com>, Ashish Kalra <ashish.kalra@samsung.com>,
-        Mohammad Irfan Ansari <mohammad.a2@samsung.com>,
-        Rajat Suri <rajat.suri@samsung.com>
-Subject: Re: [PATCH] Security: List corruption occured during file system
- automation test
-Message-ID: <20140916073445.GW7996@ZenIV.linux.org.uk>
-References: <83.72.04938.152E7145@epcpsbgx1.samsung.com>
+	Tue, 16 Sep 2014 03:37:42 -0400
+Date: Tue, 16 Sep 2014 02:37:36 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Helge Deller <deller@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        Aaron Tomlin <atomlin@redhat.com>,
+        James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH] Fix end_of_stack() fn and location of stack canary for
+ archs using STACK_GROWSUP
+Message-ID: <20140916023736.49db964e@as>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <83.72.04938.152E7145@epcpsbgx1.samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 07:10:09AM +0000, Shivnandan Kumar wrote: /
-> <HTML><HEAD><TITLE>Samsung Enterprise Portal mySingle</TITLE> /
+Aaron Tomlin recently posted patches [1] to enable checking the stack canary on
+every task switch. Looking at the canary code, I realized that every arch
+(except ia64, which adds some space for register spill above the stack) shares a
+definition of end_of_stack() that makes it the first long after the threadinfo.
 
-[snip arseloads of unreadable HTML]
+For stacks that grow down, this low address is correct because the stack starts
+at the end of the thread area and grows toward lower addresses. However, for
+stacks that grow up, toward higher addresses, this is wrong. (The stack actually
+grows away from the canary.) On these archs end_of_stack() should return the 
+address of the last long, at the highest possible address for the stack.
 
-.-.. . .- .-. -. 
-- --- 
-..- ... . 
-.-. . .- -.. .- -... .-.. . 
-..-. --- .-. -- .- - ...
---..-- 
-.-- .- -. -.- . .-.
-.-.-.-
-...-.- 
+[1] http://lkml.org/lkml/2014/9/12/293
+
+Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
+
+---
+
+Compile tested only, with Aaron's patches applied and the new option
+CONFIG_SCHED_STACK_END_CHECK they add enabled. I have no way to test
+this any further.
+
+diff a/include/linux/sched.h b/include/linux/sched.h
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2610,7 +2610,11 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
+ 
+ static inline unsigned long *end_of_stack(struct task_struct *p)
+ {
++#ifdef CONFIG_STACK_GROWSUP
++	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
++#else
+ 	return (unsigned long *)(task_thread_info(p) + 1);
++#endif
+ }
+ 
+ #endif
+
+
