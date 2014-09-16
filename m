@@ -1,109 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998AbaIPLsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:48:10 -0400
-Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:36118 "EHLO
-	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753944AbaIPLsH (ORCPT
+	id S1754001AbaIPLtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:49:45 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:39584 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860AbaIPLto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:48:07 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-From: Kiran Padwal <kiran.padwal@smartplayin.com>
-To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        davidb@codeaurora.org, afaerber@suse.de
-Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kiran Padwal <kiran.padwal@smartplayin.com>
-Subject: [PATCH] ARM: dts: qcom: Add I2C dt node for MSM8974 and DB8074 board
-Date: Tue, 16 Sep 2014 17:15:38 +0530
-Message-Id: <1410867938-6254-1-git-send-email-kiran.padwal@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 16 Sep 2014 07:49:44 -0400
+MIME-Version: 1.0
+Date: Tue, 16 Sep 2014 17:19:43 +0530
+Message-ID: <CAP6rfc-36nGq0nZU1pQjUJLMknC26zibeD9hAS6JmmiL+OVSVA@mail.gmail.com>
+Subject: =?UTF-8?Q?BUG=3A_scheduling_while_atomic=3A_dslmgmt=2F53=E2=80=8B8=2F0x00000?=
+	=?UTF-8?Q?2=E2=80=8B01?=
+From: Mushtaq Khan <mushtaqk921@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for i2c controller on the DB8074 board.
-It also adds necessary DT support for i2c eeprom which is present on
-DB8074 board.
+ Hi,
 
-Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
----
- arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |   21 +++++++++++++++++++++
- arch/arm/boot/dts/qcom-msm8974.dtsi            |   15 +++++++++++++--
- 2 files changed, 34 insertions(+), 2 deletions(-)
+ I see the error message "BUG: scheduling while atomic: dslmgmt"
+intermittently. As per other post on similar issue, this happens when
+schedule() is called from either interrupt context or some other
+atomic operation (Might be after acquiring spinlock).
+ But from the call trace am not getting any clue, please help me guide
+on this issue.
 
-diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-index b4dfb01..4737049 100644
---- a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-+++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
-@@ -22,6 +22,13 @@
- 
- 
- 		pinctrl@fd510000 {
-+			i2c11_pins: i2c11 {
-+				mux {
-+					pins = "gpio83", "gpio84";
-+					function = "blsp_i2c11";
-+				};
-+			};
-+
- 			spi8_default: spi8_default {
- 				mosi {
- 					pins = "gpio45";
-@@ -41,5 +48,19 @@
- 				};
- 			};
- 		};
-+
-+		i2c@f9967000 {
-+			status = "okay";
-+			clock-frequency = <200000>;
-+			pinctrl-0 = <&i2c11_pins>;
-+			pinctrl-names = "default";
-+
-+			eeprom: eeprom@52 {
-+				compatible = "atmel,24c128";
-+				reg = <0x52>;
-+				pagesize = <32>;
-+				read-only;
-+			};
-+		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
-index 69dca2a..e265ec1 100644
---- a/arch/arm/boot/dts/qcom-msm8974.dtsi
-+++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
-@@ -1,8 +1,8 @@
- /dts-v1/;
- 
--#include "skeleton.dtsi"
--
-+#include <dt-bindings/interrupt-controller/irq.h>
- #include <dt-bindings/clock/qcom,gcc-msm8974.h>
-+#include "skeleton.dtsi"
- 
- / {
- 	model = "Qualcomm MSM8974";
-@@ -236,5 +236,16 @@
- 			#interrupt-cells = <2>;
- 			interrupts = <0 208 0>;
- 		};
-+
-+		blsp_i2c11: i2c@f9967000 {
-+			status = "disable";
-+			compatible = "qcom,i2c-qup-v2.1.1";
-+			reg = <0xf9967000 0x1000>;
-+			interrupts = <0 105 IRQ_TYPE_NONE>;
-+			clocks = <&gcc GCC_BLSP2_QUP5_I2C_APPS_CLK>, <&gcc GCC_BLSP2_AHB_CLK>;
-+			clock-names = "core", "iface";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+		};
- 	};
- };
--- 
-1.7.9.5
+ BUG: scheduling while atomic: dslmgmt/538/0x00000201
+ Modules linked in: iptable_mangle init_addr(  (null) -   (null)),
+core_addr(c036
+ 9000 - c0369210)
+  iptable_filter init_addr(  (null) -   (null)), core_addr(c0362000 - c03620b0)
+  ip_tables init_addr(  (null) -   (null)), core_addr(c0359000 - c035b618)
+  xt_multiport init_addr(  (null) -   (null)), core_addr(c034f000 - c034f2d8)
+  pktflow(P) init_addr(  (null) -   (null)), core_addr(c0067000 - c0074800)
+  bcm_bpm(P) init_addr(  (null) -   (null)), core_addr(c0045000 - c0046470)
+  bcm_ingqos(P) init_addr(  (null) -   (null)), core_addr(c003a000 - c003b070)
+  chipinfo(P) init_addr(  (null) -   (null)), core_addr(c0031000 - c0031198)
 
+ Call Trace:
+ [<802a0d6c>] printk+0x24/0x30
+ [<80074714>] print_modules+0x88/0x144
+ [<802a43c8>] __schedule+0x54c/0x58c
+ [<802a12d0>] __schedule_bug+0x38/0x54
+ [<802a0b30>] dump_stack+0x8/0x34
+ [<802a43c8>] __schedule+0x54c/0x58c
+ [<8017d0f0>] do_output_char+0x1b4/0x220
+ [<801876ec>] uart_write+0xd8/0x15c
+ [<8017d19c>] process_output+0x40/0x6c
+ [<802a4580>] schedule+0x58/0xb4
+ [<800f1dc0>] fsnotify+0x1b0/0x2dc
+ [<802a3514>] do_nanosleep+0xf8/0x13c
+ [<80055c98>] hrtimer_nanosleep+0xb4/0x158
+ [<80054dd8>] hrtimer_wakeup+0x0/0x2c
+ [<80044f00>] sys_rt_sigaction+0x78/0xd4
+ [<80055da8>] sys_nanosleep+0x6c/0x94
+ [<8001b95c>] stack_done+0x20/0x40
+ Call Trace:
+ [<802a0b30>] dump_stack+0x8/0x34
+ [<802a43c8>] __schedule+0x54c/0x58c
+ [<802a4580>] schedule+0x58/0xb4
+ [<802a3514>] do_nanosleep+0xf8/0x13c
+ [<80055c98>] hrtimer_nanosleep+0xb4/0x158
+ [<80055da8>] sys_nanosleep+0x6c/0x94
+ [<8001b95c>] stack_done+0x20/0x40
+
+ Regards,
+ Mushtaq Khan
