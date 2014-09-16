@@ -1,95 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaIPGqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 02:46:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:33584 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158AbaIPGqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 02:46:22 -0400
-Date: Tue, 16 Sep 2014 16:46:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Behan Webster <behanw@converseincode.com>,
-        <llvmlinux@lists.linuxfoundation.org>, Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: linux-next: manual merge of the llvmlinux tree with the kbuild tree
-Message-ID: <20140916164607.3627ee85@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753072AbaIPGrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 02:47:43 -0400
+Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:1620 "EHLO
+	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751025AbaIPGrm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 02:47:42 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Jiang Liu'" <jiang.liu@huawei.com>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Will Deacon'" <Will.Deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'grant.likely@linaro.org'" <grant.likely@linaro.org>,
+        "'robh+dt@kernel.org'" <robh+dt@kernel.org>,
+        "'devicetree@vger.kernel.org'" <devicetree@vger.kernel.org>
+Date: Tue, 16 Sep 2014 14:43:40 +0800
+Subject: [RFC] arm:fdt:free the fdt reserved memory
+Thread-Topic: [RFC] arm:fdt:free the fdt reserved memory
+Thread-Index: Ac/ReY0TC5GPfk5LTLqVwRPbVpgDeQ==
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB491610@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/B32aST+ZilUJe+8Ig/cI_LE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/B32aST+ZilUJe+8Ig/cI_LE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+this patch make some change to fdt driver, so that we can
+free the reserved memory which is reserved by fdt blob for
+unflatten device tree, we free it in free_initmem, this memory
+will not be used after init calls.
 
-Hi all,
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ arch/arm/mm/init.c     |  5 +++--
+ arch/arm64/mm/init.c   |  4 +++-
+ drivers/of/fdt.c       | 27 +++++++++++++++++++++++----
+ include/linux/of_fdt.h |  2 ++
+ 4 files changed, 31 insertions(+), 7 deletions(-)
 
-Today's linux-next merge of the llvmlinux tree got a conflict in
-Makefile between commit 19a3cc83353e ("Kbuild, lto: Add Link Time
-Optimization support v3") from the kbuild tree and commit 6d9203642de6
-("kbuild, LLVMLinux: Add better clang cross build support") from the
-llvmlinux tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc Makefile
-index 6b5e010d91e2,aa642d244f19..000000000000
---- a/Makefile
-+++ b/Makefile
-@@@ -360,14 -360,18 +360,23 @@@ include $(srctree)/scripts/Kbuild.inclu
-  # Make variables (CC, etc...)
-  AS		=3D $(CROSS_COMPILE)as
-  LD		=3D $(CROSS_COMPILE)ld
- +LDFINAL	=3D $(LD)
-+ ifeq ($(COMPILER),clang)
-+ ifneq ($(CROSS_COMPILE),)
-+ CC		+=3D -target $(CROSS_COMPILE:%-=3D%)
-+ endif
-+ ifneq ($(GCC_TOOLCHAIN),)
-+ CC		+=3D -gcc-toolchain $(GCC_TOOLCHAIN)
-+ endif
-+ else
-  CC		=3D $(CROSS_COMPILE)gcc
-+ endif
-  CPP		=3D $(CC) -E
- +ifdef CONFIG_LTO
- +AR		=3D $(CROSS_COMPILE)gcc-ar
- +else
-  AR		=3D $(CROSS_COMPILE)ar
- +endif
-  NM		=3D $(CROSS_COMPILE)nm
-  STRIP		=3D $(CROSS_COMPILE)strip
-  OBJCOPY		=3D $(CROSS_COMPILE)objcopy
-
---Sig_/B32aST+ZilUJe+8Ig/cI_LE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUF9y5AAoJEMDTa8Ir7ZwVq5gQAIe9ZOLXuy9Ug6qw2AZcSMwX
-xee+sDIY9vDit3swE0zbrJzDdWVtejuh0jV9pcTEo7p5pQnvItoGfINDeTN83DhH
-ULgi9jkHGM+92LXfSpbsGPbORQBzP2JNlKsf+IeNH4Qr1q8bqF4i4kS+1Jk2elFd
-WSEIfU31l+m1DGxYViRWQiR33yz10cmvxvLogzQQtpiX+87MvN4wlejCh0+OdwFg
-Ss8IEKg/xUSKjDVWOvDLsnqJsn84Od1I3zuL1P+L1spIxy8vD1xiisbqR/U+ukfO
-urP+CKc8gCmaHxshgWoSHbUQrZuKenfquZui+hOnu0uqMDfCQXtF94KPZ/xrDirx
-JkSRiEk5P8hvEZXmk1L/SWJ0gYXIMHkJYJYkT0rZVQS/8Vduezw8trc+n5/du3yt
-I3+h5tMCTu+8kq+ptEjBQ4cCSxXP/1SGtP2v/1+CKHOeCjgCWN1gimmVwcXNhwGW
-BT4XoL3lET15wTnT9V6nCw81SB0gRm8rICLblPEKSmyItuTpb4xpwV3sHs4qbloI
-XcjOWCAl058VyHDbloCmzCsNAKlGvJ2ezWt0POc+9e0rW+nblWIigqNowMK/BpFA
-/HN5JA+/7B9tCRtaDEHRPrjc+OoZ4xB95azdZSY0OAr6OYsqksxqf3lkyO0hk1sY
-ZlaQhhg1xguCK3yw73Z/
-=Nsi2
------END PGP SIGNATURE-----
-
---Sig_/B32aST+ZilUJe+8Ig/cI_LE--
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 907dee1..de4dfa1 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -615,7 +615,7 @@ void __init mem_init(void)
+ 	}
+ }
+ 
+-void free_initmem(void)
++void __init_refok free_initmem(void)
+ {
+ #ifdef CONFIG_HAVE_TCM
+ 	extern char __tcm_start, __tcm_end;
+@@ -623,7 +623,8 @@ void free_initmem(void)
+ 	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
+ 	free_reserved_area(&__tcm_start, &__tcm_end, -1, "TCM link");
+ #endif
+-
++	/*this function must be called before init memory are freed*/
++	free_early_init_fdt_scan_reserved_mem();
+ 	poison_init_mem(__init_begin, __init_end - __init_begin);
+ 	if (!machine_is_integrator() && !machine_is_cintegrator())
+ 		free_initmem_default(-1);
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 7268d57..6ad21ef 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -323,8 +323,10 @@ void __init mem_init(void)
+ 	}
+ }
+ 
+-void free_initmem(void)
++void __init_refok free_initmem(void)
+ {
++	/*this function must be called before init memory are freed*/
++	free_early_init_fdt_scan_reserved_mem();
+ 	free_initmem_default(0);
+ }
+ 
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 79cb831..bdcc104 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -240,6 +240,7 @@ static void * unflatten_dt_node(void *blob,
+ 	     (offset = fdt_next_property_offset(blob, offset))) {
+ 		const char *pname;
+ 		u32 sz;
++		int name_len;
+ 
+ 		if (!(p = fdt_getprop_by_offset(blob, offset, &pname, &sz))) {
+ 			offset = -FDT_ERR_INTERNAL;
+@@ -250,10 +251,12 @@ static void * unflatten_dt_node(void *blob,
+ 			pr_info("Can't find property name in list !\n");
+ 			break;
+ 		}
++		name_len = strlen(pname);
+ 		if (strcmp(pname, "name") == 0)
+ 			has_name = 1;
+-		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
+-					__alignof__(struct property));
++		pp = unflatten_dt_alloc(&mem,
++				ALIGN(sizeof(struct property) + name_len + 1, 4)
++				+ sz, __alignof__(struct property));
+ 		if (allnextpp) {
+ 			/* We accept flattened tree phandles either in
+ 			 * ePAPR-style "phandle" properties, or the
+@@ -270,9 +273,11 @@ static void * unflatten_dt_node(void *blob,
+ 			 * stuff */
+ 			if (strcmp(pname, "ibm,phandle") == 0)
+ 				np->phandle = be32_to_cpup(p);
+-			pp->name = (char *)pname;
++			pp->name = (char *)memcpy(pp + 1, pname, name_len + 1);
+ 			pp->length = sz;
+-			pp->value = (__be32 *)p;
++			pp->value = (__be32 *)memcpy((void *)pp +
++					ALIGN(sizeof(struct property) +
++						name_len + 1, 4), p, sz);
+ 			*prev_pp = pp;
+ 			prev_pp = &pp->next;
+ 		}
+@@ -564,6 +569,20 @@ void __init early_init_fdt_scan_reserved_mem(void)
+ 	fdt_init_reserved_mem();
+ }
+ 
++void __init free_early_init_fdt_scan_reserved_mem(void)
++{
++	unsigned long start, end, size;
++	if (!initial_boot_params)
++		return;
++
++	size = fdt_totalsize(initial_boot_params);
++	memblock_free(__pa(initial_boot_params), size);
++	start = round_down((unsigned long)initial_boot_params, PAGE_SIZE);
++	end = round_up(start + size, PAGE_SIZE);
++	free_reserved_area((void *)start, (void *)end, 0, "fdt");
++	initial_boot_params = 0;
++}
++
+ /**
+  * of_scan_flat_dt - scan flattened tree blob and call callback on each.
+  * @it: callback function
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index 0ff360d..21d51ce 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -62,6 +62,7 @@ extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
+ extern int early_init_dt_scan_memory(unsigned long node, const char *uname,
+ 				     int depth, void *data);
+ extern void early_init_fdt_scan_reserved_mem(void);
++extern void free_early_init_fdt_scan_reserved_mem(void);
+ extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+ extern int early_init_dt_reserve_memory_arch(phys_addr_t base, phys_addr_t size,
+ 					     bool no_map);
+@@ -89,6 +90,7 @@ extern u64 fdt_translate_address(const void *blob, int node_offset);
+ extern void of_fdt_limit_memory(int limit);
+ #else /* CONFIG_OF_FLATTREE */
+ static inline void early_init_fdt_scan_reserved_mem(void) {}
++static inline void free_early_init_fdt_scan_reserved_mem(void) {}
+ static inline const char *of_flat_dt_get_machine_name(void) { return NULL; }
+ static inline void unflatten_device_tree(void) {}
+ static inline void unflatten_and_copy_device_tree(void) {}
+-- 
+2.1.0
