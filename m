@@ -1,203 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766AbaIPMgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 08:36:45 -0400
-Received: from smtp89.iad3a.emailsrvr.com ([173.203.187.89]:39837 "EHLO
-	smtp89.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752968AbaIPMgn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 08:36:43 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-Date: Tue, 16 Sep 2014 08:36:41 -0400 (EDT)
-Subject: Re: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
-From: kiran.padwal@smartplayin.com
-To: "Andy Gross" <agross@codeaurora.org>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        davidb@codeaurora.org, afaerber@suse.de, devicetree@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753918AbaIPMjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 08:39:47 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:4414 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206AbaIPMjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 08:39:45 -0400
+X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
+   d="scan'208";a="191229719"
+Message-ID: <54182F8B.8010302@Netapp.com>
+Date: Tue, 16 Sep 2014 08:39:39 -0400
+From: Anna Schumaker <Anna.Schumaker@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Importance: Normal
-X-Priority: 3 (Normal)
-X-Type: plain
-In-Reply-To: <20140916023922.GB2386@qualcomm.com>
-References: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com> 
- <20140916023922.GB2386@qualcomm.com>
-Message-ID: <1410871001.891126377@apps.rackspace.com>
-X-Mailer: webmail7.0
+To: NeilBrown <neilb@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>
+CC: <linux-fsdevel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jeff.layton@primarydata.com>
+Subject: Re: [PATCH 3/4] NFS: avoid deadlocks with loop-back mounted NFS filesystems.
+References: <20140916051911.22257.24658.stgit@notabene.brown> <20140916053135.22257.68002.stgit@notabene.brown>
+In-Reply-To: <20140916053135.22257.68002.stgit@notabene.brown>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09/16/2014 01:31 AM, NeilBrown wrote:
+> Support for loop-back mounted NFS filesystems is useful when NFS is
+> used to access shared storage in a high-availability cluster.
+>
+> If the node running the NFS server fails, some other node can mount the
+> filesystem and start providing NFS service.  If that node already had
+> the filesystem NFS mounted, it will now have it loop-back mounted.
+>
+> nfsd can suffer a deadlock when allocating memory and entering direct
+> reclaim.
+> While direct reclaim does not write to the NFS filesystem it can send
+> and wait for a COMMIT through nfs_release_page().
 
+Is there anything that can be done on the nfsd side to prevent the deadlocks?
 
-On Monday, September 15, 2014 10:39pm, "Andy Gross" <agross@codeaurora.org> said:
+Anna
 
-> On Tue, Aug 26, 2014 at 05:00:45PM +0530, Kiran Padwal wrote:
->> This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
->> It also adds necessary DT support for i2c eeprom which is present on
->> IFC6410.
->>
->> Tested on IFC6410 board.
-> 
-> Looks fine
-
-Thanks for review.
-
-> 
->>
->> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
->> ---
->> Changes since v2:
->>  - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
->>  - Removed labes of node.
->>  - Used canonical value as "okay" instead of "ok".
->>  - Used macros.
->>
->> Changes since v1:
->>  - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
->>  - Updated pinmux interrupt.
->>
->>  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
->>  arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
->>  2 files changed, 80 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> index 7c2441d..ef0857e 100644
->> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
->> @@ -5,6 +5,24 @@
->>  	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
->>
->>  	soc {
->> +		gsbi@12440000 {
->> +			status = "okay";
->> +			qcom,mode = <GSBI_PROT_I2C>;
->> +
->> +			i2c@12460000 {
->> +				status = "okay";
->> +				clock-frequency = <200000>;
->> +				pinctrl-0 = <&i2c1_pins>;
->> +				pinctrl-names = "default";
->> +
->> +				eeprom: eeprom@52 {
->> +					compatible = "atmel,24c128";
->> +					reg = <0x52>;
->> +					pagesize = <32>;
->> +				};
-> 
-> don't need read only here.  the eeprom is not being used by anything....
-> thankfully.
-> 
->> +			};
->> +		};
->> +
->>  		gsbi@16600000 {
->>  			status = "ok";
->>  			qcom,mode = <GSBI_PROT_I2C_UART>;
->> @@ -12,5 +30,14 @@
->>  				status = "ok";
->>  			};
->>  		};
->> +
->> +		pinmux@800000 {
->> +			i2c1_pins: i2c1 {
->> +				mux {
->> +					pins = "gpio20", "gpio21";
->> +					function = "gsbi1";
->> +				};
->> +			};
->> +		};
->>  	};
->>  };
->> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi
->> b/arch/arm/boot/dts/qcom-apq8064.dtsi
->> index 92bf793..5dddbf3 100644
->> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
->> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
->> @@ -89,6 +89,17 @@
->>  			cpu-offset = <0x80000>;
->>  		};
->>
->> +		tlmm_pinmux: pinmux@800000 {
->> +			compatible = "qcom,apq8064-pinctrl";
->> +			reg = <0x800000 0x4000>;
->> +
->> +			gpio-controller;
->> +			#gpio-cells = <2>;
->> +			interrupt-controller;
->> +			#interrupt-cells = <2>;
->> +			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
->> +		};
->> +
->>  		acc0: clock-controller@2088000 {
->>  			compatible = "qcom,kpss-acc-v1";
->>  			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
->> @@ -133,6 +144,48 @@
->>  			regulator;
->>  		};
->>
->> +		gsbi1: gsbi@12440000 {
->> +			status = "disabled";
->> +			compatible = "qcom,gsbi-v1.0.0";
->> +			reg = <0x12440000 0x100>;
->> +			clocks = <&gcc GSBI1_H_CLK>;
->> +			clock-names = "iface";
->> +			#address-cells = <1>;
->> +			#size-cells = <1>;
->> +			ranges;
->> +
->> +			i2c1: i2c@12460000 {
->> +				compatible = "qcom,i2c-qup-v1.1.1";
->> +				reg = <0x12460000 0x1000>;
->> +				interrupts = <0 194 IRQ_TYPE_NONE>;
->> +				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
->> +				clock-names = "core", "iface";
->> +				#address-cells = <1>;
->> +				#size-cells = <0>;
->> +			};
->> +		};
->> +
->> +		gsbi2: gsbi@12480000 {
->> +			status = "disabled";
->> +			compatible = "qcom,gsbi-v1.0.0";
->> +			reg = <0x12480000 0x100>;
->> +			clocks = <&gcc GSBI2_H_CLK>;
->> +			clock-names = "iface";
->> +			#address-cells = <1>;
->> +			#size-cells = <1>;
->> +			ranges;
->> +
->> +			i2c2: i2c@124a0000 {
->> +				compatible = "qcom,i2c-qup-v1.1.1";
->> +				reg = <0x124a0000 0x1000>;
->> +				interrupts = <0 196 IRQ_TYPE_NONE>;
->> +				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
->> +				clock-names = "core", "iface";
->> +				#address-cells = <1>;
->> +				#size-cells = <0>;
->> +			};
->> +		};
->> +
->>  		gsbi7: gsbi@16600000 {
->>  			status = "disabled";
->>  			compatible = "qcom,gsbi-v1.0.0";
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>
+> This patch modifies nfs_release_page() to wait a limited time for the
+> commit to complete - one second.  If the commit doesn't complete
+> in this time, nfs_release_page() will fail.  This means it might now
+> fail in some cases where it wouldn't before.  These cases are only
+> when 'gfp' includes '__GFP_WAIT'.
+>
+> nfs_release_page() is only called by try_to_release_page(), and that
+> can only be called on an NFS page with required 'gfp' flags from
+>  - page_cache_pipe_buf_steal() in splice.c
+>  - shrink_page_list() in vmscan.c
+>  - invalidate_inode_pages2_range() in truncate.c
+>
+> The first two handle failure quite safely.  The last is only called
+> after ->launder_page() has been called, and that will have waited
+> for the commit to finish already.
+>
+> So aborting if the commit takes longer than 1 second is perfectly safe.
+>
+> 1 second may be longer than is really necessary, but it is much
+> shorter than the current maximum wait, so this is not a regression.
+> Some waiting is needed to help slow down memory allocation to the
+> rate that we can complete writeout of pages.
+>
+> In those rare cases where it is nfsd, or something that nfsd is
+> waiting for, that is calling nfs_release_page(), this delay will at
+> most cause a small hic-cough in places where it currently deadlocks.
+>
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/nfs/file.c  |   24 ++++++++++++++----------
+>  fs/nfs/write.c |    2 ++
+>  2 files changed, 16 insertions(+), 10 deletions(-)
+>
+> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+> index 524dd80d1898..8d74983417af 100644
+> --- a/fs/nfs/file.c
+> +++ b/fs/nfs/file.c
+> @@ -468,17 +468,21 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
+>  
+>  	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
+>  
+> -	/* Only do I/O if gfp is a superset of GFP_KERNEL, and we're not
+> -	 * doing this memory reclaim for a fs-related allocation.
+> +	/* Always try to initiate a 'commit' if relevant, but only
+> +	 * wait for it if __GFP_WAIT is set and the calling process is
+> +	 * allowed to block.  Even then, only wait 1 second.  Waiting
+> +	 * indefinitely can cause deadlocks when the NFS server is on
+> +	 * this machine, and there is no particular need to wait
+> +	 * extensively here.  A short wait has the benefit that
+> +	 * someone else can worry about the freezer.
+>  	 */
+> -	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL &&
+> -	    !(current->flags & PF_FSTRANS)) {
+> -		int how = FLUSH_SYNC;
+> -
+> -		/* Don't let kswapd deadlock waiting for OOM RPC calls */
+> -		if (current_is_kswapd())
+> -			how = 0;
+> -		nfs_commit_inode(mapping->host, how);
+> +	if (mapping) {
+> +		nfs_commit_inode(mapping->host, 0);
+> +		if ((gfp & __GFP_WAIT) &&
+> +		    !current_is_kswapd() &&
+> +		    !(current->flags & PF_FSTRANS))
+> +			wait_on_page_bit_killable_timeout(page, PG_private,
+> +							  HZ);
+>  	}
+>  	/* If PagePrivate() is set, then the page is not freeable */
+>  	if (PagePrivate(page))
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index 175d5d073ccf..b5d83c7545d4 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -731,6 +731,8 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+>  		if (likely(!PageSwapCache(head->wb_page))) {
+>  			set_page_private(head->wb_page, 0);
+>  			ClearPagePrivate(head->wb_page);
+> +			smp_mb__after_atomic();
+> +			wake_up_page(head->wb_page, PG_private);
+>  			clear_bit(PG_MAPPED, &head->wb_flags);
+>  		}
+>  		nfsi->npages--;
+>
+>
 > --
-> sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
