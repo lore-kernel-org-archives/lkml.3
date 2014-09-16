@@ -1,183 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaIPRkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 13:40:45 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:43290 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614AbaIPRkn (ORCPT
+	id S1754761AbaIPRlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 13:41:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45466 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754214AbaIPRla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 13:40:43 -0400
+	Tue, 16 Sep 2014 13:41:30 -0400
+Date: Tue, 16 Sep 2014 10:41:12 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Frank.Li@freescale.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-spi@vger.kernel.org
+Message-ID: <20140916174112.GU7960@sirena.org.uk>
+References: <1410398324-15284-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <54187400.10506@osg.samsung.com>
-References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com>
- <1410820442-8774-2-git-send-email-shuahkh@osg.samsung.com>
- <1410883441.4630.9.camel@linux-t7sj.site> <54187400.10506@osg.samsung.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 16 Sep 2014 10:40:22 -0700
-Message-ID: <CALCETrUw21Bgd9N4wakP08OiFshxzPS6wBE6=Fd2K=k33RDgXA@mail.gmail.com>
-Subject: Re: [PATCH 1/7] selftests: add header file for test exit code defines
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Davidlohr Bueso <dave@stgolabs.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, colin.king@canonical.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>, thierry@linux.vnet.ibm.com,
-        felipensp@gmail.com, Linux API <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="saqwZB8dd8xoGD4q"
+Content-Disposition: inline
+In-Reply-To: <1410398324-15284-1-git-send-email-b38343@freescale.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v6] spi: spi-imx: add DMA support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 10:31 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
-> On 09/16/2014 10:04 AM, Davidlohr Bueso wrote:
->> On Mon, 2014-09-15 at 16:33 -0600, Shuah Khan wrote:
->>> Add a new header file that defines exit codes for individual
->>> tests to use to communicate test results. These defines are
->>> intended to provide a common and uniform way for selftests
->>> to report results. pass/fail/xfail/xpass/skip/unsupported
->>> are defined.
->>>
->>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->>> ---
->>>  tools/testing/selftests/kselftest.h | 20 ++++++++++++++++++++
->>>  1 file changed, 20 insertions(+)
->>>  create mode 100644 tools/testing/selftests/kselftest.h
->>>
->>> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
->>> new file mode 100644
->>> index 0000000..1b1c9cb
->>> --- /dev/null
->>> +++ b/tools/testing/selftests/kselftest.h
->>> @@ -0,0 +1,20 @@
->>> +/*
->>> + * kselftest.h - kselftest framework return codes to include from
->>> + *           selftests.
->>> + *
->>> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
->>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
->>> + *
->>> + * This file is released under the GPLv2.
->>> + */
->>> +#ifndef __KSELFTEST_H
->>> +#define __KSELFTEST_H
->>> +
->>> +#define     EXIT_PASS               0
->>> +#define     EXIT_FAIL               1
->>> +#define     EXIT_XFAIL              2
->>> +#define     EXIT_XPASS              3
->>> +#define     EXIT_SKIP               4
->>> +#define     EXIT_UNSUPPORTED        EXIT_SKIP
->>
->> Looks to me like a potential name clashes here.
->>
->> What's the difference between XFAIL/XPASS and regular FAIL/PASS (I don't
->> see the former used in patchset either, only PASS/FAIL)? What's the
->> purpose of EXIT_SKIP? I think overall these should be commented.
->
-> Yeah Comments would have been nice. :) I will add them.
->
->>
->> Also, in the bigger picture, I'm guessing you have a reason for not
->> recycling errno and inventing your own exit codes... How do you plan on
->> using these? In addition I'm seeing things like:
->>
->> -       exit(EXIT_FAILURE);
->> +       exit(EXIT_FAIL);
->>
->> which isn't a very good idea in general.
->
-> EXIT_FAILURE happens to have the same value as EXIT_FAIL. That said,
-> I do understand what you are saying. EXIT_FAILURE and EXIT_SUCCESS
-> are defined in stdlib.h - I would have liked to simply use them,
-> however that won't meet the needs. More on this below.
->
-> At the moment there is no clear way to tell why a test failed. Some
-> tests exit with -1, some exit 1, and some with errno. One of the
-> requests/requirements that was discussed at the kernel summit kselftest
-> session was to enhance tests to report why an individual test failed.
-> Returning and/or exiting with -1, 1 and errno doesn't tell the user
-> anything other than that the test failed. Even without this request, it
-> will helps us developers if we have a uniform reporting in place for
-> all tests to use.
->
-> We have two kinds of users for these tests.
->
-> 1. Developers that simply want to regression test their individual areas
->    These are the users that don't care about the categories of failures.
-> 2. Users that want to run them from their user-space test suites. These
->    users care to know why a test failed, not just that it failed.
->
-> errno is useful in pin-pointing the failure for a developer, however it
-> is not very useful for somebody that is running sanity checks. We need
-> both, hence I changed some of the tests in this series to print errno.
-> Several tests print errno in their error legs and there a few places
-> that don't.
->
-> In either case, it would be good to report if a test failed because
-> a modules it needs isn't configured or it just failed.
->
-> There is also a need to report the following cases in addition a simple
-> pass/fail:
->
-> pass - test passed
-> fail - it failed
-> xfail - a test that expected to fail failed as expected (this is really
-> a pass case)
-> xpass - a test that is expected to fail passed.
-> xskip or xunsupported - test couldn't run because of unmet dependencies.
->
-> These types of decisions on why test failed, can only be made in the
-> individual tests.
->
-> I picked the POSIX conforming test codes that are used by various user
-> space test suites. POSIX right, I can't go wrong :)
->
-> I also want to avoid adding some test framework in kernel tree, hence
-> I simply defined these in a header file. Another goal is to not make it
-> hard for developers write these tests and think too much about the
-> reporting. We need some way to report these and hence the need for a
-> common defines so tests can simply use them.
 
-I think we will want a framework in the tree, but it can be very
-minimal.  But I also think that using exit(2) for this is wrong.  Why
-not:
+--saqwZB8dd8xoGD4q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-enum ktest_result {
-  KTEST_PASS,
-  ...,
-};
+On Thu, Sep 11, 2014 at 09:18:44AM +0800, Robin Gong wrote:
+> Enable DMA support on i.mx6. The read speed can increase from 600KB/s
+> to 1.2MB/s on i.mx6q. You can disable or enable dma function in dts.
+> If not set "dma-names" in dts, spi will use PIO mode. This patch only
+> validate on i.mx6, not i.mx5, but encourage ones to apply this patch
+> on i.mx5 since they share the same IP.
 
-void ktest_exit(enum ktest_result result);
+Applied, thanks.
 
-With the possibility of further extensions for more than one test (and
-associated result) per execution of the test binary.
+--saqwZB8dd8xoGD4q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---Andy
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->
-> I am trying to balance the needs of the two types of users and also
-> do minimal changes to existing test with a light weight framework.
-> Hope this helps explain this patch series better.
->
-> I am open to suggestions as always.
->
-> thanks,
-> -- Shuah
->
->
-> --
-> Shuah Khan
-> Sr. Linux Kernel Developer
-> Samsung Research America (Silicon Valley)
-> shuahkh@osg.samsung.com | (970) 217-8978
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+iQEcBAEBAgAGBQJUGHY3AAoJECTWi3JdVIfQjyAH/idzcyENZCv5XYBmBARGjcLd
+VBO8sU5OieN4U5/bq2TyDzVW4vRP0BfBoQ2PQZec5N1UcYnWAsfjupzGC1yvGAqK
+mq9OAe4J5qihlwNLg+YNn9AHTGEcBJ+UKmJE+Y3KhS58wIGiLYq3YVfb9hyflVla
+6gQ9Wjmqc3uNtRvvr3sey8/19B+7i0Lr8vlUyBM751I7nVUZPOy26YoHsNc1QS82
+WgX7QcmB4WpUeUtQ4nxFrrq8jxi+dexrU5HHcuqOa+wqA8SNeQbdREdUekn5N+Mf
+IdI7X1I8KtOTpbFF9fF/eHT/h8PwInhuCvgBc76KNRAZOLGYFileVkn8pg9HcbU=
+=5iX7
+-----END PGP SIGNATURE-----
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--saqwZB8dd8xoGD4q--
