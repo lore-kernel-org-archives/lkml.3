@@ -1,225 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaIPUTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:19:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48306 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbaIPUTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:19:05 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Dave Gerlach <d-gerlach@ti.com>, Robert Tivy <rtivy@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv2 2/2] remoteproc: add support to handle internal memories
-Date: Tue, 16 Sep 2014 15:18:38 -0500
-Message-ID: <1410898718-10828-3-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410898718-10828-1-git-send-email-s-anna@ti.com>
-References: <1410898718-10828-1-git-send-email-s-anna@ti.com>
+	id S1755322AbaIPUTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:19:20 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:34507 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753936AbaIPUTQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:19:16 -0400
+Message-ID: <54189B3D.3040301@gmail.com>
+Date: Tue, 16 Sep 2014 23:19:09 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@kernel.org>, Nadav Amit <namit@cs.technion.ac.il>
+CC: pbonzini@redhat.com, hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 0/3] x86: structs for cpuid info in x86
+References: <1410870160-28845-1-git-send-email-namit@cs.technion.ac.il> <20140916132226.GA13726@gmail.com>
+In-Reply-To: <20140916132226.GA13726@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A remote processor may need to load certain firmware sections into
-internal memories (eg: RAM at L1 or L2 levels) for performance or
-other reasons. Introduce a new resource type (RSC_INTMEM) and add
-an associated handler function to handle such memories. The handler
-creates a kernel mapping for the resource's 'pa' (physical address).
 
-Note that no iommu mapping is performed for this resource, as the
-resource is primarily used to represent physical internal memories.
-If the internal memory region can only be accessed through an iommu,
-a devmem resource entry should be used instead.
 
-Signed-off-by: Robert Tivy <rtivy@ti.com>
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
-v2:
-- fixed a minor checkpatch warning
+On 9/16/14 4:22 PM, Ingo Molnar wrote:
+> 
+> * Nadav Amit <namit@cs.technion.ac.il> wrote:
+> 
+>> The code that deals with x86 cpuid fields is hard to follow since it performs
+>> many bit operations and does not refer to cpuid field explicitly.  To
+>> eliminate the need of openning a spec whenever dealing with cpuid fields, this
+>> patch-set introduces structs that reflect the various cpuid functions.
+>>
+>> Thanks for reviewing the patch-set.
+>>
+>> Nadav Amit (3):
+>>   x86: Adding structs to reflect cpuid fields
+>>   x86: Use new cpuid structs in cpuid functions
+>>   KVM: x86: Using cpuid structs in KVM
+>>
+>>  arch/x86/include/asm/cpuid_def.h | 163 +++++++++++++++++++++++++++++++++++++++
+>>  arch/x86/kernel/cpu/common.c     |  56 ++++++++------
+>>  arch/x86/kvm/cpuid.c             |  36 +++++----
+>>  3 files changed, 219 insertions(+), 36 deletions(-)
+>>  create mode 100644 arch/x86/include/asm/cpuid_def.h
+> 
+> I personally like bitfields in theory (they provide type clarity 
+> and abstract robustness, compared to open-coded bitmask numeric 
+> literals that are often used in cpuid using code, obfuscating 
+> cpuid usage), with the big caveat that for many years I didn't 
+> like bitfields in practice: older versions of GCC did a really 
+> poor job of optimizing them.
+> 
+> So such a series would only be acceptable if it's demonstrated 
+> that both 'latest' and 'reasonably old' GCC versions do a good 
+> job in that department, compared to the old open-coded bitmask 
+> ops ...
+> 
+> Comparing the 'size vmlinux' output of before/after kernels would 
+> probably be a good start in seeing the impact of such a change.
+> 
+> If those results are positive then this technique could be 
+> propagated to all cpuid using code in arch/x86/, of which
+> there's plenty.
 
- drivers/remoteproc/remoteproc_core.c | 83 +++++++++++++++++++++++++++++++++++-
- include/linux/remoteproc.h           | 43 ++++++++++++++++++-
- 2 files changed, 124 insertions(+), 2 deletions(-)
+Thanks for the quick response. I was not aware GCC behaves this way. I
+made some small experiments with GCC-4.8 and GCC-4.4 and in brief my
+conclusions are:
+1. The assembled code of bitmask and bitfields is indeed different.
+2. GCC-4.8 and GCC-4.4 behave pretty much the same, yet GCC-4.8 appears
+to make better instructions reordering.
+3. Loading/storing a single bitfield seems to be pretty much optimized
+(marginal advantage from code size point-of-view for bitmask, same
+number of instructions).
+4. Loading/storing multiple bitfields seems to be somewhat
+under-optimized - multiple accesses to the original value result in ~30%
+more instructions and code-size.
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 11cdb11..1d668e5 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -664,6 +664,82 @@ free_carv:
- 	return ret;
- }
- 
-+/**
-+ * rproc_handle_intmem() - handle internal memory resource entry
-+ * @rproc: rproc handle
-+ * @rsc: the intmem resource entry
-+ * @offset: offset of the resource data in resource table
-+ * @avail: size of available data (for image validation)
-+ *
-+ * This function will handle firmware requests for mapping a memory region
-+ * internal to a remote processor into kernel. It neither allocates any
-+ * physical pages, nor performs any iommu mapping, as this resource entry
-+ * is primarily used for representing physical internal memories. If the
-+ * internal memory region can only be accessed through an iommu, please
-+ * use a devmem resource entry.
-+ *
-+ * These resource entries should be grouped near the carveout entries in
-+ * the firmware's resource table, as other firmware entries might request
-+ * placing other data objects inside these memory regions (e.g. data/code
-+ * segments, trace resource entries, ...).
-+ */
-+static int rproc_handle_intmem(struct rproc *rproc, struct fw_rsc_intmem *rsc,
-+			       int offset, int avail)
-+{
-+	struct rproc_mem_entry *intmem;
-+	struct device *dev = &rproc->dev;
-+	void *va;
-+	int ret;
-+
-+	if (sizeof(*rsc) > avail) {
-+		dev_err(dev, "intmem rsc is truncated\n");
-+		return -EINVAL;
-+	}
-+
-+	if (rsc->version != 1) {
-+		dev_err(dev, "intmem rsc version %d is not supported\n",
-+			rsc->version);
-+		return -EINVAL;
-+	}
-+
-+	if (rsc->reserved) {
-+		dev_err(dev, "intmem rsc has non zero reserved bytes\n");
-+		return -EINVAL;
-+	}
-+
-+	dev_dbg(dev, "intmem rsc: da 0x%x, pa 0x%x, len 0x%x\n",
-+		rsc->da, rsc->pa, rsc->len);
-+
-+	intmem = kzalloc(sizeof(*intmem), GFP_KERNEL);
-+	if (!intmem)
-+		return -ENOMEM;
-+
-+	va = (__force void *)ioremap_nocache(rsc->pa, rsc->len);
-+	if (!va) {
-+		dev_err(dev, "ioremap_nocache err: %d\n", rsc->len);
-+		ret = -ENOMEM;
-+		goto free_intmem;
-+	}
-+
-+	dev_dbg(dev, "intmem mapped pa 0x%x of len 0x%x into kernel va %p\n",
-+		rsc->pa, rsc->len, va);
-+
-+	intmem->va = va;
-+	intmem->len = rsc->len;
-+	intmem->dma = rsc->pa;
-+	intmem->da = rsc->da;
-+	intmem->priv = (void *)1;    /* prevents freeing */
-+
-+	/* reuse the rproc->carveouts list, so that loading is automatic */
-+	list_add_tail(&intmem->node, &rproc->carveouts);
-+
-+	return 0;
-+
-+free_intmem:
-+	kfree(intmem);
-+	return ret;
-+}
-+
- static int rproc_count_vrings(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 			      int offset, int avail)
- {
-@@ -681,6 +757,7 @@ static rproc_handle_resource_t rproc_loading_handlers[RSC_LAST] = {
- 	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
- 	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
- 	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
-+	[RSC_INTMEM] = (rproc_handle_resource_t)rproc_handle_intmem,
- 	[RSC_VDEV] = NULL, /* VDEVs were handled upon registrarion */
- };
- 
-@@ -768,7 +845,11 @@ static void rproc_resource_cleanup(struct rproc *rproc)
- 
- 	/* clean up carveout allocations */
- 	list_for_each_entry_safe(entry, tmp, &rproc->carveouts, node) {
--		dma_free_coherent(dev->parent, entry->len, entry->va, entry->dma);
-+		if (!entry->priv)
-+			dma_free_coherent(dev->parent, entry->len, entry->va,
-+					  entry->dma);
-+		else
-+			iounmap((__force void __iomem *)entry->va);
- 		list_del(&entry->node);
- 		kfree(entry);
- 	}
-diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
-index 78b8a9b..2a25ee8 100644
---- a/include/linux/remoteproc.h
-+++ b/include/linux/remoteproc.h
-@@ -100,6 +100,7 @@ struct fw_rsc_hdr {
-  *		    the remote processor will be writing logs.
-  * @RSC_VDEV:       declare support for a virtio device, and serve as its
-  *		    virtio header.
-+ * @RSC_INTMEM:     request to map into kernel an internal memory region.
-  * @RSC_LAST:       just keep this one at the end
-  *
-  * For more details regarding a specific resource type, please see its
-@@ -115,7 +116,8 @@ enum fw_resource_type {
- 	RSC_DEVMEM	= 1,
- 	RSC_TRACE	= 2,
- 	RSC_VDEV	= 3,
--	RSC_LAST	= 4,
-+	RSC_INTMEM	= 4,
-+	RSC_LAST	= 5,
- };
- 
- #define FW_RSC_ADDR_ANY (0xFFFFFFFFFFFFFFFF)
-@@ -306,6 +308,45 @@ struct fw_rsc_vdev {
- } __packed;
- 
- /**
-+ * struct fw_rsc_intmem - internal memory publishing request
-+ * @version: version for this resource type (must be one)
-+ * @da: device address
-+ * @pa: physical address
-+ * @len: length (in bytes)
-+ * @reserved: reserved (must be zero)
-+ * @name: human-readable name of the region being published
-+ *
-+ * This resource entry allows a remote processor to publish an internal
-+ * memory region to the host. This resource type allows a remote processor
-+ * to publish the whole or just a portion of certain internal memories,
-+ * while it owns and manages any unpublished portion (eg: a shared L1
-+ * memory that can be split configured as RAM and/or cache). This is
-+ * primarily provided to allow a host to load code/data into internal
-+ * memories, the memory for which is neither allocated nor required to
-+ * be mapped into an iommu.
-+ *
-+ * @da should specify the required address as accessible by the device
-+ * without going through an iommu, @pa should specify the physical address
-+ * for the region as seen on the bus, @len should specify the size of the
-+ * memory region. As always, @name may (optionally) contain a human readable
-+ * name of this mapping (mainly for debugging purposes). The @version field
-+ * is added for future scalability, and should be 1 for now.
-+ *
-+ * Note: at this point we just "trust" these intmem entries to contain valid
-+ * physical bus addresses. these are not currently intended to be managed
-+ * as host-controlled heaps, as it is much better to do that from the remote
-+ * processor side.
-+ */
-+struct fw_rsc_intmem {
-+	u32 version;
-+	u32 da;
-+	u32 pa;
-+	u32 len;
-+	u32 reserved;
-+	u8 name[32];
-+} __packed;
-+
-+/**
-  * struct rproc_mem_entry - memory entry descriptor
-  * @va:	virtual address
-  * @dma: dma address
--- 
-2.0.4
+So you are correct - bitfields are less optimized. Nonetheless, since
+cpuid data is mostly used during startup, and otherwise a single
+bitfield is usually accessed in each function - I wonder whether it
+worth keeping the optimized but "obfuscate" code. Obviously, I can guess
+your answer to this question...
 
+Nadav
