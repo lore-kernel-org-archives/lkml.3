@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584AbaIPUyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:54:40 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:57006 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbaIPUwR (ORCPT
+	id S1755403AbaIPUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:54:57 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58390 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755596AbaIPUyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:52:17 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "Igor M. Liplianin" <liplianin@netup.ru>
-Subject: [PATCH 16/22] altera-stapl: Replace strnicmp with strncasecmp
-Date: Tue, 16 Sep 2014 22:51:30 +0200
-Message-Id: <1410900696-6481-17-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
+	Tue, 16 Sep 2014 16:54:55 -0400
+Date: Tue, 16 Sep 2014 16:54:52 -0400 (EDT)
+Message-Id: <20140916.165452.1747695341192703967.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, luto@amacapital.net,
+        dborkman@redhat.com, hannes@stressinduktion.org, chema@google.com,
+        edumazet@google.com, a.p.zijlstra@chello.nl, pablo@netfilter.org,
+        hpa@zytor.com, akpm@linux-foundation.org, keescook@chromium.org,
+        linux-api@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v12 net-next 03/11] bpf: add
+ lookup/update/delete/iterate methods to BPF maps
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
+References: <1410808721-27493-4-git-send-email-ast@plumgrid.com>
+	<20140916.151606.448751391205382097.davem@davemloft.net>
+	<CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 16 Sep 2014 13:54:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel used to contain two functions for length-delimited,
-case-insensitive string comparison, strnicmp with correct semantics
-and a slightly buggy strncasecmp. The latter is the POSIX name, so
-strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
-for the new strncasecmp to avoid breaking existing users.
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Tue, 16 Sep 2014 13:44:12 -0700
 
-To allow the compat wrapper strnicmp to be removed at some point in
-the future, and to avoid the extra indirection cost, do
-s/strnicmp/strncasecmp/g.
+> the union indeed changes alignment from patch #1 to #3,
+> but, imo, it is not a problem, since kernel does:
 
-Cc: "Igor M. Liplianin" <liplianin@netup.ru>
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- drivers/misc/altera-stapl/altera.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+It changes the alignment of the datastructures in userspace.
 
-diff --git a/drivers/misc/altera-stapl/altera.c b/drivers/misc/altera-stapl/altera.c
-index 24272e0..bca2630 100644
---- a/drivers/misc/altera-stapl/altera.c
-+++ b/drivers/misc/altera-stapl/altera.c
-@@ -454,7 +454,7 @@ exit_done:
- 
- 				name = &p[str_table + name_id];
- 
--				if (strnicmp(aconf->action, name, strlen(name)) == 0) {
-+				if (strncasecmp(aconf->action, name, strlen(name)) == 0) {
- 					action_found = 1;
- 					current_proc =
- 						get_unaligned_be32(&p[action_table +
-@@ -2176,7 +2176,7 @@ static int altera_get_note(u8 *p, s32 program_size,
- 			key_ptr = &p[note_strings +
- 					get_unaligned_be32(
- 					&p[note_table + (8 * i)])];
--			if ((strnicmp(key, key_ptr, strlen(key_ptr)) == 0) &&
-+			if ((strncasecmp(key, key_ptr, strlen(key_ptr)) == 0) &&
- 						(key != NULL)) {
- 				status = 0;
- 
--- 
-2.0.4
+> I haven't thought of 'aligned_u64' for this case.
+> For counters and masks it would be perfect, but here user is
+> passing real pointers to key and value, so they have to
+> be 'void __user *', otherwise user would need to type cast
+> them, which I want to avoid.
 
+The cost of the compat layer must be considered and weighted
+against this cast, which I think is really no big deal.
+
+> I think compat layer is a better option.
+
+It's overhead you'll have to support forever, I think you should
+reconsider.
+
+All of the "ugly casting" will be hidden, or can be hidden, in the
+syscall wrappers and/or interfaces in userspace.
