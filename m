@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969AbaIPApD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:45:03 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:36320
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752731AbaIPApA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:45:00 -0400
-From: "Mandic, Andrew" <AMandic@stanfordchildrens.org>
-To: "Mandic, Andrew" <AMandic@stanfordchildrens.org>
-Subject: RE: 
-Thread-Index: Ac/REQ2AxRBVvyB/TnKTGG9D/j0p+QANWHOF
-Date: Tue, 16 Sep 2014 00:44:26 +0000
-Message-ID: <AB37FB01B00BF44E85C75F6CFEC35E7D473ED63B@LPPTCPMXMBX01.LPCH.NET>
-References: <AB37FB01B00BF44E85C75F6CFEC35E7D47324643@LPPTCPMXMBX01.LPCH.NET>
-In-Reply-To: <AB37FB01B00BF44E85C75F6CFEC35E7D47324643@LPPTCPMXMBX01.LPCH.NET>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.230.3.243]
-x-ems-proccessed: PgmtXYjPx41cY+Wm2rTAhw==
-x-ems-stamp: MX300XBDT7QsWW1L5L+1kw==
-Content-Type: text/plain; charset=US-ASCII
+	id S1757875AbaIPArw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:47:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:57973 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455AbaIPAru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:47:50 -0400
+Date: Tue, 16 Sep 2014 10:47:49 +1000
+From: Anton Blanchard <anton@samba.org>
+To: benh@kernel.crashing.org, paulus@samba.org, michael@ellerman.id.au,
+        torvalds@linux-foundation.org
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] powerpc: Add POWER8 CPU selection
+Message-ID: <20140916104749.35b84da8@kryten>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:160.109.123.155;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(428002)(85714005)(377454003)(199003)(189002)(15202345003)(45126002)(50466002)(90102001)(84676001)(85306004)(63266004)(110136001)(46102001)(107886001)(77982001)(76482001)(107046002)(79102001)(55846006)(2656002)(97736003)(33656002)(95666004)(15975445006)(81542001)(99396002)(81342001)(68736004)(83322001)(69596002)(44976005)(64706001)(19580395003)(6806004)(23756003)(21056001)(80022001)(221173001)(20776003)(47776003)(101416001)(104016003)(50986999)(105586002)(76176999)(106466001)(54356999)(92726001)(92566001)(87936001)(575854001)(74502001)(74662001)(85852003)(83072002)(31966008)(86362001)(4396001)(81156004)(119396001)(231573001)(588654002)(575514002)(80792004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR06MB310;H:lpchp-ironport1.lpch.org;FPR:;MLV:nov;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=none (sender IP is 160.109.123.155)
- smtp.mailfrom=AMandic@stanfordchildrens.org; 
-X-OriginatorOrg: stanfordchildrens.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This allows the user to build a kernel targeted at POWER8
+(ie gcc -mcpu=power8).
 
-________________________________
-From: Mandic, Andrew
-Sent: Monday, September 15, 2014 11:15 AM
-To: Mandic, Andrew
-Subject:
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
 
-
-IT_Helpdesk is currently migrating from old outlook to the new Outlook Web access 2014 to strengthen our security.  You need to update your account immediately for activation. Click the website below for activation:
-
-Click Here<http://www.electro-univers.ro/matei/-ee43/owa/index.htm>
-
-You will not be able to send or receive mail if activation is not complete.
-
-IT Message Center.
-
-CONFIDENTIALITY NOTICE: This communication and any attachments may contain confidential or privileged information for the use by the designated recipient(s) named above.   If you are not the intended recipient, you are hereby notified that you have received this communication in error and that any review, disclosure, dissemination, distribution or copying of it or the attachments is strictly prohibited.  If you have received this communication in error, please contact the sender  and destroy all copies of the communication and attachments.  Thank you. MSG:104-123
-
+Index: b/arch/powerpc/Makefile
+===================================================================
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -135,6 +135,7 @@ CFLAGS-$(CONFIG_POWER4_CPU) += $(call cc
+ CFLAGS-$(CONFIG_POWER5_CPU) += $(call cc-option,-mcpu=power5)
+ CFLAGS-$(CONFIG_POWER6_CPU) += $(call cc-option,-mcpu=power6)
+ CFLAGS-$(CONFIG_POWER7_CPU) += $(call cc-option,-mcpu=power7)
++CFLAGS-$(CONFIG_POWER8_CPU) += $(call cc-option,-mcpu=power8)
+ 
+ # Altivec option not allowed with e500mc64 in GCC.
+ ifeq ($(CONFIG_ALTIVEC),y)
+Index: b/arch/powerpc/platforms/Kconfig.cputype
+===================================================================
+--- a/arch/powerpc/platforms/Kconfig.cputype
++++ b/arch/powerpc/platforms/Kconfig.cputype
+@@ -117,6 +117,10 @@ config POWER7_CPU
+ 	bool "POWER7"
+ 	depends on PPC_BOOK3S_64
+ 
++config POWER8_CPU
++	bool "POWER8"
++	depends on PPC_BOOK3S_64
++
+ config E5500_CPU
+ 	bool "Freescale e5500"
+ 	depends on E500
