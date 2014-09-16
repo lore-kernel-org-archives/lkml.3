@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388AbaIPBg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:36:26 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34807 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754752AbaIPBgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:36:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <541793BF.7070106@jp.fujitsu.com>
-Date: Tue, 16 Sep 2014 10:34:55 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1757297AbaIPBiH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:38:07 -0400
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:3459 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754584AbaIPBiF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 21:38:05 -0400
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Will Deacon'" <will.deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-msm@vger.kernel.org'" <linux-arm-msm@vger.kernel.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Date: Tue, 16 Sep 2014 09:34:49 +0800
+Subject: [RFC v3] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Thread-Topic: [RFC v3] arm:extend the reserved mrmory for initrd to be page
+ aligned
+Thread-Index: Ac/RTmegzKLfxnudTH+lcS457OIJMg==
+Message-ID: <35FD53F367049845BC99AC72306C23D103D6DB49160A@CNBJMBX05.corpusers.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>,
-        Vladimir Davydov <vdavydov@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Konstantin Khorenko <khorenko@parallels.com>,
-        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] memory cgroup: my thoughts on memsw
-References: <20140904143055.GA20099@esperanza> <20140915191435.GA8950@cmpxchg.org>
-In-Reply-To: <20140915191435.GA8950@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/09/16 4:14), Johannes Weiner wrote:
-> Hi Vladimir,
->
-> On Thu, Sep 04, 2014 at 06:30:55PM +0400, Vladimir Davydov wrote:
->> To sum it up, the current mem + memsw configuration scheme doesn't allow
->> us to limit swap usage if we want to partition the system dynamically
->> using soft limits. Actually, it also looks rather confusing to me. We
->> have mem limit and mem+swap limit. I bet that from the first glance, an
->> average admin will think it's possible to limit swap usage by setting
->> the limits so that the difference between memory.memsw.limit and
->> memory.limit equals the maximal swap usage, but (surprise!) it isn't
->> really so. It holds if there's no global memory pressure, but otherwise
->> swap usage is only limited by memory.memsw.limit! IMHO, it isn't
->> something obvious.
->
-> Agreed, memory+swap accounting & limiting is broken.
->
->>   - Anon memory is handled by the user application, while file caches are
->>     all on the kernel. That means the application will *definitely* die
->>     w/o anon memory. W/o file caches it usually can survive, but the more
->>     caches it has the better it feels.
->>
->>   - Anon memory is not that easy to reclaim. Swap out is a really slow
->>     process, because data are usually read/written w/o any specific
->>     order. Dropping file caches is much easier. Typically we have lots of
->>     clean pages there.
->>
->>   - Swap space is limited. And today, it's OK to have TBs of RAM and only
->>     several GBs of swap. Customers simply don't want to waste their disk
->>     space on that.
->
->> Finally, my understanding (may be crazy!) how the things should be
->> configured. Just like now, there should be mem_cgroup->res accounting
->> and limiting total user memory (cache+anon) usage for processes inside
->> cgroups. This is where there's nothing to do. However, mem_cgroup->memsw
->> should be reworked to account *only* memory that may be swapped out plus
->> memory that has been swapped out (i.e. swap usage).
->
-> But anon pages are not a resource, they are a swap space liability.
-> Think of virtual memory vs. physical pages - the use of one does not
-> necessarily result in the use of the other.  Without memory pressure,
-> anonymous pages do not consume swap space.
->
-> What we *should* be accounting and limiting here is the actual finite
-> resource: swap space.  Whenever we try to swap a page, its owner
-> should be charged for the swap space - or the swapout be rejected.
->
-> For hard limit reclaim, the semantics of a swap space limit would be
-> fairly obvious, because it's clear who the offender is.
->
-> However, in an overcommitted machine, the amount of swap space used by
-> a particular group depends just as much on the behavior of the other
-> groups in the system, so the per-group swap limit should be enforced
-> even during global reclaim to feed back pressure on whoever is causing
-> the swapout.  If reclaim fails, the global OOM killer triggers, which
-> should then off the group with the biggest soft limit excess.
->
-> As far as implementation goes, it should be doable to try-charge from
-> add_to_swap() and keep the uncharging in swap_entry_free().
->
-> We'll also have to extend the global OOM killer to be memcg-aware, but
-> we've been meaning to do that anyway.
->
+this patch extend the start and end address of initrd to be page aligned,
+so that we can free all memory including the un-page aligned head or tail
+page of initrd, if the start or end address of initrd are not page
+aligned, the page can't be freed by free_initrd_mem() function.
 
-When we introduced memsw limitation, we tried to avoid affecting global memory reclaim.
-Then, we did memory+swap limitation.
+Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+---
+ arch/arm/mm/init.c   | 5 +++++
+ arch/arm64/mm/init.c | 8 +++++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
 
-Now, global memory reclaim is memcg-aware. So, I think swap-limitation rather than
-anon+swap may be a choice. The change will reduce res_counter access. Hmm, it will be
-desireble to move anon pages to Unevictable if memcg's swap slot is 0.
-
-Anyway, I think softlimit should be re-implemented, 1st. It will be starting point.
-
-Thanks,
--Kame
-
-
-
-
-
-
+diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+index 659c75d..9221645 100644
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -636,6 +636,11 @@ static int keep_initrd;
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+ 	if (!keep_initrd) {
++		if (start == initrd_start)
++			start = round_down(start, PAGE_SIZE);
++		if (end == initrd_end)
++			end = round_up(end, PAGE_SIZE);
++
+ 		poison_init_mem((void *)start, PAGE_ALIGN(end) - start);
+ 		free_reserved_area((void *)start, (void *)end, -1, "initrd");
+ 	}
+diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
+index 5472c24..c5512f6 100644
+--- a/arch/arm64/mm/init.c
++++ b/arch/arm64/mm/init.c
+@@ -334,8 +334,14 @@ static int keep_initrd;
+ 
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	if (!keep_initrd)
++	if (!keep_initrd) {
++		if (start == initrd_start)
++			start = round_down(start, PAGE_SIZE);
++		if (end == initrd_end)
++			end = round_up(end, PAGE_SIZE);
++
+ 		free_reserved_area((void *)start, (void *)end, 0, "initrd");
++	}
+ }
+ 
+ static int __init keepinitrd_setup(char *__unused)
+-- 
+2.1.0
