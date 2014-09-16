@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183AbaIPTUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:20:42 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:56958 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928AbaIPTUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:20:40 -0400
-From: Heiko Stuebner <heiko@sntech.de>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, Heiko Stuebner <heiko@sntech.de>
-Subject: [PATCH v3 1/3] dt-bindings: add devicetree bindings for Fairchild FAN53555 regulators
-Date: Tue, 16 Sep 2014 21:22:52 +0200
-Message-Id: <1410895374-18367-2-git-send-email-heiko@sntech.de>
-X-Mailer: git-send-email 2.0.1
-In-Reply-To: <1410895374-18367-1-git-send-email-heiko@sntech.de>
-References: <1410895374-18367-1-git-send-email-heiko@sntech.de>
+	id S1754891AbaIPTY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:24:59 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40102 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaIPTY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:24:57 -0400
+Date: Tue, 16 Sep 2014 21:24:46 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
+Message-ID: <20140916192446.GK3755@pengutronix.de>
+References: <cover.1410632834.git.joe@perches.com>
+ <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+ <20140915155656.GA29744@arm.com>
+ <20140916160759.GJ12361@n2100.arm.linux.org.uk>
+ <1410884281.16519.2.camel@joe-AO725>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410884281.16519.2.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the regulator and add a fairchild vendor-prefix.
+Hi Joe,
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- .../devicetree/bindings/regulator/fan53555.txt     | 23 ++++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |  1 +
- 2 files changed, 24 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/fan53555.txt
+On Tue, Sep 16, 2014 at 09:18:01AM -0700, Joe Perches wrote:
+> On Tue, 2014-09-16 at 17:07 +0100, Russell King - ARM Linux wrote:
+> > any chance you could add a KernelVersion: tag somewhere in the
+> > commit message and throw it at patches@arm.linux.org.uk so it doesn't
+> > get lost?
+> 
+> There are no commit logs with a KernelVersion: tag
+> in all of git history.
+> 
+> What do you think a KernelVersion: tag is and what
+> would it be used for?
+That's used in Russell's patch tracker, but the resulting commit doesn't
+have the KernelVersion tag.
 
-diff --git a/Documentation/devicetree/bindings/regulator/fan53555.txt b/Documentation/devicetree/bindings/regulator/fan53555.txt
-new file mode 100644
-index 0000000..8a51924
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/fan53555.txt
-@@ -0,0 +1,23 @@
-+Binding for Fairchild FAN53555 regulators
-+
-+Required properties:
-+  - compatible: "fcs,fan53555"
-+  - reg: I2C address
-+
-+Optional properties:
-+  - fcs,suspend-voltage-selector: declare which of the two available
-+		voltage selector registers should be used for the suspend
-+		voltage. The other one is used for the runtime voltage setting
-+		Possible values are either <0> or <1>
-+  - vin-supply: regulator supplying the vin pin
-+
-+Example:
-+
-+	regulator@40 {
-+		compatible = "fcs,fan53555";
-+		regulator-name = "fan53555";
-+		regulator-min-microvolt = <1000000>;
-+		regulator-max-microvolt = <1800000>;
-+		vin-supply = <&parent_reg>;
-+		fcs,suspend-voltage-selector = <1>;
-+	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index ac7269f..24b92b3 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -49,6 +49,7 @@ epson	Seiko Epson Corp.
- est	ESTeem Wireless Modems
- eukrea  EukrÃ©a Electromatique
- excito	Excito
-+fcs	Fairchild Semiconductor
- fsl	Freescale Semiconductor
- GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
- gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+See http://www.arm.linux.org.uk/developer/patches/info.php for the
+details.
+
+Best regards
+Uwe
+
 -- 
-2.0.1
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
