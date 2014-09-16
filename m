@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaIPNsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:48:08 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:33919 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaIPNsG (ORCPT
+	id S1754159AbaIPNwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:52:03 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:39414 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817AbaIPNwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 09:48:06 -0400
+	Tue, 16 Sep 2014 09:52:01 -0400
+Message-ID: <54184078.4070505@redhat.com>
+Date: Tue, 16 Sep 2014 15:51:52 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-X-Originating-IP: [95.23.61.81]
-In-Reply-To: <1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
-References: <1409216559-22402-1-git-send-email-cw00.choi@samsung.com>
-	<1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
-Date: Tue, 16 Sep 2014 15:48:02 +0200
-Message-ID: <CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
-Subject: Re: [PATCHv3 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>, akpm@linux-foundation.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+In-Reply-To: <1410811885-17267-1-git-send-email-andreslc@google.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chanwoo,
+Il 15/09/2014 22:11, Andres Lagar-Cavilla ha scritto:
+> +	if (!locked) {
+> +		BUG_ON(npages != -EBUSY);
 
-On Thu, Aug 28, 2014 at 11:02 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch add support for RTC of Exynos3250 SoC. The Exynos3250 needs source
-> clock(32.768KHz) for RTC block. If source clock of RTC is registerd on clock
-> list of common clk framework, Exynos RTC drvier have to control this clock.
->
-> Clock list for s3c-rtc device:
-> - rtc : CLK_RTC of CLK_GATE_IP_PERIR is gate clock for RTC.
-> - rtc_src : XrtcXTI is 32.768.kHz source clock for RTC.
+VM_BUG_ON perhaps?
 
-Is this RTC source clock needed for all Exynos SoCs?
+> @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+>  		npages = get_user_page_nowait(current, current->mm,
+>  					      addr, write_fault, page);
+>  		up_read(&current->mm->mmap_sem);
+> -	} else
+> -		npages = get_user_pages_fast(addr, 1, write_fault,
+> -					     page);
+> +	} else {
+> +		/*
+> +		 * By now we have tried gup_fast, and possible async_pf, and we
+> +		 * are certainly not atomic. Time to retry the gup, allowing
+> +		 * mmap semaphore to be relinquished in the case of IO.
+> +		 */
+> +		npages = kvm_get_user_page_retry(current, current->mm, addr,
+> +						 write_fault, page);
 
-> @@ -480,11 +530,19 @@ static int s3c_rtc_probe(struct platform_device *pdev)
->
->         info->rtc_clk = devm_clk_get(&pdev->dev, "rtc");
->         if (IS_ERR(info->rtc_clk)) {
-> -               dev_err(&pdev->dev, "failed to find rtc clock source\n");
-> +               dev_err(&pdev->dev, "failed to find rtc clock\n");
->                 return PTR_ERR(info->rtc_clk);
->         }
->         clk_prepare_enable(info->rtc_clk);
->
-> +       info->rtc_src_clk = devm_clk_get(&pdev->dev, "rtc_src");
-> +       if (IS_ERR(info->rtc_src_clk)) {
-> +               dev_err(&pdev->dev, "failed to find rtc source clock\n");
-> +               return PTR_ERR(info->rtc_src_clk);
+This is a separate logical change.  Was this:
 
-On an Exynos5420 Peach Pit machine I'm having the following error and
-the driver fails to probe:
+	down_read(&mm->mmap_sem);
+	npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
+	up_read(&mm->mmap_sem);
 
-[    2.095700] s3c-rtc: probe of 101e0000.rtc failed with error -2
+the intention rather than get_user_pages_fast?
 
-Reverting this patch fixes the issue and the s3c RTC works again on
-this machine.
+I think a first patch should introduce kvm_get_user_page_retry ("Retry a
+fault after a gup with FOLL_NOWAIT.") and the second would add
+FOLL_TRIED ("This properly relinquishes mmap semaphore if the
+filemap/swap has to wait on page lock (and retries the gup to completion
+after that").
 
-Best regards,
-Javier
+Apart from this, the patch looks good.  The mm/ parts are minimal, so I
+think it's best to merge it through the KVM tree with someone's Acked-by.
+
+Paolo
