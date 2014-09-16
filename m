@@ -1,168 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaIPTd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:33:27 -0400
-Received: from mail-bl2on0128.outbound.protection.outlook.com ([65.55.169.128]:44128
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754788AbaIPTdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:33:25 -0400
-Date: Tue, 16 Sep 2014 14:28:06 -0500
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: "J. German Rivera" <German.Rivera@freescale.com>,
-        <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <stuart.yoder@freescale.com>,
-        <agraf@suse.de>, <linuxppc-release@linux.freescale.net>
-Subject: Re: [PATCH 1/4] drivers/bus: Added Freescale Management Complex
- APIs
-Message-ID: <20140916142806.f255250be8df08c56241580f@freescale.com>
-In-Reply-To: <1410841881.24184.499.camel@snotra.buserror.net>
-References: <1410456864-27890-1-git-send-email-German.Rivera@freescale.com>
-	<1410456864-27890-2-git-send-email-German.Rivera@freescale.com>
-	<20140915184451.962a3a19c4940792d182f10a@freescale.com>
-	<1410841881.24184.499.camel@snotra.buserror.net>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	id S1755228AbaIPTfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:35:19 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54054 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755178AbaIPTfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:35:13 -0400
+Date: Tue, 16 Sep 2014 12:35:08 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Davidlohr Bueso <dave@stgolabs.net>, peterz@infradead.org,
+        mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <dbueso@suse.de>
+Subject: Re: [PATCH 2/9] locktorture: Add documentation
+Message-ID: <20140916193507.GN4723@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
+ <1410493224-3312-3-git-send-email-dave@stgolabs.net>
+ <5413997B.40301@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(51404002)(51704005)(24454002)(164054003)(377424004)(199003)(77156001)(88136002)(23726002)(84676001)(87936001)(89996001)(90102001)(46406003)(50226001)(4396001)(81542003)(81342003)(87286001)(62966002)(79102003)(46102003)(95666004)(77982003)(74502003)(80022003)(85852003)(83072002)(74662003)(86362001)(93886004)(99396002)(102836001)(92726001)(105606002)(100306002)(93916002)(97736003)(92566001)(106466001)(33646002)(68736004)(50466002)(104166001)(50986999)(104016003)(76176999)(85306004)(107046002)(76482001)(47776003)(26826002)(31966008)(21056001)(36756003)(20776003)(83322001)(19580405001)(6806004)(44976005)(19580395003)(64706001)(110136001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB321;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5413997B.40301@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091619-1542-0000-0000-000004DBDE00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Sep 2014 23:31:21 -0500
-Scott Wood <scottwood@freescale.com> wrote:
+On Fri, Sep 12, 2014 at 06:10:19PM -0700, Randy Dunlap wrote:
+> On 09/11/14 20:40, Davidlohr Bueso wrote:
+> > Just like Documentation/RCU/torture.txt, begin a document for the
+> > locktorture module. This module is still pretty green, so I have
+> > just added some specific sections to the doc (general desc, params,
+> > usage, etc.). Further development should update the file.
+> > 
+> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+> > ---
+> >  Documentation/locking/locktorture.txt | 128 ++++++++++++++++++++++++++++++++++
+> >  1 file changed, 128 insertions(+)
+> >  create mode 100644 Documentation/locking/locktorture.txt
 
-> On Mon, 2014-09-15 at 18:44 -0500, Kim Phillips wrote:
-> > On Thu, 11 Sep 2014 12:34:21 -0500
-> > "J. German Rivera" <German.Rivera@freescale.com> wrote:
-> > 
-> > > +int mc_get_version(struct fsl_mc_io *mc_io, struct mc_version *mc_ver_info)
-> > > +{
-> > > +	struct mc_command cmd = { 0 };
-> > 
-> > we can save some cycles if this initialization is not absolutely
-> > necessary: is it?  i.e., does the h/w actually look at the params
-> > section when doing a get_version?  not sure to what other commands
-> > this comment would apply to...at least get_container_id, but maybe
-> > more - all of them?
+Thank you for the review, Randy!  I am folding the patch below into
+Davidlohr's patch.
+
+							Thanx, Paul
+
+> > diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
+> > new file mode 100644
+> > index 0000000..c0ab969
+> > --- /dev/null
+> > +++ b/Documentation/locking/locktorture.txt
+> > @@ -0,0 +1,128 @@
+> > +Kernel Lock Torture Test Operation
+> > +
+> > +CONFIG_LOCK_TORTURE_TEST
+> > +
+> > +The CONFIG LOCK_TORTURE_TEST config option provides a kernel module
+> > +that runs torture tests on core kernel locking primitives. The kernel
+> > +module, 'locktorture', may be built after the fact on the running
+> > +kernel to be tested, if desired. The tests periodically outputs status
 > 
-> Do you really want to open that can of worms, much less to speed up
-> something that doesn't look performance critical?  Have fun debugging it
-> if it turns out the hardware does look at something you didn't
-> initialize.
-
-point taken.
-
-> > > diff --git a/drivers/bus/fsl-mc/fsl_mc_sys.c b/drivers/bus/fsl-mc/fsl_mc_sys.c
-> > 
-> > > +/**
-> > > + * Map an MC portal in the kernel virtual address space
-> > > + */
-> > > +static int map_mc_portal(phys_addr_t mc_portal_phys_addr,
-> > > +			 uint32_t mc_portal_size,
-> > > +			 void __iomem **new_mc_portal_virt_addr)
-> > > +{
-> > > +	void __iomem *mc_portal_virt_addr = NULL;
-> > > +	struct resource *res = NULL;
-> > > +	int error = -EINVAL;
-> > > +
-> > > +	res =
-> > > +	    request_mem_region(mc_portal_phys_addr, mc_portal_size,
-> > > +			       "mc_portal");
-> > > +	if (res == NULL) {
-> > > +		pr_err("request_mem_region() failed for MC portal %#llx\n",
-> > > +		       mc_portal_phys_addr);
-> > > +		error = -EBUSY;
-> > > +		goto error;
-> > > +	}
-> > > +
-> > > +	mc_portal_virt_addr = ioremap_nocache(mc_portal_phys_addr,
-> > > +					      mc_portal_size);
-> > > +	if (mc_portal_virt_addr == NULL) {
-> > > +		pr_err("ioremap_nocache() failed for MC portal %#llx\n",
-> > > +		       mc_portal_phys_addr);
-> > > +		error = -EFAULT;
-> > > +		goto error;
-> > > +	}
-> > > +
-> > > +	*new_mc_portal_virt_addr = mc_portal_virt_addr;
-> > > +	return 0;
-> > > +error:
-> > > +	if (mc_portal_virt_addr != NULL)
-> > > +		iounmap(mc_portal_virt_addr);
-> > > +
-> > > +	if (res != NULL)
-> > > +		release_mem_region(mc_portal_phys_addr, mc_portal_size);
-> > > +
-> > > +	return error;
-> > > +}
-> > 
-> > unnecessary initializations, bad error codes (both should be
-> > -ENOMEM),
+>                                                            output
 > 
-> Why should the first one be -ENOMEM?  It's not allocating memory, but
-> rather reserving I/O space.
-
-I was going with what most of the drivers are already doing, but I
-see EFAULT is 'Bad address', which, you're right, is probably more
-appropriate.
-
-> >  unnecessarily complicated error path, plus a simpler
-> > implementation can be made if fn can return the mapped address, like
-> > so:
-> > 
-> > static void __iomem *map_mc_portal(phys_addr_t mc_portal_phys_addr,
-> >                                    uint32_t mc_portal_size)
-> > { 
-> >         struct resource *res;
-> >         void __iomem *mapped_addr;
-> > 
-> >         res = request_mem_region(mc_portal_phys_addr, mc_portal_size, 
-> >                                  "mc_portal");
-> >         if (!res) 
-> >                 return NULL;
-> > 
-> >         mapped_addr = ioremap_nocache(mc_portal_phys_addr,
-> >                                       mc_portal_size);
-> >         if (!mapped_addr)
-> >                 release_mem_region(mc_portal_phys_addr, mc_portal_size);
-> > 
-> >         return mapped_addr;
-> > }
-> > 
-> > the callsite can return -ENOMEM to its caller if returned NULL.
+> > +messages via printk(), which can be examined via the dmesg (perhaps
+> > +grepping for "torture").  The test is started when the module is loaded,
+> > +and stops when the module is unloaded. This program is based on how RCU
+> > +is tortured, via rcutorture.
+> > +
+> > +This torture test consists of creating a number of kernel threads which
+> > +acquires the lock and holds it for specific amount of time, thus simulating
 > 
-> -ENOMEM would only be appropriate for one of these errors.
-
-in that case, ERR_PTR() can be used to return the specific error.
-
-> > > +#define ioread64(_p)	    readq(_p)
-> > > +#define iowrite64(_v, _p)   writeq(_v, _p)
-> > 
-> > these definitions have names that are too generic to belong in a FSL
-> > h/w header: conflicts will be introduced once the existing
-> > io{read,write}32 functions get promoted.  Either use readq/writeq
-> > directly, or, if you can justify it, patch a more generic io.h.
-> > 
-> > Also, is there a reason the 'relaxed' versions of the i/o accessors
-> > aren't being used?
+>    acquire               hold
 > 
-> Raw accessors should only be used in performance critical sections where
-> it's worth the effort to implement and verify manual synchronization.
-> My understanding is that the entire management complex is related to
-> setup, not on the I/O fast path.
+> > +different critical region behaviors. The amount of contention on the lock
+> > +can be simulated by either enlarging this critical region hold time and/or
+> > +creating more kthreads.
+> > +
+> > +
+> > +MODULE PARAMETERS
+> > +
+> > +This module has the following parameters:
+> > +
+> > +
+> > +	    ** Locktorture-specific **
+> > +
+> > +nwriters_stress   Number of kernel threads that will stress exclusive lock
+> > +		  ownership (writers). The default value is twice the amount
+> 
+> I would s/amount/number/ but that's minor.
+> 
+> > +		  of online CPUs.
+> > +
+> > +torture_type	  Type of lock to torture. By default, only spinlocks will
+> > +		  be tortured. This module can torture the following locks,
+> > +		  with string values as follows:
+> > +
+> > +		     o "lock_busted": Simulates a buggy lock implementation.
+> > +
+> > +		     o "spin_lock": spin_lock() and spin_unlock() pairs.
+> > +
+> > +		     o "spin_lock_irq": spin_lock_irq() and spin_unlock_irq()
+> > +					pairs.
+> > +
+> > +torture_runnable  Start locktorture at module init. By default it will begin
+> > +		  once the module is loaded.
+> 
+> What differences would that make?
+> 
+> > +
+> > +
+> > +	    ** Torture-framework (RCU + locking) **
+> > +
+> > +shutdown_secs	  The number of seconds to run the test before terminating
+> > +		  the test and powering off the system.  The default is
+> > +		  zero, which disables test termination and system shutdown.
+> > +		  This capability is useful for automated testing.
+> > +
+> > +onoff_holdoff	  The number of seconds between each attempt to execute a
+> > +		  randomly selected CPU-hotplug operation.  Defaults to
+> > +		  zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
+> 
+> s/HOTPLUG_CPU/CONFIG_HOTPLUG_CPU/ to be consistent.
+> 
+> > +		  kernels, locktorture will silently refuse to do any
+> > +		  CPU-hotplug operations regardless of what value is
+> > +		  specified for onoff_interval.
+> 
+> eh?  what is                    onoff_interval ?
+> 
+> Oh, the param name (in leftmost column) above should be onoff_interval since
+> onoff_holdoff is below.
+> 
+> > +
+> > +onoff_holdoff	  The number of seconds to wait until starting CPU-hotplug
+> > +		  operations.  This would normally only be used when
+> > +		  locktorture was built into the kernel and started
+> > +		  automatically at boot time, in which case it is useful
+> > +		  in order to avoid confusing boot-time code with CPUs
+> > +		  coming and going. This parameter is only useful if
+> > +		  CONFIG_HOTPLUG_CPU is enabled.
+> > +
+> > +stat_interval	  Number of seconds between statistics-related printk()s.
+> > +		  By default, locktorture will report stats every 60 seconds.
+> > +		  Setting the interval to zero causes the statistics to
+> > +		  be printed -only- when the module is unloaded, and this
+> > +		  is the default.
+> > +
+> > +stutter		  The length of time to run the test before pausing for this
+> > +		  same period of time.  Defaults to "stutter=5", so as
+> > +		  to run and pause for (roughly) five-second intervals.
+> > +		  Specifying "stutter=0" causes the test to run continuously
+> > +		  without pausing, which is the old default behavior.
+> > +
+> > +shuffle_interval  The number of seconds to keep the test threads affinitied
+> > +		  to a particular subset of the CPUs, defaults to 3 seconds.
+> > +		  Used in conjunction with test_no_idle_hz.
+> > +
+> > +verbose		  Enable verbose debugging printking, via printk(). Enabled
+> 
+> 			                           printing
+> 
+> > +		  by default. This extra information is mostly related to
+> > +		  high-level errors and reports from the main 'torture'
+> > +		  framework.
+> > +
+> > +
+> > +STATISTICS
+> > +
+> > +Statistics are printed in the following format:
+> > +
+> > +spin_lock-torture: Writes:  Total: 93746064  Max/Min: 0/0   Fail: 0
+> > +   (A)				   (B)		  (C)	       (D)
+> > +
+> > +(A): Lock type that is being tortured -- torture_type parameter.
+> > +
+> > +(B): Number of times the lock was acquired.
+> > +
+> > +(C): Min and max number of times threads failed to acquire the lock.
+> > +
+> > +(D): true/false values if there were errors acquiring the lock. This should
+> > +     -only- be positive if there is a bug in the locking primitive's
+> > +     implementation. Otherwise a lock should never fail (ie: spin_lock()).
+> 
+>                                                            (i.e., spin_lock()).
+> 
+> > +     Of course, the same applies for (C), above. A dummy example of this is
+> > +     the "lock_busted" type.
+> > +
+> > +USAGE
+> > +
+> > +The following script may be used to torture locks:
+> > +
+> > +	#!/bin/sh
+> > +
+> > +	modprobe locktorture
+> > +	sleep 3600
+> > +	rmmod locktorture
+> > +	dmesg | grep torture:
+> > +
+> > +The output can be manually inspected for the error flag of "!!!".
+> > +One could of course create a more elaborate script that automatically
+> > +checked for such errors.  The "rmmod" command forces a "SUCCESS",
+> > +"FAILURE", or "RCU_HOTPLUG" indication to be printk()ed.  The first
+> > +two are self-explanatory, while the last indicates that while there
+> > +were no locking failures, CPU-hotplug problems were detected.
+> > +
+> > +Also see: Documentation/RCU/torture.txt
 
-ok.
+diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
+index f7d99e2a5799..be715015e0f7 100644
+--- a/Documentation/locking/locktorture.txt
++++ b/Documentation/locking/locktorture.txt
+@@ -5,14 +5,14 @@ CONFIG_LOCK_TORTURE_TEST
+ The CONFIG LOCK_TORTURE_TEST config option provides a kernel module
+ that runs torture tests on core kernel locking primitives. The kernel
+ module, 'locktorture', may be built after the fact on the running
+-kernel to be tested, if desired. The tests periodically outputs status
++kernel to be tested, if desired. The tests periodically output status
+ messages via printk(), which can be examined via the dmesg (perhaps
+ grepping for "torture").  The test is started when the module is loaded,
+ and stops when the module is unloaded. This program is based on how RCU
+ is tortured, via rcutorture.
+ 
+ This torture test consists of creating a number of kernel threads which
+-acquires the lock and holds it for specific amount of time, thus simulating
++acquire the lock and hold it for specific amount of time, thus simulating
+ different critical region behaviors. The amount of contention on the lock
+ can be simulated by either enlarging this critical region hold time and/or
+ creating more kthreads.
+@@ -26,7 +26,7 @@ This module has the following parameters:
+ 	    ** Locktorture-specific **
+ 
+ nwriters_stress   Number of kernel threads that will stress exclusive lock
+-		  ownership (writers). The default value is twice the amount
++		  ownership (writers). The default value is twice the number
+ 		  of online CPUs.
+ 
+ nreaders_stress   Number of kernel threads that will stress shared lock
+@@ -49,8 +49,10 @@ torture_type	  Type of lock to torture. By default, only spinlocks will
+ 
+ 		     o "rwsem_lock": read/write down() and up() semaphore pairs.
+ 
+-torture_runnable  Start locktorture at module init. By default it will begin
+-		  once the module is loaded.
++torture_runnable  Start locktorture at boot time in the case where the
++		  module is built into the kernel, otherwise wait for
++		  torture_runnable to be set via sysfs before starting.
++		  By default it will begin once the module is loaded.
+ 
+ 
+ 	    ** Torture-framework (RCU + locking) **
+@@ -60,12 +62,12 @@ shutdown_secs	  The number of seconds to run the test before terminating
+ 		  zero, which disables test termination and system shutdown.
+ 		  This capability is useful for automated testing.
+ 
+-onoff_holdoff	  The number of seconds between each attempt to execute a
+-		  randomly selected CPU-hotplug operation.  Defaults to
+-		  zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
+-		  kernels, locktorture will silently refuse to do any
+-		  CPU-hotplug operations regardless of what value is
+-		  specified for onoff_interval.
++onoff_interval	  The number of seconds between each attempt to execute a
++		  randomly selected CPU-hotplug operation.  Defaults
++		  to zero, which disables CPU hotplugging.  In
++		  CONFIG_HOTPLUG_CPU=n kernels, locktorture will silently
++		  refuse to do any CPU-hotplug operations regardless of
++		  what value is specified for onoff_interval.
+ 
+ onoff_holdoff	  The number of seconds to wait until starting CPU-hotplug
+ 		  operations.  This would normally only be used when
+@@ -91,7 +93,7 @@ shuffle_interval  The number of seconds to keep the test threads affinitied
+ 		  to a particular subset of the CPUs, defaults to 3 seconds.
+ 		  Used in conjunction with test_no_idle_hz.
+ 
+-verbose		  Enable verbose debugging printking, via printk(). Enabled
++verbose		  Enable verbose debugging printing, via printk(). Enabled
+ 		  by default. This extra information is mostly related to
+ 		  high-level errors and reports from the main 'torture'
+ 		  framework.
+@@ -115,7 +117,7 @@ spin_lock-torture: Writes:  Total: 93746064  Max/Min: 0/0   Fail: 0
+ 
+ (E): true/false values if there were errors acquiring the lock. This should
+      -only- be positive if there is a bug in the locking primitive's
+-     implementation. Otherwise a lock should never fail (ie: spin_lock()).
++     implementation. Otherwise a lock should never fail (i.e., spin_lock()).
+      Of course, the same applies for (C), above. A dummy example of this is
+      the "lock_busted" type.
+ 
 
-Thanks,
-
-Kim
