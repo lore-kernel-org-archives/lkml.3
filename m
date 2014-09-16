@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaIPL4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:56:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4928 "EHLO mga02.intel.com"
+	id S1754436AbaIPL5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:57:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34254 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169AbaIPLxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752927AbaIPLxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Sep 2014 07:53:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
-   d="scan'208";a="573795144"
+   d="scan'208";a="600313938"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
@@ -21,9 +21,9 @@ Cc: linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
         Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC PATCH v2 09/16] leds: leds-gpio: Add support for GPIO descriptors
-Date: Tue, 16 Sep 2014 14:52:40 +0300
-Message-Id: <1410868367-11056-10-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
+Date: Tue, 16 Sep 2014 14:52:38 +0300
+Message-Id: <1410868367-11056-8-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -31,198 +31,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPIO descriptors are the preferred way over legacy GPIO numbers
-nowadays. Convert the driver to use GPIO descriptors internally but
-still allow passing legacy GPIO numbers from platform data to support
-existing platforms.
+Some drivers need to deal with only firmware representation of its
+GPIOs. An example would be a GPIO button array driver where each button
+is described as a separate firmware node in device tree. Typically these
+child nodes do not have physical representation in the Linux device
+model.
+
+In order to help device drivers to handle such firmware child nodes we
+add dev[m]_node_get_named_gpiod() that takes a firmware node pointer as
+parameter, finds the GPIO using whatever is the underlying firmware
+method, and requests the GPIO properly.
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/leds/leds-gpio.c | 80 +++++++++++++++++++++++++++---------------------
- include/linux/leds.h     |  1 +
- 2 files changed, 46 insertions(+), 35 deletions(-)
+ drivers/gpio/devres.c         | 35 +++++++++++++++++++++++++++
+ drivers/gpio/gpiolib.c        | 55 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/gpio/consumer.h |  7 ++++++
+ 3 files changed, 97 insertions(+)
 
-diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
-index 57ff20fecf57..c84e913527f0 100644
---- a/drivers/leds/leds-gpio.c
-+++ b/drivers/leds/leds-gpio.c
-@@ -13,6 +13,7 @@
- #include <linux/kernel.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
-+#include <linux/gpio/consumer.h>
- #include <linux/leds.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-@@ -24,11 +25,10 @@
+diff --git a/drivers/gpio/devres.c b/drivers/gpio/devres.c
+index 954b9f6b0ef8..1556a251fc8e 100644
+--- a/drivers/gpio/devres.c
++++ b/drivers/gpio/devres.c
+@@ -109,6 +109,41 @@ struct gpio_desc *__must_check __devm_gpiod_get_index(struct device *dev,
+ EXPORT_SYMBOL(__devm_gpiod_get_index);
  
- struct gpio_led_data {
- 	struct led_classdev cdev;
--	unsigned gpio;
-+	struct gpio_desc *gpiod;
- 	struct work_struct work;
- 	u8 new_level;
- 	u8 can_sleep;
--	u8 active_low;
- 	u8 blinking;
- 	int (*platform_gpio_blink_set)(unsigned gpio, int state,
- 			unsigned long *delay_on, unsigned long *delay_off);
-@@ -40,12 +40,16 @@ static void gpio_led_work(struct work_struct *work)
- 		container_of(work, struct gpio_led_data, work);
- 
- 	if (led_dat->blinking) {
--		led_dat->platform_gpio_blink_set(led_dat->gpio,
--						 led_dat->new_level,
--						 NULL, NULL);
-+		int gpio = desc_to_gpio(led_dat->gpiod);
-+		int level = led_dat->new_level;
+ /**
++ * devm_node_get_named_gpiod - resource-managed dev_node_get_named_gpiod()
++ * @dev:	GPIO consumer
++ * @fdn:	firmware device node
++ * @propname:	name of the firmware property
++ * @idx:	index of the GPIO in the property value in case of many
++ *
++ * Managed dev_node_get_named_gpiod(). GPIO descriptors returned from
++ * this function are automatically disposed on driver detach.
++ */
++struct gpio_desc *devm_node_get_named_gpiod(struct device *dev,
++					    struct fw_dev_node *fdn,
++					    const char *propname, int index)
++{
++	struct gpio_desc **dr;
++	struct gpio_desc *desc;
 +
-+		if (gpiod_is_active_low(led_dat->gpiod))
-+			level = !level;
++	dr = devres_alloc(devm_gpiod_release, sizeof(struct gpio_desc *),
++			  GFP_KERNEL);
++	if (!dr)
++		return ERR_PTR(-ENOMEM);
 +
-+		led_dat->platform_gpio_blink_set(gpio, level, NULL, NULL);
- 		led_dat->blinking = 0;
- 	} else
--		gpio_set_value_cansleep(led_dat->gpio, led_dat->new_level);
-+		gpiod_set_value_cansleep(led_dat->gpiod, led_dat->new_level);
- }
- 
- static void gpio_led_set(struct led_classdev *led_cdev,
-@@ -60,9 +64,6 @@ static void gpio_led_set(struct led_classdev *led_cdev,
- 	else
- 		level = 1;
- 
--	if (led_dat->active_low)
--		level = !level;
--
- 	/* Setting GPIOs with I2C/etc requires a task context, and we don't
- 	 * seem to have a reliable way to know if we're already in one; so
- 	 * let's just assume the worst.
-@@ -72,11 +73,16 @@ static void gpio_led_set(struct led_classdev *led_cdev,
- 		schedule_work(&led_dat->work);
- 	} else {
- 		if (led_dat->blinking) {
--			led_dat->platform_gpio_blink_set(led_dat->gpio, level,
--							 NULL, NULL);
-+			int gpio = desc_to_gpio(led_dat->gpiod);
-+
-+			if (gpiod_is_active_low(led_dat->gpiod))
-+				level = !level;
-+
-+			led_dat->platform_gpio_blink_set(gpio, level, NULL,
-+							 NULL);
- 			led_dat->blinking = 0;
- 		} else
--			gpio_set_value(led_dat->gpio, level);
-+			gpiod_set_value(led_dat->gpiod, level);
- 	}
- }
- 
-@@ -85,9 +91,10 @@ static int gpio_blink_set(struct led_classdev *led_cdev,
- {
- 	struct gpio_led_data *led_dat =
- 		container_of(led_cdev, struct gpio_led_data, cdev);
-+	int gpio = desc_to_gpio(led_dat->gpiod);
- 
- 	led_dat->blinking = 1;
--	return led_dat->platform_gpio_blink_set(led_dat->gpio, GPIO_LED_BLINK,
-+	return led_dat->platform_gpio_blink_set(gpio, GPIO_LED_BLINK,
- 						delay_on, delay_off);
- }
- 
-@@ -97,24 +104,33 @@ static int create_gpio_led(const struct gpio_led *template,
- {
- 	int ret, state;
- 
--	led_dat->gpio = -1;
-+	if (!template->gpiod) {
-+		unsigned long flags = 0;
- 
--	/* skip leds that aren't available */
--	if (!gpio_is_valid(template->gpio)) {
--		dev_info(parent, "Skipping unavailable LED gpio %d (%s)\n",
--				template->gpio, template->name);
--		return 0;
--	}
-+		/* skip leds that aren't available */
-+		if (!gpio_is_valid(template->gpio)) {
-+			dev_info(parent, "Skipping unavailable LED gpio %d (%s)\n",
-+					template->gpio, template->name);
-+			return 0;
-+		}
- 
--	ret = devm_gpio_request(parent, template->gpio, template->name);
--	if (ret < 0)
--		return ret;
-+		if (template->active_low)
-+			flags |= GPIOF_ACTIVE_LOW;
-+
-+		ret = devm_gpio_request_one(parent, template->gpio, flags,
-+					    template->name);
-+		if (ret < 0)
-+			return ret;
-+
-+		led_dat->gpiod = gpio_to_desc(template->gpio);
-+		if (IS_ERR(led_dat->gpiod))
-+			return PTR_ERR(led_dat->gpiod);
++	desc = dev_node_get_named_gpiod(fdn, propname, index);
++	if (IS_ERR(desc)) {
++		devres_free(dr);
++		return desc;
 +	}
++
++	*dr = desc;
++	devres_add(dev, dr);
++
++	return desc;
++}
++EXPORT_SYMBOL(devm_node_get_named_gpiod);
++
++/**
+  * devm_gpiod_get_index_optional - Resource-managed gpiod_get_index_optional()
+  * @dev: GPIO consumer
+  * @con_id: function within the GPIO consumer
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 444d43c9fd3e..d364214d2946 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1717,6 +1717,61 @@ struct gpio_desc *__must_check __gpiod_get_index(struct device *dev,
+ EXPORT_SYMBOL_GPL(__gpiod_get_index);
  
- 	led_dat->cdev.name = template->name;
- 	led_dat->cdev.default_trigger = template->default_trigger;
--	led_dat->gpio = template->gpio;
--	led_dat->can_sleep = gpio_cansleep(template->gpio);
--	led_dat->active_low = template->active_low;
-+	led_dat->gpiod = template->gpiod;
-+	led_dat->can_sleep = gpiod_cansleep(template->gpiod);
- 	led_dat->blinking = 0;
- 	if (blink_set) {
- 		led_dat->platform_gpio_blink_set = blink_set;
-@@ -122,30 +138,24 @@ static int create_gpio_led(const struct gpio_led *template,
- 	}
- 	led_dat->cdev.brightness_set = gpio_led_set;
- 	if (template->default_state == LEDS_GPIO_DEFSTATE_KEEP)
--		state = !!gpio_get_value_cansleep(led_dat->gpio) ^ led_dat->active_low;
-+		state = !!gpiod_get_value_cansleep(led_dat->gpiod);
- 	else
- 		state = (template->default_state == LEDS_GPIO_DEFSTATE_ON);
- 	led_dat->cdev.brightness = state ? LED_FULL : LED_OFF;
- 	if (!template->retain_state_suspended)
- 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
+ /**
++ * dev_node_get_named_gpiod - obtain a GPIO from firmware device node
++ * @fdn:	firmware device node
++ * @propname:	name of the firmware property
++ * @idx:	index of the GPIO in the property value in case of many
++ *
++ * This function can be used for drivers that get their configuration
++ * from firmware in such way that there is not always corresponding
++ * physical device pointer available. For example some properties are
++ * described as a child nodes for the parent device in DT or ACPI.
++ *
++ * Function properly finds the corresponding GPIO using whatever is the
++ * underlying firmware interface and then makes sure that the GPIO
++ * descriptor is requested before it is returned to the caller.
++ *
++ * In case of error an ERR_PTR() is returned.
++ */
++struct gpio_desc *dev_node_get_named_gpiod(struct fw_dev_node *fdn,
++					   const char *propname, int index)
++{
++	struct gpio_desc *desc = ERR_PTR(-ENODEV);
++	struct acpi_device *adev = fdn->acpi_node;
++	struct device_node *np = fdn->of_node;
++	bool active_low = false;
++	int ret;
++
++	if (IS_ENABLED(CONFIG_OF) && np) {
++		enum of_gpio_flags flags;
++
++		desc = of_get_named_gpiod_flags(np, propname, index, &flags);
++		if (!IS_ERR(desc))
++			active_low = flags & OF_GPIO_ACTIVE_LOW;
++	} else if (IS_ENABLED(CONFIG_ACPI) && adev) {
++		struct acpi_gpio_info info;
++
++		desc = acpi_get_gpiod_by_index(adev, propname, index, &info);
++		if (!IS_ERR(desc))
++			active_low = info.active_low;
++	}
++
++	if (IS_ERR(desc))
++		return desc;
++
++	ret = gpiod_request(desc, NULL);
++	if (ret)
++		return ERR_PTR(ret);
++
++	/* Only value flag can be set from both DT and ACPI is active_low */
++	if (active_low)
++		set_bit(FLAG_ACTIVE_LOW, &desc->flags);
++
++	return desc;
++}
++EXPORT_SYMBOL_GPL(dev_node_get_named_gpiod);
++
++/**
+  * gpiod_get_index_optional - obtain an optional GPIO from a multi-index GPIO
+  *                            function
+  * @dev: GPIO consumer, can be NULL for system-global GPIOs
+diff --git a/include/linux/gpio/consumer.h b/include/linux/gpio/consumer.h
+index 12f146fa6604..aa1b273f0e38 100644
+--- a/include/linux/gpio/consumer.h
++++ b/include/linux/gpio/consumer.h
+@@ -6,6 +6,7 @@
+ #include <linux/kernel.h>
  
--	ret = gpio_direction_output(led_dat->gpio, led_dat->active_low ^ state);
-+	ret = gpiod_direction_output(led_dat->gpiod, state);
- 	if (ret < 0)
- 		return ret;
+ struct device;
++struct fw_dev_node;
  
- 	INIT_WORK(&led_dat->work, gpio_led_work);
+ /**
+  * Opaque descriptor for a GPIO. These are obtained using gpiod_get() and are
+@@ -94,6 +95,12 @@ int gpiod_to_irq(const struct gpio_desc *desc);
+ struct gpio_desc *gpio_to_desc(unsigned gpio);
+ int desc_to_gpio(const struct gpio_desc *desc);
  
--	ret = led_classdev_register(parent, &led_dat->cdev);
--	if (ret < 0)
--		return ret;
--
--	return 0;
-+	return led_classdev_register(parent, &led_dat->cdev);
- }
++/* Firmware node interface */
++struct gpio_desc *dev_node_get_named_gpiod(struct fw_dev_node *fdn,
++					   const char *propname, int index);
++struct gpio_desc *devm_node_get_named_gpiod(struct device *dev,
++					    struct fw_dev_node *fdn,
++					    const char *propname, int index);
+ #else /* CONFIG_GPIOLIB */
  
- static void delete_gpio_led(struct gpio_led_data *led)
- {
--	if (!gpio_is_valid(led->gpio))
--		return;
- 	led_classdev_unregister(&led->cdev);
- 	cancel_work_sync(&led->work);
- }
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index e43686472197..879a113b3d57 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -246,6 +246,7 @@ struct led_platform_data {
- struct gpio_led {
- 	const char *name;
- 	const char *default_trigger;
-+	struct gpio_desc *gpiod;
- 	unsigned 	gpio;
- 	unsigned	active_low : 1;
- 	unsigned	retain_state_suspended : 1;
+ static inline struct gpio_desc *__must_check __gpiod_get(struct device *dev,
 -- 
 2.1.0
 
