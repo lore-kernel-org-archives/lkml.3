@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaIPJBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 05:01:21 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:54475 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaIPJBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 05:01:17 -0400
-Date: Tue, 16 Sep 2014 11:01:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>
-Subject: Re: [PATCH v4] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-Message-ID: <20140916090112.GC4907@gmail.com>
-References: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com>
- <20140904052034.GA29146@gmail.com>
- <20140904085641.GA6311@kernel>
- <20140904093414.GA7296@kernel>
+	id S1753441AbaIPJCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 05:02:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:11607 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752686AbaIPJCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 05:02:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
+   d="scan'208";a="603457529"
+Message-ID: <5417F13B.7030500@linux.intel.com>
+Date: Tue, 16 Sep 2014 16:13:47 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140904093414.GA7296@kernel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Yijing Wang <wangyijing@huawei.com>, Joerg Roedel <joro@8bytes.org>,
+        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org
+Subject: Re: [Patch Part3 V5 5/8] iommu/vt-d: Enhance intel_irq_remapping
+ driver to support DMAR unit hotplug
+References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-6-git-send-email-jiang.liu@linux.intel.com> <54164D01.4060003@huawei.com> <5417E00D.5000108@linux.intel.com> <5417EC7B.4060400@huawei.com>
+In-Reply-To: <5417EC7B.4060400@huawei.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
 
-> Hi Ingo,
-> On Thu, Sep 04, 2014 at 04:56:41PM +0800, Wanpeng Li wrote:
-> >On Thu, Sep 04, 2014 at 07:20:34AM +0200, Ingo Molnar wrote:
-> >>
-> >>* Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
-> >>
-> >>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
-> >>> IP: [..] find_busiest_group
-> >>> PGD 5a9d5067 PUD 13067 PMD 0
-> >>> Oops: 0000 [#3] SMP
-> >>> [...]
-> >>> Call Trace:
-> >>> load_balance
-> >>> ? _raw_spin_unlock_irqrestore
-> >>> idle_balance
-> >>> __schedule
-> >>> schedule
-> >>> schedule_timeout
-> >>> ? lock_timer_base
-> >>> schedule_timeout_uninterruptible
-> >>> msleep
-> >>> lock_device_hotplug_sysfs
-> >>> online_store
-> >>> dev_attr_store
-> >>> sysfs_write_file
-> >>> vfs_write
-> >>> SyS_write
-> >>> system_call_fastpath
-> >>> 
-> >>> Last level cache shared map is built during cpu up and build sched domain 
-> >>> routine takes advantage of it to setup sched domain cpu topology, however, 
-> >>> llc shared map is unreleased during cpu disable which lead to invalid sched 
-> >>> domain cpu topology. This patch fix it by release llc shared map correctly
-> >>> during cpu disable.
-> >>
-> >>Very little is said in this changelog about how the bug was 
-> >>found, how likely it is to occur for others, what systems are 
-> >>affected, etc.
-> >
-> >This bug can be triggered by hot add and remove large number of xen 
-> >domain0's vcpus repeated.
-> >
+On 2014/9/16 15:53, Yijing Wang wrote:
+> On 2014/9/16 15:00, Jiang Liu wrote:
+>> On 2014/9/15 10:20, Yijing Wang wrote:
+>>>> +static void ir_remove_ioapic_hpet_scope(struct intel_iommu *iommu)
+>>>> +{
+>>>> +	int i;
+>>>>  
+>>>> -			ir_parse_one_hpet_scope(scope, iommu);
+>>>> -		}
+>>>> -		start += scope->length;
+>>>> -	}
+>>>> +	for (i = 0; i < MAX_HPET_TBS; i++)
+>>>> +		if (ir_hpet[i].iommu == iommu)
+>>>> +			ir_hpet[i].iommu = NULL;
+>>>
+>>> Hi Gerry, why not reset whole ir_hpe and ir_ioapic data struct?
+>> Hi Yijing,
+>> 	Thanks for review. Zero is legal for id, bus and devfn in
+>> struct ioapic_scope and struct hpet_scope. So we use domain field
+>> as a flag to mark entry valid or invalid and only reset iommu field.
 > 
-> If I need to send a new version of the patch or you can pick the patch
-> w/ the updated changelog for me? ;-)
-
-Please send a fresh new version, maintainers trying to splice & 
-dice patches and changelogs is an unrobust approach prone to 
-mistakes.
-
-Thanks,
-
-	Ingo
+> Hi Gerry, use iommu field as a flag to mark entry valid may be not safe enough,
+> I found map_hpet_to_ir() and map_ioapic_to_ir() still only check the id field to return the valid iommu.
+> 
+> What about this case:
+> E.g. ir_hpet[2].id = N, ir_hpet[2].iommu = NULL, ir_hpet[4].id = N, ir_hpet[4].iommu = iommu;
+> 
+> ir_hpet[2] maybe released yet, and the hpet now has been saved in ir_hpet[4], but map_hpet_to_irq()
+> will return the wrong iommu(NULL).
+Hi Yijing,
+Good catch, I will enhance map_hpet_to_ir() and map_ioapic_to_ir().
+Regards!
+Gerry
+> 
+> 
+> static struct intel_iommu *map_hpet_to_ir(u8 hpet_id)
+> {
+> 	int i;
+> 
+> 	for (i = 0; i < MAX_HPET_TBS; i++)
+> 		if (ir_hpet[i].id == hpet_id)
+> 			return ir_hpet[i].iommu;
+> 	return NULL;
+> }
+> 
+>>
+>> Regards!
+>> Gerry
+>>>
+>>>
+>>>
+>>>>  
+>>>> -	return 0;
+>>>> +	for (i = 0; i < MAX_IO_APICS; i++)
+>>>> +		if (ir_ioapic[i].iommu == iommu)
+>>>> +			ir_ioapic[i].iommu = NULL;
+>>>>  }
+>>>>  
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>> .
+>>
+> 
+> 
