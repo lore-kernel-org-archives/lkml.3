@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaIPVYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:24:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33756 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbaIPVYS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:24:18 -0400
-Message-ID: <5418AA80.4090102@codeaurora.org>
-Date: Tue, 16 Sep 2014 17:24:16 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1753529AbaIPVZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:25:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870AbaIPVZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 17:25:08 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Milosz Tanski <milosz@adfin.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
+References: <cover.1410810247.git.milosz@adfin.com>
+	<c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com>
+	<x49wq93xt5e.fsf@segfault.boston.devel.redhat.com>
+	<20140916210441.GC24591@infradead.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Sep 2014 17:24:29 -0400
+In-Reply-To: <20140916210441.GC24591@infradead.org> (Christoph Hellwig's
+	message of "Tue, 16 Sep 2014 14:04:41 -0700")
+Message-ID: <x49wq93tg1e.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Christopher Covington <cov@codeaurora.org>
-CC: Sonny Rao <sonnyrao@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arm: Handle starting up in secure mode
-References: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
-In-Reply-To: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 05:09 PM, Christopher Covington wrote:
-> ARM Linux currently has the most features available to it in hypervisor
-> (HYP) mode, so switch to it when possible. This can also ensure proper
-> reset of newer registers such as CNTVOFF.
-> 
-> The permissions on the Non-Secure Access Control Register (NSACR) are
-> used to probe what the security setting currently is when in supervisor
-> (SVC) mode.
+Christoph Hellwig <hch@infradead.org> writes:
 
-Sorry, this doesn't work yet. I was misinterpreting my test results. For what
-it's worth, my testing and development methodology is to run it after hacked
-up versions of the semihosting bootwrapper on the simulator that corresponds
-to rtsm_ve-aemv8a.dtb (AEM VE FVP these days?) and examine the instruction traces.
+>> Again, the right return value for the O_DIRECT case is EINVAL.
+>
+> Is it?  We define -EAGAIN as it would block, which is defintively true
+> for O_DIRECT reads.
 
-Christopher
+It will *always* block.  So I don't think it's valid to ask for a
+non-blocking read on a file opened with O_DIRECT.  What am I missing?
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+Cheers,
+Jeff
