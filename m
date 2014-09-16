@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaIPKkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:40:36 -0400
+	id S1753608AbaIPKkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:40:43 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:58727 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752933AbaIPKke (ORCPT
+	with ESMTP id S1752971AbaIPKki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:40:34 -0400
+	Tue, 16 Sep 2014 06:40:38 -0400
 X-IronPort-AV: E=Sophos;i="5.04,534,1406563200"; 
-   d="scan'208";a="36022242"
+   d="scan'208";a="36022246"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: <gleb@kernel.org>, <mtosatti@redhat.com>, <nadav.amit@gmail.com>,
         <jan.kiszka@web.de>, <pbonzini@redhat.com>
 CC: <kvm@vger.kernel.org>, <laijs@cn.fujitsu.com>,
         <isimatu.yasuaki@jp.fujitsu.com>, <guz.fnst@cn.fujitsu.com>,
         <linux-kernel@vger.kernel.org>, <tangchen@cn.fujitsu.com>
-Subject: [PATCH v6 0/6] kvm, mem-hotplug: Do not pin ept identity pagetable and apic access page.
-Date: Tue, 16 Sep 2014 18:41:56 +0800
-Message-ID: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v6 2/6] kvm: Remove ept_identity_pagetable from struct kvm_arch.
+Date: Tue, 16 Sep 2014 18:41:58 +0800
+Message-ID: <1410864122-12434-3-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1410864122-12434-1-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.71]
@@ -26,51 +28,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ept identity pagetable and apic access page in kvm are pinned in memory.
-As a result, they cannot be migrated/hot-removed.
+kvm_arch->ept_identity_pagetable holds the ept identity pagetable page. But
+it is never used to refer to the page at all.
 
-But actually they don't need to be pinned in memory.
+In vcpu initialization, it indicates two things:
+1. indicates if ept page is allocated
+2. indicates if a memory slot for identity page is initialized
 
-[For ept identity page]
-Just do not pin it. When it is migrated, guest will be able to find the
-new page in the next ept violation.
+Actually, kvm_arch->ept_identity_pagetable_done is enough to tell if the ept
+identity pagetable is initialized. So we can remove ept_identity_pagetable.
 
-[For apic access page]
-The hpa of apic access page is stored in VMCS APIC_ACCESS_ADDR pointer.
-When apic access page is migrated, we update VMCS APIC_ACCESS_ADDR pointer
-for each vcpu in addition.
+NOTE: In the original code, ept identity pagetable page is pinned in memroy.
+      As a result, it cannot be migrated/hot-removed. After this patch, since
+      kvm_arch->ept_identity_pagetable is removed, ept identity pagetable page
+      is no longer pinned in memory. And it can be migrated/hot-removed.
 
-NOTE: Tested with -cpu xxx,-x2apic option.
-      But since nested vm pins some other pages in memory, if user uses nested
-      vm, memory hot-remove will not work.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Gleb Natapov <gleb@kernel.org>
+---
+ arch/x86/include/asm/kvm_host.h |  1 -
+ arch/x86/kvm/vmx.c              | 47 +++++++++++++++++++----------------------
+ arch/x86/kvm/x86.c              |  2 --
+ 3 files changed, 22 insertions(+), 28 deletions(-)
 
-Change log v5 -> v6:
-1. Patch 1/6 has been applied by Paolo Bonzini <pbonzini@redhat.com>, just resend it.
-2. Simplify comment in alloc_identity_pagetable() and add a BUG_ON() in patch 2/6.
-3. Move err initialization forward in patch 3/6.
-4. Rename vcpu_reload_apic_access_page() to kvm_vcpu_reload_apic_access_page() and 
-   use it instead of kvm_reload_apic_access_page() in nested_vmx_vmexit() in patch 5/6.
-5. Reuse kvm_vcpu_reload_apic_access_page() in prepare_vmcs02() and vmx_vcpu_reset() in patch 6/6.
-6. Remove original patch 7 since we are not able to handle the situation in nested vm.
-
-Tang Chen (6):
-  kvm: Use APIC_DEFAULT_PHYS_BASE macro as the apic access page address.
-  kvm: Remove ept_identity_pagetable from struct kvm_arch.
-  kvm: Make init_rmode_identity_map() return 0 on success.
-  kvm, mem-hotplug: Reload L1' apic access page on migration in
-    vcpu_enter_guest().
-  kvm, mem-hotplug: Reload L1's apic access page on migration when L2 is
-    running.
-  kvm, mem-hotplug: Unpin and remove kvm_arch->apic_access_page.
-
- arch/x86/include/asm/kvm_host.h |  5 ++-
- arch/x86/kvm/svm.c              |  9 +++-
- arch/x86/kvm/vmx.c              | 95 +++++++++++++++++++++++------------------
- arch/x86/kvm/x86.c              | 25 +++++++++--
- include/linux/kvm_host.h        |  2 +
- virt/kvm/kvm_main.c             | 12 ++++++
- 6 files changed, 99 insertions(+), 49 deletions(-)
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 7c492ed..35171c7 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -580,7 +580,6 @@ struct kvm_arch {
+ 
+ 	gpa_t wall_clock;
+ 
+-	struct page *ept_identity_pagetable;
+ 	bool ept_identity_pagetable_done;
+ 	gpa_t ept_identity_map_addr;
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4b80ead..4fb84ad 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -743,6 +743,7 @@ static u32 vmx_segment_access_rights(struct kvm_segment *var);
+ static void vmx_sync_pir_to_irr_dummy(struct kvm_vcpu *vcpu);
+ static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx);
+ static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx);
++static int alloc_identity_pagetable(struct kvm *kvm);
+ 
+ static DEFINE_PER_CPU(struct vmcs *, vmxarea);
+ static DEFINE_PER_CPU(struct vmcs *, current_vmcs);
+@@ -3938,21 +3939,27 @@ out:
+ 
+ static int init_rmode_identity_map(struct kvm *kvm)
+ {
+-	int i, idx, r, ret;
++	int i, idx, r, ret = 0;
+ 	pfn_t identity_map_pfn;
+ 	u32 tmp;
+ 
+ 	if (!enable_ept)
+ 		return 1;
+-	if (unlikely(!kvm->arch.ept_identity_pagetable)) {
+-		printk(KERN_ERR "EPT: identity-mapping pagetable "
+-			"haven't been allocated!\n");
+-		return 0;
++
++	/* Protect kvm->arch.ept_identity_pagetable_done. */
++	mutex_lock(&kvm->slots_lock);
++
++	if (likely(kvm->arch.ept_identity_pagetable_done)) {
++		ret = 1;
++		goto out2;
+ 	}
+-	if (likely(kvm->arch.ept_identity_pagetable_done))
+-		return 1;
+-	ret = 0;
++
+ 	identity_map_pfn = kvm->arch.ept_identity_map_addr >> PAGE_SHIFT;
++
++	r = alloc_identity_pagetable(kvm);
++	if (r)
++		goto out2;
++
+ 	idx = srcu_read_lock(&kvm->srcu);
+ 	r = kvm_clear_guest_page(kvm, identity_map_pfn, 0, PAGE_SIZE);
+ 	if (r < 0)
+@@ -3970,6 +3977,9 @@ static int init_rmode_identity_map(struct kvm *kvm)
+ 	ret = 1;
+ out:
+ 	srcu_read_unlock(&kvm->srcu, idx);
++
++out2:
++	mutex_unlock(&kvm->slots_lock);
+ 	return ret;
+ }
+ 
+@@ -4019,31 +4029,20 @@ out:
+ 
+ static int alloc_identity_pagetable(struct kvm *kvm)
+ {
+-	struct page *page;
++	/* Called with kvm->slots_lock held. */
++
+ 	struct kvm_userspace_memory_region kvm_userspace_mem;
+ 	int r = 0;
+ 
+-	mutex_lock(&kvm->slots_lock);
+-	if (kvm->arch.ept_identity_pagetable)
+-		goto out;
++	BUG_ON(kvm->arch.ept_identity_pagetable_done);
++
+ 	kvm_userspace_mem.slot = IDENTITY_PAGETABLE_PRIVATE_MEMSLOT;
+ 	kvm_userspace_mem.flags = 0;
+ 	kvm_userspace_mem.guest_phys_addr =
+ 		kvm->arch.ept_identity_map_addr;
+ 	kvm_userspace_mem.memory_size = PAGE_SIZE;
+ 	r = __kvm_set_memory_region(kvm, &kvm_userspace_mem);
+-	if (r)
+-		goto out;
+-
+-	page = gfn_to_page(kvm, kvm->arch.ept_identity_map_addr >> PAGE_SHIFT);
+-	if (is_error_page(page)) {
+-		r = -EFAULT;
+-		goto out;
+-	}
+ 
+-	kvm->arch.ept_identity_pagetable = page;
+-out:
+-	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+ }
+ 
+@@ -7643,8 +7642,6 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+ 			kvm->arch.ept_identity_map_addr =
+ 				VMX_EPT_IDENTITY_PAGETABLE_ADDR;
+ 		err = -ENOMEM;
+-		if (alloc_identity_pagetable(kvm) != 0)
+-			goto free_vmcs;
+ 		if (!init_rmode_identity_map(kvm))
+ 			goto free_vmcs;
+ 	}
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 8f1e22d..e05bd58 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -7239,8 +7239,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
+ 	kvm_free_vcpus(kvm);
+ 	if (kvm->arch.apic_access_page)
+ 		put_page(kvm->arch.apic_access_page);
+-	if (kvm->arch.ept_identity_pagetable)
+-		put_page(kvm->arch.ept_identity_pagetable);
+ 	kfree(rcu_dereference_check(kvm->arch.apic_map, 1));
+ }
+ 
 -- 
 1.8.3.1
 
