@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaIPQBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:01:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:55194 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895AbaIPQBk (ORCPT
+	id S1754410AbaIPQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:05:16 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:42455 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050AbaIPQFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:01:40 -0400
-Date: Tue, 16 Sep 2014 18:01:34 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Dave Hansen <dave@sr71.net>,
-        linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
-        andreas.herrmann3@amd.com, hpa@linux.intel.com, ak@linux.intel.com
-Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
- "sane"
-Message-ID: <20140916160134.GB2848@worktop.localdomain>
-References: <20140915222641.D640BD8A@viggo.jf.intel.com>
- <20140916032920.GH2840@worktop.localdomain>
- <20140916013845.390833b9@as>
- <20140916064403.GC14807@gmail.com>
- <20140916020300.5013b8f0@as>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916020300.5013b8f0@as>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Tue, 16 Sep 2014 12:05:14 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, schwidefsky@de.ibm.com,
+        keescook@chromium.org, linux@arm.linux.org.uk, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] parisc: Use secure_computing_strict, not secure_computing
+Date: Tue, 16 Sep 2014 09:05:03 -0700
+Message-Id: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 02:03:00AM -0500, Chuck Ebbert wrote:
-> Hmm, looking closer at the diagram, each ring has its own memory controller, so
-> it really is NUMA if you break the interconnect between that caches.
+After commit a4412fc9486e, the secure_computing function is only
+available if seccomp filters are implemented by the architecture.
+Architectures without seccomp filters use secure_computing_strict
+instead.
 
-How does it do that? Does it split the DIMM slots in two as well, with
-half for the one node and the other half for the other? Or will both
-'nodes' share the same local memory?
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-In the first case its full NUMA, in the second case, not so much.
+This is minimally tested because my cross-compiler toolchain for parisc
+is quite broken.  ptrace.c seems to *compile*, but it doesn't assemble.
+
+ arch/parisc/kernel/ptrace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/parisc/kernel/ptrace.c b/arch/parisc/kernel/ptrace.c
+index 3bab72462ab5..5961cc86d6d2 100644
+--- a/arch/parisc/kernel/ptrace.c
++++ b/arch/parisc/kernel/ptrace.c
+@@ -270,11 +270,11 @@ long do_syscall_trace_enter(struct pt_regs *regs)
+ {
+ 	long ret = 0;
+ 
+-	/* Do the secure computing check first. */
+-	if (secure_computing(regs->gr[20])) {
+-		/* seccomp failures shouldn't expose any additional code. */
+-		return -1;
+-	}
++	/*
++	 * Do the secure computing check first. seccomp failures
++	 * shouldn't expose any additional code.
++	 */
++	secure_computing_strict(regs->gr[20]);
+ 
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+ 	    tracehook_report_syscall_entry(regs))
+-- 
+1.9.3
+
