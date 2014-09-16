@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaIPVqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:46:53 -0400
-Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60167 "EHLO
+	id S1754105AbaIPVrC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:47:02 -0400
+Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60196 "EHLO
 	vidar.hosts.sieglitzhof.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753488AbaIPVqv (ORCPT
+	by vger.kernel.org with ESMTP id S1753488AbaIPVq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:46:51 -0400
+	Tue, 16 Sep 2014 17:46:57 -0400
 From: Maximilian Eschenbacher <maximilian@eschenbacher.email>
 To: linux-kernel@vger.kernel.org
 Cc: valentina.manea.m@gmail.com, shuah.kh@samsung.com,
@@ -15,14 +15,14 @@ Cc: valentina.manea.m@gmail.com, shuah.kh@samsung.com,
         Fjodor Schelichow <fjodor.schelichow@hotmail.com>,
         Johannes Stadlinger <johannes.stadlinger@fau.de>,
         Tobias Polzer <tobias.polzer@fau.de>
-Date: Tue, 16 Sep 2014 23:38:51 +0000
-Message-Id: <1410910735-27929-15-git-send-email-maximilian@eschenbacher.email>
+Date: Tue, 16 Sep 2014 23:38:50 +0000
+Message-Id: <1410910735-27929-14-git-send-email-maximilian@eschenbacher.email>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
 References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
 X-SA-Exim-Connect-IP: 172.16.2.6
 X-SA-Exim-Mail-From: maximilian@eschenbacher.email
-Subject: [PATCH 14/18] usbip: Wrap kernel_sendmsg()/recvmsg()
+Subject: [PATCH 13/18] usbip: Pass session keys to the kernel
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on vidar.hosts.sieglitzhof.net)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,9 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dominik Paulus <dominik.paulus@fau.de>
 
-This adds two simple wrappers around kernel_sendmsg() and
-kernel_recvmsg() that can be extended to perform additional
-cryptographic operations on the data before sending it.
+This extends the userspace code to write the generated session keys to
+sysfs in hexadecimal encoding after establishing the connection.
+The kernel code is modified to parse the session keys.
 
 Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
 Signed-off-by: Fjodor Schelichow <fjodor.schelichow@hotmail.com>
@@ -41,224 +41,250 @@ Signed-off-by: Johannes Stadlinger <johannes.stadlinger@fau.de>
 Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
 Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
 ---
- drivers/usb/usbip/stub_rx.c      |  2 +-
- drivers/usb/usbip/stub_tx.c      |  6 ++--
- drivers/usb/usbip/usbip_common.c | 64 +++++++++++++++++++++-------------------
- drivers/usb/usbip/usbip_common.h |  7 ++++-
- drivers/usb/usbip/vhci_rx.c      |  2 +-
- drivers/usb/usbip/vhci_tx.c      |  4 +--
- 6 files changed, 46 insertions(+), 39 deletions(-)
+ drivers/usb/usbip/stub_dev.c               | 36 +++++++++++++++++++++++++----
+ drivers/usb/usbip/usbip_common.h           | 10 ++++++++
+ drivers/usb/usbip/vhci_sysfs.c             | 37 ++++++++++++++++++++++++++++--
+ tools/usb/usbip/libsrc/usbip_common.c      | 15 ++++++++++++
+ tools/usb/usbip/libsrc/usbip_common.h      |  2 ++
+ tools/usb/usbip/libsrc/usbip_host_driver.c | 14 ++++++++---
+ tools/usb/usbip/libsrc/vhci_driver.c       |  8 ++++---
+ 7 files changed, 110 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/usbip/stub_rx.c b/drivers/usb/usbip/stub_rx.c
-index 00e475c..64b61bf5 100644
---- a/drivers/usb/usbip/stub_rx.c
-+++ b/drivers/usb/usbip/stub_rx.c
-@@ -544,7 +544,7 @@ static void stub_rx_pdu(struct usbip_device *ud)
- 	memset(&pdu, 0, sizeof(pdu));
- 
- 	/* receive a pdu header */
--	ret = usbip_recv(ud->tcp_socket, &pdu, sizeof(pdu));
-+	ret = usbip_recv(ud, &pdu, sizeof(pdu));
- 	if (ret != sizeof(pdu)) {
- 		dev_err(dev, "recv a header, %d\n", ret);
- 		usbip_event_add(ud, SDEV_EVENT_ERROR_TCP);
-diff --git a/drivers/usb/usbip/stub_tx.c b/drivers/usb/usbip/stub_tx.c
-index dbcabc9..06ccbcb 100644
---- a/drivers/usb/usbip/stub_tx.c
-+++ b/drivers/usb/usbip/stub_tx.c
-@@ -258,8 +258,7 @@ static int stub_send_ret_submit(struct stub_device *sdev)
- 			iovnum++;
- 		}
- 
--		ret = kernel_sendmsg(sdev->ud.tcp_socket, &msg,
--						iov,  iovnum, txsize);
-+		ret = usbip_sendmsg(&sdev->ud, &msg, iov, iovnum, txsize);
- 		if (ret != txsize) {
- 			dev_err(&sdev->interface->dev,
- 				"sendmsg failed!, retval %d for %zd\n",
-@@ -333,8 +332,7 @@ static int stub_send_ret_unlink(struct stub_device *sdev)
- 		iov[0].iov_len  = sizeof(pdu_header);
- 		txsize += sizeof(pdu_header);
- 
--		ret = kernel_sendmsg(sdev->ud.tcp_socket, &msg, iov,
--				     1, txsize);
-+		ret = usbip_sendmsg(&sdev->ud, &msg, iov, 1, txsize);
- 		if (ret != txsize) {
- 			dev_err(&sdev->interface->dev,
- 				"sendmsg failed!, retval %d for %zd\n",
-diff --git a/drivers/usb/usbip/usbip_common.c b/drivers/usb/usbip/usbip_common.c
-index facaaf0..559fe53 100644
---- a/drivers/usb/usbip/usbip_common.c
-+++ b/drivers/usb/usbip/usbip_common.c
-@@ -322,7 +322,7 @@ void usbip_dump_header(struct usbip_header *pdu)
- EXPORT_SYMBOL_GPL(usbip_dump_header);
- 
- /* Receive data over TCP/IP. */
--int usbip_recv(struct socket *sock, void *buf, int size)
-+int usbip_recv(struct usbip_device *ud, void *buf, int size)
+diff --git a/drivers/usb/usbip/stub_dev.c b/drivers/usb/usbip/stub_dev.c
+index e6624f1..d237351 100644
+--- a/drivers/usb/usbip/stub_dev.c
++++ b/drivers/usb/usbip/stub_dev.c
+@@ -57,18 +57,46 @@ static ssize_t store_sockfd(struct device *dev, struct device_attribute *attr,
+ 			    const char *buf, size_t count)
  {
- 	int result;
- 	struct msghdr msg;
-@@ -335,33 +335,26 @@ int usbip_recv(struct socket *sock, void *buf, int size)
+ 	struct stub_device *sdev = dev_get_drvdata(dev);
+-	int sockfd = 0;
++	int sockfd = 0, ret;
+ 	struct socket *socket;
+-	int rv;
++	char sendkey[USBIP_KEYSIZE], recvkey[USBIP_KEYSIZE];
++	char sendkey_hex[2 * USBIP_KEYSIZE + 1];
++	char recvkey_hex[2 * USBIP_KEYSIZE + 1];
  
- 	usbip_dbg_xmit("enter\n");
- 
--	if (!sock || !buf || !size) {
--		pr_err("invalid arg, sock %p buff %p size %d\n", sock, buf,
--		       size);
-+	if (!ud || !buf || !size) {
-+		pr_err("invalid arg, ud %p buff %p size %d\n", ud, buf, size);
- 		return -EINVAL;
+ 	if (!sdev) {
+ 		dev_err(dev, "sdev is null\n");
+ 		return -ENODEV;
  	}
  
--	do {
--		sock->sk->sk_allocation = GFP_NOIO;
--		iov.iov_base    = buf;
--		iov.iov_len     = size;
--		msg.msg_name    = NULL;
--		msg.msg_namelen = 0;
--		msg.msg_control = NULL;
--		msg.msg_controllen = 0;
--		msg.msg_flags      = MSG_NOSIGNAL;
--
--		result = kernel_recvmsg(sock, &msg, &iov, 1, size, MSG_WAITALL);
--		if (result <= 0) {
--			pr_debug("receive sock %p buf %p size %u ret %d total %d\n",
--				 sock, buf, size, result, total);
--			goto err;
--		}
--
--		size -= result;
--		buf += result;
--		total += result;
--	} while (size > 0);
-+	ud->tcp_socket->sk->sk_allocation = GFP_NOIO;
-+	iov.iov_base    = buf;
-+	iov.iov_len     = size;
-+	msg.msg_name    = NULL;
-+	msg.msg_namelen = 0;
-+	msg.msg_control = NULL;
-+	msg.msg_controllen = 0;
-+	msg.msg_flags      = MSG_NOSIGNAL;
+-	rv = sscanf(buf, "%d", &sockfd);
+-	if (rv != 1)
++	/*
++	 * Read symmetric crypto keys. They are randomly
++	 * generated by userspace and passed to the kernel
++	 * via sysfs (encoded in hexadecimal)
++	 */
++	if (sscanf(buf, "%d %d %32s %32s", &sockfd, &sdev->ud.use_crypto,
++		   sendkey_hex, recvkey_hex) < 1) {
++		dev_err(dev, "Invalid write to sysfs: Invalid sockfd\n");
+ 		return -EINVAL;
++	}
++	if (sdev->ud.use_crypto) {
++		int i;
 +
-+	result = usbip_recvmsg(ud, &msg, &iov, 1, size, MSG_WAITALL);
-+	if (result < 0) {
-+		pr_debug("receive sock %p buf %p size %u ret %d total %d\n",
-+			 ud->tcp_socket, buf, size, result, total);
-+		return result;
++		dev_info(dev, "Using encrypted data transport\n");
++		for (i = USBIP_KEYSIZE - 1; i >= 0; --i) {
++			sendkey_hex[2 * (i + 1)] = 0;
++			ret = sscanf(sendkey_hex + (2 * i), "%2hhX",
++				     &sendkey[i]);
++			if (ret < 1)
++				return -EINVAL;
++		}
++		for (i = USBIP_KEYSIZE - 1; i >= 0; --i) {
++			recvkey_hex[2 * (i + 1)] = 0;
++			ret = sscanf(recvkey_hex + (2 * i), "%2hhX",
++				     &recvkey[i]);
++			if (ret < 1)
++				return -EINVAL;
++		}
 +	}
  
- 	if (usbip_dbg_flag_xmit) {
- 		if (!in_interrupt())
-@@ -375,9 +368,6 @@ int usbip_recv(struct socket *sock, void *buf, int size)
- 			 osize, result, size, total);
- 	}
- 
--	return total;
--
--err:
- 	return result;
- }
- EXPORT_SYMBOL_GPL(usbip_recv);
-@@ -591,6 +581,20 @@ static void usbip_pack_iso(struct usbip_iso_packet_descriptor *iso,
- 	}
- }
- 
-+int usbip_recvmsg(struct usbip_device *ud, struct msghdr *msg,
-+		  struct kvec *vec, size_t num, size_t size, int flags)
-+{
-+	return kernel_recvmsg(ud->tcp_socket, msg, vec, num, size, flags);
-+}
-+EXPORT_SYMBOL_GPL(usbip_recvmsg);
-+
-+int usbip_sendmsg(struct usbip_device *ud, struct msghdr *msg,
-+		  struct kvec *vec, size_t num, size_t size)
-+{
-+	return kernel_sendmsg(ud->tcp_socket, msg, vec, num, size);
-+}
-+EXPORT_SYMBOL_GPL(usbip_sendmsg);
-+
- /* must free buffer */
- struct usbip_iso_packet_descriptor*
- usbip_alloc_iso_desc_pdu(struct urb *urb, ssize_t *bufflen)
-@@ -637,7 +641,7 @@ int usbip_recv_iso(struct usbip_device *ud, struct urb *urb)
- 	if (!buff)
- 		return -ENOMEM;
- 
--	ret = usbip_recv(ud->tcp_socket, buff, size);
-+	ret = usbip_recv(ud, buff, size);
- 	if (ret != size) {
- 		dev_err(&urb->dev->dev, "recv iso_frame_descriptor, %d\n",
- 			ret);
-@@ -741,7 +745,7 @@ int usbip_recv_xbuff(struct usbip_device *ud, struct urb *urb)
- 	if (!(size > 0))
- 		return 0;
- 
--	ret = usbip_recv(ud->tcp_socket, urb->transfer_buffer, size);
-+	ret = usbip_recv(ud, urb->transfer_buffer, size);
- 	if (ret != size) {
- 		dev_err(&urb->dev->dev, "recv xbuf, %d\n", ret);
- 		if (ud->side == USBIP_STUB) {
+ 	if (sockfd != -1) {
+ 		int err;
 diff --git a/drivers/usb/usbip/usbip_common.h b/drivers/usb/usbip/usbip_common.h
-index 69b3f8a..8b0ac52 100644
+index 86b0847..69b3f8a 100644
 --- a/drivers/usb/usbip/usbip_common.h
 +++ b/drivers/usb/usbip/usbip_common.h
-@@ -308,7 +308,7 @@ struct usbip_device {
- void usbip_dump_urb(struct urb *purb);
- void usbip_dump_header(struct usbip_header *pdu);
+@@ -33,6 +33,13 @@
  
--int usbip_recv(struct socket *sock, void *buf, int size);
-+int usbip_recv(struct usbip_device *ui, void *buf, int size);
+ #define USBIP_VERSION "1.0.0"
  
- void usbip_pack_pdu(struct usbip_header *pdu, struct urb *urb, int cmd,
- 		    int pack);
-@@ -328,6 +328,11 @@ void usbip_stop_eh(struct usbip_device *ud);
- void usbip_event_add(struct usbip_device *ud, unsigned long event);
- int usbip_event_happened(struct usbip_device *ud);
- 
-+int usbip_recvmsg(struct usbip_device *ui, struct msghdr *msg,
-+		  struct kvec *vec, size_t num, size_t size, int flags);
-+int usbip_sendmsg(struct usbip_device *ui, struct msghdr *msg,
-+		  struct kvec *vec, size_t num, size_t size);
++/*
++ * Length of symmetric keys. Currently, this should be fixed at 16 bytes.
++ * Will break code if changed, look at userspace and stub_dev.c/vhci_sysfs.c
++ * where this constant is used before changing.
++ */
++#define USBIP_KEYSIZE 16
 +
- static inline int interface_to_busnum(struct usb_interface *interface)
+ #undef pr_fmt
+ 
+ #ifdef DEBUG
+@@ -275,6 +282,9 @@ struct usbip_device {
+ 		void (*reset)(struct usbip_device *);
+ 		void (*unusable)(struct usbip_device *);
+ 	} eh_ops;
++
++	/* Crypto support */
++	int use_crypto;
+ };
+ 
+ #define kthread_get_run(threadfn, data, namefmt, ...)			   \
+diff --git a/drivers/usb/usbip/vhci_sysfs.c b/drivers/usb/usbip/vhci_sysfs.c
+index 211f43f..fa948ad 100644
+--- a/drivers/usb/usbip/vhci_sysfs.c
++++ b/drivers/usb/usbip/vhci_sysfs.c
+@@ -174,18 +174,51 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
  {
- 	struct usb_device *udev = interface_to_usbdev(interface);
-diff --git a/drivers/usb/usbip/vhci_rx.c b/drivers/usb/usbip/vhci_rx.c
-index 00e4a54..38cee58 100644
---- a/drivers/usb/usbip/vhci_rx.c
-+++ b/drivers/usb/usbip/vhci_rx.c
-@@ -205,7 +205,7 @@ static void vhci_rx_pdu(struct usbip_device *ud)
- 	memset(&pdu, 0, sizeof(pdu));
+ 	struct vhci_device *vdev;
+ 	struct socket *socket;
+-	int sockfd = 0;
++	int sockfd = 0, ret;
+ 	__u32 rhport = 0, devid = 0, speed = 0;
+ 	int err;
++	unsigned char sendkey[USBIP_KEYSIZE], recvkey[USBIP_KEYSIZE];
++	char sendkey_hex[2*USBIP_KEYSIZE+1], recvkey_hex[2*USBIP_KEYSIZE+1];
++	int use_crypto = 0;
  
- 	/* receive a pdu header */
--	ret = usbip_recv(ud->tcp_socket, &pdu, sizeof(pdu));
-+	ret = usbip_recv(ud, &pdu, sizeof(pdu));
+ 	/*
+ 	 * @rhport: port number of vhci_hcd
+ 	 * @sockfd: socket descriptor of an established TCP connection
+ 	 * @devid: unique device identifier in a remote host
+ 	 * @speed: usb device speed in a remote host
++	 * @use_crypto: Whether to use an encrypted connection
++	 * @recvkey_hex/@sendkey_hex: Hexadecimal encoded 128bit
++	 *              symmetric encryption keys to be used.
++	 *              Generated randomly for each connection
++	 *              by userspace.
+ 	 */
+-	if (sscanf(buf, "%u %u %u %u", &rhport, &sockfd, &devid, &speed) != 4)
++	sendkey_hex[0] = 0;
++	recvkey_hex[0] = 0;
++	ret = sscanf(buf, "%u %u %u %u %d %32s %32s", &rhport, &sockfd, &devid,
++		     &speed, &use_crypto, sendkey_hex, recvkey_hex);
++	if (ret < 1)
+ 		return -EINVAL;
++	if (use_crypto && strlen(sendkey_hex) == 32 &&
++			strlen(recvkey_hex) == 32) {
++		int i;
++
++		dev_info(dev, "Using encrypted data transport\n");
++		/* Decode decimal representation */
++		for (i = USBIP_KEYSIZE - 1; i >= 0; --i) {
++			sendkey_hex[2 * (i + 1)] = 0;
++			ret = sscanf(sendkey_hex + (2 * i), "%2hhX",
++				     &sendkey[i]);
++			if (ret < 1)
++				return -EINVAL;
++		}
++		for (i = USBIP_KEYSIZE - 1; i >= 0; --i) {
++			recvkey_hex[2 * (i + 1)] = 0;
++			ret = sscanf(recvkey_hex + (2 * i), "%2hhX",
++				     &recvkey[i]);
++			if (ret < 1)
++				return -EINVAL;
++		}
++	}
+ 
+ 	usbip_dbg_vhci_sysfs("rhport(%u) sockfd(%u) devid(%u) speed(%u)\n",
+ 			     rhport, sockfd, devid, speed);
+diff --git a/tools/usb/usbip/libsrc/usbip_common.c b/tools/usb/usbip/libsrc/usbip_common.c
+index ac73710..ebca98b 100644
+--- a/tools/usb/usbip/libsrc/usbip_common.c
++++ b/tools/usb/usbip/libsrc/usbip_common.c
+@@ -283,3 +283,18 @@ void usbip_names_get_class(char *buff, size_t size, uint8_t class,
+ 
+ 	snprintf(buff, size, "%s / %s / %s (%02x/%02x/%02x)", c, s, p, class, subclass, protocol);
+ }
++
++/*
++ * Converts a 16-byte key to hexadecimal to be pushed to kernelspace
++ *
++ * Output buffer must be at least 33 bytes long
++ */
++char *keytohex(unsigned char *key, char *out)
++{
++	int i;
++
++	out[32] = 0;
++	for (i = 0; i != 16; ++i)
++		sprintf(out + (2 * i), "%02X", key[i]);
++	return out;
++}
+diff --git a/tools/usb/usbip/libsrc/usbip_common.h b/tools/usb/usbip/libsrc/usbip_common.h
+index 86d21f2..b185c2c 100644
+--- a/tools/usb/usbip/libsrc/usbip_common.h
++++ b/tools/usb/usbip/libsrc/usbip_common.h
+@@ -156,4 +156,6 @@ void usbip_names_get_product(char *buff, size_t size, uint16_t vendor,
+ void usbip_names_get_class(char *buff, size_t size, uint8_t class,
+ 			   uint8_t subclass, uint8_t protocol);
+ 
++char *keytohex(unsigned char *key, char *out);
++
+ #endif /* __USBIP_COMMON_H */
+diff --git a/tools/usb/usbip/libsrc/usbip_host_driver.c b/tools/usb/usbip/libsrc/usbip_host_driver.c
+index f7c85da..9ee218e 100644
+--- a/tools/usb/usbip/libsrc/usbip_host_driver.c
++++ b/tools/usb/usbip/libsrc/usbip_host_driver.c
+@@ -226,7 +226,7 @@ int usbip_host_export_device(struct usbip_exported_device *edev,
+ {
+ 	char attr_name[] = "usbip_sockfd";
+ 	char sockfd_attr_path[SYSFS_PATH_MAX];
+-	char sockfd_buff[30];
++	char sockfd_buff[512];
+ 	int ret;
+ 
+ 	if (edev->status != SDEV_ST_AVAILABLE) {
+@@ -244,12 +244,20 @@ int usbip_host_export_device(struct usbip_exported_device *edev,
+ 		return -1;
+ 	}
+ 
++	{
++		char key1[33], key2[33];
++
++		snprintf(sockfd_buff, sizeof(sockfd_buff), "%d %d %s %s\n",
++			 conf->sockfd, conf->use_crypto,
++			 keytohex(conf->key2, key2),
++			 keytohex(conf->key1, key1));
++		dbg("write: %s", sockfd_buff);
++	}
++
+ 	/* only the first interface is true */
+ 	snprintf(sockfd_attr_path, sizeof(sockfd_attr_path), "%s/%s",
+ 		 edev->udev.path, attr_name);
+ 
+-	snprintf(sockfd_buff, sizeof(sockfd_buff), "%d\n", conf->sockfd);
+-
+ 	ret = write_sysfs_attribute(sockfd_attr_path, sockfd_buff,
+ 				    strlen(sockfd_buff));
  	if (ret < 0) {
- 		if (ret == -ECONNRESET)
- 			pr_info("connection reset by peer\n");
-diff --git a/drivers/usb/usbip/vhci_tx.c b/drivers/usb/usbip/vhci_tx.c
-index 409fd99..09663e6 100644
---- a/drivers/usb/usbip/vhci_tx.c
-+++ b/drivers/usb/usbip/vhci_tx.c
-@@ -115,7 +115,7 @@ static int vhci_send_cmd_submit(struct vhci_device *vdev)
- 			txsize += len;
- 		}
+diff --git a/tools/usb/usbip/libsrc/vhci_driver.c b/tools/usb/usbip/libsrc/vhci_driver.c
+index c0928e2..b34e53a 100644
+--- a/tools/usb/usbip/libsrc/vhci_driver.c
++++ b/tools/usb/usbip/libsrc/vhci_driver.c
+@@ -300,14 +300,16 @@ int usbip_vhci_get_free_port(void)
  
--		ret = kernel_sendmsg(vdev->ud.tcp_socket, &msg, iov, 3, txsize);
-+		ret = usbip_sendmsg(&vdev->ud, &msg, iov, 3, txsize);
- 		if (ret != txsize) {
- 			pr_err("sendmsg failed!, ret=%d for %zd\n", ret,
- 			       txsize);
-@@ -184,7 +184,7 @@ static int vhci_send_cmd_unlink(struct vhci_device *vdev)
- 		iov[0].iov_len  = sizeof(pdu_header);
- 		txsize += sizeof(pdu_header);
+ int usbip_vhci_attach_device(struct vhci_conf *conf)
+ {
+-	char buff[200]; /* what size should be ? */
++	char buff[512], key1[33], key2[33];
+ 	char attach_attr_path[SYSFS_PATH_MAX];
+ 	char attr_attach[] = "attach";
+ 	const char *path;
+ 	int ret;
  
--		ret = kernel_sendmsg(vdev->ud.tcp_socket, &msg, iov, 1, txsize);
-+		ret = usbip_sendmsg(&vdev->ud, &msg, iov, 1, txsize);
- 		if (ret != txsize) {
- 			pr_err("sendmsg failed!, ret=%d for %zd\n", ret,
- 			       txsize);
+-	snprintf(buff, sizeof(buff), "%u %d %u %u",
+-			conf->port, conf->sockfd, conf->devid, conf->speed);
++	snprintf(buff, sizeof(buff), "%u %u %u %u %d %s %s",
++		 conf->port, conf->sockfd, conf->devid, conf->speed,
++		 conf->use_crypto, keytohex(conf->key1, key1),
++		 keytohex(conf->key2, key2));
+ 	dbg("writing: %s", buff);
+ 
+ 	path = udev_device_get_syspath(vhci_driver->hc_device);
 -- 
 2.1.0
 
