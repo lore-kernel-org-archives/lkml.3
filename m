@@ -1,105 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaIPR0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 13:26:36 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:34269 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaIPR0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 13:26:35 -0400
-Date: Tue, 16 Sep 2014 12:26:27 -0500
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Shea Levy <shea@shealevy.com>
-Cc: linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
-Subject: Re: [RFC PATCH 0/2] Loop device psuedo filesystem
-Message-ID: <20140916172627.GA50006@ubuntu-hedt>
-Mail-Followup-To: Shea Levy <shea@shealevy.com>,
-	linux-kernel@vger.kernel.org, lxc-devel@lists.linuxcontainers.org
-References: <1401227936-15698-1-git-send-email-seth.forshee@canonical.com>
- <20140915203844.GA14761@nixos.hsd1.nh.comcast.net>
- <20140915205532.GA16651@ubuntu-hedt>
- <20140915232052.GA2235@nixos.hsd1.nh.comcast.net>
- <20140916161247.GA5026@nixos.hsd1.nh.comcast.net>
- <20140916163957.GB30588@ubuntu-hedt>
- <20140916170548.GB5026@nixos.hsd1.nh.comcast.net>
+	id S1754413AbaIPRb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 13:31:56 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:36297 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013AbaIPRby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 13:31:54 -0400
+Message-ID: <54187400.10506@osg.samsung.com>
+Date: Tue, 16 Sep 2014 11:31:44 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916170548.GB5026@nixos.hsd1.nh.comcast.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Davidlohr Bueso <dave@stgolabs.net>
+CC: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, ebiederm@xmission.com,
+        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
+        felipensp@gmail.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
+Subject: Re: [PATCH 1/7] selftests: add header file for test exit code defines
+References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com> <1410820442-8774-2-git-send-email-shuahkh@osg.samsung.com> <1410883441.4630.9.camel@linux-t7sj.site>
+In-Reply-To: <1410883441.4630.9.camel@linux-t7sj.site>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 01:05:48PM -0400, Shea Levy wrote:
-> On Tue, Sep 16, 2014 at 11:39:57AM -0500, Seth Forshee wrote:
-> > On Tue, Sep 16, 2014 at 12:12:47PM -0400, Shea Levy wrote:
-> > > OK, compiling with BLK_DEV_LOOP=y (on top of 3.16.2), I was able to
-> > > mount loopfs, request a loop device from loop-control, and associate it
-> > > with an image with an ext4 partition with losetup, but mount still gives
-> > > EPERM (all as root in a userns started from an unprivileged account). Is
-> > > this expected? I do have read and write permissions to the resultant
-> > > loop device. If this is expected, what would be needed to be able to
-> > > mount the device?
-> > 
-> > Yes. Very few filesystems allow mounting from a userns right now, and
-> > probably no "regular" filesystems do, only special filesystems like
-> > sysfs. At minimum you'll need to add the FS_USERNS_MOUNT flag to any
-> > filesystems you want to use, but even then the user/group ids probably
-> > won't be translated into the userns.
-> > 
+On 09/16/2014 10:04 AM, Davidlohr Bueso wrote:
+> On Mon, 2014-09-15 at 16:33 -0600, Shuah Khan wrote:
+>> Add a new header file that defines exit codes for individual
+>> tests to use to communicate test results. These defines are
+>> intended to provide a common and uniform way for selftests
+>> to report results. pass/fail/xfail/xpass/skip/unsupported
+>> are defined.
+>>
+>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+>> ---
+>>  tools/testing/selftests/kselftest.h | 20 ++++++++++++++++++++
+>>  1 file changed, 20 insertions(+)
+>>  create mode 100644 tools/testing/selftests/kselftest.h
+>>
+>> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
+>> new file mode 100644
+>> index 0000000..1b1c9cb
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/kselftest.h
+>> @@ -0,0 +1,20 @@
+>> +/*
+>> + * kselftest.h - kselftest framework return codes to include from
+>> + *		 selftests.
+>> + *
+>> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
+>> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+>> + *
+>> + * This file is released under the GPLv2.
+>> + */
+>> +#ifndef __KSELFTEST_H
+>> +#define __KSELFTEST_H
+>> +
+>> +#define	EXIT_PASS		0
+>> +#define	EXIT_FAIL		1
+>> +#define	EXIT_XFAIL		2
+>> +#define	EXIT_XPASS		3
+>> +#define	EXIT_SKIP		4
+>> +#define	EXIT_UNSUPPORTED	EXIT_SKIP
 > 
-> Hm, I see. Yeah, none of the 'regular' filesystems have that set. Why is
-> that, if it's easy to explain? From a naive perspective it seems like if
-> you have the permissions to the device then the uid/gid mapping should
-> be generic (the on-disk id is the id *inside* the namespace, the kernel
-> maps that based on the id_map file to processes outside the namespace),
-> but I'm sure that's insecure in a way I'm not seeing.
-
-Security. There are likely some bugs in how filesystem data is
-processed, and if an arbitrary user can hand the kernel specially
-crafted filesystem images these bugs could become exploits. I suspect
-that some filesystems will be mountable from user namespaces eventually,
-I just don't think anyone has done the work to alleviate the security
-concerns yet.
-
-> > > Also, this isn't an issue exactly, but the free devices started at 8
-> > > (presumably because I have /dev/loop[0-7]) and appear in /dev in the
-> > > root ns (presumably via udev) until I unmounted.
-> > 
-> > Right. 0-7 get created at module init time and end up allocated to the
-> > init_user_ns superblock, so the first "free" id for your ns is 8.
-> > 
-> > I've brought up the problem of the devices for the userns also showing
-> > up in devtmpfs. It was dismissed as not really being an issue, though I
-> > still don't agree with that viewpoint. My proposed solution of assigning
-> > devices to namespaces and then creating a namespaced devtmpfs was
-> > rejected as well.
-> > 
-> > Just so you know, I'm not doing any further development of these patches
-> > right now. I've shifted my efforts to getting fuse mountable from user
-> > namespaces (https://lkml.org/lkml/2014/9/12/367).
-> > 
+> Looks to me like a potential name clashes here.
 > 
-> Aside from the patch to build as a module, is there anything further to
-> be done on the loopfs side of things? If not I may try to get this
-> merged myself if you don't mind.
+> What's the difference between XFAIL/XPASS and regular FAIL/PASS (I don't
+> see the former used in patchset either, only PASS/FAIL)? What's the
+> purpose of EXIT_SKIP? I think overall these should be commented.
 
-No, I don't mind.
+Yeah Comments would have been nice. :) I will add them.
 
-There's probably some cleanup to do. I don't recall if I had resolved
-all the issues with getting the loop devices "freed" when a superblock
-was killed, which was kind of tricky to get right. Obviously I never
-tested unloading the module either ;-)
+> 
+> Also, in the bigger picture, I'm guessing you have a reason for not
+> recycling errno and inventing your own exit codes... How do you plan on
+> using these? In addition I'm seeing things like:
+> 
+> -       exit(EXIT_FAILURE);
+> +       exit(EXIT_FAIL);
+> 
+> which isn't a very good idea in general.
 
-Also go back through the thread and read the feedback the patches got.
-There was a suggestion to leave loop alone and create something new for
-this purpose as well.
+EXIT_FAILURE happens to have the same value as EXIT_FAIL. That said,
+I do understand what you are saying. EXIT_FAILURE and EXIT_SUCCESS
+are defined in stdlib.h - I would have liked to simply use them,
+however that won't meet the needs. More on this below.
 
-There may be more, but that's what comes to mind. I also wanted to
-somehow make the devices which are in a non-root loopfs mount not show
-up in devtmpfs, but I still needed to come up with a way to do that
-which Greg would be happy with.
+At the moment there is no clear way to tell why a test failed. Some
+tests exit with -1, some exit 1, and some with errno. One of the
+requests/requirements that was discussed at the kernel summit kselftest
+session was to enhance tests to report why an individual test failed.
+Returning and/or exiting with -1, 1 and errno doesn't tell the user
+anything other than that the test failed. Even without this request, it
+will helps us developers if we have a uniform reporting in place for
+all tests to use.
 
-Seth
+We have two kinds of users for these tests.
 
+1. Developers that simply want to regression test their individual areas
+   These are the users that don't care about the categories of failures.
+2. Users that want to run them from their user-space test suites. These
+   users care to know why a test failed, not just that it failed.
+
+errno is useful in pin-pointing the failure for a developer, however it
+is not very useful for somebody that is running sanity checks. We need
+both, hence I changed some of the tests in this series to print errno.
+Several tests print errno in their error legs and there a few places
+that don't.
+
+In either case, it would be good to report if a test failed because
+a modules it needs isn't configured or it just failed.
+
+There is also a need to report the following cases in addition a simple
+pass/fail:
+
+pass - test passed
+fail - it failed
+xfail - a test that expected to fail failed as expected (this is really
+a pass case)
+xpass - a test that is expected to fail passed.
+xskip or xunsupported - test couldn't run because of unmet dependencies.
+
+These types of decisions on why test failed, can only be made in the
+individual tests.
+
+I picked the POSIX conforming test codes that are used by various user
+space test suites. POSIX right, I can't go wrong :)
+
+I also want to avoid adding some test framework in kernel tree, hence
+I simply defined these in a header file. Another goal is to not make it
+hard for developers write these tests and think too much about the
+reporting. We need some way to report these and hence the need for a
+common defines so tests can simply use them.
+
+I am trying to balance the needs of the two types of users and also
+do minimal changes to existing test with a light weight framework.
+Hope this helps explain this patch series better.
+
+I am open to suggestions as always.
+
+thanks,
+-- Shuah
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
