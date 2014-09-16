@@ -1,134 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954AbaIPKnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:43:05 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33139 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaIPKnD (ORCPT
+	id S1753990AbaIPKnk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:43:40 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:62556 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183AbaIPKnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:43:03 -0400
-Date: Tue, 16 Sep 2014 11:42:42 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
+	Tue, 16 Sep 2014 06:43:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>
+References: <1409693701-16520-1-git-send-email-abrestic@chromium.org>
+ <CAAObsKAYqpJMJnxSMxhkkRtnoEwLwgUa1y7ij5ZHvHf1jRok+Q@mail.gmail.com>
+ <CAL1qeaF7U9aoBp5gQPS=r+pe6krKmXdP1qak2gjhNqQMoHFB8A@mail.gmail.com>
+ <CAAObsKAXO-pBtqd1jNj8faXqpE+5Wb0RFzPp+jn9FH0B=dHq8g@mail.gmail.com>
+ <CAL1qeaEk_r5XAKvvJfwXN9+Wi9EjC_2MgBfoP92TK=F+Ou9QTA@mail.gmail.com>
+ <CAAObsKAwgfx1g2p7PQP+=HudvAHHpcPi47gEH6BrxEgLu6w2VQ@mail.gmail.com> <CAL1qeaEC9O8-jgjGC44cFctoZPpp4dRVfQ=mhSb_2on7GgiU0w@mail.gmail.com>
+From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
+Date: Tue, 16 Sep 2014 12:43:16 +0200
+X-Google-Sender-Auth: rUGkwTP3OEVNyga3m_64dDMC8mw
+Message-ID: <CAAObsKC=_pnr+LD6MBe0iAmf2f6suHgb=ZshkxuLfHhBFM7P3A@mail.gmail.com>
+Subject: Re: [PATCH v3 0/9] Tegra xHCI support
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-Message-ID: <20140916104242.GC27273@arm.com>
-References: <5412DC48.7030708@codeaurora.org>
- <5412E3BB.9030800@arm.com>
- <54134291.3040700@codeaurora.org>
- <20140915111055.GD1577@arm.com>
- <54174CFF.7050504@codeaurora.org>
- <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com>
- <54175EFE.6010509@codeaurora.org>
- <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com>
- <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com>
- <54176D62.9010600@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54176D62.9010600@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 11:51:14PM +0100, Christopher Covington wrote:
-> Hi Sonny,
-> 
-> On 09/15/2014 06:04 PM, Sonny Rao wrote:
-> > On Mon, Sep 15, 2014 at 2:52 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
-> >> On Mon, Sep 15, 2014 at 2:49 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >>> On 09/15/14 14:47, Sonny Rao wrote:
-> >>>> On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> >>>>> On 09/15/14 04:10, Catalin Marinas wrote:
-> >>>>>> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
-> >>>>>>> On 09/12/14 05:14, Marc Zyngier wrote:
-> >>>>>>>> We surely can handle the UNDEF and do something there. We just can't do
-> >>>>>>>> it the way Doug described it above.
-> >>>>>>> I suggested doing that for something else a while ago and Will and Dave
-> >>>>>>> we're not thrilled[1]. The suggestion back then was to use DT to
-> >>>>>>> indicate what mode the kernel is running in.
-> >>>>>>>
-> >>>>>>> [1]
-> >>>>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
-> >>>>>> I think the context was slightly different. As I re-read the thread, it
-> >>>>>> seems that the discussion was around whether to use some SMC interface
-> >>>>>> or not based on whether the kernel is running secure or non-secure. The
-> >>>>>> argument made by Will was to actually specify the type of the firmware
-> >>>>>> SMC interface in the DT and use it in the kernel (and probably assume
-> >>>>>> the kernel is running in secure mode if no smc interface is specified in
-> >>>>>> the DT; you could have both though, running in secure mode and also
-> >>>>>> having firmware).
-> >>>>>>
-> >>>>>> In this arch timer case, we need to work around a firmware bug (or
-> >>>>>> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
-> >>>>>> firmware, no matter how small such firmware is). We don't expect a
-> >>>>>> specific SMC call to initialise CNTVOFF, so we can't describe it in the
-> >>>>>> DT.
-> >>>>> Agreed, we can't described SMC calls that don't exist. From my
-> >>>>> perspective it's just another part of the cpu boot sequence that needs
-> >>>>> to be handled in the kernel, so describing the requirement via the
-> >>>>> cpu-boot method seems appropriate. It seems like we're making it harder
-> >>>>> than it should be by handling the undef when we could have slightly
-> >>>>> different SMP boot code (and suspend/resume code) depending on the boot
-> >>>>> method property.
-> >>>>
-> >>>> +heiko
-> >>>>
-> >>>> So, for the case of rk3288, based on this discussion what I'm going to
-> >>>> propose is to add code to rockchip.c which looks for a particular SMP
-> >>>> enable method -- say something like "rockchip,rk3288-smp-secure-svc"
-> >>>> which will then assume we have been booted in secure SVC mode and do
-> >>>> the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
-> >>>> as well, so I think it will need to scan the DT fairly early on the
-> >>>> boot CPU and also perform the function there.
-> >>>>
-> >>>> I'll look into implementing this and post code.  Comments and
-> >>>> suggestions appreciated, thanks.
-> >>>
-> >>> What goes wrong if we read the cntvoff from the boot CPU during
-> >>> smp_prepare_cpus() phase and use that to set the cntvoff on the other
-> >>> CPUs? That avoids needing to do anything very early by making the value
-> >>> the same. It does mean that cntvoff is some random out of reset value
-> >>> for CPU0, but at least it's consistent.
-> >>
-> >> I think we cannot read the value if we're not in hyp mode.
-> > 
-> > Well, thinking about it a little more, I think you still have a good point.
-> > 
-> > We don't need to do this early on, as long as we haven't started using
-> > the arch timers yet.  If we are still able to do this at the point
-> > where we're executing the code in arch/arm/mach-rockchip/platsmp.c
-> > that finds the enable method then we can just handle it there.
-> 
-> I've been playing around with the probe-based approach and while I need to do
-> a lot more testing, it seems to be working for the first tens of instructions.
-> I hope to be able to share a draft of that soon. Basically, I just read the
-> current NSACR value and write it back (although maybe in the long term we
-> would want to make sure a few of those bits are set or cleared). If that
-> succeeds, we know we're in secure SVC and can proceed to set up MON and HYP.
+On 15 September 2014 19:06, Andrew Bresticker <abrestic@chromium.org> wrote:
+> On Mon, Sep 15, 2014 at 12:00 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
+>> On 12 September 2014 18:37, Andrew Bresticker <abrestic@chromium.org> wrote:
+>>> On Tue, Sep 9, 2014 at 1:21 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
+>>>> On 8 September 2014 18:22, Andrew Bresticker <abrestic@chromium.org> wrote:
+>>>>> On Mon, Sep 8, 2014 at 8:34 AM, Tomeu Vizoso <tomeu@tomeuvizoso.net> wrote:
+>>>>>> On 2 September 2014 23:34, Andrew Bresticker <abrestic@chromium.org> wrote:
+>>>>>>>
+>>>>>>> Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
+>>>>>>> USB3.0 memory sticks and ethernet dongles using controller firmware
+>>>>>>> recently posted by Andrew Chew [2].
+>>>>>>
+>>>>>> I have had mixed results when testing this on a Jetson TK1 board. Of 8
+>>>>>> USB devices I tested with, about half where probed correctly, but the
+>>>>>> other half repeatedly fail in hub_port_init because in the GET_STATUS
+>>>>>> right after the reset, the C_PORT_CONNECTION bit is set.
+>>>>>>
+>>>>>> I don't see any correlation between the failure and the kind of usb
+>>>>>> device, but I don't have much experience with USB implementations
+>>>>>> either.
+>>>>>
+>>>>> Hmm... I haven't seen that before.  Which particular devices were you using?
+>>>>
+>>>> Here they are:
+>>>>
+>>>> work:
+>>>>
+>>>> Genius keyboard: 05d5:6782
+>>>> Logitech mouse: 046d:c06a
+>>>> Denver MP3 player: 10d6:1100
+>>>> Atheros Bluetooth dongle: 0cf3:3005
+>>>>
+>>>> don't work:
+>>>>
+>>>> MCS7830 ethernet dongle: 9710:7830
+>>>> Genesys Logic hub: 05e3:0608
+>>>
+>>> I tried the hub and it works just fine for me... Have you tried this
+>>> on any other boards like Big or Blaze?
+>>
+>> I have a Blaze here, but haven't been able to get the external ports
+>> to power up. I don't have schematics nor a strong interest to get that
+>> fixed myself, as I can test my code just fine with the Blaze's
+>> internal camera and the devices that do work on the Jetson.
+>
+> Ok, since Blaze has been announced, hopefully we can post a
+> device-tree for it soon.
+>
+>> I'm using the firmware file that was posted recently:
+>>
+>> xhci-tegra 70090000.usb: Firmware timestamp: 2014-05-02 02:22:50 UTC,
+>> Falcon state 0x20
+>
+> Yup, I'm using the same firmware.
+>
+>> If things work for you with the same sources, .config and firmware, I
+>> can only think of the hw being different (other hw revision?).
+>
+> That, or perhaps bootloader differences?  I'm using mainline U-Boot.
 
-But when it doesn't succeed, you get an undefined instruction fault
-(since NSACR is only writable in secure mode).
+Also mainline here:
 
--- 
-Catalin
+U-Boot 2014.10-rc1-00136-g7bee1c9 (Aug 28 2014 - 15:22:05)
+
+Don't know how to check what revision of the hw I have, though.
+
+Regards,
+
+Tomeu
+
+> Stephen, Thierry, have either of you had a chance to test this series?
