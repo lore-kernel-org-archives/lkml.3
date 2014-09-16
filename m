@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620AbaIPVfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:35:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48370 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752732AbaIPVfV convert rfc822-to-8bit (ORCPT
+	id S1753685AbaIPVhl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:37:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41374 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036AbaIPVhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:35:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,536,1406617200"; 
-   d="scan'208";a="477962992"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Jiri Kosina <trivial@kernel.org>,
-        "Greg KH (gregkh@linuxfoundation.org)" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH trivial] mei: Spelling s/domian/domain/,
- s/stucture/structure/
-Thread-Topic: [PATCH trivial] mei: Spelling s/domian/domain/,
- s/stucture/structure/
-Thread-Index: AQHP0ejybICcLE3QtEKE006xpIQuD5wESC9A
-Date: Tue, 16 Sep 2014 21:35:07 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1C457C00@HASMSX106.ger.corp.intel.com>
-References: <1410897647-28308-1-git-send-email-geert+renesas@glider.be>
-In-Reply-To: <1410897647-28308-1-git-send-email-geert+renesas@glider.be>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Sep 2014 17:37:39 -0400
+Date: Tue, 16 Sep 2014 14:37:39 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] scsi patch queue tree updated
+Message-ID: <20140916213739.GA19111@infradead.org>
+References: <20140708134003.GA7790@infradead.org>
+ <20140801122042.GA10771@infradead.org>
+ <20140915225818.GA11869@infradead.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915225818.GA11869@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: [PATCH trivial] mei: Spelling s/domian/domain/, s/stucture/structure/
+On Mon, Sep 15, 2014 at 03:58:18PM -0700, Christoph Hellwig wrote:
+> I've pushed two updates to the core-for-3.17 branch of
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>     git://git.infradead.org/users/hch/scsi-queue.git
+> 
+> which should go to Linus before the next rc.
+> 
+> One is a regression fix for drivers using block layer tagging when
+> not using blk-mq introduced in the blk-mq series, and the other
+> fixes a potential buffer overrun in the iscsi initiator.
+> 
+> Updates of the for-3.18 trees will follow soon.
 
-ACK
+core-for-3.17 has grown another fix from Daniel for bidi support.
 
+core-for-3.18 has got the autopm fix to balance the calls and thus
+	handle LUNs without attached ULD
+
+drivers-for-3.18 has the megaraid, mpt and arcmsr updates as well as a
+	bnx fix
