@@ -1,155 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaIPQ7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086AbaIPQ7W convert rfc822-to-8bit (ORCPT
+	id S1754794AbaIPQ7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:59:49 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:29942 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754539AbaIPQ7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:59:22 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: James Morris <jmorris@namei.org>
-cc: dhowells@redhat.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] KEYS: Changes for keyrings for security/next
+	Tue, 16 Sep 2014 12:59:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,535,1406584800"; 
+   d="scan'208";a="96122097"
+Message-ID: <54186C82.2040404@gmail.com>
+Date: Tue, 16 Sep 2014 18:59:46 +0200
+From: Brice Goglin <brice.goglin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <32369.1410886755.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Sep 2014 17:59:15 +0100
-Message-ID: <32370.1410886755@warthog.procyon.org.uk>
+To: Peter Zijlstra <peterz@infradead.org>, Dave Hansen <dave@sr71.net>
+CC: linux-kernel@vger.kernel.org, borislav.petkov@amd.com,
+        andreas.herrmann3@amd.com, mingo@kernel.org, hpa@linux.intel.com,
+        ak@linux.intel.com
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain>
+In-Reply-To: <20140916032920.GH2840@worktop.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Le 16/09/2014 05:29, Peter Zijlstra a écrit :
+>
+>> This also fixes sysfs because CPUs with the same 'physical_package_id'
+>> in /sys/devices/system/cpu/cpu*/topology/ are not listed together
+>> in the same 'core_siblings_list'.  This violates a statement from
+>> Documentation/ABI/testing/sysfs-devices-system-cpu:
+>>
+>> 	core_siblings: internal kernel map of cpu#'s hardware threads
+>> 	within the same physical_package_id.
+>>
+>> 	core_siblings_list: human-readable list of the logical CPU
+>> 	numbers within the same physical_package_id as cpu#.
+> No that statement is wrong; it assumes physical_package_id is a good
+> identifier for nodes. Clearly this is no longer true.
+>
+> The idea is that core_siblings (or rather cpu_core_mask) is a mask of
+> all cores on a node.
 
-Can you please pull these changes into security/next.  They include the fixes
-tag I previously requested as there's a dependency between these changes and
-the fixes.
+or rather node_core_mask since it's not clear whether a CPU is a package
+or a die or a node or whatever?
 
-So, there are the fixes to go upstream:
+Aside from the bad naming, I fail to see why core_siblings couldn't be
+package-wide.
 
- (1) Reinstate the production of EPERM for key types beginning with '.' in
-     requests from userspace.
+Node-wide masks are already in /sys/devices/system/node/node*/cpumap
 
- (2) Tidy up the cleanup of PKCS#7 message signed information blocks and fix a
-     bug this made more obvious.
+>> The sysfs effects here cause an issue with the hwloc tool where
+>> it gets confused and thinks there are more sockets than are
+>> physically present.
+> Meh, so then we need another mask.
 
-There are some additional fixes which can go through security/next:
+Note that AMD tried to add a "cpu_node" mask back in 2009 for the same
+reason for their 6xxx CPUs but it was rejected :/
+https://lkml.org/lkml/2009/6/3/244
 
- (1) Insert some missing 'static' annotations.
+>> diff -puN arch/x86/kernel/smpboot.c~hsw-cod-is-sane arch/x86/kernel/smpboot.c
+>> --- a/arch/x86/kernel/smpboot.c~hsw-cod-is-sane	2014-09-15 14:56:20.012314468 -0700
+>> +++ b/arch/x86/kernel/smpboot.c	2014-09-15 14:58:58.837506644 -0700
+>> @@ -344,10 +344,13 @@ static bool match_llc(struct cpuinfo_x86
+>>  static bool match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+>>  {
+>>  	if (c->phys_proc_id == o->phys_proc_id) {
+>> -		if (cpu_has(c, X86_FEATURE_AMD_DCM))
+>> -			return true;
+>> -
+>> -		return topology_sane(c, o, "mc");
+>> +		/*
+>> +		 * We used to enforce that 'c' and 'o' be on the
+>> +		 * same node, but AMD's DCM and Intel's Cluster-
+>> +		 * on-Die (CoD) support both have physical
+>> +		 * processors that span NUMA nodes.
+>> +		 */
+>> +		return true;
+>>  	}
+>>  	return false;
+>>  }
+> This is wrong (and I suppose the AMD case was already wrong). That
+> function is supposed to match a multi-core group which is very much
+> supposed to be smaller-or-equal to a node, not spanning nodes.
 
-And then there are some improvements to X.509 and PKCS#7:
+Well, even if it's wrong, it matches what the sysfs doc says. We have
+been using this ABI in userspace tools for years and it always properly
+detected AMD CPUs. So if you want to break things, please remove
+core_siblings entirely and add new well-defined package-wide and
+node-wide masks :/
 
-Changes for next to improve the matching of asymmetric keys and to improve the
-handling of PKCS#7 certificates:
+Brice
 
- (1) Provide a method to preparse the data supplied for matching a key.  This
-     permits they key type to extract out the bits it needs for matching once
-     only.
-
-     Further, the type of search (direct lookup or iterative) can be set and
-     the function used to actually check the match can be set by preparse
-     rather than being hard coded for the type.
-
- (2) Improves asymmetric keys identification.
-
-     Keys derived from X.509 certs now get labelled with IDs derived from their
-     issuer and certificate number (required to match PKCS#7) and from their
-     SKID and subject (required to match X.509).
-
-     IDs are now binary and match criterion preparsing is provided so that
-     criteria can be turned into binary blobs to make matching faster.
-
- (3) Improves PKCS#7 message handling to permit PKCS#7 messages without X.509
-     cert lists to be matched to trusted keys, thereby allowing minimally sized
-     PKCS#7 certs to be used.
-
- (4) Improves PKCS#7 message handling to better handle certificate chains that
-     are broken due to unsupported crypto that can otherwise by used to
-     intersect a trust keyring.
-
-David
----
-The following changes since commit ac60ab4b4968b54fb5af20eac9dd78e36ad910c1:
-
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into next (2014-09-12 22:40:22 +1000)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-20140916
-
-for you to fetch changes up to d3e4f41973753a7768a5728be53c7d9a3fdf86cb:
-
-  Merge tag 'keys-pkcs7-20140916' into keys-next (2014-09-16 17:38:07 +0100)
-
-----------------------------------------------------------------
-
-(from the branch description for keys-next local branch)
-
-Keyrings for linux-next
-Keyrings changes for next
-
-----------------------------------------------------------------
-David Howells (18):
-      KEYS: Fix missing statics
-      PKCS#7: Add a missing static
-      KEYS: Reinstate EPERM for a key type name beginning with a '.'
-      PKCS#7: Provide a single place to do signed info block freeing
-      PKCS#7: Fix the parser cleanup to drain parsed out X.509 certs
-      Merge tag 'keys-fixes-20140916' into keys-next
-      Merge tag 'keys-next-fixes-20140916' into keys-next
-      Provide a binary to hex conversion function
-      KEYS: Preparse match data
-      KEYS: Remove key_type::def_lookup_type
-      KEYS: Remove key_type::match in favour of overriding default by match_preparse
-      KEYS: Make the key matching functions return bool
-      KEYS: Update the keyrings documentation for match changes
-      KEYS: Implement binary asymmetric key ID handling
-      KEYS: Overhaul key identification when searching for asymmetric keys
-      PKCS#7: Better handling of unsupported crypto
-      PKCS#7: Handle PKCS#7 messages that contain no X.509 certs
-      Merge tag 'keys-pkcs7-20140916' into keys-next
-
- Documentation/security/keys.txt           |  65 +++++++--
- crypto/asymmetric_keys/asymmetric_keys.h  |   8 +-
- crypto/asymmetric_keys/asymmetric_type.c  | 222 +++++++++++++++++++++---------
- crypto/asymmetric_keys/pkcs7_key_type.c   |   2 -
- crypto/asymmetric_keys/pkcs7_parser.c     |  99 +++++++------
- crypto/asymmetric_keys/pkcs7_parser.h     |   6 +-
- crypto/asymmetric_keys/pkcs7_trust.c      |  87 ++++++++----
- crypto/asymmetric_keys/pkcs7_verify.c     | 102 +++++++++-----
- crypto/asymmetric_keys/x509_cert_parser.c |  55 +++++---
- crypto/asymmetric_keys/x509_parser.h      |   6 +-
- crypto/asymmetric_keys/x509_public_key.c  | 102 ++++++++------
- fs/cifs/cifs_spnego.c                     |   1 -
- fs/cifs/cifsacl.c                         |   1 -
- fs/nfs/idmap.c                            |   2 -
- include/crypto/public_key.h               |   5 +-
- include/keys/asymmetric-type.h            |  38 +++++
- include/keys/user-type.h                  |   1 -
- include/linux/kernel.h                    |   1 +
- include/linux/key-type.h                  |  34 ++++-
- lib/hexdump.c                             |  16 +++
- net/ceph/crypto.c                         |   1 -
- net/dns_resolver/dns_key.c                |  18 ++-
- net/rxrpc/ar-key.c                        |   2 -
- security/keys/big_key.c                   |   2 -
- security/keys/encrypted-keys/encrypted.c  |   1 -
- security/keys/internal.h                  |  21 ++-
- security/keys/key.c                       |   2 +-
- security/keys/keyctl.c                    |   2 +
- security/keys/keyring.c                   |  58 +++++---
- security/keys/proc.c                      |   8 +-
- security/keys/process_keys.c              |  13 +-
- security/keys/request_key.c               |  21 ++-
- security/keys/request_key_auth.c          |  10 +-
- security/keys/trusted.c                   |   1 -
- security/keys/user_defined.c              |  14 --
- 35 files changed, 689 insertions(+), 338 deletions(-)
