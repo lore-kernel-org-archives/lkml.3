@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610AbaIPWE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:04:58 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:52827 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905AbaIPWE4 (ORCPT
+	id S1753763AbaIPWGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:06:55 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:64141 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbaIPWGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:04:56 -0400
+	Tue, 16 Sep 2014 18:06:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140916053135.22257.46476.stgit@notabene.brown>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-	<20140916053135.22257.46476.stgit@notabene.brown>
-Date: Tue, 16 Sep 2014 18:04:55 -0400
-Message-ID: <CAHQdGtQbFtLFEpzgqoMoLiG7-Y0FdFiZdpS4dgkT7hsCnqMiPA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] NFS/SUNRPC: Remove other deadlock-avoidance
- mechanisms in nfs_release_page()
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+In-Reply-To: <20140916.174901.2174503796369572537.davem@davemloft.net>
+References: <CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
+	<20140916.165452.1747695341192703967.davem@davemloft.net>
+	<CAMEtUuzy0Hvjr0f4XBrH+FAxaKD7aijnYzDe3-MPrGWe6+MD4Q@mail.gmail.com>
+	<20140916.174901.2174503796369572537.davem@davemloft.net>
+Date: Tue, 16 Sep 2014 15:06:51 -0700
+Message-ID: <CAMEtUux2mLD7X+PFq1kZv893Dg9u2rO6w=HwsOirx-VoYejuQQ@mail.gmail.com>
+Subject: Re: [PATCH v12 net-next 03/11] bpf: add lookup/update/delete/iterate
+ methods to BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jeff Layton <jeff.layton@primarydata.com>
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
-
-On Tue, Sep 16, 2014 at 1:31 AM, NeilBrown <neilb@suse.de> wrote:
-> Now that nfs_release_page() doesn't block indefinitely, other deadlock
-> avoidance mechanisms aren't needed.
->  - it doesn't hurt for kswapd to block occasionally.  If it doesn't
->    want to block it would clear __GFP_WAIT.  The current_is_kswapd()
->    was only added to avoid deadlocks and we have a new approach for
->    that.
->  - memory allocation in the SUNRPC layer can very rarely try to
->    ->releasepage() a page it is trying to handle.  The deadlock
->    is removed as nfs_release_page() doesn't block indefinitely.
+On Tue, Sep 16, 2014 at 2:49 PM, David Miller <davem@davemloft.net> wrote:
+> From: Alexei Starovoitov <ast@plumgrid.com>
+> Date: Tue, 16 Sep 2014 14:23:27 -0700
 >
-> So we don't need to set PF_FSTRANS for sunrpc network operations any
-> more.
+>> no compat layer and type checking will be done
+>> by syscall wrappers. Ok?
+>
+> Why are you against using strong typing just for everything other
+> than the user pointer blobs?
+>
+> I don't understand the resistence to my suggestion to just use
+> aligned_u64 instead of "void __user *" in the union members.
 
-Jeff Layton and I had a little discussion about this earlier today.
-The issue that Jeff raised was that these 1 second waits, although
-they will eventually complete, can nevertheless have a cumulative
-large effect if, say, the reason why we're not making progress is that
-we're being called as part of a socket reconnect attempt in
-xs_tcp_setup_socket().
-
-In that case, any attempts to call nfs_release_page() on pages that
-need to use that socket, will result in a 1 second wait, and no
-progress in satisfying the allocation attempt.
-
-Our conclusion was that we still need the PF_FSTRANS in order to deal
-with that case, where we need to actually circumvent the new wait in
-order to guarantee progress on the task of allocating and connecting
-the new socket.
-
-Comments?
-
-Cheers
-  Trond
-
--- 
-Trond Myklebust
-
-Linux NFS client maintainer, PrimaryData
-
-trond.myklebust@primarydata.com
+All these different variants are ok to me. There are pros and
+cons to either approach. I'm not against strong typing.
+I just thought it would be cleaner not to use 'union' and
+was asking for opinion. That's all. Sure, I will keep 'union'
+and only change pointers to __aligned_u64.
