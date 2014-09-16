@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaIPKFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:05:42 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:52898 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853AbaIPKFk (ORCPT
+	id S1753869AbaIPKHc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:07:32 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49500 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107AbaIPKHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:05:40 -0400
-Message-ID: <54180B6E.10404@huawei.com>
-Date: Tue, 16 Sep 2014 18:05:34 +0800
-From: Yao Dongdong <yaodongdong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Tue, 16 Sep 2014 06:07:30 -0400
+Date: Tue, 16 Sep 2014 12:07:25 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, hpa@linux.intel.com, ak@linux.intel.com,
+        Alex Chiang <achiang@hp.com>, Borislav Petkov <bp@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mike Travis <travis@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+Message-ID: <20140916100725.GB4796@osiris>
+References: <20140915222641.D640BD8A@viggo.jf.intel.com>
+ <20140916032920.GH2840@worktop.localdomain>
+ <5417F228.9060301@sr71.net>
 MIME-Version: 1.0
-To: Jianyu Zhan <nasa4836@gmail.com>
-CC: Randy Dunlap <rdunlap@infradead.org>, <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation/memory-barriers.txt: match table to its
- comment followed
-References: <5417FA0F.1030403@huawei.com> <CAHz2CGUSkb08futic+OiWz4zZ==zNRsVLR7EfCr5Wt2eeYxgCw@mail.gmail.com>
-In-Reply-To: <CAHz2CGUSkb08futic+OiWz4zZ==zNRsVLR7EfCr5Wt2eeYxgCw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.110.51.36]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5417F228.9060301@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091610-8372-0000-0000-00000130E06B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/16 17:24, Jianyu Zhan wrote:
-> Hi,
->
-> Some one has submitted a patch addressing this issue a few days ago.
-> The patch is now being cooked in the paulk's tree now, IIRC.
->
-> Thanks,
-> Jianyu Zhan
->
-I have found the patch you mentioned.
+On Tue, Sep 16, 2014 at 01:17:44AM -0700, Dave Hansen wrote:
+> >> The sysfs effects here cause an issue with the hwloc tool where
+> >> it gets confused and thinks there are more sockets than are
+> >> physically present.
+> > 
+> > Meh, so then we need another mask.
+> 
+> s390 has this concept of a "book" although it's not obvious at all where
+> this fits in to the hierarchy to me.  The help text and comments are
+> pretty funny:
+> 
+> 	Book scheduler support improves the CPU scheduler's decision
+> 	making when dealing with machines that have several books.
+> 
+> Wow, really?  Book scheduling helps with books?  I would have never
+> guessed.
 
-Thanks
-> On Tue, Sep 16, 2014 at 4:51 PM, Yao Dongdong <yaodongdong@huawei.com> wrote:
->> The table shows CPU2's sequence of events as "x = B; y = A;", but its comment followed
->> described as "x = A; y = B;".
->>
->> Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
->> ---
->>  Documentation/memory-barriers.txt | 4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
->> index a4de88f..9a46bbe 100644
->> --- a/Documentation/memory-barriers.txt
->> +++ b/Documentation/memory-barriers.txt
->> @@ -115,8 +115,8 @@ For example, consider the following sequence of events:
->>         CPU 1           CPU 2
->>         =============== ===============
->>         { A == 1; B == 2 }
->> -       A = 3;          x = B;
->> -       B = 4;          y = A;
->> +       A = 3;          x = A;
->> +       B = 4;          y = B;
->>
->>  The set of accesses as seen by the memory system in the middle can be arranged
->>  in 24 different combinations:
->> --
->> 1.8.0.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+I'm glad the help text did enlighten you.
+
+>  Wish I knew what a book was. :)  Google helped a bit:
+> 	http://sysmagazine.com/posts/150430/
+> but it's still not clear.  I think a book is below a node?
+> 
+> 	SMT <= LLC <= MC <= BOOK <= NODE
+
+This one is correct. s390 does not have NUMA support. So we have one
+node with multiple books.
 
