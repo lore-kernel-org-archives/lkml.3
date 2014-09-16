@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaIPNpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:45:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42956 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaIPNpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 09:45:30 -0400
-Message-ID: <54183EDB.20801@ti.com>
-Date: Tue, 16 Sep 2014 09:44:59 -0400
-From: Sandeep Nair <sandeep_n@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754286AbaIPNpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:45:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56893 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220AbaIPNpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 09:45:40 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        michael.kerrisk@gmail.com
+Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
+References: <cover.1410810247.git.milosz@adfin.com>
+	<x49d2awr1ez.fsf@segfault.boston.devel.redhat.com>
+	<CANP1eJF7b3RFd4NdyCfsFuf9uyhrahVqJkDHs81nd2ZvVDwzSg@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Sep 2014 09:44:57 -0400
+In-Reply-To: <CANP1eJF7b3RFd4NdyCfsFuf9uyhrahVqJkDHs81nd2ZvVDwzSg@mail.gmail.com>
+	(Milosz Tanski's message of "Mon, 15 Sep 2014 18:27:07 -0400")
+Message-ID: <x49bnqf3ciu.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, <santosh.shilimkar@ti.com>
-CC: <netdev@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <jhs@mojatatu.com>
-Subject: Re: [PATCH v3 2/3] net: Add Keystone NetCP ethernet driver
-References: <1410638839-14792-1-git-send-email-santosh.shilimkar@ti.com>	<1410638839-14792-3-git-send-email-santosh.shilimkar@ti.com> <20140915.123755.1868053059646672094.davem@davemloft.net>
-In-Reply-To: <20140915.123755.1868053059646672094.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [158.218.103.167]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/15/2014 12:37 PM, David Miller wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Date: Sat, 13 Sep 2014 16:07:18 -0400
->
->> +	/* Find this module in the sub-tree for this device */
->> +	devices = of_get_child_by_name(node, "netcp-devices");
->> +	if (!devices) {
->> +		dev_err(dev, "could not find netcp-devices node\n");
->> +		return NETCP_MOD_PROBE_SKIPPED;
->> +	}
->> +
->> +	for_each_available_child_of_node(devices, child) {
->> +		const char *name = netcp_node_name(child);
->> +
->> +		if (!strcasecmp(module->name, name))
->> +			break;
->> +	}
->> +
->> +	/* If module not used for this device, skip it */
->> +	if (child == NULL) {
->> +		dev_warn(dev, "module(%s) not used for device\n", module->name);
->> +		return NETCP_MOD_PROBE_SKIPPED;
->> +	}
->
-> of_get_child_by_name() takes a reference to an OF node, you must release
-> it in the error path.
->
-Will fix this.
->> +	inst_modpriv = devm_kzalloc(dev, sizeof(*inst_modpriv), GFP_KERNEL);
->> +	if (!inst_modpriv) {
->> +		dev_err(dev, "Failed to allocate instance for %s\n",
->> +			module->name);
->> +		return -ENOMEM;
->> +	}
->
-> Likewise, but here you have to release both "devices" and "child".
->
-> You're going to have to fix this OF node refcount problem for this
-> entire probe routine.
->
-Will do.
+Milosz Tanski <milosz@adfin.com> writes:
 
-Thanks for the review David!
+> Jeff,
+>
+> This patchset creates a new read (readv2/preadv2) syscall(s) that take
+> a extra flag argument (kind of like recvmsg). What it doesn't do is
+> change the current behavior of of the O_NONBLOCK, if the file is
+> open() with O_NONBLOCK flag. It shouldn't break any existing
+> applications since you have to opt into using this by using the new
+> syscall.
 
-Regards
-Sandeep
+Hi, Milosz,
 
+Ah, I misread one of the patches.  Now that I've applied the series, I
+see that you're testing the flag argument, not the file open flags.
+
+> I don't have a preference either way if we should create a new flag or
+> re-use O_NONBLOCK the flag. Instead, I'm hoping to get some consensus
+> here from senior kernel developers like yourself. Maybe a RWF_NONBLOCK
+> (I'm stealing from eventfd, EFD_NONBLOCK).
+
+I think I'd rather name the flag something other than O_NONBLOCK, if for
+no other reason that to avoid confusion.
+
+> As a side note, I noticed that EFD_NONBLOCK, SFD_NONBLOCK, etc... all
+> alias to the value of O_NONBLOCK and there's a bunch of bug checks in
+> the code like this:
+> BUILD_BUG_ON(EFD_NONBLOCK != O_NONBLOCK);
+
+That's because the flag is passed on to anon_inode_getfile.  See also
+this define:
+
+#define EFD_SHARED_FCNTL_FLAGS (O_CLOEXEC | O_NONBLOCK)
+
+A general note on your subjects -- you should make them more specific to
+the subsystem you're updating.  Commit titles like "documentation
+update" are a bit too broad.  ;-)
+
+Cheers,
+Jeff
