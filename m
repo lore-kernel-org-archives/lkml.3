@@ -1,218 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754318AbaIPWIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:08:24 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41863 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765AbaIPWIS (ORCPT
+	id S1754542AbaIPWIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:08:35 -0400
+Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60288 "EHLO
+	vidar.hosts.sieglitzhof.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754324AbaIPWIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:08:18 -0400
-Date: Tue, 16 Sep 2014 15:07:40 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: Re: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Message-ID: <20140916220740.GQ25162@lee--X1>
-References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <20140828163608.GY24579@lee--X1>
- <2E89032DDAA8B9408CB92943514A0337AB5144CE@SW-EX-MBX01.diasemi.com>
- <20140910094951.GN30307@lee--X1>
- <2E89032DDAA8B9408CB92943514A0337AB514846@SW-EX-MBX01.diasemi.com>
- <20140915223924.GC25162@lee--X1>
- <2E89032DDAA8B9408CB92943514A0337AB514E7C@SW-EX-MBX01.diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB514E7C@SW-EX-MBX01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Sep 2014 18:08:30 -0400
+From: Maximilian Eschenbacher <maximilian@eschenbacher.email>
+To: linux-kernel@vger.kernel.org
+Cc: valentina.manea.m@gmail.com, shuah.kh@samsung.com,
+        gregkh@linuxfoundation.org,
+        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
+        Fjodor Schelichow <fjodor.schelichow@hotmail.com>,
+        Johannes Stadlinger <johannes.stadlinger@fau.de>,
+        Dominik Paulus <dominik.paulus@fau.de>,
+        Tobias Polzer <tobias.polzer@fau.de>
+Date: Tue, 16 Sep 2014 23:38:45 +0000
+Message-Id: <1410910735-27929-9-git-send-email-maximilian@eschenbacher.email>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
+References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
+X-SA-Exim-Connect-IP: 172.16.2.6
+X-SA-Exim-Mail-From: maximilian@eschenbacher.email
+Subject: [PATCH 08/18] usbip: Handle usbip being started as user
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on vidar.hosts.sieglitzhof.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014, Opensource [Adam Thomson] wrote:
+usbip now prints an error message when started as user and requiring
+root access. Also, some debug messages are changed to error messages so
+the command line utilities now print less confusing (and more verbose)
+error messages when not used correctly.
 
-> On September 15, 2014 23:39, Lee Jones wrote:
-> 
-> > On Wed, 10 Sep 2014, Opensource [Adam Thomson] wrote:
-> > > On September 10, 2014 10:50, Lee Jones wrote:
-> > > > On Tue, 09 Sep 2014, Opensource [Adam Thomson] wrote:
-> > > >
-> > > > > On August 28, 2014 17:36, Lee Jones wrote:
-> > > > >
-> > > > > Thanks for the feedback. As a general comment a couple of the items you've
-> > > > > identified relate to future updates (additional functionality being added).
-> > > > > I already have code in place for this but have stripped out a couple of the
-> > > > > drivers just to reduce the churn and size of patch submission. These will be
-> > > > > added once these patches have been accepted.
-> > > > >
-> > > > > Where this is the case, I have added notes in-line against the relevant
-> > > > > comments you made.
-> > > > >
-> > > > > > On Thu, 28 Aug 2014, Adam Thomson wrote:
-> > > > > >
-> > > > > > > DA9150 is a combined Charger and Fuel-Gauge IC, with additional
-> > > > > > > GPIO and GPADC functionality.
-> > > > > > >
-> > > > > > > Signed-off-by: Adam Thomson
-> > <Adam.Thomson.Opensource@diasemi.com>
-> > > > > > > ---
-> > > > > > >  drivers/mfd/Kconfig                  |   12 +
-> > > > > > >  drivers/mfd/Makefile                 |    2 +
-> > > > > > >  drivers/mfd/da9150-core.c            |  332 ++++++++++
-> > > > > > >  drivers/mfd/da9150-i2c.c             |  176 ++++++
-> > 
-> > [...]
-> > 
-> > > > > > > +/* Helper functions for sub-devices to request/free IRQs */
-> > > > > > > +int da9150_register_irq(struct platform_device *pdev, void *dev_id,
-> > > > > > > +			irq_handler_t handler, const char *name)
-> > > > > > > +{
-> > > > > > > +	int irq, ret;
-> > > > > > > +
-> > > > > > > +	irq = platform_get_irq_byname(pdev, name);
-> > > > > > > +	if (irq < 0)
-> > > > > > > +		return irq;
-> > > > > > > +
-> > > > > > > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL, handler,
-> > > > > > > +					IRQF_ONESHOT, name, dev_id);
-> > > > > > > +	if (ret)
-> > > > > > > +		dev_err(&pdev->dev, "Failed to request IRQ %d: %d\n", irq,
-> > ret);
-> > > > > > > +
-> > > > > > > +	return ret;
-> > > > > > > +}
-> > > > > > > +EXPORT_SYMBOL_GPL(da9150_register_irq);
-> > > > > >
-> > > > > > Why do they need help?  What problem does adding these layers solve?
-> > > > >
-> > > > > Means I don't have to keep adding print error lines everywhere else if this
-> > > > > function takes care of it. Thought that would be cleaner.
-> > > >
-> > > > You only need to request each IRQ once.  It's just more abstraction
-> > > > for the sake of it.  I would prefer if you removed them.
-> > >
-> > > Yes, but in the charger driver for example, there are 4 IRQs to request. If
-> > > I don't use this approach the IRQ requesting becomes bloated, hence why I went
-> > > for a common function like this. Thought generally the intention was to cut
-> > > down on repeated code?
-> > 
-> > If you're worried about bloat in .probe() it's okay to define a new
-> > function within the charger driver; however, creating a call-back into
-> > the MFD driver like this I think it over-kill for 4 requests.
-> 
-> I could do something just in the charger, but why not have something which can
-> be used for all sub-devices? There is also an IRQ used in the IIO ADC driver and
-> there will be another in the later fuel-gauge driver too. Doesn't make sense to
-> me not to do in the MFD code when that will provide a simple common call for all
-> sub-devices. What is your concern with adding something like this, just so I'm
-> clear?
+Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
+Signed-off-by: Fjodor Schelichow <fjodor.schelichow@hotmail.com>
+Signed-off-by: Johannes Stadlinger <johannes.stadlinger@fau.de>
+Signed-off-by: Dominik Paulus <dominik.paulus@fau.de>
+Signed-off-by: Tobias Polzer <tobias.polzer@fau.de>
+---
+ tools/usb/usbip/src/usbip_attach.c | 3 +++
+ tools/usb/usbip/src/usbip_bind.c   | 9 ++++++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-I guess my last response wasn't as descriptive as it could have been.
-I don't think that any helper function is required at all.  No need to
-abstract/obfuscate how the IRQ is obtained and registered.  What I
-meant by 'do it in the charger driver' was, copy and paste all of the
-platform_get_irq_byname() and devm_request_threaded_irq() calls from
-.probe() into a separate function, but only if you are worried about a
-bloated .probe().  Personally I'd just leave them in there.
-
-Bottom line is; I don't feel there is a necessity for any helper
-function here.  I think it adds unnecessary complexity for the sake of
-saving a few lines of code.
-
-If you still think there is a requirement for it, perhaps a more
-system-wide devm_request_threaded_irq_byname() is in order instead?
-
-> > > > > > > +void da9150_release_irq(struct platform_device *pdev, void *dev_id,
-> > > > > > > +		       const char *name)
-> > > > > > > +{
-> > > > > > > +	int irq;
-> > > > > > > +
-> > > > > > > +	irq = platform_get_irq_byname(pdev, name);
-> > > > > > > +	if (irq < 0)
-> > > > > > > +		return;
-> > > > > > > +
-> > > > > > > +	devm_free_irq(&pdev->dev, irq, dev_id);
-> > > > > > > +}
-> > > > > > > +EXPORT_SYMBOL_GPL(da9150_release_irq);
-> > > > > >
-> > > > > > Do you ever release the IRQ and not unbind the driver?
-> > > > > >
-> > > > > > Are there ordering issues at play here?
-> > > > > >
-> > > > > > If not, there's no need to conduct a manual free.
-> > > > >
-> > > > > In the charger driver, in the remove function there is a need I believe to
-> > > > > free the IRQs before other items are cleared up (e.g. power_supply classes),
-> > > > > so this is why I have added this in here.
-> > > >
-> > > > Can you handle this separately in the Charger driver then please?
-> > > >
-> > > > [...]
-> > >
-> > > If I have to remove the IRQ register function, then yes, otherwise it makes more
-> > > sense to have the pair of functions in the MFD core I would say.
-> > 
-> > I would prefer you to remove the call-back please.
-> 
-> Right.
-> 
-> > 
-> > > > > > > +	if (pdata)
-> > > > > > > +		da9150->irq_base = pdata->irq_base;
-> > > > > > > +	else
-> > > > > > > +		da9150->irq_base = -1;
-> > > > > >
-> > > > > > pdata ? pdata->irq_base : -1;
-> > > > >
-> > > > > This is left this way as later updates to add additional functionality will
-> > > > > require addtional work to be done with the platform data. Seemed pointless
-> > > > > changing it here just to change it back later.
-> > > >
-> > > > You're not changing anything, as this is the introduction of the code.
-> > > > I can't tell you how many times I've heard "I will change it later",
-> > > > or "doing it this way will support subsequent submissions", then
-> > > > received no more patches.  It's okay to do it nicely now and expand
-> > > > it back out in the new patches.
-> > > >
-> > > > [...]
-> > >
-> > > It appears that way to you but I have to modify my code for sumbission as the
-> > > local code I have covers all functionality. Am having to refactor again and
-> > > again just to suit this initial submission, and then I have to revert it back
-> > > again when submitting the last couple of drivers. Time consuming, and quite
-> > > frustrating when the intention was to make the whole process easier. Anyway,
-> > > will update for now and revert in subsequent patches.
-> > 
-> > I sincerely hope the refactorings won't add too much effort, but it's
-> > difficult to have one rule for the masses and different ones for
-> > others.
-> 
-> I do understand that, and that's fair enough. Is just frustrating when you're
-> trying to do a proper job. Anyway, am sure I'll live. :)
-
-I know how you feel, as I've been on the receiving end of such rules
-more than once, but you could have probably re-factored twice in the
-time it's taken us to have this conversation. :)
-
+diff --git a/tools/usb/usbip/src/usbip_attach.c b/tools/usb/usbip/src/usbip_attach.c
+index 51c67a2..fcc3efb 100644
+--- a/tools/usb/usbip/src/usbip_attach.c
++++ b/tools/usb/usbip/src/usbip_attach.c
+@@ -210,6 +210,9 @@ int usbip_attach(int argc, char *argv[])
+ 	int opt;
+ 	int ret = -1;
+ 
++	if (geteuid() != 0)
++		err("not running as root?");
++
+ 	for (;;) {
+ 		opt = getopt_long(argc, argv, "r:b:", opts, NULL);
+ 
+diff --git a/tools/usb/usbip/src/usbip_bind.c b/tools/usb/usbip/src/usbip_bind.c
+index 3f8c7a3..6f5d3c2 100644
+--- a/tools/usb/usbip/src/usbip_bind.c
++++ b/tools/usb/usbip/src/usbip_bind.c
+@@ -102,19 +102,19 @@ static int unbind_other(char *busid)
+ 	/* Get the device. */
+ 	dev = udev_device_new_from_subsystem_sysname(udev, "usb", busid);
+ 	if (!dev) {
+-		dbg("unable to find device with bus ID %s", busid);
++		err("unable to find device with bus ID %s", busid);
+ 		goto err_close_busid_dev;
+ 	}
+ 
+ 	/* Check what kind of device it is. */
+ 	bDevClass  = udev_device_get_sysattr_value(dev, "bDeviceClass");
+ 	if (!bDevClass) {
+-		dbg("unable to get bDevClass device attribute");
++		err("unable to get bDevClass device attribute");
+ 		goto err_close_busid_dev;
+ 	}
+ 
+ 	if (!strncmp(bDevClass, "09", strlen(bDevClass))) {
+-		dbg("skip unbinding of hub");
++		err("skip unbinding of hub");
+ 		goto err_close_busid_dev;
+ 	}
+ 
+@@ -212,6 +212,9 @@ int usbip_bind(int argc, char *argv[])
+ 
+ 	allow[0] = 0;
+ 
++	if (geteuid() != 0)
++		err("not running as root?");
++
+ 	for (;;) {
+ 		opt = getopt_long(argc, argv, "a:b:", opts, NULL);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.0
+
