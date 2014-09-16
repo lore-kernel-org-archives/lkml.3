@@ -1,133 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaIPIh7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:37:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9911 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753314AbaIPIh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:37:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="573728011"
-Message-ID: <1410856669.7023.54.camel@linux.intel.com>
-Subject: Re: [PATCH 3/4 v4] GPIO: gpio-dwapb: Support Debounce
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Weike Chen <alvin.chen@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Tue, 16 Sep 2014 11:37:49 +0300
-In-Reply-To: <1410859335-11080-4-git-send-email-alvin.chen@intel.com>
-References: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
-	 <1410859335-11080-4-git-send-email-alvin.chen@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753505AbaIPIie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:38:34 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:45915 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314AbaIPIib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 04:38:31 -0400
+Date: Tue, 16 Sep 2014 12:38:10 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
+Message-ID: <20140916083810.GB32139@esperanza>
+References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
+ <20140912171809.GA24469@dhcp22.suse.cz>
+ <20140912175516.GB6298@mtj.dyndns.org>
+ <20140915074257.GB11353@esperanza>
+ <20140916061401.GD805@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140916061401.GD805@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-16 at 02:22 -0700, Weike Chen wrote:
-> This patch enables 'debounce' for the designware GPIO, and
-> it is based on Josef Ahmad's previous work.
+On Tue, Sep 16, 2014 at 03:14:01PM +0900, Tejun Heo wrote:
+> I don't think marking config options as "UNDER DEVELOPMENT" in its
+> help documentation means anything.  It's a rather silly thing to do.
+> Not many people pay much attention to the help texts and once somebody
+> somewhere enabled the option for a distro, it's as free in the wild as
+> any other kernel feature and CONFIG_MEMCG_KMEM is enabled by a lot of
+> distros.  The same goes with the "debug" controller.  It doesn't mean
+> much that it has "debug" in its name.  Once it's out in the wild,
+> there will be someone making use of it in some weird way.
 > 
-> Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
-> Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
-
-This line is wrong. How come?
-
-Couple of minor comments below, and after addressing them, please, use 
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-> Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> ---
->  drivers/gpio/gpio-dwapb.c |   28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
+> If a debug feature has to be in the mainline kernel, the fact that
+> it's a debug feature must be explicitly chosen in each use.  IOW, gate
+> it by an unwieldy boot param which makes it painfully clear that it's
+> enabling an unstable debug feature and print out a loud warning
+> message about it.
 > 
-> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-> index 534945c..9a76e3c 100644
-> --- a/drivers/gpio/gpio-dwapb.c
-> +++ b/drivers/gpio/gpio-dwapb.c
-> @@ -37,6 +37,7 @@
->  #define GPIO_INTTYPE_LEVEL	0x38
->  #define GPIO_INT_POLARITY	0x3c
->  #define GPIO_INTSTATUS		0x40
-> +#define GPIO_PORTA_DEBOUNCE	0x48
->  #define GPIO_PORTA_EOI		0x4c
->  #define GPIO_EXT_PORTA		0x50
->  #define GPIO_EXT_PORTB		0x54
-> @@ -235,6 +236,29 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
->  	return 0;
->  }
->  
-> +static int dwapb_gpio_set_debounce(struct gpio_chip *gc,
-> +				   unsigned offset, unsigned debounce)
-> +{
-> +	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-> +	struct dwapb_gpio_port *port =
-> +			container_of(bgc, struct dwapb_gpio_port, bgc);
+> As it currently stands, CONFIG_MEMCG_KMEM is as good as any other
+> enabled kernel option.  The help text saying that it's experimental
+> does not mean anything especially when it doesn't even depend on
+> CONFIG_BROKEN.
+> 
+> So, the argument "the option was explained as experimental in help
+> text" doesn't fly at all.  We can still try to deprecate it gradually
+> if the cleanup seems worthwhile; however, with v2 interface pending,
+> I'm not sure how meaningful that'd be.  We'd have to carry quite a bit
+> of v1 code around anyway and I'd like to keep v1 interface as static
+> as possible.  No reason to shake that at this point.
 
-Does it make sense to introduce an inline helper like
+Fair enough, thank you for the clarification. I hope we'll be able to
+get rid of it in a year or two when cgroup v2 becomes stable.
 
-static inline struct dwapb_gpio_port *to_dwapb_gpio_port(struct
-bgpio_chip *gc)
-{...}
-
-?
-
-There is also another place where it could be used.
-
-> +	struct dwapb_gpio *gpio = port->gpio;
-> +	unsigned long flags, val_deb;
-> +	unsigned long mask = bgc->pin2mask(bgc, offset);
-> +
-> +	spin_lock_irqsave(&bgc->lock, flags);
-> +
-> +	val_deb = dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
-> +	if (debounce)
-> +		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, mask | val_deb);
-
-May you put value on the first place? Like 'val_deb | mask'.
-
-> +	else
-> +		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, ~mask & val_deb);
-
-Ditto.
-
-> +
-
-> +	spin_unlock_irqrestore(&bgc->lock, flags);
-> +
-> +	return 0;
-> +}
-> +
->  static irqreturn_t dwapb_irq_handler_mfd(int irq, void *dev_id)
->  {
->  	u32 worked;
-> @@ -373,6 +397,10 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
->  	port->bgc.gc.ngpio = pp->ngpio;
->  	port->bgc.gc.base = pp->gpio_base;
->  
-> +	/* Only port A support debounce */
-> +	if (pp->idx == 0)
-> +		port->bgc.gc.set_debounce = dwapb_gpio_set_debounce;
-> +
->  	if (pp->irq)
->  		dwapb_configure_irqs(gpio, port, pp);
->  
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
-
+Thanks,
+Vladimir
