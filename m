@@ -1,185 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaIPSdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:33:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57876 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030AbaIPSdN (ORCPT
+	id S1755074AbaIPSey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:34:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45588 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaIPSew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:33:13 -0400
-From: Suman Anna <s-anna@ti.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv2] rpmsg: compute number of buffers to allocate from vrings
-Date: Tue, 16 Sep 2014 13:33:07 -0500
-Message-ID: <1410892387-30596-1-git-send-email-s-anna@ti.com>
-X-Mailer: git-send-email 2.0.4
+	Tue, 16 Sep 2014 14:34:52 -0400
+Date: Tue, 16 Sep 2014 11:34:31 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Anders Berg <anders.berg@avagotech.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140916183431.GX7960@sirena.org.uk>
+References: <1410781132-16223-1-git-send-email-anders.berg@avagotech.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J0QI3A+imHzF1NdR"
+Content-Disposition: inline
+In-Reply-To: <1410781132-16223-1-git-send-email-anders.berg@avagotech.com>
+X-Cookie: Many pages make a thick book.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 70.35.38.154
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] spi: pl022: Add support for chip select extension
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The buffers to be used for communication are allocated during the
-rpmsg virtio driver's probe, and the total number of buffers is
-currently hard-coded to 512. The vring configuration can vary from
-one platform to another or between different remote processors. The
-setup of the receive buffers will throw a WARN_ON if the associated
-vrings are configured with less than 256 buffers (in each direction).
-So, adjust this hard-coded value to rely on the number of buffers the
-virtqueue vring is setup with, but also limit to use 256 buffers at
-most in each direction to avoid wacky resource tables consuming up
-unreasonable memory.
 
-NOTE: The number of buffers is already assumed to be symmetrical
-in each direction, and that logic is not unchanged.
+--J0QI3A+imHzF1NdR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Suman Anna <s-anna@ti.com>
----
-v2 changes:
-- add upper limit on buffers and update comments
-- revise patch description
+On Mon, Sep 15, 2014 at 01:38:52PM +0200, Anders Berg wrote:
 
- drivers/rpmsg/virtio_rpmsg_bus.c | 46 ++++++++++++++++++++++++++++------------
- 1 file changed, 32 insertions(+), 14 deletions(-)
+> v2:
+>     - added constant to <linux/amba/bus.h>
 
-diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-index b6135d4..9ea6c43 100644
---- a/drivers/rpmsg/virtio_rpmsg_bus.c
-+++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-@@ -41,6 +41,7 @@
-  * @svq:	tx virtqueue
-  * @rbufs:	kernel address of rx buffers
-  * @sbufs:	kernel address of tx buffers
-+ * @num_bufs:	total number of buffers for rx and tx
-  * @last_sbuf:	index of last tx buffer used
-  * @bufs_dma:	dma base addr of the buffers
-  * @tx_lock:	protects svq, sbufs and sleepers, to allow concurrent senders.
-@@ -60,6 +61,7 @@ struct virtproc_info {
- 	struct virtio_device *vdev;
- 	struct virtqueue *rvq, *svq;
- 	void *rbufs, *sbufs;
-+	unsigned int num_bufs;
- 	int last_sbuf;
- 	dma_addr_t bufs_dma;
- 	struct mutex tx_lock;
-@@ -86,13 +88,14 @@ struct rpmsg_channel_info {
- #define to_rpmsg_driver(d) container_of(d, struct rpmsg_driver, drv)
- 
- /*
-- * We're allocating 512 buffers of 512 bytes for communications, and then
-- * using the first 256 buffers for RX, and the last 256 buffers for TX.
-+ * We're allocating buffers of 512 bytes each for communications. The
-+ * number of buffers are computed from the number of buffers supported by
-+ * the virtqueue vring (upto a maximum of 256 buffers in each direction).
-  *
-  * Each buffer will have 16 bytes for the msg header and 496 bytes for
-  * the payload.
-  *
-- * This will require a total space of 256KB for the buffers.
-+ * This will utilize a maximum total space of 256KB for the buffers.
-  *
-  * We might also want to add support for user-provided buffers in time.
-  * This will allow bigger buffer size flexibility, and can also be used
-@@ -102,9 +105,8 @@ struct rpmsg_channel_info {
-  * can change this without changing anything in the firmware of the remote
-  * processor.
-  */
--#define RPMSG_NUM_BUFS		(512)
-+#define MAX_RPMSG_NUM_BUFS	(256)
- #define RPMSG_BUF_SIZE		(512)
--#define RPMSG_TOTAL_BUF_SPACE	(RPMSG_NUM_BUFS * RPMSG_BUF_SIZE)
- 
- /*
-  * Local addresses are dynamically allocated on-demand.
-@@ -579,7 +581,7 @@ static void *get_a_tx_buf(struct virtproc_info *vrp)
- 	 * either pick the next unused tx buffer
- 	 * (half of our buffers are used for sending messages)
- 	 */
--	if (vrp->last_sbuf < RPMSG_NUM_BUFS / 2)
-+	if (vrp->last_sbuf < vrp->num_bufs / 2)
- 		ret = vrp->sbufs + RPMSG_BUF_SIZE * vrp->last_sbuf++;
- 	/* or recycle a used one */
- 	else
-@@ -948,6 +950,7 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	struct virtproc_info *vrp;
- 	void *bufs_va;
- 	int err = 0, i;
-+	size_t total_buf_space;
- 
- 	vrp = kzalloc(sizeof(*vrp), GFP_KERNEL);
- 	if (!vrp)
-@@ -968,10 +971,24 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	vrp->rvq = vqs[0];
- 	vrp->svq = vqs[1];
- 
-+	vrp->num_bufs = MAX_RPMSG_NUM_BUFS * 2;
-+	if (virtqueue_get_vring_size(vrp->rvq) < MAX_RPMSG_NUM_BUFS) {
-+		/*
-+		 * Override if the virtqueues are configured with less number of
-+		 * buffers. We expect equal number of buffers for each direction
-+		 * as per current code, so throw a warning if the configuration
-+		 * doesn't match.
-+		 */
-+		vrp->num_bufs = virtqueue_get_vring_size(vrp->rvq) * 2;
-+		WARN_ON(virtqueue_get_vring_size(vrp->svq) !=
-+			(vrp->num_bufs / 2));
-+	}
-+	total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
-+
- 	/* allocate coherent memory for the buffers */
- 	bufs_va = dma_alloc_coherent(vdev->dev.parent->parent,
--				RPMSG_TOTAL_BUF_SPACE,
--				&vrp->bufs_dma, GFP_KERNEL);
-+				     total_buf_space, &vrp->bufs_dma,
-+				     GFP_KERNEL);
- 	if (!bufs_va) {
- 		err = -ENOMEM;
- 		goto vqs_del;
-@@ -984,10 +1001,10 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	vrp->rbufs = bufs_va;
- 
- 	/* and half is dedicated for TX */
--	vrp->sbufs = bufs_va + RPMSG_TOTAL_BUF_SPACE / 2;
-+	vrp->sbufs = bufs_va + total_buf_space / 2;
- 
- 	/* set up the receive buffers */
--	for (i = 0; i < RPMSG_NUM_BUFS / 2; i++) {
-+	for (i = 0; i < vrp->num_bufs / 2; i++) {
- 		struct scatterlist sg;
- 		void *cpu_addr = vrp->rbufs + i * RPMSG_BUF_SIZE;
- 
-@@ -1023,8 +1040,8 @@ static int rpmsg_probe(struct virtio_device *vdev)
- 	return 0;
- 
- free_coherent:
--	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
--					bufs_va, vrp->bufs_dma);
-+	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
-+			  bufs_va, vrp->bufs_dma);
- vqs_del:
- 	vdev->config->del_vqs(vrp->vdev);
- free_vrp:
-@@ -1042,6 +1059,7 @@ static int rpmsg_remove_device(struct device *dev, void *data)
- static void rpmsg_remove(struct virtio_device *vdev)
- {
- 	struct virtproc_info *vrp = vdev->priv;
-+	size_t total_buf_space = vrp->num_bufs * RPMSG_BUF_SIZE;
- 	int ret;
- 
- 	vdev->config->reset(vdev);
-@@ -1057,8 +1075,8 @@ static void rpmsg_remove(struct virtio_device *vdev)
- 
- 	vdev->config->del_vqs(vrp->vdev);
- 
--	dma_free_coherent(vdev->dev.parent->parent, RPMSG_TOTAL_BUF_SPACE,
--					vrp->rbufs, vrp->bufs_dma);
-+	dma_free_coherent(vdev->dev.parent->parent, total_buf_space,
-+			  vrp->rbufs, vrp->bufs_dma);
- 
- 	kfree(vrp);
- }
--- 
-2.0.4
+Since you're editing the AMBA code you should also CC Russell so he can
+review the AMBA part of the change.
 
+--J0QI3A+imHzF1NdR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUGIK2AAoJECTWi3JdVIfQPqkH/3q6cXYjOeFlqwJk1vqkIt34
+O6mh8Lv0eVcdn32ZvzJvX0vnFARbkXhXxuX5viTrbAZ3DnY6J+OJtLqcP9qIv47x
+eCSJikvZkSS8PEJKNRRw5ejxBwkjjDHC7BuCGT+jkCogR726e7uJPc1Ss2IsgaTH
+uHHQ5xw3Y1qpQThrnAftY/07HCj9+0SGgQBf5Q2GE8nKRaURp58hSYeanOsNOBif
+ch820E0ZVG7BMoXsN2q5Y7FP31CtB2fEzEzESaT+2Qg62u1E3ljANlccFh5CAbEB
+iDOmDT96XS/syxcr2fl7U1TYvSxUOPZLoFAJ1lrXY89oJ3w4g8sTaaeg8U3f5/0=
+=i9bF
+-----END PGP SIGNATURE-----
+
+--J0QI3A+imHzF1NdR--
