@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaIPQG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:06:58 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:51293 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895AbaIPQG5 (ORCPT
+	id S1754561AbaIPQIa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:08:30 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59056 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753050AbaIPQI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:06:57 -0400
+	Tue, 16 Sep 2014 12:08:26 -0400
+Date: Tue, 16 Sep 2014 17:07:59 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Joe Perches <joe@perches.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
+Message-ID: <20140916160759.GJ12361@n2100.arm.linux.org.uk>
+References: <cover.1410632834.git.joe@perches.com> <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com> <20140915155656.GA29744@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
-References: <db9b257536558b5f068e97717bb0f25bcc603ae4.1410883257.git.luto@amacapital.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 16 Sep 2014 09:06:34 -0700
-Message-ID: <CALCETrVyGZmpNvSZShC+dT+oWbj7NbfNP=P3m5p5u4A7Z_5YOw@mail.gmail.com>
-Subject: Re: [PATCH] parisc: Use secure_computing_strict, not secure_computing
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Kees Cook <keescook@chromium.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andy Lutomirski <luto@amacapital.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915155656.GA29744@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 9:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> After commit a4412fc9486e, the secure_computing function is only
-> available if seccomp filters are implemented by the architecture.
-> Architectures without seccomp filters use secure_computing_strict
-> instead.
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> ---
->
-> This is minimally tested because my cross-compiler toolchain for parisc
-> is quite broken.  ptrace.c seems to *compile*, but it doesn't assemble.
+On Mon, Sep 15, 2014 at 04:56:56PM +0100, Will Deacon wrote:
+> On Sat, Sep 13, 2014 at 07:31:12PM +0100, Joe Perches wrote:
+> > Use the more common pr_warn.
+> > 
+> > Other miscellanea:
+> > 
+> > o Coalesce formats
+> > o Realign arguments
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  arch/arm/include/asm/syscall.h   |  8 ++++----
+> >  arch/arm/kernel/atags_parse.c    |  2 +-
+> >  arch/arm/kernel/hw_breakpoint.c  | 18 +++++++++---------
+> >  arch/arm/kernel/irq.c            |  4 ++--
+> >  arch/arm/kernel/perf_event_cpu.c |  4 ++--
+> >  arch/arm/kernel/smp.c            |  2 +-
+> >  arch/arm/kernel/unwind.c         | 24 ++++++++++++------------
+> >  arch/arm/mm/idmap.c              |  2 +-
+> >  arch/arm/mm/mmu.c                |  4 ++--
+> >  9 files changed, 34 insertions(+), 34 deletions(-)
+> 
+> It's Russell's call on this, but it really looks like more trouble than it's
+> worth imo. Having git blame identify the person who wrote the original code
+> is considerably more useful than being pointed at somebody making cosmetic
+> changes.
 
-Failed to mention: this applies on top of what tip/master, aka what
-happens when tip/seccomp is merged with a newer -linus kernel.
+I have no objection to this patch set, but I'll echo Will's comment
+that having git blame identify who wrote the code is useful.
 
---Andy
+However, removing old cruft is also a useful exercise, as it keeps
+things simpler (because we're not carrying around lots of excess
+baggage.)  So, I think on balance it's worth the churn.
 
->
->  arch/parisc/kernel/ptrace.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/parisc/kernel/ptrace.c b/arch/parisc/kernel/ptrace.c
-> index 3bab72462ab5..5961cc86d6d2 100644
-> --- a/arch/parisc/kernel/ptrace.c
-> +++ b/arch/parisc/kernel/ptrace.c
-> @@ -270,11 +270,11 @@ long do_syscall_trace_enter(struct pt_regs *regs)
->  {
->         long ret = 0;
->
-> -       /* Do the secure computing check first. */
-> -       if (secure_computing(regs->gr[20])) {
-> -               /* seccomp failures shouldn't expose any additional code. */
-> -               return -1;
-> -       }
-> +       /*
-> +        * Do the secure computing check first. seccomp failures
-> +        * shouldn't expose any additional code.
-> +        */
-> +       secure_computing_strict(regs->gr[20]);
->
->         if (test_thread_flag(TIF_SYSCALL_TRACE) &&
->             tracehook_report_syscall_entry(regs))
-> --
-> 1.9.3
->
+Joe, any chance you could add a KernelVersion: tag somewhere in the
+commit message and throw it at patches@arm.linux.org.uk so it doesn't
+get lost?
 
-
+Thanks.
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
