@@ -1,139 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190AbaIPNBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:01:05 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62377 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893AbaIPM7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 08:59:37 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-ba-54183437312a
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-doc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 3/4] amba: Don't unprepare the clocks if device driver wants
- IRQ safe runtime PM
-Date: Tue, 16 Sep 2014 14:59:19 +0200
-Message-id: <1410872360-27029-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
-References: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xK7rmJhIhBs8nKlhsnLGe1WL61AuM
-	Fqun/mW1OPBnB6PF6xeGFmeb3rBbLJk8n9Vi1pS9TBYL25awWFzeNYfN4nPvEUaL25d5LdYe
-	uctu8e5lhMXdU0fZLN7emc5iceb0JVaLCb8vsFkcXxtu8bJvP4uDiEdLcw+bx+YVWh6L97xk
-	8rhzbQ+bx5I3h1g9tlxtZ/GYffcHo0ffllWMHitWf2f3+LxJzmPv598sAdxRXDYpqTmZZalF
-	+nYJXBmH5/xiL1ghWnFoykHWBsaZgl2MHBwSAiYSs36YdzFyApliEhfurWfrYuTiEBJYyigx
-	7949KKePSeLb5lXMIFVsAsYSm5cvAUuICBxhkXh27wmYwyxwlFFieu9bJpAqYYFUiX83N4N1
-	sAioSmzqv8oKYvMKuEs8mXGeEWKfnMTJY5PB4pwCHhLX914DqxcCqrk5dQLzBEbeBYwMqxhF
-	U0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCouHLDsbFx6wOMQpwMCrx8Gb8Ew8RYk0sK67MPcQo
-	wcGsJMLroSkRIsSbklhZlVqUH19UmpNafIiRiYNTqoFxxpnfrJt3fX6e8eVG2lktiUcTJ/Ze
-	+W9ypL7g7K2pHT8aN5xfl95UUmLEv+DiZUbHzSKiPS7xpVlHVXYIrKsWU10vuY757tFd2y22
-	tng0cljvmfPK6uaHVqdLpjecazJnKc3h4Ty6ZM3Zm98UPfxCv6t5FHjI7ri1Onm3Istp2eRl
-	JuZTGR9wKbEUZyQaajEXFScCAD/jsO5kAgAA
+	id S1753974AbaIPNGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:06:46 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52066 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753383AbaIPNGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 09:06:45 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH] dmaengine: omap-dma: Fix cyclic suspend/resume
+Date: Tue, 16 Sep 2014 16:06:25 +0300
+Message-ID: <1410872785-14523-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMBA bus driver defines runtime Power Management functions which
-disable and unprepare AMBA bus clock. This is problematic for runtime PM
-because unpreparing a clock might sleep so it is not interrupt safe.
+When the audio stream is paused or suspended we stop the sDMA and when it
+is unpsues/resumed we start the channel without reconfiguring it.
+The omap_dma_stop() clears the link configuration when we pause the dma, but
+it is not setting it back on start. This will result only one audio buffer
+to be played back and the DMA will stop, since the linking is disabled.
+The link need to be enabled in omap_dma_start() to make sure that cyclic
+transfer can continue.
 
-However some drivers may want to implement runtime PM functions in
-interrupt-safe way (see pm_runtime_irq_safe()). In such case the AMBA
-bus driver should only disable/enable the clock in runtime suspend and
-resume callbacks.
-
-Detect the device driver behavior after calling its probe function and
-store it. During runtime suspend/resume deal with clocks according to
-stored value.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/amba/bus.c       | 29 +++++++++++++++++++++++++----
- include/linux/amba/bus.h |  1 +
- 2 files changed, 26 insertions(+), 4 deletions(-)
+ drivers/dma/omap-dma.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a127ee5..e8fd5706954f 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -94,8 +94,18 @@ static int amba_pm_runtime_suspend(struct device *dev)
- 	struct amba_device *pcdev = to_amba_device(dev);
- 	int ret = pm_generic_runtime_suspend(dev);
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 4cf7d9a950d7..13a02ff87f28 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -280,6 +280,7 @@ static void omap_dma_assign(struct omap_dmadev *od, struct omap_chan *c,
+ static void omap_dma_start(struct omap_chan *c, struct omap_desc *d)
+ {
+ 	struct omap_dmadev *od = to_omap_dma_dev(c->vc.chan.device);
++	uint32_t val;
  
--	if (ret == 0 && dev->driver)
--		clk_disable_unprepare(pcdev->pclk);
-+	if (ret == 0 && dev->driver) {
-+		/*
-+		 * Drivers should not change pm_runtime_irq_safe()
-+		 * after probe.
-+		 */
-+		WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
+ 	if (__dma_omap15xx(od->plat->dma_attr))
+ 		omap_dma_chan_write(c, CPC, 0);
+@@ -288,6 +289,17 @@ static void omap_dma_start(struct omap_chan *c, struct omap_desc *d)
+ 
+ 	omap_dma_clear_csr(c);
+ 
++	if (!__dma_omap15xx(od->plat->dma_attr) && c->cyclic) {
++		val = omap_dma_chan_read(c, CLNK_CTRL);
 +
-+		if (pcdev->irq_safe)
-+			clk_disable(pcdev->pclk);
++		if (dma_omap1())
++			val &= ~(1 << 14); /* clear the STOP_LNK bit */
 +		else
-+			clk_disable_unprepare(pcdev->pclk);
++			val |= CLNK_CTRL_ENABLE_LNK;
++
++		omap_dma_chan_write(c, CLNK_CTRL, val);
 +	}
- 
- 	return ret;
- }
-@@ -106,7 +116,16 @@ static int amba_pm_runtime_resume(struct device *dev)
- 	int ret;
- 
- 	if (dev->driver) {
--		ret = clk_prepare_enable(pcdev->pclk);
-+		/*
-+		 * Drivers should not change pm_runtime_irq_safe()
-+		 * after probe.
-+		 */
-+		WARN_ON(pcdev->irq_safe != pm_runtime_is_irq_safe(dev));
 +
-+		if (pcdev->irq_safe)
-+			ret = clk_enable(pcdev->pclk);
-+		else
-+			ret = clk_prepare_enable(pcdev->pclk);
- 		/* Failure is probably fatal to the system, but... */
- 		if (ret)
- 			return ret;
-@@ -191,8 +210,10 @@ static int amba_probe(struct device *dev)
- 		pm_runtime_enable(dev);
+ 	/* Enable interrupts */
+ 	omap_dma_chan_write(c, CICR, d->cicr);
  
- 		ret = pcdrv->probe(pcdev, id);
--		if (ret == 0)
-+		if (ret == 0) {
-+			pcdev->irq_safe = pm_runtime_is_irq_safe(dev);
- 			break;
-+		}
- 
- 		pm_runtime_disable(dev);
- 		pm_runtime_set_suspended(dev);
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index ad52027a9cbf..ce101e4497d6 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -32,6 +32,7 @@ struct amba_device {
- 	struct clk		*pclk;
- 	unsigned int		periphid;
- 	unsigned int		irq[AMBA_NR_IRQS];
-+	unsigned int		irq_safe:1;
- };
- 
- struct amba_driver {
 -- 
-1.9.1
+2.1.0
 
