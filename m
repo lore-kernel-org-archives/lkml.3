@@ -1,78 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790AbaIPAkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:40:19 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:34647 "EHLO
+	id S1758387AbaIPAl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:41:26 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34671 "EHLO
 	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305AbaIPAkQ (ORCPT
+	with ESMTP id S1756628AbaIPAlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:40:16 -0400
-Date: Tue, 16 Sep 2014 09:40:06 +0900
+	Mon, 15 Sep 2014 20:41:24 -0400
+Date: Tue, 16 Sep 2014 09:41:14 +0900
 From: Simon Horman <horms@verge.net.au>
 To: Geert Uytterhoeven <geert+renesas@glider.be>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
         Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 3/4] ARM: shmobile: r8a7740 legacy: Add missing INTCA
- clock for irqpin module
-Message-ID: <20140916004006.GC26557@verge.net.au>
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: shmobile: r8a7740 dtsi: Add missing INTCA clock
+ for irqpin module
+Message-ID: <20140916004113.GD26557@verge.net.au>
 References: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
- <1410527720-18061-4-git-send-email-geert+renesas@glider.be>
+ <1410527720-18061-5-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410527720-18061-4-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1410527720-18061-5-git-send-email-geert+renesas@glider.be>
 Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 03:15:19PM +0200, Geert Uytterhoeven wrote:
-> This clock drives the irqpin controller modules.
+On Fri, Sep 12, 2014 at 03:15:20PM +0200, Geert Uytterhoeven wrote:
+> This clock drives the INTCA irqpin controller modules.
 > Before, it was assumed enabled by the bootloader or reset state.
 > 
 > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> Cc: devicetree@vger.kernel.org
 
 Thanks, I have queued this up.
 
 > ---
->  arch/arm/mach-shmobile/clock-r8a7740.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+>  arch/arm/boot/dts/r8a7740.dtsi            | 14 ++++++++++----
+>  include/dt-bindings/clock/r8a7740-clock.h |  1 +
+>  2 files changed, 11 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-> index 0794f0426e70..6cb1de220612 100644
-> --- a/arch/arm/mach-shmobile/clock-r8a7740.c
-> +++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-> @@ -455,7 +455,7 @@ enum {
->  	MSTP128, MSTP127, MSTP125,
->  	MSTP116, MSTP111, MSTP100, MSTP117,
+> diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
+> index d46c213a17ad..502483f4dccb 100644
+> --- a/arch/arm/boot/dts/r8a7740.dtsi
+> +++ b/arch/arm/boot/dts/r8a7740.dtsi
+> @@ -71,6 +71,7 @@
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+>  	};
 >  
-> -	MSTP230,
-> +	MSTP230, MSTP229,
->  	MSTP222,
->  	MSTP218, MSTP217, MSTP216, MSTP214,
->  	MSTP207, MSTP206, MSTP204, MSTP203, MSTP202, MSTP201, MSTP200,
-> @@ -479,6 +479,7 @@ static struct clk mstp_clks[MSTP_NR] = {
->  	[MSTP100] = SH_CLK_MSTP32(&div4_clks[DIV4_B],	SMSTPCR1,  0, 0), /* LCDC0 */
+>  	/* irqpin1: IRQ8 - IRQ15 */
+> @@ -91,6 +92,7 @@
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+>  	};
 >  
->  	[MSTP230] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR2, 30, 0), /* SCIFA6 */
-> +	[MSTP229] = SH_CLK_MSTP32(&div6_clks[DIV4_HP],	SMSTPCR2, 29, 0), /* INTCA */
->  	[MSTP222] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR2, 22, 0), /* SCIFA7 */
->  	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],  SMSTPCR2, 18, 0), /* DMAC1 */
->  	[MSTP217] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],  SMSTPCR2, 17, 0), /* DMAC2 */
-> @@ -575,6 +576,10 @@ static struct clk_lookup lookups[] = {
->  	CLKDEV_DEV_ID("sh-dma-engine.0",	&mstp_clks[MSTP218]),
->  	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
->  	CLKDEV_DEV_ID("e6cd0000.serial",	&mstp_clks[MSTP222]),
-> +	CLKDEV_DEV_ID("renesas_intc_irqpin.0",	&mstp_clks[MSTP229]),
-> +	CLKDEV_DEV_ID("renesas_intc_irqpin.1",	&mstp_clks[MSTP229]),
-> +	CLKDEV_DEV_ID("renesas_intc_irqpin.2",	&mstp_clks[MSTP229]),
-> +	CLKDEV_DEV_ID("renesas_intc_irqpin.3",	&mstp_clks[MSTP229]),
->  	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
->  	CLKDEV_DEV_ID("e6cc0000.serial",	&mstp_clks[MSTP230]),
+>  	/* irqpin2: IRQ16 - IRQ23 */
+> @@ -111,6 +113,7 @@
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+>  	};
 >  
+>  	/* irqpin3: IRQ24 - IRQ31 */
+> @@ -131,6 +134,7 @@
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH
+>  			      0 149 IRQ_TYPE_LEVEL_HIGH>;
+> +		clocks = <&mstp2_clks R8A7740_CLK_INTCA>;
+>  	};
+>  
+>  	ether: ethernet@e9a00000 {
+> @@ -448,8 +452,8 @@
+>  		mstp2_clks: mstp2_clks@e6150138 {
+>  			compatible = "renesas,r8a7740-mstp-clocks", "renesas,cpg-mstp-clocks";
+>  			reg = <0xe6150138 4>, <0xe6150040 4>;
+> -			clocks = <&sub_clk>, <&sub_clk>,
+> -				 <&cpg_clocks R8A7740_CLK_HP>,
+> +			clocks = <&sub_clk>, <&cpg_clocks R8A7740_CLK_HP>,
+> +				 <&sub_clk>, <&cpg_clocks R8A7740_CLK_HP>,
+>  				 <&cpg_clocks R8A7740_CLK_HP>,
+>  				 <&cpg_clocks R8A7740_CLK_HP>,
+>  				 <&cpg_clocks R8A7740_CLK_HP>,
+> @@ -458,7 +462,8 @@
+>  				 <&sub_clk>;
+>  			#clock-cells = <1>;
+>  			renesas,clock-indices = <
+> -				R8A7740_CLK_SCIFA6 R8A7740_CLK_SCIFA7
+> +				R8A7740_CLK_SCIFA6 R8A7740_CLK_INTCA
+> +				R8A7740_CLK_SCIFA7
+>  				R8A7740_CLK_DMAC1 R8A7740_CLK_DMAC2
+>  				R8A7740_CLK_DMAC3 R8A7740_CLK_USBDMAC
+>  				R8A7740_CLK_SCIFA5 R8A7740_CLK_SCIFB
+> @@ -467,7 +472,8 @@
+>  				R8A7740_CLK_SCIFA4
+>  			>;
+>  			clock-output-names =
+> -				"scifa6", "scifa7", "dmac1", "dmac2", "dmac3",
+> +				"scifa6", "intca",
+> +				"scifa7", "dmac1", "dmac2", "dmac3",
+>  				"usbdmac", "scifa5", "scifb", "scifa0", "scifa1",
+>  				"scifa2", "scifa3", "scifa4";
+>  		};
+> diff --git a/include/dt-bindings/clock/r8a7740-clock.h b/include/dt-bindings/clock/r8a7740-clock.h
+> index f6b4b0fe7a43..476135da0f23 100644
+> --- a/include/dt-bindings/clock/r8a7740-clock.h
+> +++ b/include/dt-bindings/clock/r8a7740-clock.h
+> @@ -40,6 +40,7 @@
+>  
+>  /* MSTP2 */
+>  #define R8A7740_CLK_SCIFA6	30
+> +#define R8A7740_CLK_INTCA	29
+>  #define R8A7740_CLK_SCIFA7	22
+>  #define R8A7740_CLK_DMAC1	18
+>  #define R8A7740_CLK_DMAC2	17
 > -- 
 > 1.9.1
 > 
