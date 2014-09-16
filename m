@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaIPSt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:49:29 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:53711 "EHLO
+	id S1755092AbaIPSt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:49:27 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:53743 "EHLO
 	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839AbaIPStU (ORCPT
+	with ESMTP id S1754721AbaIPStU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Sep 2014 14:49:20 -0400
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -21,9 +21,9 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
         devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH/RFC v2 07/12] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev() for pm_clk setup
-Date: Tue, 16 Sep 2014 20:48:54 +0200
-Message-Id: <1410893339-6361-8-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH/RFC v2 12/12] drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
+Date: Tue, 16 Sep 2014 20:48:59 +0200
+Message-Id: <1410893339-6361-13-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
 References: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
@@ -31,63 +31,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the just introduced genpd attach/detach callbacks to register the
-devices' module clocks, instead of doing it directly, to make it
-DT-proof.
+If the default PM domain using PM_CLK is used for PM runtime, the real PM
+domain(s) cannot be registered from DT later.
+
+Hence do not enable it when running a multi-platform kernel with genpd
+support on an r8a7740. The R-Mobile PM domain driver will take care of
+PM runtime management of the module clocks.
+
+The default PM domain is still needed for:
+  - platforms without genpd support,
+  - the legacy (non-DT) case, where real PM domains may take over later,
+    except for the C5 "always on" PM domain.
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
 v2:
   - New
 ---
- arch/arm/mach-shmobile/pm-rmobile.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
+ drivers/sh/pm_runtime.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
-index 717e6413d29cb998..4c8e47179fdd333b 100644
---- a/arch/arm/mach-shmobile/pm-rmobile.c
-+++ b/arch/arm/mach-shmobile/pm-rmobile.c
-@@ -101,6 +101,22 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
- 	return true;
- }
- 
-+static int rmobile_pd_attach_dev(struct generic_pm_domain *genpd,
-+				 struct device *dev)
-+{
-+	if (pm_clk_no_clocks(dev))
-+		pm_clk_add(dev, NULL);
-+
-+	return 0;
-+}
-+
-+static int rmobile_pd_detach_dev(struct generic_pm_domain *genpd,
-+				 struct device *dev)
-+{
-+	pm_clk_remove(dev, NULL);
-+	return 0;
-+}
-+
- static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
- {
- 	struct generic_pm_domain *genpd = &rmobile_pd->genpd;
-@@ -112,6 +128,8 @@ static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
- 	genpd->dev_ops.active_wakeup	= rmobile_pd_active_wakeup;
- 	genpd->power_off		= rmobile_pd_power_down;
- 	genpd->power_on			= rmobile_pd_power_up;
-+	genpd->attach_dev		= rmobile_pd_attach_dev;
-+	genpd->detach_dev		= rmobile_pd_detach_dev;
- 	__rmobile_pd_power_up(rmobile_pd, false);
- }
- 
-@@ -130,8 +148,6 @@ void rmobile_add_device_to_domain_td(const char *domain_name,
- 	struct device *dev = &pdev->dev;
- 
- 	__pm_genpd_name_add_device(domain_name, dev, td);
--	if (pm_clk_no_clocks(dev))
--		pm_clk_add(dev, NULL);
- }
- 
- void rmobile_add_devices_to_domains(struct pm_domain_device data[],
+diff --git a/drivers/sh/pm_runtime.c b/drivers/sh/pm_runtime.c
+index fe2c2d595f599b2f..85cc89fd3e7d7cb7 100644
+--- a/drivers/sh/pm_runtime.c
++++ b/drivers/sh/pm_runtime.c
+@@ -81,7 +81,9 @@ static int __init sh_pm_runtime_init(void)
+ 		if (!of_machine_is_compatible("renesas,emev2") &&
+ 		    !of_machine_is_compatible("renesas,r7s72100") &&
+ 		    !of_machine_is_compatible("renesas,r8a73a4") &&
++#ifndef CONFIG_PM_GENERIC_DOMAINS_OF
+ 		    !of_machine_is_compatible("renesas,r8a7740") &&
++#endif
+ 		    !of_machine_is_compatible("renesas,r8a7778") &&
+ 		    !of_machine_is_compatible("renesas,r8a7779") &&
+ 		    !of_machine_is_compatible("renesas,r8a7790") &&
 -- 
 1.9.1
 
