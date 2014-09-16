@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaIPU5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:57:32 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:46992 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbaIPUwK (ORCPT
+	id S1755765AbaIPU5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:57:53 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43801 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753069AbaIPUwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:52:10 -0400
+	Tue, 16 Sep 2014 16:52:06 -0400
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH 11/22] cpufreq: Replace strnicmp with strncasecmp
-Date: Tue, 16 Sep 2014 22:51:25 +0200
-Message-Id: <1410900696-6481-12-git-send-email-linux@rasmusvillemoes.dk>
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 08/22] ALSA: hda - Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:22 +0200
+Message-Id: <1410900696-6481-9-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
 References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
@@ -32,40 +32,27 @@ To allow the compat wrapper strnicmp to be removed at some point in
 the future, and to avoid the extra indirection cost, do
 s/strnicmp/strncasecmp/g.
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linux-pm@vger.kernel.org
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: alsa-devel@alsa-project.org
 Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- drivers/cpufreq/cpufreq.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/hda_sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index d9fdedd..3330f51 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -437,7 +437,7 @@ static struct cpufreq_governor *__find_governor(const char *str_governor)
- 	struct cpufreq_governor *t;
+diff --git a/sound/pci/hda/hda_sysfs.c b/sound/pci/hda/hda_sysfs.c
+index e207909..9b49f15 100644
+--- a/sound/pci/hda/hda_sysfs.c
++++ b/sound/pci/hda/hda_sysfs.c
+@@ -514,7 +514,7 @@ enum {
  
- 	list_for_each_entry(t, &cpufreq_governor_list, governor_list)
--		if (!strnicmp(str_governor, t->name, CPUFREQ_NAME_LEN))
-+		if (!strncasecmp(str_governor, t->name, CPUFREQ_NAME_LEN))
- 			return t;
+ static inline int strmatch(const char *a, const char *b)
+ {
+-	return strnicmp(a, b, strlen(b)) == 0;
++	return strncasecmp(a, b, strlen(b)) == 0;
+ }
  
- 	return NULL;
-@@ -455,10 +455,10 @@ static int cpufreq_parse_governor(char *str_governor, unsigned int *policy,
- 		goto out;
- 
- 	if (cpufreq_driver->setpolicy) {
--		if (!strnicmp(str_governor, "performance", CPUFREQ_NAME_LEN)) {
-+		if (!strncasecmp(str_governor, "performance", CPUFREQ_NAME_LEN)) {
- 			*policy = CPUFREQ_POLICY_PERFORMANCE;
- 			err = 0;
--		} else if (!strnicmp(str_governor, "powersave",
-+		} else if (!strncasecmp(str_governor, "powersave",
- 						CPUFREQ_NAME_LEN)) {
- 			*policy = CPUFREQ_POLICY_POWERSAVE;
- 			err = 0;
+ /* parse the contents after the line "[codec]"
 -- 
 2.0.4
 
