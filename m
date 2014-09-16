@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaIPXmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:42:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55648 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754720AbaIPXl7 (ORCPT
+	id S1753555AbaIPXpo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:45:44 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55657 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039AbaIPXpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:41:59 -0400
-Message-ID: <5418CAC1.7080407@infradead.org>
-Date: Tue, 16 Sep 2014 16:41:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 16 Sep 2014 19:45:43 -0400
+Date: Tue, 16 Sep 2014 16:45:43 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Frans Klaver <fransklaver@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] eeepc-laptop: simplify parse_arg()
+Message-ID: <20140916234543.GA22408@vmdeb7>
+References: <1409784805-14190-1-git-send-email-fransklaver@gmail.com>
+ <1409814488.5546.63.camel@x220>
+ <20140906021757.GA9197@vmdeb7>
+ <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410252608.22255.5.camel@x220>
+ <20140910033304.GB39541@vmdeb7>
+ <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+ <20140910164916.GA48285@vmdeb7>
+ <1410379520.11097.18.camel@x220>
+ <20140911223739.GB18425@vmdeb7>
 MIME-Version: 1.0
-To: myungjoo.ham@samsung.com, Jean Delvare <jdelvare@suse.de>,
-        =?EUC-KR?B?w9bC+b/s?= <cw00.choi@samsung.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] extcon: sm5502: Depend on I2C
-References: <6256746.443221410910747510.JavaMail.weblogic@epml01>
-In-Reply-To: <6256746.443221410910747510.JavaMail.weblogic@epml01>
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140911223739.GB18425@vmdeb7>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/14 16:39, MyungJoo Ham wrote:
->> The SM5502 chip is an I2C device so its drivers must depend on I2C.
->> Failing to do so results in build failures on kernels where I2C is
->> not enabled.
->>
->> Signed-off-by: Jean Delvare <jdelvare@suse.de>
->> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+On Thu, Sep 11, 2014 at 03:37:39PM -0700, Darren Hart wrote:
+> On Wed, Sep 10, 2014 at 10:05:20PM +0200, Paul Bolle wrote:
+> > parse_arg() has three possible return values:
+> >     -EINVAL if sscanf(), in short, fails;
+> >     zero if "count" is zero; and
+> >     "count" in all other cases
+> > 
+> > But "count" will never be zero. See, parse_arg() is called by the
+> > various store functions. And the callchain of these functions starts
+> > with sysfs_kf_write(). And that function checks for a zero "count". So
+> > we can stop checking for a zero "count", drop the "count" argument
+> > entirely, and transform parse_arg() into a function that returns zero on
+> > success or a negative error. That, in turn, allows to make those store
+> > functions just return "count" on success. The net effect is that the
+> > code becomes a bit easier to understand.
+> > 
+> > While we're at it, let store_sys_acpi() return whatever error set_acpi()
+> > returns instead of remapping it to EIO.
+> > 
+> > A nice side effect is that this GCC warning is silenced too:
+> >     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+> >     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+> >       int rv, value;
+> > 
+> > Which is, of course, the reason to have a look at parse_arg().
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > 
-> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Queued, thanks Paul.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+After discussion with Linus, I have had to drop this patch from the queue. We
+need to restore the -EIO error code mapping to store_sys_acpi().
 
-Geert sent this same patch.  I sent this same patch.
-What happened to those patches?
-
-
-> 
->> ---
->>  drivers/extcon/Kconfig |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> --- a/drivers/extcon/Kconfig
->> +++ b/drivers/extcon/Kconfig
->> @@ -72,6 +72,7 @@ config EXTCON_PALMAS
->>  
->>  config EXTCON_SM5502
->>  	tristate "SM5502 EXTCON support"
->> +	depends on I2C
->>  	select IRQ_DOMAIN
->>  	select REGMAP_I2C
->>  	select REGMAP_IRQ
->>
->> -- 
->> Jean Delvare
->> SUSE L3 Support
-
+Apologies for the run around here, we had to define some policy around this.
 
 -- 
-~Randy
+Darren Hart
+Intel Open Source Technology Center
