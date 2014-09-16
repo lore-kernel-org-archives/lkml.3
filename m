@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaIPPtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:49:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:38111 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540AbaIPPtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:49:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bertrand Jacquin <beber@meleeweb.net>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Jon Mason <jon.mason@intel.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mark Rustad <mark.d.rustad@intel.com>
-Cc: Mathias Krause <minipli@googlemail.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Subject: [PULL] modules-next
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 17 Sep 2014 01:18:39 +0930
-Message-ID: <87d2avftwo.fsf@rustcorp.com.au>
+	id S1754513AbaIPPvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:51:37 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59161 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaIPPvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 11:51:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: Re: [PATCH v2] mfd: syscon: Decouple syscon interface from platform devices
+Date: Tue, 16 Sep 2014 16:52:15 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-35-generic; KDE/4.3.2; x86_64; ; )
+Cc: lee.jones@linaro.org, kgene.kim@samsung.com, linux@arm.linux.org.uk,
+        "'Alexander Shiyan'" <shc_work@mail.ru>, naushad@samsung.com,
+        "'Tomasz Figa'" <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        joshi@samsung.com, linux-samsung-soc@vger.kernel.org,
+        thomas.ab@samsung.com, tomasz.figa@gmail.com, vikas.sajjan@samsung.com,
+        chow.kim@samsung.com, "'Michal Simek'" <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "'Mark Brown'" <broonie@kernel.org>,
+        "'Boris BREZILLON'" <boris.brezillon@free-electrons.com>,
+        PRASHANTH GODREHAL <prashanth.g@samsung.com>
+References: <1409668935-10667-1-git-send-email-pankaj.dubey@samsung.com> <20140905101409.68b14cc3@bbrezillon> <000b01cfd1a4$f5ae0d20$e10a2760$@samsung.com>
+In-Reply-To: <000b01cfd1a4$f5ae0d20$e10a2760$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409161652.15333.arnd@arndb.de>
+X-Provags-ID: V02:K0:OGRX3z9lbk1sJbhBjETaBf8/dzp9QhkXeWaXb1zYrvk
+ 5U6jxpB6t1WD2z5qlyoeRn91ODVtrjaXWVQ1gqL9bQaVF4se1j
+ XzOUS0aaTKQCWhGW2LIFzI+5khacaTkke/T9Vc3HIqy/mjwcad
+ iY4002AwJae9r/542Xs49uZl4p5VWcZGyfGZqz3jR3UHEk7bRE
+ T3jLCIFc5whsUL4baGeQRxJVwX0ABUgYu0qG4aae1na0gZqy0i
+ 8qbyqC/a7bfMbvh0k18W3jBm6pOokg/Bv2QQdkWNl9nyZoafGQ
+ FPGF8grTm/iaeOp8umPq9ZfvJyFF+gFRySbCtBV54BrEncV9x8
+ fb0YYzmtMe1gPwSlxQo8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 68e370289c29e3beac99d59c6d840d470af9dfcf:
+On Tuesday 16 September 2014, Pankaj Dubey wrote:
+> Hi Arnd,  Lee Jones,
+> > On Thu, 04 Sep 2014 10:15:27 +0530
+> > Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+> 
+> Any update on this patch. As already it has been tested on two DT based
+> platforms.
+> 
+> If you think that we can go ahead and break clps711x till it gets migrated
+> over DT,
+> then please ack this patch, or else if you have opinion to keep support for
+> non-DT
+> based drivers (clps711x) then I can post another patch keeping platform
+> driver support
+> for non-DT based platform. 
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux (2014-08-26 13:50:23 -0700)
+The rule is that we don't intentionally break things, so please post a
+patch that keeps the existing platform driver there. Ideally we get a DT-only
+clps711x for the merge window as well, and if that happens we can add another
+patch on top to remove that syscon-pdev support again but then we will
+have a bisectable kernel that works for every point inbetween.
 
-are available in the git repository at:
 
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git tags/modules-next-for-linus
-
-for you to fetch changes up to 184c3fc3f52fb75800deb76deffb70907d1f76ea:
-
-  moduleparam: Resolve missing-field-initializer warning (2014-09-11 09:59:25 +0930)
-
-----------------------------------------------------------------
-Nothing major: support for compressing modules, and auto-tainting params.
-
-Cheers,
-Rusty.
-PS.  My virtio-next tree is empty: DaveM took the patches I had.  There might
-     be a virtio-rng starvation fix, but so far it's a bit voodoo so I will
-     get to that in the next two days or it will wait.
-
-----------------------------------------------------------------
-Bertrand Jacquin (3):
-      modsign: lookup lines ending in .ko in .mod files
-      modinst: wrap long lines in order to enhance cmd_modules_install
-      kbuild: handle module compression while running 'make modules_install'.
-
-Jani Nikula (4):
-      module: rename KERNEL_PARAM_FL_NOARG to avoid confusion
-      module: make it possible to have unsafe, tainting module params
-      module: add module_param_unsafe and module_param_named_unsafe
-      drm/i915: taint the kernel if unsafe module parameters are set
-
-Mark Rustad (1):
-      moduleparam: Resolve missing-field-initializer warning
-
-Mathias Krause (2):
-      modpost: reduce visibility of symbols and constify r/o arrays
-      modpost: simplify file name generation of *.mod.c files
-
-Rusty Russell (1):
-      param: check for tainting before calling set op.
-
- Makefile                            | 15 +++++++++++
- drivers/gpu/drm/i915/i915_params.c  |  8 +++---
- drivers/tty/serial/8250/8250_core.c |  2 +-
- include/linux/moduleparam.h         | 50 +++++++++++++++++++++++++++++--------
- init/Kconfig                        | 43 +++++++++++++++++++++++++++++++
- kernel/module.c                     |  2 +-
- kernel/params.c                     | 17 ++++++++++---
- scripts/Makefile.modinst            |  7 +++++-
- scripts/Makefile.modsign            |  2 +-
- scripts/mod/modpost.c               | 25 ++++++++++---------
- security/apparmor/lsm.c             |  4 +--
- 11 files changed, 139 insertions(+), 36 deletions(-)
+	Arnd
