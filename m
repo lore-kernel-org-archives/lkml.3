@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937AbaIPUVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:21:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57390 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaIPUVk (ORCPT
+	id S1755031AbaIPU02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:26:28 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:14084 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751966AbaIPU01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:21:40 -0400
-Message-ID: <54189BCE.2010206@canonical.com>
-Date: Tue, 16 Sep 2014 16:21:34 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Tue, 16 Sep 2014 16:26:27 -0400
+Date: Tue, 16 Sep 2014 16:26:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Jan Kara <jack@suse.cz>, Geert Uytterhoeven <geert@linux-m68k.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PCI: Only enable realloc auto when root bus has 64bit
- mmio
-References: <1386546869-31900-1-git-send-email-yinghai@kernel.org>	<1386546869-31900-3-git-send-email-yinghai@kernel.org>	<CAErSpo6VvV21DyHuHLcsA+_KPQcYdAWXtaVbZGUA-M9+iji0fw@mail.gmail.com>	<CAE9FiQUWFoyg_7TPaBVftpojCocNu0=1yWtqKTBvkQkRhNOnhg@mail.gmail.com>	<CAErSpo5+jY-P-9iUj0RVqyZzXwQcq9m9PqWKzZDU0yjK=4gAeQ@mail.gmail.com>	<CAE9FiQXf6w0u+JLu-JHd45ofSTShaB0MoMNbck9EE-y3u6B98w@mail.gmail.com>	<52A8BAC5.70006@canonical.com>	<CAE9FiQV8mfF6SMTbZN5H+DmyuM0663wQyoKYJDa7MiBR4i7XQg@mail.gmail.com>	<52D01D82.5070202@canonical.com> <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQUD0XvPJNFNMoqX6J67TKuGcj+pSbj+iPUf=fvC-4UXOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140916162625.4b55732a@gandalf.local.home>
+In-Reply-To: <20140916191740.GA24243@x4>
+References: <20140914050905.GA296@x4>
+	<20140914055450.GB296@x4>
+	<CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
+	<20140915163740.GA12408@x4>
+	<20140916105547.GA1205@quack.suse.cz>
+	<20140916144252.GB32118@x4>
+	<20140916111331.14303381@gandalf.local.home>
+	<20140916152046.GC32118@x4>
+	<20140916151415.4c646cbc@gandalf.local.home>
+	<20140916191740.GA24243@x4>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2014 12:13 PM, Yinghai Lu wrote:
-> On Fri, Jan 10, 2014 at 8:19 AM, Joseph Salisbury
-> <joseph.salisbury@canonical.com> wrote:
->> On 12/11/2013 02:55 PM, Yinghai Lu wrote:
->>> On Wed, Dec 11, 2013 at 11:19 AM, Joseph Salisbury
->>> <joseph.salisbury@canonical.com> wrote:
->>>> On 12/09/2013 03:10 PM, Yinghai Lu wrote:
->>>>> On Mon, Dec 9, 2013 at 11:42 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>>>> That doesn't answer my question at all.
->>>>>>
->>>>>> I understand that this change makes it so Joseph doesn't have to use
->>>>>> "pci=realloc=off".  But why should auto-reallocation be limited to
->>>>>> buses that have resources above 4GB?  That doesn't make any sense.
->>>>>>
->>>>>> We should fix the reallocation code so it can deal with this case.  If
->>>>>> there's not enough space for everything, obviously we have to leave
->>>>>> something unassigned.  A ROM BAR is a good candidate for leaving
->>>>>> unassigned, because most of the time we can get along without it.
->>>>> Yes, that is ideal and not that simple.
->>>>> but that would be hard to backport to old kernels.
->>>>>
->>>>> BTW, Joseph, can you try
->>>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->>>>> for-pci-3.14
->>>>> with pci=realloc=on
->>>>>
->>>>> on that system?
->>>>>
->>>>> Thanks
->>>>>
->>>>> Yinghai
->>>> I noticed there was some back and forth on this thread.  Do you still
->>>> want me to test this version, Yinghai?
->>> Yes, if that works, we would not need to put the patch in upstream for limiting
->>> realloc auto scope.
->>>
->> Another user has confirmed that at test kernel from your branch[0] does
->> resolve the bug.
-> Hi, Joe,
->
-> Bjorn does not want to limit auto realloc, so this patch can not make
-> to upstream at this point.
->
-> so we may have to ask user to append "pci=realloc=off" before we find
-> more smart way to realloc
-> resource.
->
-> Thanks
->
-> Yinghai
+On Tue, 16 Sep 2014 21:17:40 +0200
+Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
 
-Hi Yinghai,
+> On 2014.09.16 at 15:14 -0400, Steven Rostedt wrote:
+> > On Tue, 16 Sep 2014 17:20:46 +0200
+> > Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+> > 
+> > > On 2014.09.16 at 11:13 -0400, Steven Rostedt wrote
+> > > I'll leave it to you. This is just a cosmetic issue, so there's no need
+> > > to fix this immediately.
+> > > 
+> > 
+> > Actually the fix is much simpler (I had to wait for the drugs to wear
+> > off before I noticed this ;-):
+> 
+> Well, the list is not complete:
 
-A new bug[0] was opened due to enabling PCI_REALLOC_ENABLE_AUTO, which
-is similar to the original bug[1] we discussed.
+Thanks! I'll update it.
 
-Just wondering if there have been any additional ideas on realloc since
-this was last discussed?
+-- Steve
 
-Thanks,
+> 
+>  linux % git grep printk_deferred
+> ...
+> kernel/time/clockevents.c:              printk_deferred(KERN_WARNING
+> kernel/time/clockevents.c:      printk_deferred(KERN_WARNING
+> kernel/time/ntp.c:              printk_deferred(KERN_ERR
+> kernel/time/ntp.c:              printk_deferred(KERN_WARNING
+> kernel/time/ntp.c:              printk_deferred(KERN_WARNING
+> kernel/time/ntp.c:              printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
+> kernel/time/timekeeping.c:              printk_deferred(KERN_WARNING
+> 
 
-Joe
-
-
-[0] http://pad.lv/1363313
-[1] http://pad.lv/1245938
