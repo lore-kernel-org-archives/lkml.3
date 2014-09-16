@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaIPJiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 05:38:12 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29669 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732AbaIPJiI (ORCPT
+	id S1753669AbaIPJiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 05:38:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:40463 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553AbaIPJiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 05:38:08 -0400
-X-AuditID: cbfee68d-f79c46d000000b84-36-541804fdf18a
+	Tue, 16 Sep 2014 05:38:14 -0400
+X-AuditID: cbfee68d-f79c46d000000b84-86-541805033ccf
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-i2c@vger.kernel.org
 Cc: naveenkrishna.ch@gmail.com, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org, sjg@chromium.org,
         grundler@chromium.org, linux-kernel@vger.kernel.org, wsa@the-dreams.de,
         cpgs@samsung.com, devicetree@vger.kernel.org
-Subject: [PATCH 0/2] i2c: Add i2c support for Exynos7 SoC
-Date: Tue, 16 Sep 2014 15:03:16 +0530
-Message-id: <1410859998-29285-1-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 2/2] i2c: exynos5: Add Kconfig dependencies
+Date: Tue, 16 Sep 2014 15:03:18 +0530
+Message-id: <1410859998-29285-3-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkWvcvi0SIwa+zRhYvD2lazD9yjtXi
-	1ZEfTBabHl9jtej4+4XR4vKuOWwWM87vY7JYtO0/s8W3LdsYLVaemMXswOUxu+Eii8fOWXfZ
-	PTYvqffo27KK0ePkqScsHp83yQWwRXHZpKTmZJalFunbJXBlrHj3jrFgO1fFm0MP2RsY93J0
-	MXJySAiYSLzov8gOYYtJXLi3nq2LkYtDSGApo8TJzuXMMEWnP55mArGFBBYxSjQ3J0AU9TNJ
-	TLu6BCzBJmAmcXDRarBJIgKyEq0P1jCDFDELfGWUODTvCViRsIClxP6DL8CKWARUJdrfLGDp
-	YuTg4BVwlTj5yRDElBBQkJgzyQakVUJgHrvEq94pLBDlAhLfJh9igaiRldh0AOo2SYmDK26w
-	TGAUXMDIsIpRNLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjMLBP/3vWu4Px9gHrQ4wCHIxKPLwe
-	j8RDhFgTy4orcw8xmgJtmMgsJZqcD4yfvJJ4Q2MzIwtTE1NjI3NLMyVxXkWpn8FCAumJJanZ
-	qakFqUXxRaU5qcWHGJk4OKUaGBPNWGTkE/b2Oc5ZZPVWIzes6uO/dalCnqYmoc5PniwvkJKp
-	kb17gNtprbq3dcbb6ZtUY3rXN8qI6P+f+dTMK8PEQy1o3dQvO2c/07uQOjNw8oUbR5/83az1
-	pfpE8ruDT1nm7OPyv1rALbLcpMY08pHFvhAre4GXXsYpt+yCE7Y57tQ+dvzfXyWW4oxEQy3m
-	ouJEAPgxBFBnAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t9jAd2/LBIhBnvOaFq8PKRpMf/IOVaL
-	V0d+MFlsenyN1aLj7xdGi8u75rBZzDi/j8li0bb/zBbftmxjtFh5YhazA5fH7IaLLB47Z91l
-	99i8pN6jb8sqRo+Tp56weHzeJBfAFtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGto
-	aWGupJCXmJtqq+TiE6DrlpkDdJmSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0
-	kLCGMWPFu3eMBdu5Kt4cesjewLiXo4uRk0NCwETi9MfTTBC2mMSFe+vZQGwhgUWMEs3NCV2M
-	XEB2P5PEtKtLwIrYBMwkDi5azQ5iiwjISrQ+WMMMUsQs8JVR4tC8J2BFwgKWEvsPvgArYhFQ
-	lWh/s4Cli5GDg1fAVeLkJ0MQU0JAQWLOJJsJjNwLGBlWMYqmFiQXFCel5xrqFSfmFpfmpesl
-	5+duYgTHzTOpHYwrGywOMQpwMCrx8Ho8Eg8RYk0sK67MPcQowcGsJMJ78Q9QiDclsbIqtSg/
-	vqg0J7X4EKMp0O6JzFKiyfnAmM4riTc0NjE3NTa1NLEwMbNUEuc90GodKCSQnliSmp2aWpBa
-	BNPHxMEp1cAYaiwZlKE2cfIjDp65t+/k+1xfLXBiygOdlctXtG0+UXW3vfp3ze0OJe+Kr7td
-	11jx9cgxHzygm1CtVH7/0uQTM9+dyhUvluIIW1kYGd49IXmL8/1Xb1PqDnvNeRJuOS0t8Vcu
-	tz337k2vtzTGtIvtXK7p7nusKeB2/ExpX5uHR1OvR2zTUHmhxFKckWioxVxUnAgAhaJP1bEC	AAA=
+In-reply-to: <1410859998-29285-1-git-send-email-ch.naveen@samsung.com>
+References: <1410859998-29285-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkSpeZVSLE4N8nA4uXhzQt5h85x2rx
+	6sgPJotNj6+xWnT8/cJocXnXHDaLGef3MVks2vaf2eLblm2MFitPzGJ24PKY3XCRxWPnrLvs
+	HpuX1Hv0bVnF6HHy1BMWj8+b5ALYorhsUlJzMstSi/TtErgy9v7ez1Kwi61ix/ojzA2My1m7
+	GDk5JARMJCYt3cEIYYtJXLi3nq2LkYtDSGApo8TU+bvYYIo+LT3LCJFYxCixbd8WqKp+Jome
+	M9/A2tkEzCQOLlrNDmKLCMhKtD5YwwxSxCzwlVHi0LwnTCAJYQFriUnTDjCD2CwCqhKfnlwE
+	i/MKuEqcmNUINIgDaJ2CxJxJNiBhTgE3iZXzNrGAhIWASmbf94Q4aBu7xKmOYogpAhLfJh9i
+	geiUldgEMVxCQFLi4IobLBMYhRcwMqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECIyE0/+e
+	9e5gvH3A+hCjAAejEg+vxyPxECHWxLLiytxDjKZAGyYyS4km5wPjLa8k3tDYzMjC1MTU2Mjc
+	0kxJnFdR6mewkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkbDwJxvU/dO2F2XeGHR16jd6WoT
+	DIKd0pJ75nw213s674eiJ2NfmNuc9VUZT05YCkZmf/J4fqH0fIMRm/3B5+XRT/QPbZFe5sWX
+	WHq/POGfc65UxzN+m7Pq58pdOVatjV23d8JdX96D0ztjnfqF/xhurn2zvn/K4Q51PxGLhVd9
+	/osXXXc0uqvEUpyRaKjFXFScCABMmwM9fwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAV1mVokQg61vNCxeHtK0mH/kHKvF
+	qyM/mCw2Pb7GatHx9wujxeVdc9gsZpzfx2SxaNt/ZotvW7YxWqw8MYvZgctjdsNFFo+ds+6y
+	e2xeUu/Rt2UVo8fJU09YPD5vkgtgi2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
+	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
+	SFjDmLH3936Wgl1sFTvWH2FuYFzO2sXIySEhYCLxaelZRghbTOLCvfVsXYxcHEICixgltu3b
+	AuX0M0n0nPkGVsUmYCZxcNFqdhBbREBWovXBGmaQImaBr4wSh+Y9YQJJCAtYS0yadoAZxGYR
+	UJX49OQiWJxXwFXixKxGoEEcQOsUJOZMsgEJcwq4Sayct4kFJCwEVDL7vucERt4FjAyrGEVT
+	C5ILipPScw31ihNzi0vz0vWS83M3MYIj7ZnUDsaVDRaHGAU4GJV4eD0eiYcIsSaWFVfmHmKU
+	4GBWEuG9+AcoxJuSWFmVWpQfX1Sak1p8iNEU6KaJzFKiyfnAJJBXEm9obGJuamxqaWJhYmap
+	JM57oNU6UEggPbEkNTs1tSC1CKaPiYNTqoGRRSm83+//hYxdJ+/ppM7oPSbtzBd3zT0n7smk
+	BX+3uoq6XvyTO/v71D73eSx5tqoz81ZJnzh+pb714BUvnviyjfoLWcTOqHxXvyib0ive3PG9
+	kk+f39jrTMGtKRPVo3LuHZqynV2cIe/In3C3FUenHn5wbo39+UmF28y0a5NO7U5YcGDVCq1A
+	JZbijERDLeai4kQAcuFtdsoCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,34 +52,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds code to the i2c-exynos5.c driver to support
-the HSI2C H/W available on Exynos7 SoC.
+The i2c-exynos5.c driver can be reused for the HSI2C controller
+on Exynos7 SoCs from Samsung.
 
-Also, modifies the Kconfig dependencies to be able to select
-for ARCH_EXYNOS7 platform.
+This patch adds the Kconfig dependency to choose i2c-exynos5.c
+for CONFIG_ARCH_EXYNOS7.
 
-The following patches are tested based on Kgene's for-next tree.
-https://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/log/?h=for-next
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/i2c/busses/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Following patches are required for this series:
-1. "tty/serial: fix config dependencies for samsung serial"
-   https://www.mail-archive.com/linux-samsung-soc <at> vger.kernel.org/msg36208.html
-2. "dts, kbuild: Implement support for dtb vendor subdirs" patchset 
-   http://comments.gmane.org/gmane.linux.kbuild.devel/12131
-3. [PATCH v4 0/8] arch: arm64: enable support for Samsung Exynos7 SoC
-   http://www.spinics.net/lists/devicetree/msg49130.html
-4. [PATCH 0/4] Add initial support for pinctrl on Exynos7
-   http://www.spinics.net/lists/devicetree/msg49237.html
-
-Naveen Krishna Chatradhi (2):
-  i2c: exynos: add support for HSI2C module on Exynos7
-  i2c: exynos5: Add Kconfig dependencies
-
- .../devicetree/bindings/i2c/i2c-exynos5.txt        |    2 +
- drivers/i2c/busses/Kconfig                         |    2 +-
- drivers/i2c/busses/i2c-exynos5.c                   |   71 ++++++++++++++++++--
- 3 files changed, 68 insertions(+), 7 deletions(-)
-
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 2ac87fa..1f3b9cb 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -465,7 +465,7 @@ config I2C_EG20T
+ 
+ config I2C_EXYNOS5
+ 	tristate "Exynos5 high-speed I2C driver"
+-	depends on ARCH_EXYNOS5 && OF
++	depends on ARCH_EXYNOS && OF
+ 	default y
+ 	help
+ 	  High-speed I2C controller on Exynos5 based Samsung SoCs.
 -- 
 1.7.9.5
 
