@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaIPQfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:35:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34934 "EHLO bear.ext.ti.com"
+	id S1754747AbaIPQgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:36:07 -0400
+Received: from www.sr71.net ([198.145.64.142]:50252 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895AbaIPQfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:35:10 -0400
-Message-ID: <541866A2.70007@ti.com>
-Date: Tue, 16 Sep 2014 11:34:42 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754676AbaIPQgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 12:36:05 -0400
+Message-ID: <541866F2.4020108@sr71.net>
+Date: Tue, 16 Sep 2014 09:36:02 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: <daniel.lezcano@linaro.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Keerthy <j-keerthy@ti.com>, lkml <linux-kernel@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>,
-        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kevin Hilman <khilman@linaro.org>, linux-pm <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
-References: <1408716154-26101-1-git-send-email-nm@ti.com> <1408716154-26101-9-git-send-email-nm@ti.com> <7hvbpdbvb1.fsf@paris.lan> <CAGo_u6o7vAf=syzDTyxh0-kOhmzAmtdG_ardgFgoPQofrGdxUQ@mail.gmail.com> <53FE3477.2020207@ti.com> <7hegw1bs30.fsf@paris.lan> <20140905211847.GB31011@kahuna>
-In-Reply-To: <20140905211847.GB31011@kahuna>
-Content-Type: text/plain; charset="windows-1252"
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: Chuck Ebbert <cebbert.lkml@gmail.com>, linux-kernel@vger.kernel.org,
+        borislav.petkov@amd.com, andreas.herrmann3@amd.com,
+        hpa@linux.intel.com, ak@linux.intel.com
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain> <20140916013845.390833b9@as> <20140916064403.GC14807@gmail.com> <20140916155928.GA2848@worktop.localdomain>
+In-Reply-To: <20140916155928.GA2848@worktop.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Daniel,
-
-On 09/05/2014 04:18 PM, Nishanth Menon wrote:
-> Daniel,
+On 09/16/2014 08:59 AM, Peter Zijlstra wrote:
+> On Tue, Sep 16, 2014 at 08:44:03AM +0200, Ingo Molnar wrote:
+>> Note that that's not really a 'NUMA node' in the way lots of 
+>> places in the kernel assume it: permanent placement assymetry 
+>> (and access cost assymetry) of RAM.
 > 
-> On 13:22-20140827, Kevin Hilman wrote:
->> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
->>
->>> On Wednesday 27 August 2014 03:35 PM, Nishanth Menon wrote:
->>>> On Wed, Aug 27, 2014 at 2:13 PM, Kevin Hilman
->>>> <khilman@deeprootsystems.com> wrote:
->>>>> + Daniel (cpuidle maintainer)
->>>> [...]
->>>>>> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
->>>>>> +                            struct cpuidle_driver *drv,
->>>>>> +                            int index)
->>>>>> +{
->>>>>> +     struct idle_statedata *cx = state_ptr + index;
->>>>>> +     unsigned long flag;
->>>>>> +
->>>>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
->>>>>> +     cx->mpu_state_vote++;
->>>>>> +     if (cx->mpu_state_vote == num_online_cpus()) {
->>>>>> +             pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
->>>>>> +             omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
->>>>>> +     }
->>>>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
->>>>>> +
->>>>>> +     omap4_enter_lowpower(dev->cpu, cx->cpu_state);
->>>>>> +
->>>>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
->>>>>> +     if (cx->mpu_state_vote == num_online_cpus())
->>>>>> +             omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
->>>>>> +     cx->mpu_state_vote--;
->>>>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
->>>>>> +
->>>>>> +     return index;
->>>>>> +}
->>>>>
->>>>> Hmm, maybe OMAP5/DRA7 CPUidle driver should be a new one based on MCPM?
->>>>
->>>> Trying to understand benefit of MCPM here - at least without a deeper
->>>> understanding of mcpm infrastructure benefits (first look seemed a
->>>> little heavy for OMAP5/DRA7 needs).
->>>>
->>>> Neither DRA7/OMAP5 are multi-cluster, the SoCs are not targetted for
->>>> "OFF" of CPU1/0, we have mercury hardware to help with context and
->>>> sync issues.
->>>>
->>>> Being able to reuse most of existing OMAP4 infrastructure code is
->>>> useful as well to leave the existing omap4 framework as being lighter
->>>> in complexity -esp in a cpuidle like hot path?
->>>>
->>>> The spin_lock is only for the programming of MPU power domain in a
->>>> consistent manner - I suppose might have been the trigger for
->>>> proposing mcpm?
->>>>
->>> Mostly not....
->>>
->>> I think this is coming because last time Nicolas Pitre tried to convert
->>> the OMAP CPUIdle into MCPM but because of various ordering requirements,
->>> OMAP wasn't suitable and then the plan was dropped later.
->>>
->>> Just to make clear, OMAP OMAP5/DRA7 as well the ordering requirement
->>> remains the same for deeper states. Its just the mercury retention state
->>> which we are able to enter without ordering requirements and hence
->>> the voting scheme.
->>
->> Ah, OK.  This is the part that I'm missing.  So for deeper states you'll
->> need to be using omap_enter_idle_coupled()
->>
->>> Hope this clarifies to you as well as Kevin just in case he missed the
->>> part of the deeper C-states requirements.
->>
->> Yes, thanks for clarifying.
->>
->> That being said, I think MCPM can now do essentially what the coupled
->> states code is doing. Even so, that's probably not a reason to hold up
->> this patch, but Daniel gets to make that call.
-> 
-> 
-> Gentle ping.. You can find the discussion and the patch here:
-> https://patchwork.kernel.org/patch/4764661/
-> 
+> Agreed, that is not NUMA, both groups will have the exact same local
+> DRAM latency (unlike the AMD thing which has two memory busses on the
+> single package, and therefore really has two nodes on a single chip).
 
-Ping on this again.. we are pretty close to approaching v3.18 merge
-window and this discussion has'nt gotten further.
+I don't think this is correct.
 
--- 
-Regards,
-Nishanth Menon
+>From my testing, each ring of CPUs has a "close" and "far" memory
+controller in the socket.
+
+> This also means the CoD thing sets up the NUMA masks incorrectly.
+
+I used this publicly-available Intel tool:
+
+https://software.intel.com/en-us/articles/intelr-memory-latency-checker
+
+And ran various combinations pinning the latency checker to various CPUs
+and NUMA nodes.
+
+Here's what I think the SLIT table should look like with cluster-on-die
+disabled.  There is one node per socket and the latency to the other
+node is 1.5x the latency to the local node:
+
+*      0     1
+0     10    15
+1     15    10
+
+or, measured in ns:
+*      0     1
+0     76   119
+1    114    76
+
+Enabling cluster-on-die, we get 4 nodes.  The local memory in thesame
+socket gets faster, and remote memory in the same socket gets both
+absolutely and relatively slower:
+
+*      0     1     2     3
+0     10    20    26    26
+1     20    10    26    26
+2     26    26    10    20
+3     26    26    20    10
+
+and in ns:
+*      0     1     2     3
+0   74.8 152.3 190.6 200.4
+1  146.2  75.6 190.8 200.6
+2  185.1 195.5  74.5 150.1
+3  186.6 195.6 147.3  75.6
+
+So I think it really is reasonable to say that there are 2 NUMA nodes in
+a socket.
+
+BTW, these numbers are only approximate.  They were not run under
+particularly controlled conditions and I don't even remember what kernel
+they were under.
+
