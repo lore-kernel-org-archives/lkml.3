@@ -1,140 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaIPIJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:09:35 -0400
-Received: from s250.sam-solutions.net ([217.21.49.219]:46733 "EHLO
-	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413AbaIPIIs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:08:48 -0400
-From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
-To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <perex@perex.cz>, <tiwai@suse.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <=devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
-Subject: [PATCH v3 1/4] ARM: dts: pbab01: move i2c pins and frequency configuration into pfla02
-Date: Tue, 16 Sep 2014 11:08:20 +0300
-Message-ID: <1410854903-26419-2-git-send-email-d.lavnikevich@sam-solutions.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
-References: <1410537872-17274-1-git-send-email-d.lavnikevich@sam-solutions.com>
- <1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
+	id S1753091AbaIPIRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:17:51 -0400
+Received: from www.sr71.net ([198.145.64.142]:46392 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800AbaIPIRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 04:17:46 -0400
+Message-ID: <5417F228.9060301@sr71.net>
+Date: Tue, 16 Sep 2014 01:17:44 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.117.165]
-X-ClientProxiedBy: S326.sam-solutions.net (217.21.35.11) To
- S326.sam-solutions.net (217.21.35.11)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@linux.intel.com,
+        ak@linux.intel.com, Alex Chiang <achiang@hp.com>,
+        Borislav Petkov <bp@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Mike Travis <travis@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+References: <20140915222641.D640BD8A@viggo.jf.intel.com> <20140916032920.GH2840@worktop.localdomain>
+In-Reply-To: <20140916032920.GH2840@worktop.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since pins and frequency are specific to module (pfla02), not base board
-(pbab02), it is better to be initialized in corresponding dts file.
+On 09/15/2014 08:29 PM, Peter Zijlstra wrote:
+> On Mon, Sep 15, 2014 at 03:26:41PM -0700, Dave Hansen wrote:
+>> I'm getting the spew below when booting with Haswell (Xeon
+>> E5-2699) CPUs and the "Cluster-on-Die" (CoD) feature enabled in
+>> the BIOS. 
+> 
+> What is that cluster-on-die thing? I've heard it before but never could
+> find anything on it.
 
-This patch fixes i2c2, i2c3 pin configuration which caused messages:
+You split each socket in to halves.  Each half gets slightly lower
+latency to the memory on its half's memory controller.  But, at an
+increased latency cost to go to every other bit of memory on the system.
+ I've got some data squirreled away on exactly what the latencies are,
+but it really is a substantial increase for memory, especially for the
+memory that is still on package but is now "off-node".
 
-imx6q-pinctrl 20e0000.iomuxc: no groups defined in /soc/aips-bus@02000000/iomuxc@020e0000/i2c2grp
-imx6q-pinctrl 20e0000.iomuxc: no groups defined in /soc/aips-bus@02000000/iomuxc@020e0000/i2c3grp
-imx6q-pinctrl 20e0000.iomuxc: unable to find group for node i2c2grp
-imx6q-pinctrl 20e0000.iomuxc: unable to find group for node i2c3grp
+>> This also fixes sysfs because CPUs with the same 'physical_package_id'
+>> in /sys/devices/system/cpu/cpu*/topology/ are not listed together
+>> in the same 'core_siblings_list'.  This violates a statement from
+>> Documentation/ABI/testing/sysfs-devices-system-cpu:
+>>
+>> 	core_siblings: internal kernel map of cpu#'s hardware threads
+>> 	within the same physical_package_id.
+>>
+>> 	core_siblings_list: human-readable list of the logical CPU
+>> 	numbers within the same physical_package_id as cpu#.
+> 
+> No that statement is wrong; it assumes physical_package_id is a good
+> identifier for nodes. Clearly this is no longer true.
 
-Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
----
- arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 22 ----------------------
- arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi | 26 ++++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 22 deletions(-)
+I went back and re-read the text around there.  I don't see any mention
+of nodes or NUMA.  It's just talking about the topology within the CPU
+from what I can tell.
 
-diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-index 584721264121..f1bdcae5b97d 100644
---- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-@@ -28,9 +28,6 @@
- };
- 
- &i2c2 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_i2c2>;
--	clock-frequency = <100000>;
- 	status = "okay";
- 
- 	tlv320@18 {
-@@ -55,9 +52,6 @@
- };
- 
- &i2c3 {
--	pinctrl-names = "default";
--	pinctrl-0 = <&pinctrl_i2c3>;
--	clock-frequency = <100000>;
- 	status = "okay";
- };
- 
-@@ -84,19 +78,3 @@
- &usdhc3 {
- 	status = "okay";
- };
--
--&iomuxc {
--	pinctrl_i2c2: i2c2grp {
--		fsl,pins = <
--			MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
--			MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
--		>;
--	};
--
--	pinctrl_i2c3: i2c3grp {
--		fsl,pins = <
--			MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
--			MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
--		>;
--	};
--};
-diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-index 0e50bb0a6b94..aa2275671d2c 100644
---- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-@@ -162,6 +162,18 @@
- 	};
- };
- 
-+&i2c2 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_i2c2>;
-+	clock-frequency = <100000>;
-+};
-+
-+&i2c3 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_i2c3>;
-+	clock-frequency = <100000>;
-+};
-+
- &iomuxc {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_hog>;
-@@ -235,6 +247,20 @@
- 			>;
- 		};
- 
-+		pinctrl_i2c2: i2c2grp {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
-+				MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
-+			>;
-+		};
-+
-+		pinctrl_i2c3: i2c3grp {
-+			fsl,pins = <
-+				MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
-+				MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
-+			>;
-+		};
-+
- 		pinctrl_uart3: uart3grp {
- 			fsl,pins = <
- 				MX6QDL_PAD_EIM_D24__UART3_TX_DATA	0x1b0b1
--- 
-2.1.0
+Good thing it's just in "Documentation/ABI/testing/" I guess.
+
+Either way, are you saying that a core's "physical_package_id" should
+depend on what BIOS options get set, and that different cores in the
+same physical package should have different "physical_package_id"s?
+
+> The idea is that core_siblings (or rather cpu_core_mask) is a mask of
+> all cores on a node. 
+
+Why would we need that in the CPU topology information if we can get at
+it easily here?
+
+	/sys/devices/system/cpu/cpu0/node0/cpulist
+
+>> The sysfs effects here cause an issue with the hwloc tool where
+>> it gets confused and thinks there are more sockets than are
+>> physically present.
+> 
+> Meh, so then we need another mask.
+
+s390 has this concept of a "book" although it's not obvious at all where
+this fits in to the hierarchy to me.  The help text and comments are
+pretty funny:
+
+	Book scheduler support improves the CPU scheduler's decision
+	making when dealing with machines that have several books.
+
+Wow, really?  Book scheduling helps with books?  I would have never
+guessed.  Wish I knew what a book was. :)  Google helped a bit:
+
+	http://sysmagazine.com/posts/150430/
+
+but it's still not clear.  I think a book is below a node?
+
+	SMT <= LLC <= MC <= BOOK <= NODE
+
+Or is a book a collection of nodes?
+
+	SMT <= LLC <= MC <= NODE <= BOOK
+
+> The important bit you didn't show was the scheduler domain setup. I
+> suspect it all works by accident, not by design.
+
+So you want full output from a boot with CONFIG_SCHED_DEBUG=y?
+
+>> diff -puN arch/x86/kernel/smpboot.c~hsw-cod-is-sane arch/x86/kernel/smpboot.c
+>> --- a/arch/x86/kernel/smpboot.c~hsw-cod-is-sane	2014-09-15 14:56:20.012314468 -0700
+>> +++ b/arch/x86/kernel/smpboot.c	2014-09-15 14:58:58.837506644 -0700
+>> @@ -344,10 +344,13 @@ static bool match_llc(struct cpuinfo_x86
+>>  static bool match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+>>  {
+>>  	if (c->phys_proc_id == o->phys_proc_id) {
+>> -		if (cpu_has(c, X86_FEATURE_AMD_DCM))
+>> -			return true;
+>> -
+>> -		return topology_sane(c, o, "mc");
+>> +		/*
+>> +		 * We used to enforce that 'c' and 'o' be on the
+>> +		 * same node, but AMD's DCM and Intel's Cluster-
+>> +		 * on-Die (CoD) support both have physical
+>> +		 * processors that span NUMA nodes.
+>> +		 */
+>> +		return true;
+>>  	}
+>>  	return false;
+>>  }
+> 
+> This is wrong (and I suppose the AMD case was already wrong). That
+> function is supposed to match a multi-core group which is very much
+> supposed to be smaller-or-equal to a node, not spanning nodes.
+> 
+> The scheduler assumes: SMT <= LLC <= MC <= NODE and if setting the MC
+> mask to cover multiple nodes works, its by accident.
+
+This makes a lot of sense to enforce inside the scheduler.  But, do we
+really need to expose all the naming all the way out to userspace?
 
