@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757420AbaIPBec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:34:32 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59944 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074AbaIPBea (ORCPT
+	id S1757388AbaIPBg0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:36:26 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34807 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752AbaIPBgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:34:30 -0400
-Message-ID: <541794E5.7020207@gmail.com>
-Date: Tue, 16 Sep 2014 09:39:49 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Mon, 15 Sep 2014 21:36:23 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <541793BF.7070106@jp.fujitsu.com>
+Date: Tue, 16 Sep 2014 10:34:55 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>, konrad.wilk@oracle.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        stefano.stabellini@eu.citrix.com, mukesh.rathor@oracle.com
-CC: xen-devel@lists.xenproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] drivers/xen/xenbus/xenbus_client.c: Improve the failure
- processing for __xenbus_switch_state()
-References: <54157282.40402@gmail.com> <5415737D.2030209@gmail.com> <54178D6E.9090705@oracle.com>
-In-Reply-To: <54178D6E.9090705@oracle.com>
-Content-Type: text/plain; charset=windows-1252
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Vladimir Davydov <vdavydov@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Glauber Costa <glommer@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        Konstantin Khorenko <khorenko@parallels.com>,
+        LKML-MM <linux-mm@kvack.org>, LKML-cgroups <cgroups@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] memory cgroup: my thoughts on memsw
+References: <20140904143055.GA20099@esperanza> <20140915191435.GA8950@cmpxchg.org>
+In-Reply-To: <20140915191435.GA8950@cmpxchg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/16/14 9:07, Boris Ostrovsky wrote:
-> 
-> On 09/14/2014 06:52 AM, Chen Gang wrote:
->> When failure occurs, need return failure code instead of 0, or the upper
->> caller will misunderstand.
+(2014/09/16 4:14), Johannes Weiner wrote:
+> Hi Vladimir,
+>
+> On Thu, Sep 04, 2014 at 06:30:55PM +0400, Vladimir Davydov wrote:
+>> To sum it up, the current mem + memsw configuration scheme doesn't allow
+>> us to limit swap usage if we want to partition the system dynamically
+>> using soft limits. Actually, it also looks rather confusing to me. We
+>> have mem limit and mem+swap limit. I bet that from the first glance, an
+>> average admin will think it's possible to limit swap usage by setting
+>> the limits so that the difference between memory.memsw.limit and
+>> memory.limit equals the maximal swap usage, but (surprise!) it isn't
+>> really so. It holds if there's no global memory pressure, but otherwise
+>> swap usage is only limited by memory.memsw.limit! IMHO, it isn't
+>> something obvious.
+>
+> Agreed, memory+swap accounting & limiting is broken.
+>
+>>   - Anon memory is handled by the user application, while file caches are
+>>     all on the kernel. That means the application will *definitely* die
+>>     w/o anon memory. W/o file caches it usually can survive, but the more
+>>     caches it has the better it feels.
 >>
->> Also when retry for EAGAIN reason, better to schedule out for a while,
->> so can let others have chance to continue their tasks (especially,
->> their tasks are related EAGAIN under UP kernel).
+>>   - Anon memory is not that easy to reclaim. Swap out is a really slow
+>>     process, because data are usually read/written w/o any specific
+>>     order. Dropping file caches is much easier. Typically we have lots of
+>>     clean pages there.
 >>
->> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
->> ---
->>   drivers/xen/xenbus/xenbus_client.c | 9 ++++++---
->>   1 file changed, 6 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
->> index 620ffd2..fc8699b 100644
->> --- a/drivers/xen/xenbus/xenbus_client.c
->> +++ b/drivers/xen/xenbus/xenbus_client.c
->> @@ -36,6 +36,7 @@
->>   #include <linux/spinlock.h>
->>   #include <linux/vmalloc.h>
->>   #include <linux/export.h>
->> +#include <linux/delay.h>
->>   #include <asm/xen/hypervisor.h>
->>   #include <asm/xen/page.h>
->>   #include <xen/interface/xen.h>
->> @@ -196,7 +197,7 @@ again:
->>       err = xenbus_transaction_start(&xbt);
->>       if (err) {
->>           xenbus_switch_fatal(dev, depth, err, "starting transaction");
->> -        return 0;
->> +        return err;
->>       }
->>         err = xenbus_scanf(xbt, dev->nodename, "state", "%d", &current_state);
->> @@ -213,13 +214,15 @@ again:
->>   abort:
->>       err = xenbus_transaction_end(xbt, abort);
->>       if (err) {
->> -        if (err == -EAGAIN && !abort)
->> +        if (err == -EAGAIN && !abort) {
->> +            msleep(20);
-> 
-> I'd suggest you use schedule() here.
-> 
+>>   - Swap space is limited. And today, it's OK to have TBs of RAM and only
+>>     several GBs of swap. Customers simply don't want to waste their disk
+>>     space on that.
+>
+>> Finally, my understanding (may be crazy!) how the things should be
+>> configured. Just like now, there should be mem_cgroup->res accounting
+>> and limiting total user memory (cache+anon) usage for processes inside
+>> cgroups. This is where there's nothing to do. However, mem_cgroup->memsw
+>> should be reworked to account *only* memory that may be swapped out plus
+>> memory that has been swapped out (i.e. swap usage).
+>
+> But anon pages are not a resource, they are a swap space liability.
+> Think of virtual memory vs. physical pages - the use of one does not
+> necessarily result in the use of the other.  Without memory pressure,
+> anonymous pages do not consume swap space.
+>
+> What we *should* be accounting and limiting here is the actual finite
+> resource: swap space.  Whenever we try to swap a page, its owner
+> should be charged for the swap space - or the swapout be rejected.
+>
+> For hard limit reclaim, the semantics of a swap space limit would be
+> fairly obvious, because it's clear who the offender is.
+>
+> However, in an overcommitted machine, the amount of swap space used by
+> a particular group depends just as much on the behavior of the other
+> groups in the system, so the per-group swap limit should be enforced
+> even during global reclaim to feed back pressure on whoever is causing
+> the swapout.  If reclaim fails, the global OOM killer triggers, which
+> should then off the group with the biggest soft limit excess.
+>
+> As far as implementation goes, it should be doable to try-charge from
+> add_to_swap() and keep the uncharging in swap_entry_free().
+>
+> We'll also have to extend the global OOM killer to be memcg-aware, but
+> we've been meaning to do that anyway.
+>
 
-For me, it is really better than msleep(20).
+When we introduced memsw limitation, we tried to avoid affecting global memory reclaim.
+Then, we did memory+swap limitation.
 
-But just like the related maintainer said, we do not need it, since it
-has already "have a rest" inside xenbus_transaction_end().
+Now, global memory reclaim is memcg-aware. So, I think swap-limitation rather than
+anon+swap may be a choice. The change will reduce res_counter access. Hmm, it will be
+desireble to move anon pages to Unevictable if memcg's swap slot is 0.
+
+Anyway, I think softlimit should be re-implemented, 1st. It will be starting point.
+
+Thanks,
+-Kame
 
 
-Thanks.
--- 
-Chen Gang
 
-Open, share, and attitude like air, water, and life which God blessed
+
+
+
