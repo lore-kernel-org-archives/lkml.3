@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaIPU02 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:26:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:14084 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751966AbaIPU01 (ORCPT
+	id S1755256AbaIPU1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:27:06 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:53423 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755145AbaIPU1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:26:27 -0400
-Date: Tue, 16 Sep 2014 16:26:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Jan Kara <jack@suse.cz>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140916162625.4b55732a@gandalf.local.home>
-In-Reply-To: <20140916191740.GA24243@x4>
-References: <20140914050905.GA296@x4>
-	<20140914055450.GB296@x4>
-	<CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
-	<20140915163740.GA12408@x4>
-	<20140916105547.GA1205@quack.suse.cz>
-	<20140916144252.GB32118@x4>
-	<20140916111331.14303381@gandalf.local.home>
-	<20140916152046.GC32118@x4>
-	<20140916151415.4c646cbc@gandalf.local.home>
-	<20140916191740.GA24243@x4>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 16 Sep 2014 16:27:03 -0400
+Message-ID: <1410899219.31130.81.camel@x220>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Sergey Ryazanov <ryazanov.s.a@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        Hauke Mehrtens <hauke@hauke-m.de>, ath5k-devel@venema.h4ckr.net,
+        open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Sep 2014 22:26:59 +0200
+In-Reply-To: <20140915184546.GB3891@tuxdriver.com>
+References: <1403091974.1984.102.camel@x220> <1409911856.7832.9.camel@x220>
+	 <CAHNKnsRipRHicKOUW4dCutD1-sUG6qPnP2QuOveH_t1MFX9XgQ@mail.gmail.com>
+	 <1409916824.7832.20.camel@x220>
+	 <CAHNKnsQ1gt=DRBTd9Q9yos1idqmXMepEPvhm8a7unP-whzNAgg@mail.gmail.com>
+	 <20140909182734.GJ29412@tuxdriver.com>
+	 <CAHNKnsQ8G3ZFHshq7wOqex1J6DbVD5uHVAyvs+aDC2Znk5zWww@mail.gmail.com>
+	 <541037D2.7060007@gmail.com>
+	 <CAHNKnsTtqz10c=vV-f10awLanYZzom3kJ1cO5xgTGs-t3O9NYg@mail.gmail.com>
+	 <20140911192146.GC22872@tuxdriver.com>
+	 <20140915184546.GB3891@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-3.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+X-OriginalArrivalTime: 16 Sep 2014 20:27:00.0751 (UTC) FILETIME=[91E959F0:01CFD1EC]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014 21:17:40 +0200
-Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+On Mon, 2014-09-15 at 14:45 -0400, John W. Linville wrote:
+> FYI -- Sergey posted a series to linux-mips on 14 September 2014 that
+> touches the symbol in question.  For whatever reason, it is posted
+> there as RFC.
 
-> On 2014.09.16 at 15:14 -0400, Steven Rostedt wrote:
-> > On Tue, 16 Sep 2014 17:20:46 +0200
-> > Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> > 
-> > > On 2014.09.16 at 11:13 -0400, Steven Rostedt wrote
-> > > I'll leave it to you. This is just a cosmetic issue, so there's no need
-> > > to fix this immediately.
-> > > 
-> > 
-> > Actually the fix is much simpler (I had to wait for the drugs to wear
-> > off before I noticed this ;-):
-> 
-> Well, the list is not complete:
+Thanks for passing that on.
 
-Thanks! I'll update it.
+> Does this satisfy the interested parties??
 
--- Steve
+In case I qualify as an interested party: resolving this by, in short,
+making AHB support actually buildable is of course the preferable
+solution. 
 
-> 
->  linux % git grep printk_deferred
-> ...
-> kernel/time/clockevents.c:              printk_deferred(KERN_WARNING
-> kernel/time/clockevents.c:      printk_deferred(KERN_WARNING
-> kernel/time/ntp.c:              printk_deferred(KERN_ERR
-> kernel/time/ntp.c:              printk_deferred(KERN_WARNING
-> kernel/time/ntp.c:              printk_deferred(KERN_WARNING
-> kernel/time/ntp.c:              printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
-> kernel/time/timekeeping.c:              printk_deferred(KERN_WARNING
-> 
+Whether or not we should drop my patch while waiting for that series to
+land in linux-next is not my call. But if it hasn't landed by, say,
+about the time v3.18-rc3 is released I might raise this issue again.
+
+I must say that I'm a bit puzzled why people have resisted this rather
+small cleanup for years. How did having unbuildable AHB support in
+mainline benefit anyone? Couldn't the revert of this cleanup also be
+handled out of tree? Note that the revert is only "6 files changed, 3
+insertions(+), 294 deletions(-)", while the series is "39 files changed,
+3911 insertions(+), 10 deletions(-)".
+
+
+Paul Bolle
 
