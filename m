@@ -1,47 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaIPWk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:40:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57425 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaIPWkZ (ORCPT
+	id S1753920AbaIPWlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:41:07 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:39554 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975AbaIPWlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:40:25 -0400
-Date: Tue, 16 Sep 2014 15:40:19 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Ching Huang <ching2048@areca.com.tw>
-Cc: Tomas Henzl <thenzl@redhat.com>, jbottomley@parallels.com,
-        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
-Message-ID: <20140916224019.GA7738@infradead.org>
-References: <1408433122.4748.73.camel@Centos6.3-64>
- <53FDE490.1070201@redhat.com>
- <1409240809.4762.259.camel@Centos6.3-64>
- <53FF2544.8020601@redhat.com>
- <20140909163057.GA25745@infradead.org>
- <541020CB.8010302@redhat.com>
- <5416E858.7010709@redhat.com>
- <20140915170519.GB31009@infradead.org>
- <1410835328.4782.9.camel@Centos6.3-64>
+	Tue, 16 Sep 2014 18:41:05 -0400
+Date: Tue, 16 Sep 2014 15:40:42 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v4 4/4] mfd: max77693: Update DT binding to support haptic
+Message-ID: <20140916224042.GR25162@lee--X1>
+References: <1410440062-19963-1-git-send-email-jaewon02.kim@samsung.com>
+ <1410440062-19963-5-git-send-email-jaewon02.kim@samsung.com>
+ <20140915230043.GI25162@lee--X1>
+ <5417EDFE.7030700@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410835328.4782.9.camel@Centos6.3-64>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5417EDFE.7030700@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 10:42:08AM +0800, Ching Huang wrote:
-> The [PATCH v5 2/2] was depend on [PATCH v4 1/2].
-> If you skip patch 1/2, then patch 2/2 may cause line number mismatch.
-> How should I do? Please advise.
+On Tue, 16 Sep 2014, Jaewon Kim wrote:
+> 2014년 09월 16일 08:00에 Lee Jones 이(가) 쓴 글:
+> >On Thu, 11 Sep 2014, Jaewon Kim wrote:
+> >
+> >>This patch add haptic DT binding documentation and example
+> >>to support haptic driver in max77693 Multifunction device.
+> >>
+> >>Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> >>Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> >>---
+> >>  Documentation/devicetree/bindings/mfd/max77693.txt |   18 ++++++++++++++++++
+> >>  1 file changed, 18 insertions(+)
+> >>
+> >>diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>index 11921cc..d178b9e 100644
+> >>--- a/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>+++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>@@ -27,6 +27,17 @@ Optional properties:
+> >>  	[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
+> >>+- haptic : The haptic of max77693 have to be instantiated under subnod
+> >Perhaps a description as to what "The haptic" is might be handy?
+> Ok, I will add description about haptic.
+> 
+> >
+> >s/have/has
+> >
+> >s/subnod/subnode
+> >
+> >What do you mean by "under" a subnode?  Do you mean "as a" subnode?
 
-Hi Ching,
+I see what you did here now.  You copied this from the discription
+above.  That will also need to be changed.
 
-[PATCH v5 2/2] applied without a problem.  Please look at my
-drivers-for-3.18 branch and send any additional patches relative to
-that.
+> >>+  named "haptic" using the following haptic format in example.
+> >What is the "haptic format"?  It just looks like a normal node to me.
+> >
+> >>+  Haptic sensation from motor can be changed by changing a period cycle in pwms.
+> >Is "Haptic sensation" a technical term?
+> >
+> >s/from motor/from a motor/
+> >
+> >s/changed by changing/changed by varying/
+> >
+> >s/period cycle/duty cycle/
+> >
+> >s/in pwms/in the pwms property/
+> How is it if I change in this way?
+> 
+> haptic : Referring to the term Haptic, It is the use of advanced
+> vibration patterns
+>     and waveforms to convey information to a user or operator.
+> 
+>     MAX77693 uses PWM and MOTOR in order to give Haptic.
+>     The Haptic from a motor can be changed by varying a period/duty
+> cycle in pwms.
+
+Hmm... How about:
+
+The MAX77693 haptic device utilises a PWM controlled motor to provide
+users with tactile feedback.  PWM period and duty-cycle are varied in
+order to provide the approprite level of feedback.
+
+> >>+
+> >>+ Required properties:
+> >>+	- compatible : Must be "maxim,max77693-hpatic"
+> >>+	- haptic-supply : power supply for haptic motor
+> >s/for haptic/for the haptic/
+> >
+> >>+		[*] refer Documentation/devicetree/bindings/regulator/regulator.txt
+> >>+	- pwms : phandle to the physical PWM device,
+> >It's not just the phandle though is it?
+> Do you want more description?
+
+Yes please.
+
+> Or it mean the wrong?
+> 
+> >
+> >>+		[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
+> >>+
+> >>  Example:
+> >>  	max77693@66 {
+> >>  		compatible = "maxim,max77693";
+> >>@@ -52,4 +63,11 @@ Example:
+> >>  					regulator-boot-on;
+> >>  			};
+> >>  		};
+> >>+
+> >>+		haptic {
+> >>+			compatible = "maxim,max77693-haptic";
+> >>+			haptic-supply = <&haptic_supply>;
+> >>+			pwms = <&pwm 0 40000 0>;
+> >>+			pwm-names = "haptic";
+> >>+		};
+> >>  	};
+> 
+> Thank you for feedback.
+> And plz review "[PATCH v4 3/4] mfd: max77693: add haptic
+> of_compatible in mfd_cell".
+
+
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
