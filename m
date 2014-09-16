@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752AbaIPVhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:37:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753392AbaIPVhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:37:52 -0400
-Date: Tue, 16 Sep 2014 17:37:18 -0400
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: will.deacon@arm.com, catalin.marinas@arm.com,
-        linux-arm-kernel@lists.infradead.org, rusty@rustcorp.com.au
-Subject: [PATCH] aarch64: filter $x from kallsyms
-Message-ID: <20140916213718.GR22012@redacted.bos.redhat.com>
+	id S1753518AbaIPVko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:40:44 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49406 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003AbaIPVkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 17:40:42 -0400
+Date: Tue, 16 Sep 2014 23:40:37 +0200
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 10/13] eeepc-laptop: compare proper return values in
+ get_cpufv
+Message-ID: <20140916214037.GB23674@gmail.com>
+References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
+ <1410563212-31565-11-git-send-email-fransklaver@gmail.com>
+ <20140915214902.GB64909@vmdeb7>
+ <20140915215125.GA21435@kroah.com>
+ <20140915215527.GC7867@gmail.com>
+ <CAH6sp9N1y3=LLju85ZHgc05ENUYLgUdYBYpemc6_oNhbsZ+r6g@mail.gmail.com>
+ <20140916205247.GA6856@vmdeb7>
+ <20140916212715.GB6856@vmdeb7>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20140916212715.GB6856@vmdeb7>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to ARM, AArch64 is generating $x and $d syms... which isn't
-terribly helpful when looking at %pF output and the like. Filter those
-out in kallsyms, modpost and when looking at module symbols.
+On Tue, Sep 16, 2014 at 02:27:15PM -0700, Darren Hart wrote:
+> 
+> - When reading and writing sysfs device attribute files, avoid dependency
+>   on specific error codes wherever possible. This minimizes coupling to
+>   the error handling implemementation within the kernel.
+> 
+>   In general, failures to read or write sysfs device attributes shall
+>   propogate errors wherever possible. Common errors include, but are not
+>   limited to:
+> 
+>   -EIO: The read or store operation is not supported, typically returned by
+>         the sysfs system itself if the read or store pointer is NULL.
+> 
+>   -ENXIO: The read or store operation failed
+> 
+>   Error codes will not be changed without good reason, and should a change
+>   to error codes result in user-space breakage, it will be fixed, or the
+>   the offending change will be reverted.
 
-Seems simplest since none of these check EM_ARM anyway, to just add it
-to the strchr used, rather than trying to make things overly
-complicated.
+sysfs-rules.txt is written for user space? In that case, reverting the
+change is as much a fix as patching it.
 
-initcall_debug improves:
-dmesg_before.txt: initcall $x+0x0/0x154 [sg] returned 0 after 26331 usecs
-dmesg_after.txt: initcall init_sg+0x0/0x154 [sg] returned 0 after 15461 usecs
+> 
+>   Userspace applications can, however, expect the format and contents of
+>   the attribute files to remain consistent in the absence of a version
+>   attribute change in the context of a given attributes.
 
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
+...attribute.
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3388,7 +3388,7 @@ static inline int is_arm_mapping_symbol(const char *str)
- {
- 	if (str[0] == '.' && str[1] == 'L')
- 		return true;
--	return str[0] == '$' && strchr("atd", str[1])
-+	return str[0] == '$' && strchr("axtd", str[1])
- 	       && (str[2] == '\0' || str[2] == '.');
- }
- 
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -84,7 +84,7 @@ static void usage(void)
-  */
- static inline int is_arm_mapping_symbol(const char *str)
- {
--	return str[0] == '$' && strchr("atd", str[1])
-+	return str[0] == '$' && strchr("axtd", str[1])
- 	       && (str[2] == '\0' || str[2] == '.');
- }
- 
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -1146,7 +1146,7 @@ static Elf_Sym *find_elf_symbol(struct elf_info *elf, Elf64_Sword addr,
- 
- static inline int is_arm_mapping_symbol(const char *str)
- {
--	return str[0] == '$' && strchr("atd", str[1])
-+	return str[0] == '$' && strchr("axtd", str[1])
- 	       && (str[2] == '\0' || str[2] == '.');
- }
- 
+That's it for the nit-picking.
+
+Frans
