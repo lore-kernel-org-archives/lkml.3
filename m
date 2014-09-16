@@ -1,153 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413AbaIPRb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 13:31:56 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:36297 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013AbaIPRby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 13:31:54 -0400
-Message-ID: <54187400.10506@osg.samsung.com>
-Date: Tue, 16 Sep 2014 11:31:44 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1754440AbaIPRj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 13:39:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41025 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000AbaIPRj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 13:39:56 -0400
+Date: Tue, 16 Sep 2014 18:39:51 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-fsdevel@vger.kernel.org, linux-metag@vger.kernel.org
+Subject: Re: [PATCH] vfs: workaround gcc <4.6 build error in link_path_walk()
+Message-ID: <20140916173951.GX7996@ZenIV.linux.org.uk>
+References: <1410869255-8506-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>
-CC: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, ebiederm@xmission.com,
-        serge.hallyn@ubuntu.com, thierry@linux.vnet.ibm.com,
-        felipensp@gmail.com, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH 1/7] selftests: add header file for test exit code defines
-References: <1410820442-8774-1-git-send-email-shuahkh@osg.samsung.com> <1410820442-8774-2-git-send-email-shuahkh@osg.samsung.com> <1410883441.4630.9.camel@linux-t7sj.site>
-In-Reply-To: <1410883441.4630.9.camel@linux-t7sj.site>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410869255-8506-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16/2014 10:04 AM, Davidlohr Bueso wrote:
-> On Mon, 2014-09-15 at 16:33 -0600, Shuah Khan wrote:
->> Add a new header file that defines exit codes for individual
->> tests to use to communicate test results. These defines are
->> intended to provide a common and uniform way for selftests
->> to report results. pass/fail/xfail/xpass/skip/unsupported
->> are defined.
->>
->> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->> ---
->>  tools/testing/selftests/kselftest.h | 20 ++++++++++++++++++++
->>  1 file changed, 20 insertions(+)
->>  create mode 100644 tools/testing/selftests/kselftest.h
->>
->> diff --git a/tools/testing/selftests/kselftest.h b/tools/testing/selftests/kselftest.h
->> new file mode 100644
->> index 0000000..1b1c9cb
->> --- /dev/null
->> +++ b/tools/testing/selftests/kselftest.h
->> @@ -0,0 +1,20 @@
->> +/*
->> + * kselftest.h - kselftest framework return codes to include from
->> + *		 selftests.
->> + *
->> + * Copyright (c) 2014 Shuah Khan <shuahkh@osg.samsung.com>
->> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
->> + *
->> + * This file is released under the GPLv2.
->> + */
->> +#ifndef __KSELFTEST_H
->> +#define __KSELFTEST_H
->> +
->> +#define	EXIT_PASS		0
->> +#define	EXIT_FAIL		1
->> +#define	EXIT_XFAIL		2
->> +#define	EXIT_XPASS		3
->> +#define	EXIT_SKIP		4
->> +#define	EXIT_UNSUPPORTED	EXIT_SKIP
+On Tue, Sep 16, 2014 at 01:07:35PM +0100, James Hogan wrote:
+> Commit d6bb3e9075bb (vfs: simplify and shrink stack frame of
+> link_path_walk()) introduced build problems with GCC versions older than
+> 4.6 due to the initialisation of a member of an anonymous union in
+> struct qstr without enclosing braces.
 > 
-> Looks to me like a potential name clashes here.
+> This hits GCC bug 10676 [1] (which was fixed in GCC 4.6 by [2]), and
+> causes the following build error:
+>   fs/namei.c: In function 'link_path_walk':
+>   fs/namei.c:1778: error: unknown field 'hash_len' specified in initializer
 > 
-> What's the difference between XFAIL/XPASS and regular FAIL/PASS (I don't
-> see the former used in patchset either, only PASS/FAIL)? What's the
-> purpose of EXIT_SKIP? I think overall these should be commented.
+> This is worked around by adding explicit braces.
 
-Yeah Comments would have been nice. :) I will add them.
-
-> 
-> Also, in the bigger picture, I'm guessing you have a reason for not
-> recycling errno and inventing your own exit codes... How do you plan on
-> using these? In addition I'm seeing things like:
-> 
-> -       exit(EXIT_FAILURE);
-> +       exit(EXIT_FAIL);
-> 
-> which isn't a very good idea in general.
-
-EXIT_FAILURE happens to have the same value as EXIT_FAIL. That said,
-I do understand what you are saying. EXIT_FAILURE and EXIT_SUCCESS
-are defined in stdlib.h - I would have liked to simply use them,
-however that won't meet the needs. More on this below.
-
-At the moment there is no clear way to tell why a test failed. Some
-tests exit with -1, some exit 1, and some with errno. One of the
-requests/requirements that was discussed at the kernel summit kselftest
-session was to enhance tests to report why an individual test failed.
-Returning and/or exiting with -1, 1 and errno doesn't tell the user
-anything other than that the test failed. Even without this request, it
-will helps us developers if we have a uniform reporting in place for
-all tests to use.
-
-We have two kinds of users for these tests.
-
-1. Developers that simply want to regression test their individual areas
-   These are the users that don't care about the categories of failures.
-2. Users that want to run them from their user-space test suites. These
-   users care to know why a test failed, not just that it failed.
-
-errno is useful in pin-pointing the failure for a developer, however it
-is not very useful for somebody that is running sanity checks. We need
-both, hence I changed some of the tests in this series to print errno.
-Several tests print errno in their error legs and there a few places
-that don't.
-
-In either case, it would be good to report if a test failed because
-a modules it needs isn't configured or it just failed.
-
-There is also a need to report the following cases in addition a simple
-pass/fail:
-
-pass - test passed
-fail - it failed
-xfail - a test that expected to fail failed as expected (this is really
-a pass case)
-xpass - a test that is expected to fail passed.
-xskip or xunsupported - test couldn't run because of unmet dependencies.
-
-These types of decisions on why test failed, can only be made in the
-individual tests.
-
-I picked the POSIX conforming test codes that are used by various user
-space test suites. POSIX right, I can't go wrong :)
-
-I also want to avoid adding some test framework in kernel tree, hence
-I simply defined these in a header file. Another goal is to not make it
-hard for developers write these tests and think too much about the
-reporting. We need some way to report these and hence the need for a
-common defines so tests can simply use them.
-
-I am trying to balance the needs of the two types of users and also
-do minimal changes to existing test with a light weight framework.
-Hope this helps explain this patch series better.
-
-I am open to suggestions as always.
-
-thanks,
--- Shuah
-
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+IOW, the same thing QSTR_INIT is doing...  BTW, after looking at the commit
+in question, what the hell was this
++                               name = this.name;
+in link_path_walk() about?  Granted, none of the ->d_hash() instances in
+the tree reassign qstr->name, and out-of-tree ones are unlikely to do it
+either, so it's harmless but... why bother rereading this.name at all?
+Linus?
