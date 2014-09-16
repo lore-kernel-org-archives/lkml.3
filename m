@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283AbaIPTDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:03:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754875AbaIPTDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:03:42 -0400
-Date: Tue, 16 Sep 2014 15:03:30 -0400
-From: Kyle McMartin <kyle@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: airlied@redhat.com, alexander.deucher@amd.com,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH] drm/radeon: delete unused PTE_* defines
-Message-ID: <20140916190329.GN22012@redacted.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754920AbaIPTIb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:08:31 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:6623 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaIPTI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:08:29 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Scott J Norton <scott.norton@hp.com>,
+        Don Zickus <dzickus@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v2 0/1] perf mem: improves DSO long names search speed with RB tree
+Date: Tue, 16 Sep 2014 15:08:18 -0400
+Message-Id: <1410894499-27609-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They don't appear to be used anywhere... elsewhere uses R*_PTE_*.
+v1->v2:
+ - Rename DSO longname RBtree find function to segregate its two different
+   uses of searching and linking DSO into RB tree.
 
-master@linux:U:.% git grep PTE_ -- drivers/gpu/drm/radeon | grep -v _PTE_
-master@linux:U:.%	(kyle@redacted:~/linux)
+This patch addes a RBtree to sort the DSO structures of the perf tool
+by its long name so that searching for a match will be much quicker
+especially if a large number of DSOs are beining profiled.
 
-./arch/arm64/include/asm/pgtable.h:27:0: note: this is the location of the previous definition
- #define PTE_VALID  (_AT(pteval_t, 1) << 0)
- ^
-In file included from drivers/gpu/drm/radeon/r600_cs.c:31:0:
-drivers/gpu/drm/radeon/r600d.h:48:0: warning: "PTE_VALID" redefined [enabled by default]
- #define PTE_VALID    (1 << 0)
- ^
-In file included from ./arch/arm64/include/asm/io.h:29:0,
-                 from include/linux/clocksource.h:19,
-                 from include/clocksource/arm_arch_timer.h:19,
-                 from ./arch/arm64/include/asm/arch_timer.h:27,
-                 from ./arch/arm64/include/asm/timex.h:19,
-                 from include/linux/timex.h:65,
-<snip>
-                 from include/drm/drmP.h:51,
-                 from drivers/gpu/drm/radeon/r600_cs.c:29:
-./arch/arm64/include/asm/pgtable.h:27:0: note: this is the location of the previous definition
- #define PTE_VALID  (_AT(pteval_t, 1) << 0)
- ^
+Waiman Long (1):
+  perf mem: improves DSO long names search speed with RB tree
 
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
+ tools/perf/util/dso.c |   87 ++++++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/dso.h |    1 +
+ 2 files changed, 84 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -44,13 +44,6 @@
- #define R6XX_MAX_PIPES				8
- #define R6XX_MAX_PIPES_MASK			0xff
- 
--/* PTE flags */
--#define PTE_VALID				(1 << 0)
--#define PTE_SYSTEM				(1 << 1)
--#define PTE_SNOOPED				(1 << 2)
--#define PTE_READABLE				(1 << 5)
--#define PTE_WRITEABLE				(1 << 6)
--
- /* tiling bits */
- #define     ARRAY_LINEAR_GENERAL              0x00000000
- #define     ARRAY_LINEAR_ALIGNED              0x00000001
