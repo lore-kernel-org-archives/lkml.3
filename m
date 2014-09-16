@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408AbaIPWI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:08:29 -0400
-Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60285 "EHLO
+	id S1754679AbaIPWJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:09:24 -0400
+Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60287 "EHLO
 	vidar.hosts.sieglitzhof.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753765AbaIPWIZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754369AbaIPWI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:08:25 -0400
+	Tue, 16 Sep 2014 18:08:29 -0400
 From: Maximilian Eschenbacher <maximilian@eschenbacher.email>
 To: linux-kernel@vger.kernel.org
 Cc: valentina.manea.m@gmail.com, shuah.kh@samsung.com,
         gregkh@linuxfoundation.org,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>,
-        Fjodor Schelichow <fjodor.schelichow@hotmail.com>,
-        Johannes Stadlinger <johannes.stadlinger@fau.de>
-Date: Tue, 16 Sep 2014 23:38:38 +0000
-Message-Id: <1410910735-27929-2-git-send-email-maximilian@eschenbacher.email>
+        Maximilian Eschenbacher <maximilian@eschenbacher.email>
+Date: Tue, 16 Sep 2014 23:38:37 +0000
+Message-Id: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
-References: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
 X-SA-Exim-Connect-IP: 172.16.2.6
 X-SA-Exim-Mail-From: maximilian@eschenbacher.email
-Subject: [PATCH 01/18] usbip: sysfs_utils: add read_sysfs_attribute
+Subject: [PATCH 00/18] usbip: Crypto and ACLs
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on vidar.hosts.sieglitzhof.net)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previous rework of usbip's sysfs access structures called for a
-read_sysfs_attribute function to be implemented in sysfs_utils.c
+Hi,
 
-Signed-off-by: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-Signed-off-by: Fjodor Schelichow <fjodor.schelichow@hotmail.com>
-Signed-off-by: Johannes Stadlinger <johannes.stadlinger@fau.de>
+As follow-up to Dominik Paulus' and Tobias Polzers series of patches from 19
+Oct 2013 (which hasn't been accepted) and due to the fact that usb/ip has
+recently been moved out of staging we rebased the patches on top of v3.17-rc5
+and would like to resubmit.
+
+This patch series includes:
+
+ - The client/server authentication support using GnuTLS
+
+ - Support for restricting the access to devices to specific IP address ranges
+
+ - Improved error reporting and new error codes to be passed over the TCP
+   protocol.
+
+ - Minor changes to fit to the current state of usb/ip source.
+
+As Dominik and Tobias suggested the added features justify a version bump to
+1.2.0. The corresponding patch is also included. All protocol changes are
+backwards-compatible, thus, we don't increment the protocol version.
+
+Regards,
+
+Maximilian Eschenbacher, Fjodor Schelichow and Johannes Stadlinger
+
 ---
- tools/usb/usbip/libsrc/sysfs_utils.c | 23 +++++++++++++++++++++++
- tools/usb/usbip/libsrc/sysfs_utils.h |  1 +
- 2 files changed, 24 insertions(+)
 
-diff --git a/tools/usb/usbip/libsrc/sysfs_utils.c b/tools/usb/usbip/libsrc/sysfs_utils.c
-index 36ac88e..fc6d9f9 100644
---- a/tools/usb/usbip/libsrc/sysfs_utils.c
-+++ b/tools/usb/usbip/libsrc/sysfs_utils.c
-@@ -29,3 +29,26 @@ int write_sysfs_attribute(const char *attr_path, const char *new_value,
- 
- 	return 0;
- }
-+
-+int read_sysfs_attribute(const char *attr_path, char *buffer, size_t buffsize)
-+{
-+	int fd;
-+	int length;
-+
-+	fd = open(attr_path, O_RDONLY);
-+	if (fd < 0) {
-+		dbg("error opening attribute %s", attr_path);
-+		return -1;
-+	}
-+
-+	length = read(fd, buffer, buffsize);
-+	if (length < 0) {
-+		dbg("error reading from attribute %s", attr_path);
-+		close(fd);
-+		return -1;
-+	}
-+
-+	close(fd);
-+
-+	return length;
-+}
-diff --git a/tools/usb/usbip/libsrc/sysfs_utils.h b/tools/usb/usbip/libsrc/sysfs_utils.h
-index 32ac1d1..c1f1b79 100644
---- a/tools/usb/usbip/libsrc/sysfs_utils.h
-+++ b/tools/usb/usbip/libsrc/sysfs_utils.h
-@@ -4,5 +4,6 @@
- 
- int write_sysfs_attribute(const char *attr_path, const char *new_value,
- 			  size_t len);
-+int read_sysfs_attribute(const char *attr_path, char *buffer, size_t buffsize);
- 
- #endif
+ drivers/usb/usbip/Kconfig                  |   2 +-
+ drivers/usb/usbip/stub.h                   |   8 +
+ drivers/usb/usbip/stub_dev.c               | 104 +++++++-
+ drivers/usb/usbip/stub_rx.c                |   2 +-
+ drivers/usb/usbip/stub_tx.c                |   6 +-
+ drivers/usb/usbip/usbip_common.c           | 411 ++++++++++++++++++++++++++---
+ drivers/usb/usbip/usbip_common.h           |  41 ++-
+ drivers/usb/usbip/vhci_hcd.c               |   4 +-
+ drivers/usb/usbip/vhci_rx.c                |   2 +-
+ drivers/usb/usbip/vhci_sysfs.c             |  47 +++-
+ drivers/usb/usbip/vhci_tx.c                |   4 +-
+ tools/usb/usbip/README                     |  72 ++---
+ tools/usb/usbip/configure.ac               |  15 +-
+ tools/usb/usbip/doc/usbip.8                |  14 +-
+ tools/usb/usbip/doc/usbipd.8               |   7 +
+ tools/usb/usbip/libsrc/list.h              |   3 +-
+ tools/usb/usbip/libsrc/sysfs_utils.c       |  23 ++
+ tools/usb/usbip/libsrc/sysfs_utils.h       |   1 +
+ tools/usb/usbip/libsrc/usbip_common.c      |  15 ++
+ tools/usb/usbip/libsrc/usbip_common.h      |  24 ++
+ tools/usb/usbip/libsrc/usbip_host_driver.c |  17 +-
+ tools/usb/usbip/libsrc/usbip_host_driver.h |   3 +-
+ tools/usb/usbip/libsrc/vhci_driver.c       |  25 +-
+ tools/usb/usbip/libsrc/vhci_driver.h       |   9 +-
+ tools/usb/usbip/src/Makefile.am            |   2 +-
+ tools/usb/usbip/src/usbip.c                |  30 ++-
+ tools/usb/usbip/src/usbip_attach.c         |  75 +++++-
+ tools/usb/usbip/src/usbip_bind.c           |  71 +++--
+ tools/usb/usbip/src/usbip_list.c           |  29 +-
+ tools/usb/usbip/src/usbip_network.c        | 360 ++++++++++++++++++++++---
+ tools/usb/usbip/src/usbip_network.h        |  81 +++++-
+ tools/usb/usbip/src/usbipd.c               | 323 ++++++++++++++++-------
+ tools/usb/usbip/src/utils.c                |  88 ++++++
+ tools/usb/usbip/src/utils.h                |  15 ++
+ 34 files changed, 1627 insertions(+), 306 deletions(-)
+
 -- 
 2.1.0
 
