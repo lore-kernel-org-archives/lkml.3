@@ -1,125 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaIPDfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 23:35:19 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:51219 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407AbaIPDfR (ORCPT
+	id S1754111AbaIPDkx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 23:40:53 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:62229 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbaIPDkv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 23:35:17 -0400
-Date: Tue, 16 Sep 2014 12:33:33 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: dgap: use schedule_timeout_interruptible() instead
- of dgap_ms_sleep()
-Message-ID: <20140916033333.GA26821@devel>
+	Mon, 15 Sep 2014 23:40:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20140809015857.17af92e7@canb.auug.org.au>
+References: <CAJe_ZhdZTSs+Ns4u7bMXwbLHYTnE-5XEE8uev4zXbXrCP52bSg@mail.gmail.com>
+	<20140808142912.7bf68229@canb.auug.org.au>
+	<CAJe_ZhceR1j_b-_efJoq9Dv6X6C=UuMgyp8AofjcCvc+bQVkfw@mail.gmail.com>
+	<20140808144137.GE30282@n2100.arm.linux.org.uk>
+	<CAJe_Zhc+_zCB+7196rsHb=KxG4JyuvyODXCpEX-y4XhwRjoBrw@mail.gmail.com>
+	<20140809015857.17af92e7@canb.auug.org.au>
+Date: Mon, 15 Sep 2014 20:40:50 -0700
+Message-ID: <CAJe_ZhcRs45Rmzpjb-O+A=+HCUt9SspdgPofMkqd5+xL=TYwDA@mail.gmail.com>
+Subject: Re: Request to include Mailbox tree in linux-next
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
+        Mollie Wu <mollie.wu@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Andy Green <andy.green@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using schedule_timeout_interruptible() is exactly same as
-setting a status of current process and calling  schedule_timeout().
+On 8 August 2014 08:58, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Jassi,
+>
+> On Fri, 8 Aug 2014 20:40:47 +0530 Jassi Brar <jaswinder.singh@linaro.org> wrote:
+>>
+>> On 8 August 2014 20:11, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+>> >> Upon Mark's suggestion (and the right thing to do) I wanted the patchset
+>> >> to live the cycle in linux-next.
+>> >
+>> > Yes, that's the right thing to do, but you sent the request at an
+>> > inappropriate time.  The correct time to send your request would be
+>> > after 3.17-rc1 has been released, IOW after the current merge window
+>> > is over.
+>> >
+>> > In general, kernel developers don't "remember" requests from one week
+>> > to the next; instead, we much prefer people send their requests at the
+>> > appropriate times in the development cycle.
+>> >
+>> OK, thanks for explaining.
+>
+> As Russell has said, if you remind me after -rc1 is out, I will add
+> your tree then.  I will try to remember, but don't depend on it.
+>
+Hi Stephen, Could you please add now ?
 
-Removes dgap_ms_sleep(), because this function is used
-only when closing tty channel on dgap_tty_close().
-And also removes ch_close_delay that is always set to 250
-on dgap_tty_init().
+Tree:       git://git.linaro.org/landing-teams/working/fujitsu/integration.git
+Branch:   mailbox-for-next
+Contact:  Jassi Brar <jaswinder.singh@linaro.org>
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/dgap/dgap.c |   36 ++++++------------------------------
- drivers/staging/dgap/dgap.h |    3 ---
- 2 files changed, 6 insertions(+), 33 deletions(-)
-
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 67da1d5..8aff0de 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -180,7 +180,6 @@ static char *dgap_create_config_string(struct board_t *bd, char *string);
- static uint dgap_config_get_useintr(struct board_t *bd);
- static uint dgap_config_get_altpin(struct board_t *bd);
- 
--static int dgap_ms_sleep(ulong ms);
- static void dgap_do_bios_load(struct board_t *brd, const u8 *ubios, int len);
- static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
- #ifdef DIGI_CONCENTRATORS_SUPPORTED
-@@ -1200,26 +1199,6 @@ static void dgap_init_globals(void)
- 
- /************************************************************************
-  *
-- * Utility functions
-- *
-- ************************************************************************/
--
--/*
-- * dgap_ms_sleep()
-- *
-- * Put the driver to sleep for x ms's
-- *
-- * Returns 0 if timed out, !0 (showing signal) if interrupted by a signal.
-- */
--static int dgap_ms_sleep(ulong ms)
--{
--	current->state = TASK_INTERRUPTIBLE;
--	schedule_timeout((ms * HZ) / 1000);
--	return signal_pending(current);
--}
--
--/************************************************************************
-- *
-  * TTY Initialization/Cleanup Functions
-  *
-  ************************************************************************/
-@@ -1462,9 +1441,6 @@ static int dgap_tty_init(struct board_t *brd)
- 		ch->ch_tstart = 0;
- 		ch->ch_rstart = 0;
- 
--		/* .25 second delay */
--		ch->ch_close_delay = 250;
--
- 		/*
- 		 * Set queue water marks, interrupt mask,
- 		 * and general tty parameters.
-@@ -2297,12 +2273,12 @@ static void dgap_tty_close(struct tty_struct *tty, struct file *file)
- 			 * Go to sleep to ensure RTS/DTR
- 			 * have been dropped for modems to see it.
- 			 */
--			if (ch->ch_close_delay) {
--				spin_unlock_irqrestore(&ch->ch_lock,
--						       lock_flags);
--				dgap_ms_sleep(ch->ch_close_delay);
--				spin_lock_irqsave(&ch->ch_lock, lock_flags);
--			}
-+			spin_unlock_irqrestore(&ch->ch_lock,
-+					lock_flags);
-+			/* .25 second delay for dropping RTS/DTR */
-+			schedule_timeout_interruptible(msecs_to_jiffies(250));
-+			signal_pending(current);
-+			spin_lock_irqsave(&ch->ch_lock, lock_flags);
- 		}
- 
- 		ch->pscan_state = 0;
-diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
-index a0307b9..ba05c65 100644
---- a/drivers/staging/dgap/dgap.h
-+++ b/drivers/staging/dgap/dgap.h
-@@ -982,9 +982,6 @@ struct channel_t {
- 	u32 ch_open_count;		/* open count			*/
- 	u32	ch_flags;		/* Channel flags                */
- 
--	u32	ch_close_delay;		/* How long we should drop      */
--					/* RTS/DTR for                  */
--
- 	u32	ch_cpstime;		/* Time for CPS calculations    */
- 
- 	tcflag_t ch_c_iflag;		/* channel iflags               */
--- 
-1.7.1
-
+Thanks,
+Jassi
