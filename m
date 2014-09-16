@@ -1,88 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525AbaIPUwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:52:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47809 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280AbaIPUwm (ORCPT
+	id S1753062AbaIPUwY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:52:24 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:48977 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323AbaIPUwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:52:42 -0400
-Date: Tue, 16 Sep 2014 13:52:47 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 10/13] eeepc-laptop: compare proper return values in
- get_cpufv
-Message-ID: <20140916205247.GA6856@vmdeb7>
-References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
- <1410563212-31565-11-git-send-email-fransklaver@gmail.com>
- <20140915214902.GB64909@vmdeb7>
- <20140915215125.GA21435@kroah.com>
- <20140915215527.GC7867@gmail.com>
- <CAH6sp9N1y3=LLju85ZHgc05ENUYLgUdYBYpemc6_oNhbsZ+r6g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH6sp9N1y3=LLju85ZHgc05ENUYLgUdYBYpemc6_oNhbsZ+r6g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 16 Sep 2014 16:52:20 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 18/22] PNP: Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:32 +0200
+Message-Id: <1410900696-6481-19-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 01:54:25PM +0200, Frans Klaver wrote:
-> On Mon, Sep 15, 2014 at 11:55 PM, Frans Klaver <fransklaver@gmail.com> wrote:
-> > On Mon, Sep 15, 2014 at 02:51:25PM -0700, Greg Kroah-Hartman wrote:
-> >> On Mon, Sep 15, 2014 at 02:49:02PM -0700, Darren Hart wrote:
-> >> >
-> >> > This patch is fine as is. However, Greg has supported propogating the error code
-> >> > through to the sysfs interface (if I understand him correctly on an earlier post
-> >> > to this list). This would require an addition change to this patch would
-> >> > propogated the get_cpufv error code in show_available_cpuv(), show_cpuv(), and
-> >> > store_cpuv(). As it is, we return -ENODEV on any failure, where an ACPI call
-> >> > error should probably return -ENXIO as I understand it.
-> >>
-> >> I really have no idea at this point in time what to recommend.  How
-> >> about just stick with what is happening today so that:
-> >>
-> >> > However, there was a rather famous change in error code handling in which pulse
-> >> > audio broke and Linus was very upset with one of his maintainers.
-> >>
-> >> That doesn't happen :)
-> >
-> > So if I interpret that correctly, we're dropping the last patch
-> > (ENODEV -> ENXIO) from the series? That's fine by me. As mentioned
-> > earlier, I already saw something else break because I returned ENXIO
-> > instead of ENODEV.
-> >
-> > Maybe it's a good idea to try and document the expected behavior
-> > somewhere, if even Greg isn't sure what to do.
-> 
-> For good measure:
-> 
-> v2 will not change the return values at the sysfs interface, meaning
-> we will always return -ENODEV on error. I am going to try to keep as
-> much internal functions propagating errors as possible though, unless
-> someone strongly disagrees.
-> 
-> Thanks,
-> Frans
+The kernel used to contain two functions for length-delimited,
+case-insensitive string comparison, strnicmp with correct semantics
+and a slightly buggy strncasecmp. The latter is the POSIX name, so
+strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
+for the new strncasecmp to avoid breaking existing users.
 
-I cornered Linus today and asked about this specifically. The policy is this:
+To allow the compat wrapper strnicmp to be removed at some point in
+the future, and to avoid the extra indirection cost, do
+s/strnicmp/strncasecmp/g.
 
-Don't change the sysfs return codes without good reason. A good reason could be
-a real bug or problem with the return codes. It could also be to consolidate
-error handling which makes things more uniform, etc.
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/pnp/interface.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-If this results in broken userspace, the maintainer will revert the change.
-
-This is probably a good thing to add to sysfs-rules.txt. I'll prepare a patch.
-
+diff --git a/drivers/pnp/interface.c b/drivers/pnp/interface.c
+index e6c403b..4b6808f 100644
+--- a/drivers/pnp/interface.c
++++ b/drivers/pnp/interface.c
+@@ -346,41 +346,41 @@ static ssize_t resources_store(struct device *dmdev,
+ 	}
+ 
+ 	buf = skip_spaces(buf);
+-	if (!strnicmp(buf, "disable", 7)) {
++	if (!strncasecmp(buf, "disable", 7)) {
+ 		retval = pnp_disable_dev(dev);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "activate", 8)) {
++	if (!strncasecmp(buf, "activate", 8)) {
+ 		retval = pnp_activate_dev(dev);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "fill", 4)) {
++	if (!strncasecmp(buf, "fill", 4)) {
+ 		if (dev->active)
+ 			goto done;
+ 		retval = pnp_auto_config_dev(dev);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "auto", 4)) {
++	if (!strncasecmp(buf, "auto", 4)) {
+ 		if (dev->active)
+ 			goto done;
+ 		pnp_init_resources(dev);
+ 		retval = pnp_auto_config_dev(dev);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "clear", 5)) {
++	if (!strncasecmp(buf, "clear", 5)) {
+ 		if (dev->active)
+ 			goto done;
+ 		pnp_init_resources(dev);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "get", 3)) {
++	if (!strncasecmp(buf, "get", 3)) {
+ 		mutex_lock(&pnp_res_mutex);
+ 		if (pnp_can_read(dev))
+ 			dev->protocol->get(dev);
+ 		mutex_unlock(&pnp_res_mutex);
+ 		goto done;
+ 	}
+-	if (!strnicmp(buf, "set", 3)) {
++	if (!strncasecmp(buf, "set", 3)) {
+ 		resource_size_t start;
+ 		resource_size_t end;
+ 		unsigned long flags;
+@@ -392,31 +392,31 @@ static ssize_t resources_store(struct device *dmdev,
+ 		mutex_lock(&pnp_res_mutex);
+ 		while (1) {
+ 			buf = skip_spaces(buf);
+-			if (!strnicmp(buf, "io", 2)) {
++			if (!strncasecmp(buf, "io", 2)) {
+ 				buf = pnp_get_resource_value(buf + 2,
+ 							     IORESOURCE_IO,
+ 							     &start, &end,
+ 							     &flags);
+ 				pnp_add_io_resource(dev, start, end, flags);
+-			} else if (!strnicmp(buf, "mem", 3)) {
++			} else if (!strncasecmp(buf, "mem", 3)) {
+ 				buf = pnp_get_resource_value(buf + 3,
+ 							     IORESOURCE_MEM,
+ 							     &start, &end,
+ 							     &flags);
+ 				pnp_add_mem_resource(dev, start, end, flags);
+-			} else if (!strnicmp(buf, "irq", 3)) {
++			} else if (!strncasecmp(buf, "irq", 3)) {
+ 				buf = pnp_get_resource_value(buf + 3,
+ 							     IORESOURCE_IRQ,
+ 							     &start, NULL,
+ 							     &flags);
+ 				pnp_add_irq_resource(dev, start, flags);
+-			} else if (!strnicmp(buf, "dma", 3)) {
++			} else if (!strncasecmp(buf, "dma", 3)) {
+ 				buf = pnp_get_resource_value(buf + 3,
+ 							     IORESOURCE_DMA,
+ 							     &start, NULL,
+ 							     &flags);
+ 				pnp_add_dma_resource(dev, start, flags);
+-			} else if (!strnicmp(buf, "bus", 3)) {
++			} else if (!strncasecmp(buf, "bus", 3)) {
+ 				buf = pnp_get_resource_value(buf + 3,
+ 							     IORESOURCE_BUS,
+ 							     &start, &end,
 -- 
-Darren Hart
-Intel Open Source Technology Center
+2.0.4
+
