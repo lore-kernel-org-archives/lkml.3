@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340AbaIPTyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:54:49 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:49088 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755305AbaIPTyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:54:47 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] frv: Remove unused cpuinfo_frv and friends to fix future build error
-Date: Tue, 16 Sep 2014 21:54:50 +0200
-Message-Id: <1410897290-27815-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	id S1752598AbaIPTza (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:55:30 -0400
+Received: from mail-bl2on0132.outbound.protection.outlook.com ([65.55.169.132]:19104
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750720AbaIPTz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:55:28 -0400
+X-WSS-ID: 0NC0ENF-08-IZ2-02
+X-M-MSG: 
+From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+To: <herrmann.der.user@googlemail.com>, <linux@roeck-us.net>,
+        <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <boris.ostrovsky@oracle.com>,
+        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Subject: [PATCH V2 1/2] hwmon, fam15h_power: Make actual power reporting conditional
+Date: Tue, 16 Sep 2014 14:58:04 -0500
+Message-ID: <1410897484-2526-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+X-Mailer: git-send-email 2.0.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(43544003)(189002)(86362001)(89996001)(19580395003)(77096002)(93916002)(50986999)(88136002)(99396002)(31966008)(47776003)(36756003)(83322001)(102836001)(92726001)(48376002)(105586002)(85852003)(229853001)(15395725005)(21056001)(50226001)(83072002)(4396001)(104166001)(106466001)(107046002)(84676001)(90102001)(2201001)(87286001)(64706001)(50466002)(92566001)(15975445006)(53416004)(77156001)(15202345003)(20776003)(85306004)(87936001)(62966002)(77982003)(80022003)(44976005)(81342003)(74502003)(76482001)(74662003)(101416001)(19580405001)(79102003)(81542003)(46102003)(97736003)(68736004)(95666004)(2101003)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR02MB483;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
+X-Forefront-PRVS: 03361FCC43
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frv has a macro named cpu_data, interfering with variables and struct
-members with the same name:
+power1_input should only be reported for Fam15h, Models 00h-0fh
+So, introduce a is_visible function to take care of this.
 
-include/linux/pm_domain.h:75:24: error: expected identifier or '('
-before '&' token
-  struct gpd_cpu_data *cpu_data;
+As suggested by Guenter here:
+http://marc.info/?l=linux-kernel&m=141038145616437&w=2
 
-As struct cpuinfo_frv, boot_cpu_data, cpu_data, and current_cpu_data are
-not used, removed them to fix this.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Suggested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
 ---
-There are a few more waiting for this to happen:
+ drivers/hwmon/fam15h_power.c | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-arch/m32r/include/asm/processor.h:#define cpu_data (&boot_cpu_data)
-arch/mn10300/include/asm/processor.h:#define cpu_data &boot_cpu_data
-arch/um/include/asm/processor-generic.h:#define cpu_data (&boot_cpu_data)
-
- arch/frv/include/asm/processor.h | 16 ----------------
- arch/frv/kernel/setup.c          |  2 --
- 2 files changed, 18 deletions(-)
-
-diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
-index 6554e78893f26bc8..ae8d423e79d9dbe5 100644
---- a/arch/frv/include/asm/processor.h
-+++ b/arch/frv/include/asm/processor.h
-@@ -35,22 +35,6 @@
- struct task_struct;
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index 4a7cbfa..4ee0126 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -93,13 +93,29 @@ static ssize_t show_power_crit(struct device *dev,
+ }
+ static DEVICE_ATTR(power1_crit, S_IRUGO, show_power_crit, NULL);
  
- /*
-- *  CPU type and hardware bug flags. Kept separately for each CPU.
-- */
--struct cpuinfo_frv {
--#ifdef CONFIG_MMU
--	unsigned long	*pgd_quick;
--	unsigned long	*pte_quick;
--	unsigned long	pgtable_cache_sz;
--#endif
--} __cacheline_aligned;
--
--extern struct cpuinfo_frv __nongprelbss boot_cpu_data;
--
--#define cpu_data		(&boot_cpu_data)
--#define current_cpu_data	boot_cpu_data
--
--/*
-  * Bus types
-  */
- #define EISA_bus 0
-diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
-index 9f3a7a62d7873dc2..9f4a9a607dbe68fd 100644
---- a/arch/frv/kernel/setup.c
-+++ b/arch/frv/kernel/setup.c
-@@ -104,8 +104,6 @@ unsigned long __nongprelbss dma_coherent_mem_end;
- unsigned long __initdata __sdram_old_base;
- unsigned long __initdata num_mappedpages;
++static umode_t fam15h_power_is_visible(struct kobject *kobj,
++				       struct attribute *attr,
++				       int index)
++{
++	/* power1_input is only reported for Fam15h, Models 00h-0fh */
++	if (attr == &dev_attr_power1_input.attr &&
++	   (boot_cpu_data.x86 != 0x15 || boot_cpu_data.x86_model > 0xf))
++		return 0;
++
++	return attr->mode;
++}
++
+ static struct attribute *fam15h_power_attrs[] = {
+ 	&dev_attr_power1_input.attr,
+ 	&dev_attr_power1_crit.attr,
+ 	NULL
+ };
  
--struct cpuinfo_frv __nongprelbss boot_cpu_data;
--
- char __initdata command_line[COMMAND_LINE_SIZE];
- char __initdata redboot_command_line[COMMAND_LINE_SIZE];
+-ATTRIBUTE_GROUPS(fam15h_power);
++static const struct attribute_group fam15h_power_group = {
++	.attrs = fam15h_power_attrs,
++	.is_visible = fam15h_power_is_visible,
++};
++__ATTRIBUTE_GROUPS(fam15h_power);
  
+ static bool fam15h_power_is_internal_node0(struct pci_dev *f4)
+ {
 -- 
-1.9.1
+2.0.2
 
