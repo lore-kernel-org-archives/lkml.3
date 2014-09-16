@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaIPVW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:22:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46655 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753046AbaIPVWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:22:53 -0400
-Date: Tue, 16 Sep 2014 23:22:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Kara <jack@suse.cz>, Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
- printk_deferred
-Message-ID: <20140916212250.GI1205@quack.suse.cz>
-References: <20140914050905.GA296@x4>
- <20140914055450.GB296@x4>
- <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
- <20140915163740.GA12408@x4>
- <20140916105547.GA1205@quack.suse.cz>
- <20140916144252.GB32118@x4>
- <20140916111331.14303381@gandalf.local.home>
- <20140916203510.GF1205@quack.suse.cz>
- <20140916170709.73ef2993@gandalf.local.home>
+	id S1753870AbaIPVXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:23:30 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:59146 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456AbaIPVX2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 17:23:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916170709.73ef2993@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140916.165452.1747695341192703967.davem@davemloft.net>
+References: <1410808721-27493-4-git-send-email-ast@plumgrid.com>
+	<20140916.151606.448751391205382097.davem@davemloft.net>
+	<CAMEtUuxp6709mdygiQyCqwjv-0kF-CbNOzCCZmKw_mUckF4NZA@mail.gmail.com>
+	<20140916.165452.1747695341192703967.davem@davemloft.net>
+Date: Tue, 16 Sep 2014 14:23:27 -0700
+Message-ID: <CAMEtUuzy0Hvjr0f4XBrH+FAxaKD7aijnYzDe3-MPrGWe6+MD4Q@mail.gmail.com>
+Subject: Re: [PATCH v12 net-next 03/11] bpf: add lookup/update/delete/iterate
+ methods to BPF maps
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Miller <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-09-14 17:07:09, Steven Rostedt wrote:
-> On Tue, 16 Sep 2014 22:35:10 +0200
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > On Tue 16-09-14 11:13:31, Steven Rostedt wrote:
-> > > On Tue, 16 Sep 2014 16:42:52 +0200
-> > > Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
-> > > 
-> > > > commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
-> > > > the string "[sched_delayed] " before the actual message.
-> > > > However it doesn't take into account the KERN_* prefix of the message,
-> > > > that now ends up in the middle of the output:
-> > > > 
-> > > >  [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
-> > > > 
-> > > > Fix this by just getting rid of the "[sched_delayed] " scnprintf().
-> > > 
-> > > I prefer the "[sched_delayed]" output. It lets us know that the output
-> > > did not come out immediately, which is important sometimes during
-> > > debugging. Otherwise it can confuse people, as printk is suppose to be
-> > > a blocking write.
-> >   This is a common misconception about printk. It isn't a blocking write
-> > for ten years or more. If there happens to be someone else printing to
-> > console, the difference between printk() and printk_deferred() is
-> > marginal - it used to be bigger when scheduler had its own buffer but these
-> > days message is inserted in the kernel ring buffer immediately. That's why
-> > I don't think the prefix is useful anymore.
-> 
-> For the most part it's a blocking write. Yeah, if another CPU is
-> writing, it wont be a blocking write, but it usually is, I know I
-> depend on it (when I'm debugging, I usually don't have contention
-> between CPUs). The important part is that they are done in order. A
-> delayed print, wont be in order with other printks. That is still a
-> crucial difference.
-  printk_deffered() will be in order with other printks after your commit
-458df9fd4815b47809875d57f42e16401674b621. Just printing to console itself
-will be delayed to the next timer interrupt. Or am I missing something?
+On Tue, Sep 16, 2014 at 1:54 PM, David Miller <davem@davemloft.net> wrote:
+>
+> The cost of the compat layer must be considered and weighted
+> against this cast, which I think is really no big deal.
+>
+>> I think compat layer is a better option.
+>
+> It's overhead you'll have to support forever, I think you should
+> reconsider.
+>
+> All of the "ugly casting" will be hidden, or can be hidden, in the
+> syscall wrappers and/or interfaces in userspace.
 
-								Honza
-
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ahh, ok. I thought you're strongly against any type of casts.
+In such case I can get rid of 'union bpf_attr' as well and simply
+define a struct per command, then syscall will look like:
+sys_bpf(int cmd, void __user *attr, unsigned int size);
+and uapi/linux/bpf.h will have:
+struct bpf_prog_load_attr { /* for BPF_PROG_LOAD cmd */
+    __u32 prog_type;
+    __u32 insn_cnt;
+    __aligned_u64 insns;
+    __aligned_u64 license;
+    __u32 log_level;
+    __u32 log_size;
+    __aligned_u64 log_buf;
+};
+and similar for other commands.
+no compat layer and type checking will be done
+by syscall wrappers. Ok?
