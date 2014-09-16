@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaIPQRt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:17:49 -0400
-Received: from dub004-omc1s4.hotmail.com ([157.55.0.203]:56349 "EHLO
-	DUB004-OMC1S4.hotmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075AbaIPQRq convert rfc822-to-8bit (ORCPT
+	id S1754668AbaIPQSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:18:07 -0400
+Received: from smtprelay0026.hostedemail.com ([216.40.44.26]:50233 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754583AbaIPQSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:17:46 -0400
-X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 12:17:46 EDT
-X-TMN: [n2S1K6pChk/3heqY9a/iqdH3bAQJQuob]
-X-Originating-Email: [mariopirker@hotmail.com]
-Message-ID: <DUB123-W16816B212CDA9E8D7874ADA0C90@phx.gbl>
-Reply-To: <mpirker@linux.com>
-From: Mario Pirker <mariopirker@hotmail.com>
-To: "mareklindner@neomailbox.ch" <mareklindner@neomailbox.ch>,
-        "sw@simonwunderlich.de" <sw@simonwunderlich.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] 3.17.0-rc5 - Add sanity check for NULL in
- batadv_gw_out_of_range
-Date: Tue, 16 Sep 2014 18:12:36 +0200
-Importance: Normal
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 16 Sep 2014 16:12:36.0960 (UTC) FILETIME=[07FBAE00:01CFD1C9]
+	Tue, 16 Sep 2014 12:18:05 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3868:3870:3871:3872:3873:4321:5007:7652:8957:10004:10400:10848:11658:11914:12517:12519:12740:13069:13095:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: snail61_292ac598e2525
+X-Filterd-Recvd-Size: 1611
+Message-ID: <1410884281.16519.2.camel@joe-AO725>
+Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
+From: Joe Perches <joe@perches.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Sep 2014 09:18:01 -0700
+In-Reply-To: <20140916160759.GJ12361@n2100.arm.linux.org.uk>
+References: <cover.1410632834.git.joe@perches.com>
+	 <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
+	 <20140915155656.GA29744@arm.com>
+	 <20140916160759.GJ12361@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From b451e7317148e18bf6c5c8fd747d79ab34260354 Mon Sep 17 00:00:00 2001
-From: Mario Pirker <mario.pirker@kellogg.ox.ac.uk>
-Date: Tue, 16 Sep 2014 17:55:13 +0200
-Subject: [PATCH] batman-adv: fix potential NULL pointer dereferencing
+On Tue, 2014-09-16 at 17:07 +0100, Russell King - ARM Linux wrote:
+> any chance you could add a KernelVersion: tag somewhere in the
+> commit message and throw it at patches@arm.linux.org.uk so it doesn't
+> get lost?
 
-The call batadv_gw_node_get may return NULL. The return value has to
-be sanity checked before the pointer is dereferenced.
+There are no commit logs with a KernelVersion: tag
+in all of git history.
 
-Signed-off-by: Mario Pirker (mariopirker@hotmail.com)
----
- net/batman-adv/gateway_client.c | 5 +++++
- 1 file changed, 5 insertions(+)
+What do you think a KernelVersion: tag is and what
+would it be used for?
 
-diff --git a/net/batman-adv/gateway_client.c b/net/batman-adv/gateway_client.c
-index 90cff58..7ee0913 100644
---- a/net/batman-adv/gateway_client.c
-+++ b/net/batman-adv/gateway_client.c
-@@ -810,6 +810,11 @@ bool batadv_gw_out_of_range(struct batadv_priv *bat_priv,
-                goto out;
- 
-        gw_node = batadv_gw_node_get(bat_priv, orig_dst_node);
-+
-+       /* gw_node can be NULL. We need to check before dereferencing */
-+       if (gw_node == NULL)
-+               goto out;
-+
-        if (!gw_node->bandwidth_down == 0)
-                goto out;
- 
--- 
-1.8.1.4 		 	   		  
+
