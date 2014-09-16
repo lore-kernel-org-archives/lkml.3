@@ -1,194 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068AbaIPAW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:22:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42722 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaIPAWy (ORCPT
+	id S1760684AbaIPAXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:23:46 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37076 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757093AbaIPAXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:22:54 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh@kernel.org>
-Subject: [PATCH v2] tty: serial: msm: Add earlycon support
-Date: Mon, 15 Sep 2014 17:22:51 -0700
-Message-Id: <1410826971-2943-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.61.ge50deb1
+	Mon, 15 Sep 2014 20:23:43 -0400
+Date: Tue, 16 Sep 2014 09:23:33 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mark Brown <broonie@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nishanth Menon <nm@ti.com>, Rob Herring <robh@kernel.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM / OPP: Remove ARCH_HAS_OPP completely
+Message-ID: <20140916002333.GI9847@verge.net.au>
+References: <1406551632.5397.17.camel@x220>
+ <1410511111.31130.4.camel@x220>
+ <20140916000916.GD9847@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140916000916.GD9847@verge.net.au>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for DT based and command line based early console on platforms
-with the msm serial hardware.
+On Tue, Sep 16, 2014 at 09:09:17AM +0900, Simon Horman wrote:
+> On Fri, Sep 12, 2014 at 10:38:31AM +0200, Paul Bolle wrote:
+> > The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
+> > 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
+> > removed the only dependency that used it. Setting it had no effect
+> > anymore.
+> > 
+> > So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
+> > some reason that commit did not remove all select statements for that
+> > symbol. These statements are useless. Remove them too.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Done on top of next-20140912. Tested with git grep only!
+> 
+> Hi Paul,
+> 
+> could you break the shmobile portion out into a separate patch
+> for me to take through my renesas tree?
+> 
+> I am concerned that taking those changes via a different
+> route will result in conflicts as arch/arm/mach-shmobile/Kconfig
+> is often updated.
 
-Cc: Rob Herring <robh@kernel.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+Of course the above comment is redundant if Rafael
+has already taken this patch.
 
-Changes since v1:
- * Add kernel commandline support
-
- Documentation/kernel-parameters.txt | 12 ++++++
- drivers/tty/serial/Kconfig          |  1 +
- drivers/tty/serial/msm_serial.c     | 74 +++++++++++++++++++++++++++++++------
- 3 files changed, 75 insertions(+), 12 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5ae8608ca9f5..22302931e9d4 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -936,6 +936,18 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			must already be setup and configured. Options are not
- 			yet supported.
- 
-+		msm_serial,<addr>
-+			Start an early, polled-mode console on an msm serial
-+			port at the specified address. The serial port
-+			must already be setup and configured. Options are not
-+			yet supported.
-+
-+		msm_serial_dm,<addr>
-+			Start an early, polled-mode console on an msm serial
-+			dm port at the specified address. The serial port
-+			must already be setup and configured. Options are not
-+			yet supported.
-+
- 		smh	Use ARM semihosting calls for early console.
- 
- 	earlyprintk=	[X86,SH,BLACKFIN,ARM,M68k]
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 81f6ee7d4223..d609d605f712 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1070,6 +1070,7 @@ config SERIAL_MSM_CONSOLE
- 	bool "MSM serial console support"
- 	depends on SERIAL_MSM=y
- 	select SERIAL_CORE_CONSOLE
-+	select SERIAL_EARLYCON
- 
- config SERIAL_MSM_HS
- 	tristate "MSM UART High Speed: Serial Driver"
-diff --git a/drivers/tty/serial/msm_serial.c b/drivers/tty/serial/msm_serial.c
-index 4f9640d0b1bb..4b6c78331a64 100644
---- a/drivers/tty/serial/msm_serial.c
-+++ b/drivers/tty/serial/msm_serial.c
-@@ -845,22 +845,15 @@ static inline struct uart_port *get_port_from_line(unsigned int line)
- }
- 
- #ifdef CONFIG_SERIAL_MSM_CONSOLE
--static void msm_console_write(struct console *co, const char *s,
--			      unsigned int count)
-+static void __msm_console_write(struct uart_port *port, const char *s,
-+				unsigned int count, bool is_uartdm)
- {
- 	int i;
--	struct uart_port *port;
--	struct msm_port *msm_port;
- 	int num_newlines = 0;
- 	bool replaced = false;
- 	void __iomem *tf;
- 
--	BUG_ON(co->index < 0 || co->index >= UART_NR);
--
--	port = get_port_from_line(co->index);
--	msm_port = UART_TO_MSM(port);
--
--	if (msm_port->is_uartdm)
-+	if (is_uartdm)
- 		tf = port->membase + UARTDM_TF;
- 	else
- 		tf = port->membase + UART_TF;
-@@ -872,7 +865,7 @@ static void msm_console_write(struct console *co, const char *s,
- 	count += num_newlines;
- 
- 	spin_lock(&port->lock);
--	if (msm_port->is_uartdm)
-+	if (is_uartdm)
- 		reset_dm_count(port, count);
- 
- 	i = 0;
-@@ -881,7 +874,7 @@ static void msm_console_write(struct console *co, const char *s,
- 		unsigned int num_chars;
- 		char buf[4] = { 0 };
- 
--		if (msm_port->is_uartdm)
-+		if (is_uartdm)
- 			num_chars = min(count - i, (unsigned int)sizeof(buf));
- 		else
- 			num_chars = 1;
-@@ -910,6 +903,20 @@ static void msm_console_write(struct console *co, const char *s,
- 	spin_unlock(&port->lock);
- }
- 
-+static void msm_console_write(struct console *co, const char *s,
-+			      unsigned int count)
-+{
-+	struct uart_port *port;
-+	struct msm_port *msm_port;
-+
-+	BUG_ON(co->index < 0 || co->index >= UART_NR);
-+
-+	port = get_port_from_line(co->index);
-+	msm_port = UART_TO_MSM(port);
-+
-+	__msm_console_write(port, s, count, msm_port->is_uartdm);
-+}
-+
- static int __init msm_console_setup(struct console *co, char *options)
- {
- 	struct uart_port *port;
-@@ -952,6 +959,49 @@ static int __init msm_console_setup(struct console *co, char *options)
- 	return uart_set_options(port, co, baud, parity, bits, flow);
- }
- 
-+static void
-+msm_serial_early_write(struct console *con, const char *s, unsigned n)
-+{
-+	struct earlycon_device *dev = con->data;
-+
-+	__msm_console_write(&dev->port, s, n, false);
-+}
-+
-+static int __init
-+msm_serial_early_console_setup(struct earlycon_device *device, const char *opt)
-+{
-+	if (!device->port.membase)
-+		return -ENODEV;
-+
-+	device->con->write = msm_serial_early_write;
-+	return 0;
-+}
-+EARLYCON_DECLARE(msm_serial, msm_serial_early_console_setup);
-+OF_EARLYCON_DECLARE(msm_serial, "qcom,msm-uart",
-+		    msm_serial_early_console_setup);
-+
-+static void
-+msm_serial_early_write_dm(struct console *con, const char *s, unsigned n)
-+{
-+	struct earlycon_device *dev = con->data;
-+
-+	__msm_console_write(&dev->port, s, n, true);
-+}
-+
-+static int __init
-+msm_serial_early_console_setup_dm(struct earlycon_device *device,
-+				  const char *opt)
-+{
-+	if (!device->port.membase)
-+		return -ENODEV;
-+
-+	device->con->write = msm_serial_early_write_dm;
-+	return 0;
-+}
-+EARLYCON_DECLARE(msm_serial_dm, msm_serial_early_console_setup_dm);
-+OF_EARLYCON_DECLARE(msm_serial_dm, "qcom,msm-uartdm",
-+		    msm_serial_early_console_setup_dm);
-+
- static struct uart_driver msm_uart_driver;
- 
- static struct console msm_console = {
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+> 
+> >  arch/arm/mach-omap2/Kconfig    | 5 -----
+> >  arch/arm/mach-shmobile/Kconfig | 1 -
+> >  drivers/devfreq/Kconfig        | 1 -
+> >  3 files changed, 7 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> > index 5b103099626d..f138bd33a463 100644
+> > --- a/arch/arm/mach-omap2/Kconfig
+> > +++ b/arch/arm/mach-omap2/Kconfig
+> > @@ -22,7 +22,6 @@ config ARCH_OMAP4
+> >  	bool "TI OMAP4"
+> >  	depends on ARCH_MULTI_V7
+> >  	select ARCH_OMAP2PLUS
+> > -	select ARCH_HAS_OPP
+> >  	select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
+> >  	select ARM_CPU_SUSPEND if PM
+> >  	select ARM_ERRATA_720789
+> > @@ -41,7 +40,6 @@ config SOC_OMAP5
+> >  	bool "TI OMAP5"
+> >  	depends on ARCH_MULTI_V7
+> >  	select ARCH_OMAP2PLUS
+> > -	select ARCH_HAS_OPP
+> >  	select ARM_CPU_SUSPEND if PM
+> >  	select ARM_GIC
+> >  	select HAVE_ARM_SCU if SMP
+> > @@ -53,14 +51,12 @@ config SOC_AM33XX
+> >  	bool "TI AM33XX"
+> >  	depends on ARCH_MULTI_V7
+> >  	select ARCH_OMAP2PLUS
+> > -	select ARCH_HAS_OPP
+> >  	select ARM_CPU_SUSPEND if PM
+> >  
+> >  config SOC_AM43XX
+> >  	bool "TI AM43x"
+> >  	depends on ARCH_MULTI_V7
+> >  	select ARCH_OMAP2PLUS
+> > -	select ARCH_HAS_OPP
+> >  	select ARM_GIC
+> >  	select MACH_OMAP_GENERIC
+> >  	select MIGHT_HAVE_CACHE_L2X0
+> > @@ -69,7 +65,6 @@ config SOC_DRA7XX
+> >  	bool "TI DRA7XX"
+> >  	depends on ARCH_MULTI_V7
+> >  	select ARCH_OMAP2PLUS
+> > -	select ARCH_HAS_OPP
+> >  	select ARM_CPU_SUSPEND if PM
+> >  	select ARM_GIC
+> >  	select HAVE_ARM_ARCH_TIMER
+> > diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+> > index 21f457b56c01..f59019dd986e 100644
+> > --- a/arch/arm/mach-shmobile/Kconfig
+> > +++ b/arch/arm/mach-shmobile/Kconfig
+> > @@ -36,7 +36,6 @@ menuconfig ARCH_SHMOBILE_MULTI
+> >  	select NO_IOPORT_MAP
+> >  	select PINCTRL
+> >  	select ARCH_REQUIRE_GPIOLIB
+> > -	select ARCH_HAS_OPP
+> >  
+> >  if ARCH_SHMOBILE_MULTI
+> >  
+> > diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+> > index 3dced0a9eae3..2227e9bf3884 100644
+> > --- a/drivers/devfreq/Kconfig
+> > +++ b/drivers/devfreq/Kconfig
+> > @@ -80,7 +80,6 @@ config ARM_EXYNOS4_BUS_DEVFREQ
+> >  config ARM_EXYNOS5_BUS_DEVFREQ
+> >  	bool "ARM Exynos5250 Bus DEVFREQ Driver"
+> >  	depends on SOC_EXYNOS5250
+> > -	select ARCH_HAS_OPP
+> >  	select DEVFREQ_GOV_SIMPLE_ONDEMAND
+> >  	select PM_OPP
+> >  	help
+> > -- 
+> > 1.9.3
+> > 
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
