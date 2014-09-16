@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaIPDJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 23:09:18 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59101 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836AbaIPDJR (ORCPT
+	id S1754252AbaIPDUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 23:20:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47090 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753875AbaIPDUh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 23:09:17 -0400
-Date: Mon, 15 Sep 2014 22:01:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
-Message-ID: <20140915200159.GE2840@worktop.localdomain>
-References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
- <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
- <20140911161517.GA3190@worktop.ger.corp.intel.com>
- <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
- <20140914194156.GC2832@worktop.localdomain>
- <20140915114229.GB3037@worktop.localdomain>
- <alpine.LFD.2.11.1409151451540.8647@knanqh.ubzr>
+	Mon, 15 Sep 2014 23:20:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
+   d="scan'208";a="477763759"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "Hansen, Dave" <dave.hansen@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+Thread-Topic: [PATCH v8 08/10] x86, mpx: add prctl commands PR_MPX_REGISTER,
+ PR_MPX_UNREGISTER
+Thread-Index: AQHPzZ3/3LbWETWFOEu3f3vsawDskpwAzsGAgAJF92A=
+Date: Tue, 16 Sep 2014 03:20:27 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE017AE183@shsmsx102.ccr.corp.intel.com>
+References: <1410425210-24789-1-git-send-email-qiaowei.ren@intel.com>
+	<1410425210-24789-9-git-send-email-qiaowei.ren@intel.com>
+ <20140915010025.5940c946@alan.etchedpixels.co.uk>
+In-Reply-To: <20140915010025.5940c946@alan.etchedpixels.co.uk>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1409151451540.8647@knanqh.ubzr>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 03:07:44PM -0400, Nicolas Pitre wrote:
-> On Mon, 15 Sep 2014, Peter Zijlstra wrote:
 
-> Let's suppose a task running on a 1GHz CPU producing a load of 100.
-> 
-> The same task on a 100MHz CPU would produce a load of 1000 because that 
-> CPU is 10x slower.  So to properly evaluate the load of a task when 
-> moving it around, we want to normalize its load based on the CPU 
-> performance.  In this case the correction factor would be 0.1.
-> 
-> Given those normalized loads, we need to scale CPU capacity as well.  If 
-> the 1GHz CPU can handle 50 of those tasks it has a capacity of 5000.
-> 
-> In theory the 100MHz CPU could handle only 5 of those tasks, meaning it 
-> has a normalized capacity of 500, but only if the load metric is already 
-> normalized as well.
-> 
-> Or am I completely missing the point here?
 
-So I was thinking of the usage as per the next patch; where we decide if
-a cpu is 'full' or not based on the utilization measure. For this
-measure we're not interested in inter CPU relations at all, and any use
-of capacity scaling simply doesn't make sense.
+On 2014-09-15, One Thousand Gnomes wrote:
+>> The base of the bounds directory is set into mm_struct during
+>> PR_MPX_REGISTER command execution. This member can be used to check
+>> whether one application is mpx enabled.
+> 
+> Not really because by the time you ask the question another thread
+> might have decided to unregister it.
+> 
+> 
+>> +int mpx_register(struct task_struct *tsk) {
+>> +	struct mm_struct *mm = tsk->mm;
+>> +
+>> +	if (!cpu_has_mpx)
+>> +		return -EINVAL;
+>> +
+>> +	/*
+>> +	 * runtime in the userspace will be responsible for allocation of
+>> +	 * the bounds directory. Then, it will save the base of the bounds
+>> +	 * directory into XSAVE/XRSTOR Save Area and enable MPX through
+>> +	 * XRSTOR instruction.
+>> +	 *
+>> +	 * fpu_xsave() is expected to be very expensive. In order to do
+>> +	 * performance optimization, here we get the base of the bounds
+>> +	 * directory and then save it into mm_struct to be used in future.
+>> +	 */
+>> +	mm->bd_addr = task_get_bounds_dir(tsk);
+>> +	if (!mm->bd_addr)
+>> +		return -EINVAL;
+> 
+> What stops two threads calling this in parallel ?
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +int mpx_unregister(struct task_struct *tsk) {
+>> +	struct mm_struct *mm = current->mm;
+>> +
+>> +	if (!cpu_has_mpx)
+>> +		return -EINVAL;
+>> +
+>> +	mm->bd_addr = NULL;
+> 
+> or indeed calling this in parallel
+> 
+> What are the semantics across execve() ?
+> 
+This will not impact on the semantics of execve(). One runtime library for MPX will be provided (or merged into Glibc), and when the application starts, this runtime will be called to initialize MPX runtime environment, including calling prctl() to notify the kernel to start managing the bounds directories. You can see the discussion about exec(): https://lkml.org/lkml/2014/1/26/199 
 
-But I think you asking this question shows a 'bigger' problem in that
-the Changelogs are entirely failing at describing the actual problem and
-proposed solution. Because if that were clear, I don't think we would be
-having this particular discussion.
+It would be extremely unusual for an application to have some MPX and some non-MPX threads, since they would share the same address space and the non-MPX threads would mess up the bounds. That is to say, it looks like be unusual for one of these threads to call prctl() to enable or disable MPX. I guess we need to add some rules into documentation.
+
+Thanks,
+Qiaowei
+
