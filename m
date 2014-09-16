@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaIPK66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:58:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43694 "EHLO
+	id S1754036AbaIPK7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:59:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43681 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaIPK6z (ORCPT
+	with ESMTP id S1752761AbaIPK6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:58:55 -0400
-Date: Tue, 16 Sep 2014 03:57:45 -0700
+	Tue, 16 Sep 2014 06:58:34 -0400
+Date: Tue, 16 Sep 2014 03:57:29 -0700
 From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-13924d2a983fc1557eb737ea59e2324adb538fa2@git.kernel.org>
+Message-ID: <tip-f5801933ce595ba6eb77d170ab0dfbcd5c894e11@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         henrik@austad.us, torvalds@linux-foundation.org, peterz@infradead.org,
         rdunlap@infradead.org, raistlin@linux.it, juri.lelli@arm.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         henrik@austad.us, torvalds@linux-foundation.org, peterz@infradead.org,
         rdunlap@infradead.org, raistlin@linux.it, juri.lelli@arm.com,
         tglx@linutronix.de, juri.lelli@gmail.com
-In-Reply-To: <1410256636-26171-6-git-send-email-juri.lelli@arm.com>
-References: <1410256636-26171-6-git-send-email-juri.lelli@arm.com>
+In-Reply-To: <1410256636-26171-5-git-send-email-juri.lelli@arm.com>
+References: <1410256636-26171-5-git-send-email-juri.lelli@arm.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] Documentation/scheduler/sched-deadline.txt:
-  Add minimal main() appendix
-Git-Commit-ID: 13924d2a983fc1557eb737ea59e2324adb538fa2
+  Add tests suite appendix
+Git-Commit-ID: f5801933ce595ba6eb77d170ab0dfbcd5c894e11
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,18 +36,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13924d2a983fc1557eb737ea59e2324adb538fa2
-Gitweb:     http://git.kernel.org/tip/13924d2a983fc1557eb737ea59e2324adb538fa2
+Commit-ID:  f5801933ce595ba6eb77d170ab0dfbcd5c894e11
+Gitweb:     http://git.kernel.org/tip/f5801933ce595ba6eb77d170ab0dfbcd5c894e11
 Author:     Juri Lelli <juri.lelli@arm.com>
-AuthorDate: Tue, 9 Sep 2014 10:57:16 +0100
+AuthorDate: Tue, 9 Sep 2014 10:57:15 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 16 Sep 2014 10:23:45 +0200
+CommitDate: Tue, 16 Sep 2014 10:23:02 +0200
 
-Documentation/scheduler/sched-deadline.txt: Add minimal main() appendix
+Documentation/scheduler/sched-deadline.txt: Add tests suite appendix
 
-Add an appendix providing a simple self-contained code snippet
-showing how SCHED_DEADLINE reservations can be created by
-application developers.
+Add an appendix briefly describing tools that can be used to
+test SCHED_DEADLINE (and the scheduler in general). Links to
+where source code of the tools is hosted are also provided.
 
 Signed-off-by: Juri Lelli <juri.lelli@arm.com>
 Reviewed-by: Henrik Austad <henrik@austad.us>
@@ -56,151 +56,76 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Dario Faggioli <raistlin@linux.it>
 Cc: Juri Lelli <juri.lelli@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1410256636-26171-6-git-send-email-juri.lelli@arm.com
-[ Fixed some whitespace inconsistencies. ]
+Link: http://lkml.kernel.org/r/1410256636-26171-5-git-send-email-juri.lelli@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/scheduler/sched-deadline.txt | 126 +++++++++++++++++++++++++++++
- 1 file changed, 126 insertions(+)
+ Documentation/scheduler/sched-deadline.txt | 52 ++++++++++++++++++++++++++++++
+ 1 file changed, 52 insertions(+)
 
 diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-index b4aad31..21461a0 100644
+index 0ce5e2c..b4aad31 100644
 --- a/Documentation/scheduler/sched-deadline.txt
 +++ b/Documentation/scheduler/sched-deadline.txt
-@@ -16,6 +16,7 @@ CONTENTS
+@@ -15,6 +15,7 @@ CONTENTS
+  5. Tasks CPU affinity
     5.1 SCHED_DEADLINE and cpusets HOWTO
   6. Future plans
-  A. Test suite
-+ B. Minimal main()
++ A. Test suite
  
  
  0. WARNING
-@@ -397,3 +398,128 @@ Appendix A. Test suite
-  application, given that you know its pid:
- 
-   # schedtool -E -t 10000000:100000000 my_app_pid
+@@ -345,3 +346,54 @@ CONTENTS
+  throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
+  the preliminary phases of the merge and we really seek feedback that would
+  help us decide on the direction it should take.
 +
-+Appendix B. Minimal main()
-+==========================
++Appendix A. Test suite
++======================
 +
-+ We provide in what follows a simple (ugly) self-contained code snippet
-+ showing how SCHED_DEADLINE reservations can be created by a real-time
-+ application developer.
++ The SCHED_DEADLINE policy can be easily tested using two applications that
++ are part of a wider Linux Scheduler validation suite. The suite is
++ available as a GitHub repository: https://github.com/scheduler-tools.
 +
-+ #define _GNU_SOURCE
-+ #include <unistd.h>
-+ #include <stdio.h>
-+ #include <stdlib.h>
-+ #include <string.h>
-+ #include <time.h>
-+ #include <linux/unistd.h>
-+ #include <linux/kernel.h>
-+ #include <linux/types.h>
-+ #include <sys/syscall.h>
-+ #include <pthread.h>
++ The first testing application is called rt-app and can be used to
++ start multiple threads with specific parameters. rt-app supports
++ SCHED_{OTHER,FIFO,RR,DEADLINE} scheduling policies and their related
++ parameters (e.g., niceness, priority, runtime/deadline/period). rt-app
++ is a valuable tool, as it can be used to synthetically recreate certain
++ workloads (maybe mimicking real use-cases) and evaluate how the scheduler
++ behaves under such workloads. In this way, results are easily reproducible.
++ rt-app is available at: https://github.com/scheduler-tools/rt-app.
 +
-+ #define gettid() syscall(__NR_gettid)
++ Thread parameters can be specified from the command line, with something like
++ this:
 +
-+ #define SCHED_DEADLINE	6
++  # rt-app -t 100000:10000:d -t 150000:20000:f:10 -D5
 +
-+ /* XXX use the proper syscall numbers */
-+ #ifdef __x86_64__
-+ #define __NR_sched_setattr		314
-+ #define __NR_sched_getattr		315
-+ #endif
++ The above creates 2 threads. The first one, scheduled by SCHED_DEADLINE,
++ executes for 10ms every 100ms. The second one, scheduled at SCHED_FIFO
++ priority 10, executes for 20ms every 150ms. The test will run for a total
++ of 5 seconds.
 +
-+ #ifdef __i386__
-+ #define __NR_sched_setattr		351
-+ #define __NR_sched_getattr		352
-+ #endif
++ More interestingly, configurations can be described with a json file that
++ can be passed as input to rt-app with something like this:
 +
-+ #ifdef __arm__
-+ #define __NR_sched_setattr		380
-+ #define __NR_sched_getattr		381
-+ #endif
++  # rt-app my_config.json
 +
-+ static volatile int done;
++ The parameters that can be specified with the second method are a superset
++ of the command line options. Please refer to rt-app documentation for more
++ details (<rt-app-sources>/doc/*.json).
 +
-+ struct sched_attr {
-+	__u32 size;
++ The second testing application is a modification of schedtool, called
++ schedtool-dl, which can be used to setup SCHED_DEADLINE parameters for a
++ certain pid/application. schedtool-dl is available at:
++ https://github.com/scheduler-tools/schedtool-dl.git.
 +
-+	__u32 sched_policy;
-+	__u64 sched_flags;
++ The usage is straightforward:
 +
-+	/* SCHED_NORMAL, SCHED_BATCH */
-+	__s32 sched_nice;
++  # schedtool -E -t 10000000:100000000 -e ./my_cpuhog_app
 +
-+	/* SCHED_FIFO, SCHED_RR */
-+	__u32 sched_priority;
++ With this, my_cpuhog_app is put to run inside a SCHED_DEADLINE reservation
++ of 10ms every 100ms (note that parameters are expressed in microseconds).
++ You can also use schedtool to create a reservation for an already running
++ application, given that you know its pid:
 +
-+	/* SCHED_DEADLINE (nsec) */
-+	__u64 sched_runtime;
-+	__u64 sched_deadline;
-+	__u64 sched_period;
-+ };
-+
-+ int sched_setattr(pid_t pid,
-+		  const struct sched_attr *attr,
-+		  unsigned int flags)
-+ {
-+	return syscall(__NR_sched_setattr, pid, attr, flags);
-+ }
-+
-+ int sched_getattr(pid_t pid,
-+		  struct sched_attr *attr,
-+		  unsigned int size,
-+		  unsigned int flags)
-+ {
-+	return syscall(__NR_sched_getattr, pid, attr, size, flags);
-+ }
-+
-+ void *run_deadline(void *data)
-+ {
-+	struct sched_attr attr;
-+	int x = 0;
-+	int ret;
-+	unsigned int flags = 0;
-+
-+	printf("deadline thread started [%ld]\n", gettid());
-+
-+	attr.size = sizeof(attr);
-+	attr.sched_flags = 0;
-+	attr.sched_nice = 0;
-+	attr.sched_priority = 0;
-+
-+	/* This creates a 10ms/30ms reservation */
-+	attr.sched_policy = SCHED_DEADLINE;
-+	attr.sched_runtime = 10 * 1000 * 1000;
-+	attr.sched_period = attr.sched_deadline = 30 * 1000 * 1000;
-+
-+	ret = sched_setattr(0, &attr, flags);
-+	if (ret < 0) {
-+		done = 0;
-+		perror("sched_setattr");
-+		exit(-1);
-+	}
-+
-+	while (!done) {
-+		x++;
-+	}
-+
-+	printf("deadline thread dies [%ld]\n", gettid());
-+	return NULL;
-+ }
-+
-+ int main (int argc, char **argv)
-+ {
-+	pthread_t thread;
-+
-+	printf("main thread [%ld]\n", gettid());
-+
-+	pthread_create(&thread, NULL, run_deadline, NULL);
-+
-+	sleep(10);
-+
-+	done = 1;
-+	pthread_join(thread, NULL);
-+
-+	printf("main dies [%ld]\n", gettid());
-+	return 0;
-+ }
++  # schedtool -E -t 10000000:100000000 my_app_pid
