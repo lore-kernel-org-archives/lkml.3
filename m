@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaIPXir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:38:47 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:35236 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989AbaIPXip (ORCPT
+	id S1754353AbaIPXjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:39:12 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33533 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039AbaIPXjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:38:45 -0400
-Date: Tue, 16 Sep 2014 17:38:41 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: matwey@sai.msu.ru, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, matwey.kornilov@gmail.com
-Subject: Re: [PATCH] Export functions from pcie-designware
-Message-ID: <20140916233841.GJ5050@google.com>
-References: <1409401476-5002-1-git-send-email-matwey@sai.msu.ru>
- <CAOMZO5DzNo3Y6=R4mA=h0+RjWoM6UBCqXxqeEqUM4iu5RjrBEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOMZO5DzNo3Y6=R4mA=h0+RjWoM6UBCqXxqeEqUM4iu5RjrBEA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Sep 2014 19:39:10 -0400
+X-AuditID: cbfee690-f79ce6d00000115a-26-5418ca1cd635
+Date: Tue, 16 Sep 2014 23:39:08 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] extcon: sm5502: Depend on I2C
+To: Jean Delvare <jdelvare@suse.de>,
+        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20140916233814787@myungjoo.ham
+Msgkey: 20140916233814787@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20140916233814787@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <6256746.443221410910747510.JavaMail.weblogic@epml01>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsWyRsSkSFfmlESIweSLPBaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvjyJkdzAXX2Cs+r3/A1sC4g72LkZNDSEBdYtGSk2wgtoSAicSi
+	a/9ZIGwxiQv31gPFuYBqljJKbFu0lgmm6PPEI0wQiTmMEgcmPgKbxCKgKnHl3xGgbg4ONgE9
+	iZmfk0HCwgJGEr0fToL1iggkSbRueMEEUsIsYCgx90MKxA1KEmv2vQLbyysgKHFy5hOoG1Ql
+	Zi9cxg4RV5NoPjWTGSIuITFr+gVWCJtXYkb7U6h6OYlpX9dA1UhLnJ+1gRHml8XfH0PF+SWO
+	3d4BdgJI75P7wTBjdm/+Ag0GAYmpZw4yQpRoSby5FAoR5pNYs/AtC8yUXaeWM8O03t8yF+xB
+	ZgFFiSndD9khbC2JLz/2saH7ilfAUWLTv5/MExiVZyFJzULSPgtJO7KaBYwsqxhFUwuSC4qT
+	0otM9IoTc4tL89L1kvNzNzECU8Lpf88m7GC8d8D6EKMAB6MSD6/HI/EQIdbEsuLK3EOMpsAo
+	msgsJZqcD0w8eSXxhsZmRhamJqbGRuaWZkrivK+lfgYLCaQnlqRmp6YWpBbFF5XmpBYfYmTi
+	4JRqYOyf/4FjvYf35PquBIv5RxxdvOYUGTyT2rFIVFrv9SM++zmPfvy40yYm6WEsfUFW8ltJ
+	fZbX9qRa0XCvjAjd5wmZdk+YDs/JeHdzsbJ9/e5Z4lrPN9Vci39ef27JDq57LbZJ0XdNpq05
+	13N21oUtL9c8cN7xIKxowzH7t8LFHE2fvnv1fNIVPajEUpyRaKjFXFScCADS0PQuBAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t/tPl2ZUxIhBlO2sVlc3jWHzYHR4/Mm
+	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIwj
+	Z3YwF1xjr/i8/gFbA+MO9i5GTg4hAXWJRUtOsoHYEgImEp8nHmGCsMUkLtxbDxTnAqqZwyhx
+	YOIjsAYWAVWJK/+OsHQxcnCwCehJzPycDBIWFjCS6P1wEqxXRCBJonXDCyaQEmYBQ4m5H1Ig
+	VilJrNn3igXE5hUQlDg58wkLxCpVidkLl7FDxNUkmk/NZIaIS0jMmn6BFcLmlZjR/hSqXk5i
+	2tc1UDXSEudnbWCEOXnx98dQcX6JY7d3gJ0A0vvkfjDMmN2bv0B9KyAx9cxBRogSLYk3l0Ih
+	wnwSaxa+ZYGZsuvUcmaY1vtb5oI9yCygKDGl+yE7hK0l8eXHPjZ0X/EKOEps+veTeQKj3Cwk
+	qVlI2mchaUdWs4CRZRWjaGpBckFxUnqFiV5xYm5xaV66XnJ+7iZGcGJ6tmQHY8MF60OMAhyM
+	Sjy8Ho/EQ4RYE8uKK3MPMUpwMCuJ8P7wlQgR4k1JrKxKLcqPLyrNSS0+xGgKjL2JzFKiyfnA
+	pJlXEm9obGxiZmJqaWJhYGquJM674FZSkJBAemJJanZqakFqEUwfEwenVANj83M2Xf/l+9O+
+	/BGq81eyK3KtcahX8hSTi+FZ7C738XZnuOGLs24uaYcP3/80/RfTNOU1IkLPD4WH/tHumVdi
+	MD1G0CXxy5fTb5ezVmp7OJU1C/dVdD9LSIy8WBpxtvzupVxBgfzHIhXVZdsqw2V3XPbeNXGa
+	B3+c+7pGkek3hN3St0hmvVRiKc5INNRiLipOBAD7rMRfYgMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8GNdH2A031309
 
-On Sat, Aug 30, 2014 at 10:07:30AM -0300, Fabio Estevam wrote:
-> On Sat, Aug 30, 2014 at 9:24 AM,  <matwey@sai.msu.ru> wrote:
-> > From: "Matwey V. Kornilov" <matwey@sai.msu.ru>
-> >
-> > pcie-spear13xx when built as module requires the functions from pcie-designware.
-> > Export them properly.
-
-I don't know how valuable pcie-spear13xx as a module is.  No other host
-drivers are supported as a module.  Maybe we should just change
-pcie-spear13xx from tristate to bool?
-
-> >
-> > Signed-off-by: Matwey V. Kornilov <matwey@sai.msu.ru>
-> > ---
-> >  drivers/pci/host/pcie-designware.c |  7 +++++++
-> >  drivers/pci/host/pcie-designware.h | 14 +++++++-------
-> >  2 files changed, 14 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> > index 52bd3a1..7914b92c 100644
-> > --- a/drivers/pci/host/pcie-designware.c
-> > +++ b/drivers/pci/host/pcie-designware.c
-> > @@ -89,6 +89,7 @@ int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val)
-> >
-> >         return PCIBIOS_SUCCESSFUL;
-> >  }
-> > +EXPORT_SYMBOL(dw_pcie_cfg_read);
+> The SM5502 chip is an I2C device so its drivers must depend on I2C.
+> Failing to do so results in build failures on kernels where I2C is
+> not enabled.
 > 
-> What about using EXPORT_SYMBOL_GPL instead?
-> 
-> > -int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
-> > -int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
-> > -irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
-> > -void dw_pcie_msi_init(struct pcie_port *pp);
-> > -int dw_pcie_link_up(struct pcie_port *pp);
-> > -void dw_pcie_setup_rc(struct pcie_port *pp);
-> > -int dw_pcie_host_init(struct pcie_port *pp);
-> > +extern int dw_pcie_cfg_read(void __iomem *addr, int where, int size, u32 *val);
-> > +extern int dw_pcie_cfg_write(void __iomem *addr, int where, int size, u32 val);
-> > +extern irqreturn_t dw_handle_msi_irq(struct pcie_port *pp);
-> > +extern void dw_pcie_msi_init(struct pcie_port *pp);
-> > +extern int dw_pcie_link_up(struct pcie_port *pp);
-> > +extern void dw_pcie_setup_rc(struct pcie_port *pp);
-> > +extern int dw_pcie_host_init(struct pcie_port *pp);
-> 
-> Why is this needed?
+> Signed-off-by: Jean Delvare <jdelvare@suse.de>
+> Cc: Chanwoo Choi <cw00.choi@samsung.com>
 
-- This is logically separate from the EXPORT_SYMBOL change, so it should be
-  a separate patch.
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-- I wouldn't take a patch adding "extern" to function declarations in a
-  header file because I recently removed them all, e.g.,
-  http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f39d5b72913e.
+> ---
+>  drivers/extcon/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- a/drivers/extcon/Kconfig
+> +++ b/drivers/extcon/Kconfig
+> @@ -72,6 +72,7 @@ config EXTCON_PALMAS
+>  
+>  config EXTCON_SM5502
+>  	tristate "SM5502 EXTCON support"
+> +	depends on I2C
+>  	select IRQ_DOMAIN
+>  	select REGMAP_I2C
+>  	select REGMAP_IRQ
+> 
+> -- 
+> Jean Delvare
+> SUSE L3 Support
+> 
+> 
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
