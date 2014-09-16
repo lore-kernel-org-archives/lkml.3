@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaIPWrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:47:23 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51968 "EHLO
+	id S1754669AbaIPWrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:47:42 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:53298 "EHLO
 	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbaIPWrS (ORCPT
+	with ESMTP id S1754565AbaIPWrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:47:18 -0400
+	Tue, 16 Sep 2014 18:47:14 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -14,9 +14,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
         Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH v10 9/9] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Tue, 16 Sep 2014 23:46:28 +0100
-Message-Id: <1410907588-19957-10-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v10 8/9] arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+Date: Tue, 16 Sep 2014 23:46:27 +0100
+Message-Id: <1410907588-19957-9-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org>
 References: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org>
@@ -24,43 +24,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multi_v7_defconfig kernel it is not possible to configure
-DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-accurately and worse, it is possible to configure a different serial
-device but KConfig does not honour this request. In fact this also
-overrides the user selection for some of the single platform kernels, for
-example I don't think DEBUG_LL can be targetted at ICE or semihosted
-supervisor for ARCH_VERSATILE.
+On EP93XX uncompress.h uses CONFIG_DEBUG_UART_PHYS instead of a hard
+coded serial port. This means the build breaks when DEBUG_LL
+(and DEBUG_LL_UART_PL01X) is not enabled.
 
-This happens because DEBUG_UART_PL01X is automatically enabled by
-some architectures and this means user decisions made regarding
-the DEBUG_LL backend will be overriden. Problem is fixed by removing the
-automatic enabling of this option.
+This is fixed by adding a new dependancy.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/Kconfig.debug | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/arm/Kconfig.debug | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index ed7da37..b6ec25a 100644
+index cf5ef1c..ed7da37 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -1126,12 +1126,7 @@ config DEBUG_LL_INCLUDE
+@@ -1218,7 +1218,8 @@ config DEBUG_UART_PHYS
+ 		DEBUG_LL_UART_EFM32 || \
+ 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
+ 		DEBUG_MSM_UART || DEBUG_NETX_UART || DEBUG_QCOM_UARTDM || \
+-		DEBUG_S3C24XX_UART || DEBUG_SA1100_UART
++		DEBUG_S3C24XX_UART || DEBUG_SA1100_UART || \
++		ARCH_EP93XX
  
- # Compatibility options for PL01x
- config DEBUG_UART_PL01X
--	def_bool ARCH_EP93XX || \
--		ARCH_INTEGRATOR || \
--		ARCH_SPEAR3XX || \
--		ARCH_SPEAR6XX || \
--		ARCH_SPEAR13XX || \
--		ARCH_VERSATILE
-+	bool
- 
- #Compatibility options for 8250
- config DEBUG_UART_8250
+ config DEBUG_UART_VIRT
+ 	hex "Virtual base address of debug UART"
 -- 
 1.9.3
 
