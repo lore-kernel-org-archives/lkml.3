@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217AbaIPAgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:36:44 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:61430 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918AbaIPAgl (ORCPT
+	id S1757790AbaIPAkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:40:19 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34647 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305AbaIPAkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:36:41 -0400
-Date: Mon, 15 Sep 2014 17:36:20 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Cc: linux-mtd@lists.infradead.org, Rashika Kheria <rashika.kheria@gmail.com>,
-        linux-kernel@vger.kernel.org, Huang Shijie <shijie8@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH v2 0/7] mtd: denali: A collection of trivial coding style
- fixes
-Message-ID: <20140916003620.GA1193@ld-irv-0074>
-References: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
+	Mon, 15 Sep 2014 20:40:16 -0400
+Date: Tue, 16 Sep 2014 09:40:06 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 3/4] ARM: shmobile: r8a7740 legacy: Add missing INTCA
+ clock for irqpin module
+Message-ID: <20140916004006.GC26557@verge.net.au>
+References: <1410527720-18061-1-git-send-email-geert+renesas@glider.be>
+ <1410527720-18061-4-git-send-email-geert+renesas@glider.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410228117-14820-1-git-send-email-yamada.m@jp.panasonic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410527720-18061-4-git-send-email-geert+renesas@glider.be>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 09, 2014 at 11:01:50AM +0900, Masahiro Yamada wrote:
-> Changes in v2:
->   - Join quotes strings into a single line
+On Fri, Sep 12, 2014 at 03:15:19PM +0200, Geert Uytterhoeven wrote:
+> This clock drives the irqpin controller modules.
+> Before, it was assumed enabled by the bootloader or reset state.
 > 
-> Masahiro Yamada (7):
->   mtd: denali: fix the format of comment blocks
->   mtd: denali: remove unnecessary variable initializations
->   mtd: denali: remove unnecessary casts
->   mtd: denali: change the type of iterators to int
->   mtd: denali: remove a set-but-unused variable
->   mtd: denali: remove unnecessary parentheses
->   mtd: denali: fix indents and other trivial things
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+
+Thanks, I have queued this up.
+
+> ---
+>  arch/arm/mach-shmobile/clock-r8a7740.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 > 
->  drivers/mtd/nand/denali.c | 562 +++++++++++++++++++++++++---------------------
->  1 file changed, 303 insertions(+), 259 deletions(-)
-
-Pushed patches 1 to 5 to l2-mtd.git. Thanks!
-
-Patch 6 has a conflict with another fix already in l2-mtd.git. Can you
-rebase and resend?
-
-BTW, my automatic build tests show that there's at least one other
-'unused' warning left, in case you want to tackle it too:
-
-    drivers/mtd/nand/denali.c: In function ‘denali_read_page_raw’:
-    drivers/mtd/nand/denali.c:1221:11: warning: variable ‘irq_status’ set but not used [-Wunused-but-set-variable]
-          uint32_t irq_status;
-
-Brian
+> diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
+> index 0794f0426e70..6cb1de220612 100644
+> --- a/arch/arm/mach-shmobile/clock-r8a7740.c
+> +++ b/arch/arm/mach-shmobile/clock-r8a7740.c
+> @@ -455,7 +455,7 @@ enum {
+>  	MSTP128, MSTP127, MSTP125,
+>  	MSTP116, MSTP111, MSTP100, MSTP117,
+>  
+> -	MSTP230,
+> +	MSTP230, MSTP229,
+>  	MSTP222,
+>  	MSTP218, MSTP217, MSTP216, MSTP214,
+>  	MSTP207, MSTP206, MSTP204, MSTP203, MSTP202, MSTP201, MSTP200,
+> @@ -479,6 +479,7 @@ static struct clk mstp_clks[MSTP_NR] = {
+>  	[MSTP100] = SH_CLK_MSTP32(&div4_clks[DIV4_B],	SMSTPCR1,  0, 0), /* LCDC0 */
+>  
+>  	[MSTP230] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR2, 30, 0), /* SCIFA6 */
+> +	[MSTP229] = SH_CLK_MSTP32(&div6_clks[DIV4_HP],	SMSTPCR2, 29, 0), /* INTCA */
+>  	[MSTP222] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR2, 22, 0), /* SCIFA7 */
+>  	[MSTP218] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],  SMSTPCR2, 18, 0), /* DMAC1 */
+>  	[MSTP217] = SH_CLK_MSTP32(&div4_clks[DIV4_HP],  SMSTPCR2, 17, 0), /* DMAC2 */
+> @@ -575,6 +576,10 @@ static struct clk_lookup lookups[] = {
+>  	CLKDEV_DEV_ID("sh-dma-engine.0",	&mstp_clks[MSTP218]),
+>  	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
+>  	CLKDEV_DEV_ID("e6cd0000.serial",	&mstp_clks[MSTP222]),
+> +	CLKDEV_DEV_ID("renesas_intc_irqpin.0",	&mstp_clks[MSTP229]),
+> +	CLKDEV_DEV_ID("renesas_intc_irqpin.1",	&mstp_clks[MSTP229]),
+> +	CLKDEV_DEV_ID("renesas_intc_irqpin.2",	&mstp_clks[MSTP229]),
+> +	CLKDEV_DEV_ID("renesas_intc_irqpin.3",	&mstp_clks[MSTP229]),
+>  	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
+>  	CLKDEV_DEV_ID("e6cc0000.serial",	&mstp_clks[MSTP230]),
+>  
+> -- 
+> 1.9.1
+> 
