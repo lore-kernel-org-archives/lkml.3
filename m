@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300AbaIPTyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:54:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788AbaIPTyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:54:39 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel\@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 4/7] O_NONBLOCK flag for readv2/preadv2
-References: <cover.1410810247.git.milosz@adfin.com>
-	<ead00ff46b581749da6d1a6d2db9d8f8dc3aed67.1410810247.git.milosz@adfin.com>
-	<x4961gnz844.fsf@segfault.boston.devel.redhat.com>
-	<CANP1eJEiGxQ0fZMkOY1utmkUOkGC4gOHYrXt+yO-9+tnzA24hw@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 16 Sep 2014 15:53:56 -0400
-In-Reply-To: <CANP1eJEiGxQ0fZMkOY1utmkUOkGC4gOHYrXt+yO-9+tnzA24hw@mail.gmail.com>
-	(Milosz Tanski's message of "Tue, 16 Sep 2014 15:44:13 -0400")
-Message-ID: <x49ppevwdd7.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755340AbaIPTyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:54:49 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:49088 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755305AbaIPTyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:54:47 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: kbuild test robot <fengguang.wu@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] frv: Remove unused cpuinfo_frv and friends to fix future build error
+Date: Tue, 16 Sep 2014 21:54:50 +0200
+Message-Id: <1410897290-27815-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> writes:
+Frv has a macro named cpu_data, interfering with variables and struct
+members with the same name:
 
->> Why did you put the wouldblock label inside the loop?  That should be
->> pushed down to just above out, and then you can get rid of the goto.
->
-> When I put the code outside the loop it actually looked worse (imo):
->
-> }
->
-> goto out;
->
-> would_block:
-> error = -EAGAIN;
->
-> out:
-> ...
->
+include/linux/pm_domain.h:75:24: error: expected identifier or '('
+before '&' token
+  struct gpd_cpu_data *cpu_data;
 
-We don't exit the loop without a return or a goto, so you wouldn't need
-that 'goto out' just below the end of the loop.  It would look like:
+As struct cpuinfo_frv, boot_cpu_data, cpu_data, and current_cpu_data are
+not used, removed them to fix this.
 
-	}
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+There are a few more waiting for this to happen:
 
-would_block:
-	error = -EAGAIN;
-out:
-...
+arch/m32r/include/asm/processor.h:#define cpu_data (&boot_cpu_data)
+arch/mn10300/include/asm/processor.h:#define cpu_data &boot_cpu_data
+arch/um/include/asm/processor-generic.h:#define cpu_data (&boot_cpu_data)
 
-> Point taken and I can fix this for the next version further up the
-> stack. A longer term question is how the flags the file is open with
-> interact with the read/write flags ... since I imagine folks will want
-> to add other flags (like force a SYNC write).
+ arch/frv/include/asm/processor.h | 16 ----------------
+ arch/frv/kernel/setup.c          |  2 --
+ 2 files changed, 18 deletions(-)
 
-I think we'll have to address those one at a time.  I do like the idea
-of the SYNC flag for a write, though you'll probably have several
-variants of that (equivalents of SYNC and DSYNC at least).  Another fun
-write flag to consider is O_ATOMIC.  :)
+diff --git a/arch/frv/include/asm/processor.h b/arch/frv/include/asm/processor.h
+index 6554e78893f26bc8..ae8d423e79d9dbe5 100644
+--- a/arch/frv/include/asm/processor.h
++++ b/arch/frv/include/asm/processor.h
+@@ -35,22 +35,6 @@
+ struct task_struct;
+ 
+ /*
+- *  CPU type and hardware bug flags. Kept separately for each CPU.
+- */
+-struct cpuinfo_frv {
+-#ifdef CONFIG_MMU
+-	unsigned long	*pgd_quick;
+-	unsigned long	*pte_quick;
+-	unsigned long	pgtable_cache_sz;
+-#endif
+-} __cacheline_aligned;
+-
+-extern struct cpuinfo_frv __nongprelbss boot_cpu_data;
+-
+-#define cpu_data		(&boot_cpu_data)
+-#define current_cpu_data	boot_cpu_data
+-
+-/*
+  * Bus types
+  */
+ #define EISA_bus 0
+diff --git a/arch/frv/kernel/setup.c b/arch/frv/kernel/setup.c
+index 9f3a7a62d7873dc2..9f4a9a607dbe68fd 100644
+--- a/arch/frv/kernel/setup.c
++++ b/arch/frv/kernel/setup.c
+@@ -104,8 +104,6 @@ unsigned long __nongprelbss dma_coherent_mem_end;
+ unsigned long __initdata __sdram_old_base;
+ unsigned long __initdata num_mappedpages;
+ 
+-struct cpuinfo_frv __nongprelbss boot_cpu_data;
+-
+ char __initdata command_line[COMMAND_LINE_SIZE];
+ char __initdata redboot_command_line[COMMAND_LINE_SIZE];
+ 
+-- 
+1.9.1
 
-Cheers,
-Jeff
