@@ -1,93 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaIPF4Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 01:56:24 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37687 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaIPF4X (ORCPT
+	id S1752890AbaIPGFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 02:05:46 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:53346 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046AbaIPGFo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 01:56:23 -0400
-Date: Tue, 16 Sep 2014 14:56:10 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
-Message-ID: <20140916055610.GB805@mtj.dyndns.org>
-References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
- <20140909160625.GC4851@dhcp22.suse.cz>
- <20140909164658.GB11748@mtj.dyndns.org>
- <2008100.1EF7gjK5Z6@vostro.rjw.lan>
- <20140910132417.GF25219@dhcp22.suse.cz>
- <20140912234846.GA28183@mtj.dyndns.org>
- <20140915142821.GF19976@dhcp22.suse.cz>
+	Tue, 16 Sep 2014 02:05:44 -0400
+Date: Tue, 16 Sep 2014 08:05:41 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH 3.13 073/187] x86, ia64: Move EFI_FB
+ vga_default_device() initialization to pci_vga_fixup()
+Message-ID: <20140916080541.773888fa@pluto>
+In-Reply-To: <1410818997-9432-74-git-send-email-kamal@canonical.com>
+References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
+	<1410818997-9432-74-git-send-email-kamal@canonical.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140915142821.GF19976@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+Hi Kamel,
 
-On Mon, Sep 15, 2014 at 04:28:21PM +0200, Michal Hocko wrote:
-> > Are we gonna introduce an alternate versions for all of them?
+On Mon, 15 Sep 2014 15:08:03 -0700 Kamal Mostafa wrote:
+> 3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
+
+As mentioned to Greg for 3.16 (and 3.14, 3.10) stable trees, please
+postpone this patch until its regression fix for dual-GPU Macs can be
+applied at the same time.
+
+See
+  https://patchwork.kernel.org/patch/4771201/
+as well as
+  https://bugzilla.kernel.org/show_bug.cgi?id=84461
+
+Bruno
+
+> ------------------
 > 
-> Are they intended for kernel threads in the first place? The primary
-
-There's no restriction in using them and I'm pretty sure some of them
-are used by kernel threads.
-
-> objective seems to be to not wake up user tasks just to put them into
-> the fridge when you know they are in a "deep" sleep currently. Kernel
-
-That's one of the uses but not the only one.
-
-> threads know they might freeze themselves when returning from schedule,
-> no?
-
-I'm not following.  Can you elaborate?
-
-> freezable_schedule{_timeout} seem to be used only by user tasks AFAICS.
-> freezable_schedule_unsafe seems to be more complicated due to nfs and
-> cifs but both of them are checking for fatal signal pending and return
-> ERESTARTSYS which looks like userspace stuff. So maybe we do not need
-> any alternate version for kernel threads.
+> From: Kamal Mostafa <kamal@canonical.com>
 > 
-> I haven't check the workqueue_freezable API.
-
-That one is actually easy and should be fine.
-
-> > What do we actually gain?
+> commit 20cde694027e7477cc532833e38ab9fcaa83fb64 upstream.
 > 
-> I thought we could easily document and add some rules to where
-> try_to_freeze can be called from for userspace tasks. Kernel threads
-> know when they are safe to get frozen but we should be more careful
-> about user tasks. Whether that can be enforced by an API is a question.
-> I do admit this much more complicated than I originally anticipated.
+> Commit b4aa0163056b ("efifb: Implement vga_default_device() (v2)")
+> added efifb vga_default_device() so EFI systems that do not load
+> shadow VBIOS or setup VGA get proper value for boot_vga PCI sysfs
+> attribute on the corresponding PCI device.
 > 
-> try_to_freeze should be a nice barrier where you know that waking into
-> a new world is safe for the caller (there is no state crossing the
-
-It isn't and I'm not sure it can ever be used as "world" barrier.  It
-just doesn't mean that.
-
-> freezing point). Whether a separate API makes this happen is an open
-> question. I would hope for much higher bar for adding new freezing
-> points for users tasks as those are more tricky to check.
-
-Heh, as far as I can recall, freezer usage has always been a rather
-large mess.  In the long term, I think the right thing to do is
-merging userland freezing into job control stop so that it doesn't get
-the special SIGKILL immunity.  We shouldn't have exposed this
-unkillable state the beginning.  :(
-
-Thanks.
-
--- 
-tejun
+> Xorg doesn't detect devices when boot_vga=0, e.g., on some EFI
+> systems such as MacBookAir2,1.  Xorg detects the GPU and finds the
+> DRI device but then bails out with "no devices detected".
+> 
+> Note: When vga_default_device() is set boot_vga PCI sysfs attribute
+> reflects its state.  When unset this attribute is 1 whenever
+> IORESOURCE_ROM_SHADOW flag is set.
+> 
+> With introduction of sysfb/simplefb/simpledrm efifb is getting
+> obsolete while having native drivers for the GPU also makes selecting
+> sysfb/efifb optional.
+> 
+> Remove the efifb implementation of vga_default_device() and initialize
+> vgaarb's vga_default_device() with the PCI GPU that matches boot
+> screen_info in pci_fixup_video().
+> 
+> [bhelgaas: remove unused "dev" in efifb_setup()]
+> Fixes: b4aa0163056b ("efifb: Implement vga_default_device() (v2)")
+> Tested-by: Anibal Francisco Martinez Cortina <linuxkid.zeuz@gmail.com>
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> Acked-by: Matthew Garrett <matthew.garrett@nebula.com>
+> [ kamal: backport to 3.13-stable: context ]
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> ---
+>  arch/ia64/pci/fixup.c      | 22 ++++++++++++++++++++++
+>  arch/x86/include/asm/vga.h |  6 ------
+>  arch/x86/pci/fixup.c       | 21 +++++++++++++++++++++
+>  drivers/video/efifb.c      | 39
+> --------------------------------------- 4 files changed, 43
+> insertions(+), 45 deletions(-)
+> 
+> diff --git a/arch/ia64/pci/fixup.c b/arch/ia64/pci/fixup.c
+> index 5dc969d..62fb9ba 100644
+> --- a/arch/ia64/pci/fixup.c
+> +++ b/arch/ia64/pci/fixup.c
+> @@ -5,6 +5,7 @@
+>  
+>  #include <linux/pci.h>
+>  #include <linux/init.h>
+> +#include <linux/screen_info.h>
+>  
+>  #include <asm/machvec.h>
+>  
+> @@ -38,6 +39,27 @@ static void pci_fixup_video(struct pci_dev *pdev)
+>  	if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+>  		return;
+>  
+> +	if (!vga_default_device()) {
+> +		resource_size_t start, end;
+> +		int i;
+> +
+> +		/* Does firmware framebuffer belong to us? */
+> +		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+> +			if (!(pci_resource_flags(pdev, i) &
+> IORESOURCE_MEM))
+> +				continue;
+> +
+> +			start = pci_resource_start(pdev, i);
+> +			end  = pci_resource_end(pdev, i);
+> +
+> +			if (!start || !end)
+> +				continue;
+> +
+> +			if (screen_info.lfb_base >= start &&
+> +			    (screen_info.lfb_base +
+> screen_info.lfb_size) < end)
+> +				vga_set_default_device(pdev);
+> +		}
+> +	}
+> +
+>  	/* Is VGA routed to us? */
+>  	bus = pdev->bus;
+>  	while (bus) {
+> diff --git a/arch/x86/include/asm/vga.h b/arch/x86/include/asm/vga.h
+> index 44282fb..c4b9dc2 100644
+> --- a/arch/x86/include/asm/vga.h
+> +++ b/arch/x86/include/asm/vga.h
+> @@ -17,10 +17,4 @@
+>  #define vga_readb(x) (*(x))
+>  #define vga_writeb(x, y) (*(y) = (x))
+>  
+> -#ifdef CONFIG_FB_EFI
+> -#define __ARCH_HAS_VGA_DEFAULT_DEVICE
+> -extern struct pci_dev *vga_default_device(void);
+> -extern void vga_set_default_device(struct pci_dev *pdev);
+> -#endif
+> -
+>  #endif /* _ASM_X86_VGA_H */
+> diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+> index b046e07..4ee44d4 100644
+> --- a/arch/x86/pci/fixup.c
+> +++ b/arch/x86/pci/fixup.c
+> @@ -325,6 +325,27 @@ static void pci_fixup_video(struct pci_dev *pdev)
+>  	struct pci_bus *bus;
+>  	u16 config;
+>  
+> +	if (!vga_default_device()) {
+> +		resource_size_t start, end;
+> +		int i;
+> +
+> +		/* Does firmware framebuffer belong to us? */
+> +		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+> +			if (!(pci_resource_flags(pdev, i) &
+> IORESOURCE_MEM))
+> +				continue;
+> +
+> +			start = pci_resource_start(pdev, i);
+> +			end  = pci_resource_end(pdev, i);
+> +
+> +			if (!start || !end)
+> +				continue;
+> +
+> +			if (screen_info.lfb_base >= start &&
+> +			    (screen_info.lfb_base +
+> screen_info.lfb_size) < end)
+> +				vga_set_default_device(pdev);
+> +		}
+> +	}
+> +
+>  	/* Is VGA routed to us? */
+>  	bus = pdev->bus;
+>  	while (bus) {
+> diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+> index cd7c0df..201ab4f 100644
+> --- a/drivers/video/efifb.c
+> +++ b/drivers/video/efifb.c
+> @@ -19,8 +19,6 @@
+>  
+>  static bool request_mem_succeeded = false;
+>  
+> -static struct pci_dev *default_vga;
+> -
+>  static struct fb_var_screeninfo efifb_defined = {
+>  	.activate		= FB_ACTIVATE_NOW,
+>  	.height			= -1,
+> @@ -85,23 +83,10 @@ static struct fb_ops efifb_ops = {
+>  	.fb_imageblit	= cfb_imageblit,
+>  };
+>  
+> -struct pci_dev *vga_default_device(void)
+> -{
+> -	return default_vga;
+> -}
+> -
+> -EXPORT_SYMBOL_GPL(vga_default_device);
+> -
+> -void vga_set_default_device(struct pci_dev *pdev)
+> -{
+> -	default_vga = pdev;
+> -}
+> -
+>  static int efifb_setup(char *options)
+>  {
+>  	char *this_opt;
+>  	int i;
+> -	struct pci_dev *dev = NULL;
+>  
+>  	if (options && *options) {
+>  		while ((this_opt = strsep(&options, ",")) != NULL) {
+> @@ -127,30 +112,6 @@ static int efifb_setup(char *options)
+>  		}
+>  	}
+>  
+> -	for_each_pci_dev(dev) {
+> -		int i;
+> -
+> -		if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+> -			continue;
+> -
+> -		for (i=0; i < DEVICE_COUNT_RESOURCE; i++) {
+> -			resource_size_t start, end;
+> -
+> -			if (!(pci_resource_flags(dev, i) &
+> IORESOURCE_MEM))
+> -				continue;
+> -
+> -			start = pci_resource_start(dev, i);
+> -			end  = pci_resource_end(dev, i);
+> -
+> -			if (!start || !end)
+> -				continue;
+> -
+> -			if (screen_info.lfb_base >= start &&
+> -			    (screen_info.lfb_base +
+> screen_info.lfb_size) < end)
+> -				default_vga = dev;
+> -		}
+> -	}
+> -
+>  	return 0;
+>  }
+>  
