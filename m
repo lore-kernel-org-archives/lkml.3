@@ -1,41 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaIPHqW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:46:22 -0400
-Received: from mga14.intel.com ([192.55.52.115]:26674 "EHLO mga14.intel.com"
+	id S1753354AbaIPHqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:46:34 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35811 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772AbaIPHqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:46:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="591873781"
-Message-ID: <1410853522.1280.0.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-From: Zhang Rui <rui.zhang@intel.com>
+	id S1753318AbaIPHqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:46:32 -0400
+Message-ID: <1410853589.30351.12.camel@iivanov-dev>
+Subject: Re: [PATCH RESEND] thermal: Add QPNP PMIC temperature alarm driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
-        Chris Zhong <zyw@rock-chips.com>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        zhaoyifeng <zyf@rock-chips.com>
-Date: Tue, 16 Sep 2014 15:45:22 +0800
-In-Reply-To: <20140911155324.GA27076@developer>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
-	 <1410403012.25559.69.camel@rzhang1-toshiba>
-	 <20140911121842.GB26715@developer> <40514790.Xc34lyFLGa@wuerfel>
-	 <20140911155324.GA27076@developer>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Date: Tue, 16 Sep 2014 10:46:29 +0300
+In-Reply-To: <20140915153052.GB27076@developer>
+References: <1410793383-30097-1-git-send-email-iivanov@mm-sol.com>
+	 <20140915153052.GB27076@developer>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,57 +31,79 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Thu, 2014-09-11 at 11:53 -0400, Eduardo Valentin wrote:
-> Arnd,
-> 
-> On Thu, Sep 11, 2014 at 02:32:08PM +0200, Arnd Bergmann wrote:
-> > On Thursday 11 September 2014 08:18:43 Eduardo Valentin wrote:
-> > > > As what we want is to make thermal driver have a chance to configure the
-> > > > hardware shutdown registers, I'm thinking if we can do this without
-> > > > representing the hardware shutdown value as a trip point.
-> > > > Say,
-> > > > 1. parse DT, and get the hardware shutdown temperature value, and store
-> > > > it somewhere, e.g. struct __thermal_zone.
-> > > > 2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
-> > > > in thermal_zone_of_sensor_register().
-> > > > 3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
-> > > > thermal_zone_of_sensor_register().
-> > > 
-> > > The only issue I have with the above proposal is that not all platforms
-> > > use DT. Some still boot with boardfiles, for instance. Thus, the
-> > > parameter to configure hardware thermal shutdown needs to be common on
-> > > thermal core, not specific to of-thermal. Do you agree?
-> > 
-> > Do you know of a machine that can't yet be converted to DT and that
-> > needs this driver? In case of rockchips that is certainly not the
-> > case, and we don't care about anybody trying to use board files out
-> > of tree, they can just hack the thermal support as well.
-> 
-> I see. Again, the only concern I have is to produce thermal framework APIs
-> that would be only in the of-thermal. My point is not specific to this
-> patch, or this platform, but with a detail in the above proposal. 
-> 
-> While I agree to have a trip specific to configurable hardware triggered
-> thermal shutdown, I just don't see why it needs to be a feature
-> implemented only via of-thermal. It has to be properly defined in
-> thermal core.
-> 
-> The proposal of of-thermal is not to become a separate/competing thermal
-> framework.
-> 
-Agreed.
-And I think we can have such feature in thermal core.
-But again I don't think we should represent it as an trip point.
-Instead, we can have a separate parameter for
+Hi, 
 
-thanks,
-rui
-> > 
-> > 	Arnd
+On Mon, 2014-09-15 at 11:30 -0400, Eduardo Valentin wrote:
+> Hey Ivan,
 > 
-> Cheers,
+> Please give us at least a two weeks time frame before resending your
+> patches.
 > 
-> Eduardo
 
+Sure, I just wanted to add MSM mail list, sorry.
 
+> > +
+> > +Optional properties:
+> > +- label:           A string used as a descriptive name for this thermal
+> > +                   device. This name should be 19 characters or less.
+> 
+> This is a driver specific property and must be properly named as such.
+> Please read the the DT documentation.
+
+I believe that it is standard property. Section 6.1.2.3 label. I could
+drop this property. Node name should be enough descriptive, already.
+
+> 
+> More specifically, we already have standardized and discussed way of
+> describing thermal zones in DT, including their names. Please read
+> Documentation/devicetree/bindings/thermal/thermal.txt 
+> 
+> > +- io-channels:     Should contain IIO channel specifier
+> > +- io-channel-names: "thermal". The ADC channel for temperature reading.
+> > +
+> > +Example:
+> > +
+> > +	thermal-alarm@2400 {
+> > +		compatible = "qcom,qpnp-temp-alarm";
+> > +		reg = <0x2400>;
+> > +		interrupts = <0 0x24 0 IRQ_TYPE_EDGE_RISING>;
+> > +		label = "pm8941_tz";
+> > +		io-channels = <&pm8941_vadc VADC_DIE_TEMP>;
+> > +		io-channel-names = "thermal";
+> > +	};
+
+<snip>
+
+> > +++ b/drivers/thermal/qpnp-temp-alarm.c
+> > @@ -0,0 +1,519 @@
+> > +/*
+> > + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+> > + *
+> 
+> Is it really the Linux Foundation? Or would it be QC/Codeaurora copyrights here?
+
+Yes, it is Linux Foundation. Downstream driver on this which driver is
+based is also Linux Foundation copyrighted.
+
+<snip>
+
+> > +
+> > +	rc = devm_request_irq(chip->dev, chip->irq, qpnp_tm_isr,
+> > +			      IRQF_TRIGGER_RISING, chip->tm_name, chip);
+> > +	if (rc < 0)
+> > +		thermal_zone_device_unregister(chip->tz_dev);
+> > +
+> 
+> This thermal driver does not bind to any cooling device?
+
+This driver monitor temperature of the external PMIC chip, accessed over
+SPMI bus. I am not aware of way how to cool this chip.
+
+> 
+> > +	return rc;
+> > +}
+> > +
+
+Regards,
+Ivan
 
