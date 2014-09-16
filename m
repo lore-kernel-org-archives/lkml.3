@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaIPKHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:07:32 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49500 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107AbaIPKHa (ORCPT
+	id S1753878AbaIPKIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:08:00 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:43496 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753177AbaIPKH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:07:30 -0400
-Date: Tue, 16 Sep 2014 12:07:25 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, hpa@linux.intel.com, ak@linux.intel.com,
-        Alex Chiang <achiang@hp.com>, Borislav Petkov <bp@suse.de>,
-        Rusty Russell <rusty@rustcorp.com.au>, Mike Travis <travis@sgi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
- "sane"
-Message-ID: <20140916100725.GB4796@osiris>
-References: <20140915222641.D640BD8A@viggo.jf.intel.com>
- <20140916032920.GH2840@worktop.localdomain>
- <5417F228.9060301@sr71.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5417F228.9060301@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091610-8372-0000-0000-00000130E06B
+	Tue, 16 Sep 2014 06:07:58 -0400
+Message-ID: <1410861633.5342.4.camel@marge.simpson.net>
+Subject: Re: [PATCH v5] x86,cpu-hotplug: assign same CPU number to readded
+ CPU
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, bp@alien8.de,
+        gong.chen@linux.intel.com, tony.luck@intel.com, x86@kernel.org,
+        imammedo@redhat.com, huawei.libin@huawei.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, peterz@infradead.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>
+Date: Tue, 16 Sep 2014 12:00:33 +0200
+In-Reply-To: <54180899.4060408@gmail.com>
+References: <53CF2A81.7080505@jp.fujitsu.com>
+	 <53D5CF2A.2030007@jp.fujitsu.com> <5407D27D.4020006@jp.fujitsu.com>
+	 <54114D83.7070004@jp.fujitsu.com>
+	 <1410755159.5165.24.camel@marge.simpson.net>
+	 <1410799463.28990.326.camel@misato.fc.hp.com>
+	 <1410839798.5149.22.camel@marge.simpson.net> <54180899.4060408@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 01:17:44AM -0700, Dave Hansen wrote:
-> >> The sysfs effects here cause an issue with the hwloc tool where
-> >> it gets confused and thinks there are more sockets than are
-> >> physically present.
-> > 
-> > Meh, so then we need another mask.
+On Tue, 2014-09-16 at 17:53 +0800, Wanpeng Li wrote: 
+> Hi Mike,
 > 
-> s390 has this concept of a "book" although it's not obvious at all where
-> this fits in to the hierarchy to me.  The help text and comments are
-> pretty funny:
+> 于 14-9-16 上午11:56, Mike Galbraith 写道:
+> > On Mon, 2014-09-15 at 10:44 -0600, Toshi Kani wrote:
+> >> On Mon, 2014-09-15 at 06:25 +0200, Mike Galbraith wrote:
+> >>> On Thu, 2014-09-11 at 16:21 +0900, Yasuaki Ishimatsu wrote:
+> >>>> There is no response for two months since posting v4.
+> >>>> What can I do for pushing the patch to upstream?
+> >>> Looks to me like we have two patches floating about for more or less the
+> >>> same problem, this one, and...
+> >>>
+> >>> https://lkml.org/lkml/2014/7/29/159
+> >>>
+> >>> ..this one, which you reviewed, and HP both reviewed and tested.
+> >>>
+> >>> We seem to kinda stuck with Boris having said don't diddle the
+> >>> cpu_llc_shared_map, but HP/Intel saying that this map diddling fixes
+> >>> their explosions.  If your alternative is preferred over diddling
+> >>> cpu_llc_shared_map, perhaps HP/Intel can test/confirm that their
+> >>> explosions stay gone?
+> >> Well, Boris mentioned later in his email:
+> >> https://lkml.org/lkml/2014/7/22/201
+> >>
+> >> And I agree with his assessment that both patches make sense.
+> > Nonetheless, this just reeks of "department of redundancy department".
+> > I have nothing against doing both really, but it does leave me wondering
+> > if we would not then be merging the mask clearing "just because".
 > 
-> 	Book scheduler support improves the CPU scheduler's decision
-> 	making when dealing with machines that have several books.
+> Maybe you miss my reply.
 > 
-> Wow, really?  Book scheduling helps with books?  I would have never
-> guessed.
+> https://lkml.org/lkml/2014/7/29/40
 
-I'm glad the help text did enlighten you.
+Yes, I did.  Thanks.
 
->  Wish I knew what a book was. :)  Google helped a bit:
-> 	http://sysmagazine.com/posts/150430/
-> but it's still not clear.  I think a book is below a node?
-> 
-> 	SMT <= LLC <= MC <= BOOK <= NODE
-
-This one is correct. s390 does not have NUMA support. So we have one
-node with multiple books.
+-Mike
 
