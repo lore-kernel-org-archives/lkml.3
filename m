@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289AbaIPTVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:21:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7938 "EHLO mx1.redhat.com"
+	id S1755183AbaIPTUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:20:42 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:56958 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755178AbaIPTVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:21:11 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/7] Define new syscalls readv2,preadv2,writev2,pwritev2
-References: <cover.1410810247.git.milosz@adfin.com>
-	<057d758976db2fcce58e394abaa0d55e48cdeec1.1410810247.git.milosz@adfin.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 16 Sep 2014 15:20:32 -0400
-In-Reply-To: <057d758976db2fcce58e394abaa0d55e48cdeec1.1410810247.git.milosz@adfin.com>
-	(Milosz Tanski's message of "Mon, 15 Sep 2014 16:20:37 -0400")
-Message-ID: <x491trbz81r.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1754928AbaIPTUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:20:40 -0400
+From: Heiko Stuebner <heiko@sntech.de>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, Heiko Stuebner <heiko@sntech.de>
+Subject: [PATCH v3 1/3] dt-bindings: add devicetree bindings for Fairchild FAN53555 regulators
+Date: Tue, 16 Sep 2014 21:22:52 +0200
+Message-Id: <1410895374-18367-2-git-send-email-heiko@sntech.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1410895374-18367-1-git-send-email-heiko@sntech.de>
+References: <1410895374-18367-1-git-send-email-heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> writes:
+Document the regulator and add a fairchild vendor-prefix.
 
-> New syscalls with an extra flag argument. For now all flags except for 0 are
-> not supported.
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ .../devicetree/bindings/regulator/fan53555.txt     | 23 ++++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |  1 +
+ 2 files changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/fan53555.txt
 
-The blatant copy-n-paste of the vectored functions bothers me.  I'll
-withold judgement until I've seen your next version of the patch series,
-though.
+diff --git a/Documentation/devicetree/bindings/regulator/fan53555.txt b/Documentation/devicetree/bindings/regulator/fan53555.txt
+new file mode 100644
+index 0000000..8a51924
+--- /dev/null
++++ b/Documentation/devicetree/bindings/regulator/fan53555.txt
+@@ -0,0 +1,23 @@
++Binding for Fairchild FAN53555 regulators
++
++Required properties:
++  - compatible: "fcs,fan53555"
++  - reg: I2C address
++
++Optional properties:
++  - fcs,suspend-voltage-selector: declare which of the two available
++		voltage selector registers should be used for the suspend
++		voltage. The other one is used for the runtime voltage setting
++		Possible values are either <0> or <1>
++  - vin-supply: regulator supplying the vin pin
++
++Example:
++
++	regulator@40 {
++		compatible = "fcs,fan53555";
++		regulator-name = "fan53555";
++		regulator-min-microvolt = <1000000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&parent_reg>;
++		fcs,suspend-voltage-selector = <1>;
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index ac7269f..24b92b3 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -49,6 +49,7 @@ epson	Seiko Epson Corp.
+ est	ESTeem Wireless Modems
+ eukrea  Eukréa Electromatique
+ excito	Excito
++fcs	Fairchild Semiconductor
+ fsl	Freescale Semiconductor
+ GEFanuc	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
+-- 
+2.0.1
 
-Cheers,
-Jeff
