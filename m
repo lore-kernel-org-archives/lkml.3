@@ -1,135 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239AbaIPPQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:16:43 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:40361 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045AbaIPPQm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:16:42 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: acme@redhat.com
-Cc: linux-kernel@vger.kernel.org, Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
-        Cody P Schafer <dev@codyps.com>
-Subject: [PATCH v2] perf tools: fix type mismatch - long vs __statfs_word
-Date: Tue, 16 Sep 2014 19:16:29 +0400
-Message-Id: <1410880589-22531-1-git-send-email-abrodkin@synopsys.com>
-X-Mailer: git-send-email 1.9.3
+	id S1754273AbaIPPRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:17:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39769 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753356AbaIPPRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 11:17:33 -0400
+Date: Tue, 16 Sep 2014 17:17:28 +0200
+From: Petr =?iso-8859-1?Q?Ml=E1dek?= <pmladek@suse.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] usb: hub: convert khubd into workqueue
+Message-ID: <20140916151725.GE2168@dhcp128.suse.cz>
+References: <20140912150815.GB13354@pathway.suse.cz>
+ <Pine.LNX.4.44L0.1409121137080.1180-100000@iolanthe.rowland.org>
+ <20140916091031.GD2168@dhcp128.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140916091031.GD2168@dhcp128.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of compilation with "-Wextra" following breakage happens:
---->---
-fs.c: In function ‘fs__valid_mount’:
-fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
-  else if (st_fs.f_type != magic)
-                        ^
-cc1: all warnings being treated as errors
---->---
+On Tue 16-09-14 11:10:31, Petr Ml�dek wrote:
+> Anyway, the solution for the race between kick_hub_wq() and
+> hub_event() might be to get the reference already in kick_hub_wq().
+> I mean something like:
+> 
+> static void kick_hub_wq(struct usb_hub *hub)
+> {
+> 	if (hub->disconnected || work_pending(&hub->events))
+> 		return;
+> 	/*
+> 	 * Suppress autosuspend until the event is proceed.
+> 	 *
+> 	 * Be careful and make sure that the symmetric operation is
+> 	 * always called. We are here only when there is no pending
+> 	 * work for this hub. Therefore put the interface either when
+> 	 * the new work is called or when it is canceled.
+> 	 */
+> 	usb_autopm_get_interface_no_resume(to_usb_interface(hub->intfdev));
+> 	kref_get(&hub->kref);
+> 
+> 	if (queue_work(hub_wq, &hub->events))
+> 		return;
+> 
+> 	/* the work could not be scheduled twice */
+> 	kref_put(&hub->kref, hub_release);
+> 	usb_autopm_put_interface_no_suspend(intf);
+> }
 
-Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
-CFLAGS has hard-coded "-Wextra" this is inevitable even if one builds "perf"
-with "WERROR=0".
+I have just realized that I was working in the Linus' three where the
+commit c605f3cdff53a743f6d87 ("usb: hub: take hub->hdev reference when
+processing from eventlist") was missing :-(
 
-Even though "debugfs.c" gets compiled successfully because DEBUGFS_MAGIC is
-definitely positive (MSB bit is not set, so compiler doesn't care about
-explisit cast to "long") it's good to cast "st_fs.f_type" to "long" as well.
+It means that we would need to call also usb_get_dev(hdev) in
+kick_hub_wq() to make sure that everything is valid when the work
+hub_event() is proceed.
 
-And here's an explanation of observed issue.
 
-Perf tools use libc headers instead of ones from kernel source tree.
-This is because "perf" is just a user-space tool even thought its sources are
-merged in Linux kernel source tree.
-And so "statfs.h" comes from either uClibc, glibc or musl.
+Hmm, it stopped being nice. So, I was looking for another solution and
+found an interesting behavior of cancel_work_sync() that is used in
+hub_disconnect(). It either removes the work item from the queue or it
+waits until the work is done. Anyway, no work is pending when the
+function returns. It means that struct usb_hub never will be released
+when hub_event() is in progress and we do not need to get the
+references in advance at all.
 
-In case of uClibc most of architectures use "legacy" version from here:
-http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/statfs.h
 
-New UAPI compliant architectures (looks like for now it's only ARC) uses UAPI
-version of "statfs.h" from here:
-http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
+I am really sorry for sending so many mails. I am still getting familiar with
+kernel hacking. I am often surprised how complex it is. I do not want
+to spam and lose your interest, definitely. So, I am going to calm
+down and be more patient when doing the homework.
 
-In this particular situation most interesting difference is in data type used
-for "struct statfs" member "f_type".
 
-In "legacy" version it's:
---->---
-__SWORD_TYPE f_type;
---->---
-
-In UAPI version it's:
---->---
-__U32_TYPE f_type;
---->---
-
-In its turn mentioned types are defined in
-http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/types.h
-this way:
---->---
-...
---->---
-
-And for 32-bit architectures "int" is of the same length as "long" so compiler
-is happy on data type check.
-
-But if "f_type" is "unsigned int" it's definitely not an unsigned "long".
-
-Essential fix is explicit casting of "f_type" to "long".
-
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-
-Cc: Vineet Gupta <vgupta@synopsys.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Cody P Schafer <dev@codyps.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
-
-Changes in v2:
-
- * Added type cast to DEBUGFS_MAGIC in "debugfs.c"
- * Added verbose explanation of root cause
-
-Thanks a lot to Arnaldo for mention of another instance of hidden missing
-cast in "debugfs.c".
-
----
- tools/lib/api/fs/debugfs.c | 2 +-
- tools/lib/api/fs/fs.c      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-index a74fba6..93aa4cd 100644
---- a/tools/lib/api/fs/debugfs.c
-+++ b/tools/lib/api/fs/debugfs.c
-@@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
- 
- 	if (statfs(debugfs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-+	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
- 		return -ENOENT;
- 
- 	return 0;
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index c1b49c3..a9fd78b 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
- 
- 	if (statfs(fs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != magic)
-+	else if ((long) st_fs.f_type != magic)
- 		return -ENOENT;
- 
- 	return 0;
--- 
-1.9.3
-
+Best Regards,
+Petr
