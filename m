@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaIPUwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:52:24 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:48977 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323AbaIPUwU (ORCPT
+	id S1755551AbaIPUx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:53:28 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:50433 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459AbaIPUwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:52:20 -0400
+	Tue, 16 Sep 2014 16:52:23 -0400
 From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 18/22] PNP: Replace strnicmp with strncasecmp
-Date: Tue, 16 Sep 2014 22:51:32 +0200
-Message-Id: <1410900696-6481-19-git-send-email-linux@rasmusvillemoes.dk>
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Subject: [PATCH 22/22] kdb: Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:36 +0200
+Message-Id: <1410900696-6481-23-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
 References: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
@@ -31,102 +32,32 @@ To allow the compat wrapper strnicmp to be removed at some point in
 the future, and to avoid the extra indirection cost, do
 s/strnicmp/strncasecmp/g.
 
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net
 Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
- drivers/pnp/interface.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ kernel/debug/kdb/kdb_bp.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pnp/interface.c b/drivers/pnp/interface.c
-index e6c403b..4b6808f 100644
---- a/drivers/pnp/interface.c
-+++ b/drivers/pnp/interface.c
-@@ -346,41 +346,41 @@ static ssize_t resources_store(struct device *dmdev,
- 	}
+diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
+index 70a5046..b20d544 100644
+--- a/kernel/debug/kdb/kdb_bp.c
++++ b/kernel/debug/kdb/kdb_bp.c
+@@ -52,11 +52,11 @@ static int kdb_parsebp(int argc, const char **argv, int *nextargp, kdb_bp_t *bp)
  
- 	buf = skip_spaces(buf);
--	if (!strnicmp(buf, "disable", 7)) {
-+	if (!strncasecmp(buf, "disable", 7)) {
- 		retval = pnp_disable_dev(dev);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "activate", 8)) {
-+	if (!strncasecmp(buf, "activate", 8)) {
- 		retval = pnp_activate_dev(dev);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "fill", 4)) {
-+	if (!strncasecmp(buf, "fill", 4)) {
- 		if (dev->active)
- 			goto done;
- 		retval = pnp_auto_config_dev(dev);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "auto", 4)) {
-+	if (!strncasecmp(buf, "auto", 4)) {
- 		if (dev->active)
- 			goto done;
- 		pnp_init_resources(dev);
- 		retval = pnp_auto_config_dev(dev);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "clear", 5)) {
-+	if (!strncasecmp(buf, "clear", 5)) {
- 		if (dev->active)
- 			goto done;
- 		pnp_init_resources(dev);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "get", 3)) {
-+	if (!strncasecmp(buf, "get", 3)) {
- 		mutex_lock(&pnp_res_mutex);
- 		if (pnp_can_read(dev))
- 			dev->protocol->get(dev);
- 		mutex_unlock(&pnp_res_mutex);
- 		goto done;
- 	}
--	if (!strnicmp(buf, "set", 3)) {
-+	if (!strncasecmp(buf, "set", 3)) {
- 		resource_size_t start;
- 		resource_size_t end;
- 		unsigned long flags;
-@@ -392,31 +392,31 @@ static ssize_t resources_store(struct device *dmdev,
- 		mutex_lock(&pnp_res_mutex);
- 		while (1) {
- 			buf = skip_spaces(buf);
--			if (!strnicmp(buf, "io", 2)) {
-+			if (!strncasecmp(buf, "io", 2)) {
- 				buf = pnp_get_resource_value(buf + 2,
- 							     IORESOURCE_IO,
- 							     &start, &end,
- 							     &flags);
- 				pnp_add_io_resource(dev, start, end, flags);
--			} else if (!strnicmp(buf, "mem", 3)) {
-+			} else if (!strncasecmp(buf, "mem", 3)) {
- 				buf = pnp_get_resource_value(buf + 3,
- 							     IORESOURCE_MEM,
- 							     &start, &end,
- 							     &flags);
- 				pnp_add_mem_resource(dev, start, end, flags);
--			} else if (!strnicmp(buf, "irq", 3)) {
-+			} else if (!strncasecmp(buf, "irq", 3)) {
- 				buf = pnp_get_resource_value(buf + 3,
- 							     IORESOURCE_IRQ,
- 							     &start, NULL,
- 							     &flags);
- 				pnp_add_irq_resource(dev, start, flags);
--			} else if (!strnicmp(buf, "dma", 3)) {
-+			} else if (!strncasecmp(buf, "dma", 3)) {
- 				buf = pnp_get_resource_value(buf + 3,
- 							     IORESOURCE_DMA,
- 							     &start, NULL,
- 							     &flags);
- 				pnp_add_dma_resource(dev, start, flags);
--			} else if (!strnicmp(buf, "bus", 3)) {
-+			} else if (!strncasecmp(buf, "bus", 3)) {
- 				buf = pnp_get_resource_value(buf + 3,
- 							     IORESOURCE_BUS,
- 							     &start, &end,
+ 	bp->bph_length = 1;
+ 	if ((argc + 1) != nextarg) {
+-		if (strnicmp(argv[nextarg], "datar", sizeof("datar")) == 0)
++		if (strncasecmp(argv[nextarg], "datar", sizeof("datar")) == 0)
+ 			bp->bp_type = BP_ACCESS_WATCHPOINT;
+-		else if (strnicmp(argv[nextarg], "dataw", sizeof("dataw")) == 0)
++		else if (strncasecmp(argv[nextarg], "dataw", sizeof("dataw")) == 0)
+ 			bp->bp_type = BP_WRITE_WATCHPOINT;
+-		else if (strnicmp(argv[nextarg], "inst", sizeof("inst")) == 0)
++		else if (strncasecmp(argv[nextarg], "inst", sizeof("inst")) == 0)
+ 			bp->bp_type = BP_HARDWARE_BREAKPOINT;
+ 		else
+ 			return KDB_ARGCOUNT;
 -- 
 2.0.4
 
