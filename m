@@ -1,110 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaIPCd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 22:33:59 -0400
-Received: from mail-by2on0127.outbound.protection.outlook.com ([207.46.100.127]:13440
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753907AbaIPCdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 22:33:38 -0400
-X-WSS-ID: 0NBZ33W-07-F1R-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-apci@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <astone@redhat.com>,
-        <hanjun.guo@linaro.org>, <rjw@rjwysocki.net>, <marc.zyngier@arm.com>,
-        <mark.rutland@arm.com>, <Sudeep.Holla@arm.com>, <olof@lixom.net>,
-        <grant.likely@linaro.org>, <graeme.gregory@linaro.org>,
-        <arnd@arndb.de>, <jason@lakedaemon.net>,
-        Mark Salter <msalter@redhat.com>
-Subject: [PATCH 3/4] efi/arm64: fix fdt-related memory reservation
-Date: Mon, 15 Sep 2014 19:47:25 -0500
-Message-ID: <1410828446-28502-4-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1754151AbaIPCj0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:39:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50422 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752725AbaIPCjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 22:39:24 -0400
+Date: Mon, 15 Sep 2014 21:39:22 -0500
+From: Andy Gross <agross@codeaurora.org>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davidb@codeaurora.org, afaerber@suse.de, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: apq8064: Add pinmux and i2c pinctrl nodes
+Message-ID: <20140916023922.GB2386@qualcomm.com>
+References: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(104166001)(99396002)(89996001)(62966002)(101416001)(20776003)(4396001)(85306004)(33646002)(85852003)(88136002)(105586002)(102836001)(47776003)(48376002)(46102003)(80022003)(74502003)(74662003)(79102003)(77982003)(53416004)(81342003)(84676001)(81542003)(87286001)(87936001)(92566001)(92726001)(44976005)(77156001)(77096002)(50226001)(21056001)(76482001)(2201001)(86152002)(31966008)(90102001)(76176999)(229853001)(36756003)(83072002)(86362001)(93916002)(50986999)(106466001)(83322001)(19580395003)(107046002)(97736003)(68736004)(19580405001)(95666004)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB490;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409052645-14984-1-git-send-email-kiran.padwal@smartplayin.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Salter <msalter@redhat.com>
+On Tue, Aug 26, 2014 at 05:00:45PM +0530, Kiran Padwal wrote:
+> This patch adds pinmux and i2c pinctrl DT node for IFC6410 board.
+> It also adds necessary DT support for i2c eeprom which is present on
+> IFC6410.
+> 
+> Tested on IFC6410 board.
 
-Commit 86c8b27a01cf:
- "arm64: ignore DT memreserve entries when booting in UEFI mode
+Looks fine
 
-prevents early_init_fdt_scan_reserved_mem() from being called for
-arm64 kernels booting via UEFI. This was done because the kernel
-will use the UEFI memory map to determine reserved memory regions.
-That approach has problems in that early_init_fdt_scan_reserved_mem()
-also reserves the FDT itself and any node-specific reserved memory.
-By chance of some kernel configs, the FDT may be overwritten before
-it can be unflattened and the kernel will fail to boot. More subtle
-problems will result if the FDT has node specific reserved memory
-which is not really reserved.
+> 
+> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+> ---
+> Changes since v2:
+>  - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
+>  - Removed labes of node.
+>  - Used canonical value as "okay" instead of "ok".
+>  - Used macros.
+> 
+> Changes since v1:
+>  - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
+>  - Updated pinmux interrupt.
+> 
+>  arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++
+>  arch/arm/boot/dts/qcom-apq8064.dtsi        |   53 ++++++++++++++++++++++++++++
+>  2 files changed, 80 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> index 7c2441d..ef0857e 100644
+> --- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> +++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+> @@ -5,6 +5,24 @@
+>  	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
+>  
+>  	soc {
+> +		gsbi@12440000 {
+> +			status = "okay";
+> +			qcom,mode = <GSBI_PROT_I2C>;
+> +
+> +			i2c@12460000 {
+> +				status = "okay";
+> +				clock-frequency = <200000>;
+> +				pinctrl-0 = <&i2c1_pins>;
+> +				pinctrl-names = "default";
+> +
+> +				eeprom: eeprom@52 {
+> +					compatible = "atmel,24c128";
+> +					reg = <0x52>;
+> +					pagesize = <32>;
+> +				};
 
-This patch has the UEFI stub remove the memory reserve map entries
-from the FDT as it does with the memory nodes. This allows
-early_init_fdt_scan_reserved_mem() to be called unconditionally
-so that the other needed reservations are made.
+don't need read only here.  the eeprom is not being used by anything....
+thankfully.
 
-Signed-off-by: Mark Salter <msalter@redhat.com>
----
- arch/arm64/mm/init.c               |  3 +--
- drivers/firmware/efi/libstub/fdt.c | 10 +++++++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+> +			};
+> +		};
+> +
+>  		gsbi@16600000 {
+>  			status = "ok";
+>  			qcom,mode = <GSBI_PROT_I2C_UART>;
+> @@ -12,5 +30,14 @@
+>  				status = "ok";
+>  			};
+>  		};
+> +
+> +		pinmux@800000 {
+> +			i2c1_pins: i2c1 {
+> +				mux {
+> +					pins = "gpio20", "gpio21";
+> +					function = "gsbi1";
+> +				};
+> +			};
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+> index 92bf793..5dddbf3 100644
+> --- a/arch/arm/boot/dts/qcom-apq8064.dtsi
+> +++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+> @@ -89,6 +89,17 @@
+>  			cpu-offset = <0x80000>;
+>  		};
+>  
+> +		tlmm_pinmux: pinmux@800000 {
+> +			compatible = "qcom,apq8064-pinctrl";
+> +			reg = <0x800000 0x4000>;
+> +
+> +			gpio-controller;
+> +			#gpio-cells = <2>;
+> +			interrupt-controller;
+> +			#interrupt-cells = <2>;
+> +			interrupts = <0 16 IRQ_TYPE_LEVEL_HIGH>;
+> +		};
+> +
+>  		acc0: clock-controller@2088000 {
+>  			compatible = "qcom,kpss-acc-v1";
+>  			reg = <0x02088000 0x1000>, <0x02008000 0x1000>;
+> @@ -133,6 +144,48 @@
+>  			regulator;
+>  		};
+>  
+> +		gsbi1: gsbi@12440000 {
+> +			status = "disabled";
+> +			compatible = "qcom,gsbi-v1.0.0";
+> +			reg = <0x12440000 0x100>;
+> +			clocks = <&gcc GSBI1_H_CLK>;
+> +			clock-names = "iface";
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			ranges;
+> +
+> +			i2c1: i2c@12460000 {
+> +				compatible = "qcom,i2c-qup-v1.1.1";
+> +				reg = <0x12460000 0x1000>;
+> +				interrupts = <0 194 IRQ_TYPE_NONE>;
+> +				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
+> +				clock-names = "core", "iface";
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +			};
+> +		};
+> +
+> +		gsbi2: gsbi@12480000 {
+> +			status = "disabled";
+> +			compatible = "qcom,gsbi-v1.0.0";
+> +			reg = <0x12480000 0x100>;
+> +			clocks = <&gcc GSBI2_H_CLK>;
+> +			clock-names = "iface";
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			ranges;
+> +
+> +			i2c2: i2c@124a0000 {
+> +				compatible = "qcom,i2c-qup-v1.1.1";
+> +				reg = <0x124a0000 0x1000>;
+> +				interrupts = <0 196 IRQ_TYPE_NONE>;
+> +				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
+> +				clock-names = "core", "iface";
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +			};
+> +		};
+> +
+>  		gsbi7: gsbi@16600000 {
+>  			status = "disabled";
+>  			compatible = "qcom,gsbi-v1.0.0";
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/arch/arm64/mm/init.c b/arch/arm64/mm/init.c
-index 5472c24..a83061f 100644
---- a/arch/arm64/mm/init.c
-+++ b/arch/arm64/mm/init.c
-@@ -149,8 +149,7 @@ void __init arm64_memblock_init(void)
- 		memblock_reserve(__virt_to_phys(initrd_start), initrd_end - initrd_start);
- #endif
- 
--	if (!efi_enabled(EFI_MEMMAP))
--		early_init_fdt_scan_reserved_mem();
-+	early_init_fdt_scan_reserved_mem();
- 
- 	/* 4GB maximum for 32-bit only capable devices */
- 	if (IS_ENABLED(CONFIG_ZONE_DMA))
-diff --git a/drivers/firmware/efi/libstub/fdt.c b/drivers/firmware/efi/libstub/fdt.c
-index a56bb35..c846a96 100644
---- a/drivers/firmware/efi/libstub/fdt.c
-+++ b/drivers/firmware/efi/libstub/fdt.c
-@@ -22,7 +22,7 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
- 			unsigned long map_size, unsigned long desc_size,
- 			u32 desc_ver)
- {
--	int node, prev;
-+	int node, prev, num_rsv;
- 	int status;
- 	u32 fdt_val32;
- 	u64 fdt_val64;
-@@ -73,6 +73,14 @@ efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
- 		prev = node;
- 	}
- 
-+	/*
-+	 * Delete all memory reserve map entries. When booting via UEFI,
-+	 * kernel will use the UEFI memory map to find reserved regions.
-+	 */
-+	num_rsv = fdt_num_mem_rsv(fdt);
-+	while (num_rsv-- > 0)
-+		fdt_del_mem_rsv(fdt, num_rsv);
-+
- 	node = fdt_subnode_offset(fdt, 0, "chosen");
- 	if (node < 0) {
- 		node = fdt_add_subnode(fdt, 0, "chosen");
 -- 
-1.9.3
-
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
