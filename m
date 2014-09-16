@@ -1,142 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570AbaIPAZX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:25:23 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:57403 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348AbaIPAZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:25:20 -0400
+	id S932791AbaIPAZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:25:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759146AbaIPAZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:25:43 -0400
+Date: Mon, 15 Sep 2014 20:25:03 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, andi@firstfloor.org, riel@redhat.com,
+        yinghai@kernel.org, isimatu.yasuaki@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] x86: numa: setup_node_data(): drop dead code and
+ rename function
+Message-ID: <20140915202503.7ff3fb97@redhat.com>
+In-Reply-To: <alpine.DEB.2.02.1409151711060.6549@chino.kir.corp.google.com>
+References: <20140915142540.0a24c887@redhat.com>
+	<alpine.DEB.2.02.1409151711060.6549@chino.kir.corp.google.com>
+Organization: Red Hat
 MIME-Version: 1.0
-In-Reply-To: <54176D62.9010600@codeaurora.org>
-References: <1410452204-7277-1-git-send-email-dianders@chromium.org>
- <20140911164710.GW6158@arm.com> <5411D528.4050605@arm.com>
- <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
- <5411DA67.2040402@arm.com> <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
- <5411DF5D.8060906@arm.com> <5412DC48.7030708@codeaurora.org>
- <5412E3BB.9030800@arm.com> <54134291.3040700@codeaurora.org>
- <20140915111055.GD1577@arm.com> <54174CFF.7050504@codeaurora.org>
- <CAPz6YkU8hEL6yocPf7UL8-tz9Onuu-9bevAToK3CDWsShN92YQ@mail.gmail.com>
- <54175EFE.6010509@codeaurora.org> <CAPz6YkWbxiGHO8RK==HbQ3P22amZ9sDKpGew=a2U8gO7soQCDg@mail.gmail.com>
- <CAPz6YkWwzpd4oxarEH4Vu-Z_eH+ysw0TNubpPsv_eC6QJPcw7g@mail.gmail.com> <54176D62.9010600@codeaurora.org>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Mon, 15 Sep 2014 17:24:59 -0700
-X-Google-Sender-Auth: D7wYL4zozjh6puB6jTN2c1s9myA
-Message-ID: <CAPz6YkVRcb7nUJ=P3kBCcLDhLUeq745nZG6JuBqMvcD+9GbC7g@mail.gmail.com>
-Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
- specify the physical timer
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 3:51 PM, Christopher Covington
-<cov@codeaurora.org> wrote:
-> Hi Sonny,
->
-> On 09/15/2014 06:04 PM, Sonny Rao wrote:
->> On Mon, Sep 15, 2014 at 2:52 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
->>> On Mon, Sep 15, 2014 at 2:49 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>>> On 09/15/14 14:47, Sonny Rao wrote:
->>>>> On Mon, Sep 15, 2014 at 1:33 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->>>>>> On 09/15/14 04:10, Catalin Marinas wrote:
->>>>>>> On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
->>>>>>>> On 09/12/14 05:14, Marc Zyngier wrote:
->>>>>>>>> We surely can handle the UNDEF and do something there. We just can't do
->>>>>>>>> it the way Doug described it above.
->>>>>>>> I suggested doing that for something else a while ago and Will and Dave
->>>>>>>> we're not thrilled[1]. The suggestion back then was to use DT to
->>>>>>>> indicate what mode the kernel is running in.
->>>>>>>>
->>>>>>>> [1]
->>>>>>>> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
->>>>>>> I think the context was slightly different. As I re-read the thread, it
->>>>>>> seems that the discussion was around whether to use some SMC interface
->>>>>>> or not based on whether the kernel is running secure or non-secure. The
->>>>>>> argument made by Will was to actually specify the type of the firmware
->>>>>>> SMC interface in the DT and use it in the kernel (and probably assume
->>>>>>> the kernel is running in secure mode if no smc interface is specified in
->>>>>>> the DT; you could have both though, running in secure mode and also
->>>>>>> having firmware).
->>>>>>>
->>>>>>> In this arch timer case, we need to work around a firmware bug (or
->>>>>>> feature as 32-bit ARM kernels never required CNTVOFF initialisation by
->>>>>>> firmware, no matter how small such firmware is). We don't expect a
->>>>>>> specific SMC call to initialise CNTVOFF, so we can't describe it in the
->>>>>>> DT.
->>>>>> Agreed, we can't described SMC calls that don't exist. From my
->>>>>> perspective it's just another part of the cpu boot sequence that needs
->>>>>> to be handled in the kernel, so describing the requirement via the
->>>>>> cpu-boot method seems appropriate. It seems like we're making it harder
->>>>>> than it should be by handling the undef when we could have slightly
->>>>>> different SMP boot code (and suspend/resume code) depending on the boot
->>>>>> method property.
->>>>>
->>>>> +heiko
->>>>>
->>>>> So, for the case of rk3288, based on this discussion what I'm going to
->>>>> propose is to add code to rockchip.c which looks for a particular SMP
->>>>> enable method -- say something like "rockchip,rk3288-smp-secure-svc"
->>>>> which will then assume we have been booted in secure SVC mode and do
->>>>> the CNTVOFF fixup.  I believe, it will need to do this on the boot CPU
->>>>> as well, so I think it will need to scan the DT fairly early on the
->>>>> boot CPU and also perform the function there.
->>>>>
->>>>> I'll look into implementing this and post code.  Comments and
->>>>> suggestions appreciated, thanks.
->>>>
->>>> What goes wrong if we read the cntvoff from the boot CPU during
->>>> smp_prepare_cpus() phase and use that to set the cntvoff on the other
->>>> CPUs? That avoids needing to do anything very early by making the value
->>>> the same. It does mean that cntvoff is some random out of reset value
->>>> for CPU0, but at least it's consistent.
->>>
->>> I think we cannot read the value if we're not in hyp mode.
->>
->> Well, thinking about it a little more, I think you still have a good point.
->>
->> We don't need to do this early on, as long as we haven't started using
->> the arch timers yet.  If we are still able to do this at the point
->> where we're executing the code in arch/arm/mach-rockchip/platsmp.c
->> that finds the enable method then we can just handle it there.
->
-> I've been playing around with the probe-based approach and while I need to do
-> a lot more testing, it seems to be working for the first tens of instructions.
-> I hope to be able to share a draft of that soon. Basically, I just read the
-> current NSACR value and write it back (although maybe in the long term we
-> would want to make sure a few of those bits are set or cleared). If that
-> succeeds, we know we're in secure SVC and can proceed to set up MON and HYP.
+On Mon, 15 Sep 2014 17:13:39 -0700 (PDT)
+David Rientjes <rientjes@google.com> wrote:
 
-Christopher, sounds promising, please do share, thanks!
+> On Mon, 15 Sep 2014, Luiz Capitulino wrote:
+> 
+> > The setup_node_data() function allocates a pg_data_t object, inserts it
+> > into the node_data[] array and initializes the following fields: node_id,
+> > node_start_pfn and node_spanned_pages.
+> > 
+> > However, a few function calls later during the kernel boot,
+> > free_area_init_node() re-initializes those fields, possibly with
+> > setup_node_data() is not used.
+> > 
+> > This causes a small glitch when running Linux as a hyperv numa guest:
+> > 
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
+> > [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
+> > [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
+> > [    0.000000] Initmem setup node 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000]   NODE_DATA [mem 0x7ffdc000-0x7ffeffff]
+> > [    0.000000] Initmem setup node 1 [mem 0x80800000-0x1081fffff]
+> > [    0.000000]   NODE_DATA [mem 0x1081ea000-0x1081fdfff]
+> > [    0.000000] crashkernel: memory value expected
+> > [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
+> > [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
+> > [    0.000000] Zone ranges:
+> > [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+> > [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+> > [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Movable zone start for each node
+> > [    0.000000] Early memory node ranges
+> > [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
+> > [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
+> > [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
+> > [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
+> > [    0.000000] On node 0 totalpages: 524174
+> > [    0.000000]   DMA zone: 64 pages used for memmap
+> > [    0.000000]   DMA zone: 21 pages reserved
+> > [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+> > [    0.000000]   DMA32 zone: 8128 pages used for memmap
+> > [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
+> > [    0.000000] On node 1 totalpages: 524288
+> > [    0.000000]   DMA32 zone: 7672 pages used for memmap
+> > [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
+> > [    0.000000]   Normal zone: 520 pages used for memmap
+> > [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
+> > 
+> > In this dmesg, the SRAT table reports that the memory range for node 1
+> > starts at 0x80200000.  However, the line starting with "Initmem" reports
+> > that node 1 memory range starts at 0x80800000.  The "Initmem" line is
+> > reported by setup_node_data() and is wrong, because the kernel ends up
+> > using the range as reported in the SRAT table.
+> > 
+> > This commit drops all that dead code from setup_node_data(), renames it to
+> > alloc_node_data() and adds a printk() to free_area_init_node() so that we
+> > report a node's memory range accurately.
+> > 
+> > Here's the same dmesg section with this patch applied:
+> > 
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x00 -> Node 0
+> > [    0.000000] SRAT: PXM 0 -> APIC 0x01 -> Node 0
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x02 -> Node 1
+> > [    0.000000] SRAT: PXM 1 -> APIC 0x03 -> Node 1
+> > [    0.000000] SRAT: Node 0 PXM 0 [mem 0x00000000-0x7fffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x80200000-0xf7ffffff]
+> > [    0.000000] SRAT: Node 1 PXM 1 [mem 0x100000000-0x1081fffff]
+> > [    0.000000] NUMA: Node 1 [mem 0x80200000-0xf7ffffff] + [mem 0x100000000-0x1081fffff] -> [mem 0x80200000-0x1081fffff]
+> > [    0.000000] NODE_DATA(0) allocated [mem 0x7ffdc000-0x7ffeffff]
+> > [    0.000000] NODE_DATA(1) allocated [mem 0x1081ea000-0x1081fdfff]
+> > [    0.000000] crashkernel: memory value expected
+> > [    0.000000]  [ffffea0000000000-ffffea0001ffffff] PMD -> [ffff88007de00000-ffff88007fdfffff] on node 0
+> > [    0.000000]  [ffffea0002000000-ffffea00043fffff] PMD -> [ffff880105600000-ffff8801077fffff] on node 1
+> > [    0.000000] Zone ranges:
+> > [    0.000000]   DMA      [mem 0x00001000-0x00ffffff]
+> > [    0.000000]   DMA32    [mem 0x01000000-0xffffffff]
+> > [    0.000000]   Normal   [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Movable zone start for each node
+> > [    0.000000] Early memory node ranges
+> > [    0.000000]   node   0: [mem 0x00001000-0x0009efff]
+> > [    0.000000]   node   0: [mem 0x00100000-0x7ffeffff]
+> > [    0.000000]   node   1: [mem 0x80200000-0xf7ffffff]
+> > [    0.000000]   node   1: [mem 0x100000000-0x1081fffff]
+> > [    0.000000] Initmem setup node 0 [mem 0x00001000-0x7ffeffff]
+> > [    0.000000] On node 0 totalpages: 524174
+> > [    0.000000]   DMA zone: 64 pages used for memmap
+> > [    0.000000]   DMA zone: 21 pages reserved
+> > [    0.000000]   DMA zone: 3998 pages, LIFO batch:0
+> > [    0.000000]   DMA32 zone: 8128 pages used for memmap
+> > [    0.000000]   DMA32 zone: 520176 pages, LIFO batch:31
+> > [    0.000000] Initmem setup node 1 [mem 0x80200000-0x1081fffff]
+> > [    0.000000] On node 1 totalpages: 524288
+> > [    0.000000]   DMA32 zone: 7672 pages used for memmap
+> > [    0.000000]   DMA32 zone: 491008 pages, LIFO batch:31
+> > [    0.000000]   Normal zone: 520 pages used for memmap
+> > [    0.000000]   Normal zone: 33280 pages, LIFO batch:7
+> > 
+> > This commit was tested on a two node bare-metal NUMA machine and Linux as
+> > a numa guest on hyperv and qemu/kvm.
+> > 
+> > PS: The wrong memory range reported by setup_node_data() seems to be
+> >     harmless in the current kernel because it's just not used.  However,
+> >     that bad range is used in kernel 2.6.32 to initialize the old boot
+> >     memory allocator, which causes a crash during boot.
+> > 
+> > Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+> > Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > Cc: Yinghai Lu <yinghai@kernel.org>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Cc: Andi Kleen <andi@firstfloor.org>
+> > Cc: David Rientjes <rientjes@google.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> > ---
+> > 
+> > I posted this patch more than two months ago. Andrew picked it up and it
+> > rested in the -mm tree for a couple of weeks. Andrew dropped it from -mm
+> > to move it forward, but looks like it hasn't been picked by anyone else
+> > since then. Resending...
+> > 
+> 
+> This is still in linux-next-20140915 and I doubt it's 3.17 material so I'd 
+> wait for Andrew to take care of it.
 
-Marc or Will, what do you guys think about this approach?
-
-
->
-> Christopher
->
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> hosted by the Linux Foundation.
+Oh, I thought it had been forgotten because it was dropped from -mm some
+weeks ago (dropped for inclusion in mainline, I guess). I'm not targeting
+3.17 btw, I just don't want this patch to be forgotten.
