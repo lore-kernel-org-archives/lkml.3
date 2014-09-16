@@ -1,180 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaIPFdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 01:33:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53265 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752660AbaIPFdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 01:33:06 -0400
-From: NeilBrown <neilb@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Tue, 16 Sep 2014 15:31:35 +1000
-Subject: [PATCH 4/4] NFS/SUNRPC: Remove other deadlock-avoidance mechanisms
- in nfs_release_page()
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Layton <jeff.layton@primarydata.com>
-Message-ID: <20140916053135.22257.46476.stgit@notabene.brown>
-In-Reply-To: <20140916051911.22257.24658.stgit@notabene.brown>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-User-Agent: StGit/0.16
+	id S1752525AbaIPF4Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 01:56:24 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37687 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaIPF4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 01:56:23 -0400
+Date: Tue, 16 Sep 2014 14:56:10 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Patch v4 1/2] freezer: check OOM kill while being frozen
+Message-ID: <20140916055610.GB805@mtj.dyndns.org>
+References: <1409869842-10807-1-git-send-email-xiyou.wangcong@gmail.com>
+ <20140909160625.GC4851@dhcp22.suse.cz>
+ <20140909164658.GB11748@mtj.dyndns.org>
+ <2008100.1EF7gjK5Z6@vostro.rjw.lan>
+ <20140910132417.GF25219@dhcp22.suse.cz>
+ <20140912234846.GA28183@mtj.dyndns.org>
+ <20140915142821.GF19976@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915142821.GF19976@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that nfs_release_page() doesn't block indefinitely, other deadlock
-avoidance mechanisms aren't needed.
- - it doesn't hurt for kswapd to block occasionally.  If it doesn't
-   want to block it would clear __GFP_WAIT.  The current_is_kswapd()
-   was only added to avoid deadlocks and we have a new approach for
-   that.
- - memory allocation in the SUNRPC layer can very rarely try to
-   ->releasepage() a page it is trying to handle.  The deadlock
-   is removed as nfs_release_page() doesn't block indefinitely.
+Hello, Michal.
 
-So we don't need to set PF_FSTRANS for sunrpc network operations any
-more.
+On Mon, Sep 15, 2014 at 04:28:21PM +0200, Michal Hocko wrote:
+> > Are we gonna introduce an alternate versions for all of them?
+> 
+> Are they intended for kernel threads in the first place? The primary
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- fs/nfs/file.c                   |   16 +++++++---------
- net/sunrpc/sched.c              |    2 --
- net/sunrpc/xprtrdma/transport.c |    2 --
- net/sunrpc/xprtsock.c           |   10 ----------
- 4 files changed, 7 insertions(+), 23 deletions(-)
+There's no restriction in using them and I'm pretty sure some of them
+are used by kernel threads.
 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 8d74983417af..5949ca37cd18 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -469,18 +469,16 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
- 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
- 
- 	/* Always try to initiate a 'commit' if relevant, but only
--	 * wait for it if __GFP_WAIT is set and the calling process is
--	 * allowed to block.  Even then, only wait 1 second.  Waiting
--	 * indefinitely can cause deadlocks when the NFS server is on
--	 * this machine, and there is no particular need to wait
--	 * extensively here.  A short wait has the benefit that
--	 * someone else can worry about the freezer.
-+	 * wait for it if __GFP_WAIT is set.  Even then, only wait 1
-+	 * second.  Waiting indefinitely can cause deadlocks when the
-+	 * NFS server is on this machine, when a new TCP connection is
-+	 * needed and in other rare cases.  There is no particular
-+	 * need to wait extensively here.  A short wait has the
-+	 * benefit that someone else can worry about the freezer.
- 	 */
- 	if (mapping) {
- 		nfs_commit_inode(mapping->host, 0);
--		if ((gfp & __GFP_WAIT) &&
--		    !current_is_kswapd() &&
--		    !(current->flags & PF_FSTRANS))
-+		if ((gfp & __GFP_WAIT))
- 			wait_on_page_bit_killable_timeout(page, PG_private,
- 							  HZ);
- 	}
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index 9358c79fd589..fe3441abdbe5 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -821,9 +821,7 @@ void rpc_execute(struct rpc_task *task)
- 
- static void rpc_async_schedule(struct work_struct *work)
- {
--	current->flags |= PF_FSTRANS;
- 	__rpc_execute(container_of(work, struct rpc_task, u.tk_work));
--	current->flags &= ~PF_FSTRANS;
- }
- 
- /**
-diff --git a/net/sunrpc/xprtrdma/transport.c b/net/sunrpc/xprtrdma/transport.c
-index 2faac4940563..6a4615dd0261 100644
---- a/net/sunrpc/xprtrdma/transport.c
-+++ b/net/sunrpc/xprtrdma/transport.c
-@@ -205,7 +205,6 @@ xprt_rdma_connect_worker(struct work_struct *work)
- 	struct rpc_xprt *xprt = &r_xprt->xprt;
- 	int rc = 0;
- 
--	current->flags |= PF_FSTRANS;
- 	xprt_clear_connected(xprt);
- 
- 	dprintk("RPC:       %s: %sconnect\n", __func__,
-@@ -216,7 +215,6 @@ xprt_rdma_connect_worker(struct work_struct *work)
- 
- 	dprintk("RPC:       %s: exit\n", __func__);
- 	xprt_clear_connecting(xprt);
--	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 43cd89eacfab..4707c0c8568b 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1927,8 +1927,6 @@ static int xs_local_setup_socket(struct sock_xprt *transport)
- 	struct socket *sock;
- 	int status = -EIO;
- 
--	current->flags |= PF_FSTRANS;
--
- 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 	status = __sock_create(xprt->xprt_net, AF_LOCAL,
- 					SOCK_STREAM, 0, &sock, 1);
-@@ -1968,7 +1966,6 @@ static int xs_local_setup_socket(struct sock_xprt *transport)
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
--	current->flags &= ~PF_FSTRANS;
- 	return status;
- }
- 
-@@ -2071,8 +2068,6 @@ static void xs_udp_setup_socket(struct work_struct *work)
- 	struct socket *sock = transport->sock;
- 	int status = -EIO;
- 
--	current->flags |= PF_FSTRANS;
--
- 	/* Start by resetting any existing state */
- 	xs_reset_transport(transport);
- 	sock = xs_create_sock(xprt, transport,
-@@ -2092,7 +2087,6 @@ static void xs_udp_setup_socket(struct work_struct *work)
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
--	current->flags &= ~PF_FSTRANS;
- }
- 
- /*
-@@ -2229,8 +2223,6 @@ static void xs_tcp_setup_socket(struct work_struct *work)
- 	struct rpc_xprt *xprt = &transport->xprt;
- 	int status = -EIO;
- 
--	current->flags |= PF_FSTRANS;
--
- 	if (!sock) {
- 		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
- 		sock = xs_create_sock(xprt, transport,
-@@ -2276,7 +2268,6 @@ static void xs_tcp_setup_socket(struct work_struct *work)
- 	case -EINPROGRESS:
- 	case -EALREADY:
- 		xprt_clear_connecting(xprt);
--		current->flags &= ~PF_FSTRANS;
- 		return;
- 	case -EINVAL:
- 		/* Happens, for instance, if the user specified a link
-@@ -2294,7 +2285,6 @@ out_eagain:
- out:
- 	xprt_clear_connecting(xprt);
- 	xprt_wake_pending_tasks(xprt, status);
--	current->flags &= ~PF_FSTRANS;
- }
- 
- /**
+> objective seems to be to not wake up user tasks just to put them into
+> the fridge when you know they are in a "deep" sleep currently. Kernel
 
+That's one of the uses but not the only one.
 
+> threads know they might freeze themselves when returning from schedule,
+> no?
+
+I'm not following.  Can you elaborate?
+
+> freezable_schedule{_timeout} seem to be used only by user tasks AFAICS.
+> freezable_schedule_unsafe seems to be more complicated due to nfs and
+> cifs but both of them are checking for fatal signal pending and return
+> ERESTARTSYS which looks like userspace stuff. So maybe we do not need
+> any alternate version for kernel threads.
+> 
+> I haven't check the workqueue_freezable API.
+
+That one is actually easy and should be fine.
+
+> > What do we actually gain?
+> 
+> I thought we could easily document and add some rules to where
+> try_to_freeze can be called from for userspace tasks. Kernel threads
+> know when they are safe to get frozen but we should be more careful
+> about user tasks. Whether that can be enforced by an API is a question.
+> I do admit this much more complicated than I originally anticipated.
+> 
+> try_to_freeze should be a nice barrier where you know that waking into
+> a new world is safe for the caller (there is no state crossing the
+
+It isn't and I'm not sure it can ever be used as "world" barrier.  It
+just doesn't mean that.
+
+> freezing point). Whether a separate API makes this happen is an open
+> question. I would hope for much higher bar for adding new freezing
+> points for users tasks as those are more tricky to check.
+
+Heh, as far as I can recall, freezer usage has always been a rather
+large mess.  In the long term, I think the right thing to do is
+merging userland freezing into job control stop so that it doesn't get
+the special SIGKILL immunity.  We shouldn't have exposed this
+unkillable state the beginning.  :(
+
+Thanks.
+
+-- 
+tejun
