@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaIPJxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 05:53:54 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:58798 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaIPJxx (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Tue, 16 Sep 2014 05:53:53 -0400
-Message-Id: <541824CE020000780003550B@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 16 Sep 2014 10:53:50 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andy Lutomirski" <luto@amacapital.net>
-Cc: <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: suspicious compiler warning in vdso2c.h
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1753771AbaIPJyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 05:54:04 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:55726 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708AbaIPJx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 05:53:59 -0400
+Message-ID: <54180899.4060408@gmail.com>
+Date: Tue, 16 Sep 2014 17:53:29 +0800
+From: Wanpeng Li <kernellwp@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Mike Galbraith <umgwanakikbuti@gmail.com>, Toshi Kani <toshi.kani@hp.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, bp@alien8.de,
+        gong.chen@linux.intel.com, tony.luck@intel.com, x86@kernel.org,
+        imammedo@redhat.com, huawei.libin@huawei.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, peterz@infradead.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>
+Subject: Re: [PATCH v5] x86,cpu-hotplug: assign same CPU number to readded
+ CPU
+References: <53CF2A81.7080505@jp.fujitsu.com>	 <53D5CF2A.2030007@jp.fujitsu.com> <5407D27D.4020006@jp.fujitsu.com>	 <54114D83.7070004@jp.fujitsu.com>	 <1410755159.5165.24.camel@marge.simpson.net>	 <1410799463.28990.326.camel@misato.fc.hp.com> <1410839798.5149.22.camel@marge.simpson.net>
+In-Reply-To: <1410839798.5149.22.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy
+Hi Mike,
 
-following e6577a7ce9 ("x86, vdso: Move the vvar area before the
-vdso text") gcc 4.3.4 tells me
+于 14-9-16 上午11:56, Mike Galbraith 写道:
+> On Mon, 2014-09-15 at 10:44 -0600, Toshi Kani wrote:
+>> On Mon, 2014-09-15 at 06:25 +0200, Mike Galbraith wrote:
+>>> On Thu, 2014-09-11 at 16:21 +0900, Yasuaki Ishimatsu wrote:
+>>>> There is no response for two months since posting v4.
+>>>> What can I do for pushing the patch to upstream?
+>>> Looks to me like we have two patches floating about for more or less the
+>>> same problem, this one, and...
+>>>
+>>> https://lkml.org/lkml/2014/7/29/159
+>>>
+>>> ..this one, which you reviewed, and HP both reviewed and tested.
+>>>
+>>> We seem to kinda stuck with Boris having said don't diddle the
+>>> cpu_llc_shared_map, but HP/Intel saying that this map diddling fixes
+>>> their explosions.  If your alternative is preferred over diddling
+>>> cpu_llc_shared_map, perhaps HP/Intel can test/confirm that their
+>>> explosions stay gone?
+>> Well, Boris mentioned later in his email:
+>> https://lkml.org/lkml/2014/7/22/201
+>>
+>> And I agree with his assessment that both patches make sense.
+> Nonetheless, this just reeks of "department of redundancy department".
+> I have nothing against doing both really, but it does leave me wondering
+> if we would not then be merging the mask clearing "just because".
 
-.../arch/x86/vdso/vdso2c.c: In function ‘main’:
-.../arch/x86/vdso/vdso2c.h:118: warning: assuming signed overflow does not occur when assuming that (X + c) < X is
-always false
-.../arch/x86/vdso/vdso2c.h:118: warning: assuming signed overflow does not occur when assuming that (X + c) < X is
-always false
+Maybe you miss my reply.
 
-apparently because it unrolls the containing loop and finds i ==
-sym_vvar_start on the first iteration. I think there was a hidden
-dependency before your change on required_syms[] first two
-entries matching up with special_pages[]. If that's correct, all
-syms[i] within said loop would seem to need replacing by
-syms[special_pages[i]] (similarly for required_syms[i] afaict, see
-below draft patch), which also is in line with the loop iterating
-over the array elements of special_pages[].
+https://lkml.org/lkml/2014/7/29/40
 
-Question then of course is - are there any further hidden
-dependencies that already got or may eventually get broken?
+Regards,
+Wanpeng Li
 
-Jan
-
---- a/arch/x86/vdso/vdso2c.h
-+++ b/arch/x86/vdso/vdso2c.h
-@@ -109,18 +109,18 @@ static void BITSFUNC(go)(void *raw_addr,
- 
- 	/* Validate mapping addresses. */
- 	for (i = 0; i < sizeof(special_pages) / sizeof(special_pages[0]); i++) {
--		if (!syms[i])
-+		if (!syms[special_pages[i]])
- 			continue;  /* The mapping isn't used; ignore it. */
- 
--		if (syms[i] % 4096)
-+		if (syms[special_pages[i]] % 4096)
- 			fail("%s must be a multiple of 4096\n",
--			     required_syms[i].name);
--		if (syms[sym_vvar_start] > syms[i] + 4096)
-+			     required_syms[special_pages[i]].name);
-+		if (syms[sym_vvar_start] > syms[special_pages[i]] + 4096)
- 			fail("%s underruns begin_vvar\n",
--			     required_syms[i].name);
--		if (syms[i] + 4096 > 0)
-+			     required_syms[special_pages[i]].name);
-+		if (syms[special_pages[i]] + 4096 > 0)
- 			fail("%s is on the wrong side of the vdso text\n",
--			     required_syms[i].name);
-+			     required_syms[special_pages[i]].name);
- 	}
- 	if (syms[sym_vvar_start] % 4096)
- 		fail("vvar_begin must be a multiple of 4096\n");
+>
+> -Mike
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
