@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519AbaIPCCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 22:02:37 -0400
-Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:30008
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753471AbaIPCCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 22:02:35 -0400
-Date: Tue, 16 Sep 2014 10:02:25 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Andreas Larsson <andreas@gaisler.com>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <software@gaisler.com>
-Subject: Re: [PATCH] usb: gadget: udc_core: Use right kobj when calling
- sysfs_notify
-Message-ID: <20140916020223.GD3379@peterchendt>
-References: <1410777748-28090-1-git-send-email-andreas@gaisler.com>
+	id S1755706AbaIPCEL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:04:11 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:12007 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752867AbaIPCEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 22:04:09 -0400
+X-IronPort-AV: E=Sophos;i="5.04,532,1406563200"; 
+   d="scan'208";a="35999736"
+Message-ID: <54179768.2010708@cn.fujitsu.com>
+Date: Tue, 16 Sep 2014 09:50:32 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1410777748-28090-1-git-send-email-andreas@gaisler.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(51704005)(24454002)(199003)(189002)(33656002)(107046002)(97736003)(76482001)(44976005)(106466001)(104016003)(81542002)(81342002)(80022002)(77982002)(74662002)(79102002)(74502002)(20776003)(575784001)(95666004)(31966008)(64706001)(105606002)(50466002)(19580405001)(85306004)(6806004)(47776003)(19580395003)(92726001)(33716001)(23726002)(21056001)(86362001)(87936001)(76176999)(83322001)(83072002)(110136001)(46406003)(83506001)(85852003)(68736004)(90102001)(50986999)(26826002)(102836001)(57986006)(97756001)(46102002)(84676001)(92566001)(99396002)(54356999)(4396001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB270;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Chao Yu <chao2.yu@samsung.com>
+CC: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>,
+        <linux-f2fs-devel@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [f2fs-dev][PATCH 4/5] f2fs: fix to clean previous mount option
+ when remount_fs
+References: <003001cfd0cc$96f9e8e0$c4edbaa0$@samsung.com>
+In-Reply-To: <003001cfd0cc$96f9e8e0$c4edbaa0$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:42:27PM +0200, Andreas Larsson wrote:
-> The state attribute is connected to the kobj of the udc, not the gadget.
+Hi Yu,
+On 09/15/2014 06:04 PM, Chao Yu wrote:
+
+> In manual of mount, we descript remount as below:
 > 
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+> "mount -o remount,rw /dev/foo /dir
+> After  this call all old mount options are replaced and arbitrary stuff from
+> fstab is ignored, except the loop= option which is internally generated and
+> maintained by the mount command."
+> 
+> Previously f2fs do not clear up old mount options when remount_fs, so we have no
+> chance of disabling previous option (e.g. flush_merge). Fix it.
+
+Please don't.
+"Remount" should just change what you specified and keep others unchanged.
+The problem here is that we need to provide mount opts for disable/enable
+some features, but we missed it. So the right way is adding these opts if
+we really need them.
+
+Thanks,
+Gu
+
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 > ---
->  drivers/usb/gadget/udc/udc-core.c |   14 +++++++++++++-
->  1 file changed, 13 insertions(+), 1 deletion(-)
+>  fs/f2fs/super.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
-> index b0d9817..37c129a 100644
-> --- a/drivers/usb/gadget/udc/udc-core.c
-> +++ b/drivers/usb/gadget/udc/udc-core.c
-> @@ -109,8 +109,20 @@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
->  static void usb_gadget_state_work(struct work_struct *work)
->  {
->  	struct usb_gadget	*gadget = work_to_gadget(work);
-> +	struct usb_udc		*udc = NULL;
-> +
-> +	mutex_lock(&udc_lock);
-> +	list_for_each_entry(udc, &udc_list, list)
-> +		if (udc->gadget == gadget)
-> +			goto found;
-> +	mutex_unlock(&udc_lock);
-> +
-> +	return;
-> +
-> +found:
-> +	mutex_unlock(&udc_lock);
+> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> index 54444bb..90fcbe0 100644
+> --- a/fs/f2fs/super.c
+> +++ b/fs/f2fs/super.c
+> @@ -616,6 +616,9 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
+>  	org_mount_opt = sbi->mount_opt;
+>  	active_logs = sbi->active_logs;
 >  
-> -	sysfs_notify(&gadget->dev.kobj, NULL, "state");
-> +	sysfs_notify(&udc->dev.kobj, NULL, "state");
->  }
->  
->  void usb_gadget_set_state(struct usb_gadget *gadget,
+> +	sbi->mount_opt.opt = 0;
+> +	sbi->active_logs = NR_CURSEG_TYPE;
+> +
+>  	/* parse mount options */
+>  	err = parse_options(sb, data);
+>  	if (err)
 
-What's the user mode difference with and without this patch?
 
--- 
-Best Regards,
-Peter Chen
