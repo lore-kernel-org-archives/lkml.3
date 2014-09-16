@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991AbaIPB3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:29:36 -0400
+	id S1757500AbaIPB3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:29:44 -0400
 Received: from mga01.intel.com ([192.55.52.88]:50501 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781AbaIPB3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:29:33 -0400
+	id S1755863AbaIPB3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 21:29:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,532,1406617200"; 
-   d="scan'208";a="477747362"
+   d="scan'208";a="477747371"
 From: Weike Chen <alvin.chen@intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
@@ -22,9 +22,9 @@ Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
         Mika Westerberg <mika.westerberg@intel.com>,
         Andriy Shevchenko <andriy.shevchenko@intel.com>,
         Alvin Chen <alvin.chen@intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3/4 v4] GPIO: gpio-dwapb: Support Debounce
-Date: Tue, 16 Sep 2014 02:22:14 -0700
-Message-Id: <1410859335-11080-4-git-send-email-alvin.chen@intel.com>
+Subject: [PATCH 4/4 v4] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Date: Tue, 16 Sep 2014 02:22:15 -0700
+Message-Id: <1410859335-11080-5-git-send-email-alvin.chen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
 References: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
@@ -32,69 +32,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables 'debounce' for the designware GPIO, and
+This patch enables suspend and resume mode for the power management, and
 it is based on Josef Ahmad's previous work.
 
 Reviewed-by: Hock Leong Kweh <hock.leong.kweh@intel.com>
-Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
 Signed-off-by: Weike Chen <alvin.chen@intel.com>
 ---
- drivers/gpio/gpio-dwapb.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/gpio/gpio-dwapb.c |  109 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 109 insertions(+)
 
 diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-index 534945c..9a76e3c 100644
+index 9a76e3c..14d83af 100644
 --- a/drivers/gpio/gpio-dwapb.c
 +++ b/drivers/gpio/gpio-dwapb.c
-@@ -37,6 +37,7 @@
- #define GPIO_INTTYPE_LEVEL	0x38
- #define GPIO_INT_POLARITY	0x3c
- #define GPIO_INTSTATUS		0x40
-+#define GPIO_PORTA_DEBOUNCE	0x48
- #define GPIO_PORTA_EOI		0x4c
- #define GPIO_EXT_PORTA		0x50
- #define GPIO_EXT_PORTB		0x54
-@@ -235,6 +236,29 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
- 	return 0;
- }
+@@ -50,11 +50,14 @@
+ #define GPIO_SWPORT_DDR_SIZE	(GPIO_SWPORTB_DDR - GPIO_SWPORTA_DDR)
  
-+static int dwapb_gpio_set_debounce(struct gpio_chip *gc,
-+				   unsigned offset, unsigned debounce)
+ struct dwapb_gpio;
++struct dwapb_context;
+ 
+ struct dwapb_gpio_port {
+ 	struct bgpio_chip	bgc;
+ 	bool			is_registered;
+ 	struct dwapb_gpio	*gpio;
++	struct dwapb_context	*ctx;
++	unsigned int		idx;
+ };
+ 
+ struct dwapb_gpio {
+@@ -377,6 +380,7 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
+ 
+ 	port = &gpio->ports[offs];
+ 	port->gpio = gpio;
++	port->idx = pp->idx;
+ 
+ 	dat = gpio->regs + GPIO_EXT_PORTA + (pp->idx * GPIO_EXT_PORT_SIZE);
+ 	set = gpio->regs + GPIO_SWPORTA_DR + (pp->idx * GPIO_SWPORT_DR_SIZE);
+@@ -584,10 +588,115 @@ static const struct of_device_id dwapb_of_match[] = {
+ };
+ MODULE_DEVICE_TABLE(of, dwapb_of_match);
+ 
++#ifdef CONFIG_PM_SLEEP
++/* Store GPIO context across system-wide suspend/resume transitions */
++struct dwapb_context {
++	u32 data;
++	u32 dir;
++	u32 ext;
++	u32 int_en;
++	u32 int_mask;
++	u32 int_type;
++	u32 int_pol;
++	u32 int_deb;
++};
++
++static int dwapb_gpio_suspend(struct device *dev)
 +{
-+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-+	struct dwapb_gpio_port *port =
-+			container_of(bgc, struct dwapb_gpio_port, bgc);
-+	struct dwapb_gpio *gpio = port->gpio;
-+	unsigned long flags, val_deb;
-+	unsigned long mask = bgc->pin2mask(bgc, offset);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
++	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
++	unsigned long flags;
++	int i;
 +
 +	spin_lock_irqsave(&bgc->lock, flags);
++	for (i = 0; i < gpio->nr_ports; i++) {
++		unsigned int offset;
++		unsigned int idx = gpio->ports[i].idx;
++		struct dwapb_context *ctx = gpio->ports[i].ctx;
 +
-+	val_deb = dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
-+	if (debounce)
-+		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, mask | val_deb);
-+	else
-+		dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, ~mask & val_deb);
++		if (!ctx) {
++			ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
++			gpio->ports[i].ctx = ctx;
++		}
 +
++		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
++		ctx->dir = dwapb_read(gpio, offset);
++
++		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
++		ctx->data = dwapb_read(gpio, offset);
++
++		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
++		ctx->ext = dwapb_read(gpio, offset);
++
++		/* Only port A can provide interrupts */
++		if (idx == 0) {
++			ctx->int_mask	= dwapb_read(gpio, GPIO_INTMASK);
++			ctx->int_en	= dwapb_read(gpio, GPIO_INTEN);
++			ctx->int_pol	= dwapb_read(gpio, GPIO_INT_POLARITY);
++			ctx->int_type	= dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
++			ctx->int_deb	= dwapb_read(gpio, GPIO_PORTA_DEBOUNCE);
++
++			/* Mask out interrupts */
++			dwapb_write(gpio, GPIO_INTMASK, 0xffffffff);
++		}
++	}
 +	spin_unlock_irqrestore(&bgc->lock, flags);
 +
 +	return 0;
 +}
 +
- static irqreturn_t dwapb_irq_handler_mfd(int irq, void *dev_id)
- {
- 	u32 worked;
-@@ -373,6 +397,10 @@ static int dwapb_gpio_add_port(struct dwapb_gpio *gpio,
- 	port->bgc.gc.ngpio = pp->ngpio;
- 	port->bgc.gc.base = pp->gpio_base;
- 
-+	/* Only port A support debounce */
-+	if (pp->idx == 0)
-+		port->bgc.gc.set_debounce = dwapb_gpio_set_debounce;
++static int dwapb_gpio_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct dwapb_gpio *gpio = platform_get_drvdata(pdev);
++	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
++	unsigned long flags;
++	int i;
 +
- 	if (pp->irq)
- 		dwapb_configure_irqs(gpio, port, pp);
- 
++	spin_lock_irqsave(&bgc->lock, flags);
++	for (i = 0; i < gpio->nr_ports; i++) {
++		unsigned int offset;
++		unsigned int idx = gpio->ports[i].idx;
++		struct dwapb_context *ctx = gpio->ports[i].ctx;
++
++		BUG_ON(ctx == 0);
++
++		offset = GPIO_SWPORTA_DR + (idx * GPIO_SWPORT_DR_SIZE);
++		dwapb_write(gpio, offset, ctx->data);
++
++		offset = GPIO_SWPORTA_DDR + (idx * GPIO_SWPORT_DDR_SIZE);
++		dwapb_write(gpio, offset, ctx->dir);
++
++		offset = GPIO_EXT_PORTA + (idx * GPIO_EXT_PORT_SIZE);
++		dwapb_write(gpio, offset, ctx->ext);
++
++		/* Only port A can provide interrupts */
++		if (idx == 0) {
++			dwapb_write(gpio, GPIO_INTTYPE_LEVEL, ctx->int_type);
++			dwapb_write(gpio, GPIO_INT_POLARITY, ctx->int_pol);
++			dwapb_write(gpio, GPIO_PORTA_DEBOUNCE, ctx->int_deb);
++			dwapb_write(gpio, GPIO_INTEN, ctx->int_en);
++			dwapb_write(gpio, GPIO_INTMASK, ctx->int_mask);
++
++			/* Clear out spurious interrupts */
++			dwapb_write(gpio, GPIO_PORTA_EOI, 0xffffffff);
++		}
++	}
++	spin_unlock_irqrestore(&bgc->lock, flags);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(dwapb_gpio_pm_ops, dwapb_gpio_suspend,
++			 dwapb_gpio_resume);
++
+ static struct platform_driver dwapb_gpio_driver = {
+ 	.driver		= {
+ 		.name	= "gpio-dwapb",
+ 		.owner	= THIS_MODULE,
++		.pm	= &dwapb_gpio_pm_ops,
+ 		.of_match_table = of_match_ptr(dwapb_of_match),
+ 	},
+ 	.probe		= dwapb_gpio_probe,
 -- 
 1.7.9.5
 
