@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaIPXAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:00:38 -0400
-Received: from ozlabs.org ([103.22.144.67]:45913 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081AbaIPXAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:00:36 -0400
-Date: Wed, 17 Sep 2014 09:00:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Peter Foley <pefoley2@pefoley.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the rd-docs tree
-Message-ID: <20140917090020.1f3c2c30@canb.auug.org.au>
-In-Reply-To: <CAOFdcFMDnR50cS-Geb0S1S2VRPzZqDr9zzqUp-DpMYLfF0qtvQ@mail.gmail.com>
-References: <20140916171102.61509be5@canb.auug.org.au>
-	<CAOFdcFMDnR50cS-Geb0S1S2VRPzZqDr9zzqUp-DpMYLfF0qtvQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1753352AbaIPXC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:02:26 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:59045 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaIPXCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 19:02:24 -0400
+Date: Tue, 16 Sep 2014 16:01:41 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND] mfd: max14577: Don't pass IRQ domain to mfd_add_devices
+Message-ID: <20140916230141.GT25162@lee--X1>
+References: <1409912110-18120-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/f=yz.PyeO7utT1hbO05K.KE"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409912110-18120-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/f=yz.PyeO7utT1hbO05K.KE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, 05 Sep 2014, Krzysztof Kozlowski wrote:
 
-Hi Peter,
+> The max14577 MFD cells do not have any resources so the IRQ domain
+> passed to mfd_add_devices is not used.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max14577.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 
-On Tue, 16 Sep 2014 13:19:07 -0400 Peter Foley <pefoley2@pefoley.com> wrote:
->
-> On Tue, Sep 16, 2014 at 3:11 AM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
-> >
-> > After merging the rd-docs tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
-> >
-> > Documentation/vDSO/vdso_test.c:15:22: fatal error: sys/auxv.h: No such =
-file or directory
-> >
->=20
-> What glibc version are you running?
-> It appears the function getauxval (and I assume the missing header)
-> were only added in glibc 2.16.
+Applied, thanks.
 
-My build machine runs Debian stable which only has libc6 version 2.13.
+> diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
+> index 4a5e885383f8..ba2ac9c10b12 100644
+> --- a/drivers/mfd/max14577.c
+> +++ b/drivers/mfd/max14577.c
+> @@ -372,8 +372,7 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+>  	}
+>  
+>  	ret = mfd_add_devices(max14577->dev, -1, mfd_devs,
+> -			mfd_devs_size, NULL, 0,
+> -			regmap_irq_get_domain(max14577->irq_data));
+> +			mfd_devs_size, NULL, 0, NULL);
+>  	if (ret < 0)
+>  		goto err_mfd;
+>  
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/f=yz.PyeO7utT1hbO05K.KE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGMESAAoJEMDTa8Ir7ZwVWysP/R1FORLGxa068qJ7Jp6RTrCa
-gvhUcOZ0cJ09O0YFT11x/sOd7Q9NHFspf7tHln+/zw6y253UUiVFbo4sdKJlb/AU
-suPZo5CnDaVAhiZ/1Glv3XcAaYsTOyqxjkzMVUqpRRrJYbMw+l91c2BlrVOSM2eK
-VOyr8/ILOMEo+bcpN5ARz0tm6l6mhHcxgAEgI9nVthACTqGovjEo4C7tSJvpPNRv
-tvB9UsAFVy67BC98fGUbCBfZM3wLOC0b8icb8P1QlziI1+pb//RqDEKouiZY7UdP
-H+tm/zzfAGoBPj19u8T1tpbSmVVKC7rkAKoSwJAGYc5IAzbCw7HLaWZGErt7TQ8+
-8ub+nLqwr342HTIFRozJteNo5LohQZLOV6L95jLElc1Z3RlBHaOJIku0B9rPHFi/
-LtFBZ/gpJhCEq/pb8xquZEI5yxOVPPmmucXgau8fKfAvsuOjzfv5JEQD7kGsV79u
-lBK8cKAvqRfIkTrTM6NhO3CTJv5YD/A3qyNXvBgWW0w9smo+USF69nVMvNHoI3Bc
-quWfEzdlJwRCwpYUhwMDkOhF8kXKkEKOqaveCBiFYQVTzCiahosrF8bxLubgo4mD
-lM2u+2uE8GcONC2AlWEXvXXny+xrNXmTWwyJvs5USeseHE/ujYY4QIr1DWYLf4w+
-gbiibr9t/Ft2OcCkMHPs
-=8Sek
------END PGP SIGNATURE-----
-
---Sig_/f=yz.PyeO7utT1hbO05K.KE--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
