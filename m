@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224AbaIPHxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:53:33 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:36418 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485AbaIPHxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:53:31 -0400
-Message-ID: <1410854010.30351.17.camel@iivanov-dev>
-Subject: Re: [PATCH RESEND] thermal: Add QPNP PMIC temperature alarm driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
-Date: Tue, 16 Sep 2014 10:53:30 +0300
-In-Reply-To: <54170DA6.6050001@mm-sol.com>
-References: <1410793383-30097-1-git-send-email-iivanov@mm-sol.com>
-	 <54170DA6.6050001@mm-sol.com>
+	id S1753337AbaIPHx7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:53:59 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:33598 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761AbaIPHx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:53:57 -0400
+Message-ID: <5417EC7B.4060400@huawei.com>
+Date: Tue, 16 Sep 2014 15:53:31 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
+        David Woodhouse <dwmw2@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        "Bjorn Helgaas" <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        "Vinod Koul" <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+CC: Ashok Raj <ashok.raj@intel.com>, Tony Luck <tony.luck@intel.com>,
+        <iommu@lists.linux-foundation.org>, <linux-pci@vger.kernel.org>,
+        <linux-hotplug@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dmaengine@vger.kernel.org>
+Subject: Re: [Patch Part3 V5 5/8] iommu/vt-d: Enhance intel_irq_remapping
+ driver to support DMAR unit hotplug
+References: <1410487848-6027-1-git-send-email-jiang.liu@linux.intel.com> <1410487848-6027-6-git-send-email-jiang.liu@linux.intel.com> <54164D01.4060003@huawei.com> <5417E00D.5000108@linux.intel.com>
+In-Reply-To: <5417E00D.5000108@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-15 at 19:02 +0300, Georgi Djakov wrote:
+On 2014/9/16 15:00, Jiang Liu wrote:
+> On 2014/9/15 10:20, Yijing Wang wrote:
+>>> +static void ir_remove_ioapic_hpet_scope(struct intel_iommu *iommu)
+>>> +{
+>>> +	int i;
+>>>  
+>>> -			ir_parse_one_hpet_scope(scope, iommu);
+>>> -		}
+>>> -		start += scope->length;
+>>> -	}
+>>> +	for (i = 0; i < MAX_HPET_TBS; i++)
+>>> +		if (ir_hpet[i].iommu == iommu)
+>>> +			ir_hpet[i].iommu = NULL;
+>>
+>> Hi Gerry, why not reset whole ir_hpe and ir_ioapic data struct?
+> Hi Yijing,
+> 	Thanks for review. Zero is legal for id, bus and devfn in
+> struct ioapic_scope and struct hpet_scope. So we use domain field
+> as a flag to mark entry valid or invalid and only reset iommu field.
 
-<snip>
+Hi Gerry, use iommu field as a flag to mark entry valid may be not safe enough,
+I found map_hpet_to_ir() and map_ioapic_to_ir() still only check the id field to return the valid iommu.
 
-> > +Example:
-> > +
-> > +	thermal-alarm@2400 {
-> > +		compatible = "qcom,qpnp-temp-alarm";
-> > +		reg = <0x2400>;
-> > +		interrupts = <0 0x24 0 IRQ_TYPE_EDGE_RISING>;
-> > +		label = "pm8941_tz";
-> > +		io-channels = <&pm8941_vadc VADC_DIE_TEMP>;
-> > +		io-channel-names = "thermal";
-> > +	};
+What about this case:
+E.g. ir_hpet[2].id = N, ir_hpet[2].iommu = NULL, ir_hpet[4].id = N, ir_hpet[4].iommu = iommu;
+
+ir_hpet[2] maybe released yet, and the hpet now has been saved in ir_hpet[4], but map_hpet_to_irq()
+will return the wrong iommu(NULL).
+
+
+static struct intel_iommu *map_hpet_to_ir(u8 hpet_id)
+{
+	int i;
+
+	for (i = 0; i < MAX_HPET_TBS; i++)
+		if (ir_hpet[i].id == hpet_id)
+			return ir_hpet[i].iommu;
+	return NULL;
+}
+
 > 
-> Maybe describe the trip points in the DT?
+> Regards!
+> Gerry
+>>
+>>
+>>
+>>>  
+>>> -	return 0;
+>>> +	for (i = 0; i < MAX_IO_APICS; i++)
+>>> +		if (ir_ioapic[i].iommu == iommu)
+>>> +			ir_ioapic[i].iommu = NULL;
+>>>  }
+>>>  
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> .
+> 
 
-I am not sure. Trip points are not arbitrary selectable. Hardware
-have 4 predefined operating modes, if I could say.
 
-0 = {105 C, 125 C, 145 C}
-1 = {110 C, 130 C, 150 C}
-2 = {115 C, 135 C, 155 C}
-3 = {120 C, 140 C, 160 C}
-
-Everything which driver could select is one of 0...3.
-
-Rest of the comments will be fixed in next version.
-
-Thanks,
-Ivan
-
+-- 
+Thanks!
+Yijing
 
