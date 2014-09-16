@@ -1,128 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaIPHUz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:20:55 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:38225 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaIPHUy (ORCPT
+	id S1753253AbaIPHXs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:23:48 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:43488 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485AbaIPHXq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:20:54 -0400
-Date: Tue, 16 Sep 2014 16:19:06 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Subject: [PATCH V2] staging: dgap: use schedule_timeout_interruptible()
- instead of dgap_ms_sleep()
-Message-ID: <20140916071906.GA30424@devel>
+	Tue, 16 Sep 2014 03:23:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20140915195514.GC18175@roeck-us.net>
+References: <20140831175010.GA15408@roeck-us.net>
+	<20140915145203.GK4659@axis.com>
+	<20140915195514.GC18175@roeck-us.net>
+Date: Tue, 16 Sep 2014 09:23:44 +0200
+X-Google-Sender-Auth: GKZ8IgkWJcKOdQB_4q1kVpdjbhc
+Message-ID: <CAMuHMdXafiDxr2QtbiuYs48BZ_wyNVFGar91oJyYvBJ+U1Co-w@mail.gmail.com>
+Subject: Re: Status of 'cris' architecture support in Linux kernel
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jesper Nilsson <jesper.nilsson@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cris <linux-cris-kernel@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using schedule_timeout_interruptible() is exactly same as
-setting a status of current process and calling  schedule_timeout().
+Hi Günther,
 
-Removes dgap_ms_sleep(), because this function is used
-only when closing tty channel on dgap_tty_close().
-And also removes ch_close_delay that is always set to 250
-on dgap_tty_init().
+On Mon, Sep 15, 2014 at 9:55 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
+>> >     No such file or directory
+>> > make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
+>>
+>> Yes, known error, I believe that Sam Ravnborg's patch will correct this.
+>>
+> Is that patch available in public ? Sam's response seems to suggest that he
+> sent it to Michael (Mikael ?) who wanted to handle it, but I don't find a
+> matching patch in public archives.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-V2: remove singal_pending().
+https://lkml.org/lkml/2014/7/14/424
 
- drivers/staging/dgap/dgap.c |   37 +++++++------------------------------
- drivers/staging/dgap/dgap.h |    3 ---
- 2 files changed, 7 insertions(+), 33 deletions(-)
+>> On a tangential note, my automatic (minimal) builds does not do
+>> make install, so I haven't seen this error. :-P
+>>
+> Mine not either ;-). I only found it because I tried to build an initramfs
+> which needs installed headers.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 67da1d5..db8ccd1 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -180,7 +180,6 @@ static char *dgap_create_config_string(struct board_t *bd, char *string);
- static uint dgap_config_get_useintr(struct board_t *bd);
- static uint dgap_config_get_altpin(struct board_t *bd);
- 
--static int dgap_ms_sleep(ulong ms);
- static void dgap_do_bios_load(struct board_t *brd, const u8 *ubios, int len);
- static void dgap_do_fep_load(struct board_t *brd, const u8 *ufep, int len);
- #ifdef DIGI_CONCENTRATORS_SUPPORTED
-@@ -1200,26 +1199,6 @@ static void dgap_init_globals(void)
- 
- /************************************************************************
-  *
-- * Utility functions
-- *
-- ************************************************************************/
--
--/*
-- * dgap_ms_sleep()
-- *
-- * Put the driver to sleep for x ms's
-- *
-- * Returns 0 if timed out, !0 (showing signal) if interrupted by a signal.
-- */
--static int dgap_ms_sleep(ulong ms)
--{
--	current->state = TASK_INTERRUPTIBLE;
--	schedule_timeout((ms * HZ) / 1000);
--	return signal_pending(current);
--}
--
--/************************************************************************
-- *
-  * TTY Initialization/Cleanup Functions
-  *
-  ************************************************************************/
-@@ -1462,9 +1441,6 @@ static int dgap_tty_init(struct board_t *brd)
- 		ch->ch_tstart = 0;
- 		ch->ch_rstart = 0;
- 
--		/* .25 second delay */
--		ch->ch_close_delay = 250;
--
- 		/*
- 		 * Set queue water marks, interrupt mask,
- 		 * and general tty parameters.
-@@ -2297,12 +2273,13 @@ static void dgap_tty_close(struct tty_struct *tty, struct file *file)
- 			 * Go to sleep to ensure RTS/DTR
- 			 * have been dropped for modems to see it.
- 			 */
--			if (ch->ch_close_delay) {
--				spin_unlock_irqrestore(&ch->ch_lock,
--						       lock_flags);
--				dgap_ms_sleep(ch->ch_close_delay);
--				spin_lock_irqsave(&ch->ch_lock, lock_flags);
--			}
-+			spin_unlock_irqrestore(&ch->ch_lock,
-+					lock_flags);
-+
-+			/* .25 second delay for dropping RTS/DTR */
-+			schedule_timeout_interruptible(msecs_to_jiffies(250));
-+
-+			spin_lock_irqsave(&ch->ch_lock, lock_flags);
- 		}
- 
- 		ch->pscan_state = 0;
-diff --git a/drivers/staging/dgap/dgap.h b/drivers/staging/dgap/dgap.h
-index a0307b9..ba05c65 100644
---- a/drivers/staging/dgap/dgap.h
-+++ b/drivers/staging/dgap/dgap.h
-@@ -982,9 +982,6 @@ struct channel_t {
- 	u32 ch_open_count;		/* open count			*/
- 	u32	ch_flags;		/* Channel flags                */
- 
--	u32	ch_close_delay;		/* How long we should drop      */
--					/* RTS/DTR for                  */
--
- 	u32	ch_cpstime;		/* Time for CPS calculations    */
- 
- 	tcflag_t ch_c_iflag;		/* channel iflags               */
--- 
-1.7.1
+http://kisskb.ellerman.id.au/kisskb/buildresult/11881673/
 
+We need an Auto-Builder Consolidation Project ;-)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
