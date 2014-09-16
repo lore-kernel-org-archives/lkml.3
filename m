@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaIPKLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:11:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46648 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825AbaIPKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:11:44 -0400
-Message-ID: <1410862294.6398.3.camel@menhir>
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Date: Tue, 16 Sep 2014 11:11:34 +0100
-Organization: Red Hat UK Ltd
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-Z3ocbH5dokD6kcQA/Dpb"
-Mime-Version: 1.0
+	id S1753474AbaIPKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:13:09 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33113 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaIPKNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 06:13:06 -0400
+Date: Tue, 16 Sep 2014 11:12:56 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "grant.likely@linaro.org" <grant.likely@linaro.org>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20140916101256.GA21943@localhost>
+References: <1409583475-6978-1-git-send-email-hanjun.guo@linaro.org>
+ <20140911132935.068DCC408F6@trevor.secretlab.ca>
+ <20140911153739.GA24416@localhost>
+ <20140915043116.9985CC407E8@trevor.secretlab.ca>
+ <20140915091515.GA1577@arm.com>
+ <20140915224800.BA32FC40B84@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140915224800.BA32FC40B84@trevor.secretlab.ca>
+Thread-Topic: [PATCH v3 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Sep 15, 2014 at 11:48:00PM +0100, Grant Likely wrote:
+> On Mon, 15 Sep 2014 10:15:16 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Mon, Sep 15, 2014 at 05:31:16AM +0100, Grant Likely wrote:
+> > > On Thu, 11 Sep 2014 16:37:39 +0100, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > > On Thu, Sep 11, 2014 at 02:29:34PM +0100, Grant Likely wrote:
+> > > > > Regarding the requests to refactor ACPICA to work better for ARM. I
+> > > > > completely agree that it should be done, but I do not think it should be
+> > > > > a prerequisite to getting this core support merged. That kind of
+> > > > > refactoring is far easier to justify when it has immediate improvement
+> > > > > on the mainline codebase, and it gives us a working baseline to test
+> > > > > against. Doing it the other way around just makes things harder.
+> > > > 
+> > > > I have to disagree here. As I said, I'm perfectly fine with refactoring
+> > > > happening later but I'm not happy with compiling in code with undefined
+> > > > behaviour on ARM that may actually be executed at run-time.
+> > > > 
+> > > > I'm being told one of the main advantages of ACPI is forward
+> > > > compatibility: running older kernels on newer hardware (potentially with
+> > > > newer ACPI version tables). ACPI 5.1 includes partial support for ARM
+> > > > but the S and C states are not defined yet. We therefore assume that
+> > > > hardware vendors deploying servers using ACPI would not provide such
+> > > > yet to be defined information in ACPI 5.1 tables.
+> > > 
+> > > We're good on this front. ACPI-future platforms aren't allowed to use
+> > > new features when booting an older kernel.
+> > 
+> > Do you mean ACPI-future firmware should not provide new information to
+> > older kernels?
+> 
+> I mean that ACPI has the mechanism so that the platform (via AML)
+> doesn't try to do things that the OS doesn't understand.  AML methods are
+> to use the \_REV object to determine whether or not it can use a
+> feature. If, for example, the _REV is 5, then the AML must switch itself
+> to code paths that don't use ACPI 6 features.
 
---=-Z3ocbH5dokD6kcQA/Dpb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+So you are talking about AML code paths and from what I understand they
+should be fine.
 
-Hi,
+However, what I'm talking about is _kernel_ code paths and functions
+like acpi_suspend_enter(). Do you mean this function can only be called
+as a result of some AML execution (it doesn't look so to me)? If not,
+what guarantees do we have that ACPI-future tables exposed to an older
+kernel would not trigger this kernel code path (if compiled in)?
 
-Please consider pulling the following fixes for GFS2,
-
-Steve.
-
----------------------------------------------------------------------------=
------
-The following changes since commit 372b1dbdd1fb5697890b937228d93cfd9c734c90=
-:
-
-  Merge branch 'for-linus' of git://git.samba.org/sfrench/cifs-2.6 (2014-08=
--20 18:33:21 -0500)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ta=
-gs/gfs2-fixes
-
-for you to fetch changes up to cfb2f9d5c921e38b0f12bb26fed10b877664444d:
-
-  GFS2: fix d_splice_alias() misuses (2014-09-12 20:58:55 +0100)
-
-----------------------------------------------------------------
-Here are a number of small fixes for GFS2. There is a fix for FIEMAP
-on large sparse files, a negative dentry hashing fix, a fix for
-flock, and a bug fix relating to d_splice_alias usage. There are
-also (patches 1 and 5) a couple of updates which are less
-critical, but small and low risk.
-
-----------------------------------------------------------------
-Al Viro (1):
-      GFS2: fix d_splice_alias() misuses
-
-Benjamin Coddington (1):
-      GFS2: Hash the negative dentry during inode lookup
-
-Bob Peterson (2):
-      GFS2: Change maxlen variables to size_t
-      GFS2: Request demote when a "try" flock fails
-
-Fabian Frederick (1):
-      GFS2: fs/gfs2/super.c: replace seq_printf by seq_puts
-
-Jan Kara (1):
-      GFS2: Don't use MAXQUOTAS value
-
- fs/gfs2/bmap.c   |  9 +++++----
- fs/gfs2/file.c   | 15 ++++++++++++---
- fs/gfs2/incore.h |  7 +++++--
- fs/gfs2/inode.c  |  9 ++++++---
- fs/gfs2/super.c  | 20 ++++++++++----------
- 5 files changed, 38 insertions(+), 22 deletions(-)
-
-
---=-Z3ocbH5dokD6kcQA/Dpb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABAgAGBQJUGAzbAAoJEMrg3m4a/8jSq68P/3+GMqeMNEkaDQv4nBPJzqzO
-WJ2jQe8pnWiPdAJlcthc+tSsPFWv2GZOLGoG1Mtbh8+/bDN47BrV7eHFzXsoHHbc
-6v8mr9G3boOM2vQcXURyxFlq1pKnyxw5NCHTBv117YfDM92RcFVIYiECLIHXKnia
-z31P2g1Pb9/5ro7WBSYhvd+RXGyFL3IT24sI02PuW4vqXwuUF6NLaYjnBMgktpZ5
-ACHGCKEjF5m4qyLzIpjgWH/HO0SFVoan5gLw++Mcp31xgCduSo9cYja8S1VkRs0E
-dD/woG1ICsd/mIrjJKEaOMwxINp+9nGnrlTyTtkA6+D2PMG6zlb9F5F/MapbuVye
-dld4ZGzWdkwuij3u4dwG7A/e1nM9neh+JoLRLLyyZw7+lWJxf6H0gh3yC/C85V4Q
-QUYFzWkPw13HADf1ml7nO/s8GjLX4fyr/GTb6v9EoO9RFtwJ/oxThvHxh++Jye4/
-KB97W5GHKXbcPdeiPx6xSbVC8qjRlak8eyZ7fw4O1PVl1qgptp3ldJe6rI4Dfd1d
-VilqpK8O+Zm9/pncBKw0ueXEBnJIMH/sPfyaJpcVeMTKGPzJu6p8EauNC4rHFXFp
-ndAGs9LtYxerYiiLaLXchJ/5npbCU6Xxq/314xNkp78o8Dl2zFA/KBxM08dohE83
-/nKg1owZZHPLQ23cW3Ar
-=OqJz
------END PGP SIGNATURE-----
-
---=-Z3ocbH5dokD6kcQA/Dpb--
-
+-- 
+Catalin
