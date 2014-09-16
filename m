@@ -1,30 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaIPWqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:46:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36327 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaIPWqL (ORCPT
+	id S1754222AbaIPWqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:46:42 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:51278 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164AbaIPWqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:46:11 -0400
-Date: Tue, 16 Sep 2014 15:46:07 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Robert Elliott <elliott@hp.com>, Ming Lei <ming.lei@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] blk-mq: avoid infite recursion with the FUA
-Message-ID: <20140916224607.GA21051@infradead.org>
-References: <1410903847-18519-1-git-send-email-hch@lst.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410903847-18519-1-git-send-email-hch@lst.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 16 Sep 2014 18:46:40 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org
+Subject: [PATCH v10 0/9] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Tue, 16 Sep 2014 23:46:19 +0100
+Message-Id: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The subject is missing a " flag" at the end.  Feel free to fix it up on
-commit :)
+This patchset removes some single-platform compatibility tricks related
+to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+to enable DEBUG_LL. Currently the user selected kbuild setting is
+ignored and the PL01X's DEBUG_LL stub is silently selected instead. This
+is a pain if your hardware doesn't have this cell, not least because it
+takes a little time to figure out that kbuild built the wrong code.
+
+Warning:
+
+    silentoldconfig on PL011 single platforms will result in DEBUG_LL
+    being directed at ICEDCC rather than PL011. This should only
+    affect silentoldconfig since oldconfig prompts and the defconfigs have
+    been updated to avoid this problem.
+
+Changes since v9:
+- Removed a spuriously introduced (and unused) config variable from
+  the netx patch (review of Paul Bolle).
+- Fix netx macro to ensure \rv is correctly initialized.
+- Rebased on v3.17rc4.
+
+Changes since v8:
+- Regenerated patch series with --find-renames to properly track code
+  movement.
+
+Changes since v7:
+- Killed DEBUG_LL_UART_NONE completely and migrated over the four remaining
+  platforms that relied on this (Arnd Bergmann, Russell King). This
+  fixes some problems with oldconfig builds.
+- Rebased on latest mainline (v3.17rc1).
+
+Changes since v6:
+- Removed a patch to limit DEBUG_LL_UART_NONE to platforms that support
+  it because it almost time to drop DEBUG_LL_UART_NONE anyway (only
+  four platforms still use it).
+- Rebased on latest mainline (v3.16rc3).
+
+Changes since v5:
+
+- Shortened the list of platforms that can select DEBUG_LL_UART_NONE
+  (changes Arnd Bergmann)
+- Rebased on latest mainline (v3.15rc7).
+
+Changes since v4:
+
+- Rebased to latest mainline (and tested again). No functional changes.
+
+Changes since v3:
+
+- Converted from a single patch to a series.
+- Tested defconfig builds of all impacted platforms.
+
+Changes since v2:
+
+- Switch from def_bool to bool (thanks Russell King)
+
+Changes since v1:
+
+- Remove pointless single platform support (thanks Arnd Bergmann)
+
+Daniel Thompson (9):
+  arm: versatile: Enable DEBUG_LL_UART_PL01X
+  arm: ep93xx: Enable DEBUG_LL_UART_PL01X
+  arm: Remove DEBUG_LL_UART_NONE
+  arm: ks8695: Migrate debug_ll macros to shared directory
+  arm: omap1: Migrate debug_ll macros to use 8250.S
+  arm: netx: Migrate DEBUG_LL macros to shared directory
+  arm: sa1100: Migrate DEBUG_LL macros to shared directory
+  arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+  arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+
+ arch/arm/Kconfig.debug                             | 137 ++++++++++++++++++---
+ arch/arm/configs/ep93xx_defconfig                  |   1 +
+ arch/arm/configs/versatile_defconfig               |   1 +
+ .../mach/debug-macro.S => include/debug/ks8695.S}  |  10 +-
+ .../mach/debug-macro.S => include/debug/netx.S}    |  22 ++--
+ arch/arm/include/debug/sa1100.S                    |  37 ++++++
+ arch/arm/mach-omap1/include/mach/debug-macro.S     | 101 ---------------
+ arch/arm/mach-sa1100/include/mach/debug-macro.S    |  62 ----------
+ 8 files changed, 174 insertions(+), 197 deletions(-)
+ rename arch/arm/{mach-ks8695/include/mach/debug-macro.S => include/debug/ks8695.S} (80%)
+ rename arch/arm/{mach-netx/include/mach/debug-macro.S => include/debug/netx.S} (62%)
+ create mode 100644 arch/arm/include/debug/sa1100.S
+ delete mode 100644 arch/arm/mach-omap1/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-sa1100/include/mach/debug-macro.S
+
+--
+1.9.3
+
