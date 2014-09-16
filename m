@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756AbaIPQkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:40:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21593 "EHLO mx1.redhat.com"
+	id S1754726AbaIPQlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:41:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62060 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754634AbaIPQka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:40:30 -0400
-Date: Tue, 16 Sep 2014 12:40:26 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] framebuffer: fix border color
-Message-ID: <alpine.LRH.2.02.1409161238560.3150@file01.intranet.prod.int.rdu2.redhat.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1752211AbaIPQlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 12:41:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,535,1406617200"; 
+   d="scan'208";a="573917879"
+Date: Tue, 16 Sep 2014 21:06:35 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PM: Add helper to mark last busy and autosuspend
+Message-ID: <20140916153635.GS3131@intel.com>
+References: <20140916151457.GQ3131@intel.com>
+ <Pine.LNX.4.44L0.1409161156560.1166-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1409161156560.1166-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The framebuffer code uses the current background color to fill the border
-when switching consoles, however, this results in inconsistent behavior.
-For example:
-- start Midnigh Commander
-- the border is black
-- switch to another console and switch back
-- the border is cyan
-- type something into the command line in mc
-- the border is cyan
-- switch to another console and switch back
-- the border is black
-- press F9 to go to menu
-- the border is black
-- switch to another console and switch back
-- the border is dark blue
+On Tue, Sep 16, 2014 at 11:58:13AM -0400, Alan Stern wrote:
+> On Tue, 16 Sep 2014, Vinod Koul wrote:
+> 
+> > On Tue, Sep 16, 2014 at 10:27:53AM -0400, Alan Stern wrote:
+> > > On Tue, 16 Sep 2014, Subhransu S. Prusty wrote:
+> > > 
+> > > > pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
+> > > > in quite a lot of places. Add a helper for these.
+> > > > 
+> > > > Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
+> > > > ---
+> > > >  include/linux/pm_runtime.h | 6 ++++++
+> > > >  1 file changed, 6 insertions(+)
+> > > > 
+> > > > diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> > > > index 367f49b..256ec50 100644
+> > > > --- a/include/linux/pm_runtime.h
+> > > > +++ b/include/linux/pm_runtime.h
+> > > > @@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
+> > > >  	__pm_runtime_use_autosuspend(dev, false);
+> > > >  }
+> > > >  
+> > > > +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
+> > > > +{
+> > > > +	pm_runtime_mark_last_busy(dev);
+> > > > +	return pm_runtime_put_autosuspend(dev);
+> > > > +}
+> > > > +
+> > > >  #endif
+> > > 
+> > > What's the advantage?  Removing a few bytes of source code?  There will 
+> > > no change to the object code.  (Not to mention that your patch didn't 
+> > > actually change _any_ of the places where both routines get called!)
+> > Yes we didnt change users, as we need this for one of our drivers we are
+> > trying to push.
+> 
+> Why do you need it?  Just change your driver to call
+> 
+> 	pm_runtime_mark_last_busy(dev);
+> 	pm_runtime_put_autosuspend(dev);
+> 
+> instead of
+> 
+> 	pm_runtime_last_busy_and_autosuspend(dev);
+> 
+> Or create a subroutine in your driver to do this.
+Well since this is common why not add a helper in framework!
 
-When switching to a console with Midnight Commander, the border is random
-color that was left selected by the slang subsystem.
-
-This patch fixes this inconsistency by always using black as the
-background color when switching consoles.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Cc: stable@vger.kernel.org
-
----
- drivers/video/console/bitblit.c   |    3 +--
- drivers/video/console/fbcon_ccw.c |    3 +--
- drivers/video/console/fbcon_cw.c  |    3 +--
- drivers/video/console/fbcon_ud.c  |    3 +--
- 4 files changed, 4 insertions(+), 8 deletions(-)
-
-Index: linux-3.14.18/drivers/video/console/bitblit.c
-===================================================================
---- linux-3.14.18.orig/drivers/video/console/bitblit.c	2014-09-16 00:15:21.622812568 +0200
-+++ linux-3.14.18/drivers/video/console/bitblit.c	2014-09-16 00:16:00.447137568 +0200
-@@ -205,7 +205,6 @@ static void bit_putcs(struct vc_data *vc
- static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
- 			      int bottom_only)
- {
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 	unsigned int cw = vc->vc_font.width;
- 	unsigned int ch = vc->vc_font.height;
- 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
-@@ -214,7 +213,7 @@ static void bit_clear_margins(struct vc_
- 	unsigned int bs = info->var.yres - bh;
- 	struct fb_fillrect region;
- 
--	region.color = attr_bgcol_ec(bgshift, vc, info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-Index: linux-3.14.18/drivers/video/console/fbcon_ccw.c
-===================================================================
---- linux-3.14.18.orig/drivers/video/console/fbcon_ccw.c	2014-09-16 00:15:21.619479721 +0200
-+++ linux-3.14.18/drivers/video/console/fbcon_ccw.c	2014-09-16 00:16:00.450470414 +0200
-@@ -197,9 +197,8 @@ static void ccw_clear_margins(struct vc_
- 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
- 	unsigned int bs = vc->vc_rows*ch;
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-Index: linux-3.14.18/drivers/video/console/fbcon_cw.c
-===================================================================
---- linux-3.14.18.orig/drivers/video/console/fbcon_cw.c	2014-09-16 00:15:21.622812568 +0200
-+++ linux-3.14.18/drivers/video/console/fbcon_cw.c	2014-09-16 00:16:00.450470414 +0200
-@@ -180,9 +180,8 @@ static void cw_clear_margins(struct vc_d
- 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
- 	unsigned int rs = info->var.yres - rw;
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-Index: linux-3.14.18/drivers/video/console/fbcon_ud.c
-===================================================================
---- linux-3.14.18.orig/drivers/video/console/fbcon_ud.c	2014-09-16 00:15:21.622812568 +0200
-+++ linux-3.14.18/drivers/video/console/fbcon_ud.c	2014-09-16 00:16:00.453803261 +0200
-@@ -227,9 +227,8 @@ static void ud_clear_margins(struct vc_d
- 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
- 	unsigned int bh = info->var.yres - (vc->vc_rows*ch);
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
+-- 
+~Vinod
