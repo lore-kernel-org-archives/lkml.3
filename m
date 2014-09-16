@@ -1,294 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228AbaIPTfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:35:19 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:54054 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755178AbaIPTfN (ORCPT
+	id S1755292AbaIPTmk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:42:40 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:7998 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755150AbaIPTmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:35:13 -0400
-Date: Tue, 16 Sep 2014 12:35:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Davidlohr Bueso <dave@stgolabs.net>, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 2/9] locktorture: Add documentation
-Message-ID: <20140916193507.GN4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1410493224-3312-1-git-send-email-dave@stgolabs.net>
- <1410493224-3312-3-git-send-email-dave@stgolabs.net>
- <5413997B.40301@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5413997B.40301@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091619-1542-0000-0000-000004DBDE00
+	Tue, 16 Sep 2014 15:42:36 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkMOAIqRGFRXQAMM/2dsb2JhbABggw2BKrQTBQFvmxiBFBcBeYRgI4EaN4hCAbxCGIV8iGtkHYQ1BZ0KjC0EiRSCG4FFOy+BBoFEAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Roland McGrath <roland@hack.frob.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 1/1 linux-next] ptrace: remove linux/compat.h inclusion under CONFIG_COMPAT
+Date: Tue, 16 Sep 2014 21:42:10 +0200
+Message-Id: <1410896530-18082-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 06:10:19PM -0700, Randy Dunlap wrote:
-> On 09/11/14 20:40, Davidlohr Bueso wrote:
-> > Just like Documentation/RCU/torture.txt, begin a document for the
-> > locktorture module. This module is still pretty green, so I have
-> > just added some specific sections to the doc (general desc, params,
-> > usage, etc.). Further development should update the file.
-> > 
-> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> > ---
-> >  Documentation/locking/locktorture.txt | 128 ++++++++++++++++++++++++++++++++++
-> >  1 file changed, 128 insertions(+)
-> >  create mode 100644 Documentation/locking/locktorture.txt
+Commit 84c751bd4aeb
+("ptrace: add ability to retrieve signals without removing from a queue (v4)")
+includes <linux/compat.h> globally in ptrace.c
 
-Thank you for the review, Randy!  I am folding the patch below into
-Davidlohr's patch.
+This patch removes inclusion under if defined CONFIG_COMPAT.
 
-							Thanx, Paul
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/ptrace.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-> > diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
-> > new file mode 100644
-> > index 0000000..c0ab969
-> > --- /dev/null
-> > +++ b/Documentation/locking/locktorture.txt
-> > @@ -0,0 +1,128 @@
-> > +Kernel Lock Torture Test Operation
-> > +
-> > +CONFIG_LOCK_TORTURE_TEST
-> > +
-> > +The CONFIG LOCK_TORTURE_TEST config option provides a kernel module
-> > +that runs torture tests on core kernel locking primitives. The kernel
-> > +module, 'locktorture', may be built after the fact on the running
-> > +kernel to be tested, if desired. The tests periodically outputs status
-> 
->                                                            output
-> 
-> > +messages via printk(), which can be examined via the dmesg (perhaps
-> > +grepping for "torture").  The test is started when the module is loaded,
-> > +and stops when the module is unloaded. This program is based on how RCU
-> > +is tortured, via rcutorture.
-> > +
-> > +This torture test consists of creating a number of kernel threads which
-> > +acquires the lock and holds it for specific amount of time, thus simulating
-> 
->    acquire               hold
-> 
-> > +different critical region behaviors. The amount of contention on the lock
-> > +can be simulated by either enlarging this critical region hold time and/or
-> > +creating more kthreads.
-> > +
-> > +
-> > +MODULE PARAMETERS
-> > +
-> > +This module has the following parameters:
-> > +
-> > +
-> > +	    ** Locktorture-specific **
-> > +
-> > +nwriters_stress   Number of kernel threads that will stress exclusive lock
-> > +		  ownership (writers). The default value is twice the amount
-> 
-> I would s/amount/number/ but that's minor.
-> 
-> > +		  of online CPUs.
-> > +
-> > +torture_type	  Type of lock to torture. By default, only spinlocks will
-> > +		  be tortured. This module can torture the following locks,
-> > +		  with string values as follows:
-> > +
-> > +		     o "lock_busted": Simulates a buggy lock implementation.
-> > +
-> > +		     o "spin_lock": spin_lock() and spin_unlock() pairs.
-> > +
-> > +		     o "spin_lock_irq": spin_lock_irq() and spin_unlock_irq()
-> > +					pairs.
-> > +
-> > +torture_runnable  Start locktorture at module init. By default it will begin
-> > +		  once the module is loaded.
-> 
-> What differences would that make?
-> 
-> > +
-> > +
-> > +	    ** Torture-framework (RCU + locking) **
-> > +
-> > +shutdown_secs	  The number of seconds to run the test before terminating
-> > +		  the test and powering off the system.  The default is
-> > +		  zero, which disables test termination and system shutdown.
-> > +		  This capability is useful for automated testing.
-> > +
-> > +onoff_holdoff	  The number of seconds between each attempt to execute a
-> > +		  randomly selected CPU-hotplug operation.  Defaults to
-> > +		  zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
-> 
-> s/HOTPLUG_CPU/CONFIG_HOTPLUG_CPU/ to be consistent.
-> 
-> > +		  kernels, locktorture will silently refuse to do any
-> > +		  CPU-hotplug operations regardless of what value is
-> > +		  specified for onoff_interval.
-> 
-> eh?  what is                    onoff_interval ?
-> 
-> Oh, the param name (in leftmost column) above should be onoff_interval since
-> onoff_holdoff is below.
-> 
-> > +
-> > +onoff_holdoff	  The number of seconds to wait until starting CPU-hotplug
-> > +		  operations.  This would normally only be used when
-> > +		  locktorture was built into the kernel and started
-> > +		  automatically at boot time, in which case it is useful
-> > +		  in order to avoid confusing boot-time code with CPUs
-> > +		  coming and going. This parameter is only useful if
-> > +		  CONFIG_HOTPLUG_CPU is enabled.
-> > +
-> > +stat_interval	  Number of seconds between statistics-related printk()s.
-> > +		  By default, locktorture will report stats every 60 seconds.
-> > +		  Setting the interval to zero causes the statistics to
-> > +		  be printed -only- when the module is unloaded, and this
-> > +		  is the default.
-> > +
-> > +stutter		  The length of time to run the test before pausing for this
-> > +		  same period of time.  Defaults to "stutter=5", so as
-> > +		  to run and pause for (roughly) five-second intervals.
-> > +		  Specifying "stutter=0" causes the test to run continuously
-> > +		  without pausing, which is the old default behavior.
-> > +
-> > +shuffle_interval  The number of seconds to keep the test threads affinitied
-> > +		  to a particular subset of the CPUs, defaults to 3 seconds.
-> > +		  Used in conjunction with test_no_idle_hz.
-> > +
-> > +verbose		  Enable verbose debugging printking, via printk(). Enabled
-> 
-> 			                           printing
-> 
-> > +		  by default. This extra information is mostly related to
-> > +		  high-level errors and reports from the main 'torture'
-> > +		  framework.
-> > +
-> > +
-> > +STATISTICS
-> > +
-> > +Statistics are printed in the following format:
-> > +
-> > +spin_lock-torture: Writes:  Total: 93746064  Max/Min: 0/0   Fail: 0
-> > +   (A)				   (B)		  (C)	       (D)
-> > +
-> > +(A): Lock type that is being tortured -- torture_type parameter.
-> > +
-> > +(B): Number of times the lock was acquired.
-> > +
-> > +(C): Min and max number of times threads failed to acquire the lock.
-> > +
-> > +(D): true/false values if there were errors acquiring the lock. This should
-> > +     -only- be positive if there is a bug in the locking primitive's
-> > +     implementation. Otherwise a lock should never fail (ie: spin_lock()).
-> 
->                                                            (i.e., spin_lock()).
-> 
-> > +     Of course, the same applies for (C), above. A dummy example of this is
-> > +     the "lock_busted" type.
-> > +
-> > +USAGE
-> > +
-> > +The following script may be used to torture locks:
-> > +
-> > +	#!/bin/sh
-> > +
-> > +	modprobe locktorture
-> > +	sleep 3600
-> > +	rmmod locktorture
-> > +	dmesg | grep torture:
-> > +
-> > +The output can be manually inspected for the error flag of "!!!".
-> > +One could of course create a more elaborate script that automatically
-> > +checked for such errors.  The "rmmod" command forces a "SUCCESS",
-> > +"FAILURE", or "RCU_HOTPLUG" indication to be printk()ed.  The first
-> > +two are self-explanatory, while the last indicates that while there
-> > +were no locking failures, CPU-hotplug problems were detected.
-> > +
-> > +Also see: Documentation/RCU/torture.txt
-
-diff --git a/Documentation/locking/locktorture.txt b/Documentation/locking/locktorture.txt
-index f7d99e2a5799..be715015e0f7 100644
---- a/Documentation/locking/locktorture.txt
-+++ b/Documentation/locking/locktorture.txt
-@@ -5,14 +5,14 @@ CONFIG_LOCK_TORTURE_TEST
- The CONFIG LOCK_TORTURE_TEST config option provides a kernel module
- that runs torture tests on core kernel locking primitives. The kernel
- module, 'locktorture', may be built after the fact on the running
--kernel to be tested, if desired. The tests periodically outputs status
-+kernel to be tested, if desired. The tests periodically output status
- messages via printk(), which can be examined via the dmesg (perhaps
- grepping for "torture").  The test is started when the module is loaded,
- and stops when the module is unloaded. This program is based on how RCU
- is tortured, via rcutorture.
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 54e7522..d4f8e3e 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -1094,7 +1094,6 @@ int generic_ptrace_pokedata(struct task_struct *tsk, unsigned long addr,
+ }
  
- This torture test consists of creating a number of kernel threads which
--acquires the lock and holds it for specific amount of time, thus simulating
-+acquire the lock and hold it for specific amount of time, thus simulating
- different critical region behaviors. The amount of contention on the lock
- can be simulated by either enlarging this critical region hold time and/or
- creating more kthreads.
-@@ -26,7 +26,7 @@ This module has the following parameters:
- 	    ** Locktorture-specific **
+ #if defined CONFIG_COMPAT
+-#include <linux/compat.h>
  
- nwriters_stress   Number of kernel threads that will stress exclusive lock
--		  ownership (writers). The default value is twice the amount
-+		  ownership (writers). The default value is twice the number
- 		  of online CPUs.
- 
- nreaders_stress   Number of kernel threads that will stress shared lock
-@@ -49,8 +49,10 @@ torture_type	  Type of lock to torture. By default, only spinlocks will
- 
- 		     o "rwsem_lock": read/write down() and up() semaphore pairs.
- 
--torture_runnable  Start locktorture at module init. By default it will begin
--		  once the module is loaded.
-+torture_runnable  Start locktorture at boot time in the case where the
-+		  module is built into the kernel, otherwise wait for
-+		  torture_runnable to be set via sysfs before starting.
-+		  By default it will begin once the module is loaded.
- 
- 
- 	    ** Torture-framework (RCU + locking) **
-@@ -60,12 +62,12 @@ shutdown_secs	  The number of seconds to run the test before terminating
- 		  zero, which disables test termination and system shutdown.
- 		  This capability is useful for automated testing.
- 
--onoff_holdoff	  The number of seconds between each attempt to execute a
--		  randomly selected CPU-hotplug operation.  Defaults to
--		  zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
--		  kernels, locktorture will silently refuse to do any
--		  CPU-hotplug operations regardless of what value is
--		  specified for onoff_interval.
-+onoff_interval	  The number of seconds between each attempt to execute a
-+		  randomly selected CPU-hotplug operation.  Defaults
-+		  to zero, which disables CPU hotplugging.  In
-+		  CONFIG_HOTPLUG_CPU=n kernels, locktorture will silently
-+		  refuse to do any CPU-hotplug operations regardless of
-+		  what value is specified for onoff_interval.
- 
- onoff_holdoff	  The number of seconds to wait until starting CPU-hotplug
- 		  operations.  This would normally only be used when
-@@ -91,7 +93,7 @@ shuffle_interval  The number of seconds to keep the test threads affinitied
- 		  to a particular subset of the CPUs, defaults to 3 seconds.
- 		  Used in conjunction with test_no_idle_hz.
- 
--verbose		  Enable verbose debugging printking, via printk(). Enabled
-+verbose		  Enable verbose debugging printing, via printk(). Enabled
- 		  by default. This extra information is mostly related to
- 		  high-level errors and reports from the main 'torture'
- 		  framework.
-@@ -115,7 +117,7 @@ spin_lock-torture: Writes:  Total: 93746064  Max/Min: 0/0   Fail: 0
- 
- (E): true/false values if there were errors acquiring the lock. This should
-      -only- be positive if there is a bug in the locking primitive's
--     implementation. Otherwise a lock should never fail (ie: spin_lock()).
-+     implementation. Otherwise a lock should never fail (i.e., spin_lock()).
-      Of course, the same applies for (C), above. A dummy example of this is
-      the "lock_busted" type.
- 
+ int compat_ptrace_request(struct task_struct *child, compat_long_t request,
+ 			  compat_ulong_t addr, compat_ulong_t data)
+-- 
+2.1.0
 
