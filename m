@@ -1,152 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaIPWsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:48:15 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52323 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484AbaIPWrG (ORCPT
+	id S1754853AbaIPWtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:49:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45976 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068AbaIPWtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:47:06 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org
-Subject: [PATCH v10 6/9] arm: netx: Migrate DEBUG_LL macros to shared directory
-Date: Tue, 16 Sep 2014 23:46:25 +0100
-Message-Id: <1410907588-19957-7-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org>
-References: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 16 Sep 2014 18:49:10 -0400
+Date: Tue, 16 Sep 2014 15:49:14 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Peter Ujfalusi <peter.ujfalusi@gmail.com>
+Cc: mjg59@srcf.ucam.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/2] intel-rst: Use ACPI_FAILURE() macro instead
+ !ACPI_SUCCESS() for error checking
+Message-ID: <20140916224914.GA17720@vmdeb7>
+References: <1410902036-10282-1-git-send-email-peter.ujfalusi@gmail.com>
+ <1410902036-10282-2-git-send-email-peter.ujfalusi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410902036-10282-2-git-send-email-peter.ujfalusi@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of the migration we introduce DEBUG_UART_PHYS/DEBUG_UART_VIRT
-which default to UART1 but allow a user to configure UART2 or UART3.
-We also introduce symbolic names for the registers and flags.
+On Wed, Sep 17, 2014 at 12:13:55AM +0300, Peter Ujfalusi wrote:
+> ACPI_SUCCESS is defined as:
+> #define ACPI_SUCCESS(a)			(!(a))
+> 
+> There is no need for the the double ! since there is already a macro
+> defined for failures: ACPI_FAILURE()
+> 
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/Kconfig.debug                             | 16 ++++++++++++++--
- .../mach/debug-macro.S => include/debug/netx.S}    | 22 +++++++++++-----------
- 2 files changed, 25 insertions(+), 13 deletions(-)
- rename arch/arm/{mach-netx/include/mach/debug-macro.S => include/debug/netx.S} (62%)
+Cc: linux-acpi
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 01f4ee2..c61a7eb 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -447,6 +447,13 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on Vybrid based platforms.
- 
-+	config DEBUG_NETX_UART
-+		bool "Kernel low-level debugging messages via NetX UART"
-+		depends on ARCH_NETX
-+		help
-+		  Say Y here if you want kernel low-level debugging support
-+		  on Hilscher NetX based platforms.
-+
- 	config DEBUG_NOMADIK_UART
- 		bool "Kernel low-level debugging messages via NOMADIK UART"
- 		depends on ARCH_NOMADIK
-@@ -1074,6 +1081,7 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX6SX_UART
- 	default "debug/ks8695.S" if DEBUG_KS8695_UART
- 	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
-+	default "debug/netx.S" if DEBUG_NETX_UART
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
- 	default "debug/s3c24xx.S" if DEBUG_S3C24XX_UART
- 	default "debug/s5pv210.S" if DEBUG_S5PV210_UART
-@@ -1106,6 +1114,7 @@ config DEBUG_UART_8250
- 
- config DEBUG_UART_PHYS
- 	hex "Physical base address of debug UART"
-+	default 0x00100a00 if DEBUG_NETX_UART
- 	default 0x01c20000 if DEBUG_DAVINCI_DMx_UART0
- 	default 0x01c28000 if DEBUG_SUNXI_UART0
- 	default 0x01c28400 if DEBUG_SUNXI_UART1
-@@ -1176,10 +1185,12 @@ config DEBUG_UART_PHYS
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_LL_UART_EFM32 || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
--		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART
-+		DEBUG_MSM_UART || DEBUG_NETX_UART || DEBUG_QCOM_UARTDM || \
-+		DEBUG_S3C24XX_UART
- 
- config DEBUG_UART_VIRT
- 	hex "Virtual base address of debug UART"
-+	default 0xe0000a00 if DEBUG_NETX_UART
- 	default 0xe0010fe0 if ARCH_RPC
- 	default 0xe1000000 if DEBUG_MSM_UART
- 	default 0xf0000be0 if ARCH_EBSA110
-@@ -1247,7 +1258,8 @@ config DEBUG_UART_VIRT
- 	default DEBUG_UART_PHYS if !MMU
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
--		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM || DEBUG_S3C24XX_UART
-+		DEBUG_MSM_UART || DEBUG_NETX_UART || DEBUG_QCOM_UARTDM || \
-+		DEBUG_S3C24XX_UART
- 
- config DEBUG_UART_8250_SHIFT
- 	int "Register offset shift for the 8250 debug UART"
-diff --git a/arch/arm/mach-netx/include/mach/debug-macro.S b/arch/arm/include/debug/netx.S
-similarity index 62%
-rename from arch/arm/mach-netx/include/mach/debug-macro.S
-rename to arch/arm/include/debug/netx.S
-index 247781e..81e1b2a 100644
---- a/arch/arm/mach-netx/include/mach/debug-macro.S
-+++ b/arch/arm/include/debug/netx.S
-@@ -1,5 +1,4 @@
--/* arch/arm/mach-netx/include/mach/debug-macro.S
-- *
-+/*
-  * Debugging macro include header
-  *
-  *  Copyright (C) 1994-1999 Russell King
-@@ -11,26 +10,27 @@
-  *
- */
- 
--#include "hardware.h"
-+#define UART_DATA 0
-+#define UART_FLAG 0x18
-+#define UART_FLAG_BUSY (1 << 3)
- 
- 		.macro	addruart, rp, rv, tmp
--		mov	\rp, #0x00000a00
--		orr	\rv, \rp, #io_p2v(0x00100000)	@ virtual
--		orr	\rp, \rp, #0x00100000		@ physical
-+		ldr	\rp, =CONFIG_DEBUG_UART_PHYS
-+		ldr	\rv, =CONFIG_DEBUG_UART_VIRT
- 		.endm
- 
- 		.macro	senduart,rd,rx
--		str	\rd, [\rx, #0]
-+		str	\rd, [\rx, #UART_DATA]
- 		.endm
- 
- 		.macro	busyuart,rd,rx
--1002:		ldr	\rd, [\rx, #0x18]
--		tst	\rd, #(1 << 3)
-+1002:		ldr	\rd, [\rx, #UART_FLAG]
-+		tst	\rd, #UART_FLAG_BUSY
- 		bne	1002b
- 		.endm
- 
- 		.macro	waituart,rd,rx
--1001:		ldr	\rd, [\rx, #0x18]
--		tst	\rd, #(1 << 3)
-+1001:		ldr	\rd, [\rx, #UART_FLAG]
-+		tst	\rd, #UART_FLAG_BUSY
- 		bne	1001b
- 		.endm
+Thanks,
+
+Darren
+
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@gmail.com>
+> ---
+>  drivers/platform/x86/intel-rst.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/intel-rst.c b/drivers/platform/x86/intel-rst.c
+> index d45bca3..8c6a8fe 100644
+> --- a/drivers/platform/x86/intel-rst.c
+> +++ b/drivers/platform/x86/intel-rst.c
+> @@ -35,7 +35,7 @@ static ssize_t irst_show_wakeup_events(struct device *dev,
+>  	acpi = to_acpi_device(dev);
+>  
+>  	status = acpi_evaluate_integer(acpi->handle, "GFFS", NULL, &value);
+> -	if (!ACPI_SUCCESS(status))
+> +	if (ACPI_FAILURE(status))
+>  		return -EINVAL;
+>  
+>  	return sprintf(buf, "%lld\n", value);
+> @@ -59,7 +59,7 @@ static ssize_t irst_store_wakeup_events(struct device *dev,
+>  
+>  	status = acpi_execute_simple_method(acpi->handle, "SFFS", value);
+>  
+> -	if (!ACPI_SUCCESS(status))
+> +	if (ACPI_FAILURE(status))
+>  		return -EINVAL;
+>  
+>  	return count;
+> @@ -81,7 +81,7 @@ static ssize_t irst_show_wakeup_time(struct device *dev,
+>  	acpi = to_acpi_device(dev);
+>  
+>  	status = acpi_evaluate_integer(acpi->handle, "GFTV", NULL, &value);
+> -	if (!ACPI_SUCCESS(status))
+> +	if (ACPI_FAILURE(status))
+>  		return -EINVAL;
+>  
+>  	return sprintf(buf, "%lld\n", value);
+> @@ -105,7 +105,7 @@ static ssize_t irst_store_wakeup_time(struct device *dev,
+>  
+>  	status = acpi_execute_simple_method(acpi->handle, "SFTV", value);
+>  
+> -	if (!ACPI_SUCCESS(status))
+> +	if (ACPI_FAILURE(status))
+>  		return -EINVAL;
+>  
+>  	return count;
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 -- 
-1.9.3
-
+Darren Hart
+Intel Open Source Technology Center
