@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaIPV5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:57:03 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48457 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaIPV5A (ORCPT
+	id S1753113AbaIPWBL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:01:11 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:40942 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaIPWBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:57:00 -0400
-From: Darren Hart <dvhart@infradead.org>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Frans Klaver <fransklaver@gmail.com>
-Subject: [PATCH] Documentation/sysfs-rules.txt: Add device attribute error code documentation
-Date: Tue, 16 Sep 2014 14:56:37 -0700
-Message-Id: <933ed4c751511b0b4a6665b7d4ca90d54d1111cb.1410904597.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 2.1.0.rc1
+	Tue, 16 Sep 2014 18:01:10 -0400
+Message-ID: <1410904867.2447.9.camel@j-VirtualBox>
+Subject: Re: [PATCH v2] locking/rwsem: Avoid double checking before try
+ acquiring write lock
+From: Jason Low <jason.low2@hp.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Davidlohr Bueso <dbueso@suse.de>, linux-kernel@vger.kernel.org,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>, jason.low2@hp.com
+Date: Tue, 16 Sep 2014 15:01:07 -0700
+In-Reply-To: <541898C7.6070508@hurleysoftware.com>
+References: <1410894118.2447.4.camel@j-VirtualBox>
+	 <541898C7.6070508@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darren Hart <dvhart@linux.intel.com>
+On Tue, 2014-09-16 at 16:08 -0400, Peter Hurley wrote:
+> Hi Jason,
+> 
+> On 09/16/2014 03:01 PM, Jason Low wrote:
+> > Commit 9b0fc9c09f1b checks for if there are known active lockers in
+> > order to avoid write trylocking using expensive cmpxchg() when it
+> > likely wouldn't get the lock.
+> > 
+> > However, a subsequent patch was added such that we directly check for
+> > sem->count == RWSEM_WAITING_BIAS right before trying that cmpxchg().
+> > Thus, commit 9b0fc9c09f1b now just adds extra overhead. This patch
+> > deletes it.
+> 
+> It would be better to just not reload sem->count, and check the parameter
+> count == RWSEM_WAITING_BIAS instead. The count parameter is a very recent
+> load of sem->count (one of which is the latest exclusive read from an
+> atomic operation), so likely to be just as accurate as a reload of
+> sem->count without causing more cache line contention.
 
-Provide some entry-level statements about what to expect from sysfs
-device attribute read/store return codes, both for users and kernel
-developers.
+Hi Peter and Tim,
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Azael Avalos <coproscefalo@gmail.com>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Frans Klaver <fransklaver@gmail.com>
----
- Documentation/sysfs-rules.txt | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+Yes, I also agree. I will send out a new patch with this update.
 
-diff --git a/Documentation/sysfs-rules.txt b/Documentation/sysfs-rules.txt
-index a5f985e..ce60ffa 100644
---- a/Documentation/sysfs-rules.txt
-+++ b/Documentation/sysfs-rules.txt
-@@ -161,3 +161,24 @@ versions of the sysfs interface.
-   the device that matches the expected subsystem. Depending on a specific
-   position of a parent device or exposing relative paths using "../" to
-   access the chain of parents is a bug in the application.
-+
-+- When reading and writing sysfs device attribute files, avoid dependency
-+  on specific error codes wherever possible. This minimizes coupling to
-+  the error handling implementation within the kernel.
-+
-+  In general, failures to read or write sysfs device attributes shall
-+  propagate errors wherever possible. Common errors include, but are not
-+  limited to:
-+
-+  -EIO: The read or store operation is not supported, typically returned by
-+        the sysfs system itself if the read or store pointer is NULL.
-+
-+  -ENXIO: The read or store operation failed
-+
-+  Error codes will not be changed without good reason, and should a change
-+  to error codes result in user-space breakage, it will be fixed, or the
-+  the offending change will be reverted.
-+
-+  Userspace applications can, however, expect the format and contents of
-+  the attribute files to remain consistent in the absence of a version
-+  attribute change in the context of a given attribute.
--- 
-2.1.0.rc1
+Thanks,
+Jason
 
