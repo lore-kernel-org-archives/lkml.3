@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaIPCk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 22:40:56 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57612 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807AbaIPCkz (ORCPT
+	id S1754658AbaIPCmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 22:42:18 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:53556 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbaIPCmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 22:40:55 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 16 Sep 2014 11:41:07 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] zsmalloc: simplify init_zspage free obj linking
-Message-ID: <20140916024107.GF10912@bbox>
-References: <20140914232427.GD2160@bbox>
- <1410814730-5740-1-git-send-email-ddstreet@ieee.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1410814730-5740-1-git-send-email-ddstreet@ieee.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 15 Sep 2014 22:42:16 -0400
+Subject: Re: [PATCH v3 16/17] arcmsr: support new adapter ARC12x4 series
+From: Ching Huang <ching2048@areca.com.tw>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Tomas Henzl <thenzl@redhat.com>, jbottomley@parallels.com,
+        dan.carpenter@oracle.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140915170519.GB31009@infradead.org>
+References: <1408433122.4748.73.camel@Centos6.3-64>
+	 <53FDE490.1070201@redhat.com> <1409240809.4762.259.camel@Centos6.3-64>
+	 <53FF2544.8020601@redhat.com> <20140909163057.GA25745@infradead.org>
+	 <541020CB.8010302@redhat.com> <5416E858.7010709@redhat.com>
+	 <20140915170519.GB31009@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Sep 2014 10:42:08 +0800
+Message-ID: <1410835328.4782.9.camel@Centos6.3-64>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-24.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 04:58:50PM -0400, Dan Streetman wrote:
-> Change zsmalloc init_zspage() logic to iterate through each object on
-> each of its pages, checking the offset to verify the object is on the
-> current page before linking it into the zspage.
+On Mon, 2014-09-15 at 10:05 -0700, Christoph Hellwig wrote:
+> On Mon, Sep 15, 2014 at 03:23:36PM +0200, Tomas Henzl wrote:
+> > Christoph,
+> > 
+> > you may add my 'reviewed-by' to the arcmsr series
+> > http://git.infradead.org/users/hch/scsi-queue.git/tree/arcmsr-for-3.18:/drivers/scsi/arcmsr
+> > with the '[PATCH v5 2/2] arcmsr: simplify of updating doneq_index and postq_index'
+> > ( https://lkml.org/lkml/2014/9/15/177 ) on top of the series
+> > that last patch fixes the 16/17 from your git.
+> > I hope the series is an iteration in the right direction.
+> > Skip the the '[PATCH v4 1/2] arcmsr: simplify ioctl data read/write', Ching will repost it later.
 > 
-> The current zsmalloc init_zspage free object linking code has logic
-> that relies on there only being one page per zspage when PAGE_SIZE
-> is a multiple of class->size.  It calculates the number of objects
-> for the current page, and iterates through all of them plus one,
-> to account for the assumed partial object at the end of the page.
-> While this currently works, the logic can be simplified to just
-> link the object at each successive offset until the offset is larger
-> than PAGE_SIZE, which does not rely on PAGE_SIZE being a multiple of
-> class->size.
+> Thanks a lot Tomas for all the review, and thanks Ching for the patches
+> and updates.  I'll merge the branch and the additional patch today.
 > 
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
-> Cc: Minchan Kim <minchan@kernel.org>
-Acked-by: Minchan Kim <minchan@kernel.org>
 
--- 
-Kind regards,
-Minchan Kim
+Christoph,
+
+The [PATCH v5 2/2] was depend on [PATCH v4 1/2].
+If you skip patch 1/2, then patch 2/2 may cause line number mismatch.
+How should I do? Please advise.
+
+
+
