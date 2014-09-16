@@ -1,144 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaIPHLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:11:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10290 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752360AbaIPHLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:11:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="603435447"
-Message-ID: <1410851466.7023.44.camel@linux.intel.com>
-Subject: Re: [PATCH v4 05/12] seq_file: provide an analogue of
- print_hex_dump()
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Helge Deller <deller@gmx.de>,
-        Ingo Tuchscherer <ingo.tuchscherer@de.ibm.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Marek Vasut <marex@denx.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Vladimir Kondratiev <qca_vkondrat@qca.qualcomm.com>,
-        Benjamin Romer <benjamin.romer@unisys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>
-Date: Tue, 16 Sep 2014 10:11:06 +0300
-In-Reply-To: <1409840819-18976-6-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1409840819-18976-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1409840819-18976-6-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752880AbaIPHQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:16:44 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:60557 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbaIPHQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:16:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140916063115.GF17875@mwanda>
+References: <20140916033333.GA26821@devel>
+	<20140916063115.GF17875@mwanda>
+Date: Tue, 16 Sep 2014 16:16:42 +0900
+Message-ID: <CAHb8M2DN+FyctZVeQjR5jOQ=GPUYVDCAy2f_Q145TPU2Cg0dTg@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: use schedule_timeout_interruptible()
+ instead of dgap_ms_sleep()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Lidza Louina <lidza.louina@gmail.com>, Mark Hounschell <markh@compro.net>,
+        devel <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-04 at 17:26 +0300, Andy Shevchenko wrote:
-> The new seq_hex_dump() is a complete analogue of print_hex_dump().
-> 
-> We have few users of this functionality already. It allows to reduce their
-> codebase.
+Hi,
 
-Al, what do you think about this version?
+2014-09-16 15:31 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>
+> On Tue, Sep 16, 2014 at 12:33:33PM +0900, Daeseok Youn wrote:
+> > @@ -2297,12 +2273,12 @@ static void dgap_tty_close(struct tty_struct *tty, struct file *file)
+> >                        * Go to sleep to ensure RTS/DTR
+> >                        * have been dropped for modems to see it.
+> >                        */
+> > -                     if (ch->ch_close_delay) {
+> > -                             spin_unlock_irqrestore(&ch->ch_lock,
+> > -                                                    lock_flags);
+> > -                             dgap_ms_sleep(ch->ch_close_delay);
+> > -                             spin_lock_irqsave(&ch->ch_lock, lock_flags);
+> > -                     }
+> > +                     spin_unlock_irqrestore(&ch->ch_lock,
+> > +                                     lock_flags);
+> > +                     /* .25 second delay for dropping RTS/DTR */
+> > +                     schedule_timeout_interruptible(msecs_to_jiffies(250));
+> > +                     signal_pending(current);
+>
+> There is no point in calling signal_pending() if you don't care about
+> the return value.
+Yes, you're right.
+Originally it didn't have any handling of the return value from
+signal_pending().
+So, I will re-send this patch after removing signal_pending().
 
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  fs/seq_file.c            | 50 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/seq_file.h |  4 ++++
->  2 files changed, 54 insertions(+)
-> 
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 3857b72..66c721f4 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -12,6 +12,7 @@
->  #include <linux/slab.h>
->  #include <linux/cred.h>
->  #include <linux/mm.h>
-> +#include <linux/printk.h>
->  
->  #include <asm/uaccess.h>
->  #include <asm/page.h>
-> @@ -794,6 +795,55 @@ void seq_pad(struct seq_file *m, char c)
->  }
->  EXPORT_SYMBOL(seq_pad);
->  
-> +/* Analogue of print_hex_dump() */
-> +int seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
-> +		 int rowsize, int groupsize, const void *buf, size_t len,
-> +		 bool ascii)
-> +{
-> +	const u8 *ptr = buf;
-> +	int i, linelen, remaining = len;
-> +	int ret;
-> +
-> +	if (rowsize != 16 && rowsize != 32)
-> +		rowsize = 16;
-> +
-> +	for (i = 0; i < len; i += rowsize) {
-> +		linelen = min(remaining, rowsize);
-> +		remaining -= rowsize;
-> +
-> +		/* Prefix string */
-> +		ret = seq_printf(m, "%s", prefix_str);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		/* Counter if asked */
-> +		if (prefix_type == DUMP_PREFIX_ADDRESS)
-> +			ret = seq_printf(m, "%p: ", ptr + i);
-> +		else if (prefix_type == DUMP_PREFIX_OFFSET)
-> +			ret = seq_printf(m, "%.8x: ", i);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		/* Hex dump */
-> +		ret = hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
-> +					 m->buf + m->count, m->size - m->count,
-> +					 ascii);
-> +		if (m->count + ret >= m->size) {
-> +			seq_set_overflow(m);
-> +			return -1;
-> +		}
-> +		m->count += ret;
-> +
-> +		/* EOL */
-> +		ret = seq_putc(m, '\n');
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(seq_hex_dump);
-> +
->  struct list_head *seq_list_start(struct list_head *head, loff_t pos)
->  {
->  	struct list_head *lh;
-> diff --git a/include/linux/seq_file.h b/include/linux/seq_file.h
-> index 52e0097..5de290c 100644
-> --- a/include/linux/seq_file.h
-> +++ b/include/linux/seq_file.h
-> @@ -107,6 +107,10 @@ int seq_write(struct seq_file *seq, const void *data, size_t len);
->  __printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
->  __printf(2, 0) int seq_vprintf(struct seq_file *, const char *, va_list args);
->  
-> +int seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
-> +		 int rowsize, int groupsize, const void *buf, size_t len,
-> +		 bool ascii);
-> +
->  int seq_path(struct seq_file *, const struct path *, const char *);
->  int seq_dentry(struct seq_file *, struct dentry *, const char *);
->  int seq_path_root(struct seq_file *m, const struct path *path,
+Thanks.
 
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+regards,
+Daeseok Youn
+>
+> > +                     spin_lock_irqsave(&ch->ch_lock, lock_flags);
+> >               }
+> >
+>
+> regards,
+> dan carpenter
