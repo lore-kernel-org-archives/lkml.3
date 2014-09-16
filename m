@@ -1,66 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaIPDkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 23:40:53 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:62229 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904AbaIPDkv (ORCPT
+	id S1754423AbaIPDlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 23:41:01 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38087 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbaIPDk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 23:40:51 -0400
+	Mon, 15 Sep 2014 23:40:58 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s8G3eqWV022067, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>
+Subject: [PATCH net] r8169: adjust __rtl8169_set_features
+Date: Tue, 16 Sep 2014 11:40:47 +0800
+Message-ID: <1394712342-15778-42-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20140916000321.GA19564@electric-eye.fr.zoreil.com>
+References: <20140916000321.GA19564@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-In-Reply-To: <20140809015857.17af92e7@canb.auug.org.au>
-References: <CAJe_ZhdZTSs+Ns4u7bMXwbLHYTnE-5XEE8uev4zXbXrCP52bSg@mail.gmail.com>
-	<20140808142912.7bf68229@canb.auug.org.au>
-	<CAJe_ZhceR1j_b-_efJoq9Dv6X6C=UuMgyp8AofjcCvc+bQVkfw@mail.gmail.com>
-	<20140808144137.GE30282@n2100.arm.linux.org.uk>
-	<CAJe_Zhc+_zCB+7196rsHb=KxG4JyuvyODXCpEX-y4XhwRjoBrw@mail.gmail.com>
-	<20140809015857.17af92e7@canb.auug.org.au>
-Date: Mon, 15 Sep 2014 20:40:50 -0700
-Message-ID: <CAJe_ZhcRs45Rmzpjb-O+A=+HCUt9SspdgPofMkqd5+xL=TYwDA@mail.gmail.com>
-Subject: Re: Request to include Mailbox tree in linux-next
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
-        Mollie Wu <mollie.wu@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Andy Green <andy.green@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2014 08:58, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Jassi,
->
-> On Fri, 8 Aug 2014 20:40:47 +0530 Jassi Brar <jaswinder.singh@linaro.org> wrote:
->>
->> On 8 August 2014 20:11, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
->> >> Upon Mark's suggestion (and the right thing to do) I wanted the patchset
->> >> to live the cycle in linux-next.
->> >
->> > Yes, that's the right thing to do, but you sent the request at an
->> > inappropriate time.  The correct time to send your request would be
->> > after 3.17-rc1 has been released, IOW after the current merge window
->> > is over.
->> >
->> > In general, kernel developers don't "remember" requests from one week
->> > to the next; instead, we much prefer people send their requests at the
->> > appropriate times in the development cycle.
->> >
->> OK, thanks for explaining.
->
-> As Russell has said, if you remind me after -rc1 is out, I will add
-> your tree then.  I will try to remember, but don't depend on it.
->
-Hi Stephen, Could you please add now ?
+Remove the "changed" test in __rtl8169_set_features(). Instead, do
+simple test in rtl8169_set_features().
 
-Tree:       git://git.linaro.org/landing-teams/working/fujitsu/integration.git
-Branch:   mailbox-for-next
-Contact:  Jassi Brar <jaswinder.singh@linaro.org>
+Set the RxChkSum and RxVlan through __rtl8169_set_features() in
+rtl_open().
 
-Thanks,
-Jassi
+Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 74 +++++++++++++++++-------------------
+ 1 file changed, 34 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 7a7860a..ef2cee5 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1783,33 +1783,31 @@ static void __rtl8169_set_features(struct net_device *dev,
+ 				   netdev_features_t features)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+-	netdev_features_t changed = features ^ dev->features;
+ 	void __iomem *ioaddr = tp->mmio_addr;
++	u32 rx_config;
+ 
+-	if (!(changed & (NETIF_F_RXALL | NETIF_F_RXCSUM |
+-			 NETIF_F_HW_VLAN_CTAG_RX)))
+-		return;
++	rx_config = RTL_R32(RxConfig);
++	if (features & NETIF_F_RXALL)
++		rx_config |= (AcceptErr | AcceptRunt);
++	else
++		rx_config &= ~(AcceptErr | AcceptRunt);
+ 
+-	if (changed & (NETIF_F_RXCSUM | NETIF_F_HW_VLAN_CTAG_RX)) {
+-		if (features & NETIF_F_RXCSUM)
+-			tp->cp_cmd |= RxChkSum;
+-		else
+-			tp->cp_cmd &= ~RxChkSum;
++	RTL_W32(RxConfig, rx_config);
+ 
+-		if (features & NETIF_F_HW_VLAN_CTAG_RX)
+-			tp->cp_cmd |= RxVlan;
+-		else
+-			tp->cp_cmd &= ~RxVlan;
++	if (features & NETIF_F_RXCSUM)
++		tp->cp_cmd |= RxChkSum;
++	else
++		tp->cp_cmd &= ~RxChkSum;
+ 
+-		RTL_W16(CPlusCmd, tp->cp_cmd);
+-		RTL_R16(CPlusCmd);
+-	}
+-	if (changed & NETIF_F_RXALL) {
+-		int tmp = (RTL_R32(RxConfig) & ~(AcceptErr | AcceptRunt));
+-		if (features & NETIF_F_RXALL)
+-			tmp |= (AcceptErr | AcceptRunt);
+-		RTL_W32(RxConfig, tmp);
+-	}
++	if (features & NETIF_F_HW_VLAN_CTAG_RX)
++		tp->cp_cmd |= RxVlan;
++	else
++		tp->cp_cmd &= ~RxVlan;
++
++	tp->cp_cmd |= RTL_R16(CPlusCmd) & ~(RxVlan | RxChkSum);
++
++	RTL_W16(CPlusCmd, tp->cp_cmd);
++	RTL_R16(CPlusCmd);
+ }
+ 
+ static int rtl8169_set_features(struct net_device *dev,
+@@ -1817,8 +1815,11 @@ static int rtl8169_set_features(struct net_device *dev,
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+ 
++	features &= NETIF_F_RXALL | NETIF_F_RXCSUM | NETIF_F_HW_VLAN_CTAG_RX;
++
+ 	rtl_lock_work(tp);
+-	__rtl8169_set_features(dev, features);
++	if (features ^ dev->features);
++		__rtl8169_set_features(dev, features);
+ 	rtl_unlock_work(tp);
+ 
+ 	return 0;
+@@ -6707,12 +6708,7 @@ static int rtl_open(struct net_device *dev)
+ 
+ 	rtl8169_init_phy(dev, tp);
+ 
+-	if (dev->features & NETIF_F_HW_VLAN_CTAG_RX)
+-		tp->cp_cmd |= RxVlan;
+-	else
+-		tp->cp_cmd &= ~RxVlan;
+-
+-	RTL_W16(CPlusCmd, tp->cp_cmd);
++	__rtl8169_set_features(dev, dev->features);
+ 
+ 	rtl_pll_power_up(tp);
+ 
+@@ -7123,8 +7119,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ 	}
+ }
+ 
+-static int
+-rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
++static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	const struct rtl_cfg_info *cfg = rtl_cfg_infos + ent->driver_data;
+ 	const unsigned int region = cfg->region;
+@@ -7199,7 +7194,7 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		goto err_out_mwi_2;
+ 	}
+ 
+-	tp->cp_cmd = RxChkSum;
++	tp->cp_cmd = 0;
+ 
+ 	if ((sizeof(dma_addr_t) > 4) &&
+ 	    !pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) && use_dac) {
+@@ -7240,13 +7235,6 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	pci_set_master(pdev);
+ 
+-	/*
+-	 * Pretend we are using VLANs; This bypasses a nasty bug where
+-	 * Interrupts stop flowing on high load on 8110SCd controllers.
+-	 */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
+-		tp->cp_cmd |= RxVlan;
+-
+ 	rtl_init_mdio_ops(tp);
+ 	rtl_init_pll_power_ops(tp);
+ 	rtl_init_jumbo_ops(tp);
+@@ -7307,8 +7295,14 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_TSO |
+ 		NETIF_F_HIGHDMA;
+ 
++	tp->cp_cmd |= RxChkSum | RxVlan;
++
++	/*
++	 * Pretend we are using VLANs; This bypasses a nasty bug where
++	 * Interrupts stop flowing on high load on 8110SCd controllers.
++	 */
+ 	if (tp->mac_version == RTL_GIGA_MAC_VER_05)
+-		/* 8110SCd requires hardware Rx VLAN - disallow toggling */
++		/* Disallow toggling */
+ 		dev->hw_features &= ~NETIF_F_HW_VLAN_CTAG_RX;
+ 
+ 	if (tp->txd_version == RTL_TD_0)
+-- 
+1.9.3
+
