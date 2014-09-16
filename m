@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaIPSu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:50:56 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:64712 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817AbaIPSux (ORCPT
+	id S1755049AbaIPStZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:49:25 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:53708 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468AbaIPStU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:50:53 -0400
-From: tim.gardner@canonical.com
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>
-Subject: [PATCH 3.17-rc5] =?UTF-8?q?kconfig:=20Suppress=20warning:=20=E2=80=98j?= =?UTF-8?q?ump=E2=80=99=20may=20be=20used=20uninitialized?=
-Date: Tue, 16 Sep 2014 12:50:42 -0600
-Message-Id: <1410893442-17181-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 2.1.0
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 16 Sep 2014 14:49:20 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH/RFC v2 02/12] PM / Domains: Add DT bindings for PM QoS device latencies
+Date: Tue, 16 Sep 2014 20:48:49 +0200
+Message-Id: <1410893339-6361-3-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
+References: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Gardner <tim.gardner@canonical.com>
+PM QoS device start/stop and save/restore state latencies are more or
+less properties of the hardware.
+In legacy code, they're specified from platform code.
+On DT platforms, their values should come from DT.
 
-In file included from scripts/kconfig/zconf.tab.c:2537:0:
-scripts/kconfig/menu.c: In function ‘get_symbol_str’:
-scripts/kconfig/menu.c:590:18: warning: ‘jump’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-     jump->offset = strlen(r->s);
-                  ^
-scripts/kconfig/menu.c:551:19: note: ‘jump’ was declared here
-  struct jump_key *jump;
-                   ^
-  HOSTLD  scripts/kconfig/conf
-
-gcc 4.9.1
-
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
+Should these properties be called "linux,*-latency"?
 
-Is gcc 4.9 dumber then 4.8 ? gcc 4.8 doesn't produce this warning.
+v2:
+  - New
+---
+ Documentation/devicetree/bindings/power/power_domain.txt | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
- scripts/kconfig/menu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/kconfig/menu.c b/scripts/kconfig/menu.c
-index a26cc5d..584e0fc 100644
---- a/scripts/kconfig/menu.c
-+++ b/scripts/kconfig/menu.c
-@@ -548,7 +548,7 @@ static void get_prompt_str(struct gstr *r, struct property *prop,
- {
- 	int i, j;
- 	struct menu *submenu[8], *menu, *location = NULL;
--	struct jump_key *jump;
-+	struct jump_key *jump = NULL;
+diff --git a/Documentation/devicetree/bindings/power/power_domain.txt b/Documentation/devicetree/bindings/power/power_domain.txt
+index 7bc421d84367d636..024815bc257723b1 100644
+--- a/Documentation/devicetree/bindings/power/power_domain.txt
++++ b/Documentation/devicetree/bindings/power/power_domain.txt
+@@ -42,12 +42,22 @@ Required properties:
+  - power-domains : A phandle and PM domain specifier as defined by bindings of
+                    the power controller specified by phandle.
  
- 	str_printf(r, _("Prompt: %s\n"), _(prop->text));
- 	menu = prop->menu->parent;
++Optional properties:
++ - stop-latency: Stop latency of the device, in ns,
++ - start-latency: Start latency of the device, in ns,
++ - save-state-latency: Save-state latency of the device, in ns,
++ - restore-state-latency: Restore-state latency of the device, in ns.
++
+ Example:
+ 
+ 	leaky-device@12350000 {
+ 		compatible = "foo,i-leak-current";
+ 		reg = <0x12350000 0x1000>;
+ 		power-domains = <&power 0>;
++		stop-latency = <250000>;
++		start-latency = <250000>;
++		save-state-latency = <250000>;
++		restore-state-latency = <250000>;
+ 	};
+ 
+ The node above defines a typical PM domain consumer device, which is located
 -- 
-2.1.0
+1.9.1
 
