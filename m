@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaIPT44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:56:56 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:13109 "EHLO
+	id S1755396AbaIPT4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:56:37 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:7342 "EHLO
 	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066AbaIPT4j (ORCPT
+	with ESMTP id S1755233AbaIPT4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:56:39 -0400
+	Tue, 16 Sep 2014 15:56:32 -0400
 X-IronPort-AV: E=Sophos;i="5.04,535,1406617200"; 
-   d="scan'208";a="45743614"
+   d="scan'208";a="45743530"
 From: Jonathan Richardson <jonathar@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -22,9 +22,9 @@ CC: <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Scott Branden <sbranden@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         Jonathan Richardson <jonathar@broadcom.com>
-Subject: [PATCH 6/6] MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock drivers
-Date: Tue, 16 Sep 2014 12:58:17 -0700
-Message-ID: <1410897497-27527-7-git-send-email-jonathar@broadcom.com>
+Subject: [PATCH 3/6] dt-bindings: Document Broadcom Cygnus SoC and clock driver
+Date: Tue, 16 Sep 2014 12:58:14 -0700
+Message-ID: <1410897497-27527-4-git-send-email-jonathar@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410897497-27527-1-git-send-email-jonathar@broadcom.com>
 References: <Jonathan Richardson <jonathar@broadcom.com>
@@ -35,45 +35,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
 Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
 Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
 ---
- MAINTAINERS |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ Documentation/devicetree/bindings/arm/cygnus.txt   |   12 ++
+ .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++++++++++++++++++++
+ .../devicetree/bindings/clock/clk-iproc.txt        |   48 ++++++++
+ 3 files changed, 181 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 809ecd6..2152ee0 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2070,6 +2070,27 @@ L:	linux-scsi@vger.kernel.org
- S:	Supported
- F:	drivers/scsi/bnx2i/
- 
-+BROADCOM CYGNUS/IPROC ARM ARCHITECTURE
-+M:	Jonathan Richardson <jonathar@broadcom.com>
-+M:	Scott Branden <sbranden@broadcom.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	Documentation/devicetree/bindings/arm/cygnus.txt
-+F:	arch/arm/boot/dts/bcm-cygnus.dtsi
-+F:	arch/arm/boot/dts/bcm911360_entphn.dts
-+F:	arch/arm/configs/bcm_cygnus_defconfig
-+F:	arch/arm/mach-bcm/board_bcm_cygnus.c
+diff --git a/Documentation/devicetree/bindings/arm/cygnus.txt b/Documentation/devicetree/bindings/arm/cygnus.txt
+new file mode 100644
+index 0000000..a210377
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/cygnus.txt
+@@ -0,0 +1,12 @@
++Broadcom Cygnus device tree bindings
++------------------------------------
 +
-+BROADCOM CYGNUS/IPROC CLOCK DRIVERS
-+M:	Jonathan Richardson <jonathar@broadcom.com>
-+M:	Scott Branden <sbranden@broadcom.com>
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	Maintained
-+F:	Documentation/devicetree/bindings/clock/clk-cygnus.txt
-+F:	Documentation/devicetree/bindings/clock/clk-iproc.txt
-+F:	drivers/clk/bcm/clk-cygnus.c
-+F:	drivers/clk/bcm/clk-iproc.c
++All Cygnus boards shall have the following properties:
 +
- BROADCOM KONA GPIO DRIVER
- M:	Ray Jui <rjui@broadcom.com>
- L:	bcm-kernel-feedback-list@broadcom.com
++Required root node property:
++	- compatible = "brcm,cygnus";
++
++Boards variants shall have the following additional properties:
++
++Required root node property for the BCM911360_ENTPHN board:
++	- compatible = "brcm,bcm911360_entphn";
+diff --git a/Documentation/devicetree/bindings/clock/clk-cygnus.txt b/Documentation/devicetree/bindings/clock/clk-cygnus.txt
+new file mode 100644
+index 0000000..7e03837
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clk-cygnus.txt
+@@ -0,0 +1,121 @@
++Broadcom Cygnus Clock Controller
++
++This binding uses the common clock binding:
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++The Cygnus clock controller manages several PLL's and their channels, found only
++on the Cygnus chip. Clocks that are common to iProc can be found in the iProc
++clock controller. The controllers are split into a parent-child relationship
++where the parent is the PLL and the child controls the PLL's channels.
++
++All PLL's are derived from a 25MHz oscillator. The PLL's controlled are the
++GENPLL, LCPLL, the MIPI PLL. In addition, there are two clocks derived from
++GENPLL channel 0, and three that are derived directly from the oscillator.
++
++Required properties:
++- compatible: Must be one of the following:
++    "brcm,cygnus-lcpll-clk" - Controls LCPLL.
++    "brcm,cygnus-lcpll-ch" -  Controls LCPLL (parent) channels
++    "brcm,cygnus-genpll-clk" - Controls parent GENPLL
++    "brcm,cygnus-genpll-ch" - Controls GENPLL (parent) channels
++    "brcm,cygnus-mipipll-clk" - Controls MIPI PLL
++    "brcm,cygnus-mipipll-ch" - Controls parent MIPI PLL (parent) channels
++    "brcm,cygnus-osc-derived" - Controls oscillator (parent) derived channels
++        not controlled by any PLL.
++    "brcm,cygnus-pll-derived" - Controls clocks derived from GENPLL channel 0.
++	  These clocks have hard wired internal dividers and their clock rates
++	  scale according to the GENPLL channel.
++
++- reg: First register is the base address of the PLL. Register 2 and 3 are
++  required by some clocks. They are the top clock gating control used to
++  enable/disable clocks (ch 1), and the CRMU PLL AON CONTROL register which
++  powers on PLL/LDO's (ch 2).
++
++- clocks: The input parent clock phandle for the clock. This is either a PLL,
++  oscillator, or GENPLL channel 0.
++
++- channel: The PLL channel that the clock belongs to. This is used for
++  "brcm,cygnus-lcpll-ch", "brcm,cygnus-genpll-ch", "brcm,cygnus-mipipll-ch",
++  "brcm,cygnus-osc-derived" only.
++
++- div: Used by "brcm,cygnus-pll-derived" to define the hard coded internal
++  divider value. Used by "brcm,cygnus-osc-derived" to specify the programmable
++  divider.
++
++- #clock-cells: From common clock binding; shall be set to 0.
++
++Examples:
++
++		osc: oscillator {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <25000000>;
++		};
++
++		lcpll: lcpll@0301d02c {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-lcpll-clk";
++			reg = <0x0301d02c 0x1c>;
++			clocks = <&osc>;
++		};
++
++		genpll: genpll@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-clk";
++			reg = <0x0301d000 0x2c>,
++				  <0x180AA024 0x4>,
++				  <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
++
++		axi21_clk: genpll_ch0@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <0>;
++		};
++
++		pcie_clk: lcpll_ch0@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <0>;
++		};
++
++		axi41_clk: axi41_clk {
++			reg = <0x0301d000 0x2c>;
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-pll-derived";
++			clocks = <&axi21_clk>;
++			div = <2>;
++		};
++
++		keypad_clk: keypad_clk@0301D048 {
++			compatible = "brcm,cygnus-osc-derived";
++			reg = <0x0301D048 0x4>,
++				  <0x180AA024 0x4>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++			channel = <0>;
++			div = <392>;
++		};
++
++		mipipll: mipipll@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-clk";
++			reg = <0x180a9800 0x2c>,
++				  top_clk_gating_ctrl: <0x180AA024 0x4>,
++				  crmu_pll_aon_ctrl: <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
++
++		lcd_clk: mipipll_ch1@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-ch";
++			reg = <0x180a9800 0x2c>,
++				  <0x180AA024 0x4>;
++			clocks = <&mipipll>;
++			channel = <1>;
++		};
+diff --git a/Documentation/devicetree/bindings/clock/clk-iproc.txt b/Documentation/devicetree/bindings/clock/clk-iproc.txt
+new file mode 100644
+index 0000000..b5d4f08
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/clk-iproc.txt
+@@ -0,0 +1,48 @@
++Broadcom iProc Clock Controller
++
++This binding uses the common clock binding:
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++The iProc clock controller manages clocks that are common to iProc chips.
++The controllers are split into a parent-child relationship where the parent is
++the PLL and the child controls the PLL's channels.
++
++The only PLL controlled is the ARM PLL which is derived from a 25MHz crystal.
++
++Required properties:
++- compatible: Must be one of the following:
++    "brcm,iproc-arm-a9pll" - Controls ARM PLL.
++    "brcm,iproc-arm-ch" -  Controls ARM PLL (parent) channels
++
++- reg: The base address of the PLL.
++
++- clocks: The input parent clock phandle for the clock. This is either a PLL,
++  or oscillator.
++
++- channel: The PLL channel that the clock belongs to. This is used for
++  "brcm,iproc-arm-ch" only.
++
++- #clock-cells: From common clock binding; shall be set to 0.
++
++Example:
++
++	osc: oscillator {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <25000000>;
++	};
++
++	a9pll: arm_clk@19000000 {
++		compatible = "brcm,iproc-arm-a9pll";
++		reg = <0x19000000 0x1000>;
++		#clock-cells = <0>;
++		clocks = <&osc>;
++	};
++
++	periph_clk: periph_clk@19000000 {
++		compatible = "brcm,iproc-arm-ch";
++		reg = <0x19000000 0x1000>;
++		#clock-cells = <0>;
++		clocks = <&a9pll>;
++		channel = <3>;
++	};
 -- 
 1.7.9.5
 
