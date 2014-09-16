@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198AbaIPO0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:26:47 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:33557 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbaIPO0p (ORCPT
+	id S1754397AbaIPO1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:27:55 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33684 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753527AbaIPO1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:26:45 -0400
-X-ASG-Debug-ID: 1410877365-0759e7612927af0003-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Tue, 16 Sep 2014 16:23:11 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140916142311.GL28458@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <20140911151114.GD28458@ci00147.xsens-tech.local>
- <5411C810.7070906@linutronix.de>
- <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
- <54129F6C.7040508@linutronix.de>
- <20140912094010.GE28458@ci00147.xsens-tech.local>
- <5412C21A.8020203@linutronix.de>
- <20140912102816.GF28458@ci00147.xsens-tech.local>
- <541716DC.9020904@linutronix.de>
- <20140916090540.GJ28458@ci00147.xsens-tech.local>
- <20140916124200.GK28458@ci00147.xsens-tech.local>
+	Tue, 16 Sep 2014 10:27:54 -0400
+Date: Tue, 16 Sep 2014 10:27:53 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>
+cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <vinod.koul@intel.com>
+Subject: Re: [PATCH] PM: Add helper to mark last busy and autosuspend
+In-Reply-To: <1410864231-10334-1-git-send-email-subhransu.s.prusty@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1409161024580.1166-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20140916124200.GK28458@ci00147.xsens-tech.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1410877500
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9548
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 02:42:00PM +0200, Frans Klaver wrote:
-> On Tue, Sep 16, 2014 at 11:05:40AM +0200, Frans Klaver wrote:
-> > On Mon, Sep 15, 2014 at 06:42:04PM +0200, Sebastian Andrzej Siewior wrote:
-> > > If there is nothing specific to the file you do less on I have no idea
-> > > what else it could if it is not the config.
-> > 
-> > I'll test your config and go through the differences.
-> 
-> So far it looks like it isn't in the config. I've tested both your and
-> my config on debian wheezy on a boneblack. No lock ups.
+On Tue, 16 Sep 2014, Subhransu S. Prusty wrote:
 
-No, skip that. It is in the config. I'll hunt it down.
+> pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
+> in quite a lot of places. Add a helper for these.
+> 
+> Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
+> ---
+>  include/linux/pm_runtime.h | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> index 367f49b..256ec50 100644
+> --- a/include/linux/pm_runtime.h
+> +++ b/include/linux/pm_runtime.h
+> @@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
+>  	__pm_runtime_use_autosuspend(dev, false);
+>  }
+>  
+> +static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
+> +{
+> +	pm_runtime_mark_last_busy(dev);
+> +	return pm_runtime_put_autosuspend(dev);
+> +}
+> +
+>  #endif
+
+What's the advantage?  Removing a few bytes of source code?  There will 
+no change to the object code.  (Not to mention that your patch didn't 
+actually change _any_ of the places where both routines get called!)
+
+Besides, if you're going to make an addition to the runtime PM API like 
+this, then you also have to update Documentation/power/runtime_pm.txt.
+
+Alan Stern
+
