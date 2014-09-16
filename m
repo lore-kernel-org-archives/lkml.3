@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaIPXFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:05:10 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:54598 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaIPXFI (ORCPT
+	id S1754203AbaIPXF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:05:56 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:64220 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827AbaIPXFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:05:08 -0400
-Message-ID: <5418C224.8050504@linaro.org>
-Date: Tue, 16 Sep 2014 16:05:08 -0700
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 16 Sep 2014 19:05:54 -0400
+Date: Tue, 16 Sep 2014 16:05:37 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] mfd: twl4030-power: use 'ti,system-power-controller'
+ as alternative way to support system power off
+Message-ID: <20140916230537.GU25162@lee--X1>
+References: <1409771208-21867-1-git-send-email-nm@ti.com>
+ <1409771208-21867-3-git-send-email-nm@ti.com>
+ <20140909000126.GU3238@atomide.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v10 5/9] arm: omap1: Migrate debug_ll macros to use 8250.S
-References: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org> <1410907588-19957-6-git-send-email-daniel.thompson@linaro.org> <20140916225810.GA1273@drone.musicnaut.iki.fi>
-In-Reply-To: <20140916225810.GA1273@drone.musicnaut.iki.fi>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140909000126.GU3238@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/09/14 15:58, Aaro Koskinen wrote:
-> Hi,
-> 
-> On Tue, Sep 16, 2014 at 11:46:24PM +0100, Daniel Thompson wrote:
->> +	config DEBUG_OMAP1UART1
->> +		bool "Kernel low-level debugging via OMAP1 UART1"
->> +		depends on ARCH_OMAP1
->> +		select DEBUG_UART_8250
->> +		help
->> +		  Say Y here if you want kernel low-level debugging support
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART1.
->                                             ^^^^^^
-> 
->> +		select DEBUG_UART_8250
->> +		help
->> +		  Say Y here if you want kernel low-level debugging support
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART2.
->                                             ^^^^^^
-> 
->> +		select DEBUG_UART_8250
->> +		help
->> +		  Say Y here if you want kernel low-level debugging support
->> +		  on OMAP1 based platforms (expect OMAP730) on the UART3.
->                                             ^^^^^^
-> 
-> I already commented earlier, that "expect" here is probably a typo?
+On Mon, 08 Sep 2014, Tony Lindgren wrote:
 
-I'm extremely sorry to have overlooked your previous comment. There's
-certainly no question I read your previous e-mail because because I
-copied your Tested-by: from it.
+> * Nishanth Menon <nm@ti.com> [140903 12:07]:
+> > ti,system-power-controller is more or less the standard way of
+> > indicating that the PMIC is the system wide power controller and hence
+> > may be used to switch off the system. Almost ALL TI PMIC drivers and
+> > many Maxim PMIC drivers follow the same style.
+> > 
+> > So support 'ti,system-power-controller' in addition to the usual
+> > 'ti,use_poweroff' to indicate that the PMIC instance has control for
+> > switching off the system.
+> > 
+> > Signed-off-by: Nishanth Menon <nm@ti.com>
+> 
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-I will fix this (and also grep all other patches in the set to make sure
-I haven't copied the typo anywhere else).
+I assume you're going to resend this with the document modifications?
+When you do, don't forget to apply Tony's Ack, as it will ensure a
+faster merge.
 
+> > ---
+> >  drivers/mfd/twl4030-power.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+> > index 3bc969a..1c129ba 100644
+> > --- a/drivers/mfd/twl4030-power.c
+> > +++ b/drivers/mfd/twl4030-power.c
+> > @@ -627,6 +627,9 @@ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+> >  	if (pdata && pdata->use_poweroff)
+> >  		return true;
+> >  
+> > +	if (of_property_read_bool(node, "ti,system-power-controller"))
+> > +		return true;
+> > +
+> >  	if (of_property_read_bool(node, "ti,use_poweroff"))
+> >  		return true;
+> >  
 
-Daniel.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
