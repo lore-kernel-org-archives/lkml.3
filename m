@@ -1,218 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaIPXkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:40:32 -0400
-Received: from mx1.scotdoyle.com ([23.226.141.211]:43499 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaIPXkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:40:31 -0400
-Date: Tue, 16 Sep 2014 23:36:38 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        Stefan Berger <stefanb@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@google.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v8] tpm_tis: verify interrupt during init
-In-Reply-To: <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
-Message-ID: <alpine.LNX.2.11.1409162329370.3936@localhost.localdomain>
-References: <20140827173142.GA11183@obsidianresearch.com> <alpine.LNX.2.11.1408271755470.4371@localhost.localdomain> <20140827214743.GC11183@obsidianresearch.com> <alpine.LNX.2.11.1408280017420.1064@localhost.localdomain> <20140828165348.GE11183@obsidianresearch.com>
- <alpine.LNX.2.11.1408290234060.1020@localhost.localdomain> <20140830174920.GA26218@obsidianresearch.com> <alpine.LNX.2.11.1408302229001.579@localhost.localdomain> <20140902172015.GD13956@obsidianresearch.com> <alpine.LNX.2.11.1409021954110.1026@localhost.localdomain>
- <20140908220238.GB6204@obsidianresearch.com> <alpine.LNX.2.11.1409110010290.700@localhost.localdomain>
-User-Agent: Alpine 2.11 (LNX 23 2013-08-11)
+	id S1754657AbaIPXl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:41:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48396 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753268AbaIPXlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 19:41:24 -0400
+Date: Wed, 17 Sep 2014 09:41:13 +1000
+From: NeilBrown <neilb@suse.de>
+To: Jeff Layton <jeff.layton@primarydata.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
+Message-ID: <20140917094113.0cb07cf1@notabene.brown>
+In-Reply-To: <20140916074741.1de870c5@tlielax.poochiereds.net>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
+	<20140916074741.1de870c5@tlielax.poochiereds.net>
+X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 11 Sep 2014, Scot Doyle wrote:
->
-> On Mon, 8 Sep 2014, Jason Gunthorpe wrote:
->> On Tue, Sep 02, 2014 at 08:22:58PM +0000, Scot Doyle wrote:
->>
->>> It's spending that time (now 3 seconds) in tpm_tis_send_data.
->>
->> Due to request_locality?
->
-> The first command transmitted (TPM_CAP_PROP) in tpm_get_timeouts goes
-> through tpm_tis_send which calls tpm_tis_send_data before setting up
-> polling mode for the interrupt test. In tpm_tis_send_data, the last call
-> to wait_for_tpm_stat is still timing out.
->
-> One solution would be to move the test from tpm_tis_send to
-> tpm_tis_send_data. Another would be to expand the test in tpm_tis_send to
-> include the call to tpm_tis_send_data.
->
-> The latter seems safer, since it provides more opportunity for an IRQ to
-> be generated. E.g. I'm not sure if TPM_CAP_PROP always generates an IRQ.
-> But the problem with this approach is that tpm_tis_send becomes a bit
-> messy. So this patch wraps tpm_tis_send in an attempt to keep the code
-> clean. (Is there a better name for the wrapped function than
-> tpm_tis_send_main?)
->
-> Thoughts?
->
-> With this patch, the output becomes:
-> [    4.264619] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> [    4.311628] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
->
-> P.S. My apologies for revisiting this issue after it seemed to be
-> finalized.
+On Tue, 16 Sep 2014 07:47:41 -0400 Jeff Layton <jeff.layton@primarydata.com>
+wrote:
 
 
-Hi Peter,
+> Also, we call things like invalidate_complete_page2 from the cache
+> invalidation code. Will we end up with potential problems now that we
+> have a stronger possibility that a page might not be freeable when it
+> calls releasepage? (no idea on this -- I'm just spitballing)
+>=20
 
-Would you prefer this revision on top of or in place of the previous patch?
-https://github.com/PeterHuewe/linux-tpmdd/commit/1bf961689d9b826aa6a27b6a6c5c56d977d5fe2b
+Answering just this part here:
+ invalidate_complete_page2() is only called immediately after a call to
+do_launder_page().
+For nfs, that means nfs_launder_page() was called, which calls nfs_wb_page()
+which in turn calls
+		ret =3D nfs_commit_inode(inode, FLUSH_SYNC);
+
+so the inode is fully committed when invalidate_complete_page2 is called, so
+nfs_release_page will succeed.
+
+So there shouldn't be a problem there.
 
 Thanks,
-Scot
+NeilBrown
 
+--Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-> ---
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-> index 2c46734..2dbd652 100644
-> --- a/drivers/char/tpm/tpm_tis.c
-> +++ b/drivers/char/tpm/tpm_tis.c
-> @@ -75,6 +75,10 @@ enum tis_defaults {
-> #define	TPM_DID_VID(l)			(0x0F00 | ((l) << 12))
-> #define	TPM_RID(l)			(0x0F04 | ((l) << 12))
->
-> +struct priv_data {
-> +	bool irq_tested;
-> +};
-> +
-> static LIST_HEAD(tis_chips);
-> static DEFINE_MUTEX(tis_lock);
->
-> @@ -338,12 +342,27 @@ out_err:
-> 	return rc;
-> }
->
-> +static void disable_interrupts(struct tpm_chip *chip)
-> +{
-> +	u32 intmask;
-> +	intmask =
-> +	    ioread32(chip->vendor.iobase +
-> +		     TPM_INT_ENABLE(chip->vendor.locality));
-> +	intmask |= TPM_INTF_CMD_READY_INT | TPM_INTF_LOCALITY_CHANGE_INT |
-> +		   TPM_INTF_DATA_AVAIL_INT | TPM_INTF_STS_VALID_INT;
-> +	iowrite32(intmask,
-> +		  chip->vendor.iobase +
-> +		  TPM_INT_ENABLE(chip->vendor.locality));
-> +	free_irq(chip->vendor.irq, chip);
-> +	chip->vendor.irq = 0;
-> +}
-> +
-> /*
->  * If interrupts are used (signaled by an irq set in the vendor structure)
->  * tpm.c can skip polling for the data to be available as the interrupt is
->  * waited for here
->  */
-> -static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +static int tpm_tis_send_main(struct tpm_chip *chip, u8 *buf, size_t len)
-> {
-> 	int rc;
-> 	u32 ordinal;
-> @@ -373,6 +392,28 @@ out_err:
-> 	return rc;
-> }
->
-> +static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
-> +{
-> +	int rc, irq;
-> +	struct priv_data *priv = chip->vendor.priv;
-> +
-> +	if (!chip->vendor.irq || priv->irq_tested)
-> +		return tpm_tis_send_main(chip, buf, len);
-> +
-> +	/* Verify receipt of the expected IRQ */
-> +	irq = chip->vendor.irq;
-> +	chip->vendor.irq = 0;
-> +	rc = tpm_tis_send_main(chip, buf, len);
-> +	chip->vendor.irq = irq;
-> +	if (!priv->irq_tested) {
-> +		disable_interrupts(chip);
-> +		dev_err(chip->dev,
-> +			FW_BUG "TPM interrupt not working, polling instead\n");
-> +	}
-> +	priv->irq_tested = true;
-> +	return rc;
-> +}
-> +
-> struct tis_vendor_timeout_override {
-> 	u32 did_vid;
-> 	unsigned long timeout_us[4];
-> @@ -505,6 +546,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
-> 	if (interrupt == 0)
-> 		return IRQ_NONE;
->
-> +	((struct priv_data*)chip->vendor.priv)->irq_tested = true;
-> 	if (interrupt & TPM_INTF_DATA_AVAIL_INT)
-> 		wake_up_interruptible(&chip->vendor.read_queue);
-> 	if (interrupt & TPM_INTF_LOCALITY_CHANGE_INT)
-> @@ -534,10 +576,14 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 	u32 vendor, intfcaps, intmask;
-> 	int rc, i, irq_s, irq_e, probe;
-> 	struct tpm_chip *chip;
-> +	struct priv_data *priv;
->
-> 	if (!(chip = tpm_register_hardware(dev, &tpm_tis)))
-> 		return -ENODEV;
->
-> +	priv = devm_kzalloc(dev, sizeof(struct priv_data), GFP_KERNEL);
-> +	chip->vendor.priv = priv;
-> +
-> 	chip->vendor.iobase = ioremap(start, len);
-> 	if (!chip->vendor.iobase) {
-> 		rc = -EIO;
-> @@ -605,19 +651,6 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 	if (intfcaps & TPM_INTF_DATA_AVAIL_INT)
-> 		dev_dbg(dev, "\tData Avail Int Support\n");
->
-> -	/* get the timeouts before testing for irqs */
-> -	if (tpm_get_timeouts(chip)) {
-> -		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
-> -	if (tpm_do_selftest(chip)) {
-> -		dev_err(dev, "TPM self test failed\n");
-> -		rc = -ENODEV;
-> -		goto out_err;
-> -	}
-> -
-> 	/* INTERRUPT Setup */
-> 	init_waitqueue_head(&chip->vendor.read_queue);
-> 	init_waitqueue_head(&chip->vendor.int_queue);
-> @@ -719,6 +752,18 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
-> 		}
-> 	}
->
-> +	if (tpm_get_timeouts(chip)) {
-> +		dev_err(dev, "Could not get TPM timeouts and durations\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> +	if (tpm_do_selftest(chip)) {
-> +		dev_err(dev, "TPM self test failed\n");
-> +		rc = -ENODEV;
-> +		goto out_err;
-> +	}
-> +
-> 	INIT_LIST_HEAD(&chip->vendor.list);
-> 	mutex_lock(&tis_lock);
-> 	list_add(&chip->vendor.list, &tis_chips);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBVBjKmTnsnt1WYoG5AQIKoxAAwHYOT2px8v/27OkcGivaLkX0QeRC/v7N
+DGFYWzkLZCJQTk8ubsU8qTaMiYBsCHBfxMh7RxIQ66IQ4YOis9/3BiMTFtA81eQL
+sm8TK64e4jBSPrTSwevJ4GUGlJBF/xWZTfYKCGjzaGDo3I/G+WB6fTj2YJDulWnk
+xgoDy1s23yrvdKJpiC3av9hnvnFAYv4d/sv2axOQGzKDfMn62f8vApPLpqphoq+1
+Zone0nWEKTZbDxS0vhf+cN5wDkXtITyjd3WViocfx/QgGPDSZRTvauIXaSmsxYmC
+x4jB2n9bnyAI/ifetUjQwt7WbXu61gmI2Tzkny+hZQBTtng/N3S3UBQlCDfJRszD
+Gn9juNyfO2NbUJb3z1SxUtPo/liHECOzxt/4qmWgVxRs0BQjcY3WdMejOK19llBO
+brBixSxRyNE9c60upOeS3/7kosQSIQttz0KOP0p+/iNmva7h7i5/tgXGpM79vLmn
+DTCCQtU/bNnNaTkUgviSZgm68TrmE6HTHJ4JWdKKgDqDFeb0XJaKqd6yS8zmm7lk
+l3ChbGiK2ul66xNgFkFfBv1QXozpz9lGfvujoESnMrvWTCYbREWg8mVNEIxyhe2K
+3WWlQhEMF5OklFyBUCuQKq+xnNr5O+EiHPboA4wl1PVGRP79pILQ1vbBFdOg/FPD
+3fd8+iJf7nc=
+=Lclc
+-----END PGP SIGNATURE-----
+
+--Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv--
