@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbaIPNXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:23:18 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58885 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753423AbaIPNXO (ORCPT
+	id S1754166AbaIPNY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:24:59 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59326 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743AbaIPNY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 09:23:14 -0400
-Date: Tue, 16 Sep 2014 14:22:59 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: omap-dma: Fix cyclic suspend/resume
-Message-ID: <20140916132259.GE12379@n2100.arm.linux.org.uk>
-References: <1410872785-14523-1-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 16 Sep 2014 09:24:57 -0400
+Message-ID: <54183A1C.3010206@roeck-us.net>
+Date: Tue, 16 Sep 2014 06:24:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410872785-14523-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cris <linux-cris-kernel@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Edgar E. Iglesias" <edgar.iglesias@gmail.com>
+Subject: Re: Status of 'cris' architecture support in Linux kernel
+References: <20140831175010.GA15408@roeck-us.net>	<20140915145203.GK4659@axis.com>	<20140915195514.GC18175@roeck-us.net> <CAMuHMdXafiDxr2QtbiuYs48BZ_wyNVFGar91oJyYvBJ+U1Co-w@mail.gmail.com>
+In-Reply-To: <CAMuHMdXafiDxr2QtbiuYs48BZ_wyNVFGar91oJyYvBJ+U1Co-w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54183A28.0232,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 04:06:25PM +0300, Peter Ujfalusi wrote:
-> When the audio stream is paused or suspended we stop the sDMA and when it
-> is unpsues/resumed we start the channel without reconfiguring it.
-> The omap_dma_stop() clears the link configuration when we pause the dma, but
-> it is not setting it back on start. This will result only one audio buffer
-> to be played back and the DMA will stop, since the linking is disabled.
-> The link need to be enabled in omap_dma_start() to make sure that cyclic
-> transfer can continue.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/dma/omap-dma.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index 4cf7d9a950d7..13a02ff87f28 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -280,6 +280,7 @@ static void omap_dma_assign(struct omap_dmadev *od, struct omap_chan *c,
->  static void omap_dma_start(struct omap_chan *c, struct omap_desc *d)
->  {
->  	struct omap_dmadev *od = to_omap_dma_dev(c->vc.chan.device);
-> +	uint32_t val;
->  
->  	if (__dma_omap15xx(od->plat->dma_attr))
->  		omap_dma_chan_write(c, CPC, 0);
-> @@ -288,6 +289,17 @@ static void omap_dma_start(struct omap_chan *c, struct omap_desc *d)
->  
->  	omap_dma_clear_csr(c);
->  
-> +	if (!__dma_omap15xx(od->plat->dma_attr) && c->cyclic) {
-> +		val = omap_dma_chan_read(c, CLNK_CTRL);
-> +
-> +		if (dma_omap1())
-> +			val &= ~(1 << 14); /* clear the STOP_LNK bit */
-> +		else
-> +			val |= CLNK_CTRL_ENABLE_LNK;
-> +
-> +		omap_dma_chan_write(c, CLNK_CTRL, val);
-> +	}
-> +
+On 09/16/2014 12:23 AM, Geert Uytterhoeven wrote:
+> Hi Günther,
+>
+> On Mon, Sep 15, 2014 at 9:55 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>> ./scripts/Makefile.headersinst:14: arch/cris/include/uapi/asm/arch-v10/Kbuild:
+>>>>      No such file or directory
+>>>> make[2]: *** No rule to make target `arch/cris/include/uapi/asm/arch-v10/Kbuild'.  Stop.
+>>>
+>>> Yes, known error, I believe that Sam Ravnborg's patch will correct this.
+>>>
+>> Is that patch available in public ? Sam's response seems to suggest that he
+>> sent it to Michael (Mikael ?) who wanted to handle it, but I don't find a
+>> matching patch in public archives.
+>
+> https://lkml.org/lkml/2014/7/14/424
+>
+Must be blind. Looked at the series for a long time but didn't see it.
 
-Why is this soo complicated?  What's wrong with simply writing the
-stored value back from the omap_desc:
+>>> On a tangential note, my automatic (minimal) builds does not do
+>>> make install, so I haven't seen this error. :-P
+>>>
+>> Mine not either ;-). I only found it because I tried to build an initramfs
+>> which needs installed headers.
+>
+> http://kisskb.ellerman.id.au/kisskb/buildresult/11881673/
+>
+> We need an Auto-Builder Consolidation Project ;-)
+>
 
-	omap_dma_chan_write(c, CLNK_CTRL, d->clnk_ctrl);
+More likely we need someone to actually look at build results. Like all the -next
+builds that are currently failing, and I bet those responsible are not even aware
+of it. Any ideas ?
 
-In fact, rather than loading up the above fast path with stuff which
-it really doesn't need, why not do this in the resume path?  The
-other thing which should be placed in the resume path is a mb() call,
-since calling omap_dma_start() won't have a barrier in that path.
+Guenter
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
