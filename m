@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280AbaIPVxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:53:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35450 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbaIPVxL (ORCPT
+	id S1753567AbaIPVyv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:54:51 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:42551 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaIPVys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:53:11 -0400
-Date: Tue, 16 Sep 2014 14:53:09 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [Patch v2] clk: qcom: Add IPQ8064 PLL required for USB
-Message-ID: <20140916215309.GC22593@codeaurora.org>
-References: <1410901452-13519-1-git-send-email-agross@codeaurora.org>
+	Tue, 16 Sep 2014 17:54:48 -0400
+Date: Tue, 16 Sep 2014 14:54:40 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Aaron Lu <aaron.lu@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [RFC PATCH v2 05/16] mfd: Add ACPI support
+Message-ID: <20140916215440.GP25162@lee--X1>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1410868367-11056-6-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410901452-13519-1-git-send-email-agross@codeaurora.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410868367-11056-6-git-send-email-mika.westerberg@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/16, Andy Gross wrote:
-> This patch adds the PLL0 that is required for the USB clocks to work properly.
+On Tue, 16 Sep 2014, Mika Westerberg wrote:
+
+> If an MFD device is backed by ACPI namespace, we should allow subdevice
+> drivers to access their corresponding ACPI companion devices through normal
+> means (e.g using ACPI_COMPANION()).
 > 
-> Changes in v2: Correct table to only use pll0_vote
+> This patch adds such support to the MFD core. If the MFD parent device
+> does not specify any ACPI _HID/_CID for the child device, the child
+> device will share the parent ACPI companion device. Otherwise the child
+> device will be assigned with the corresponding ACPI companion, if found
+> in the namespace below the parent.
 > 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Reviewed-by: Darren Hart <dvhart@linux.intel.com>
 > ---
+> Lee, I tried to get rid of #ifdefs in the below patch but it wasn't
+> possible because we are using functions that are not available when
+> !CONFIG_ACPI.
+> 
+>  Documentation/acpi/enumeration.txt | 27 +++++++++++++++++++++++++
+>  drivers/mfd/mfd-core.c             | 40 ++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/core.h           |  3 +++
+>  3 files changed, 70 insertions(+)
 
-Thanks, looks good.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
