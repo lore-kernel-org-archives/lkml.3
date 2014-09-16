@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaIPXDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:03:54 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12607 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753867AbaIPXDx (ORCPT
+	id S1753725AbaIPXFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:05:10 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:54598 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975AbaIPXFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:03:53 -0400
-Message-ID: <5418C1D2.4000303@sonymobile.com>
-Date: Tue, 16 Sep 2014 16:03:46 -0700
-From: Tim Bird <tim.bird@sonymobile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Tue, 16 Sep 2014 19:05:08 -0400
+Message-ID: <5418C224.8050504@linaro.org>
+Date: Tue, 16 Sep 2014 16:05:08 -0700
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: <galak@codeaurora.org>
-CC: <linux-arm-msm@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        <linux-kernel@vger.kernel.org>, <device-tree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>
-Subject: [PATCH] ARM: dts: Add initial DTS file for Sony Xperia Z1 phone
-Content-Type: text/plain; charset="utf-8"
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, Tony Lindgren <tony@atomide.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH v10 5/9] arm: omap1: Migrate debug_ll macros to use 8250.S
+References: <1410907588-19957-1-git-send-email-daniel.thompson@linaro.org> <1410907588-19957-6-git-send-email-daniel.thompson@linaro.org> <20140916225810.GA1273@drone.musicnaut.iki.fi>
+In-Reply-To: <20140916225810.GA1273@drone.musicnaut.iki.fi>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This DTS has initial support for just a serial console, for the
-Sony Xperia Z1 phone.  This phone uses a QualComm 8074 processor.
+On 16/09/14 15:58, Aaro Koskinen wrote:
+> Hi,
+> 
+> On Tue, Sep 16, 2014 at 11:46:24PM +0100, Daniel Thompson wrote:
+>> +	config DEBUG_OMAP1UART1
+>> +		bool "Kernel low-level debugging via OMAP1 UART1"
+>> +		depends on ARCH_OMAP1
+>> +		select DEBUG_UART_8250
+>> +		help
+>> +		  Say Y here if you want kernel low-level debugging support
+>> +		  on OMAP1 based platforms (expect OMAP730) on the UART1.
+>                                             ^^^^^^
+> 
+>> +		select DEBUG_UART_8250
+>> +		help
+>> +		  Say Y here if you want kernel low-level debugging support
+>> +		  on OMAP1 based platforms (expect OMAP730) on the UART2.
+>                                             ^^^^^^
+> 
+>> +		select DEBUG_UART_8250
+>> +		help
+>> +		  Say Y here if you want kernel low-level debugging support
+>> +		  on OMAP1 based platforms (expect OMAP730) on the UART3.
+>                                             ^^^^^^
+> 
+> I already commented earlier, that "expect" here is probably a typo?
 
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
----
- arch/arm/boot/dts/Makefile                   |    1 +
- arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts |   18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
- create mode 100644 arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
+I'm extremely sorry to have overlooked your previous comment. There's
+certainly no question I read your previous e-mail because because I
+copied your Tested-by: from it.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b8c5cd3..680ce7e 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -341,6 +341,7 @@ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
- dtb-$(CONFIG_ARCH_QCOM) += \
- 	qcom-apq8064-ifc6410.dtb \
- 	qcom-apq8074-dragonboard.dtb \
-+	qcom-apq8074-xperia-z1.dtb \
- 	qcom-apq8084-mtp.dtb \
- 	qcom-msm8660-surf.dtb \
- 	qcom-msm8960-cdp.dtb
-diff --git a/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts b/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
-new file mode 100644
-index 0000000..59b3fa1
---- /dev/null
-+++ b/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
-@@ -0,0 +1,18 @@
-+#include "qcom-msm8974.dtsi"
-+
-+/ {
-+	model = "Sony Xperia Z1 phone";
-+	compatible = "qcom,msm8974";
-+	qcom,msm-id = <126 8 0>, <185 8 0>, <186 8 0>;
-+
-+	memory@0 {
-+		reg = <0 0x40000000>, <0x40000000 0x40000000>;
-+		device_type = "memory";
-+	};
-+};
-+
-+&soc {
-+	serial@f991e000 {
-+		status = "ok";
-+	};
-+};
--- 
-1.7.9.5
+I will fix this (and also grep all other patches in the set to make sure
+I haven't copied the typo anywhere else).
 
+
+Daniel.
