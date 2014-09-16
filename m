@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaIPK62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:58:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43662 "EHLO
+	id S1753892AbaIPK6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:58:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43679 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775AbaIPK6Z (ORCPT
+	with ESMTP id S1753804AbaIPK6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:58:25 -0400
-Date: Tue, 16 Sep 2014 03:58:02 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-c88f2096136416b261bd3647cc260935f6e95805@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-        eranian@google.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <20140908143107.GG17728@krava.brq.redhat.com>
-References: <20140908143107.GG17728@krava.brq.redhat.com>
+	Tue, 16 Sep 2014 06:58:34 -0400
+Date: Tue, 16 Sep 2014 03:56:45 -0700
+From: tip-bot for Luca Abeni <tipbot@zytor.com>
+Message-ID: <tip-ad67dc316f000df4756b027f3559ad0491497d9e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luca.abeni@unitn.it, hpa@zytor.com,
+        mingo@kernel.org, henrik@austad.us, torvalds@linux-foundation.org,
+        peterz@infradead.org, rdunlap@infradead.org, raistlin@linux.it,
+        juri.lelli@arm.com, tglx@linutronix.de, juri.lelli@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luca.abeni@unitn.it,
+        linux-kernel@vger.kernel.org, henrik@austad.us,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        rdunlap@infradead.org, raistlin@linux.it, juri.lelli@arm.com,
+        tglx@linutronix.de, juri.lelli@gmail.com
+In-Reply-To: <1410256636-26171-2-git-send-email-juri.lelli@arm.com>
+References: <1410256636-26171-2-git-send-email-juri.lelli@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf:
-  Do not check PERF_EVENT_STATE_EXIT on syscall read path
-Git-Commit-ID: c88f2096136416b261bd3647cc260935f6e95805
+Subject: [tip:sched/core] Documentation/scheduler/sched-deadline.txt:
+  Fix terminology and improve clarity
+Git-Commit-ID: ad67dc316f000df4756b027f3559ad0491497d9e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,47 +37,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c88f2096136416b261bd3647cc260935f6e95805
-Gitweb:     http://git.kernel.org/tip/c88f2096136416b261bd3647cc260935f6e95805
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Mon, 8 Sep 2014 16:31:07 +0200
+Commit-ID:  ad67dc316f000df4756b027f3559ad0491497d9e
+Gitweb:     http://git.kernel.org/tip/ad67dc316f000df4756b027f3559ad0491497d9e
+Author:     Luca Abeni <luca.abeni@unitn.it>
+AuthorDate: Tue, 9 Sep 2014 10:57:12 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 16 Sep 2014 10:30:36 +0200
+CommitDate: Tue, 16 Sep 2014 10:23:00 +0200
 
-perf: Do not check PERF_EVENT_STATE_EXIT on syscall read path
+Documentation/scheduler/sched-deadline.txt: Fix terminology and improve clarity
 
-Revert PERF_EVENT_STATE_EXIT check on read syscall path.
-It breaks standard way to read counter, which is to open
-the counter, wait for the monitored process to die and
-read the counter.
+Several small changes regarding SCHED_DEADLINE documentation
+that fix terminology and improve clarity and readability:
 
-Reported-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Stephane Eranian <eranian@google.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/20140908143107.GG17728@krava.brq.redhat.com
+ - "current runtime" becomes "remaining runtime"
+
+ - readablity of an equation is improved by introducing more spacing
+
+ - clarify when admission control will certainly fail
+
+ - new URL for CBS technical report
+
+ - substitue "smallest" with "earliest"
+
+Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+Reviewed-by: Henrik Austad <henrik@austad.us>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Juri Lelli <juri.lelli@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1410256636-26171-2-git-send-email-juri.lelli@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/events/core.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ Documentation/scheduler/sched-deadline.txt | 38 ++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f917dec..733c616 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3601,8 +3601,7 @@ perf_read_hw(struct perf_event *event, char __user *buf, size_t count)
- 	 * error state (i.e. because it was pinned but it couldn't be
- 	 * scheduled on to the CPU at some point).
- 	 */
--	if ((event->state == PERF_EVENT_STATE_ERROR) ||
--	    (event->state == PERF_EVENT_STATE_EXIT))
-+	if (event->state == PERF_EVENT_STATE_ERROR)
- 		return 0;
+diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
+index 18adc92..a029891 100644
+--- a/Documentation/scheduler/sched-deadline.txt
++++ b/Documentation/scheduler/sched-deadline.txt
+@@ -45,17 +45,17 @@ CONTENTS
+  every time the task wakes up, the scheduler computes a "scheduling deadline"
+  consistent with the guarantee (using the CBS[2,3] algorithm). Tasks are then
+  scheduled using EDF[1] on these scheduling deadlines (the task with the
+- smallest scheduling deadline is selected for execution). Notice that this
++ earliest scheduling deadline is selected for execution). Notice that this
+  guaranteed is respected if a proper "admission control" strategy (see Section
+  "4. Bandwidth management") is used.
  
- 	if (count < event->read_size)
+  Summing up, the CBS[2,3] algorithms assigns scheduling deadlines to tasks so
+  that each task runs for at most its runtime every period, avoiding any
+  interference between different tasks (bandwidth isolation), while the EDF[1]
+- algorithm selects the task with the smallest scheduling deadline as the one
+- to be executed first.  Thanks to this feature, also tasks that do not
+- strictly comply with the "traditional" real-time task model (see Section 3)
+- can effectively use the new policy.
++ algorithm selects the task with the earliest scheduling deadline as the one
++ to be executed next. Thanks to this feature, tasks that do not strictly comply
++ with the "traditional" real-time task model (see Section 3) can effectively
++ use the new policy.
+ 
+  In more details, the CBS algorithm assigns scheduling deadlines to
+  tasks in the following way:
+@@ -64,45 +64,45 @@ CONTENTS
+     "deadline", and "period" parameters;
+ 
+   - The state of the task is described by a "scheduling deadline", and
+-    a "current runtime". These two parameters are initially set to 0;
++    a "remaining runtime". These two parameters are initially set to 0;
+ 
+   - When a SCHED_DEADLINE task wakes up (becomes ready for execution),
+     the scheduler checks if
+ 
+-                    current runtime                runtime
+-         ---------------------------------- > ----------------
+-         scheduling deadline - current time         period
++                 remaining runtime                  runtime
++        ----------------------------------    >    ---------
++        scheduling deadline - current time           period
+ 
+     then, if the scheduling deadline is smaller than the current time, or
+     this condition is verified, the scheduling deadline and the
+-    current budget are re-initialised as
++    remaining runtime are re-initialised as
+ 
+          scheduling deadline = current time + deadline
+-         current runtime = runtime
++         remaining runtime = runtime
+ 
+-    otherwise, the scheduling deadline and the current runtime are
++    otherwise, the scheduling deadline and the remaining runtime are
+     left unchanged;
+ 
+   - When a SCHED_DEADLINE task executes for an amount of time t, its
+-    current runtime is decreased as
++    remaining runtime is decreased as
+ 
+-         current runtime = current runtime - t
++         remaining runtime = remaining runtime - t
+ 
+     (technically, the runtime is decreased at every tick, or when the
+     task is descheduled / preempted);
+ 
+-  - When the current runtime becomes less or equal than 0, the task is
++  - When the remaining runtime becomes less or equal than 0, the task is
+     said to be "throttled" (also known as "depleted" in real-time literature)
+     and cannot be scheduled until its scheduling deadline. The "replenishment
+     time" for this task (see next item) is set to be equal to the current
+     value of the scheduling deadline;
+ 
+   - When the current time is equal to the replenishment time of a
+-    throttled task, the scheduling deadline and the current runtime are
++    throttled task, the scheduling deadline and the remaining runtime are
+     updated as
+ 
+          scheduling deadline = scheduling deadline + period
+-         current runtime = current runtime + runtime
++         remaining runtime = remaining runtime + runtime
+ 
+ 
+ 3. Scheduling Real-Time Tasks
+@@ -147,6 +147,8 @@ CONTENTS
+  and the absolute deadlines (d_j) coincide, so a proper admission control
+  allows to respect the jobs' absolute deadlines for this task (this is what is
+  called "hard schedulability property" and is an extension of Lemma 1 of [2]).
++ Notice that if runtime > deadline the admission control will surely reject
++ this task, as it is not possible to respect its temporal constraints.
+ 
+  References:
+   1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
+@@ -156,7 +158,7 @@ CONTENTS
+       Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
+       Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
+   3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
+-      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
++      Technical Report. http://disi.unitn.it/~abeni/tr-98-01.pdf
+ 
+ 4. Bandwidth management
+ =======================
