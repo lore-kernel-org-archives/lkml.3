@@ -1,36 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaIPOBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:01:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8532 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754058AbaIPOBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:01:11 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <23655.1410874187@warthog.procyon.org.uk>
-References: <23655.1410874187@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, James Morris <jmorris@namei.org>,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+	id S1754498AbaIPOB0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:01:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46410 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754032AbaIPOBX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 10:01:23 -0400
+Date: Tue, 16 Sep 2014 16:01:18 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
+        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
+        stern@rowland.harvard.edu, yoshihiro.shimoda.uh@renesas.com,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] KEYS: Fixes for keyrings
+Subject: Re: [PATCH v5 4/9] usb: rename phy to usb_phy in HCD
+Message-ID: <20140916140118.GD4869@kwain>
+References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1410777309-12552-5-git-send-email-antoine.tenart@free-electrons.com>
+ <54172B42.1060606@cogentembedded.com>
+ <20140916135347.GC4869@kwain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <24646.1410876063.1@warthog.procyon.org.uk>
-Date: Tue, 16 Sep 2014 15:01:03 +0100
-Message-ID: <24647.1410876063@warthog.procyon.org.uk>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140916135347.GC4869@kwain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you please pull these fixes and send them on upstream:
+On Tue, Sep 16, 2014 at 03:53:47PM +0200, Antoine Tenart wrote:
+> On Mon, Sep 15, 2014 at 09:09:06PM +0300, Sergei Shtylyov wrote:
+> > On 9/15/2014 1:35 PM, Antoine Tenart wrote:
+> > 
+> > >The USB PHY member of the HCD structure is renamed to 'usb_phy' and
+> > >modifications are done in all drivers accessing it.
+> > 
+> > >Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> > >Acked-by: Alan Stern <stern@rowland.harvard.edu>
+> > >---
+> > >  drivers/usb/chipidea/host.c   |  2 +-
+> > >  drivers/usb/core/hcd.c        | 20 ++++++++++----------
+> > >  drivers/usb/core/hub.c        |  8 ++++----
+> > >  drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
+> > >  drivers/usb/host/ehci-hub.c   |  2 +-
+> > >  drivers/usb/host/ehci-msm.c   |  4 ++--
+> > >  drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
+> > >  drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
+> > >  drivers/usb/misc/lvstest.c    |  8 ++++----
+> > 
+> >    I have already re-posted this patch (adding it to my generic PHY
+> > patch to form a short series) with this file added, and CC'ed you. I
+> > haven't heard any protest (perhaps I missed it?), why reiterate with
+> > this patch instead of basing the patchset on my most recent posting?
+> 
+> Well, I can only return the question.
+> 
+> Anyway, this is not really important. I'll let the maintainers decide
+> which series they want this patch in, and I'll make the needed
+> modifications if needed.
 
-Can you also pull them into your next branch as I have stuff for your next
-branch that depends on those changes?
+Oh, I see. I mixed up some series. Well, I'll drop this patch in the
+next version.
 
-Thanks,
-David
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
