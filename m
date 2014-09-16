@@ -1,108 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863AbaIPShr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:37:47 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:63686 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576AbaIPShp (ORCPT
+	id S1754877AbaIPSjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:39:37 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:53294 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754612AbaIPSjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:37:45 -0400
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Zi Shen Lim <zlim.lnx@gmail.com>, "David S . Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm64: bpf: add 'shift by register' instructions
-Date: Tue, 16 Sep 2014 11:37:35 -0700
-Message-Id: <1410892655-17818-1-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 16 Sep 2014 14:39:36 -0400
+Message-ID: <541883E4.6070702@hp.com>
+Date: Tue, 16 Sep 2014 14:39:32 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Scott J Norton <scott.norton@hp.com>, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@kernel.org>, Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH] perf mem: improves DSO long names search speed with RB
+ tree
+References: <1410799401-22163-1-git-send-email-Waiman.Long@hp.com> <20140915201544.GJ11199@kernel.org>
+In-Reply-To: <20140915201544.GJ11199@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin, Will,
+On 09/15/2014 04:15 PM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Sep 15, 2014 at 12:43:21PM -0400, Waiman Long escreveu:
+>> With workload that spawns and destroys many threads and processes,
+>> it was found that perf-mem could took a long time to post-process
+>> the perf data after the target workload had completed its operation.
+>> The performance bottleneck was found to be searching and insertion
+>> of the new DSO structures (thousands of them in this case).
+>>
+>> In a dual-socket Ivy-Bridge E7-4890 v2 machine (30-core, 60-thread),
+>> the perf profile below shows what perf was doing after the profiled
+>> AIM7 shared workload completed:
+>>
+>> -     83.94%  perf  libc-2.11.3.so     [.] __strcmp_sse42
+>>     - __strcmp_sse42
+>>        - 99.82% map__new
+>>             machine__process_mmap_event
+>>             perf_session_deliver_event
+>>             perf_session__process_event
+>>             __perf_session__process_events
+>>             cmd_record
+>>             cmd_mem
+>>             run_builtin
+>>             main
+>>             __libc_start_main
+>> -     13.17%  perf  perf               [.] __dsos__findnew
+>>       __dsos__findnew
+>>       map__new
+>>       machine__process_mmap_event
+>>       perf_session_deliver_event
+>>       perf_session__process_event
+>>       __perf_session__process_events
+>>       cmd_record
+>>       cmd_mem
+>>       run_builtin
+>>       main
+>>       __libc_start_main
+>>
+>> So about 97% of CPU times were spent in the map__new() function
+>> trying to insert new DSO entry into the DSO linked list. The whole
+>> post-processing step took about 9 minutes.
+>>
+>> The DSO structures are currently searched linearly. So the total
+>> processing time will be proportional to n^2.
+>>
+>> To overcome this performance problem, the DSO code is modified to
+>> put the DSO structures in a RB tree sorted by its long name. With
+>> this change, the processing time will become proportional to n*log(n)
+>> which will be much quicker for large n. However, the short name will
+>> still be searched using the old linear searching method which is slow.
+>> With that patch in place, the same perf-mem post-processing step took
+>> less than 30 seconds to complete.
+>>
+>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>> ---
+>>   tools/perf/util/dso.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++--
+>>   tools/perf/util/dso.h |    1 +
+>>   2 files changed, 74 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+>> index 819f104..bd92564 100644
+>> --- a/tools/perf/util/dso.c
+>> +++ b/tools/perf/util/dso.c
+>> @@ -611,17 +611,83 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
+>>   	return dso;
+>>   }
+>>
+>> +/*
+>> + * RB root of DSOs sorted by the long name
+>> + */
+>> +static struct rb_root dso__long_name_root = { NULL };
+>> +
+>> +/*
+>> + * Either one of the dso or name parameter must be non-NULL or the
+>> + * function will not work.
+>> + */
+>> +static struct dso *
+>> +dso__long_name_findadd_node(struct dso *dso, const char *name)
+>> +{
+>> +	struct rb_node **p =&dso__long_name_root.rb_node;
+>> +	struct rb_node  *parent = NULL;
+>> +	int warned = false;
+>> +
+>> +	if (!name)
+>> +		name = dso->long_name;
+>> +	/*
+>> +	 * Find node with the matching name
+>> +	 */
+>> +	while (*p) {
+>> +		struct dso *this = rb_entry(*p, struct dso, long_name_rb_node);
+>> +		long rc = (long)strcmp(name, this->long_name);
+>> +
+>> +		parent = *p;
+>> +		if (rc == 0) {
+>> +			/*
+>> +			 * In case the new DSO is a duplicate of an existing
+>> +			 * one, print an one-time warning&  sort the entry
+>> +			 * by its DSO address.
+>> +			 */
+>> +			if (!dso || (dso == this))
+>> +				return this;	/* Find matching dso */
+>> +			if (!warned) {
+>> +				pr_warning("Duplicated dso long name: %s\n",
+>> +					   name);
+>> +				warned = true;
+>> +			}
+>> +			rc = (long)dso - (long)this;
+>> +		}
+>> +		if (rc<  0)
+>> +			p =&parent->rb_left;
+>> +		else
+>> +			p =&parent->rb_right;
+>> +	}
+>> +	if (dso) {
+>> +		/* Add new node and rebalance tree */
+>> +		rb_link_node(&dso->long_name_rb_node, parent, p);
+>> +		rb_insert_color(&dso->long_name_rb_node,&dso__long_name_root);
+>> +	}
+>> +	return NULL;
+>> +}
+>> +
+>> +static inline void dso__long_name_remove_node(struct dso *dso)
+>> +{
+>> +	rb_erase(&dso->long_name_rb_node,&dso__long_name_root);
+>> +}
+>> +
+>>   void dso__set_long_name(struct dso *dso, const char *name, bool name_allocated)
+>>   {
+>>   	if (name == NULL)
+>>   		return;
+>>
+>> +	if (dso->long_name) {
+>> +		if (!strcmp(dso->long_name, name))
+>> +			return;
+>> +		dso__long_name_remove_node(dso);
+>> +	}
+>> +
+>>   	if (dso->long_name_allocated)
+>>   		free((char *)dso->long_name);
+>>
+>>   	dso->long_name		 = name;
+>>   	dso->long_name_len	 = strlen(name);
+>>   	dso->long_name_allocated = name_allocated;
+>> +	(void)dso__long_name_findadd_node(dso, name);
+>>   }
+>>
+>>   void dso__set_short_name(struct dso *dso, const char *name, bool name_allocated)
+>> @@ -695,6 +761,8 @@ struct dso *dso__new(const char *name)
+>>   	if (dso != NULL) {
+>>   		int i;
+>>   		strcpy(dso->name, name);
+>> +		RB_CLEAR_NODE(&dso->long_name_rb_node);
+>> +		dso->long_name = NULL;
+>>   		dso__set_long_name(dso, dso->name, false);
+>>   		dso__set_short_name(dso, dso->name, false);
+>>   		for (i = 0; i<  MAP__NR_TYPES; ++i)
+>> @@ -733,6 +801,10 @@ void dso__delete(struct dso *dso)
+>>   		zfree((char **)&dso->long_name);
+>>   		dso->long_name_allocated = false;
+>>   	}
+>> +	if (dso->long_name) {
+>> +		dso__long_name_remove_node(dso);
+>> +		dso->long_name = NULL;
+>> +	}
+>>
+>>   	dso__data_close(dso);
+>>   	dso_cache__free(&dso->data.cache);
+>> @@ -822,10 +894,7 @@ struct dso *dsos__find(const struct list_head *head, const char *name, bool cmp_
+>>   				return pos;
+>>   		return NULL;
+>>   	}
+>> -	list_for_each_entry(pos, head, node)
+>> -		if (strcmp(pos->long_name, name) == 0)
+>> -			return pos;
+>> -	return NULL;
+>> +	return dso__long_name_findadd_node(NULL, name);
+> By its name, dsos__find() should not add anything to any data structure,
+> it is about just finding something, or it would be named
+> dsos__findnew().
 
-Please consider applying this after -rc1.
+You are right. I am a bit sloppy with the function name. The 
+dsos__find() function will not add anything to any data structure with 
+this patch. I will separate the two different use of the 
+dso__long_name_findadd_node() function. The first use case is to find a 
+matching entry when DSO is NULL. The second use case is to link the DSO 
+structure to the appropriate place in the RB tree when DSO is not NULL.
 
-A new commit in net-next 72b603ee8cfc introduced a new test case for
-"shift by register" in lib/test_bpf.c, and arm64 JIT is currently
-failing that (in linux-next). This patch enables support in arm64 JIT
-and now passes the test.
+> Also would we want to add something if we don't even have a DSO here?
 
-Just FYI, a later commit 02ab695bb37e in net-next introduced a new eBPF
-"load 64-bit immediate" instruction and arm64 JIT is also failing that
-in linux-next. I'll take a look at it later, but am more than happy if
-someone else beats me to it :)
+Nothing will be added if DSO isn't there.
 
-BTW, none of these failures are fatal. When something is not supported
-by our JIT compiler, we gracefully fallback to the core interpreter.
+>
+> I think the right thing is to call it dsos__find_by_longname() and have
+> a dsos__findnew_by_longname().
+>
+> If you want to share code behind that api, probably there are
+> opportunities for that, but doing it at this level makes the code
+> unecessarily hard to follow :-\
+>
+> - Arnaldo
+>
 
-Thanks,
-z
->8------------------------------------------------------8<
+I will change the name to dsos__find_by_longname() as suggesed and 
+dsos__findlink_by_longname(). When DSO is defined, it will link it into 
+appropriate place in the tree, but allocation a new DSO structure. That 
+is why I am planning to use link instead of new.
 
-Commit 72b603ee8cfc ("bpf: x86: add missing 'shift by register'
-instructions to x64 eBPF JIT") noted support for 'shift by register'
-in eBPF and added support for it for x64. Let's enable this for arm64
-as well.
-
-The arm64 eBPF JIT compiler now passes the new 'shift by register'
-test case introduced in the same commit 72b603ee8cfc.
-
-Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Alexei Starovoitov <ast@plumgrid.com>
----
- arch/arm64/net/bpf_jit.h      |  8 ++++++--
- arch/arm64/net/bpf_jit_comp.c | 12 ++++++++++++
- 2 files changed, 18 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm64/net/bpf_jit.h b/arch/arm64/net/bpf_jit.h
-index 2134f7e..de0a81a 100644
---- a/arch/arm64/net/bpf_jit.h
-+++ b/arch/arm64/net/bpf_jit.h
-@@ -144,8 +144,12 @@
- 
- /* Data-processing (2 source) */
- /* Rd = Rn OP Rm */
--#define A64_UDIV(sf, Rd, Rn, Rm) aarch64_insn_gen_data2(Rd, Rn, Rm, \
--	A64_VARIANT(sf), AARCH64_INSN_DATA2_UDIV)
-+#define A64_DATA2(sf, Rd, Rn, Rm, type) aarch64_insn_gen_data2(Rd, Rn, Rm, \
-+	A64_VARIANT(sf), AARCH64_INSN_DATA2_##type)
-+#define A64_UDIV(sf, Rd, Rn, Rm) A64_DATA2(sf, Rd, Rn, Rm, UDIV)
-+#define A64_LSLV(sf, Rd, Rn, Rm) A64_DATA2(sf, Rd, Rn, Rm, LSLV)
-+#define A64_LSRV(sf, Rd, Rn, Rm) A64_DATA2(sf, Rd, Rn, Rm, LSRV)
-+#define A64_ASRV(sf, Rd, Rn, Rm) A64_DATA2(sf, Rd, Rn, Rm, ASRV)
- 
- /* Data-processing (3 source) */
- /* Rd = Ra + Rn * Rm */
-diff --git a/arch/arm64/net/bpf_jit_comp.c b/arch/arm64/net/bpf_jit_comp.c
-index 7108895..80cc769 100644
---- a/arch/arm64/net/bpf_jit_comp.c
-+++ b/arch/arm64/net/bpf_jit_comp.c
-@@ -261,6 +261,18 @@ static int build_insn(const struct bpf_insn *insn, struct jit_ctx *ctx)
- 		emit(A64_MUL(is64, tmp, tmp, src), ctx);
- 		emit(A64_SUB(is64, dst, dst, tmp), ctx);
- 		break;
-+	case BPF_ALU | BPF_LSH | BPF_X:
-+	case BPF_ALU64 | BPF_LSH | BPF_X:
-+		emit(A64_LSLV(is64, dst, dst, src), ctx);
-+		break;
-+	case BPF_ALU | BPF_RSH | BPF_X:
-+	case BPF_ALU64 | BPF_RSH | BPF_X:
-+		emit(A64_LSRV(is64, dst, dst, src), ctx);
-+		break;
-+	case BPF_ALU | BPF_ARSH | BPF_X:
-+	case BPF_ALU64 | BPF_ARSH | BPF_X:
-+		emit(A64_ASRV(is64, dst, dst, src), ctx);
-+		break;
- 	/* dst = -dst */
- 	case BPF_ALU | BPF_NEG:
- 	case BPF_ALU64 | BPF_NEG:
--- 
-1.9.1
-
+Thanks for the comment.
+Longman
