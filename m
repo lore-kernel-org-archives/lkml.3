@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755092AbaIPSt1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:49:27 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:53743 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721AbaIPStU (ORCPT
+	id S1755198AbaIPSuB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:50:01 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:54080 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755170AbaIPSt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:49:20 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH/RFC v2 12/12] drivers: sh: Disable PM runtime for multi-platform r8a7740 with genpd
-Date: Tue, 16 Sep 2014 20:48:59 +0200
-Message-Id: <1410893339-6361-13-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
-References: <1410893339-6361-1-git-send-email-geert+renesas@glider.be>
+	Tue, 16 Sep 2014 14:49:58 -0400
+From: tim.gardner@canonical.com
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jamie Iles <jamie.iles@oracle.com>
+Subject: [PATCH 3.17-rc5 ] =?UTF-8?q?scripts/sortextable:=20Suppress=20warning:?= =?UTF-8?q?=20=E2=80=98relocs=5Fsize=E2=80=99=20may=20be=20used=20uninitia?= =?UTF-8?q?lized?=
+Date: Tue, 16 Sep 2014 12:49:22 -0600
+Message-Id: <1410893362-17128-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the default PM domain using PM_CLK is used for PM runtime, the real PM
-domain(s) cannot be registered from DT later.
+From: Tim Gardner <tim.gardner@canonical.com>
 
-Hence do not enable it when running a multi-platform kernel with genpd
-support on an r8a7740. The R-Mobile PM domain driver will take care of
-PM runtime management of the module clocks.
+In file included from scripts/sortextable.c:194:0:
+scripts/sortextable.c: In function ‘main’:
+scripts/sortextable.h:176:3: warning: ‘relocs_size’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+   memset(relocs, 0, relocs_size);
+   ^
+scripts/sortextable.h:106:6: note: ‘relocs_size’ was declared here
+  int relocs_size;
+      ^
+In file included from scripts/sortextable.c:192:0:
+scripts/sortextable.h:176:3: warning: ‘relocs_size’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+   memset(relocs, 0, relocs_size);
+   ^
+scripts/sortextable.h:106:6: note: ‘relocs_size’ was declared here
+  int relocs_size;
+      ^
 
-The default PM domain is still needed for:
-  - platforms without genpd support,
-  - the legacy (non-DT) case, where real PM domains may take over later,
-    except for the C5 "always on" PM domain.
+gcc 4.9.1
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jamie Iles <jamie.iles@oracle.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
-v2:
-  - New
----
- drivers/sh/pm_runtime.c | 2 ++
- 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/sh/pm_runtime.c b/drivers/sh/pm_runtime.c
-index fe2c2d595f599b2f..85cc89fd3e7d7cb7 100644
---- a/drivers/sh/pm_runtime.c
-+++ b/drivers/sh/pm_runtime.c
-@@ -81,7 +81,9 @@ static int __init sh_pm_runtime_init(void)
- 		if (!of_machine_is_compatible("renesas,emev2") &&
- 		    !of_machine_is_compatible("renesas,r7s72100") &&
- 		    !of_machine_is_compatible("renesas,r8a73a4") &&
-+#ifndef CONFIG_PM_GENERIC_DOMAINS_OF
- 		    !of_machine_is_compatible("renesas,r8a7740") &&
-+#endif
- 		    !of_machine_is_compatible("renesas,r8a7778") &&
- 		    !of_machine_is_compatible("renesas,r8a7779") &&
- 		    !of_machine_is_compatible("renesas,r8a7790") &&
+Is gcc 4.9 dumber then 4.8 ? gcc 4.8 doesn't produce this warning.
+
+ scripts/sortextable.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/sortextable.h b/scripts/sortextable.h
+index 8fac3fd..ba87004 100644
+--- a/scripts/sortextable.h
++++ b/scripts/sortextable.h
+@@ -103,7 +103,7 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	Elf_Sym *sort_needed_sym;
+ 	Elf_Shdr *sort_needed_sec;
+ 	Elf_Rel *relocs = NULL;
+-	int relocs_size;
++	int relocs_size = 0;
+ 	uint32_t *sort_done_location;
+ 	const char *secstrtab;
+ 	const char *strtab;
 -- 
-1.9.1
+2.1.0
 
