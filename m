@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059AbaIPIvh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:51:37 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:57954 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662AbaIPIve (ORCPT
+	id S1753439AbaIPIvn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:51:43 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:7570 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662AbaIPIvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:51:34 -0400
+	Tue, 16 Sep 2014 04:51:39 -0400
+Message-ID: <5417FA0F.1030403@huawei.com>
+Date: Tue, 16 Sep 2014 16:51:27 +0800
+From: Yao Dongdong <yaodongdong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20140915155837.GR5387@tassilo.jf.intel.com>
-References: <20140915143832.GA3264@quad>
-	<20140915155837.GR5387@tassilo.jf.intel.com>
-Date: Tue, 16 Sep 2014 10:51:33 +0200
-Message-ID: <CABPqkBSw1CUwULMhXbSEYYjYxNih=Yf+uR0pezcdv6VhFtFUWw@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/uncore: update support for client uncore IMC PMU
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "Liang, Kan" <kan.liang@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Documentation/memory-barriers.txt: match table to its comment
+ followed
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.110.51.36]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 5:58 PM, Andi Kleen <ak@linux.intel.com> wrote:
->
-> On Mon, Sep 15, 2014 at 04:38:32PM +0200, Stephane Eranian wrote:
-> >
-> > This patch restructures the memory controller (IMC) uncore
-> > PMU support for client SNB/IVB/HSW processors. The main change
-> > is that it can now cope with more than one PCI device ID per
-> > processor model. There are many flavors of memory controllers
-> > for each processor. They have different PCI device ID, yet
-> > they behave the same w.r.t. the memory controller PMU that
-> > we are interested in.
-> >
-> > The patch now supports two distinct memory controllers for IVB
-> > processors: one for mobile, one for desktop.
->
-> I haven't investigated yet, but on my Lenovo ULT Haswell laptop
-> the IMC PCI-ID doesn't exist, so the driver doesn't initialize.
->
-Send me the PCI-ID for this memory controller and I will add it
-to V2 of the patch.
-Thanks.
+The table shows CPU2's sequence of events as "x = B; y = A;", but its comment followed
+described as "x = A; y = B;".
+
+Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
+---
+ Documentation/memory-barriers.txt | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+index a4de88f..9a46bbe 100644
+--- a/Documentation/memory-barriers.txt
++++ b/Documentation/memory-barriers.txt
+@@ -115,8 +115,8 @@ For example, consider the following sequence of events:
+        CPU 1           CPU 2
+        =============== ===============
+        { A == 1; B == 2 }
+-       A = 3;          x = B;
+-       B = 4;          y = A;
++       A = 3;          x = A;
++       B = 4;          y = B;
+
+ The set of accesses as seen by the memory system in the middle can be arranged
+ in 24 different combinations:
+--
+1.8.0.1
+
