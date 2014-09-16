@@ -1,158 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaIPWIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:08:02 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:36362 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaIPWH6 (ORCPT
+	id S1754318AbaIPWIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:08:24 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:41863 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753765AbaIPWIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:07:58 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: remove remaining users of gpiochip_remove() retval
-Date: Tue, 16 Sep 2014 15:07:54 -0700
-Message-Id: <1410905274-22339-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Tue, 16 Sep 2014 18:08:18 -0400
+Date: Tue, 16 Sep 2014 15:07:40 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: Re: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
+ fuel-gauge device
+Message-ID: <20140916220740.GQ25162@lee--X1>
+References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+ <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
+ <20140828163608.GY24579@lee--X1>
+ <2E89032DDAA8B9408CB92943514A0337AB5144CE@SW-EX-MBX01.diasemi.com>
+ <20140910094951.GN30307@lee--X1>
+ <2E89032DDAA8B9408CB92943514A0337AB514846@SW-EX-MBX01.diasemi.com>
+ <20140915223924.GC25162@lee--X1>
+ <2E89032DDAA8B9408CB92943514A0337AB514E7C@SW-EX-MBX01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB514E7C@SW-EX-MBX01.diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers accidentally still use the return value from
-gpiochip_remove(). Get rid of them so we can simplify this function
-and get rid of the return value.
+On Tue, 16 Sep 2014, Opensource [Adam Thomson] wrote:
 
-Abdoulaye Berthe <berthe.ab@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-This patch will be merged through the GPIO tree.
----
- drivers/pinctrl/nomadik/pinctrl-abx500.c     | 14 ++------------
- drivers/pinctrl/nomadik/pinctrl-nomadik.c    |  2 +-
- drivers/pinctrl/qcom/pinctrl-msm.c           |  9 +--------
- drivers/pinctrl/samsung/pinctrl-exynos5440.c |  6 +-----
- drivers/pinctrl/samsung/pinctrl-samsung.c    | 13 +++----------
- 5 files changed, 8 insertions(+), 36 deletions(-)
+> On September 15, 2014 23:39, Lee Jones wrote:
+> 
+> > On Wed, 10 Sep 2014, Opensource [Adam Thomson] wrote:
+> > > On September 10, 2014 10:50, Lee Jones wrote:
+> > > > On Tue, 09 Sep 2014, Opensource [Adam Thomson] wrote:
+> > > >
+> > > > > On August 28, 2014 17:36, Lee Jones wrote:
+> > > > >
+> > > > > Thanks for the feedback. As a general comment a couple of the items you've
+> > > > > identified relate to future updates (additional functionality being added).
+> > > > > I already have code in place for this but have stripped out a couple of the
+> > > > > drivers just to reduce the churn and size of patch submission. These will be
+> > > > > added once these patches have been accepted.
+> > > > >
+> > > > > Where this is the case, I have added notes in-line against the relevant
+> > > > > comments you made.
+> > > > >
+> > > > > > On Thu, 28 Aug 2014, Adam Thomson wrote:
+> > > > > >
+> > > > > > > DA9150 is a combined Charger and Fuel-Gauge IC, with additional
+> > > > > > > GPIO and GPADC functionality.
+> > > > > > >
+> > > > > > > Signed-off-by: Adam Thomson
+> > <Adam.Thomson.Opensource@diasemi.com>
+> > > > > > > ---
+> > > > > > >  drivers/mfd/Kconfig                  |   12 +
+> > > > > > >  drivers/mfd/Makefile                 |    2 +
+> > > > > > >  drivers/mfd/da9150-core.c            |  332 ++++++++++
+> > > > > > >  drivers/mfd/da9150-i2c.c             |  176 ++++++
+> > 
+> > [...]
+> > 
+> > > > > > > +/* Helper functions for sub-devices to request/free IRQs */
+> > > > > > > +int da9150_register_irq(struct platform_device *pdev, void *dev_id,
+> > > > > > > +			irq_handler_t handler, const char *name)
+> > > > > > > +{
+> > > > > > > +	int irq, ret;
+> > > > > > > +
+> > > > > > > +	irq = platform_get_irq_byname(pdev, name);
+> > > > > > > +	if (irq < 0)
+> > > > > > > +		return irq;
+> > > > > > > +
+> > > > > > > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL, handler,
+> > > > > > > +					IRQF_ONESHOT, name, dev_id);
+> > > > > > > +	if (ret)
+> > > > > > > +		dev_err(&pdev->dev, "Failed to request IRQ %d: %d\n", irq,
+> > ret);
+> > > > > > > +
+> > > > > > > +	return ret;
+> > > > > > > +}
+> > > > > > > +EXPORT_SYMBOL_GPL(da9150_register_irq);
+> > > > > >
+> > > > > > Why do they need help?  What problem does adding these layers solve?
+> > > > >
+> > > > > Means I don't have to keep adding print error lines everywhere else if this
+> > > > > function takes care of it. Thought that would be cleaner.
+> > > >
+> > > > You only need to request each IRQ once.  It's just more abstraction
+> > > > for the sake of it.  I would prefer if you removed them.
+> > >
+> > > Yes, but in the charger driver for example, there are 4 IRQs to request. If
+> > > I don't use this approach the IRQ requesting becomes bloated, hence why I went
+> > > for a common function like this. Thought generally the intention was to cut
+> > > down on repeated code?
+> > 
+> > If you're worried about bloat in .probe() it's okay to define a new
+> > function within the charger driver; however, creating a call-back into
+> > the MFD driver like this I think it over-kill for 4 requests.
+> 
+> I could do something just in the charger, but why not have something which can
+> be used for all sub-devices? There is also an IRQ used in the IIO ADC driver and
+> there will be another in the later fuel-gauge driver too. Doesn't make sense to
+> me not to do in the MFD code when that will provide a simple common call for all
+> sub-devices. What is your concern with adding something like this, just so I'm
+> clear?
 
-diff --git a/drivers/pinctrl/nomadik/pinctrl-abx500.c b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-index a53a689a2bfa..7df34b70e8b6 100644
---- a/drivers/pinctrl/nomadik/pinctrl-abx500.c
-+++ b/drivers/pinctrl/nomadik/pinctrl-abx500.c
-@@ -1298,10 +1298,7 @@ static int abx500_gpio_probe(struct platform_device *pdev)
- 	return 0;
- 
- out_rem_chip:
--	err = gpiochip_remove(&pct->chip);
--	if (err)
--		dev_info(&pdev->dev, "failed to remove gpiochip\n");
--
-+	gpiochip_remove(&pct->chip);
- 	return ret;
- }
- 
-@@ -1312,15 +1309,8 @@ out_rem_chip:
- static int abx500_gpio_remove(struct platform_device *pdev)
- {
- 	struct abx500_pinctrl *pct = platform_get_drvdata(pdev);
--	int ret;
--
--	ret = gpiochip_remove(&pct->chip);
--	if (ret < 0) {
--		dev_err(pct->dev, "unable to remove gpiochip: %d\n",
--			ret);
--		return ret;
--	}
- 
-+	gpiochip_remove(&pct->chip);
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/nomadik/pinctrl-nomadik.c b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-index e7cab07eef47..4332b38c52ab 100644
---- a/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/nomadik/pinctrl-nomadik.c
-@@ -1261,7 +1261,7 @@ static int nmk_gpio_probe(struct platform_device *dev)
- 				   IRQ_TYPE_EDGE_FALLING);
- 	if (ret) {
- 		dev_err(&dev->dev, "could not add irqchip\n");
--		ret = gpiochip_remove(&nmk_chip->chip);
-+		gpiochip_remove(&nmk_chip->chip);
- 		return -ENODEV;
- 	}
- 	/* Then register the chain on the parent IRQ */
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index 2738108caff2..041677113a48 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -903,16 +903,9 @@ EXPORT_SYMBOL(msm_pinctrl_probe);
- int msm_pinctrl_remove(struct platform_device *pdev)
- {
- 	struct msm_pinctrl *pctrl = platform_get_drvdata(pdev);
--	int ret;
--
--	ret = gpiochip_remove(&pctrl->chip);
--	if (ret) {
--		dev_err(&pdev->dev, "Failed to remove gpiochip\n");
--		return ret;
--	}
- 
-+	gpiochip_remove(&pctrl->chip);
- 	pinctrl_unregister(pctrl->pctrl);
--
- 	return 0;
- }
- EXPORT_SYMBOL(msm_pinctrl_remove);
-diff --git a/drivers/pinctrl/samsung/pinctrl-exynos5440.c b/drivers/pinctrl/samsung/pinctrl-exynos5440.c
-index 603da2f9dd95..8ef370244aee 100644
---- a/drivers/pinctrl/samsung/pinctrl-exynos5440.c
-+++ b/drivers/pinctrl/samsung/pinctrl-exynos5440.c
-@@ -873,11 +873,7 @@ static int exynos5440_gpiolib_register(struct platform_device *pdev,
- static int exynos5440_gpiolib_unregister(struct platform_device *pdev,
- 				struct exynos5440_pinctrl_priv_data *priv)
- {
--	int ret = gpiochip_remove(priv->gc);
--	if (ret) {
--		dev_err(&pdev->dev, "gpio chip remove failed\n");
--		return ret;
--	}
-+	gpiochip_remove(priv->gc);
- 	return 0;
- }
- 
-diff --git a/drivers/pinctrl/samsung/pinctrl-samsung.c b/drivers/pinctrl/samsung/pinctrl-samsung.c
-index b07406da333c..0d137c56a6a5 100644
---- a/drivers/pinctrl/samsung/pinctrl-samsung.c
-+++ b/drivers/pinctrl/samsung/pinctrl-samsung.c
-@@ -945,9 +945,7 @@ static int samsung_gpiolib_register(struct platform_device *pdev,
- 
- fail:
- 	for (--i, --bank; i >= 0; --i, --bank)
--		if (gpiochip_remove(&bank->gpio_chip))
--			dev_err(&pdev->dev, "gpio chip %s remove failed\n",
--							bank->gpio_chip.label);
-+		gpiochip_remove(&bank->gpio_chip);
- 	return ret;
- }
- 
-@@ -957,16 +955,11 @@ static int samsung_gpiolib_unregister(struct platform_device *pdev,
- {
- 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
- 	struct samsung_pin_bank *bank = ctrl->pin_banks;
--	int ret = 0;
- 	int i;
- 
- 	for (i = 0; !ret && i < ctrl->nr_banks; ++i, ++bank)
--		ret = gpiochip_remove(&bank->gpio_chip);
--
--	if (ret)
--		dev_err(&pdev->dev, "gpio chip remove failed\n");
--
--	return ret;
-+		gpiochip_remove(&bank->gpio_chip);
-+	return 0;
- }
- 
- static const struct of_device_id samsung_pinctrl_dt_match[];
+I guess my last response wasn't as descriptive as it could have been.
+I don't think that any helper function is required at all.  No need to
+abstract/obfuscate how the IRQ is obtained and registered.  What I
+meant by 'do it in the charger driver' was, copy and paste all of the
+platform_get_irq_byname() and devm_request_threaded_irq() calls from
+.probe() into a separate function, but only if you are worried about a
+bloated .probe().  Personally I'd just leave them in there.
+
+Bottom line is; I don't feel there is a necessity for any helper
+function here.  I think it adds unnecessary complexity for the sake of
+saving a few lines of code.
+
+If you still think there is a requirement for it, perhaps a more
+system-wide devm_request_threaded_irq_byname() is in order instead?
+
+> > > > > > > +void da9150_release_irq(struct platform_device *pdev, void *dev_id,
+> > > > > > > +		       const char *name)
+> > > > > > > +{
+> > > > > > > +	int irq;
+> > > > > > > +
+> > > > > > > +	irq = platform_get_irq_byname(pdev, name);
+> > > > > > > +	if (irq < 0)
+> > > > > > > +		return;
+> > > > > > > +
+> > > > > > > +	devm_free_irq(&pdev->dev, irq, dev_id);
+> > > > > > > +}
+> > > > > > > +EXPORT_SYMBOL_GPL(da9150_release_irq);
+> > > > > >
+> > > > > > Do you ever release the IRQ and not unbind the driver?
+> > > > > >
+> > > > > > Are there ordering issues at play here?
+> > > > > >
+> > > > > > If not, there's no need to conduct a manual free.
+> > > > >
+> > > > > In the charger driver, in the remove function there is a need I believe to
+> > > > > free the IRQs before other items are cleared up (e.g. power_supply classes),
+> > > > > so this is why I have added this in here.
+> > > >
+> > > > Can you handle this separately in the Charger driver then please?
+> > > >
+> > > > [...]
+> > >
+> > > If I have to remove the IRQ register function, then yes, otherwise it makes more
+> > > sense to have the pair of functions in the MFD core I would say.
+> > 
+> > I would prefer you to remove the call-back please.
+> 
+> Right.
+> 
+> > 
+> > > > > > > +	if (pdata)
+> > > > > > > +		da9150->irq_base = pdata->irq_base;
+> > > > > > > +	else
+> > > > > > > +		da9150->irq_base = -1;
+> > > > > >
+> > > > > > pdata ? pdata->irq_base : -1;
+> > > > >
+> > > > > This is left this way as later updates to add additional functionality will
+> > > > > require addtional work to be done with the platform data. Seemed pointless
+> > > > > changing it here just to change it back later.
+> > > >
+> > > > You're not changing anything, as this is the introduction of the code.
+> > > > I can't tell you how many times I've heard "I will change it later",
+> > > > or "doing it this way will support subsequent submissions", then
+> > > > received no more patches.  It's okay to do it nicely now and expand
+> > > > it back out in the new patches.
+> > > >
+> > > > [...]
+> > >
+> > > It appears that way to you but I have to modify my code for sumbission as the
+> > > local code I have covers all functionality. Am having to refactor again and
+> > > again just to suit this initial submission, and then I have to revert it back
+> > > again when submitting the last couple of drivers. Time consuming, and quite
+> > > frustrating when the intention was to make the whole process easier. Anyway,
+> > > will update for now and revert in subsequent patches.
+> > 
+> > I sincerely hope the refactorings won't add too much effort, but it's
+> > difficult to have one rule for the masses and different ones for
+> > others.
+> 
+> I do understand that, and that's fair enough. Is just frustrating when you're
+> trying to do a proper job. Anyway, am sure I'll live. :)
+
+I know how you feel, as I've been on the receiving end of such rules
+more than once, but you could have probably re-factored twice in the
+time it's taken us to have this conversation. :)
+
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
