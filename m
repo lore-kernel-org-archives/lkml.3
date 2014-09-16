@@ -1,213 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaIPKuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:50:32 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.141]:40095 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750875AbaIPKu3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:50:29 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-16.tower-179.messagelabs.com!1410864624!38491347!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Thread-Topic: [PATCH v2 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Thread-Index: AQHPwq2qx8nTzPhylUOPMOTaGYVHb5vmJjcAgBKH1lCAAXT1gIAAdiEggAg8igCAANxb0A==
-Date: Tue, 16 Sep 2014 10:50:21 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB514E7C@SW-EX-MBX01.diasemi.com>
-References: <cover.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <d6c7de200c9447dbafa74ee76739da943a0b73b2.1409145187.git.Adam.Thomson.Opensource@diasemi.com>
- <20140828163608.GY24579@lee--X1>
- <2E89032DDAA8B9408CB92943514A0337AB5144CE@SW-EX-MBX01.diasemi.com>
- <20140910094951.GN30307@lee--X1>
- <2E89032DDAA8B9408CB92943514A0337AB514846@SW-EX-MBX01.diasemi.com>
- <20140915223924.GC25162@lee--X1>
-In-Reply-To: <20140915223924.GC25162@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	id S1753128AbaIPKxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:53:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40281 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752046AbaIPKxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 06:53:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
+   d="scan'208";a="477839408"
+Date: Tue, 16 Sep 2014 03:53:27 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "David E. Box" <david.e.box@linux.intel.com>, wsa@the-dreams.de,
+        jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
+        sjg@chromium.org, laurent.pinchart+renesas@ideasonboard.com,
+        u.kleine-koenig@pengutronix.de, boris.brezillon@free-electrons.com,
+        maxime.coquelin@st.com, max.schwarz@online.de, schwidefsky@de.ibm.com,
+        iivanov@mm-sol.com, soren.brinkmann@xilinx.com,
+        bjorn.andersson@sonymobile.com, andrew@lunn.ch, skuribay@pobox.com,
+        christian.ruppert@abilis.com, Romain.Baeriswyl@abilis.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c-designware: Intel BayTrail PMIC I2C bus support
+Message-ID: <20140916035327.4d3d5555@ultegra>
+In-Reply-To: <20140916094449.GZ10854@lahna.fi.intel.com>
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+	<20140916094449.GZ10854@lahna.fi.intel.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8GAoaIV026686
 
-On September 15, 2014 23:39, Lee Jones wrote:
+On Tue, 16 Sep 2014 12:44:49 +0300
+Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
 
-> On Wed, 10 Sep 2014, Opensource [Adam Thomson] wrote:
-> > On September 10, 2014 10:50, Lee Jones wrote:
-> > > On Tue, 09 Sep 2014, Opensource [Adam Thomson] wrote:
-> > >
-> > > > On August 28, 2014 17:36, Lee Jones wrote:
-> > > >
-> > > > Thanks for the feedback. As a general comment a couple of the items you've
-> > > > identified relate to future updates (additional functionality being added).
-> > > > I already have code in place for this but have stripped out a couple of the
-> > > > drivers just to reduce the churn and size of patch submission. These will be
-> > > > added once these patches have been accepted.
-> > > >
-> > > > Where this is the case, I have added notes in-line against the relevant
-> > > > comments you made.
-> > > >
-> > > > > On Thu, 28 Aug 2014, Adam Thomson wrote:
-> > > > >
-> > > > > > DA9150 is a combined Charger and Fuel-Gauge IC, with additional
-> > > > > > GPIO and GPADC functionality.
-> > > > > >
-> > > > > > Signed-off-by: Adam Thomson
-> <Adam.Thomson.Opensource@diasemi.com>
-> > > > > > ---
-> > > > > >  drivers/mfd/Kconfig                  |   12 +
-> > > > > >  drivers/mfd/Makefile                 |    2 +
-> > > > > >  drivers/mfd/da9150-core.c            |  332 ++++++++++
-> > > > > >  drivers/mfd/da9150-i2c.c             |  176 ++++++
+> Is this because we need to access the PMIC from host as well? I mean
+> from some PMIC driver (which driver btw)?
 > 
-> [...]
-> 
-> > > > > > +/* Helper functions for sub-devices to request/free IRQs */
-> > > > > > +int da9150_register_irq(struct platform_device *pdev, void *dev_id,
-> > > > > > +			irq_handler_t handler, const char *name)
-> > > > > > +{
-> > > > > > +	int irq, ret;
-> > > > > > +
-> > > > > > +	irq = platform_get_irq_byname(pdev, name);
-> > > > > > +	if (irq < 0)
-> > > > > > +		return irq;
-> > > > > > +
-> > > > > > +	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL, handler,
-> > > > > > +					IRQF_ONESHOT, name, dev_id);
-> > > > > > +	if (ret)
-> > > > > > +		dev_err(&pdev->dev, "Failed to request IRQ %d: %d\n", irq,
-> ret);
-> > > > > > +
-> > > > > > +	return ret;
-> > > > > > +}
-> > > > > > +EXPORT_SYMBOL_GPL(da9150_register_irq);
-> > > > >
-> > > > > Why do they need help?  What problem does adding these layers solve?
-> > > >
-> > > > Means I don't have to keep adding print error lines everywhere else if this
-> > > > function takes care of it. Thought that would be cleaner.
-> > >
-> > > You only need to request each IRQ once.  It's just more abstraction
-> > > for the sake of it.  I would prefer if you removed them.
-> >
-> > Yes, but in the charger driver for example, there are 4 IRQs to request. If
-> > I don't use this approach the IRQ requesting becomes bloated, hence why I went
-> > for a common function like this. Thought generally the intention was to cut
-> > down on repeated code?
-> 
-> If you're worried about bloat in .probe() it's okay to define a new
-> function within the charger driver; however, creating a call-back into
-> the MFD driver like this I think it over-kill for 4 requests.
+This is used by the X-Powers PMIC.
+https://lkml.org/lkml/2014/9/11/1016
 
-I could do something just in the charger, but why not have something which can
-be used for all sub-devices? There is also an IRQ used in the IIO ADC driver and
-there will be another in the later fuel-gauge driver too. Doesn't make sense to
-me not to do in the MFD code when that will provide a simple common call for all
-sub-devices. What is your concern with adding something like this, just so I'm
-clear?
+> Otherwise it would be best to just detect _SEM and return -ENODEV.
 
-> 
-> > > > > > +void da9150_release_irq(struct platform_device *pdev, void *dev_id,
-> > > > > > +		       const char *name)
-> > > > > > +{
-> > > > > > +	int irq;
-> > > > > > +
-> > > > > > +	irq = platform_get_irq_byname(pdev, name);
-> > > > > > +	if (irq < 0)
-> > > > > > +		return;
-> > > > > > +
-> > > > > > +	devm_free_irq(&pdev->dev, irq, dev_id);
-> > > > > > +}
-> > > > > > +EXPORT_SYMBOL_GPL(da9150_release_irq);
-> > > > >
-> > > > > Do you ever release the IRQ and not unbind the driver?
-> > > > >
-> > > > > Are there ordering issues at play here?
-> > > > >
-> > > > > If not, there's no need to conduct a manual free.
-> > > >
-> > > > In the charger driver, in the remove function there is a need I believe to
-> > > > free the IRQs before other items are cleared up (e.g. power_supply classes),
-> > > > so this is why I have added this in here.
-> > >
-> > > Can you handle this separately in the Charger driver then please?
-> > >
-> > > [...]
-> >
-> > If I have to remove the IRQ register function, then yes, otherwise it makes more
-> > sense to have the pair of functions in the MFD core I would say.
-> 
-> I would prefer you to remove the call-back please.
+Thanks,
 
-Right.
-
-> 
-> > > > > > +	if (pdata)
-> > > > > > +		da9150->irq_base = pdata->irq_base;
-> > > > > > +	else
-> > > > > > +		da9150->irq_base = -1;
-> > > > >
-> > > > > pdata ? pdata->irq_base : -1;
-> > > >
-> > > > This is left this way as later updates to add additional functionality will
-> > > > require addtional work to be done with the platform data. Seemed pointless
-> > > > changing it here just to change it back later.
-> > >
-> > > You're not changing anything, as this is the introduction of the code.
-> > > I can't tell you how many times I've heard "I will change it later",
-> > > or "doing it this way will support subsequent submissions", then
-> > > received no more patches.  It's okay to do it nicely now and expand
-> > > it back out in the new patches.
-> > >
-> > > [...]
-> >
-> > It appears that way to you but I have to modify my code for sumbission as the
-> > local code I have covers all functionality. Am having to refactor again and
-> > again just to suit this initial submission, and then I have to revert it back
-> > again when submitting the last couple of drivers. Time consuming, and quite
-> > frustrating when the intention was to make the whole process easier. Anyway,
-> > will update for now and revert in subsequent patches.
-> 
-> I sincerely hope the refactorings won't add too much effort, but it's
-> difficult to have one rule for the masses and different ones for
-> others.
-
-I do understand that, and that's fair enough. Is just frustrating when you're
-trying to do a proper job. Anyway, am sure I'll live. :)
-
-> 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org â”‚ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Jacob
