@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaIPXF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:05:56 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64220 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827AbaIPXFy (ORCPT
+	id S1753899AbaIPXH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:07:28 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:44672 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036AbaIPXH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:05:54 -0400
-Date: Tue, 16 Sep 2014 16:05:37 -0700
+	Tue, 16 Sep 2014 19:07:27 -0400
+Date: Tue, 16 Sep 2014 16:07:11 -0700
 From: Lee Jones <lee.jones@linaro.org>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mfd: twl4030-power: use 'ti,system-power-controller'
- as alternative way to support system power off
-Message-ID: <20140916230537.GU25162@lee--X1>
-References: <1409771208-21867-1-git-send-email-nm@ti.com>
- <1409771208-21867-3-git-send-email-nm@ti.com>
- <20140909000126.GU3238@atomide.com>
+Subject: Re: [PATCH] mfd: arizona: Use handle_simple_irq for IRQ dispatch chip
+Message-ID: <20140916230711.GA30918@lee--X1>
+References: <1410278409-28216-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140909000126.GU3238@atomide.com>
+In-Reply-To: <1410278409-28216-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Sep 2014, Tony Lindgren wrote:
+On Tue, 09 Sep 2014, Charles Keepax wrote:
 
-> * Nishanth Menon <nm@ti.com> [140903 12:07]:
-> > ti,system-power-controller is more or less the standard way of
-> > indicating that the PMIC is the system wide power controller and hence
-> > may be used to switch off the system. Almost ALL TI PMIC drivers and
-> > many Maxim PMIC drivers follow the same style.
-> > 
-> > So support 'ti,system-power-controller' in addition to the usual
-> > 'ti,use_poweroff' to indicate that the PMIC instance has control for
-> > switching off the system.
-> > 
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
+> We use a dummy IRQ chip to dispatch interrupts to the two seperate IRQ
+> domains on the Arizona devices. This is just a simple software IRQ chip
+> and thus the current handle_edge_irq is unnecessary for its needs.
 > 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-irq.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-I assume you're going to resend this with the document modifications?
-When you do, don't forget to apply Tony's Ack, as it will ensure a
-faster merge.
+Applied, thanks.
 
-> > ---
-> >  drivers/mfd/twl4030-power.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-> > index 3bc969a..1c129ba 100644
-> > --- a/drivers/mfd/twl4030-power.c
-> > +++ b/drivers/mfd/twl4030-power.c
-> > @@ -627,6 +627,9 @@ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
-> >  	if (pdata && pdata->use_poweroff)
-> >  		return true;
-> >  
-> > +	if (of_property_read_bool(node, "ti,system-power-controller"))
-> > +		return true;
-> > +
-> >  	if (of_property_read_bool(node, "ti,use_poweroff"))
-> >  		return true;
-> >  
+> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+> index 5e2f450..3a3fe7c 100644
+> --- a/drivers/mfd/arizona-irq.c
+> +++ b/drivers/mfd/arizona-irq.c
+> @@ -172,7 +172,7 @@ static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
+>  	struct regmap_irq_chip_data *data = h->host_data;
+>  
+>  	irq_set_chip_data(virq, data);
+> -	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
+> +	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_simple_irq);
+>  	irq_set_nested_thread(virq, 1);
+>  
+>  	/* ARM needs us to explicitly flag the IRQ as valid
 
 -- 
 Lee Jones
