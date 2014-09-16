@@ -1,96 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaIPMn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 08:43:29 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:48068 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365AbaIPMn1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 08:43:27 -0400
-X-ASG-Debug-ID: 1410871300-0759e71e82012b0003-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Tue, 16 Sep 2014 14:42:01 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140916124200.GK28458@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <54119AAA.9080907@linutronix.de>
- <20140911151114.GD28458@ci00147.xsens-tech.local>
- <5411C810.7070906@linutronix.de>
- <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
- <54129F6C.7040508@linutronix.de>
- <20140912094010.GE28458@ci00147.xsens-tech.local>
- <5412C21A.8020203@linutronix.de>
- <20140912102816.GF28458@ci00147.xsens-tech.local>
- <541716DC.9020904@linutronix.de>
- <20140916090540.GJ28458@ci00147.xsens-tech.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754017AbaIPMoa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 08:44:30 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:38833 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422AbaIPMo3 (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 16 Sep 2014 08:44:29 -0400
+Message-Id: <54184CC802000078000355EE@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Tue, 16 Sep 2014 13:44:24 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <jiang.liu@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ix86: fix build failure when !CONFIG_X86_IO_APIC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <20140916090540.GJ28458@ci00147.xsens-tech.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1410871332
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9546
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 11:05:40AM +0200, Frans Klaver wrote:
-> On Mon, Sep 15, 2014 at 06:42:04PM +0200, Sebastian Andrzej Siewior wrote:
-> > On 09/12/2014 12:28 PM, Frans Klaver wrote:
-> > > port config is 115200 8N1. I don't recall doing anything special. I
-> > > boot, login, less file and get a lock.
-> > 
-> > So I booted my mini Debian 7.6 (basic system + openssh) on my beagle
-> > bone black which is:
-> > 
-> > [    0.000000] AM335X ES2.0 (neon )
-> > 
-> > configured a console, login, invoked "less file". The file was shown, I
-> > hit on the space key so less shows me more of the file. No lock-up.
-> > I tried booting via NFS and MMC. I tried various files with less.
-> > 
-> > My dot config is here
-> > 	https://breakpoint.cc/config-am335x-bb.txt.xz
-> > 
-> > If there is nothing specific to the file you do less on I have no idea
-> > what else it could if it is not the config.
-> 
-> I'll test your config and go through the differences.
+mp_should_keep_irq() isn't really IO-APIC related, and considering that
+it's being used solely in arch/x86/pci/ likely both declaration and
+definition got misplaced even without considering the resulting build
+failure:
 
-So far it looks like it isn't in the config. I've tested both your and
-my config on debian wheezy on a boneblack. No lock ups.
+.../arch/x86/pci/irq.c: In function ‘pirq_disable_irq’:
+.../arch/x86/pci/irq.c:1259: error: implicit declaration of function ‘mp_should_keep_irq’
+make[3]: *** [arch/x86/pci/irq.o] Error 1
 
-Less doesn't fill my entire screen, so it looks a bit funky when
-scrolling, but I'm not sure if that's related to the driver.
+Move them to better places.
 
-I'll have to look further for things we did that may have impact here.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/io_apic.h |    2 --
+ arch/x86/include/asm/pci_x86.h |    2 ++
+ arch/x86/kernel/apic/io_apic.c |   12 ------------
+ arch/x86/pci/irq.c             |   12 ++++++++++++
+ 4 files changed, 14 insertions(+), 14 deletions(-)
 
-> Thanks,
-> Frans
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+--- 3.17-rc5/arch/x86/include/asm/io_apic.h
++++ 3.17-rc5-ix86-build-no-IOAPIC/arch/x86/include/asm/io_apic.h
+@@ -227,8 +227,6 @@ static inline void io_apic_modify(unsign
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
+-extern bool mp_should_keep_irq(struct device *dev);
+-
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
+ #define io_apic_assign_pci_irqs 0
+--- 3.17-rc5/arch/x86/include/asm/pci_x86.h
++++ 3.17-rc5-ix86-build-no-IOAPIC/arch/x86/include/asm/pci_x86.h
+@@ -93,6 +93,8 @@ extern raw_spinlock_t pci_config_lock;
+ extern int (*pcibios_enable_irq)(struct pci_dev *dev);
+ extern void (*pcibios_disable_irq)(struct pci_dev *dev);
+ 
++extern bool mp_should_keep_irq(struct device *dev);
++
+ struct pci_raw_ops {
+ 	int (*read)(unsigned int domain, unsigned int bus, unsigned int devfn,
+ 						int reg, int len, u32 *val);
+--- 3.17-rc5/arch/x86/kernel/apic/io_apic.c
++++ 3.17-rc5-ix86-build-no-IOAPIC/arch/x86/kernel/apic/io_apic.c
+@@ -3959,18 +3959,6 @@ int mp_set_gsi_attr(u32 gsi, int trigger
+ 	return ret;
+ }
+ 
+-bool mp_should_keep_irq(struct device *dev)
+-{
+-	if (dev->power.is_prepared)
+-		return true;
+-#ifdef	CONFIG_PM_RUNTIME
+-	if (dev->power.runtime_status == RPM_SUSPENDING)
+-		return true;
+-#endif
+-
+-	return false;
+-}
+-
+ /* Enable IOAPIC early just for system timer */
+ void __init pre_init_apic_IRQ0(void)
+ {
+--- 3.17-rc5/arch/x86/pci/irq.c
++++ 3.17-rc5-ix86-build-no-IOAPIC/arch/x86/pci/irq.c
+@@ -1254,6 +1254,18 @@ static int pirq_enable_irq(struct pci_de
+ 	return 0;
+ }
+ 
++bool mp_should_keep_irq(struct device *dev)
++{
++	if (dev->power.is_prepared)
++		return true;
++#ifdef CONFIG_PM_RUNTIME
++	if (dev->power.runtime_status == RPM_SUSPENDING)
++		return true;
++#endif
++
++	return false;
++}
++
+ static void pirq_disable_irq(struct pci_dev *dev)
+ {
+ 	if (io_apic_assign_pci_irqs && !mp_should_keep_irq(&dev->dev) &&
+
+
