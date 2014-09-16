@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119AbaIPHhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:37:43 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:34680 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaIPHhm (ORCPT
+	id S1752889AbaIPHo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:44:28 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:56771 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaIPHo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:37:42 -0400
-Date: Tue, 16 Sep 2014 02:37:36 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Helge Deller <deller@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        Aaron Tomlin <atomlin@redhat.com>,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH] Fix end_of_stack() fn and location of stack canary for
- archs using STACK_GROWSUP
-Message-ID: <20140916023736.49db964e@as>
+	Tue, 16 Sep 2014 03:44:26 -0400
+Date: Tue, 16 Sep 2014 09:44:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
+Message-ID: <20140916074421.GA21295@gmail.com>
+References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com>
+ <1410522513-1045-3-git-send-email-pawel.moll@arm.com>
+ <54132F63.1010401@gmail.com>
+ <20140912204444.GA11199@kernel.org>
+ <5415B790.5010607@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5415B790.5010607@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aaron Tomlin recently posted patches [1] to enable checking the stack canary on
-every task switch. Looking at the canary code, I realized that every arch
-(except ia64, which adds some space for register spill above the stack) shares a
-definition of end_of_stack() that makes it the first long after the threadinfo.
 
-For stacks that grow down, this low address is correct because the stack starts
-at the end of the thread area and grows toward lower addresses. However, for
-stacks that grow up, toward higher addresses, this is wrong. (The stack actually
-grows away from the canary.) On these archs end_of_stack() should return the 
-address of the last long, at the highest possible address for the stack.
+* David Ahern <dsahern@gmail.com> wrote:
 
-[1] http://lkml.org/lkml/2014/9/12/293
+> On 9/12/14, 2:44 PM, Arnaldo Carvalho de Melo wrote:
+> >Em Fri, Sep 12, 2014 at 10:37:39AM -0700, David Ahern escreveu:
+> >>On 9/12/14, 4:48 AM, Pawel Moll wrote:
+> >>>This patch adds a PERF_COUNT_SW_MARKER event type, which
+> >>>can be requested by user and a PERF_EVENT_IOC_MARKER
+> >>>ioctl command which will inject an event of said type into
+> >>>the perf buffer. The ioctl can take a zero-terminated
+> >>>string argument, similar to tracing_marker in ftrace,
+> >>>which will be kept in the "raw" field of the sample.
+> >>>
+> >>>The main use case for this is synchronisation of
+> >>>performance data generated in user space with the perf
+> >>>stream coming from the kernel. For example, the marker
+> >>>can be inserted by a JIT engine after it generated
+> >>>portion of the code, but before the code is executed
+> >>>for the first time, allowing the post-processor to
+> >>>pick the correct debugging information. Other example
+> >>>is a system profiling tool taking data from other
+> >>>sources than just perf, which generates a marker
+> >>>at the beginning at at the end of the session
+> >>>(also possibly periodically during the session) to
+> >>>synchronise kernel timestamps with clock values
+> >>>obtained in userspace (gtod or raw_monotonic).
+> >>
+> >>Seems really similar to what I proposed in the past:
+> >>
+> >>https://lkml.org/lkml/2011/2/27/159
+> >>
+> >>Which was rejected.
+> >
+> >I took a look at that thread, but just barely, emphasis on that.
+> >
+> >Injecting something from userspace, a la ftrace, seems to be something,
+> >as tglx mentioned, "buried" in that patchset.
+> 
+> Thomas object to an ioctl buried deep in a patch -- newbie 
+> mistake.
+> 
+> Peter objected to the ioctl https://lkml.org/lkml/2011/3/1/229
+> 
+> It was not userspace injecting random data into the stream but 
+> rather forcing the sample to be generated and added to the 
+> stream.
 
-Signed-off-by: Chuck Ebbert <cebbert.lkml@gmail.com>
+I think adding an ioctl to inject user-provided data into the 
+event stream is sensible, as long as there's a separate 'user 
+generated data' event for it, etc.
 
----
+The main usecase I could see would be to introduce a 
+perf_printf() variant, supported by 'perf trace' by default, to 
+add various tracable printouts to apps.
 
-Compile tested only, with Aaron's patches applied and the new option
-CONFIG_SCHED_STACK_END_CHECK they add enabled. I have no way to test
-this any further.
+Timestamps generated by apps would be another usecase. It would 
+probably be wise to add a 32-bit (or 64-bit) message type ID, 
+plus a length field, with a message type registry somewhere in 
+tools/perf/ (and reference implementation for each new subtype), 
+to keep things organized yet flexible going forward.
 
-diff a/include/linux/sched.h b/include/linux/sched.h
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2610,7 +2610,11 @@ static inline void setup_thread_stack(struct task_struct *p, struct task_struct
- 
- static inline unsigned long *end_of_stack(struct task_struct *p)
- {
-+#ifdef CONFIG_STACK_GROWSUP
-+	return (unsigned long *)((unsigned long)task_thread_info(p) + THREAD_SIZE) - 1;
-+#else
- 	return (unsigned long *)(task_thread_info(p) + 1);
-+#endif
- }
- 
- #endif
+Thanks,
 
-
+	Ingo
