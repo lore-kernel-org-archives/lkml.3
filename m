@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891AbaIPTY7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:24:59 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40102 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468AbaIPTY5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:24:57 -0400
-Date: Tue, 16 Sep 2014 21:24:46 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Joe Perches <joe@perches.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/8] arm: Convert pr_warning to pr_warn
-Message-ID: <20140916192446.GK3755@pengutronix.de>
-References: <cover.1410632834.git.joe@perches.com>
- <7995478e8c658478cd37dabb996f7269405251ac.1410632835.git.joe@perches.com>
- <20140915155656.GA29744@arm.com>
- <20140916160759.GJ12361@n2100.arm.linux.org.uk>
- <1410884281.16519.2.camel@joe-AO725>
+	id S1754997AbaIPT2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:28:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468AbaIPT2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 15:28:21 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
+References: <cover.1410810247.git.milosz@adfin.com>
+	<c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Sep 2014 15:27:41 -0400
+In-Reply-To: <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com>
+	(Christoph Hellwig's message of "Mon, 15 Sep 2014 16:22:12 -0400")
+Message-ID: <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410884281.16519.2.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+Christoph Hellwig <milosz@adfin.com> writes:
 
-On Tue, Sep 16, 2014 at 09:18:01AM -0700, Joe Perches wrote:
-> On Tue, 2014-09-16 at 17:07 +0100, Russell King - ARM Linux wrote:
-> > any chance you could add a KernelVersion: tag somewhere in the
-> > commit message and throw it at patches@arm.linux.org.uk so it doesn't
-> > get lost?
-> 
-> There are no commit logs with a KernelVersion: tag
-> in all of git history.
-> 
-> What do you think a KernelVersion: tag is and what
-> would it be used for?
-That's used in Russell's patch tracker, but the resulting commit doesn't
-have the KernelVersion tag.
+Hrm, you're not Christoph...
 
-See http://www.arm.linux.org.uk/developer/patches/info.php for the
-details.
+> Acked-by: Milosz Tanski <milosz@adfin.com>
+> ---
+>  fs/ceph/file.c    |    2 ++
+>  fs/cifs/file.c    |    6 ++++++
+>  fs/nfs/file.c     |    5 ++++-
+>  fs/ocfs2/file.c   |    6 ++++++
+>  fs/pipe.c         |    3 ++-
+>  fs/read_write.c   |   17 +++++++++++------
+>  fs/xfs/xfs_file.c |    4 ++++
+>  mm/shmem.c        |    4 ++++
+>  8 files changed, 39 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+> index 4776257..b62e3a5 100644
+> --- a/fs/ceph/file.c
+> +++ b/fs/ceph/file.c
+> @@ -808,6 +808,8 @@ again:
+>  	if ((got & (CEPH_CAP_FILE_CACHE|CEPH_CAP_FILE_LAZYIO)) == 0 ||
+>  	    (iocb->ki_filp->f_flags & O_DIRECT) ||
+>  	    (fi->flags & CEPH_F_SYNC)) {
+> +		if (flags & O_NONBLOCK)
+> +			return -EAGAIN;
 
-Best regards
-Uwe
+Again, the right return value for the O_DIRECT case is EINVAL.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+> index 4072f3a..116bed2 100644
+> --- a/fs/nfs/file.c
+> +++ b/fs/nfs/file.c
+> @@ -170,8 +170,11 @@ nfs_file_read(struct kiocb *iocb, struct iov_iter *to, int flags)
+>  	struct inode *inode = file_inode(iocb->ki_filp);
+>  	ssize_t result;
+>  
+> -	if (iocb->ki_filp->f_flags & O_DIRECT)
+> +	if (iocb->ki_filp->f_flags & O_DIRECT) {
+> +		if (flags & O_NONBLOCK)
+> +			return -EAGAIN;
+>  		return nfs_file_direct_read(iocb, to, iocb->ki_pos, true);
+> +	}
+
+And here.  I stopped looking for that case at this point.
+
+Cheers,
+Jeff
