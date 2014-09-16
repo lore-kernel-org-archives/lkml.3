@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaIPPBp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:01:45 -0400
-Received: from bues.ch ([80.190.117.144]:42701 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753000AbaIPPBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:01:44 -0400
-Date: Tue, 16 Sep 2014 17:01:16 +0200
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Amos Kong <akong@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        herbert@gondor.apana.org.au, mpm@selenic.com, rusty@rustcorp.com.au,
-        amit.shah@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] hw_random: increase schedule timeout in
- rng_dev_read()
-Message-ID: <20140916170116.65f8d883@wiggum>
-In-Reply-To: <20140916002740.GA5671@zen>
-References: <1410796949-2221-1-git-send-email-akong@redhat.com>
-	<1410796949-2221-4-git-send-email-akong@redhat.com>
-	<20140915181331.4e3f5fed@wiggum>
-	<20140916002740.GA5671@zen>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1754113AbaIPPDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:03:43 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:63954 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393AbaIPPDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 11:03:41 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/7=Ee=1KEUuR5Fsm=4e3N5nX"; protocol="application/pgp-signature"
+In-Reply-To: <CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
+References: <1409216559-22402-1-git-send-email-cw00.choi@samsung.com>
+	<1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
+	<CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
+Date: Tue, 16 Sep 2014 09:03:39 -0600
+Message-ID: <CAD8Lp47M8jHLrQAdYUn6NZn2Ety_02E6HPzPDUX3uGLVqf1riw@mail.gmail.com>
+Subject: Re: [PATCHv3 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
+From: Daniel Drake <drake@endlessm.com>
+To: Javier Martinez Canillas <javier@dowhile0.org>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/7=Ee=1KEUuR5Fsm=4e3N5nX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 16, 2014 at 7:48 AM, Javier Martinez Canillas
+<javier@dowhile0.org> wrote:
+>> Clock list for s3c-rtc device:
+>> - rtc : CLK_RTC of CLK_GATE_IP_PERIR is gate clock for RTC.
+>> - rtc_src : XrtcXTI is 32.768.kHz source clock for RTC.
+>
+> Is this RTC source clock needed for all Exynos SoCs?
 
-On Tue, 16 Sep 2014 08:27:40 +0800
-Amos Kong <akong@redhat.com> wrote:
+It is at least needed on Exynos4412, which has the XrtcXTI thing
+exactly as you describe. However the very standard setup there is to
+hook it up to the CP clock output of the MAX76686 PMIC. This CP clock
+is on by default, so you can potentially live without that detail
+being present in the DT.
 
-> Set timeout to 10:
->   non-smp guest with quick backend (1.2M/s) -> about 490K/s)
+However... one small issue with this setup is that when you enable
+CONFIG_COMMON_CLK_MAX77686, the CP clock gets exposed in Linux's
+common clock framework, and Linux then turns it off because it
+believes it is unused. Then the RTC stops ticking.
 
-That sounds like an awful lot. This is a 60% loss in throughput.
-I don't think we can live with that.
+So the rtc_src idea would also be good for Exynos4412. Maybe it would
+make sense to drop the needs_src_clk flag, and simply require/enable
+the src clock whenever it is present in the DT.
 
---=20
-Michael
+Also, are you sure about the way you are treating this clock, all
+those enable/disable calls? You only seem to enable it when doing some
+particular driver operations e.g. reading the time, leaving it
+disabled at all other times. However I believe on Exynos4412 that if
+you disable this clock then the RTC will not tick.
 
---Sig_/7=Ee=1KEUuR5Fsm=4e3N5nX
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUGFC8AAoJEPUyvh2QjYsO1rQP/3BUqE2P6lKKSVE6J0l47J/1
-dgNKWEyQBPEa4wz7jcaQkniVEfTRbn5xZVFuVtdWGVLcLa3XCYWgveo3Jo4f/Aon
-6t0nUZXEeENbi4hBYYrZ8LnG+12SqcYvaVSNCrTL4fCmfcYEv3OUdUiEYh5iw1Py
-iFKDfUzohhbKlObgm2rMOCNXTv3ZPwKalE6cxvbKpbaAe/wVXHgVWhK9rGnQmzpA
-Lk56gn/G7cDJ7G+HMT06p0qe2/QyFAJLNKVr8aOqCHMftRBkw8VhFYKX6P0EW7RI
-ARH100K8ZPjxyyYjy3+rPbBSTEGX5ioddqAm1nwzMlRkXc9xB/Q34rlt0eoMRKmF
-eiU9DcKu5DvrVsnmvj8cO1Htz2lYUMQsYRn2K5RIw0Ogej4buZHf0fkiSDwUupAV
-CdTnekusbz58CwQSjAnikBvL0HykytmiQmjt43/BW41D4J5v6AETmO9pcqPORxle
-CNTnPvAdeRlO5iEhyw3XTKzBidDHVi4h8uH311gWeXtq/NcfRcUpRHYWHBd6BB8w
-pEYw0ukyxNkHFIDu0a7h88DgcwfvmViK5Cvl3z1djkIKaPRrONCkaXv+mLCz6LrO
-kcf9lM8LMhWvyzo8/+gs3miFMROCNG+u7W3r1cBraZ8MlD+ZOp1Je9rvEuXFHe1M
-45cPqwNkbt4hswTlBjCl
-=8+vG
------END PGP SIGNATURE-----
-
---Sig_/7=Ee=1KEUuR5Fsm=4e3N5nX--
+Daniel
