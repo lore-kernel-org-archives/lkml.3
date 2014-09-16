@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924AbaIPLGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:06:44 -0400
-Received: from mga14.intel.com ([192.55.52.115]:13338 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753674AbaIPLGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:06:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="386756238"
-From: "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        vinod.koul@intel.com,
-        "Subhransu S. Prusty" <subhransu.s.prusty@intel.com>
-Subject: [PATCH] PM: Add helper to mark last busy and autosuspend
-Date: Tue, 16 Sep 2014 16:13:51 +0530
-Message-Id: <1410864231-10334-1-git-send-email-subhransu.s.prusty@intel.com>
-X-Mailer: git-send-email 1.9.0
+	id S1753951AbaIPLHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:07:46 -0400
+Received: from sesbmg23.ericsson.net ([193.180.251.37]:48076 "EHLO
+	sesbmg23.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaIPLHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 07:07:45 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 07:07:44 EDT
+X-AuditID: c1b4fb25-f791c6d00000617b-fd-541816794e69
+From: Oscar Utbult <oscar@oscr.io>
+To: <broonie@kernel.org>, <rdunlap@infradead.org>
+CC: <linux-spi@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <oscar@oscr.io>
+Subject: [PATCH 1/1] spi-summery: documentation mistake
+Date: Tue, 16 Sep 2014 12:52:13 +0200
+Message-ID: <1410864733-861751-1-git-send-email-oscar@oscr.io>
+X-Mailer: git-send-email 1.8.0.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsUyM+JvjW6lmESIwYznqhZTHz5hs1jYtoTF
+	4vKuOWwWjR9vslvM+XWazeLtneksDmwem1doeWxa1cnmcfzkBnaPz5vkAliiuGxSUnMyy1KL
+	9O0SuDJOLrzEWvCOtWLK8yPsDYyvWboYOTkkBEwk1u6ZyQxhi0lcuLeerYuRi0NI4CijxLWH
+	1xghnF2MEgs+LmOGcM4xSszZs4wdwmlglPh84RMTSD+bgJLEn8Z97CC2iIChRNvjuYwgNrNA
+	vsSHk/fBdggLmEs0bjkIZrMIqEo8aN8GVs8rYCfx8PwkqDsUJE6/u8sCEReUODnzCQvEHAmJ
+	gy9eANVwAC1Wk1h4umACo8AsJFWzkFQtYGRaxShanFqclJtuZKyXWpSZXFycn6eXl1qyiREY
+	uge3/FbdwXj5jeMhRgEORiUeXgUuiRAh1sSy4srcQ4zSHCxK4rwLz80LFhJITyxJzU5NLUgt
+	ii8qzUktPsTIxMEp1cAoWXLo9ffSbarF/tyvPAwvJ+ksfzkhMVh/wmGxhXY+4gf/xs9Qd622
+	ebpLyFxvT328WPMHlWjf9Zu4Eu4aXshqTmX488T2nfmWDF/booPeHH1L/q/6GWd2fVak7Jy2
+	VKmWXx94LTOTvvRnKeZwCTGtsvFx5Z7VO3ffxSNyK3Ryfp/1ea9QW6jEUpyRaKjFXFScCAC4
+	SHVfPgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pm_runtime_mark_last_busy and pm_runtime_put_autosuspend are used together
-in quite a lot of places. Add a helper for these.
+Contributors are not listed in alphabetical order as claimed by documentation.
 
-Signed-off-by: Subhransu S. Prusty <subhransu.s.prusty@intel.com>
+Signed-off-by: Oscar Utbult <oscar@oscr.io>
 ---
- include/linux/pm_runtime.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/spi/spi-summary | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-index 367f49b..256ec50 100644
---- a/include/linux/pm_runtime.h
-+++ b/include/linux/pm_runtime.h
-@@ -277,4 +277,10 @@ static inline void pm_runtime_dont_use_autosuspend(struct device *dev)
- 	__pm_runtime_use_autosuspend(dev, false);
- }
+diff --git a/Documentation/spi/spi-summary b/Documentation/spi/spi-summary
+index 7982bcc..d29734b 100644
+--- a/Documentation/spi/spi-summary
++++ b/Documentation/spi/spi-summary
+@@ -601,13 +601,13 @@ THANKS TO
+ Contributors to Linux-SPI discussions include (in alphabetical order,
+ by last name):
  
-+static inline int pm_runtime_last_busy_and_autosuspend(struct device *dev)
-+{
-+	pm_runtime_mark_last_busy(dev);
-+	return pm_runtime_put_autosuspend(dev);
-+}
-+
- #endif
++Mark Brown
+ David Brownell
+ Russell King
++Grant Likely
+ Dmitry Pervushin
+ Stephen Street
+ Mark Underwood
+ Andrew Victor
+-Vitaly Wool
+-Grant Likely
+-Mark Brown
+ Linus Walleij
++Vitaly Wool
 -- 
-1.9.0
+1.8.0.1
 
