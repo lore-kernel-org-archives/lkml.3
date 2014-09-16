@@ -1,794 +1,1014 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaIPVR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:17:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43458 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbaIPVR0 convert rfc822-to-8bit (ORCPT
+	id S1753429AbaIPVTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:19:21 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:55745 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbaIPVTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:17:26 -0400
-Date: Tue, 16 Sep 2014 22:17:19 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Tanmay Inamdar <tinamdar@apm.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Rob Landley <rob@landley.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
-Subject: Re: [PATCH v8 1/4] pci:host: APM X-Gene PCIe host controller driver
-Message-ID: <20140916211719.GI15899@e106497-lin.cambridge.arm.com>
-References: <1410476266-29426-1-git-send-email-tinamdar@apm.com>
- <1410476266-29426-2-git-send-email-tinamdar@apm.com>
- <20140912091816.GU27864@e106497-lin.cambridge.arm.com>
- <CACoXjckWYhe=PpWE+xYSC9Q72FyAq__3uUh2gGeGtgpC5SrpzQ@mail.gmail.com>
-MIME-Version: 1.0
-In-Reply-To: <CACoXjckWYhe=PpWE+xYSC9Q72FyAq__3uUh2gGeGtgpC5SrpzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 16 Sep 2014 21:17:20.0451 (UTC) FILETIME=[99CB0130:01CFD1F3]
-X-MC-Unique: 114091622172300301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Sep 2014 17:19:19 -0400
+To: linux-mmc@vger.kernel.org
+Subject: [PATCH] [RESEND 4] mmc: add Toshiba PCI SD controller driver
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Tue, 16 Sep 2014 23:18:49 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201409162318.49895.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 09:02:11PM +0100, Tanmay Inamdar wrote:
-> On Fri, Sep 12, 2014 at 2:18 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Thu, Sep 11, 2014 at 11:57:43PM +0100, Tanmay Inamdar wrote:
-> >> This patch adds the AppliedMicro X-Gene SOC PCIe host controller driver.
-> >> X-Gene PCIe controller supports maximum up to 8 lanes and GEN3 speed.
-> >> X-Gene SOC supports maximum 5 PCIe ports.
-> >>
-> >> Signed-off-by: Tanmay Inamdar <tinamdar@apm.com>
-> >
-> > Hi Tanmay,
-> >
-> > It looks good to me now. You can add if you care:
-> >
-> > Reviewed-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> >
-> 
-> Thanks Liviu.
-> 
-> I will have to send another version of patch as I forgot to add
-> 'dma-coherent' in device tree entry.
-> 
-> Secondly I see that setting 'dma-coherent' in device tree node sets
-> coherent_dma_ops for the root bus but for the endpoint another 'dev'
-> gets assigned. This causes endpoint to use non-coherent dma apis
-> causing failure in dma operations.
-> 
-> Somehow endpoint drivers should be able to detect that
+This patch resurrects an old never-finished driver for Toshiba PCI SD
+controllers found in some older Toshiba laptops (such as Portege R100):
 
-Does that mean that you need something added to pcibios_add_device()
-to do the dma_ops setting?
+02:0d.0 System peripheral [0880]: Toshiba America Info Systems SD TypA Controller [1179:0805] (rev 05)
 
-Best regards,
-Liviu
+The hardware is slow (around 2 MB/s - same in Windows) because it does not
+support bus mastering (busmaster enable bit cannot be set in PCI control reg).
+Also the card clock is limited to 16MHz (33MHz PCI clock divided by 2).
 
-> > Best regards,
-> > Liviu
-> >
-> >> ---
-> >>  drivers/pci/host/Kconfig     |  10 +
-> >>  drivers/pci/host/Makefile    |   1 +
-> >>  drivers/pci/host/pci-xgene.c | 646 +++++++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 657 insertions(+)
-> >>  create mode 100644 drivers/pci/host/pci-xgene.c
-> >>
-> >> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> >> index 90f5cca..382fd3d 100644
-> >> --- a/drivers/pci/host/Kconfig
-> >> +++ b/drivers/pci/host/Kconfig
-> >> @@ -63,4 +63,14 @@ config PCIE_SPEAR13XX
-> >>         help
-> >>           Say Y here if you want PCIe support on SPEAr13XX SoCs.
-> >>
-> >> +config PCI_XGENE
-> >> +       bool "X-Gene PCIe controller"
-> >> +       depends on ARCH_XGENE
-> >> +       depends on OF
-> >> +       select PCIEPORTBUS
-> >> +       help
-> >> +         Say Y here if you want internal PCI support on APM X-Gene SoC.
-> >> +         There are 5 internal PCIe ports available. Each port is GEN3 capable
-> >> +         and have varied lanes from x1 to x8.
-> >> +
-> >>  endmenu
-> >> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-> >> index d0e88f1..845611f 100644
-> >> --- a/drivers/pci/host/Makefile
-> >> +++ b/drivers/pci/host/Makefile
-> >> @@ -8,3 +8,4 @@ obj-$(CONFIG_PCI_RCAR_GEN2) += pci-rcar-gen2.o
-> >>  obj-$(CONFIG_PCI_RCAR_GEN2_PCIE) += pcie-rcar.o
-> >>  obj-$(CONFIG_PCI_HOST_GENERIC) += pci-host-generic.o
-> >>  obj-$(CONFIG_PCIE_SPEAR13XX) += pcie-spear13xx.o
-> >> +obj-$(CONFIG_PCI_XGENE) += pci-xgene.o
-> >> diff --git a/drivers/pci/host/pci-xgene.c b/drivers/pci/host/pci-xgene.c
-> >> new file mode 100644
-> >> index 0000000..dae61a6
-> >> --- /dev/null
-> >> +++ b/drivers/pci/host/pci-xgene.c
-> >> @@ -0,0 +1,646 @@
-> >> +/**
-> >> + * APM X-Gene PCIe Driver
-> >> + *
-> >> + * Copyright (c) 2014 Applied Micro Circuits Corporation.
-> >> + *
-> >> + * Author: Tanmay Inamdar <tinamdar@apm.com>.
-> >> + *
-> >> + * This program is free software; you can redistribute  it and/or modify it
-> >> + * under  the terms of  the GNU General  Public License as published by the
-> >> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> >> + * option) any later version.
-> >> + *
-> >> + * This program is distributed in the hope that it will be useful,
-> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >> + * GNU General Public License for more details.
-> >> + *
-> >> + */
-> >> +#include <linux/clk-private.h>
-> >> +#include <linux/delay.h>
-> >> +#include <linux/io.h>
-> >> +#include <linux/jiffies.h>
-> >> +#include <linux/memblock.h>
-> >> +#include <linux/module.h>
-> >> +#include <linux/of.h>
-> >> +#include <linux/of_address.h>
-> >> +#include <linux/of_irq.h>
-> >> +#include <linux/of_pci.h>
-> >> +#include <linux/pci.h>
-> >> +#include <linux/platform_device.h>
-> >> +#include <linux/slab.h>
-> >> +
-> >> +#define PCIECORE_CTLANDSTATUS          0x50
-> >> +#define PIM1_1L                                0x80
-> >> +#define IBAR2                          0x98
-> >> +#define IR2MSK                         0x9c
-> >> +#define PIM2_1L                                0xa0
-> >> +#define IBAR3L                         0xb4
-> >> +#define IR3MSKL                                0xbc
-> >> +#define PIM3_1L                                0xc4
-> >> +#define OMR1BARL                       0x100
-> >> +#define OMR2BARL                       0x118
-> >> +#define OMR3BARL                       0x130
-> >> +#define CFGBARL                                0x154
-> >> +#define CFGBARH                                0x158
-> >> +#define CFGCTL                         0x15c
-> >> +#define RTDID                          0x160
-> >> +#define BRIDGE_CFG_4                   0x2010
-> >> +#define BRIDGE_STATUS_0                        0x2600
-> >> +
-> >> +#define LINK_UP_MASK                   0x00000100
-> >> +#define AXI_EP_CFG_ACCESS              0x10000
-> >> +#define EN_COHERENCY                   0xF0000000
-> >> +#define EN_REG                         0x00000001
-> >> +#define OB_LO_IO                       0x00000002
-> >> +#define XGENE_PCIE_VENDORID            0x10E8
-> >> +#define XGENE_PCIE_DEVICEID            0xE004
-> >> +#define SZ_1T                          (SZ_1G*1024ULL)
-> >> +#define PIPE_PHY_RATE_RD(src)          ((0xc000 & (u32)(src)) >> 0xe)
-> >> +
-> >> +struct xgene_pcie_port {
-> >> +       struct device_node      *node;
-> >> +       struct device           *dev;
-> >> +       struct clk              *clk;
-> >> +       void __iomem            *csr_base;
-> >> +       void __iomem            *cfg_base;
-> >> +       unsigned long           cfg_addr;
-> >> +       bool                    link_up;
-> >> +};
-> >> +
-> >> +static inline u32 pcie_bar_low_val(u32 addr, u32 flags)
-> >> +{
-> >> +       return (addr & PCI_BASE_ADDRESS_MEM_MASK) | flags;
-> >> +}
-> >> +
-> >> +/* PCIE Configuration Out/In */
-> >> +static inline void xgene_pcie_cfg_out32(void __iomem *addr, int offset, u32 val)
-> >> +{
-> >> +       writel(val, addr + offset);
-> >> +}
-> >> +
-> >> +static inline void xgene_pcie_cfg_out16(void __iomem *addr, int offset, u16 val)
-> >> +{
-> >> +       u32 val32 = readl(addr + (offset & ~0x3));
-> >> +
-> >> +       switch (offset & 0x3) {
-> >> +       case 2:
-> >> +               val32 &= ~0xFFFF0000;
-> >> +               val32 |= (u32)val << 16;
-> >> +               break;
-> >> +       case 0:
-> >> +       default:
-> >> +               val32 &= ~0xFFFF;
-> >> +               val32 |= val;
-> >> +               break;
-> >> +       }
-> >> +       writel(val32, addr + (offset & ~0x3));
-> >> +}
-> >> +
-> >> +static inline void xgene_pcie_cfg_out8(void __iomem *addr, int offset, u8 val)
-> >> +{
-> >> +       u32 val32 = readl(addr + (offset & ~0x3));
-> >> +
-> >> +       switch (offset & 0x3) {
-> >> +       case 0:
-> >> +               val32 &= ~0xFF;
-> >> +               val32 |= val;
-> >> +               break;
-> >> +       case 1:
-> >> +               val32 &= ~0xFF00;
-> >> +               val32 |= (u32)val << 8;
-> >> +               break;
-> >> +       case 2:
-> >> +               val32 &= ~0xFF0000;
-> >> +               val32 |= (u32)val << 16;
-> >> +               break;
-> >> +       case 3:
-> >> +       default:
-> >> +               val32 &= ~0xFF000000;
-> >> +               val32 |= (u32)val << 24;
-> >> +               break;
-> >> +       }
-> >> +       writel(val32, addr + (offset & ~0x3));
-> >> +}
-> >> +
-> >> +static inline void xgene_pcie_cfg_in32(void __iomem *addr, int offset, u32 *val)
-> >> +{
-> >> +       *val = readl(addr + offset);
-> >> +}
-> >> +
-> >> +static inline void
-> >> +xgene_pcie_cfg_in16(void __iomem *addr, int offset, u32 *val)
-> >> +{
-> >> +       *val = readl(addr + (offset & ~0x3));
-> >> +
-> >> +       switch (offset & 0x3) {
-> >> +       case 2:
-> >> +               *val >>= 16;
-> >> +               break;
-> >> +       }
-> >> +
-> >> +       *val &= 0xFFFF;
-> >> +}
-> >> +
-> >> +static inline void
-> >> +xgene_pcie_cfg_in8(void __iomem *addr, int offset, u32 *val)
-> >> +{
-> >> +       *val = readl(addr + (offset & ~0x3));
-> >> +
-> >> +       switch (offset & 0x3) {
-> >> +       case 3:
-> >> +               *val = *val >> 24;
-> >> +               break;
-> >> +       case 2:
-> >> +               *val = *val >> 16;
-> >> +               break;
-> >> +       case 1:
-> >> +               *val = *val >> 8;
-> >> +               break;
-> >> +       }
-> >> +       *val &= 0xFF;
-> >> +}
-> >> +
-> >> +/* When the address bit [17:16] is 2'b01, the Configuration access will be
-> >> + * treated as Type 1 and it will be forwarded to external PCIe device.
-> >> + */
-> >> +static void __iomem *xgene_pcie_get_cfg_base(struct pci_bus *bus)
-> >> +{
-> >> +       struct xgene_pcie_port *port = bus->sysdata;
-> >> +
-> >> +       if (bus->number >= (bus->primary + 1))
-> >> +               return port->cfg_base + AXI_EP_CFG_ACCESS;
-> >> +
-> >> +       return port->cfg_base;
-> >> +}
-> >> +
-> >> +/* For Configuration request, RTDID register is used as Bus Number,
-> >> + * Device Number and Function number of the header fields.
-> >> + */
-> >> +static void xgene_pcie_set_rtdid_reg(struct pci_bus *bus, uint devfn)
-> >> +{
-> >> +       struct xgene_pcie_port *port = bus->sysdata;
-> >> +       unsigned int b, d, f;
-> >> +       u32 rtdid_val = 0;
-> >> +
-> >> +       b = bus->number;
-> >> +       d = PCI_SLOT(devfn);
-> >> +       f = PCI_FUNC(devfn);
-> >> +
-> >> +       if (!pci_is_root_bus(bus))
-> >> +               rtdid_val = (b << 8) | (d << 3) | f;
-> >> +
-> >> +       writel(rtdid_val, port->csr_base + RTDID);
-> >> +       /* read the register back to ensure flush */
-> >> +       readl(port->csr_base + RTDID);
-> >> +}
-> >> +
-> >> +static int xgene_pcie_read_config(struct pci_bus *bus, unsigned int devfn,
-> >> +                                 int offset, int len, u32 *val)
-> >> +{
-> >> +       struct xgene_pcie_port *port = bus->sysdata;
-> >> +       void __iomem *addr;
-> >> +
-> >> +       if ((pci_is_root_bus(bus) && devfn != 0) || !port->link_up)
-> >> +               return PCIBIOS_DEVICE_NOT_FOUND;
-> >> +
-> >> +       xgene_pcie_set_rtdid_reg(bus, devfn);
-> >> +       addr = xgene_pcie_get_cfg_base(bus);
-> >> +       switch (len) {
-> >> +       case 1:
-> >> +               xgene_pcie_cfg_in8(addr, offset, val);
-> >> +               break;
-> >> +       case 2:
-> >> +               xgene_pcie_cfg_in16(addr, offset, val);
-> >> +               break;
-> >> +       default:
-> >> +               xgene_pcie_cfg_in32(addr, offset, val);
-> >> +               break;
-> >> +       }
-> >> +       return PCIBIOS_SUCCESSFUL;
-> >> +}
-> >> +
-> >> +static int xgene_pcie_write_config(struct pci_bus *bus, unsigned int devfn,
-> >> +                                  int offset, int len, u32 val)
-> >> +{
-> >> +       struct xgene_pcie_port *port = bus->sysdata;
-> >> +       void __iomem *addr;
-> >> +
-> >> +       if ((pci_is_root_bus(bus) && devfn != 0) || !port->link_up)
-> >> +               return PCIBIOS_DEVICE_NOT_FOUND;
-> >> +
-> >> +       xgene_pcie_set_rtdid_reg(bus, devfn);
-> >> +       addr = xgene_pcie_get_cfg_base(bus);
-> >> +       switch (len) {
-> >> +       case 1:
-> >> +               xgene_pcie_cfg_out8(addr, offset, (u8)val);
-> >> +               break;
-> >> +       case 2:
-> >> +               xgene_pcie_cfg_out16(addr, offset, (u16)val);
-> >> +               break;
-> >> +       default:
-> >> +               xgene_pcie_cfg_out32(addr, offset, val);
-> >> +               break;
-> >> +       }
-> >> +
-> >> +       return PCIBIOS_SUCCESSFUL;
-> >> +}
-> >> +
-> >> +static struct pci_ops xgene_pcie_ops = {
-> >> +       .read = xgene_pcie_read_config,
-> >> +       .write = xgene_pcie_write_config
-> >> +};
-> >> +
-> >> +static u64 xgene_pcie_set_ib_mask(void __iomem *csr_base, u32 addr,
-> >> +                                 u32 flags, u64 size)
-> >> +{
-> >> +       u64 mask = (~(size - 1) & PCI_BASE_ADDRESS_MEM_MASK) | flags;
-> >> +       u32 val32 = 0;
-> >> +       u32 val;
-> >> +
-> >> +       val32 = readl(csr_base + addr);
-> >> +       val = (val32 & 0x0000ffff) | (lower_32_bits(mask) << 16);
-> >> +       writel(val, csr_base + addr);
-> >> +
-> >> +       val32 = readl(csr_base + addr + 0x04);
-> >> +       val = (val32 & 0xffff0000) | (lower_32_bits(mask) >> 16);
-> >> +       writel(val, csr_base + addr + 0x04);
-> >> +
-> >> +       val32 = readl(csr_base + addr + 0x04);
-> >> +       val = (val32 & 0x0000ffff) | (upper_32_bits(mask) << 16);
-> >> +       writel(val, csr_base + addr + 0x04);
-> >> +
-> >> +       val32 = readl(csr_base + addr + 0x08);
-> >> +       val = (val32 & 0xffff0000) | (upper_32_bits(mask) >> 16);
-> >> +       writel(val, csr_base + addr + 0x08);
-> >> +
-> >> +       return mask;
-> >> +}
-> >> +
-> >> +static void xgene_pcie_linkup(struct xgene_pcie_port *port,
-> >> +                                  u32 *lanes, u32 *speed)
-> >> +{
-> >> +       void __iomem *csr_base = port->csr_base;
-> >> +       u32 val32;
-> >> +
-> >> +       port->link_up = false;
-> >> +       val32 = readl(csr_base + PCIECORE_CTLANDSTATUS);
-> >> +       if (val32 & LINK_UP_MASK) {
-> >> +               port->link_up = true;
-> >> +               *speed = PIPE_PHY_RATE_RD(val32);
-> >> +               val32 = readl(csr_base + BRIDGE_STATUS_0);
-> >> +               *lanes = val32 >> 26;
-> >> +       }
-> >> +}
-> >> +
-> >> +static int xgene_pcie_init_port(struct xgene_pcie_port *port)
-> >> +{
-> >> +       int rc;
-> >> +
-> >> +       port->clk = clk_get(port->dev, NULL);
-> >> +       if (IS_ERR(port->clk)) {
-> >> +               dev_err(port->dev, "clock not available\n");
-> >> +               return -ENODEV;
-> >> +       }
-> >> +
-> >> +       rc = clk_prepare_enable(port->clk);
-> >> +       if (rc) {
-> >> +               dev_err(port->dev, "clock enable failed\n");
-> >> +               return rc;
-> >> +       }
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static void xgene_pcie_fixup_bridge(struct pci_dev *dev)
-> >> +{
-> >> +       int i;
-> >> +
-> >> +       /* Hide the PCI host BARs from the kernel as their content doesn't
-> >> +        * fit well in the resource management
-> >> +        */
-> >> +       for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
-> >> +               dev->resource[i].start = dev->resource[i].end = 0;
-> >> +               dev->resource[i].flags = 0;
-> >> +       }
-> >> +       dev_info(&dev->dev, "Hiding X-Gene pci host bridge resources %s\n",
-> >> +                pci_name(dev));
-> >> +}
-> >> +DECLARE_PCI_FIXUP_HEADER(XGENE_PCIE_VENDORID, XGENE_PCIE_DEVICEID,
-> >> +                        xgene_pcie_fixup_bridge);
-> >> +
-> >> +static int xgene_pcie_map_reg(struct xgene_pcie_port *port,
-> >> +                             struct platform_device *pdev)
-> >> +{
-> >> +       struct resource *res;
-> >> +
-> >> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "csr");
-> >> +       port->csr_base = devm_ioremap_resource(port->dev, res);
-> >> +       if (IS_ERR(port->csr_base))
-> >> +               return PTR_ERR(port->csr_base);
-> >> +
-> >> +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cfg");
-> >> +       port->cfg_base = devm_ioremap_resource(port->dev, res);
-> >> +       if (IS_ERR(port->cfg_base))
-> >> +               return PTR_ERR(port->cfg_base);
-> >> +       port->cfg_addr = res->start;
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static void xgene_pcie_setup_ob_reg(struct xgene_pcie_port *port,
-> >> +                                   struct resource *res, u32 offset,
-> >> +                                   u64 cpu_addr, u64 pci_addr)
-> >> +{
-> >> +       void __iomem *base = port->csr_base + offset;
-> >> +       resource_size_t size = resource_size(res);
-> >> +       u64 restype = resource_type(res);
-> >> +       u64 mask = 0;
-> >> +       u32 min_size;
-> >> +       u32 flag = EN_REG;
-> >> +
-> >> +       if (restype == IORESOURCE_MEM) {
-> >> +               min_size = SZ_128M;
-> >> +       } else {
-> >> +               min_size = 128;
-> >> +               flag |= OB_LO_IO;
-> >> +       }
-> >> +
-> >> +       if (size >= min_size)
-> >> +               mask = ~(size - 1) | flag;
-> >> +       else
-> >> +               dev_warn(port->dev, "res size 0x%llx less than minimum 0x%x\n",
-> >> +                        (u64)size, min_size);
-> >> +
-> >> +       writel(lower_32_bits(cpu_addr), base);
-> >> +       writel(upper_32_bits(cpu_addr), base + 0x04);
-> >> +       writel(lower_32_bits(mask), base + 0x08);
-> >> +       writel(upper_32_bits(mask), base + 0x0c);
-> >> +       writel(lower_32_bits(pci_addr), base + 0x10);
-> >> +       writel(upper_32_bits(pci_addr), base + 0x14);
-> >> +}
-> >> +
-> >> +static void xgene_pcie_setup_cfg_reg(void __iomem *csr_base, u64 addr)
-> >> +{
-> >> +       writel(lower_32_bits(addr), csr_base + CFGBARL);
-> >> +       writel(upper_32_bits(addr), csr_base + CFGBARH);
-> >> +       writel(EN_REG, csr_base + CFGCTL);
-> >> +}
-> >> +
-> >> +static int xgene_pcie_map_ranges(struct xgene_pcie_port *port,
-> >> +                                struct list_head *res,
-> >> +                                resource_size_t io_base)
-> >> +{
-> >> +       struct pci_host_bridge_window *window;
-> >> +       struct device *dev = port->dev;
-> >> +       int ret;
-> >> +
-> >> +       list_for_each_entry(window, res, list) {
-> >> +               struct resource *res = window->res;
-> >> +               u64 restype = resource_type(res);
-> >> +
-> >> +               dev_dbg(port->dev, "0x%08lx 0x%016llx...0x%016llx\n",
-> >> +                       res->flags, res->start, res->end);
-> >> +
-> >> +               switch (restype) {
-> >> +               case IORESOURCE_IO:
-> >> +                       xgene_pcie_setup_ob_reg(port, res, OMR3BARL, io_base,
-> >> +                                               res->start - window->offset);
-> >> +                       ret = pci_remap_iospace(res, io_base);
-> >> +                       if (ret < 0)
-> >> +                               return ret;
-> >> +                       break;
-> >> +               case IORESOURCE_MEM:
-> >> +                       xgene_pcie_setup_ob_reg(port, res, OMR1BARL, res->start,
-> >> +                                               res->start - window->offset);
-> >> +                       break;
-> >> +               case IORESOURCE_BUS:
-> >> +                       break;
-> >> +               default:
-> >> +                       dev_err(dev, "invalid io resource!");
-> >> +                       return -EINVAL;
-> >> +               }
-> >> +       }
-> >> +       xgene_pcie_setup_cfg_reg(port->csr_base, port->cfg_addr);
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static void xgene_pcie_setup_pims(void *addr, u64 pim, u64 size)
-> >> +{
-> >> +       writel(lower_32_bits(pim), addr);
-> >> +       writel(upper_32_bits(pim) | EN_COHERENCY, addr + 0x04);
-> >> +       writel(lower_32_bits(size), addr + 0x10);
-> >> +       writel(upper_32_bits(size), addr + 0x14);
-> >> +}
-> >> +
-> >> +/*
-> >> + * X-Gene PCIe support maximum 3 inbound memory regions
-> >> + * This function helps to select a region based on size of region
-> >> + */
-> >> +static int xgene_pcie_select_ib_reg(u8 *ib_reg_mask, u64 size)
-> >> +{
-> >> +       if ((size > 4) && (size < SZ_16M) && !(*ib_reg_mask & (1 << 1))) {
-> >> +               *ib_reg_mask |= (1 << 1);
-> >> +               return 1;
-> >> +       }
-> >> +
-> >> +       if ((size > SZ_1K) && (size < SZ_1T) && !(*ib_reg_mask & (1 << 0))) {
-> >> +               *ib_reg_mask |= (1 << 0);
-> >> +               return 0;
-> >> +       }
-> >> +
-> >> +       if ((size > SZ_1M) && (size < SZ_1T) && !(*ib_reg_mask & (1 << 2))) {
-> >> +               *ib_reg_mask |= (1 << 2);
-> >> +               return 2;
-> >> +       }
-> >> +
-> >> +       return -EINVAL;
-> >> +}
-> >> +
-> >> +static void xgene_pcie_setup_ib_reg(struct xgene_pcie_port *port,
-> >> +                                   struct of_pci_range *range, u8 *ib_reg_mask)
-> >> +{
-> >> +       void __iomem *csr_base = port->csr_base;
-> >> +       void __iomem *cfg_base = port->cfg_base;
-> >> +       void *bar_addr;
-> >> +       void *pim_addr;
-> >> +       u64 cpu_addr = range->cpu_addr;
-> >> +       u64 pci_addr = range->pci_addr;
-> >> +       u64 size = range->size;
-> >> +       u64 mask = ~(size - 1) | EN_REG;
-> >> +       u32 flags = PCI_BASE_ADDRESS_MEM_TYPE_64;
-> >> +       u32 bar_low;
-> >> +       int region;
-> >> +
-> >> +       region = xgene_pcie_select_ib_reg(ib_reg_mask, range->size);
-> >> +       if (region < 0) {
-> >> +               dev_warn(port->dev, "invalid pcie dma-range config\n");
-> >> +               return;
-> >> +       }
-> >> +
-> >> +       if (range->flags & IORESOURCE_PREFETCH)
-> >> +               flags |= PCI_BASE_ADDRESS_MEM_PREFETCH;
-> >> +
-> >> +       bar_low = pcie_bar_low_val((u32)cpu_addr, flags);
-> >> +       switch (region) {
-> >> +       case 0:
-> >> +               xgene_pcie_set_ib_mask(csr_base, BRIDGE_CFG_4, flags, size);
-> >> +               bar_addr = cfg_base + PCI_BASE_ADDRESS_0;
-> >> +               writel(bar_low, bar_addr);
-> >> +               writel(upper_32_bits(cpu_addr), bar_addr + 0x4);
-> >> +               pim_addr = csr_base + PIM1_1L;
-> >> +               break;
-> >> +       case 1:
-> >> +               bar_addr = csr_base + IBAR2;
-> >> +               writel(bar_low, bar_addr);
-> >> +               writel(lower_32_bits(mask), csr_base + IR2MSK);
-> >> +               pim_addr = csr_base + PIM2_1L;
-> >> +               break;
-> >> +       case 2:
-> >> +               bar_addr = csr_base + IBAR3L;
-> >> +               writel(bar_low, bar_addr);
-> >> +               writel(upper_32_bits(cpu_addr), bar_addr + 0x4);
-> >> +               writel(lower_32_bits(mask), csr_base + IR3MSKL);
-> >> +               writel(upper_32_bits(mask), csr_base + IR3MSKL + 0x4);
-> >> +               pim_addr = csr_base + PIM3_1L;
-> >> +               break;
-> >> +       }
-> >> +
-> >> +       xgene_pcie_setup_pims(pim_addr, pci_addr, ~(size - 1));
-> >> +}
-> >> +
-> >> +static int pci_dma_range_parser_init(struct of_pci_range_parser *parser,
-> >> +                                    struct device_node *node)
-> >> +{
-> >> +       const int na = 3, ns = 2;
-> >> +       int rlen;
-> >> +
-> >> +       parser->node = node;
-> >> +       parser->pna = of_n_addr_cells(node);
-> >> +       parser->np = parser->pna + na + ns;
-> >> +
-> >> +       parser->range = of_get_property(node, "dma-ranges", &rlen);
-> >> +       if (!parser->range)
-> >> +               return -ENOENT;
-> >> +       parser->end = parser->range + rlen / sizeof(__be32);
-> >> +
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static int xgene_pcie_parse_map_dma_ranges(struct xgene_pcie_port *port)
-> >> +{
-> >> +       struct device_node *np = port->node;
-> >> +       struct of_pci_range range;
-> >> +       struct of_pci_range_parser parser;
-> >> +       struct device *dev = port->dev;
-> >> +       u8 ib_reg_mask = 0;
-> >> +
-> >> +       if (pci_dma_range_parser_init(&parser, np)) {
-> >> +               dev_err(dev, "missing dma-ranges property\n");
-> >> +               return -EINVAL;
-> >> +       }
-> >> +
-> >> +       /* Get the dma-ranges from DT */
-> >> +       for_each_of_pci_range(&parser, &range) {
-> >> +               u64 end = range.cpu_addr + range.size - 1;
-> >> +
-> >> +               dev_dbg(port->dev, "0x%08x 0x%016llx..0x%016llx -> 0x%016llx\n",
-> >> +                       range.flags, range.cpu_addr, end, range.pci_addr);
-> >> +               xgene_pcie_setup_ib_reg(port, &range, &ib_reg_mask);
-> >> +       }
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +/* clear bar configuration which was done by firmware */
-> >> +static void xgene_pcie_clear_config(struct xgene_pcie_port *port)
-> >> +{
-> >> +       int i;
-> >> +
-> >> +       for (i = PIM1_1L; i <= CFGCTL; i += 4)
-> >> +               writel(0x0, port->csr_base + i);
-> >> +}
-> >> +
-> >> +static int xgene_pcie_setup(struct xgene_pcie_port *port,
-> >> +                           struct list_head *res,
-> >> +                           resource_size_t io_base)
-> >> +{
-> >> +       u32 lanes = 0, speed = 0;
-> >> +       int ret;
-> >> +
-> >> +       xgene_pcie_clear_config(port);
-> >> +
-> >> +       ret = xgene_pcie_map_ranges(port, res, io_base);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       ret = xgene_pcie_parse_map_dma_ranges(port);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       xgene_pcie_linkup(port, &lanes, &speed);
-> >> +       if (!port->link_up)
-> >> +               dev_info(port->dev, "(rc) link down\n");
-> >> +       else
-> >> +               dev_info(port->dev, "(rc) x%d gen-%d link up\n",
-> >> +                               lanes, speed + 1);
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static int xgene_pcie_probe_bridge(struct platform_device *pdev)
-> >> +{
-> >> +       struct device_node *dn = pdev->dev.of_node;
-> >> +       struct xgene_pcie_port *port;
-> >> +       resource_size_t iobase = 0;
-> >> +       struct pci_bus *bus;
-> >> +       int ret;
-> >> +       LIST_HEAD(res);
-> >> +
-> >> +       port = devm_kzalloc(&pdev->dev, sizeof(*port), GFP_KERNEL);
-> >> +       if (!port)
-> >> +               return -ENOMEM;
-> >> +       port->node = of_node_get(pdev->dev.of_node);
-> >> +       port->dev = &pdev->dev;
-> >> +
-> >> +       ret = xgene_pcie_map_reg(port, pdev);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       ret = xgene_pcie_init_port(port);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       ret = of_pci_get_host_bridge_resources(dn, 0, 0xff, &res, &iobase);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       ret = xgene_pcie_setup(port, &res, iobase);
-> >> +       if (ret)
-> >> +               return ret;
-> >> +
-> >> +       bus = pci_scan_root_bus(&pdev->dev, 0, &xgene_pcie_ops, port, &res);
-> >> +       if (!bus)
-> >> +               return -ENOMEM;
-> >> +
-> >> +       platform_set_drvdata(pdev, port);
-> >> +       return 0;
-> >> +}
-> >> +
-> >> +static const struct of_device_id xgene_pcie_match_table[] = {
-> >> +       {.compatible = "apm,xgene-pcie",},
-> >> +       {},
-> >> +};
-> >> +
-> >> +static struct platform_driver xgene_pcie_driver = {
-> >> +       .driver = {
-> >> +                  .name = "xgene-pcie",
-> >> +                  .owner = THIS_MODULE,
-> >> +                  .of_match_table = of_match_ptr(xgene_pcie_match_table),
-> >> +       },
-> >> +       .probe = xgene_pcie_probe_bridge,
-> >> +};
-> >> +module_platform_driver(xgene_pcie_driver);
-> >> +
-> >> +MODULE_AUTHOR("Tanmay Inamdar <tinamdar@apm.com>");
-> >> +MODULE_DESCRIPTION("APM X-Gene PCIe driver");
-> >> +MODULE_LICENSE("GPL v2");
-> >> --
-> >> 1.9.1
-> >>
-> >>
-> >
-> > --
-> > ====================
-> > | I would like to |
-> > | fix the world,  |
-> > | but they're not |
-> > | giving me the   |
-> >  \ source code!  /
-> >   ---------------
-> >     ¯\_(ツ)_/¯
-> >
-> 
+SD, SDHC and also MMC cards work. (MMC cards don't work in Windows)
+SDIO is not supported (don't have any SDIO card).
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ drivers/mmc/host/Kconfig  |    5
+ drivers/mmc/host/Makefile |    1
+ drivers/mmc/host/toshsd.c |  751 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/toshsd.h |  178 ++++++++++++++
+ 4 files changed, 935 insertions(+)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 7fc5099..29dc4ef 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -665,3 +665,8 @@ config MMC_REALTEK_PCI
+ 	help
+ 	  Say Y here to include driver code to support SD/MMC card interface
+ 	  of Realtek PCI-E card reader
++
++config MMC_TOSHIBA_PCI
++	tristate "Toshiba Type A SD/MMC Card Interface Driver"
++	depends on PCI
++	help
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index c41d0c3..2dd1617 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -51,6 +51,7 @@ obj-$(CONFIG_MMC_USHC)		+= ushc.o
+ obj-$(CONFIG_MMC_WMT)		+= wmt-sdmmc.o
+ 
+ obj-$(CONFIG_MMC_REALTEK_PCI)	+= rtsx_pci_sdmmc.o
++obj-$(CONFIG_MMC_TOSHIBA_PCI)	+= toshsd.o
+ 
+ obj-$(CONFIG_MMC_SDHCI_PLTFM)		+= sdhci-pltfm.o
+ obj-$(CONFIG_MMC_SDHCI_CNS3XXX)		+= sdhci-cns3xxx.o
+diff --git a/drivers/mmc/host/toshsd.c b/drivers/mmc/host/toshsd.c
+new file mode 100644
+index 0000000..1fe007a
+--- /dev/null
++++ b/drivers/mmc/host/toshsd.c
+@@ -0,0 +1,751 @@
++/*
++ *  Toshiba PCI Secure Digital Host Controller Interface driver
++ *
++ *  Copyright (C) 2014 Ondrej Zary
++ *  Copyright (C) 2007 Richard Betts, All Rights Reserved.
++ *
++ *	Based on asic3_mmc.c, copyright (c) 2005 SDG Systems, LLC and,
++ *	sdhci.c, copyright (C) 2005-2006 Pierre Ossman
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or (at
++ * your option) any later version.
++ */
++
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/scatterlist.h>
++#include <linux/interrupt.h>
++
++#include <linux/mmc/host.h>
++#include <linux/mmc/mmc.h>
++
++#include "toshsd.h"
++
++#define DRIVER_NAME "toshsd"
++
++static const struct pci_device_id pci_ids[] = {
++	{ PCI_DEVICE(PCI_VENDOR_ID_TOSHIBA, 0x0805) },
++	{ /* end: all zeroes */ },
++};
++
++MODULE_DEVICE_TABLE(pci, pci_ids);
++
++static void toshsd_init(struct toshsd_host *host);
++static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios);
++
++static inline u16 toshsd_readw(struct toshsd_host *host, u16 reg)
++{
++	return ioread16(host->ioaddr + reg);
++}
++
++static inline u32 toshsd_readl(struct toshsd_host *host, u16 reg)
++{
++	return ioread32(host->ioaddr + reg);
++}
++
++static inline void toshsd_writew(struct toshsd_host *host, u16 reg, u16 val)
++{
++	iowrite16(val, host->ioaddr + reg);
++}
++
++static inline void toshsd_writel(struct toshsd_host *host, u16 reg, u32 val)
++{
++	iowrite32(val, host->ioaddr + reg);
++}
++
++static inline void toshsd_readl_rep(struct toshsd_host *host, u16 reg,
++				    void *dst, unsigned long count)
++{
++	ioread32_rep(host->ioaddr + reg, dst, count);
++}
++
++static inline void toshsd_writel_rep(struct toshsd_host *host, u16 reg,
++				     const void *src, unsigned long count)
++{
++	iowrite32_rep(host->ioaddr + reg, src, count);
++}
++
++static void toshsd_set_led(struct toshsd_host *host, unsigned char state)
++{
++	toshsd_writew(host, SDIO_BASE + SDIO_LEDCTRL, state);
++}
++
++static void toshsd_finish_request(struct toshsd_host *host)
++{
++	struct mmc_request *mrq = host->mrq;
++
++	/* Write something to end the command */
++	host->mrq = NULL;
++	host->cmd = NULL;
++	host->data = NULL;
++
++	toshsd_set_led(host, 0);
++	mmc_request_done(host->mmc, mrq);
++}
++
++static void toshsd_data_transfer(unsigned long h)
++{
++	struct toshsd_host *host = (struct toshsd_host *) h;
++	struct mmc_data *data = host->data;
++	struct sg_mapping_iter *sg_miter = &host->sg_miter;
++	unsigned short *buf;
++	int count;
++	unsigned long flags;
++
++	if (!data) {
++		dev_warn(&host->pdev->dev, "Spurious Data IRQ\n");
++		if (host->cmd) {
++			host->cmd->error = -EIO;
++			toshsd_finish_request(host);
++		}
++		return;
++	}
++	spin_lock_irqsave(&host->lock, flags);
++
++	if (!sg_miter_next(sg_miter))
++		return;
++	buf = sg_miter->addr;
++
++	/* Ensure we dont read more than one block. The chip will interrupt us
++	 * When the next block is available.
++	 */
++	count = sg_miter->length;
++	if (count > data->blksz)
++		count = data->blksz;
++
++	dev_dbg(&host->pdev->dev, "count: %08x, flags %08x\n", count,
++		data->flags);
++
++	/* Transfer the data */
++	if (data->flags & MMC_DATA_READ)
++		toshsd_readl_rep(host, SD_DATAPORT, buf, count >> 2);
++	else
++		toshsd_writel_rep(host, SD_DATAPORT, buf, count >> 2);
++
++	sg_miter->consumed = count;
++	sg_miter_stop(sg_miter);
++
++	spin_unlock_irqrestore(&host->lock, flags);
++}
++
++static void toshsd_cmd_irq(struct toshsd_host *host)
++{
++	struct mmc_command *cmd = host->cmd;
++	u8 *buf = (u8 *) cmd->resp;
++	u16 data;
++
++	if (!host->cmd) {
++		dev_warn(&host->pdev->dev, "Spurious CMD irq\n");
++		return;
++	}
++
++	host->cmd = NULL;
++
++	if (cmd->flags & MMC_RSP_PRESENT && cmd->flags & MMC_RSP_136) {
++		/* R2 */
++		buf[12] = 0xff;
++		data = toshsd_readw(host, SD_RESPONSE0);
++		buf[13] = data & 0xff;
++		buf[14] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE1);
++		buf[15] = data & 0xff;
++		buf[8] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE2);
++		buf[9] = data & 0xff;
++		buf[10] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE3);
++		buf[11] = data & 0xff;
++		buf[4] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE4);
++		buf[5] = data & 0xff;
++		buf[6] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE5);
++		buf[7] = data & 0xff;
++		buf[0] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE6);
++		buf[1] = data & 0xff;
++		buf[2] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE7);
++		buf[3] = data & 0xff;
++	} else if (cmd->flags & MMC_RSP_PRESENT) {
++		/* R1, R1B, R3, R6, R7 */
++		data = toshsd_readw(host, SD_RESPONSE0);
++		buf[0] = data & 0xff;
++		buf[1] = data >> 8;
++		data = toshsd_readw(host, SD_RESPONSE1);
++		buf[2] = data & 0xff;
++		buf[3] = data >> 8;
++	}
++
++	dev_dbg(&host->pdev->dev, "Command IRQ complete %d %d %x\n",
++		cmd->opcode, cmd->error, cmd->flags);
++
++	/* If there is data to handle we will
++	 * finish the request in the mmc_data_end_irq handler.*/
++	if (host->data)
++		return;
++
++	toshsd_finish_request(host);
++}
++
++static void toshsd_data_end_irq(struct toshsd_host *host)
++{
++	struct mmc_data *data = host->data;
++
++	host->data = NULL;
++
++	if (!data) {
++		dev_warn(&host->pdev->dev, "Spurious data end IRQ\n");
++		return;
++	}
++
++	if (data->error == 0)
++		data->bytes_xfered = data->blocks * data->blksz;
++	else
++		data->bytes_xfered = 0;
++
++	dev_dbg(&host->pdev->dev, "Completed data request xfr=%d\n",
++		data->bytes_xfered);
++
++	toshsd_writew(host, SD_STOPINTERNAL, 0);
++
++	toshsd_finish_request(host);
++}
++
++static irqreturn_t toshsd_irq(int irq, void *dev_id)
++{
++	struct toshsd_host *host = dev_id;
++	u32 int_reg, int_mask, int_status, detail;
++	int error = 0;
++
++	spin_lock(&host->lock);
++	int_status = toshsd_readl(host, SD_CARDSTATUS);
++	int_mask = toshsd_readl(host, SD_INTMASKCARD);
++	int_reg = int_status & ~int_mask & ~IRQ_DONT_CARE_BITS;
++
++	dev_dbg(&host->pdev->dev, "IRQ status:%x mask:%x\n",
++		int_status, int_mask);
++
++	/* nothing to do: it's not our IRQ */
++	if (!int_reg) {
++		spin_unlock(&host->lock);
++		return IRQ_NONE;
++	}
++
++	if (int_reg & SD_BUF_CMD_TIMEOUT) {
++		error = -ETIMEDOUT;
++		dev_dbg(&host->pdev->dev, "Timeout\n");
++	} else if (int_reg & SD_BUF_CRC_ERR) {
++		error = -EILSEQ;
++		dev_err(&host->pdev->dev, "BadCRC\n");
++	} else if (int_reg & (SD_BUF_ILLEGAL_ACCESS
++				| SD_BUF_CMD_INDEX_ERR
++				| SD_BUF_STOP_BIT_END_ERR
++				| SD_BUF_OVERFLOW
++				| SD_BUF_UNDERFLOW
++				| SD_BUF_DATA_TIMEOUT)) {
++		dev_err(&host->pdev->dev, "Buffer status error: { %s%s%s%s%s%s}\n",
++			int_reg & SD_BUF_ILLEGAL_ACCESS ? "ILLEGAL_ACC " : "",
++			int_reg & SD_BUF_CMD_INDEX_ERR ? "CMD_INDEX " : "",
++			int_reg & SD_BUF_STOP_BIT_END_ERR ? "STOPBIT_END " : "",
++			int_reg & SD_BUF_OVERFLOW ? "OVERFLOW " : "",
++			int_reg & SD_BUF_UNDERFLOW ? "UNDERFLOW " : "",
++			int_reg & SD_BUF_DATA_TIMEOUT ? "DATA_TIMEOUT " : "");
++
++		detail = toshsd_readl(host, SD_ERRORSTATUS0);
++		dev_err(&host->pdev->dev, "detail error status { %s%s%s%s%s%s%s%s%s%s%s%s%s}\n",
++			detail & SD_ERR0_RESP_CMD_ERR ? "RESP_CMD " : "",
++			detail & SD_ERR0_RESP_NON_CMD12_END_BIT_ERR ? "RESP_END_BIT " : "",
++			detail & SD_ERR0_RESP_CMD12_END_BIT_ERR ? "RESP_END_BIT " : "",
++			detail & SD_ERR0_READ_DATA_END_BIT_ERR ? "READ_DATA_END_BIT " : "",
++			detail & SD_ERR0_WRITE_CRC_STATUS_END_BIT_ERR ? "WRITE_CMD_END_BIT " : "",
++			detail & SD_ERR0_RESP_NON_CMD12_CRC_ERR ? "RESP_CRC " : "",
++			detail & SD_ERR0_RESP_CMD12_CRC_ERR ? "RESP_CRC " : "",
++			detail & SD_ERR0_READ_DATA_CRC_ERR ? "READ_DATA_CRC " : "",
++			detail & SD_ERR0_WRITE_CMD_CRC_ERR ? "WRITE_CMD_CRC " : "",
++			detail & SD_ERR1_NO_CMD_RESP ? "NO_CMD_RESP " : "",
++			detail & SD_ERR1_TIMEOUT_READ_DATA ? "READ_DATA_TIMEOUT " : "",
++			detail & SD_ERR1_TIMEOUT_CRS_STATUS ? "CRS_STATUS_TIMEOUT " : "",
++			detail & SD_ERR1_TIMEOUT_CRC_BUSY ? "CRC_BUSY_TIMEOUT " : "");
++		error = -EIO;
++	}
++
++	if (error) {
++		if (host->cmd)
++			host->cmd->error = error;
++
++		if (error == -ETIMEDOUT) {
++			toshsd_writel(host, SD_CARDSTATUS, int_status &
++				~(SD_BUF_CMD_TIMEOUT | SD_CARD_RESP_END));
++		} else {
++			toshsd_init(host);
++			toshsd_set_ios_unlocked(host->mmc, &host->mmc->ios);
++			goto irq_end;
++		}
++	}
++
++	/* Card insert/remove. The mmc controlling code is stateless. */
++	if (int_reg & (SD_CARD_CARD_INSERTED_0 | SD_CARD_CARD_REMOVED_0)) {
++		toshsd_writel(host, SD_CARDSTATUS, int_status &
++			      ~(SD_CARD_CARD_REMOVED_0 |
++				SD_CARD_CARD_INSERTED_0));
++
++		if (int_reg & SD_CARD_CARD_INSERTED_0)
++			toshsd_init(host);
++
++		mmc_detect_change(host->mmc, 1);
++	}
++
++	/* Data transfer */
++	if (int_reg & (SD_BUF_READ_ENABLE | SD_BUF_WRITE_ENABLE)) {
++		toshsd_writel(host, SD_CARDSTATUS, int_status &
++			      ~(SD_BUF_WRITE_ENABLE | SD_BUF_READ_ENABLE));
++
++		tasklet_schedule(&host->data_read_tasklet);
++	}
++
++	/* Command completion */
++	if (int_reg & SD_CARD_RESP_END) {
++		toshsd_writel(host, SD_CARDSTATUS, int_status &
++			      ~(SD_CARD_RESP_END));
++		toshsd_cmd_irq(host);
++	}
++
++	/* Data transfer completion */
++	if (int_reg & SD_CARD_RW_END) {
++		toshsd_writel(host, SD_CARDSTATUS, int_status &
++			      ~(SD_CARD_RW_END));
++		toshsd_data_end_irq(host);
++	}
++irq_end:
++	spin_unlock(&host->lock);
++	return IRQ_HANDLED;
++}
++
++static void toshsd_start_cmd(struct toshsd_host *host, struct mmc_command *cmd)
++{
++	struct mmc_data *data = host->data;
++	int c = cmd->opcode;
++
++	dev_dbg(&host->pdev->dev, "Command opcode: %d\n", cmd->opcode);
++
++	if (cmd->opcode == MMC_STOP_TRANSMISSION) {
++		toshsd_writew(host, SD_STOPINTERNAL,
++			      SD_STOPINT_ISSSUE_CMD12);
++
++		cmd->resp[0] = cmd->opcode;
++		cmd->resp[1] = 0;
++		cmd->resp[2] = 0;
++		cmd->resp[3] = 0;
++
++		toshsd_finish_request(host);
++		return;
++	}
++
++	switch (mmc_resp_type(cmd)) {
++	case MMC_RSP_NONE:
++		c |= SD_CMD_RESP_TYPE_NORMAL;
++		break;
++
++	case MMC_RSP_R1:
++		c |= SD_CMD_RESP_TYPE_EXT_R1;
++		break;
++	case MMC_RSP_R1B:
++		c |= SD_CMD_RESP_TYPE_EXT_R1B;
++		break;
++	case MMC_RSP_R2:
++		c |= SD_CMD_RESP_TYPE_EXT_R2;
++		break;
++	case MMC_RSP_R3:
++		c |= SD_CMD_RESP_TYPE_EXT_R3;
++		break;
++
++	default:
++		dev_err(&host->pdev->dev, "Unknown response type %d\n",
++			mmc_resp_type(cmd));
++		break;
++	}
++
++	host->cmd = cmd;
++
++	if (cmd->opcode == MMC_APP_CMD)
++		c |= SD_CMD_TYPE_ACMD;
++
++	if (cmd->opcode == MMC_GO_IDLE_STATE)
++		c |= (3 << 8);  /* removed from ipaq-asic3.h for some reason */
++
++	if (data) {
++		c |= SD_CMD_DATA_PRESENT;
++
++		if (data->blocks > 1) {
++			toshsd_writew(host, SD_STOPINTERNAL,
++				      SD_STOPINT_AUTO_ISSUE_CMD12);
++			c |= SD_CMD_MULTI_BLOCK;
++		}
++
++		if (data->flags & MMC_DATA_READ)
++			c |= SD_CMD_TRANSFER_READ;
++
++		/* MMC_DATA_WRITE does not require a bit to be set */
++	}
++
++	/* Send the command */
++	toshsd_writel(host, SD_ARG0, cmd->arg);
++	toshsd_writew(host, SD_CMD, c);
++}
++
++static void toshsd_start_data(struct toshsd_host *host, struct mmc_data *data)
++{
++	unsigned int flags = SG_MITER_ATOMIC;
++
++	dev_dbg(&host->pdev->dev, "setup data transfer: blocksize %08x  nr_blocks %d, offset: %08x\n",
++		data->blksz, data->blocks, data->sg->offset);
++
++	host->data = data;
++
++	if (data->flags & MMC_DATA_READ)
++		flags |= SG_MITER_TO_SG;
++	else
++		flags |= SG_MITER_FROM_SG;
++
++	sg_miter_start(&host->sg_miter, data->sg, data->sg_len, flags);
++
++	/* Set transfer length and blocksize */
++	toshsd_writew(host, SD_BLOCKCOUNT, data->blocks);
++	toshsd_writew(host, SD_CARDXFERDATALEN, data->blksz);
++}
++
++/* Process requests from the MMC layer */
++static void toshsd_request(struct mmc_host *mmc, struct mmc_request *mrq)
++{
++	struct toshsd_host *host = mmc_priv(mmc);
++	unsigned long flags;
++
++	/* abort if card not present */
++	if (!(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_PRESENT_0)) {
++		mrq->cmd->error = -ENOMEDIUM;
++		mmc_request_done(mmc, mrq);
++		return;
++	}
++
++	spin_lock_irqsave(&host->lock, flags);
++
++	WARN_ON(host->mrq != NULL);
++
++	host->mrq = mrq;
++
++	if (mrq->data)
++		toshsd_start_data(host, mrq->data);
++
++	toshsd_set_led(host, 1);
++
++	toshsd_start_cmd(host, mrq->cmd);
++
++	spin_unlock_irqrestore(&host->lock, flags);
++}
++
++/* Set MMC clock / power.
++ * Note: This controller uses a simple divider scheme therefore it cannot run
++ * SD/MMC cards at full speed (24/20MHz). HCLK (=33MHz PCI clock?) is too high
++ * and the next slowest is 16MHz (div=2).
++ */
++static void toshsd_set_ios_unlocked(struct mmc_host *mmc, struct mmc_ios *ios)
++{
++	struct toshsd_host *host = mmc_priv(mmc);
++
++	if (ios->clock) {
++		u16 clk;
++		int div = 1;
++
++		while (ios->clock < HCLK / div)
++			div *= 2;
++
++		clk = div >> 2;
++
++		if (div == 1) { /* disable the divider */
++			pci_write_config_byte(host->pdev, SD_PCICFG_CLKMODE,
++					      SD_PCICFG_CLKMODE_DIV_DISABLE);
++			clk |= SD_CARDCLK_DIV_DISABLE;
++		} else
++			pci_write_config_byte(host->pdev, SD_PCICFG_CLKMODE, 0);
++
++		clk |= SD_CARDCLK_ENABLE_CLOCK;
++		toshsd_writew(host, SD_CARDCLOCKCTRL, clk);
++
++		mdelay(10);
++	} else
++		toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
++
++	switch (ios->power_mode) {
++	case MMC_POWER_OFF:
++		pci_write_config_byte(host->pdev, SD_PCICFG_POWER1,
++					SD_PCICFG_PWR1_OFF);
++		mdelay(1);
++		break;
++	case MMC_POWER_UP:
++		break;
++	case MMC_POWER_ON:
++		pci_write_config_byte(host->pdev, SD_PCICFG_POWER1,
++					SD_PCICFG_PWR1_33V);
++		pci_write_config_byte(host->pdev, SD_PCICFG_POWER2,
++					SD_PCICFG_PWR2_AUTO);
++		mdelay(20);
++		break;
++	}
++
++	switch (ios->bus_width) {
++	case MMC_BUS_WIDTH_1:
++		toshsd_writew(host, SD_CARDOPTIONSETUP, SD_CARDOPT_REQUIRED
++				| SD_CARDOPT_DATA_RESP_TIMEOUT(14)
++				| SD_CARDOPT_C2_MODULE_ABSENT
++				| SD_CARDOPT_DATA_XFR_WIDTH_1);
++		break;
++	case MMC_BUS_WIDTH_4:
++		toshsd_writew(host, SD_CARDOPTIONSETUP, SD_CARDOPT_REQUIRED
++				| SD_CARDOPT_DATA_RESP_TIMEOUT(14)
++				| SD_CARDOPT_C2_MODULE_ABSENT
++				| SD_CARDOPT_DATA_XFR_WIDTH_4);
++		break;
++	}
++}
++
++static void toshsd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
++{
++	struct toshsd_host *host = mmc_priv(mmc);
++	unsigned long flags;
++
++	spin_lock_irqsave(&host->lock, flags);
++	toshsd_set_ios_unlocked(mmc, ios);
++	spin_unlock_irqrestore(&host->lock, flags);
++}
++
++static int toshsd_get_ro(struct mmc_host *mmc)
++{
++	struct toshsd_host *host = mmc_priv(mmc);
++
++	/* active low */
++	return !(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_WRITE_PROTECT);
++}
++
++static int toshsd_get_cd(struct mmc_host *mmc)
++{
++	struct toshsd_host *host = mmc_priv(mmc);
++
++	return !!(toshsd_readw(host, SD_CARDSTATUS) & SD_CARD_PRESENT_0);
++}
++
++static struct mmc_host_ops toshsd_ops = {
++	.request = toshsd_request,
++	.set_ios = toshsd_set_ios,
++	.get_ro = toshsd_get_ro,
++	.get_cd = toshsd_get_cd,
++};
++
++static void toshsd_init(struct toshsd_host *host)
++{
++	/* enable clock */
++	pci_write_config_byte(host->pdev, SD_PCICFG_CLKSTOP,
++					SD_PCICFG_CLKSTOP_ENABLE_ALL);
++	pci_write_config_byte(host->pdev, SD_PCICFG_CARDDETECT, 2);
++
++	/* reset */
++	toshsd_writew(host, SD_SOFTWARERESET, 0); /* assert */
++	mdelay(2);
++	toshsd_writew(host, SD_SOFTWARERESET, 1); /* deassert */
++	mdelay(2);
++
++	/* Clear card registers */
++	toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
++	toshsd_writel(host, SD_CARDSTATUS, 0);
++	toshsd_writel(host, SD_ERRORSTATUS0, 0);
++	toshsd_writew(host, SD_STOPINTERNAL, 0);
++
++	/* SDIO clock? */
++	toshsd_writew(host, SDIO_BASE + SDIO_CLOCKNWAITCTRL, 0x100);
++
++	/* enable LED */
++	pci_write_config_byte(host->pdev, SD_PCICFG_SDLED_ENABLE1,
++					SD_PCICFG_LED_ENABLE1_START);
++	pci_write_config_byte(host->pdev, SD_PCICFG_SDLED_ENABLE2,
++					SD_PCICFG_LED_ENABLE2_START);
++
++	/* set interrupt masks */
++	toshsd_writel(host, SD_INTMASKCARD, ~(SD_CARD_RESP_END
++					      | SD_CARD_RW_END
++					      | SD_CARD_CARD_REMOVED_0
++					      | SD_CARD_CARD_INSERTED_0
++					      | SD_BUF_READ_ENABLE
++					      | SD_BUF_WRITE_ENABLE
++					      | SD_BUF_CMD_TIMEOUT));
++
++	toshsd_writew(host, SD_TRANSACTIONCTRL, 0x1000);
++}
++
++static void toshsd_powerdown(struct toshsd_host *host)
++{
++	/* mask all interrupts */
++	toshsd_writel(host, SD_INTMASKCARD, 0xffffffff);
++	/* disable card clock */
++	toshsd_writew(host, SDIO_BASE + SDIO_CLOCKNWAITCTRL, 0x000);
++	toshsd_writew(host, SD_CARDCLOCKCTRL, 0);
++	/* power down card */
++	pci_write_config_byte(host->pdev, SD_PCICFG_POWER1, SD_PCICFG_PWR1_OFF);
++	/* disable clock */
++	pci_write_config_byte(host->pdev, SD_PCICFG_CLKSTOP, 0);
++}
++
++#ifdef CONFIG_PM
++
++static int toshsd_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	struct toshsd_host *host = pci_get_drvdata(pdev);
++
++	toshsd_powerdown(host);
++
++	pci_save_state(pdev);
++	pci_enable_wake(pdev, pci_choose_state(pdev, state), 0);
++	pci_disable_device(pdev);
++	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++
++	return 0;
++}
++
++static int toshsd_resume(struct pci_dev *pdev)
++{
++	struct toshsd_host *host = pci_get_drvdata(pdev);
++	int ret;
++
++	pci_set_power_state(pdev, PCI_D0);
++	pci_restore_state(pdev);
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	toshsd_init(host);
++
++	return 0;
++}
++
++#else /* CONFIG_PM */
++
++#define toshsd_suspend NULL
++#define toshsd_resume NULL
++
++#endif /* CONFIG_PM */
++
++static int toshsd_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
++{
++	int ret;
++	struct toshsd_host *host;
++	struct mmc_host *mmc;
++	resource_size_t base;
++
++	ret = pci_enable_device(pdev);
++	if (ret)
++		return ret;
++
++	mmc = mmc_alloc_host(sizeof(struct toshsd_host), &pdev->dev);
++	if (!mmc) {
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	host = mmc_priv(mmc);
++	host->mmc = mmc;
++
++	host->pdev = pdev;
++	pci_set_drvdata(pdev, host);
++
++	ret = pci_request_regions(pdev, DRIVER_NAME);
++	if (ret)
++		goto free;
++
++	host->ioaddr = pci_iomap(pdev, 0, 0);
++	if (!host->ioaddr) {
++		ret = -ENOMEM;
++		goto release;
++	}
++
++	/* Set MMC host parameters */
++	mmc->ops = &toshsd_ops;
++	mmc->caps = MMC_CAP_4_BIT_DATA;
++	mmc->ocr_avail = MMC_VDD_32_33;
++
++	mmc->f_min = HCLK / 512;
++	mmc->f_max = HCLK;
++
++	spin_lock_init(&host->lock);
++
++	tasklet_init(&host->data_read_tasklet, toshsd_data_transfer,
++		     (unsigned long) host);
++
++	toshsd_init(host);
++
++	ret = request_irq(pdev->irq, toshsd_irq, IRQF_SHARED, DRIVER_NAME,
++			  host);
++	if (ret)
++		goto untasklet;
++
++	mmc_add_host(mmc);
++
++	base = pci_resource_start(pdev, 0);
++	dev_dbg(&pdev->dev, "MMIO %pa, IRQ %d\n", &base, pdev->irq);
++
++	return 0;
++
++untasklet:
++	tasklet_kill(&host->data_read_tasklet);
++	pci_iounmap(pdev, host->ioaddr);
++release:
++	pci_release_regions(pdev);
++free:
++	mmc_free_host(mmc);
++	pci_set_drvdata(pdev, NULL);
++err:
++	pci_disable_device(pdev);
++	return ret;
++}
++
++static void toshsd_remove(struct pci_dev *pdev)
++{
++	struct toshsd_host *host = pci_get_drvdata(pdev);
++
++	mmc_remove_host(host->mmc);
++	tasklet_kill(&host->data_read_tasklet);
++	toshsd_powerdown(host);
++	free_irq(pdev->irq, host);
++	pci_iounmap(pdev, host->ioaddr);
++	pci_release_regions(pdev);
++	mmc_free_host(host->mmc);
++	pci_set_drvdata(pdev, NULL);
++	pci_disable_device(pdev);
++}
++
++static struct pci_driver toshsd_driver = {
++	.name = DRIVER_NAME,
++	.id_table = pci_ids,
++	.probe = toshsd_probe,
++	.remove = toshsd_remove,
++	.suspend = toshsd_suspend,
++	.resume = toshsd_resume,
++};
++
++static int __init toshsd_drv_init(void)
++{
++	return pci_register_driver(&toshsd_driver);
++}
++
++static void __exit toshsd_drv_exit(void)
++{
++	pci_unregister_driver(&toshsd_driver);
++}
++
++module_init(toshsd_drv_init);
++module_exit(toshsd_drv_exit);
++
++MODULE_AUTHOR("Ondrej Zary, Richard Betts");
++MODULE_DESCRIPTION("Toshiba PCI Secure Digital Host Controller Interface driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/mmc/host/toshsd.h b/drivers/mmc/host/toshsd.h
+new file mode 100644
+index 0000000..2796211
+--- /dev/null
++++ b/drivers/mmc/host/toshsd.h
+@@ -0,0 +1,178 @@
++/*
++ *  Toshiba PCI Secure Digital Host Controller Interface driver
++ *
++ *  Copyright (C) 2014 Ondrej Zary
++ *  Copyright (C) 2007 Richard Betts, All Rights Reserved.
++ *
++ *      Based on asic3_mmc.c Copyright (c) 2005 SDG Systems, LLC
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or (at
++ * your option) any later version.
++ */
++
++#define HCLK	33000000	/* 33 MHz (PCI clock) */
++
++#define SD_PCICFG_CLKSTOP	0x40	/* 0x1f = clock controller, 0 = stop */
++#define SD_PCICFG_GATEDCLK	0x41	/* Gated clock */
++#define SD_PCICFG_CLKMODE	0x42	/* Control clock of SD controller */
++#define SD_PCICFG_PINSTATUS	0x44	/* R/O: read status of SD pins */
++#define SD_PCICFG_POWER1	0x48
++#define SD_PCICFG_POWER2	0x49
++#define SD_PCICFG_POWER3	0x4a
++#define SD_PCICFG_CARDDETECT	0x4c
++#define SD_PCICFG_SLOTS		0x50	/* R/O: define support slot number */
++#define SD_PCICFG_EXTGATECLK1	0xf0	/* Could be used for gated clock */
++#define SD_PCICFG_EXTGATECLK2	0xf1	/* Could be used for gated clock */
++#define SD_PCICFG_EXTGATECLK3	0xf9	/* Bit 1: double buffer/single buffer */
++#define SD_PCICFG_SDLED_ENABLE1	0xfa
++#define SD_PCICFG_SDLED_ENABLE2	0xfe
++
++#define SD_PCICFG_CLKMODE_DIV_DISABLE	(1 << 0)
++#define SD_PCICFG_CLKSTOP_ENABLE_ALL	0x1f
++#define SD_PCICFG_LED_ENABLE1_START	0x12
++#define SD_PCICFG_LED_ENABLE2_START	0x80
++
++#define SD_PCICFG_PWR1_33V	0x08	/* Set for 3.3 volts */
++#define SD_PCICFG_PWR1_OFF	0x00	/* Turn off power */
++#define SD_PCICFG_PWR2_AUTO	0x02
++
++#define SD_CMD			0x00	/* also for SDIO */
++#define SD_ARG0			0x04	/* also for SDIO */
++#define SD_ARG1			0x06	/* also for SDIO */
++#define SD_STOPINTERNAL		0x08
++#define SD_BLOCKCOUNT		0x0a	/* also for SDIO */
++#define SD_RESPONSE0		0x0c	/* also for SDIO */
++#define SD_RESPONSE1		0x0e	/* also for SDIO */
++#define SD_RESPONSE2		0x10	/* also for SDIO */
++#define SD_RESPONSE3		0x12	/* also for SDIO */
++#define SD_RESPONSE4		0x14	/* also for SDIO */
++#define SD_RESPONSE5		0x16	/* also for SDIO */
++#define SD_RESPONSE6		0x18	/* also for SDIO */
++#define SD_RESPONSE7		0x1a	/* also for SDIO */
++#define SD_CARDSTATUS		0x1c	/* also for SDIO */
++#define SD_BUFFERCTRL		0x1e	/* also for SDIO */
++#define SD_INTMASKCARD		0x20	/* also for SDIO */
++#define SD_INTMASKBUFFER	0x22	/* also for SDIO */
++#define SD_CARDCLOCKCTRL	0x24
++#define SD_CARDXFERDATALEN	0x26	/* also for SDIO */
++#define SD_CARDOPTIONSETUP	0x28	/* also for SDIO */
++#define SD_ERRORSTATUS0		0x2c	/* also for SDIO */
++#define SD_ERRORSTATUS1		0x2e	/* also for SDIO */
++#define SD_DATAPORT		0x30	/* also for SDIO */
++#define SD_TRANSACTIONCTRL	0x34	/* also for SDIO */
++#define SD_SOFTWARERESET	0xe0	/* also for SDIO */
++
++/* registers above marked "also for SDIO" and all SDIO registers below can be
++ * accessed at SDIO_BASE + reg address */
++#define SDIO_BASE	 0x100
++
++#define SDIO_CARDPORTSEL	0x02
++#define SDIO_CARDINTCTRL	0x36
++#define SDIO_CLOCKNWAITCTRL	0x38
++#define SDIO_HOSTINFORMATION	0x3a
++#define SDIO_ERRORCTRL		0x3c
++#define SDIO_LEDCTRL		0x3e
++
++#define SD_TRANSCTL_SET		(1 << 8)
++
++#define SD_CARDCLK_DIV_DISABLE	(1 << 15)
++#define SD_CARDCLK_ENABLE_CLOCK	(1 << 8)
++#define SD_CARDCLK_CLK_DIV_512	(1 << 7)
++#define SD_CARDCLK_CLK_DIV_256	(1 << 6)
++#define SD_CARDCLK_CLK_DIV_128	(1 << 5)
++#define SD_CARDCLK_CLK_DIV_64	(1 << 4)
++#define SD_CARDCLK_CLK_DIV_32	(1 << 3)
++#define SD_CARDCLK_CLK_DIV_16	(1 << 2)
++#define SD_CARDCLK_CLK_DIV_8	(1 << 1)
++#define SD_CARDCLK_CLK_DIV_4	(1 << 0)
++#define SD_CARDCLK_CLK_DIV_2	(0 << 0)
++
++#define SD_CARDOPT_REQUIRED		0x000e
++#define SD_CARDOPT_DATA_RESP_TIMEOUT(x)	(((x) & 0x0f) << 4) /* 4 bits */
++#define SD_CARDOPT_C2_MODULE_ABSENT	(1 << 14)
++#define SD_CARDOPT_DATA_XFR_WIDTH_1	(1 << 15)
++#define SD_CARDOPT_DATA_XFR_WIDTH_4	(0 << 15)
++
++#define SD_CMD_TYPE_CMD			(0 << 6)
++#define SD_CMD_TYPE_ACMD		(1 << 6)
++#define SD_CMD_TYPE_AUTHEN		(2 << 6)
++#define SD_CMD_RESP_TYPE_NORMAL		(0 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R1		(4 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R1B	(5 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R2		(6 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R3		(7 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R6		(4 << 8)
++#define SD_CMD_RESP_TYPE_EXT_R7		(4 << 8)
++#define SD_CMD_DATA_PRESENT		(1 << 11)
++#define SD_CMD_TRANSFER_READ		(1 << 12)
++#define SD_CMD_MULTI_BLOCK		(1 << 13)
++#define SD_CMD_SECURITY_CMD		(1 << 14)
++
++#define SD_STOPINT_ISSSUE_CMD12		(1 << 0)
++#define SD_STOPINT_AUTO_ISSUE_CMD12	(1 << 8)
++
++#define SD_CARD_RESP_END	(1 << 0)
++#define SD_CARD_RW_END		(1 << 2)
++#define SD_CARD_CARD_REMOVED_0	(1 << 3)
++#define SD_CARD_CARD_INSERTED_0	(1 << 4)
++#define SD_CARD_PRESENT_0	(1 << 5)
++#define SD_CARD_UNK6		(1 << 6)
++#define SD_CARD_WRITE_PROTECT	(1 << 7)
++#define SD_CARD_CARD_REMOVED_3	(1 << 8)
++#define SD_CARD_CARD_INSERTED_3	(1 << 9)
++#define SD_CARD_PRESENT_3	(1 << 10)
++
++#define SD_BUF_CMD_INDEX_ERR	(1 << 16)
++#define SD_BUF_CRC_ERR		(1 << 17)
++#define SD_BUF_STOP_BIT_END_ERR	(1 << 18)
++#define SD_BUF_DATA_TIMEOUT	(1 << 19)
++#define SD_BUF_OVERFLOW		(1 << 20)
++#define SD_BUF_UNDERFLOW	(1 << 21)
++#define SD_BUF_CMD_TIMEOUT	(1 << 22)
++#define SD_BUF_UNK7		(1 << 23)
++#define SD_BUF_READ_ENABLE	(1 << 24)
++#define SD_BUF_WRITE_ENABLE	(1 << 25)
++#define SD_BUF_ILLEGAL_FUNCTION	(1 << 29)
++#define SD_BUF_CMD_BUSY		(1 << 30)
++#define SD_BUF_ILLEGAL_ACCESS	(1 << 31)
++
++#define SD_ERR0_RESP_CMD_ERR			(1 << 0)
++#define SD_ERR0_RESP_NON_CMD12_END_BIT_ERR	(1 << 2)
++#define SD_ERR0_RESP_CMD12_END_BIT_ERR		(1 << 3)
++#define SD_ERR0_READ_DATA_END_BIT_ERR		(1 << 4)
++#define SD_ERR0_WRITE_CRC_STATUS_END_BIT_ERR	(1 << 5)
++#define SD_ERR0_RESP_NON_CMD12_CRC_ERR		(1 << 8)
++#define SD_ERR0_RESP_CMD12_CRC_ERR		(1 << 9)
++#define SD_ERR0_READ_DATA_CRC_ERR		(1 << 10)
++#define SD_ERR0_WRITE_CMD_CRC_ERR		(1 << 11)
++
++#define SD_ERR1_NO_CMD_RESP		(1 << 16)
++#define SD_ERR1_TIMEOUT_READ_DATA	(1 << 20)
++#define SD_ERR1_TIMEOUT_CRS_STATUS	(1 << 21)
++#define SD_ERR1_TIMEOUT_CRC_BUSY	(1 << 22)
++
++#define IRQ_DONT_CARE_BITS (SD_CARD_PRESENT_3 \
++	| SD_CARD_WRITE_PROTECT \
++	| SD_CARD_UNK6 \
++	| SD_CARD_PRESENT_0 \
++	| SD_BUF_UNK7 \
++	| SD_BUF_CMD_BUSY)
++
++struct toshsd_host {
++	struct pci_dev *pdev;
++	struct mmc_host *mmc;
++
++	spinlock_t lock;
++
++	struct mmc_request *mrq;/* Current request */
++	struct mmc_command *cmd;/* Current command */
++	struct mmc_data *data;	/* Current data request */
++
++	struct sg_mapping_iter sg_miter; /* for PIO */
++
++	void __iomem *ioaddr; /* mapped address */
++
++	struct tasklet_struct data_read_tasklet;
++};
+
 
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Ondrej Zary
