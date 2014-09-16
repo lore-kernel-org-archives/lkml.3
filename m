@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaIPOB0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:01:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46410 "EHLO
+	id S1754062AbaIPOF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:05:57 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46453 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754032AbaIPOBX (ORCPT
+	with ESMTP id S1752945AbaIPOFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:01:23 -0400
-Date: Tue, 16 Sep 2014 16:01:18 +0200
+	Tue, 16 Sep 2014 10:05:55 -0400
+Date: Tue, 16 Sep 2014 16:05:51 +0200
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu, yoshihiro.shimoda.uh@renesas.com,
+To: Peter Chen <peter.chen@freescale.com>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, balbi@ti.com, p.zabel@pengutronix.de,
         alexandre.belloni@free-electrons.com,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 4/9] usb: rename phy to usb_phy in HCD
-Message-ID: <20140916140118.GD4869@kwain>
-References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
- <1410777309-12552-5-git-send-email-antoine.tenart@free-electrons.com>
- <54172B42.1060606@cogentembedded.com>
- <20140916135347.GC4869@kwain>
+Subject: Re: [PATCH v5 07/12] usb: chipidea: add a usb2 driver for ci13xxx
+Message-ID: <20140916140551.GE4869@kwain>
+References: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1410777378-12726-8-git-send-email-antoine.tenart@free-electrons.com>
+ <20140916005129.GC3379@peterchendt>
+ <20140916133841.GA4869@kwain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140916135347.GC4869@kwain>
+In-Reply-To: <20140916133841.GA4869@kwain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 03:53:47PM +0200, Antoine Tenart wrote:
-> On Mon, Sep 15, 2014 at 09:09:06PM +0300, Sergei Shtylyov wrote:
-> > On 9/15/2014 1:35 PM, Antoine Tenart wrote:
+On Tue, Sep 16, 2014 at 03:38:41PM +0200, Antoine Tenart wrote:
+> On Tue, Sep 16, 2014 at 08:51:30AM +0800, Peter Chen wrote:
+> > On Mon, Sep 15, 2014 at 12:36:13PM +0200, Antoine Tenart wrote:
+> > > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
+> > > and DMA mask, to support USB2 ChipIdea controllers that don't need
+> > > specific functions.
+> > > 
+> > > Tested on the Marvell Berlin SoCs USB controllers.
+> > > 
+> > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> > > ---
+> > >  drivers/usb/chipidea/Makefile       |   1 +
+> > >  drivers/usb/chipidea/ci_hdrc_usb2.c | 137 ++++++++++++++++++++++++++++++++++++
+> > >  2 files changed, 138 insertions(+)
+> > >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
+> > > 
 > > 
-> > >The USB PHY member of the HCD structure is renamed to 'usb_phy' and
-> > >modifications are done in all drivers accessing it.
+> > compile error:
 > > 
-> > >Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > >Acked-by: Alan Stern <stern@rowland.harvard.edu>
-> > >---
-> > >  drivers/usb/chipidea/host.c   |  2 +-
-> > >  drivers/usb/core/hcd.c        | 20 ++++++++++----------
-> > >  drivers/usb/core/hub.c        |  8 ++++----
-> > >  drivers/usb/host/ehci-fsl.c   | 16 ++++++++--------
-> > >  drivers/usb/host/ehci-hub.c   |  2 +-
-> > >  drivers/usb/host/ehci-msm.c   |  4 ++--
-> > >  drivers/usb/host/ehci-tegra.c | 16 ++++++++--------
-> > >  drivers/usb/host/ohci-omap.c  | 20 ++++++++++----------
-> > >  drivers/usb/misc/lvstest.c    |  8 ++++----
-> > 
-> >    I have already re-posted this patch (adding it to my generic PHY
-> > patch to form a short series) with this file added, and CC'ed you. I
-> > haven't heard any protest (perhaps I missed it?), why reiterate with
-> > this patch instead of basing the patchset on my most recent posting?
+> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c: In function 'ci_hdrc_usb2_dt_probe':
+> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c:30:2: error: implicit declaration of function 'of_phy_get' [-Werror=implicit-function-declaration]
+> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c:30:16: warning: assignment makes pointer from integer without a cast [enabled by default]
 > 
-> Well, I can only return the question.
+> Did you apply the series introducing the support for the generic PHY
+> framework in the USB subsystem first? One of the patches includes
+> 'linux/phy/phy.h' in 'linux/usb/otg.h'. That's why I did not encounter
+> this error.
 > 
-> Anyway, this is not really important. I'll let the maintainers decide
-> which series they want this patch in, and I'll make the needed
-> modifications if needed.
+> Anyway, you're right and 'linux/phy/phy.h' should be explicitly included
+> here.
 
-Oh, I see. I mixed up some series. Well, I'll drop this patch in the
-next version.
+Let me know if you want me to quickly cook up a new version fixing this.
 
 Antoine
 
