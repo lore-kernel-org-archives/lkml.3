@@ -1,117 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaIPK7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:59:37 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40808 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811AbaIPK7f (ORCPT
+	id S1754051AbaIPLAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:00:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43728 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761AbaIPLAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:59:35 -0400
-Message-ID: <54181810.1060105@monstr.eu>
-Date: Tue, 16 Sep 2014 12:59:28 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 16 Sep 2014 07:00:14 -0400
+Date: Tue, 16 Sep 2014 03:58:38 -0700
+From: tip-bot for Igor Mammedov <tipbot@zytor.com>
+Message-ID: <tip-ce4b1b16502b182368cda20a61de2995762c8bcc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        imammedo@redhat.com, torvalds@linux-foundation.org,
+        boris.ostrovsky@oracle.com, peterz@infradead.org, bp@alien8.de,
+        toshi.kani@hp.com, akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        imammedo@redhat.com, boris.ostrovsky@oracle.com,
+        torvalds@linux-foundation.org, peterz@infradead.org, toshi.kani@hp.com,
+        bp@alien8.de, akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
+References: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/boot] x86/smpboot:
+  Initialize secondary CPU only if master CPU will wait for it
+Git-Commit-ID: ce4b1b16502b182368cda20a61de2995762c8bcc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Chen Gang <gang.chen.5i5j@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>, Paul Bolle <pebolle@tiscali.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default 'screen_info"
- for fixing compiling break
-References: <541552B8.8020807@gmail.com>	<CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>	<541559C2.8070703@gmail.com>	<5418019E.1010202@monstr.eu> <CAMuHMdWnZVi9rXzmOxsuwMeUcCvW_CH0bi_KuYiCNcp3JQHhLA@mail.gmail.com>
-In-Reply-To: <CAMuHMdWnZVi9rXzmOxsuwMeUcCvW_CH0bi_KuYiCNcp3JQHhLA@mail.gmail.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="IcTgi5G8Dm65kxV8tEjpsmckQ8jrgqaww"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---IcTgi5G8Dm65kxV8tEjpsmckQ8jrgqaww
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  ce4b1b16502b182368cda20a61de2995762c8bcc
+Gitweb:     http://git.kernel.org/tip/ce4b1b16502b182368cda20a61de2995762c8bcc
+Author:     Igor Mammedov <imammedo@redhat.com>
+AuthorDate: Fri, 20 Jun 2014 14:23:11 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 16 Sep 2014 11:11:32 +0200
 
-On 09/16/2014 12:04 PM, Geert Uytterhoeven wrote:
-> Hi Michal,
->=20
-> On Tue, Sep 16, 2014 at 11:23 AM, Michal Simek <monstr@monstr.eu> wrote=
-:
->> On 09/14/2014 11:02 AM, Chen Gang wrote:
->>> On 09/14/2014 04:45 PM, Geert Uytterhoeven wrote:
->>>> Hi Chen,
->>>>
->>>> On Sun, Sep 14, 2014 at 10:32 AM, Chen Gang <gang.chen.5i5j@gmail.co=
-m> wrote:
->>>>> Add default one just like other architectures have done (e.g. cris,=
+x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
 
->>>>> score, sh ...), the related error with allmodconfig:
->>>>>
->>>>>     LD      init/built-in.o
->>>>>   drivers/built-in.o: In function `vgacon_save_screen':
->>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x834d0): undefined re=
-ference to `screen_info'
->>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x834ec): undefined re=
-ference to `screen_info'
->>>>>   drivers/built-in.o: In function `vgacon_resize':
->>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83cdc): undefined re=
-ference to `screen_info'
->>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83d38): undefined re=
-ference to `screen_info'
->>>>>   drivers/built-in.o: In function `vgacon_switch':
->>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83f50): undefined re=
-ference to `screen_info'
->>>>>   drivers/built-in.o:drivers/video/console/.tmp_vgacon.o:(.text+0x8=
-407c): more undefined references to `screen_info' follow
->>>>>   make: *** [vmlinux] Error 1
->>>>
->>>> Can microblaze actually have VGA?
->>>>
->>>> If not, it's better to disable it.
->>>>
->>>
->>> Welcome the related microblaze maintainers ideas for it
->>
->> Is this is just about VGA or video console in general?
->> There is xilinx FB driver and other FB are around too.
->=20
-> These days screen_info is only used by:
->   - vgacon,
->   - dummycon on ARM,
->   - a few fb drivers (efifb, intelfbdrv,sis, vesafb, and vga16fb).
->=20
-> E.g. m68k doesn't have it.
+Hang is observed on virtual machines during CPU hotplug,
+especially in big guests with many CPUs. (It reproducible
+more often if host is over-committed).
 
-ok. IRC I think I remember one non mainline FB driver which required it t=
-oo.
-It breaks nothing for me that's why no problem to apply it.
+It happens because master CPU gives up waiting on
+secondary CPU and allows it to run wild. As result
+AP causes locking or crashing system. For example
+as described here:
 
-Thanks,
-Michal
+  https://lkml.org/lkml/2014/3/6/257
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+If master CPU have sent STARTUP IPI successfully,
+and AP signalled to master CPU that it's ready
+to start initialization, make master CPU wait
+indefinitely till AP is onlined.
 
+To ensure that AP won't ever run wild, make it
+wait at early startup till master CPU confirms its
+intention to wait for AP. If AP doesn't respond in 10
+seconds, the master CPU will timeout and cancel
+AP onlining.
 
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: xen-devel@lists.xenproject.org
+Link: http://lkml.kernel.org/r/1403266991-12233-1-git-send-email-imammedo@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/common.c | 29 ++++++++-----
+ arch/x86/kernel/smpboot.c    | 98 ++++++++++++++------------------------------
+ arch/x86/xen/smp.c           |  2 +
+ 3 files changed, 50 insertions(+), 79 deletions(-)
 
---IcTgi5G8Dm65kxV8tEjpsmckQ8jrgqaww
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlQYGBAACgkQykllyylKDCG0swCdFeAb6OM+mvXaaFk5ln7GX8Qb
-m0wAnjO2EZMAQMBIq4KbQqivxnFJkFIZ
-=tIrp
------END PGP SIGNATURE-----
-
---IcTgi5G8Dm65kxV8tEjpsmckQ8jrgqaww--
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index e4ab2b4..426cfed 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1266,6 +1266,19 @@ static void dbg_restore_debug_regs(void)
+ #define dbg_restore_debug_regs()
+ #endif /* ! CONFIG_KGDB */
+ 
++static void wait_for_master_cpu(int cpu)
++{
++#ifdef CONFIG_SMP
++	/*
++	 * wait for ACK from master CPU before continuing
++	 * with AP initialization
++	 */
++	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
++	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
++		cpu_relax();
++#endif
++}
++
+ /*
+  * cpu_init() initializes state that is per-CPU. Some data is already
+  * initialized (naturally) in the bootstrap process, such as the GDT
+@@ -1281,16 +1294,17 @@ void cpu_init(void)
+ 	struct task_struct *me;
+ 	struct tss_struct *t;
+ 	unsigned long v;
+-	int cpu;
++	int cpu = stack_smp_processor_id();
+ 	int i;
+ 
++	wait_for_master_cpu(cpu);
++
+ 	/*
+ 	 * Load microcode on this cpu if a valid microcode is available.
+ 	 * This is early microcode loading procedure.
+ 	 */
+ 	load_ucode_ap();
+ 
+-	cpu = stack_smp_processor_id();
+ 	t = &per_cpu(init_tss, cpu);
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+@@ -1302,9 +1316,6 @@ void cpu_init(void)
+ 
+ 	me = current;
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+-		panic("CPU#%d already initialized!\n", cpu);
+-
+ 	pr_debug("Initializing CPU#%d\n", cpu);
+ 
+ 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+@@ -1381,13 +1392,9 @@ void cpu_init(void)
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+ 	struct thread_struct *thread = &curr->thread;
+ 
+-	show_ucode_info_early();
++	wait_for_master_cpu(cpu);
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+-		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+-		for (;;)
+-			local_irq_enable();
+-	}
++	show_ucode_info_early();
+ 
+ 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 2d872e0..735c420 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -111,7 +111,6 @@ atomic_t init_deasserted;
+ static void smp_callin(void)
+ {
+ 	int cpuid, phys_id;
+-	unsigned long timeout;
+ 
+ 	/*
+ 	 * If waken up by an INIT in an 82489DX configuration
+@@ -130,37 +129,6 @@ static void smp_callin(void)
+ 	 * (This works even if the APIC is not enabled.)
+ 	 */
+ 	phys_id = read_apic_id();
+-	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+-		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+-					phys_id, cpuid);
+-	}
+-	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
+-
+-	/*
+-	 * STARTUP IPIs are fragile beasts as they might sometimes
+-	 * trigger some glue motherboard logic. Complete APIC bus
+-	 * silence for 1 second, this overestimates the time the
+-	 * boot CPU is spending to send the up to 2 STARTUP IPIs
+-	 * by a factor of two. This should be enough.
+-	 */
+-
+-	/*
+-	 * Waiting 2s total for startup (udelay is not yet working)
+-	 */
+-	timeout = jiffies + 2*HZ;
+-	while (time_before(jiffies, timeout)) {
+-		/*
+-		 * Has the boot CPU finished it's STARTUP sequence?
+-		 */
+-		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
+-			break;
+-		cpu_relax();
+-	}
+-
+-	if (!time_before(jiffies, timeout)) {
+-		panic("%s: CPU%d started up but did not get a callout!\n",
+-		      __func__, cpuid);
+-	}
+ 
+ 	/*
+ 	 * the boot CPU has finished the init stage and is spinning
+@@ -753,8 +721,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	unsigned long start_ip = real_mode_header->trampoline_start;
+ 
+ 	unsigned long boot_error = 0;
+-	int timeout;
+ 	int cpu0_nmi_registered = 0;
++	unsigned long timeout;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -802,6 +770,15 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	}
+ 
+ 	/*
++	 * AP might wait on cpu_callout_mask in cpu_init() with
++	 * cpu_initialized_mask set if previous attempt to online
++	 * it timed-out. Clear cpu_initialized_mask so that after
++	 * INIT/SIPI it could start with a clean state.
++	 */
++	cpumask_clear_cpu(cpu, cpu_initialized_mask);
++	smp_mb();
++
++	/*
+ 	 * Wake up a CPU in difference cases:
+ 	 * - Use the method in the APIC driver if it's defined
+ 	 * Otherwise,
+@@ -815,53 +792,38 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 
+ 	if (!boot_error) {
+ 		/*
+-		 * allow APs to start initializing.
++		 * Wait 10s total for a response from AP
+ 		 */
+-		pr_debug("Before Callout %d\n", cpu);
+-		cpumask_set_cpu(cpu, cpu_callout_mask);
+-		pr_debug("After Callout %d\n", cpu);
++		boot_error = -1;
++		timeout = jiffies + 10*HZ;
++		while (time_before(jiffies, timeout)) {
++			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
++				/*
++				 * Tell AP to proceed with initialization
++				 */
++				cpumask_set_cpu(cpu, cpu_callout_mask);
++				boot_error = 0;
++				break;
++			}
++			udelay(100);
++			schedule();
++		}
++	}
+ 
++	if (!boot_error) {
+ 		/*
+-		 * Wait 5s total for a response
++		 * Wait till AP completes initial initialization
+ 		 */
+-		for (timeout = 0; timeout < 50000; timeout++) {
+-			if (cpumask_test_cpu(cpu, cpu_callin_mask))
+-				break;	/* It has booted */
+-			udelay(100);
++		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
+ 			/*
+ 			 * Allow other tasks to run while we wait for the
+ 			 * AP to come online. This also gives a chance
+ 			 * for the MTRR work(triggered by the AP coming online)
+ 			 * to be completed in the stop machine context.
+ 			 */
++			udelay(100);
+ 			schedule();
+ 		}
+-
+-		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
+-			print_cpu_msr(&cpu_data(cpu));
+-			pr_debug("CPU%d: has booted.\n", cpu);
+-		} else {
+-			boot_error = 1;
+-			if (*trampoline_status == 0xA5A5A5A5)
+-				/* trampoline started but...? */
+-				pr_err("CPU%d: Stuck ??\n", cpu);
+-			else
+-				/* trampoline code not run */
+-				pr_err("CPU%d: Not responding\n", cpu);
+-			if (apic->inquire_remote_apic)
+-				apic->inquire_remote_apic(apicid);
+-		}
+-	}
+-
+-	if (boot_error) {
+-		/* Try to put things back the way they were before ... */
+-		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
+-
+-		/* was set by do_boot_cpu() */
+-		cpumask_clear_cpu(cpu, cpu_callout_mask);
+-
+-		/* was set by cpu_init() */
+-		cpumask_clear_cpu(cpu, cpu_initialized_mask);
+ 	}
+ 
+ 	/* mark "stuck" area as not stuck */
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 7005974..3631e71 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -360,6 +360,8 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
+ 	struct desc_struct *gdt;
+ 	unsigned long gdt_mfn;
+ 
++	/* used to tell cpu_init() that it can proceed with initialization */
++	cpumask_set_cpu(cpu, cpu_callout_mask);
+ 	if (cpumask_test_and_set_cpu(cpu, xen_cpu_initialized_map))
+ 		return 0;
+ 
