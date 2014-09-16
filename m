@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaIPIie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:38:34 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:45915 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314AbaIPIib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:38:31 -0400
-Date: Tue, 16 Sep 2014 12:38:10 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Tejun Heo <tj@kernel.org>
-CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Pavel Emelianov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH RFC] memcg: revert kmem.tcp accounting
-Message-ID: <20140916083810.GB32139@esperanza>
-References: <1410535618-9601-1-git-send-email-vdavydov@parallels.com>
- <20140912171809.GA24469@dhcp22.suse.cz>
- <20140912175516.GB6298@mtj.dyndns.org>
- <20140915074257.GB11353@esperanza>
- <20140916061401.GD805@mtj.dyndns.org>
+	id S1753458AbaIPIm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:42:58 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:42825 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752169AbaIPImz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 04:42:55 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Rickard Strandqvist'" <rickard_strandqvist@spectrumdigital.se>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        "Stephane Grosjean" <s.grosjean@peak-system.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c: Cleaning up
+ missing null-terminate in conjunction with strncpy
+Thread-Topic: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c: Cleaning up
+ missing null-terminate in conjunction with strncpy
+Thread-Index: AQHP0S56zQu5zQn7kU2S3rLDe5otg5wDcIdw
+Date: Tue, 16 Sep 2014 08:40:57 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D17493206@AcuExch.aculab.com>
+References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <063D6719AE5E284EB5DD2968C1650D6D17491F2B@AcuExch.aculab.com>
+ <5416A65D.6010500@pengutronix.de>
+ <063D6719AE5E284EB5DD2968C1650D6D17491F83@AcuExch.aculab.com>
+ <CAFo99gb9Rqnc7HrPbN7UVyQwPv_a=fxAbe+FTtm+9GgsjG7StA@mail.gmail.com>
+In-Reply-To: <CAFo99gb9Rqnc7HrPbN7UVyQwPv_a=fxAbe+FTtm+9GgsjG7StA@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140916061401.GD805@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8G8h5lq026070
 
-On Tue, Sep 16, 2014 at 03:14:01PM +0900, Tejun Heo wrote:
-> I don't think marking config options as "UNDER DEVELOPMENT" in its
-> help documentation means anything.  It's a rather silly thing to do.
-> Not many people pay much attention to the help texts and once somebody
-> somewhere enabled the option for a distro, it's as free in the wild as
-> any other kernel feature and CONFIG_MEMCG_KMEM is enabled by a lot of
-> distros.  The same goes with the "debug" controller.  It doesn't mean
-> much that it has "debug" in its name.  Once it's out in the wild,
-> there will be someone making use of it in some weird way.
+From: Rickard Strandqvist 
+> > 2014-09-15 10:47 GMT+02:00 David Laight <David.Laight@aculab.com>:
+...
+> > Or:
+> >     char name[sizeof netdev->name];
+> >     memcpy(name, netdev->name, sizeof netdev->name);
+> >
+...
+> I liked the variant:
+> char name[sizeof(netdev->name)];
 > 
-> If a debug feature has to be in the mainline kernel, the fact that
-> it's a debug feature must be explicitly chosen in each use.  IOW, gate
-> it by an unwieldy boot param which makes it painfully clear that it's
-> enabling an unstable debug feature and print out a loud warning
-> message about it.
-> 
-> As it currently stands, CONFIG_MEMCG_KMEM is as good as any other
-> enabled kernel option.  The help text saying that it's experimental
-> does not mean anything especially when it doesn't even depend on
-> CONFIG_BROKEN.
-> 
-> So, the argument "the option was explained as experimental in help
-> text" doesn't fly at all.  We can still try to deprecate it gradually
-> if the cleanup seems worthwhile; however, with v2 interface pending,
-> I'm not sure how meaningful that'd be.  We'd have to carry quite a bit
-> of v1 code around anyway and I'd like to keep v1 interface as static
-> as possible.  No reason to shake that at this point.
+> But dislike and do not understand what the point would be with memcpy variant.
 
-Fair enough, thank you for the clarification. I hope we'll be able to
-get rid of it in a year or two when cgroup v2 becomes stable.
+The memcpy() will be a lot faster than any of the string copy functions
+because it doesn't need to worry about the terminator.
+In many cases it will be inlined to a short series of load and stores.
 
-Thanks,
-Vladimir
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
