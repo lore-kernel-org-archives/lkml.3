@@ -1,285 +1,380 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617AbaIPABO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:01:14 -0400
-Received: from mail-bn1bon0147.outbound.protection.outlook.com ([157.56.111.147]:26352
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754164AbaIPABL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:01:11 -0400
-Date: Tue, 16 Sep 2014 08:00:46 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <stern@rowland.harvard.edu>, <sergei.shtylyov@cogentembedded.com>,
-        <yoshihiro.shimoda.uh@renesas.com>,
-        <alexandre.belloni@free-electrons.com>,
-        <thomas.petazzoni@free-electrons.com>, <zmxu@marvell.com>,
-        <jszhang@marvell.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 7/9] usb: rename transceiver and phy to usb_phy in
- ChipIdea
-Message-ID: <20140916000044.GA3379@peterchendt>
-References: <1410777309-12552-1-git-send-email-antoine.tenart@free-electrons.com>
- <1410777309-12552-8-git-send-email-antoine.tenart@free-electrons.com>
+	id S1759336AbaIPABg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:01:36 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:57729 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758641AbaIPABb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:01:31 -0400
+Message-ID: <54177DD8.5070004@linaro.org>
+Date: Tue, 16 Sep 2014 08:01:28 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1410777309-12552-8-git-send-email-antoine.tenart@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(51704005)(24454002)(33716001)(575784001)(92726001)(92566001)(57986006)(83506001)(97736003)(4396001)(84676001)(85306004)(87936001)(64706001)(97756001)(46102001)(76482001)(46406003)(47776003)(77982001)(79102001)(105606002)(80022001)(6806004)(110136001)(86362001)(19580405001)(102836001)(19580395003)(83322001)(26826002)(68736004)(44976005)(104016003)(23726002)(90102001)(33656002)(76176999)(50466002)(107046002)(20776003)(95666004)(85852003)(81342001)(74662001)(54356999)(99396002)(74502001)(83072002)(106466001)(31966008)(21056001)(81542001)(50986999);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB263;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 03361FCC43
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jon Masters <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Subject: Re: [PATCH v4 11/18] ARM64 / ACPI: Parse MADT for SMP initialization
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-12-git-send-email-hanjun.guo@linaro.org> <20140915070052.GE26649@localhost>
+In-Reply-To: <20140915070052.GE26649@localhost>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:35:07PM +0200, Antoine Tenart wrote:
-> This patch prepares the introduction of the generic PHY support in the
-> USB ChipIdea common functions. The USB PHY member of the ChipIdea
-> structure ('transceiver') is renamed to 'usb_phy', the 'phy' member of
-> the ChipIdea pdata structure is renamed to 'usb_phy' and modifications
-> are done in all drivers accessing it. Renaming this pointer will allow
-> to keep the compatibility for USB PHY drivers.
-> 
+On 2014年09月15日 15:00, Olof Johansson wrote:
+> On Fri, Sep 12, 2014 at 10:00:09PM +0800, Hanjun Guo wrote:
+>> MADT contains the information for MPIDR which is essential for
+>> SMP initialization, parse the GIC cpu interface structures to
+>> get the MPIDR value and map it to cpu_logical_map(), and add
+>> enabled cpu with valid MPIDR into cpu_possible_map.
+>>
+>> ACPI 5.1 only has two explicit methods to boot up SMP, PSCI and
+>> Parking protocol, but the Parking protocol is only specified for
+>> ARMv7 now, so make PSCI as the only way for the SMP boot protocol
+>> before some updates for the ACPI spec or the Parking protocol spec.
+>>
+>> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+>> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> ---
+>>  arch/arm64/include/asm/acpi.h    |    2 +
+>>  arch/arm64/include/asm/cpu_ops.h |    1 +
+>>  arch/arm64/include/asm/smp.h     |    5 +-
+>>  arch/arm64/kernel/acpi.c         |  147 +++++++++++++++++++++++++++++++++++++-
+>>  arch/arm64/kernel/cpu_ops.c      |    4 +-
+>>  arch/arm64/kernel/setup.c        |    8 ++-
+>>  arch/arm64/kernel/smp.c          |    2 +-
+>>  7 files changed, 160 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+>> index ecba671..da8f74a 100644
+>> --- a/arch/arm64/include/asm/acpi.h
+>> +++ b/arch/arm64/include/asm/acpi.h
+>> @@ -51,11 +51,13 @@ static inline bool acpi_has_cpu_in_madt(void)
+>>  }
+>>  
+>>  static inline void arch_fix_phys_package_id(int num, u32 slot) { }
+>> +void __init acpi_smp_init_cpus(void);
+>>  
+>>  #else
+>>  
+>>  static inline bool acpi_psci_present(void) { return false; }
+>>  static inline bool acpi_psci_use_hvc(void) { return false; }
+>> +static inline void acpi_smp_init_cpus(void) { }
+>>  
+>>  #endif /* CONFIG_ACPI */
+>>  
+>> diff --git a/arch/arm64/include/asm/cpu_ops.h b/arch/arm64/include/asm/cpu_ops.h
+>> index d7b4b38..d149580 100644
+>> --- a/arch/arm64/include/asm/cpu_ops.h
+>> +++ b/arch/arm64/include/asm/cpu_ops.h
+>> @@ -61,6 +61,7 @@ struct cpu_operations {
+>>  };
+>>  
+>>  extern const struct cpu_operations *cpu_ops[NR_CPUS];
+>> +const struct cpu_operations *cpu_get_ops(const char *name);
+>>  extern int __init cpu_read_ops(struct device_node *dn, int cpu);
+>>  extern void __init cpu_read_bootcpu_ops(void);
+>>  
+>> diff --git a/arch/arm64/include/asm/smp.h b/arch/arm64/include/asm/smp.h
+>> index a498f2c..c877adc 100644
+>> --- a/arch/arm64/include/asm/smp.h
+>> +++ b/arch/arm64/include/asm/smp.h
+>> @@ -39,9 +39,10 @@ extern void show_ipi_list(struct seq_file *p, int prec);
+>>  extern void handle_IPI(int ipinr, struct pt_regs *regs);
+>>  
+>>  /*
+>> - * Setup the set of possible CPUs (via set_cpu_possible)
+>> + * Discover the set of possible CPUs and determine their
+>> + * SMP operations.
+>>   */
+>> -extern void smp_init_cpus(void);
+>> +extern void of_smp_init_cpus(void);
+>>  
+>>  /*
+>>   * Provide a function to raise an IPI cross call on CPUs in callmap.
+>> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+>> index 9e1ae37..644b8b8 100644
+>> --- a/arch/arm64/kernel/acpi.c
+>> +++ b/arch/arm64/kernel/acpi.c
+>> @@ -24,6 +24,10 @@
+>>  #include <linux/bootmem.h>
+>>  #include <linux/smp.h>
+>>  
+>> +#include <asm/smp_plat.h>
+>> +#include <asm/cputype.h>
+>> +#include <asm/cpu_ops.h>
+>> +
+>>  int acpi_noirq;			/* skip ACPI IRQ initialization */
+>>  int acpi_disabled;
+>>  EXPORT_SYMBOL(acpi_disabled);
+>> @@ -31,6 +35,8 @@ EXPORT_SYMBOL(acpi_disabled);
+>>  int acpi_pci_disabled;		/* skip ACPI PCI scan and IRQ initialization */
+>>  EXPORT_SYMBOL(acpi_pci_disabled);
+>>  
+>> +static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
+>> +
+>>  /*
+>>   * __acpi_map_table() will be called before page_init(), so early_ioremap()
+>>   * or early_memremap() should be called here to for ACPI table mapping.
+>> @@ -51,6 +57,131 @@ void __init __acpi_unmap_table(char *map, unsigned long size)
+>>  	early_memunmap(map, size);
+>>  }
+>>  
+>> +/**
+>> + * acpi_map_gic_cpu_interface - generates a logical cpu number
+>> + * and map to MPIDR represented by GICC structure
+>> + * @mpidr: CPU's hardware id to register, MPIDR represented in MADT
+>> + * @enabled: this cpu is enabled or not
+>> + *
+>> + * Returns the logical cpu number which maps to MPIDR
+>> + */
+>> +static int acpi_map_gic_cpu_interface(u64 mpidr, u8 enabled)
+>> +{
+>> +	int cpu;
+>> +
+>> +	if (mpidr == INVALID_HWID) {
+>> +		pr_info("Skip invalid cpu hardware ID\n");
+> This message, when showing up in dmesg, will probably mostly just make
+> someone scratch their head. Something slightly more descriptive would
+> be a good idea.
 
-This one looks ok, will have a test.
+I agree. how about "Skip MADT cpu entry with invalid MPIDR" ?
 
-Peter
+>
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	total_cpus++;
+>> +	if (!enabled)
+>> +		return -EINVAL;
+>> +
+>> +	if (enabled_cpus >=  NR_CPUS) {
+>> +		pr_warn("NR_CPUS limit of %d reached, Processor %d/0x%llx ignored.\n",
+>> +			NR_CPUS, total_cpus, mpidr);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	/* No need to check duplicate MPIDRs for the first CPU */
+>> +	if (enabled_cpus) {
+>> +		/*
+>> +		 * Duplicate MPIDRs are a recipe for disaster. Scan
+>> +		 * all initialized entries and check for
+>> +		 * duplicates. If any is found just ignore the CPU.
+>> +		 */
+> But is it this entry or the other one that should be ignored? 
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> ---
->  drivers/usb/chipidea/ci.h          |  4 ++--
->  drivers/usb/chipidea/ci_hdrc_imx.c |  2 +-
->  drivers/usb/chipidea/ci_hdrc_msm.c |  8 ++++----
->  drivers/usb/chipidea/core.c        | 20 ++++++++++----------
->  drivers/usb/chipidea/debug.c       |  2 +-
->  drivers/usb/chipidea/host.c        |  4 ++--
->  drivers/usb/chipidea/otg_fsm.c     |  4 ++--
->  drivers/usb/chipidea/udc.c         |  4 ++--
->  include/linux/usb/chipidea.h       |  2 +-
->  9 files changed, 25 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-> index 9563cb56d564..b2caa1772712 100644
-> --- a/drivers/usb/chipidea/ci.h
-> +++ b/drivers/usb/chipidea/ci.h
-> @@ -161,7 +161,7 @@ struct hw_bank {
->   * @test_mode: the selected test mode
->   * @platdata: platform specific information supplied by parent device
->   * @vbus_active: is VBUS active
-> - * @transceiver: pointer to USB PHY, if any
-> + * @usb_phy: pointer to USB PHY, if any
->   * @hcd: pointer to usb_hcd for ehci host driver
->   * @debugfs: root dentry for this controller in debugfs
->   * @id_event: indicates there is an id event, and handled at ci_otg_work
-> @@ -201,7 +201,7 @@ struct ci_hdrc {
->  
->  	struct ci_hdrc_platform_data	*platdata;
->  	int				vbus_active;
-> -	struct usb_phy			*transceiver;
-> +	struct usb_phy			*usb_phy;
->  	struct usb_hcd			*hcd;
->  	struct dentry			*debugfs;
->  	bool				id_event;
-> diff --git a/drivers/usb/chipidea/ci_hdrc_imx.c b/drivers/usb/chipidea/ci_hdrc_imx.c
-> index a7ab0f15926e..6f8b1b1045b5 100644
-> --- a/drivers/usb/chipidea/ci_hdrc_imx.c
-> +++ b/drivers/usb/chipidea/ci_hdrc_imx.c
-> @@ -147,7 +147,7 @@ static int ci_hdrc_imx_probe(struct platform_device *pdev)
->  		goto err_clk;
->  	}
->  
-> -	pdata.phy = data->phy;
-> +	pdata.usb_phy = data->phy;
->  
->  	if (imx_platform_flag->flags & CI_HDRC_IMX_IMX28_WRITE_FIX)
->  		pdata.flags |= CI_HDRC_IMX28_WRITE_FIX;
-> diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-> index 4935ac38fd00..3edf969ed797 100644
-> --- a/drivers/usb/chipidea/ci_hdrc_msm.c
-> +++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-> @@ -26,15 +26,15 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
->  		dev_dbg(dev, "CI_HDRC_CONTROLLER_RESET_EVENT received\n");
->  		writel(0, USB_AHBBURST);
->  		writel(0, USB_AHBMODE);
-> -		usb_phy_init(ci->transceiver);
-> +		usb_phy_init(ci->usb_phy);
->  		break;
->  	case CI_HDRC_CONTROLLER_STOPPED_EVENT:
->  		dev_dbg(dev, "CI_HDRC_CONTROLLER_STOPPED_EVENT received\n");
->  		/*
-> -		 * Put the transceiver in non-driving mode. Otherwise host
-> +		 * Put the phy in non-driving mode. Otherwise host
->  		 * may not detect soft-disconnection.
->  		 */
-> -		usb_phy_notify_disconnect(ci->transceiver, USB_SPEED_UNKNOWN);
-> +		usb_phy_notify_disconnect(ci->usb_phy, USB_SPEED_UNKNOWN);
->  		break;
->  	default:
->  		dev_dbg(dev, "unknown ci_hdrc event\n");
-> @@ -68,7 +68,7 @@ static int ci_hdrc_msm_probe(struct platform_device *pdev)
->  	if (IS_ERR(phy))
->  		return PTR_ERR(phy);
->  
-> -	ci_hdrc_msm_platdata.phy = phy;
-> +	ci_hdrc_msm_platdata.usb_phy = phy;
->  
->  	plat_ci = ci_hdrc_add_device(&pdev->dev,
->  				pdev->resource, pdev->num_resources,
-> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-> index 579b3538cb27..ee96b0696a7b 100644
-> --- a/drivers/usb/chipidea/core.c
-> +++ b/drivers/usb/chipidea/core.c
-> @@ -306,7 +306,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
->  	case USBPHY_INTERFACE_MODE_UTMI:
->  	case USBPHY_INTERFACE_MODE_UTMIW:
->  	case USBPHY_INTERFACE_MODE_HSIC:
-> -		ret = usb_phy_init(ci->transceiver);
-> +		ret = usb_phy_init(ci->usb_phy);
->  		if (ret)
->  			return ret;
->  		hw_phymode_configure(ci);
-> @@ -314,12 +314,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
->  	case USBPHY_INTERFACE_MODE_ULPI:
->  	case USBPHY_INTERFACE_MODE_SERIAL:
->  		hw_phymode_configure(ci);
-> -		ret = usb_phy_init(ci->transceiver);
-> +		ret = usb_phy_init(ci->usb_phy);
->  		if (ret)
->  			return ret;
->  		break;
->  	default:
-> -		ret = usb_phy_init(ci->transceiver);
-> +		ret = usb_phy_init(ci->usb_phy);
->  	}
->  
->  	return ret;
-> @@ -595,13 +595,13 @@ static int ci_hdrc_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> -	if (ci->platdata->phy)
-> -		ci->transceiver = ci->platdata->phy;
-> +	if (ci->platdata->usb_phy)
-> +		ci->usb_phy = ci->platdata->usb_phy;
->  	else
-> -		ci->transceiver = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-> +		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
->  
-> -	if (IS_ERR(ci->transceiver)) {
-> -		ret = PTR_ERR(ci->transceiver);
-> +	if (IS_ERR(ci->usb_phy)) {
-> +		ret = PTR_ERR(ci->usb_phy);
->  		/*
->  		 * if -ENXIO is returned, it means PHY layer wasn't
->  		 * enabled, so it makes no sense to return -EPROBE_DEFER
-> @@ -718,7 +718,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
->  stop:
->  	ci_role_destroy(ci);
->  deinit_phy:
-> -	usb_phy_shutdown(ci->transceiver);
-> +	usb_phy_shutdown(ci->usb_phy);
->  
->  	return ret;
->  }
-> @@ -731,7 +731,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
->  	free_irq(ci->irq, ci);
->  	ci_role_destroy(ci);
->  	ci_hdrc_enter_lpm(ci, true);
-> -	usb_phy_shutdown(ci->transceiver);
-> +	usb_phy_shutdown(ci->usb_phy);
->  	kfree(ci->hw_bank.regmap);
->  
->  	return 0;
-> diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-> index 8878eea38d44..8f437e1512fa 100644
-> --- a/drivers/usb/chipidea/debug.c
-> +++ b/drivers/usb/chipidea/debug.c
-> @@ -220,7 +220,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
->  
->  	/* ------ State ----- */
->  	seq_printf(s, "OTG state: %s\n\n",
-> -		usb_otg_state_string(ci->transceiver->otg.state));
-> +		usb_otg_state_string(ci->usb_phy->otg.state));
->  
->  	/* ------ State Machine Variables ----- */
->  	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
-> diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-> index fc7541c906a2..0b67d78dd953 100644
-> --- a/drivers/usb/chipidea/host.c
-> +++ b/drivers/usb/chipidea/host.c
-> @@ -59,7 +59,7 @@ static int host_start(struct ci_hdrc *ci)
->  	hcd->has_tt = 1;
->  
->  	hcd->power_budget = ci->platdata->power_budget;
-> -	hcd->usb_phy = ci->transceiver;
-> +	hcd->usb_phy = ci->usb_phy;
->  
->  	ehci = hcd_to_ehci(hcd);
->  	ehci->caps = ci->hw_bank.cap;
-> @@ -85,7 +85,7 @@ static int host_start(struct ci_hdrc *ci)
->  	if (ret) {
->  		goto disable_reg;
->  	} else {
-> -		struct usb_otg *otg = ci->transceiver->otg;
-> +		struct usb_otg *otg = ci->usb_phy->otg;
->  
->  		ci->hcd = hcd;
->  		if (otg) {
-> diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-> index d8490e758a74..8a64ce87364e 100644
-> --- a/drivers/usb/chipidea/otg_fsm.c
-> +++ b/drivers/usb/chipidea/otg_fsm.c
-> @@ -788,10 +788,10 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
->  		return -ENOMEM;
->  	}
->  
-> -	otg->usb_phy = ci->transceiver;
-> +	otg->usb_phy = ci->usb_phy;
->  	otg->gadget = &ci->gadget;
->  	ci->fsm.otg = otg;
-> -	ci->transceiver->otg = ci->fsm.otg;
-> +	ci->usb_phy->otg = ci->fsm.otg;
->  	ci->fsm.power_up = 1;
->  	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
->  	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
-> diff --git a/drivers/usb/chipidea/udc.c b/drivers/usb/chipidea/udc.c
-> index b8125aa64ad8..ce8b4d72fe28 100644
-> --- a/drivers/usb/chipidea/udc.c
-> +++ b/drivers/usb/chipidea/udc.c
-> @@ -1519,8 +1519,8 @@ static int ci_udc_vbus_draw(struct usb_gadget *_gadget, unsigned ma)
->  {
->  	struct ci_hdrc *ci = container_of(_gadget, struct ci_hdrc, gadget);
->  
-> -	if (ci->transceiver)
-> -		return usb_phy_set_power(ci->transceiver, ma);
-> +	if (ci->usb_phy)
-> +		return usb_phy_set_power(ci->usb_phy, ma);
->  	return -ENOTSUPP;
->  }
->  
-> diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-> index bbe779f640be..57d757a1aa83 100644
-> --- a/include/linux/usb/chipidea.h
-> +++ b/include/linux/usb/chipidea.h
-> @@ -13,7 +13,7 @@ struct ci_hdrc_platform_data {
->  	/* offset of the capability registers */
->  	uintptr_t	 capoffset;
->  	unsigned	 power_budget;
-> -	struct usb_phy	*phy;
-> +	struct usb_phy	*usb_phy;
->  	enum usb_phy_interface phy_mode;
->  	unsigned long	 flags;
->  #define CI_HDRC_REGS_SHARED		BIT(0)
-> -- 
-> 1.9.1
-> 
+Only this entry will be ignored, I did the same thing as DT parsing
+CPU nodes.
 
--- 
-Best Regards,
-Peter Chen
+> Is
+> this expected to be something that firmware vendors get wrong all the
+> time? Would it be better to abort SMP alltogether?
+
+I think we can still boot other CPUs with correct MPIDRs, and ignore
+the wrong ones.
+
+>
+>> +		for_each_possible_cpu(cpu) {
+>> +			if (cpu_logical_map(cpu) == mpidr) {
+>> +				pr_err("Firmware bug, duplicate CPU MPIDR: 0x%llx in MADT\n",
+>> +				mpidr);
+> Misindented.
+
+Will update.
+
+>
+>> +				return -EINVAL;
+>> +			}
+>> +		}
+>> +		
+>> +		/* allocate a logical cpu id for the new comer */
+>> +		cpu = cpumask_next_zero(-1, cpu_possible_mask);
+>> +	} else {
+>> +		/* First GICC entry must be BSP as ACPI spec said */
+> "spec said", would be nice to have a chapter/section reference.
+
+ok.
+
+>
+>> +		if  (cpu_logical_map(0) != mpidr) {
+>> +			pr_err("First GICC entry with MPIDR 0x%llx is not BSP\n",
+>> +			       mpidr);
+> Same thing here about usefulness of error message. What is a user to do with this?
+
+I'm using this to debug the MADT table in UEFI, and correct them if this printed.
+
+>
+>> +			return -EINVAL;
+>> +		}
+>> +
+>> +		/*
+>> +		 * boot_cpu_init() already hold bit 0 in cpu_present_mask
+>> +		 * for BSP, no need to allocate again.
+>> +		 */
+>> +		cpu = 0;
+>> +	}
+>> +
+>> +	/* CPU 0 was already initialized */
+>> +	if (cpu) {
+>> +		cpu_ops[cpu] = cpu_get_ops(acpi_psci_present() ? "psci" : NULL);
+>> +		if (!cpu_ops[cpu])
+>> +			return -EINVAL;
+>> +
+>> +		if (cpu_ops[cpu]->cpu_init(NULL, cpu))
+>> +			return -EOPNOTSUPP;
+>> +
+>> +		/* map the logical cpu id to cpu MPIDR */
+>> +		cpu_logical_map(cpu) = mpidr;
+>> +
+>> +		set_cpu_possible(cpu, true);
+>> +	} else {
+>> +		/* get cpu0's ops, no need to return if ops is null */
+>> +		cpu_ops[0] = cpu_get_ops(acpi_psci_present() ? "psci" : NULL);
+>> +	}
+>> +
+>> +	enabled_cpus++;
+>> +	return cpu;
+>> +}
+>> +
+>> +static int __init
+>> +acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
+>> +				const unsigned long end)
+>> +{
+>> +	struct acpi_madt_generic_interrupt *processor;
+>> +
+>> +	processor = (struct acpi_madt_generic_interrupt *)header;
+>> +
+>> +	if (BAD_MADT_ENTRY(processor, end))
+>> +		return -EINVAL;
+>> +
+>> +	acpi_table_print_madt_entry(header);
+>> +
+>> +	acpi_map_gic_cpu_interface(processor->arm_mpidr & MPIDR_HWID_BITMASK,
+>> +		processor->flags & ACPI_MADT_ENABLED);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* Parse GIC cpu interface entries in MADT for SMP init */
+>> +void __init acpi_smp_init_cpus(void)
+>> +{
+>> +	int count;
+>> +
+>> +	/*
+>> +	 * do a partial walk of MADT to determine how many CPUs
+>> +	 * we have including disabled CPUs, and get information
+>> +	 * we need for SMP init
+>> +	 */
+>> +	count = acpi_table_parse_madt(ACPI_MADT_TYPE_GENERIC_INTERRUPT,
+>> +			acpi_parse_gic_cpu_interface, 0);
+>> +
+>> +	if (!count) {
+>> +		pr_err("No GIC CPU interface entries present\n");
+>> +		return;
+>> +	} else if (count < 0) {
+>> +		pr_err("Error parsing GIC CPU interface entry\n");
+>> +		return;
+>> +	}
+>> +
+>> +	/* Make boot-up look pretty */
+>> +	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
+>> +}
+>> +
+>>  static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>>  {
+>>  	struct acpi_table_fadt *fadt = (struct acpi_table_fadt *)table;
+>> @@ -62,8 +193,20 @@ static int __init acpi_parse_fadt(struct acpi_table_header *table)
+>>  	 * to get arm boot flags, or we will disable ACPI.
+>>  	 */
+>>  	if (table->revision > 5 ||
+>> -	    (table->revision == 5 && fadt->minor_revision >= 1))
+>> -		return 0;
+>> +	    (table->revision == 5 && fadt->minor_revision >= 1)) {
+>> +		/*
+>> +		 * ACPI 5.1 only has two explicit methods to boot up SMP,
+>> +		 * PSCI and Parking protocol, but the Parking protocol is
+>> +		 * only specified for ARMv7 now, so make PSCI as the only
+>> +		 * way for the SMP boot protocol before some updates for
+>> +		 * the ACPI spec or the Parking protocol spec.
+>> +		 */
+>> +		if (acpi_psci_present())
+>> +			return 0;
+>> +
+>> +		pr_warn("has no PSCI support, will not bring up secondary CPUs\n");
+> s/has//
+>
+>> +		return -EOPNOTSUPP;
+>> +	}
+>>  
+>>  	pr_warn("Unsupported FADT revision %d.%d, should be 5.1+, will disable ACPI\n",
+>>  		table->revision, fadt->minor_revision);
+>> diff --git a/arch/arm64/kernel/cpu_ops.c b/arch/arm64/kernel/cpu_ops.c
+>> index cce9524..1a04deb 100644
+>> --- a/arch/arm64/kernel/cpu_ops.c
+>> +++ b/arch/arm64/kernel/cpu_ops.c
+>> @@ -27,7 +27,7 @@ extern const struct cpu_operations cpu_psci_ops;
+>>  
+>>  const struct cpu_operations *cpu_ops[NR_CPUS];
+>>  
+>> -static const struct cpu_operations *supported_cpu_ops[] __initconst = {
+>> +static const struct cpu_operations *supported_cpu_ops[] = {
+>>  #ifdef CONFIG_SMP
+>>  	&smp_spin_table_ops,
+>>  #endif
+>> @@ -35,7 +35,7 @@ static const struct cpu_operations *supported_cpu_ops[] __initconst = {
+>>  	NULL,
+>>  };
+>>  
+>> -static const struct cpu_operations * __init cpu_get_ops(const char *name)
+>> +const struct cpu_operations *cpu_get_ops(const char *name)
+>>  {
+>>  	const struct cpu_operations **ops = supported_cpu_ops;
+>>  
+>> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+>> index 7ba20d4..281fa34 100644
+>> --- a/arch/arm64/kernel/setup.c
+>> +++ b/arch/arm64/kernel/setup.c
+>> @@ -60,6 +60,7 @@
+>>  #include <asm/memblock.h>
+>>  #include <asm/psci.h>
+>>  #include <asm/efi.h>
+>> +#include <asm/acpi.h>
+>>  
+>>  unsigned int processor_id;
+>>  EXPORT_SYMBOL(processor_id);
+>> @@ -401,13 +402,16 @@ void __init setup_arch(char **cmdline_p)
+>>  	if (acpi_disabled) {
+>>  		unflatten_device_tree();
+>>  		psci_dt_init();
+>> +		cpu_read_bootcpu_ops();
+>> +#ifdef CONFIG_SMP
+>> +		of_smp_init_cpus();
+>> +#endif
+> Please create a !SMP stub so you can do without the ifdef here, just
+> like you did for the ACPI case.
+
+I like this, will update the patch. :)
+
+Thanks
+Hanjun
