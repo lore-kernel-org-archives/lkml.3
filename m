@@ -1,55 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbaIPPQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 11:16:07 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:40725 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaIPPQF (ORCPT
+	id S1754239AbaIPPQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 11:16:43 -0400
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:40361 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045AbaIPPQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 11:16:05 -0400
+	Tue, 16 Sep 2014 11:16:42 -0400
+From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+To: acme@redhat.com
+Cc: linux-kernel@vger.kernel.org, Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Borislav Petkov <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
+        Cody P Schafer <dev@codyps.com>
+Subject: [PATCH v2] perf tools: fix type mismatch - long vs __statfs_word
+Date: Tue, 16 Sep 2014 19:16:29 +0400
+Message-Id: <1410880589-22531-1-git-send-email-abrodkin@synopsys.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-In-Reply-To: <1410808436-21460-2-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1410808436-21460-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1410808436-21460-2-git-send-email-alexandre.belloni@free-electrons.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Tue, 16 Sep 2014 23:15:43 +0800
-X-Google-Sender-Auth: 76nhwz9isVd37pLao0znHJYqGx0
-Message-ID: <CAGb2v65QpcukxAyQuxbhgqCk4RNj8PgMF1dic1=9FexTa2zcvw@mail.gmail.com>
-Subject: Re: [PATCHv6 1/2] pwm: Add Allwinner SoC support
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jon Smirl <jonsmirl@gmail.com>, Simon <longsleep@gmail.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In case of compilation with "-Wextra" following breakage happens:
+--->---
+fs.c: In function ‘fs__valid_mount’:
+fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+  else if (st_fs.f_type != magic)
+                        ^
+cc1: all warnings being treated as errors
+--->---
 
-On Tue, Sep 16, 2014 at 3:13 AM, Alexandre Belloni
-<alexandre.belloni@free-electrons.com> wrote:
-> This adds a generic PWM framework driver for the PWM controller
-> found on Allwinner SoCs.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  drivers/pwm/Kconfig     |   9 ++
->  drivers/pwm/Makefile    |   1 +
+Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
+CFLAGS has hard-coded "-Wextra" this is inevitable even if one builds "perf"
+with "WERROR=0".
 
-This patch doesn't apply on either linux-pwm/for-next or sunxi-next.
-The above files conflict with "pwm: sti: Add new driver for ST's PWM IP".
-Respinning on either tree should work, as both trees have that commit.
+Even though "debugfs.c" gets compiled successfully because DEBUGFS_MAGIC is
+definitely positive (MSB bit is not set, so compiler doesn't care about
+explisit cast to "long") it's good to cast "st_fs.f_type" to "long" as well.
 
->  drivers/pwm/pwm-sunxi.c | 371 ++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 381 insertions(+)
->  create mode 100644 drivers/pwm/pwm-sunxi.c
+And here's an explanation of observed issue.
 
-[...]
+Perf tools use libc headers instead of ones from kernel source tree.
+This is because "perf" is just a user-space tool even thought its sources are
+merged in Linux kernel source tree.
+And so "statfs.h" comes from either uClibc, glibc or musl.
 
-Thanks
+In case of uClibc most of architectures use "legacy" version from here:
+http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/statfs.h
 
-ChenYu
+New UAPI compliant architectures (looks like for now it's only ARC) uses UAPI
+version of "statfs.h" from here:
+http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
+
+In this particular situation most interesting difference is in data type used
+for "struct statfs" member "f_type".
+
+In "legacy" version it's:
+--->---
+__SWORD_TYPE f_type;
+--->---
+
+In UAPI version it's:
+--->---
+__U32_TYPE f_type;
+--->---
+
+In its turn mentioned types are defined in
+http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/types.h
+this way:
+--->---
+...
+--->---
+
+And for 32-bit architectures "int" is of the same length as "long" so compiler
+is happy on data type check.
+
+But if "f_type" is "unsigned int" it's definitely not an unsigned "long".
+
+Essential fix is explicit casting of "f_type" to "long".
+
+Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Cody P Schafer <dev@codyps.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+
+Changes in v2:
+
+ * Added type cast to DEBUGFS_MAGIC in "debugfs.c"
+ * Added verbose explanation of root cause
+
+Thanks a lot to Arnaldo for mention of another instance of hidden missing
+cast in "debugfs.c".
+
+---
+ tools/lib/api/fs/debugfs.c | 2 +-
+ tools/lib/api/fs/fs.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
+index a74fba6..93aa4cd 100644
+--- a/tools/lib/api/fs/debugfs.c
++++ b/tools/lib/api/fs/debugfs.c
+@@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
+ 
+ 	if (statfs(debugfs, &st_fs) < 0)
+ 		return -ENOENT;
+-	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
++	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
+ 		return -ENOENT;
+ 
+ 	return 0;
+diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+index c1b49c3..a9fd78b 100644
+--- a/tools/lib/api/fs/fs.c
++++ b/tools/lib/api/fs/fs.c
+@@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
+ 
+ 	if (statfs(fs, &st_fs) < 0)
+ 		return -ENOENT;
+-	else if (st_fs.f_type != magic)
++	else if ((long) st_fs.f_type != magic)
+ 		return -ENOENT;
+ 
+ 	return 0;
+-- 
+1.9.3
+
