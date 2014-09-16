@@ -1,128 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529AbaIPQeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:34:05 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33268 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096AbaIPQeC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:34:02 -0400
-Message-ID: <1410885227.12376.20.camel@hornet>
-Subject: Re: [RFC 2/2] perf: Marker software event and ioctl
-From: Pawel Moll <pawel.moll@arm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Christopher Covington <cov@codeaurora.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Tue, 16 Sep 2014 17:33:47 +0100
-In-Reply-To: <20140915183101.GE11199@kernel.org>
-References: <1410522513-1045-1-git-send-email-pawel.moll@arm.com>
-	 <1410522513-1045-3-git-send-email-pawel.moll@arm.com>
-	 <5412EA7A.9020807@codeaurora.org> <1410526672.16936.52.camel@hornet>
-	 <20140912134910.GG1801@kernel.org> <1410530335.16936.60.camel@hornet>
-	 <20140912161934.GJ1801@kernel.org> <1410802034.3817.21.camel@hornet>
-	 <20140915183101.GE11199@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754686AbaIPQfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:35:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34934 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753895AbaIPQfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 12:35:10 -0400
+Message-ID: <541866A2.70007@ti.com>
+Date: Tue, 16 Sep 2014 11:34:42 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: <daniel.lezcano@linaro.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Keerthy <j-keerthy@ti.com>, lkml <linux-kernel@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>,
+        =?windows-1252?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>, linux-pm <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
+References: <1408716154-26101-1-git-send-email-nm@ti.com> <1408716154-26101-9-git-send-email-nm@ti.com> <7hvbpdbvb1.fsf@paris.lan> <CAGo_u6o7vAf=syzDTyxh0-kOhmzAmtdG_ardgFgoPQofrGdxUQ@mail.gmail.com> <53FE3477.2020207@ti.com> <7hegw1bs30.fsf@paris.lan> <20140905211847.GB31011@kahuna>
+In-Reply-To: <20140905211847.GB31011@kahuna>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-15 at 19:31 +0100, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Sep 15, 2014 at 06:27:14PM +0100, Pawel Moll escreveu:
-> > On Fri, 2014-09-12 at 17:19 +0100, Arnaldo Carvalho de Melo wrote:
-> > > Em Fri, Sep 12, 2014 at 02:58:55PM +0100, Pawel Moll escreveu:
-> > > > On Fri, 2014-09-12 at 14:49 +0100, Arnaldo Carvalho de Melo wrote:
-> > > > > Perhaps both? I.e. an u64 followed from a string, if the u64 is zero,
-> > > > > then there is a string right after it?
-> > >  
-> > > > How would this look like in userspace? Something like this?
-> > >  
-> > > > 8<----
-> > > > struct perf_event_marker {
-> > > > 	uint64_t value;
-> > > > 	char *string;
-> > > > } arg;
-> > >  
-> > > > arg.value = 0x1234;
-> > >  
-> > > > /* or */
-> > >  
-> > > > arg.value = 0;
-> > > > arg.string = "abcd";
-> > >  
-> > > > ioctl(fd, PERF_EVENT_IOC_MARKER, &arg)
-> > > > 8<----
-> > >  
-> > > > If so, maybe it would simpler just to go for classic size/data
-> > > > structure?
-> > >  
-> > > > 8<-----
-> > > > struct perf_event_marker {
-> > > > 	uint32_t size;
-> > > > 	void *data;
-> > > > }
-> > > > 8<-----
-> > >  
-> > > > This would directly map into struct perf_raw_record...
-> > > 
-> > > I can see the usefulness of having it all, i.e. if we do just:
-> > > 
-> > > perf trace --pid `pidof some-tool-in-debug-mode-using-this-interface`
-> > 
-> > Hm. I haven't thought about a situation when 3rd party wants to inject
-> > something into "my" data stream... I guess it could be implemented (a
+
+Daniel,
+
+On 09/05/2014 04:18 PM, Nishanth Menon wrote:
+> Daniel,
 > 
-> I was thinking about intercepting calls that pass some logging data, as
-> strings, and 'tee' them to the 'perf trace' 'data stream'.
-
-Right, ok, like LD_PRELOADing printf (a stupid example of course) and
-piping it inside perf... So if I'm getting it right, it's the perf
-process that would eventually do the ioctl(PERF_EVENT_IOC_MARKER), not
-the traced process, correct? This makes sense. Another use case for
-ioctl justification, thanks :-)
-
-> > "myself"?), but will definitely complicate the patch. Should I have a
-> > look at it now or maybe leave it till we get a general agreement about
-> > the marker ioctl existence?
-> > 
-> > > Then 'perf trace' doesn't know about any binary format a tool may have,
-> > > getting strings there (hey, LD_PRELOADing some logging library to hook
-> > > into this comes to mind) and having it merged with other events
-> > > (syscalls, pagefaults, etc) looks useful.
-> > 
-> > But do you still mean a "magic" u64 before the rest? Injecting a string
-> > would just mean:
-> > 
-> > 	marker.size = strlen(s) + 1;
-> > 	marker.data = s;
-> > 
-> > > As well as some specialized version of 'perf trace' that knows about
-> > > some binary protocol that would get app specific stats or lock status,
-> > > etc, perhaps even plugins for 'perf trace' that would be selected by
-> > > that first u64? Also seems useful.
-> > > 	  
-> > > I.e. having a way to provide just strings and another that would allow
-> > > passing perf_raw_record.
-> > 
-> > Sounds interesting. But then maybe this stuff shouldn't go into "raw"
-> > then? It could be something like this in the sample:
-> > 
-> > 	{ u64 type; /* 0 means zero-terminated string in data */
-> > 	  u32 size;
-> > 	  char data[size]; } && PERF_SAMPLE_MARKER
+> On 13:22-20140827, Kevin Hilman wrote:
+>> Santosh Shilimkar <santosh.shilimkar@ti.com> writes:
+>>
+>>> On Wednesday 27 August 2014 03:35 PM, Nishanth Menon wrote:
+>>>> On Wed, Aug 27, 2014 at 2:13 PM, Kevin Hilman
+>>>> <khilman@deeprootsystems.com> wrote:
+>>>>> + Daniel (cpuidle maintainer)
+>>>> [...]
+>>>>>> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
+>>>>>> +                            struct cpuidle_driver *drv,
+>>>>>> +                            int index)
+>>>>>> +{
+>>>>>> +     struct idle_statedata *cx = state_ptr + index;
+>>>>>> +     unsigned long flag;
+>>>>>> +
+>>>>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
+>>>>>> +     cx->mpu_state_vote++;
+>>>>>> +     if (cx->mpu_state_vote == num_online_cpus()) {
+>>>>>> +             pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
+>>>>>> +             omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
+>>>>>> +     }
+>>>>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+>>>>>> +
+>>>>>> +     omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+>>>>>> +
+>>>>>> +     raw_spin_lock_irqsave(&mpu_lock, flag);
+>>>>>> +     if (cx->mpu_state_vote == num_online_cpus())
+>>>>>> +             omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
+>>>>>> +     cx->mpu_state_vote--;
+>>>>>> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+>>>>>> +
+>>>>>> +     return index;
+>>>>>> +}
+>>>>>
+>>>>> Hmm, maybe OMAP5/DRA7 CPUidle driver should be a new one based on MCPM?
+>>>>
+>>>> Trying to understand benefit of MCPM here - at least without a deeper
+>>>> understanding of mcpm infrastructure benefits (first look seemed a
+>>>> little heavy for OMAP5/DRA7 needs).
+>>>>
+>>>> Neither DRA7/OMAP5 are multi-cluster, the SoCs are not targetted for
+>>>> "OFF" of CPU1/0, we have mercury hardware to help with context and
+>>>> sync issues.
+>>>>
+>>>> Being able to reuse most of existing OMAP4 infrastructure code is
+>>>> useful as well to leave the existing omap4 framework as being lighter
+>>>> in complexity -esp in a cpuidle like hot path?
+>>>>
+>>>> The spin_lock is only for the programming of MPU power domain in a
+>>>> consistent manner - I suppose might have been the trigger for
+>>>> proposing mcpm?
+>>>>
+>>> Mostly not....
+>>>
+>>> I think this is coming because last time Nicolas Pitre tried to convert
+>>> the OMAP CPUIdle into MCPM but because of various ordering requirements,
+>>> OMAP wasn't suitable and then the plan was dropped later.
+>>>
+>>> Just to make clear, OMAP OMAP5/DRA7 as well the ordering requirement
+>>> remains the same for deeper states. Its just the mercury retention state
+>>> which we are able to enter without ordering requirements and hence
+>>> the voting scheme.
+>>
+>> Ah, OK.  This is the part that I'm missing.  So for deeper states you'll
+>> need to be using omap_enter_idle_coupled()
+>>
+>>> Hope this clarifies to you as well as Kevin just in case he missed the
+>>> part of the deeper C-states requirements.
+>>
+>> Yes, thanks for clarifying.
+>>
+>> That being said, I think MCPM can now do essentially what the coupled
+>> states code is doing. Even so, that's probably not a reason to hold up
+>> this patch, but Daniel gets to make that call.
 > 
-> Yes, this is how I think it should be.
+> 
+> Gentle ping.. You can find the discussion and the patch here:
+> https://patchwork.kernel.org/patch/4764661/
+> 
 
-Seems that Ingo had exactly the same thing on mind. I'll get a patch
-done.
+Ping on this again.. we are pretty close to approaching v3.18 merge
+window and this discussion has'nt gotten further.
 
-Paweł
-
+-- 
+Regards,
+Nishanth Menon
