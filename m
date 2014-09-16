@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaIPUv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:51:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34260 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421AbaIPUvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:51:53 -0400
-Date: Tue, 16 Sep 2014 22:51:10 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-Message-ID: <20140916205110.GA1273@potion.brq.redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
- <54184078.4070505@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54184078.4070505@redhat.com>
+	id S1755284AbaIPUwI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:52:08 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:47267 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754958AbaIPUv7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:51:59 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH 00/22] treewide: Replace strnicmp with strncasecmp
+Date: Tue, 16 Sep 2014 22:51:14 +0200
+Message-Id: <1410900696-6481-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-09-15 13:11-0700, Andres Lagar-Cavilla:
-> +int kvm_get_user_page_retry(struct task_struct *tsk, struct mm_struct *mm,
+The kernel used to contain two functions for length-delimited,
+case-insensitive string comparison, strnicmp with correct semantics
+and a slightly buggy strncasecmp. The latter is the POSIX name, so
+strnicmp was renamed to strncasecmp, and strnicmp made into a wrapper
+for the new strncasecmp to avoid breaking existing users.
 
-The suffix '_retry' is not best suited for this.
-On first reading, I imagined we will be retrying something from before,
-possibly calling it in a loop, but we are actually doing the first and
-last try in one call.
+To allow the compat wrapper strnicmp to be removed at some point in
+the future, and to avoid the extra indirection cost, do
+s/strnicmp/strncasecmp/g.
 
-Hard to find something that conveys our lock-dropping mechanic,
-'_polite' is my best candidate at the moment.
+Sorry for the unimaginative and identical commit messages.
 
-> +	int flags = FOLL_TOUCH | FOLL_HWPOISON |
+Rasmus Villemoes (22):
+  ARM: Replace strnicmp with strncasecmp
+  block: Replace strnicmp with strncasecmp
+  netfilter: Replace strnicmp with strncasecmp
+  video: fbdev: Replace strnicmp with strncasecmp
+  cifs: Replace strnicmp with strncasecmp
+  ocfs2: Replace strnicmp with strncasecmp
+  isofs: Replace strnicmp with strncasecmp
+  ALSA: hda - Replace strnicmp with strncasecmp
+  batman-adv: Replace strnicmp with strncasecmp
+  ACPI / battery: Replace strnicmp with strncasecmp
+  cpufreq: Replace strnicmp with strncasecmp
+  cpuidle: Replace strnicmp with strncasecmp
+  scsi: Replace strnicmp with strncasecmp
+  ib_srpt: Replace strnicmp with strncasecmp
+  Input: edt-ft5x06 - Replace strnicmp with strncasecmp
+  altera-stapl: Replace strnicmp with strncasecmp
+  thinkpad_acpi: Replace strnicmp with strncasecmp
+  PNP: Replace strnicmp with strncasecmp
+  s390/cio: Replace strnicmp with strncasecmp
+  staging: r8188eu: Replace strnicmp with strncasecmp
+  Thermal: Replace strnicmp with strncasecmp
+  kdb: Replace strnicmp with strncasecmp
 
-(FOLL_HWPOISON wasn't used before, but it's harmless.)
+ arch/arm/mach-pxa/lpd270.c                     | 12 ++---
+ block/partitions/mac.c                         |  8 ++--
+ drivers/acpi/battery.c                         |  2 +-
+ drivers/cpufreq/cpufreq.c                      |  6 +--
+ drivers/cpuidle/governor.c                     |  2 +-
+ drivers/infiniband/ulp/srpt/ib_srpt.c          |  2 +-
+ drivers/input/touchscreen/edt-ft5x06.c         |  2 +-
+ drivers/misc/altera-stapl/altera.c             |  4 +-
+ drivers/platform/x86/thinkpad_acpi.c           |  4 +-
+ drivers/pnp/interface.c                        | 24 +++++-----
+ drivers/s390/cio/chp.c                         |  4 +-
+ drivers/scsi/ips.c                             |  2 +-
+ drivers/scsi/scsi_debug.c                      |  2 +-
+ drivers/staging/rtl8188eu/os_dep/rtw_android.c |  2 +-
+ drivers/thermal/thermal_core.c                 |  8 ++--
+ drivers/video/fbdev/pvr2fb.c                   |  2 +-
+ drivers/video/fbdev/s3c2410fb.c                |  8 ++--
+ drivers/video/fbdev/sis/sis_main.c             | 66 +++++++++++++-------------
+ drivers/video/fbdev/sm501fb.c                  |  4 +-
+ fs/cifs/cifs_dfs_ref.c                         |  6 +--
+ fs/cifs/connect.c                              |  4 +-
+ fs/isofs/inode.c                               |  2 +-
+ fs/ocfs2/cluster/heartbeat.c                   |  2 +-
+ fs/ocfs2/cluster/masklog.c                     |  6 +--
+ kernel/debug/kdb/kdb_bp.c                      |  6 +--
+ net/batman-adv/gateway_common.c                |  8 ++--
+ net/netfilter/ipvs/ip_vs_ftp.c                 |  6 +--
+ net/netfilter/nf_conntrack_ftp.c               |  4 +-
+ net/netfilter/nf_conntrack_sip.c               | 22 ++++-----
+ net/netfilter/nf_log.c                         |  2 +-
+ net/netfilter/nf_nat_sip.c                     |  2 +-
+ sound/pci/hda/hda_sysfs.c                      |  2 +-
+ 32 files changed, 118 insertions(+), 118 deletions(-)
 
-2014-09-16 15:51+0200, Paolo Bonzini:
-> Il 15/09/2014 22:11, Andres Lagar-Cavilla ha scritto:
-> > @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
-> >  		npages = get_user_page_nowait(current, current->mm,
-> >  					      addr, write_fault, page);
-> >  		up_read(&current->mm->mmap_sem);
-> > -	} else
-> > -		npages = get_user_pages_fast(addr, 1, write_fault,
-> > -					     page);
-> > +	} else {
-> > +		/*
-> > +		 * By now we have tried gup_fast, and possible async_pf, and we
-                                        ^
-(If we really tried get_user_pages_fast, we wouldn't be here, so I'd
- prepend two underscores here as well.)
+-- 
+2.0.4
 
-> > +		 * are certainly not atomic. Time to retry the gup, allowing
-> > +		 * mmap semaphore to be relinquished in the case of IO.
-> > +		 */
-> > +		npages = kvm_get_user_page_retry(current, current->mm, addr,
-> > +						 write_fault, page);
-> 
-> This is a separate logical change.  Was this:
-> 
-> 	down_read(&mm->mmap_sem);
-> 	npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
-> 	up_read(&mm->mmap_sem);
-> 
-> the intention rather than get_user_pages_fast?
-
-I believe so as well.
-
-(Looking at get_user_pages_fast and __get_user_pages_fast made my
- abstraction detector very sad.)
-
-> I think a first patch should introduce kvm_get_user_page_retry ("Retry a
-> fault after a gup with FOLL_NOWAIT.") and the second would add
-> FOLL_TRIED ("This properly relinquishes mmap semaphore if the
-> filemap/swap has to wait on page lock (and retries the gup to completion
-> after that").
-
-Not sure if that would help to understand the goal ...
-
-> Apart from this, the patch looks good.  The mm/ parts are minimal, so I
-> think it's best to merge it through the KVM tree with someone's Acked-by.
-
-I would prefer to have the last hunk in a separate patch, but still,
-
-Acked-by: Radim Krčmář <rkrcmar@redhat.com>
