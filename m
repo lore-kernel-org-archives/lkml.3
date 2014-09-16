@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaIPNyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 09:54:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56021 "EHLO comal.ext.ti.com"
+	id S1754301AbaIPNyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:54:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54327 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753423AbaIPNyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753809AbaIPNyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Sep 2014 09:54:04 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>
 CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 0/2] dmaengine: omap-dma: Fix cyclic suspend/resume
-Date: Tue, 16 Sep 2014 16:53:47 +0300
-Message-ID: <1410875629-1540-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 1/2] dmaengine: omap-dma: Add memory barrier to dma_resume path
+Date: Tue, 16 Sep 2014 16:53:48 +0300
+Message-ID: <1410875629-1540-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1410875629-1540-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1410875629-1540-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add mb() call to resume path to ensure the necessary barrier.
+Resume can happen after waking up from suspend for example.
 
-When the audio is paused/resumed (application paused the sream or board suspend)
-the audio was only playing back one period worth of data and then stops because
-the omap_dam_stop() clears the link configuration and it is not restored in
-start.
-
-Also add memory barrier call to resume path since this could happen right after
-coming out from suspend.
-
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (2):
-  dmaengine: omap-dma: Add memory barrier to dma_resume path
-  dmaengine: omap-dma: Restore the CLINK_CTRL in resume path
+ drivers/dma/omap-dma.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
- drivers/dma/omap-dma.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 4cf7d9a950d7..c01ea505ee7c 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -1017,6 +1017,8 @@ static int omap_dma_resume(struct omap_chan *c)
+ 		return -EINVAL;
+ 
+ 	if (c->paused) {
++		mb();
++
+ 		omap_dma_start(c, c->desc);
+ 		c->paused = false;
+ 	}
 -- 
 2.1.0
 
