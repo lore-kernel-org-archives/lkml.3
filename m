@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899AbaIPXH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:07:28 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:44672 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbaIPXH1 (ORCPT
+	id S1753904AbaIPXIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:08:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43418 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaIPXIW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:07:27 -0400
-Date: Tue, 16 Sep 2014 16:07:11 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: arizona: Use handle_simple_irq for IRQ dispatch chip
-Message-ID: <20140916230711.GA30918@lee--X1>
-References: <1410278409-28216-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410278409-28216-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Sep 2014 19:08:22 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH] ARM: dts: Add initial DTS file for Sony Xperia Z1 phone
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <5418C1D2.4000303@sonymobile.com>
+Date: Tue, 16 Sep 2014 16:08:11 -0700
+Cc: linux-arm-msm@vger.kernel.org,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        linux-kernel@vger.kernel.org, device-tree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <27E278AA-EBC0-4368-B75C-DCB2DD906612@codeaurora.org>
+References: <5418C1D2.4000303@sonymobile.com>
+To: Tim Bird <tim.bird@sonymobile.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Sep 2014, Charles Keepax wrote:
 
-> We use a dummy IRQ chip to dispatch interrupts to the two seperate IRQ
-> domains on the Arizona devices. This is just a simple software IRQ chip
-> and thus the current handle_edge_irq is unnecessary for its needs.
+On Sep 16, 2014, at 4:03 PM, Tim Bird <tim.bird@sonymobile.com> wrote:
+
+> This DTS has initial support for just a serial console, for the
+> Sony Xperia Z1 phone.  This phone uses a QualComm 8074 processor.
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+
+Qualcomm, the C isn’t caps.
+
+> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 > ---
->  drivers/mfd/arizona-irq.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> arch/arm/boot/dts/Makefile                   |    1 +
+> arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts |   18 ++++++++++++++++++
+> 2 files changed, 19 insertions(+)
+> create mode 100644 arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
+> 
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index b8c5cd3..680ce7e 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -341,6 +341,7 @@ dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
+> dtb-$(CONFIG_ARCH_QCOM) += \
+> 	qcom-apq8064-ifc6410.dtb \
+> 	qcom-apq8074-dragonboard.dtb \
+> +	qcom-apq8074-xperia-z1.dtb \
+> 	qcom-apq8084-mtp.dtb \
+> 	qcom-msm8660-surf.dtb \
+> 	qcom-msm8960-cdp.dtb
+> diff --git a/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts b/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
+> new file mode 100644
+> index 0000000..59b3fa1
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/qcom-apq8074-xperia-z1.dts
+> @@ -0,0 +1,18 @@
+> +#include "qcom-msm8974.dtsi"
+> +
+> +/ {
+> +	model = "Sony Xperia Z1 phone";
+> +	compatible = "qcom,msm8974”;
 
-Applied, thanks.
+Should have a board compat as well
 
-> diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
-> index 5e2f450..3a3fe7c 100644
-> --- a/drivers/mfd/arizona-irq.c
-> +++ b/drivers/mfd/arizona-irq.c
-> @@ -172,7 +172,7 @@ static int arizona_irq_map(struct irq_domain *h, unsigned int virq,
->  	struct regmap_irq_chip_data *data = h->host_data;
->  
->  	irq_set_chip_data(virq, data);
-> -	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_edge_irq);
-> +	irq_set_chip_and_handler(virq, &arizona_irq_chip, handle_simple_irq);
->  	irq_set_nested_thread(virq, 1);
->  
->  	/* ARM needs us to explicitly flag the IRQ as valid
+> +	qcom,msm-id = <126 8 0>, <185 8 0>, <186 8 0>;
+
+We don’t have qcom,msm-id upstream at this time.
+
+> +
+> +	memory@0 {
+> +		reg = <0 0x40000000>, <0x40000000 0x40000000>;
+> +		device_type = "memory";
+> +	};
+> +};
+> +
+> +&soc {
+> +	serial@f991e000 {
+> +		status = "ok";
+> +	};
+> +};
+> -- 
+> 1.7.9.5
+> 
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
