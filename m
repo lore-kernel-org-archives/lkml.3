@@ -1,136 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaIPBaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 21:30:23 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50501 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932173AbaIPB33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 21:29:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,532,1406617200"; 
-   d="scan'208";a="477747353"
-From: Weike Chen <alvin.chen@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Andriy Shevchenko <andriy.shevchenko@intel.com>,
-        Alvin Chen <alvin.chen@intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 2/4 v4] GPIO: gpio-dwapb: Change readl&writel to dwapb_read&dwapb_write
-Date: Tue, 16 Sep 2014 02:22:13 -0700
-Message-Id: <1410859335-11080-3-git-send-email-alvin.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
-References: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
+	id S1756778AbaIPBdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 21:33:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41102 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074AbaIPBdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 21:33:36 -0400
+Date: Mon, 15 Sep 2014 18:33:29 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [V5 PATCH 1/1] x86/xen: Set EFER.NX and EFER.SCE in
+ PVH guests
+Message-ID: <20140915183329.70666a8d@mantra.us.oracle.com>
+In-Reply-To: <20140912204258.GA24846@laptop.dumpdata.com>
+References: <1410392166-16388-1-git-send-email-mukesh.rathor@oracle.com>
+	<1410392166-16388-2-git-send-email-mukesh.rathor@oracle.com>
+	<20140912204258.GA24846@laptop.dumpdata.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces 'readl&writel' with 'dwapb_read&dwapb_write'.
+On Fri, 12 Sep 2014 16:42:58 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
-Signed-off-by: Weike Chen <alvin.chen@intel.com>
----
- drivers/gpio/gpio-dwapb.c |   37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
+> On Wed, Sep 10, 2014 at 04:36:06PM -0700, Mukesh Rathor wrote:
 
-diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-index a62467a..534945c 100644
---- a/drivers/gpio/gpio-dwapb.c
-+++ b/drivers/gpio/gpio-dwapb.c
-@@ -64,6 +64,23 @@ struct dwapb_gpio {
- 	struct irq_domain	*domain;
- };
- 
-+static inline u32 dwapb_read(struct dwapb_gpio *gpio, unsigned int offset)
-+{
-+	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
-+	void __iomem *reg_base	= gpio->regs;
-+
-+	return bgc->read_reg(reg_base + offset);
-+}
-+
-+static inline void dwapb_write(struct dwapb_gpio *gpio, unsigned int offset,
-+			       u32 val)
-+{
-+	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
-+	void __iomem *reg_base	= gpio->regs;
-+
-+	bgc->write_reg(reg_base + offset, val);
-+}
-+
- static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
- {
- 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-@@ -76,14 +93,14 @@ static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
- 
- static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
- {
--	u32 v = readl(gpio->regs + GPIO_INT_POLARITY);
-+	u32 v = dwapb_read(gpio, GPIO_INT_POLARITY);
- 
- 	if (gpio_get_value(gpio->ports[0].bgc.gc.base + offs))
- 		v &= ~BIT(offs);
- 	else
- 		v |= BIT(offs);
- 
--	writel(v, gpio->regs + GPIO_INT_POLARITY);
-+	dwapb_write(gpio, GPIO_INT_POLARITY, v);
- }
- 
- static u32 dwapb_do_irq(struct dwapb_gpio *gpio)
-@@ -126,9 +143,9 @@ static void dwapb_irq_enable(struct irq_data *d)
- 	u32 val;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	val = readl(gpio->regs + GPIO_INTEN);
-+	val = dwapb_read(gpio, GPIO_INTEN);
- 	val |= BIT(d->hwirq);
--	writel(val, gpio->regs + GPIO_INTEN);
-+	dwapb_write(gpio, GPIO_INTEN, val);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
- 
-@@ -141,9 +158,9 @@ static void dwapb_irq_disable(struct irq_data *d)
- 	u32 val;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	val = readl(gpio->regs + GPIO_INTEN);
-+	val = dwapb_read(gpio, GPIO_INTEN);
- 	val &= ~BIT(d->hwirq);
--	writel(val, gpio->regs + GPIO_INTEN);
-+	dwapb_write(gpio, GPIO_INTEN, val);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
- 
-@@ -183,8 +200,8 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	level = readl(gpio->regs + GPIO_INTTYPE_LEVEL);
--	polarity = readl(gpio->regs + GPIO_INT_POLARITY);
-+	level = dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
-+	polarity = dwapb_read(gpio, GPIO_INT_POLARITY);
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_BOTH:
-@@ -211,8 +228,8 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
- 
- 	irq_setup_alt_chip(d, type);
- 
--	writel(level, gpio->regs + GPIO_INTTYPE_LEVEL);
--	writel(polarity, gpio->regs + GPIO_INT_POLARITY);
-+	dwapb_write(gpio, GPIO_INTTYPE_LEVEL, level);
-+	dwapb_write(gpio, GPIO_INT_POLARITY, polarity);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- 
- 	return 0;
--- 
-1.7.9.5
+sorry, i didn't realize you had more comments... didn't scroll down :)..
+
+> >  cpumask_var_t xen_cpu_initialized_map;
+> >  
+> > @@ -99,10 +100,14 @@ static void cpu_bringup(void)
+> >  	wmb();			/* make sure everything is
+> > out */ }
+> >  
+> > -/* Note: cpu parameter is only relevant for PVH */
+> > -static void cpu_bringup_and_idle(int cpu)
+> > +/*
+> > + * Note: cpu parameter is only relevant for PVH. The reason for
+> > passing it
+> > + * is we can't do smp_processor_id until the percpu segments are
+> > loaded, for
+> > + * which we need the cpu number! So we pass it in rdi as first
+> > parameter.
+> > + */
+> 
+> Thank you for expanding on that (I totally forgot why we did that).
+
+sure.
+
+> > +		 * The vcpu comes on kernel page tables which have
+> > the NX pte
+> > +		 * bit set. This means before DS/SS is touched, NX
+> > in
+> > +		 * EFER must be set. Hence the following assembly
+> > glue code.
+> 
+> And you ripped out the nice 'N.B' comment I added. Sad :-(
+> >  		 */
+> > +		ctxt->user_regs.eip = (unsigned
+> > long)xen_pvh_early_cpu_init; ctxt->user_regs.rdi = cpu;
+> > +		ctxt->user_regs.rsi = true;  /* secondary cpu ==
+> > true */
+> 
+> Oh, that is new. Ah yes we can use that [looking at Xen code].
+> I wonder what other registers we can use to pass stuff around.
+
+All GPRs. I commented that we can do that in the Rogers PVH doc.
+
+Looks like David responded to other comments.
+
+Thanks,
+Mukesh
 
