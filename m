@@ -1,88 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638AbaIPQ3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:29:32 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:54300 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754131AbaIPQ3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:29:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140916162531.GC32073@arm.com>
-References: <1410853730-16470-1-git-send-email-dborkman@redhat.com>
-	<20140916162531.GC32073@arm.com>
-Date: Tue, 16 Sep 2014 09:29:30 -0700
-Message-ID: <CABg9mcvV-+VxW6Ew-xqD=GP7Dmn=WJ5_8r4VqQPE64e3Qb-6bQ@mail.gmail.com>
-Subject: Re: [PATCH arm64-next v4] net: bpf: arm64: address randomize and
- write protect JIT code
-From: Z Lim <zlim.lnx@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754654AbaIPQaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:30:18 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:55901 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754076AbaIPQaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 12:30:16 -0400
+From: Heiko Stuebner <heiko@sntech.de>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, Heiko Stuebner <heiko@sntech.de>
+Subject: [PATCH v2 4/4] regulator: fan53555: add support for Silergy SYR82x regulators
+Date: Tue, 16 Sep 2014 17:54:04 +0200
+Message-Id: <1410882844-10349-5-git-send-email-heiko@sntech.de>
+X-Mailer: git-send-email 2.0.1
+In-Reply-To: <1410882844-10349-1-git-send-email-heiko@sntech.de>
+References: <1410882844-10349-1-git-send-email-heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 9:25 AM, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Sep 16, 2014 at 08:48:50AM +0100, Daniel Borkmann wrote:
->> This is the ARM64 variant for 314beb9bcab ("x86: bpf_jit_comp: secure bpf
->> jit against spraying attacks").
->>
->> Thanks to commit 11d91a770f1f ("arm64: Add CONFIG_DEBUG_SET_MODULE_RONX
->> support") which added necessary infrastructure, we can now implement
->> RO marking of eBPF generated JIT image pages and randomize start offset
->> for the JIT code, so that it does not reside directly on a page boundary
->> anymore. Likewise, the holes are filled with illegal instructions: here
->> we use BRK #0x100 (opcode 0xd4202000) to trigger a fault in the kernel
->> (unallocated BRKs would trigger a fault through do_debug_exception). This
->> seems more reliable as we don't have a guaranteed undefined instruction
->> space on ARM64.
->>
->> This is basically the ARM64 variant of what we already have in ARM via
->> commit 55309dd3d4cd ("net: bpf: arm: address randomize and write protect
->> JIT code"). Moreover, this commit also presents a merge resolution due to
->> conflicts with commit 60a3b2253c41 ("net: bpf: make eBPF interpreter images
->> read-only") as we don't use kfree() in bpf_jit_free() anymore to release
->> the locked bpf_prog structure, but instead bpf_prog_unlock_free() through
->> a different allocator.
->>
->> JIT tested on aarch64 with BPF test suite.
->>
->> Reference: http://mainisusuallyafunction.blogspot.com/2012/11/attacking-hardened-linux-systems-with.html
->> Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
->> Cc: Zi Shen Lim <zlim.lnx@gmail.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: David S. Miller <davem@davemloft.net>
->> Cc: Alexei Starovoitov <ast@plumgrid.com>
->> ---
->>  v3->v4:
->>   - Inclusion into debug-monitors.h as suggested by Will
->>  v2->v3:
->>   - Use cpu_to_le32() as suggested by Zi/Will
->>  v1->v2:
->>   - Use brk insn as suggested by Catalin
->>  Note:
->>   - This patch depends on net-next being merged to mainline due
->>     to the mentioned merge conflict.
->>
->>  arch/arm64/include/asm/debug-monitors.h |  8 +++++++
->>  arch/arm64/net/bpf_jit_comp.c           | 39 +++++++++++++++++++++++++--------
->>  2 files changed, 38 insertions(+), 9 deletions(-)
->
-> Thanks, Daniel, this looks great:
->
->   Acked-by: Will Deacon <will.deacon@arm.com>
->
+Silergy SYR82x regulators share the exact same functionality and register layout
+as the Fairchild FAN53555 regulators. Therefore extend the driver to add
+support for them.
 
-Reviewed-by: Zi Shen Lim <zlim.lnx@gmail.com>
+Both types use the same vendor id in their ID1 register, so it's not possible
+to distinguish them automatically.
 
-> We can merge this at -rc1.
->
-> Will
+Similarly, the types also do not match. Type 8 used by the SYR827 and SYR828
+start at 712.5mV and increment in 12.5mv steps, while the FAN53555 type 8
+starts at 600mV and increments in 10mV steps.
+
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ .../devicetree/bindings/regulator/fan53555.txt     |   2 +-
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ drivers/regulator/fan53555.c                       | 102 ++++++++++++++++++---
+ 3 files changed, 89 insertions(+), 16 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/regulator/fan53555.txt b/Documentation/devicetree/bindings/regulator/fan53555.txt
+index 4917564..f426afc 100644
+--- a/Documentation/devicetree/bindings/regulator/fan53555.txt
++++ b/Documentation/devicetree/bindings/regulator/fan53555.txt
+@@ -1,7 +1,7 @@
+ Binding for Fairchild FAN53555 regulators
+ 
+ Required properties:
+-  - compatible: "fairchild,fan53555"
++  - compatible: one of "fairchild,fan53555", "silergy,syr827", "silergy,syr828"
+   - reg: I2C address
+ 
+ Optional properties:
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 99da41b..9e34820 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -125,6 +125,7 @@ sil	Silicon Image
+ silabs	Silicon Laboratories
+ simtek
+ sii	Seiko Instruments, Inc.
++silergy	Silergy Corp.
+ sirf	SiRF Technology, Inc.
+ smsc	Standard Microsystems Corporation
+ snps 	Synopsys, Inc.
+diff --git a/drivers/regulator/fan53555.c b/drivers/regulator/fan53555.c
+index fb19fae..8905c9e 100644
+--- a/drivers/regulator/fan53555.c
++++ b/drivers/regulator/fan53555.c
+@@ -52,6 +52,11 @@
+ 
+ #define FAN53555_NVOLTAGES	64	/* Numbers of voltages */
+ 
++enum fan53555_vendor {
++	FAN53555_VENDOR_FAIRCHILD = 0,
++	FAN53555_VENDOR_SILERGY,
++};
++
+ /* IC Type */
+ enum {
+ 	FAN53555_CHIP_ID_00 = 0,
+@@ -62,7 +67,12 @@ enum {
+ 	FAN53555_CHIP_ID_05,
+ };
+ 
++enum {
++	SILERGY_SYR82X = 8,
++};
++
+ struct fan53555_device_info {
++	enum fan53555_vendor vendor;
+ 	struct regmap *regmap;
+ 	struct device *dev;
+ 	struct regulator_desc desc;
+@@ -183,6 +193,47 @@ static struct regulator_ops fan53555_regulator_ops = {
+ 	.set_ramp_delay = fan53555_set_ramp,
+ };
+ 
++static int fan53555_voltages_setup_fairchild(struct fan53555_device_info *di)
++{
++	/* Init voltage range and step */
++	switch (di->chip_id) {
++	case FAN53555_CHIP_ID_00:
++	case FAN53555_CHIP_ID_01:
++	case FAN53555_CHIP_ID_03:
++	case FAN53555_CHIP_ID_05:
++		di->vsel_min = 600000;
++		di->vsel_step = 10000;
++		break;
++	case FAN53555_CHIP_ID_04:
++		di->vsel_min = 603000;
++		di->vsel_step = 12826;
++		break;
++	default:
++		dev_err(di->dev,
++			"Chip ID %d not supported!\n", di->chip_id);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int fan53555_voltages_setup_silergy(struct fan53555_device_info *di)
++{
++	/* Init voltage range and step */
++	switch (di->chip_id) {
++	case SILERGY_SYR82X:
++		di->vsel_min = 712500;
++		di->vsel_step = 12500;
++		break;
++	default:
++		dev_err(di->dev,
++			"Chip ID %d not supported!\n", di->chip_id);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ /* For 00,01,03,05 options:
+  * VOUT = 0.60V + NSELx * 10mV, from 0.60 to 1.23V.
+  * For 04 option:
+@@ -191,6 +242,8 @@ static struct regulator_ops fan53555_regulator_ops = {
+ static int fan53555_device_setup(struct fan53555_device_info *di,
+ 				struct fan53555_platform_data *pdata)
+ {
++	int ret = 0;
++
+ 	/* Setup voltage control register */
+ 	switch (pdata->sleep_vsel_id) {
+ 	case FAN53555_VSEL_ID_0:
+@@ -205,26 +258,21 @@ static int fan53555_device_setup(struct fan53555_device_info *di,
+ 		dev_err(di->dev, "Invalid VSEL ID!\n");
+ 		return -EINVAL;
+ 	}
+-	/* Init voltage range and step */
+-	switch (di->chip_id) {
+-	case FAN53555_CHIP_ID_00:
+-	case FAN53555_CHIP_ID_01:
+-	case FAN53555_CHIP_ID_03:
+-	case FAN53555_CHIP_ID_05:
+-		di->vsel_min = 600000;
+-		di->vsel_step = 10000;
++
++	switch (di->vendor) {
++	case FAN53555_VENDOR_FAIRCHILD:
++		ret = fan53555_voltages_setup_fairchild(di);
+ 		break;
+-	case FAN53555_CHIP_ID_04:
+-		di->vsel_min = 603000;
+-		di->vsel_step = 12826;
++	case FAN53555_VENDOR_SILERGY:
++		ret = fan53555_voltages_setup_silergy(di);
+ 		break;
+ 	default:
+ 		dev_err(di->dev,
+-			"Chip ID[%d]\n not supported!\n", di->chip_id);
++			"vendor %d not supported!\n", di->chip_id);
+ 		return -EINVAL;
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int fan53555_regulator_register(struct fan53555_device_info *di,
+@@ -278,6 +326,13 @@ static struct fan53555_platform_data *fan53555_parse_dt(struct device *dev,
+ static const struct of_device_id fan53555_dt_ids[] = {
+ 	{
+ 		.compatible = "fairchild,fan53555",
++		.data = (void *)FAN53555_VENDOR_FAIRCHILD
++	}, {
++		.compatible = "silergy,syr827",
++		.data = (void *)FAN53555_VENDOR_SILERGY,
++	}, {
++		.compatible = "silergy,syr828",
++		.data = (void *)FAN53555_VENDOR_SILERGY,
+ 	},
+ 	{ }
+ };
+@@ -307,7 +362,16 @@ static int fan53555_regulator_probe(struct i2c_client *client,
+ 	if (!di)
+ 		return -ENOMEM;
+ 
+-	if (!client->dev.of_node) {
++	if (client->dev.of_node) {
++		const struct of_device_id *match;
++
++		match = of_match_device(of_match_ptr(fan53555_dt_ids),
++					&client->dev);
++		if (!match)
++			return -ENODEV;
++
++		di->vendor = (int) match->data;
++	} else {
+ 		/* if no ramp constraint set, get the pdata ramp_delay */
+ 		if (!di->regulator->constraints.ramp_delay) {
+ 			int slew_idx = (pdata->slew_rate & 0x7)
+@@ -316,6 +380,8 @@ static int fan53555_regulator_probe(struct i2c_client *client,
+ 			di->regulator->constraints.ramp_delay
+ 						= slew_rates[slew_idx];
+ 		}
++
++		di->vendor = id->driver_data;
+ 	}
+ 
+ 	di->regmap = devm_regmap_init_i2c(client, &fan53555_regmap_config);
+@@ -363,7 +429,13 @@ static int fan53555_regulator_probe(struct i2c_client *client,
+ }
+ 
+ static const struct i2c_device_id fan53555_id[] = {
+-	{"fan53555", -1},
++	{
++		.name = "fan53555",
++		.driver_data = FAN53555_VENDOR_FAIRCHILD
++	}, {
++		.name = "syr82x",
++		.driver_data = FAN53555_VENDOR_SILERGY
++	},
+ 	{ },
+ };
+ 
+-- 
+2.0.1
+
