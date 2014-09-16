@@ -1,96 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285AbaIPHYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:24:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31034 "EHLO mga01.intel.com"
+	id S1753063AbaIPH3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:29:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16618 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189AbaIPHYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 03:24:36 -0400
+	id S1752678AbaIPH3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 03:29:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="477797907"
-Message-ID: <1410852233.25559.173.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v4 2/4] dt-bindings: document Rockchip thermal
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Caesar Wang <caesar.wang@rock-chips.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Douglas Anderson <dianders@chromium.org>, dtor <dtor@chromium.org>,
-        Chris Zhong <zyw@rock-chips.com>,
-        "addy.ke@rock-chips.com" <addy.ke@rock-chips.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        zhaoyifeng <zyf@rock-chips.com>
-Date: Tue, 16 Sep 2014 15:23:53 +0800
-In-Reply-To: <20140911155324.GA27076@developer>
-References: <1409710239-19941-1-git-send-email-caesar.wang@rock-chips.com>
-	 <1410403012.25559.69.camel@rzhang1-toshiba>
-	 <20140911121842.GB26715@developer> <40514790.Xc34lyFLGa@wuerfel>
-	 <20140911155324.GA27076@developer>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="603426064"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: x86, irq: Introduce helper to check whether an IOAPIC has been registered
+Date: Tue, 16 Sep 2014 14:53:03 +0800
+Message-Id: <1410850383-2784-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1410422758-24942-15-git-send-email-jiang.liu@linux.intel.com>
+References: <1410422758-24942-15-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 11:53 -0400, Eduardo Valentin wrote:
-> Arnd,
-> 
-> On Thu, Sep 11, 2014 at 02:32:08PM +0200, Arnd Bergmann wrote:
-> > On Thursday 11 September 2014 08:18:43 Eduardo Valentin wrote:
-> > > > As what we want is to make thermal driver have a chance to configure the
-> > > > hardware shutdown registers, I'm thinking if we can do this without
-> > > > representing the hardware shutdown value as a trip point.
-> > > > Say,
-> > > > 1. parse DT, and get the hardware shutdown temperature value, and store
-> > > > it somewhere, e.g. struct __thermal_zone.
-> > > > 2. introduce a new parameter, int (*set_hardware_trip)(void *, long *),
-> > > > in thermal_zone_of_sensor_register().
-> > > > 3. invoke set_hard_trip(tz, hardware_shutdown_temperature_value) in
-> > > > thermal_zone_of_sensor_register().
-> > > 
-> > > The only issue I have with the above proposal is that not all platforms
-> > > use DT. Some still boot with boardfiles, for instance. Thus, the
-> > > parameter to configure hardware thermal shutdown needs to be common on
-> > > thermal core, not specific to of-thermal. Do you agree?
-> > 
-> > Do you know of a machine that can't yet be converted to DT and that
-> > needs this driver? In case of rockchips that is certainly not the
-> > case, and we don't care about anybody trying to use board files out
-> > of tree, they can just hack the thermal support as well.
-> 
-> I see. Again, the only concern I have is to produce thermal framework APIs
-> that would be only in the of-thermal. My point is not specific to this
-> patch, or this platform, but with a detail in the above proposal. 
-> 
-> While I agree to have a trip specific to configurable hardware triggered
-> thermal shutdown, I just don't see why it needs to be a feature
-> implemented only via of-thermal. It has to be properly defined in
-> thermal core.
-> 
-> The proposal of of-thermal is not to become a separate/competing thermal
-> framework.
-> 
-Agreed.
-And I think we can have such feature in thermal core.
-But again I don't think we should represent it as an trip point. 
+Introduce acpi_ioapic_registered() to check whether an IOAPIC has already
+been registered, it will be used when enabling IOAPIC hotplug.
 
-thanks,
-rui
-> > 
-> > 	Arnd
-> 
-> Cheers,
-> 
-> Eduardo
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+Hi Thomas,
+	I have fixed docbook issues in this patch.
+Regards!
+Gerry
+---
+ arch/x86/include/asm/io_apic.h |    1 +
+ arch/x86/kernel/acpi/boot.c    |   22 ++++++++++++++++++++++
+ arch/x86/kernel/apic/io_apic.c |   11 +++++++++++
+ include/linux/acpi.h           |    1 +
+ 4 files changed, 35 insertions(+)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 7c04b8ec22a4..ca742d5249db 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -191,6 +191,7 @@ extern void mp_unmap_irq(int irq);
+ extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 			      struct ioapic_domain_cfg *cfg);
+ extern int mp_unregister_ioapic(u32 gsi_base);
++extern int mp_ioapic_registered(u32 gsi_base);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 0e67d792741d..5a69df5dba56 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -821,6 +821,28 @@ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+ }
+ EXPORT_SYMBOL(acpi_unregister_ioapic);
+ 
++/**
++ * acpi_ioapic_registered - Check whether IOAPIC assoicatied with @gsi_base
++ *			    has been registered
++ * @handle:	ACPI handle of the IOAPIC deivce
++ * @gsi_base:	GSI base associated with the IOAPIC
++ *
++ * Assume caller holds some type of lock to serialize acpi_ioapic_registered()
++ * with acpi_register_ioapic()/acpi_unregister_ioapic().
++ */
++int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base)
++{
++	int ret = 0;
++
++#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++	down_read(&acpi_ioapic_rwsem);
++	ret  = mp_ioapic_registered(gsi_base);
++	up_read(&acpi_ioapic_rwsem);
++#endif
++
++	return ret;
++}
++
+ static int __init acpi_parse_sbf(struct acpi_table_header *table)
+ {
+ 	struct acpi_table_boot *sb;
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7fec2a8f72f3..eba25bccefd2 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4013,6 +4013,17 @@ int mp_unregister_ioapic(u32 gsi_base)
+ 	return 0;
+ }
+ 
++int mp_ioapic_registered(u32 gsi_base)
++{
++	int ioapic;
++
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].gsi_config.gsi_base == gsi_base)
++			return 1;
++
++	return 0;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
+ {
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 3574f137242e..e916cc9ca5a8 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -152,6 +152,7 @@ int acpi_get_ioapic_id(acpi_handle handle, u32 gsi_base, u64 *phys_addr);
+ 
+ int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base);
+ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base);
++int acpi_ioapic_registered(acpi_handle handle, u32 gsi_base);
+ void acpi_irq_stats_init(void);
+ extern u32 acpi_irq_handled;
+ extern u32 acpi_irq_not_handled;
+-- 
+1.7.10.4
 
