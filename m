@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaIPWJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 18:09:24 -0400
-Received: from vidar.hosts.sieglitzhof.net ([62.113.200.140]:60287 "EHLO
-	vidar.hosts.sieglitzhof.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754369AbaIPWI3 (ORCPT
+	id S1754748AbaIPWJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 18:09:45 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:58280 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444AbaIPWJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 18:08:29 -0400
-From: Maximilian Eschenbacher <maximilian@eschenbacher.email>
-To: linux-kernel@vger.kernel.org
-Cc: valentina.manea.m@gmail.com, shuah.kh@samsung.com,
-        gregkh@linuxfoundation.org,
-        Maximilian Eschenbacher <maximilian@eschenbacher.email>
-Date: Tue, 16 Sep 2014 23:38:37 +0000
-Message-Id: <1410910735-27929-1-git-send-email-maximilian@eschenbacher.email>
-X-Mailer: git-send-email 2.1.0
-X-SA-Exim-Connect-IP: 172.16.2.6
-X-SA-Exim-Mail-From: maximilian@eschenbacher.email
-Subject: [PATCH 00/18] usbip: Crypto and ACLs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on vidar.hosts.sieglitzhof.net)
+	Tue, 16 Sep 2014 18:09:41 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Carlo Caione <carlo@caione.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-i2c@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH 0/2] Amlogic Meson I2C driver
+Date: Wed, 17 Sep 2014 00:07:55 +0200
+Message-Id: <1410905277-22172-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-As follow-up to Dominik Paulus' and Tobias Polzers series of patches from 19
-Oct 2013 (which hasn't been accepted) and due to the fact that usb/ip has
-recently been moved out of staging we rebased the patches on top of v3.17-rc5
-and would like to resubmit.
+this series adds a driver for the I2C controller found on Amlogic
+Meson SoCs. It has been tested on a Tronsmart Vega S89 TV Box, which
+is based on a Meson8 core, but should work also on Meson6 devices. 
 
-This patch series includes:
+A patchset adding support for these SoCs was submitted some days ago
+and can be found here:
 
- - The client/server authentication support using GnuTLS
+http://thread.gmane.org/gmane.linux.ports.arm.kernel/356685
 
- - Support for restricting the access to devices to specific IP address ranges
+Beniamino Galvani (2):
+  i2c: add support for Amlogic Meson I2C controller
+  i2c: meson: add device tree bindings documentation
 
- - Improved error reporting and new error codes to be passed over the TCP
-   protocol.
-
- - Minor changes to fit to the current state of usb/ip source.
-
-As Dominik and Tobias suggested the added features justify a version bump to
-1.2.0. The corresponding patch is also included. All protocol changes are
-backwards-compatible, thus, we don't increment the protocol version.
-
-Regards,
-
-Maximilian Eschenbacher, Fjodor Schelichow and Johannes Stadlinger
-
----
-
- drivers/usb/usbip/Kconfig                  |   2 +-
- drivers/usb/usbip/stub.h                   |   8 +
- drivers/usb/usbip/stub_dev.c               | 104 +++++++-
- drivers/usb/usbip/stub_rx.c                |   2 +-
- drivers/usb/usbip/stub_tx.c                |   6 +-
- drivers/usb/usbip/usbip_common.c           | 411 ++++++++++++++++++++++++++---
- drivers/usb/usbip/usbip_common.h           |  41 ++-
- drivers/usb/usbip/vhci_hcd.c               |   4 +-
- drivers/usb/usbip/vhci_rx.c                |   2 +-
- drivers/usb/usbip/vhci_sysfs.c             |  47 +++-
- drivers/usb/usbip/vhci_tx.c                |   4 +-
- tools/usb/usbip/README                     |  72 ++---
- tools/usb/usbip/configure.ac               |  15 +-
- tools/usb/usbip/doc/usbip.8                |  14 +-
- tools/usb/usbip/doc/usbipd.8               |   7 +
- tools/usb/usbip/libsrc/list.h              |   3 +-
- tools/usb/usbip/libsrc/sysfs_utils.c       |  23 ++
- tools/usb/usbip/libsrc/sysfs_utils.h       |   1 +
- tools/usb/usbip/libsrc/usbip_common.c      |  15 ++
- tools/usb/usbip/libsrc/usbip_common.h      |  24 ++
- tools/usb/usbip/libsrc/usbip_host_driver.c |  17 +-
- tools/usb/usbip/libsrc/usbip_host_driver.h |   3 +-
- tools/usb/usbip/libsrc/vhci_driver.c       |  25 +-
- tools/usb/usbip/libsrc/vhci_driver.h       |   9 +-
- tools/usb/usbip/src/Makefile.am            |   2 +-
- tools/usb/usbip/src/usbip.c                |  30 ++-
- tools/usb/usbip/src/usbip_attach.c         |  75 +++++-
- tools/usb/usbip/src/usbip_bind.c           |  71 +++--
- tools/usb/usbip/src/usbip_list.c           |  29 +-
- tools/usb/usbip/src/usbip_network.c        | 360 ++++++++++++++++++++++---
- tools/usb/usbip/src/usbip_network.h        |  81 +++++-
- tools/usb/usbip/src/usbipd.c               | 323 ++++++++++++++++-------
- tools/usb/usbip/src/utils.c                |  88 ++++++
- tools/usb/usbip/src/utils.h                |  15 ++
- 34 files changed, 1627 insertions(+), 306 deletions(-)
+ .../devicetree/bindings/i2c/i2c-meson.txt          |  24 +
+ drivers/i2c/busses/Kconfig                         |   7 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-meson.c                     | 500 +++++++++++++++++++++
+ 4 files changed, 532 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-meson.txt
+ create mode 100644 drivers/i2c/busses/i2c-meson.c
 
 -- 
-2.1.0
+1.9.1
 
