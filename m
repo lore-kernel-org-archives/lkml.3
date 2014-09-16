@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279AbaIPUvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:51:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23204 "EHLO mga02.intel.com"
+	id S1754948AbaIPUv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:51:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34260 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573AbaIPUvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:51:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,535,1406617200"; 
-   d="scan'208";a="603799464"
-Message-ID: <1410900692.31585.68.camel@schen9-desk2.jf.intel.com>
-Subject: Re: [PATCH v2] locking/rwsem: Avoid double checking before try
- acquiring write lock
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Davidlohr Bueso <dbueso@suse.de>,
-        linux-kernel@vger.kernel.org, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>
-Date: Tue, 16 Sep 2014 13:51:32 -0700
-In-Reply-To: <541898C7.6070508@hurleysoftware.com>
-References: <1410894118.2447.4.camel@j-VirtualBox>
-	 <541898C7.6070508@hurleysoftware.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754421AbaIPUvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:51:53 -0400
+Date: Tue, 16 Sep 2014 22:51:10 +0200
+From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Andres Lagar-Cavilla <andreslc@google.com>, Gleb Natapov <gleb@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140916205110.GA1273@potion.brq.redhat.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <54184078.4070505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54184078.4070505@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-16 at 16:08 -0400, Peter Hurley wrote:
-> Hi Jason,
+2014-09-15 13:11-0700, Andres Lagar-Cavilla:
+> +int kvm_get_user_page_retry(struct task_struct *tsk, struct mm_struct *mm,
+
+The suffix '_retry' is not best suited for this.
+On first reading, I imagined we will be retrying something from before,
+possibly calling it in a loop, but we are actually doing the first and
+last try in one call.
+
+Hard to find something that conveys our lock-dropping mechanic,
+'_polite' is my best candidate at the moment.
+
+> +	int flags = FOLL_TOUCH | FOLL_HWPOISON |
+
+(FOLL_HWPOISON wasn't used before, but it's harmless.)
+
+2014-09-16 15:51+0200, Paolo Bonzini:
+> Il 15/09/2014 22:11, Andres Lagar-Cavilla ha scritto:
+> > @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr, bool *async, bool write_fault,
+> >  		npages = get_user_page_nowait(current, current->mm,
+> >  					      addr, write_fault, page);
+> >  		up_read(&current->mm->mmap_sem);
+> > -	} else
+> > -		npages = get_user_pages_fast(addr, 1, write_fault,
+> > -					     page);
+> > +	} else {
+> > +		/*
+> > +		 * By now we have tried gup_fast, and possible async_pf, and we
+                                        ^
+(If we really tried get_user_pages_fast, we wouldn't be here, so I'd
+ prepend two underscores here as well.)
+
+> > +		 * are certainly not atomic. Time to retry the gup, allowing
+> > +		 * mmap semaphore to be relinquished in the case of IO.
+> > +		 */
+> > +		npages = kvm_get_user_page_retry(current, current->mm, addr,
+> > +						 write_fault, page);
 > 
-> On 09/16/2014 03:01 PM, Jason Low wrote:
-> > Commit 9b0fc9c09f1b checks for if there are known active lockers in
-> > order to avoid write trylocking using expensive cmpxchg() when it
-> > likely wouldn't get the lock.
-> > 
-> > However, a subsequent patch was added such that we directly check for
-> > sem->count == RWSEM_WAITING_BIAS right before trying that cmpxchg().
-> > Thus, commit 9b0fc9c09f1b now just adds extra overhead. This patch
-> > deletes it.
+> This is a separate logical change.  Was this:
 > 
-> It would be better to just not reload sem->count, and check the parameter
-> count == RWSEM_WAITING_BIAS instead. The count parameter is a very recent
-> load of sem->count (one of which is the latest exclusive read from an
-> atomic operation), so likely to be just as accurate as a reload of
-> sem->count without causing more cache line contention.
+> 	down_read(&mm->mmap_sem);
+> 	npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
+> 	up_read(&mm->mmap_sem);
 > 
+> the intention rather than get_user_pages_fast?
 
-Agree with Peter.
-I think the extra check in the original code was to try to 
-avoid reloading sem->count. 
-So checking directly here (count == RWSEM_WAITING_BIAS) will
-accomplish that end.  You'll need to modify your comment slightly
-to say
+I believe so as well.
 
-Try acquiring the write lock. Check count first   ...
+(Looking at get_user_pages_fast and __get_user_pages_fast made my
+ abstraction detector very sad.)
 
-Thanks.
+> I think a first patch should introduce kvm_get_user_page_retry ("Retry a
+> fault after a gup with FOLL_NOWAIT.") and the second would add
+> FOLL_TRIED ("This properly relinquishes mmap semaphore if the
+> filemap/swap has to wait on page lock (and retries the gup to completion
+> after that").
 
-Tim
+Not sure if that would help to understand the goal ...
 
-> Regards,
-> Peter Hurley
-> 
-> > Also, add a comment on why we do an "extra check" of sem->count before
-> > the cmpxchg().
-> > 
-> > Signed-off-by: Jason Low <jason.low2@hp.com>
-> > ---
-> >  kernel/locking/rwsem-xadd.c |   24 +++++++++++++-----------
-> >  1 files changed, 13 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > index d6203fa..63d3ef2 100644
-> > --- a/kernel/locking/rwsem-xadd.c
-> > +++ b/kernel/locking/rwsem-xadd.c
-> > @@ -247,18 +247,20 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
-> >  	return sem;
-> >  }
-> >  
-> > -static inline bool rwsem_try_write_lock(long count, struct rw_semaphore *sem)
-> > +static inline bool rwsem_try_write_lock(struct rw_semaphore *sem)
-> >  {
-> > -	if (!(count & RWSEM_ACTIVE_MASK)) {
-> > -		/* try acquiring the write lock */
-> > -		if (sem->count == RWSEM_WAITING_BIAS &&
-> > -		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > -			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> > -			if (!list_is_singular(&sem->wait_list))
-> > -				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> > -			return true;
-> > -		}
-> > +	/*
-> > +	 * Try acquiring the write lock. Check sem->count first
-> > +	 * in order to reduce unnecessary expensive cmpxchg() operations.
-> > +	 */
-> > +	if (sem->count == RWSEM_WAITING_BIAS &&
-> > +	    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > +		    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> > +		if (!list_is_singular(&sem->wait_list))
-> > +			rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> > +		return true;
-> >  	}
-> > +
-> >  	return false;
-> >  }
-> >  
-> > @@ -446,7 +448,7 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >  	/* wait until we successfully acquire the lock */
-> >  	set_current_state(TASK_UNINTERRUPTIBLE);
-> >  	while (true) {
-> > -		if (rwsem_try_write_lock(count, sem))
-> > +		if (rwsem_try_write_lock(sem))
-> >  			break;
-> >  		raw_spin_unlock_irq(&sem->wait_lock);
-> >  
-> > 
-> 
+> Apart from this, the patch looks good.  The mm/ parts are minimal, so I
+> think it's best to merge it through the KVM tree with someone's Acked-by.
 
+I would prefer to have the last hunk in a separate patch, but still,
 
+Acked-by: Radim Krčmář <rkrcmar@redhat.com>
