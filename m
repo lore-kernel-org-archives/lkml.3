@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604AbaIPKAh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 06:00:37 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:64013 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444AbaIPKAe (ORCPT
+	id S1753828AbaIPKFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 06:05:18 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:49973 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793AbaIPKE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 06:00:34 -0400
-Message-ID: <54180A36.7040504@gmail.com>
-Date: Tue, 16 Sep 2014 18:00:22 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 16 Sep 2014 06:04:59 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, hpa@zytor.com,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Borislav Petkov <bp@alien8.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Toshi Kani <toshi.kani@hp.com>,
-        linux-kernel@vger.kernel.org, Zhang Yang <yang.z.zhang@intel.com>
-Subject: Re: [PATCH v4] x86, hotplug: fix llc shared map unreleased during
- cpu hotplug
-References: <1406625883-4972-1-git-send-email-wanpeng.li@linux.intel.com> <20140904052034.GA29146@gmail.com> <20140904085641.GA6311@kernel> <20140904093414.GA7296@kernel> <20140916090112.GC4907@gmail.com>
-In-Reply-To: <20140916090112.GC4907@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5418019E.1010202@monstr.eu>
+References: <541552B8.8020807@gmail.com>
+	<CAMuHMdU6adYoOafUZ2STZCeuQa3cU-_kD7FHW3x=Tq-O+aqrZw@mail.gmail.com>
+	<541559C2.8070703@gmail.com>
+	<5418019E.1010202@monstr.eu>
+Date: Tue, 16 Sep 2014 12:04:57 +0200
+X-Google-Sender-Auth: HgmRmz9WPqcPLGEeFHnzfDycbTI
+Message-ID: <CAMuHMdWnZVi9rXzmOxsuwMeUcCvW_CH0bi_KuYiCNcp3JQHhLA@mail.gmail.com>
+Subject: Re: [PATCH] arch/microblaze/kernel/setup.c: Add default 'screen_info"
+ for fixing compiling break
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Chen Gang <gang.chen.5i5j@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 14-9-16 下午5:01, Ingo Molnar 写道:
-> * Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
->
->> Hi Ingo,
->> On Thu, Sep 04, 2014 at 04:56:41PM +0800, Wanpeng Li wrote:
->>> On Thu, Sep 04, 2014 at 07:20:34AM +0200, Ingo Molnar wrote:
->>>> * Wanpeng Li <wanpeng.li@linux.intel.com> wrote:
->>>>
->>>>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
->>>>> IP: [..] find_busiest_group
->>>>> PGD 5a9d5067 PUD 13067 PMD 0
->>>>> Oops: 0000 [#3] SMP
->>>>> [...]
->>>>> Call Trace:
->>>>> load_balance
->>>>> ? _raw_spin_unlock_irqrestore
->>>>> idle_balance
->>>>> __schedule
->>>>> schedule
->>>>> schedule_timeout
->>>>> ? lock_timer_base
->>>>> schedule_timeout_uninterruptible
->>>>> msleep
->>>>> lock_device_hotplug_sysfs
->>>>> online_store
->>>>> dev_attr_store
->>>>> sysfs_write_file
->>>>> vfs_write
->>>>> SyS_write
->>>>> system_call_fastpath
->>>>>
->>>>> Last level cache shared map is built during cpu up and build sched domain
->>>>> routine takes advantage of it to setup sched domain cpu topology, however,
->>>>> llc shared map is unreleased during cpu disable which lead to invalid sched
->>>>> domain cpu topology. This patch fix it by release llc shared map correctly
->>>>> during cpu disable.
->>>> Very little is said in this changelog about how the bug was
->>>> found, how likely it is to occur for others, what systems are
->>>> affected, etc.
->>> This bug can be triggered by hot add and remove large number of xen
->>> domain0's vcpus repeated.
+Hi Michal,
+
+On Tue, Sep 16, 2014 at 11:23 AM, Michal Simek <monstr@monstr.eu> wrote:
+> On 09/14/2014 11:02 AM, Chen Gang wrote:
+>> On 09/14/2014 04:45 PM, Geert Uytterhoeven wrote:
+>>> Hi Chen,
 >>>
->> If I need to send a new version of the patch or you can pick the patch
->> w/ the updated changelog for me? ;-)
-> Please send a fresh new version, maintainers trying to splice &
-> dice patches and changelogs is an unrobust approach prone to
-> mistakes.
-
-Ok, I will send out a new version tomorrow. ;-)
-
-Regards,
-Wanpeng Li
-
+>>> On Sun, Sep 14, 2014 at 10:32 AM, Chen Gang <gang.chen.5i5j@gmail.com> wrote:
+>>>> Add default one just like other architectures have done (e.g. cris,
+>>>> score, sh ...), the related error with allmodconfig:
+>>>>
+>>>>     LD      init/built-in.o
+>>>>   drivers/built-in.o: In function `vgacon_save_screen':
+>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x834d0): undefined reference to `screen_info'
+>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x834ec): undefined reference to `screen_info'
+>>>>   drivers/built-in.o: In function `vgacon_resize':
+>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83cdc): undefined reference to `screen_info'
+>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83d38): undefined reference to `screen_info'
+>>>>   drivers/built-in.o: In function `vgacon_switch':
+>>>>   drivers/video/console/.tmp_vgacon.o:(.text+0x83f50): undefined reference to `screen_info'
+>>>>   drivers/built-in.o:drivers/video/console/.tmp_vgacon.o:(.text+0x8407c): more undefined references to `screen_info' follow
+>>>>   make: *** [vmlinux] Error 1
+>>>
+>>> Can microblaze actually have VGA?
+>>>
+>>> If not, it's better to disable it.
+>>>
+>>
+>> Welcome the related microblaze maintainers ideas for it
 >
-> Thanks,
->
-> 	Ingo
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Is this is just about VGA or video console in general?
+> There is xilinx FB driver and other FB are around too.
 
+These days screen_info is only used by:
+  - vgacon,
+  - dummycon on ARM,
+  - a few fb drivers (efifb, intelfbdrv,sis, vesafb, and vga16fb).
+
+E.g. m68k doesn't have it.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
