@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaIPIz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:55:26 -0400
-Received: from michael.mail.tiscali.it ([213.205.33.246]:41728 "EHLO
-	michael.mail.tiscali.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaIPIzM (ORCPT
+	id S1753345AbaIPI5f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:57:35 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54239 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaIPI5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:55:12 -0400
-Message-ID: <5417FB30.8030908@assyoma.it>
-Date: Tue, 16 Sep 2014 10:56:16 +0200
-From: Gionatan Danti <g.danti@assyoma.it>
-Organization: Assyoma s.r.l.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	Tue, 16 Sep 2014 04:57:32 -0400
+Date: Tue, 16 Sep 2014 10:57:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCHv3 0/9] Mark literal strings in __init / __exit code
+Message-ID: <20140916085727.GA4907@gmail.com>
+References: <1408623792-7973-1-git-send-email-minipli@googlemail.com>
+ <20140821125717.GA28987@gmail.com>
+ <CA+rthh8XzSC-n+WaYEWiJQdF1XOSRiGSmxpJSFy9duXOOwXX_w@mail.gmail.com>
+ <20140822082459.GA8771@gmail.com>
+ <CA+rthh_tkpqYXJfnwCcAN5ULOHjiRp1EG7jceE1C2eLT-YJv8Q@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: g.danti@assyoma.it
-Subject: Re: AHCI maximum transfer size
-References: <a39687c7cc1c7137f0187aea4ee38676@assyoma.it>
-In-Reply-To: <a39687c7cc1c7137f0187aea4ee38676@assyoma.it>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+rthh_tkpqYXJfnwCcAN5ULOHjiRp1EG7jceE1C2eLT-YJv8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi all,
-> I searched the list and the internet for this question, but I did not
-> find a definitive answer.
->
-> I wonder what is the maximum AHCI transfer size for kernel 2.6.32.x
-> Let me explain: using a command as "dd if=/dev/zero of=/dev/sda bs=2M" I
-> can see, via iostat, that request-size is at 2M (as expected). However
-> it seems to me that the effective transfer size is way lower: disabling
-> writeback cache on the target disk, I see very low performance even for
-> big-chunk transfers.
->
-> Googling, I found this post on stackoverflow stating that maximum
-> observerd AHCI transfer size (with a SATA protocol analyzer) is 128KB:
-> http://stackoverflow.com/questions/24053662/how-to-enlarge-sata-transfer-size-in-linux-ahci-driver.
->
-> The stackoverflow post seems to agree with this old LWN.net article:
-> http://lwn.net/Articles/77981/
->
-> Anyone has any idea of how to find (and eventually change) the used AHCI
-> transfer size without touching the code?
->
-> NOTE: please CC me directly.
-> Regards.
->
 
-Hi all,
-any idea on the subject?
+* Mathias Krause <minipli@googlemail.com> wrote:
 
-Regards.
+> > Regardless of how it's implemented on the tooling side, my 
+> > point remains: this kind of optimization is done on the 
+> > tooling side in a natural fashion, while it's an ongoing 
+> > maintenance concern on the kernel side.
+> 
+> The costs of making the required changes to the code, i.e. 
+> changing printk() / pr_*() to pi_*() / pe_*(), are a necessary 
+> pain but are a one-time cost, as Joe already said. [...]
 
--- 
-Danti Gionatan
-Supporto Tecnico
-Assyoma S.r.l. - www.assyoma.it
-email: g.danti@assyoma.it - info@assyoma.it
-GPG public key ID: FF5F32A8
+That argument is bogus - the costs form increased complexity are 
+ongoing for all new code affected by such constructs, and they 
+are an ongoing cost for all changes to the code as well.
+
+> > So it should be done on the tooling side, especially as the 
+> > benefits appear to be marginal.
+> 
+> But still, they are measurable. [...]
+
+So is the cost of complexity measurable: we already got rid of 
+__init annotation variants, and we want to keep it simple and 
+maintainable, not litter the code with new variants again, only 
+to be warned about in build time checks that few developers run.
+
+And when it comes to weighing increased complexity against some 
+marginal benefit, usually the simpler approach is preferred, 
+especially since it could all be solved via tooling. Sure, you 
+have to implement the tooling support for that, and have to wait 
+for that to trickle through to actual build environments - but in 
+turn that would benefit a lot more projects than the kernel 
+alone. If you are impatient you could do tooling in the kernel as 
+well, in tools/ for example.
+
+Thanks,
+
+	Ingo
