@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532AbaIPVnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:43:12 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:46966 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752512AbaIPVnK (ORCPT
+	id S1753901AbaIPVnb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:43:31 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43367 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837AbaIPVn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:43:10 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmA2AGKuGFR5LCtm/2dsb2JhbABggw2BKoIssWsGlhaFawICAQEBgRQXAXmEBAEBBDocIxAIAxgJJQ8FJQMhE4g9vG4YGIVkiG0QAgFPB4RLBZ0JjDKJFINwKy+CSgEBAQ
-Date: Wed, 17 Sep 2014 07:42:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
-Message-ID: <20140916214254.GK4322@dastard>
-References: <cover.1410810247.git.milosz@adfin.com>
- <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com>
- <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com>
- <CANP1eJF3Kxj+yOndLLS749bEy6=MmSJ1iBpPn6JPbKN3h3q87g@mail.gmail.com>
+	Tue, 16 Sep 2014 17:43:29 -0400
+Date: Tue, 16 Sep 2014 14:43:34 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-acpi <linux-acpi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [PATCH 10/13] eeepc-laptop: compare proper return values in
+ get_cpufv
+Message-ID: <20140916214334.GC6856@vmdeb7>
+References: <1410563212-31565-1-git-send-email-fransklaver@gmail.com>
+ <1410563212-31565-11-git-send-email-fransklaver@gmail.com>
+ <20140915214902.GB64909@vmdeb7>
+ <20140915215125.GA21435@kroah.com>
+ <20140915215527.GC7867@gmail.com>
+ <CAH6sp9N1y3=LLju85ZHgc05ENUYLgUdYBYpemc6_oNhbsZ+r6g@mail.gmail.com>
+ <20140916205247.GA6856@vmdeb7>
+ <20140916212715.GB6856@vmdeb7>
+ <20140916214037.GB23674@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANP1eJF3Kxj+yOndLLS749bEy6=MmSJ1iBpPn6JPbKN3h3q87g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140916214037.GB23674@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Please don't top post!]
+On Tue, Sep 16, 2014 at 11:40:37PM +0200, Frans Klaver wrote:
+> On Tue, Sep 16, 2014 at 02:27:15PM -0700, Darren Hart wrote:
+> > 
+> > - When reading and writing sysfs device attribute files, avoid dependency
+> >   on specific error codes wherever possible. This minimizes coupling to
+> >   the error handling implemementation within the kernel.
+> > 
+> >   In general, failures to read or write sysfs device attributes shall
+> >   propogate errors wherever possible. Common errors include, but are not
+> >   limited to:
+> > 
+> >   -EIO: The read or store operation is not supported, typically returned by
+> >         the sysfs system itself if the read or store pointer is NULL.
+> > 
+> >   -ENXIO: The read or store operation failed
+> > 
+> >   Error codes will not be changed without good reason, and should a change
+> >   to error codes result in user-space breakage, it will be fixed, or the
+> >   the offending change will be reverted.
+> 
+> sysfs-rules.txt is written for user space? In that case, reverting the
+> change is as much a fix as patching it.
+> 
+> > 
+> >   Userspace applications can, however, expect the format and contents of
+> >   the attribute files to remain consistent in the absence of a version
+> >   attribute change in the context of a given attributes.
 
-On Tue, Sep 16, 2014 at 03:45:52PM -0400, Milosz Tanski wrote:
-> On Tue, Sep 16, 2014 at 3:27 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> > Christoph Hellwig <milosz@adfin.com> writes:
-> >
-> > Hrm, you're not Christoph...
->
-> I am not Christoph, we collaborated and he sent me this patch.
+Agreed, but I wanted to make this clear to kernel devs reading this as well,
+rather than duplicating this blurb elsewhere.
 
-You're missing Jeff's point - have a look at the name and email
-adress the mail appears to be from. It's completely mangled - forged
-if you will and Linus had a major rant about doing exactly this to
-patch sereies recently.  There is a perfectly acceptible way of
-crediting who the patch is from correctly without resorting to games
-like this.
+> 
+> ...attribute.
+> 
+> That's it for the nit-picking.
 
-Also, this patch doesn't have a description or a valid SOB on it....
+Thanks for the plural catch.
 
-Please read Documentation/SubmittingPatches so you get the format of
-the patches correct for V2. ;)
+I'll send to Greg as a patch.
 
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Darren Hart
+Intel Open Source Technology Center
