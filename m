@@ -1,83 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaIPUeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 16:34:36 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:37229 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840AbaIPUef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 16:34:35 -0400
+	id S1755026AbaIPUfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 16:35:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45133 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316AbaIPUfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 16:35:20 -0400
+Date: Tue, 16 Sep 2014 22:35:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, Jan Kara <jack@suse.cz>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140916203510.GF1205@quack.suse.cz>
+References: <20140914050905.GA296@x4>
+ <20140914055450.GB296@x4>
+ <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
+ <20140915163740.GA12408@x4>
+ <20140916105547.GA1205@quack.suse.cz>
+ <20140916144252.GB32118@x4>
+ <20140916111331.14303381@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <x49sijrxt1f.fsf@segfault.boston.devel.redhat.com>
-References: <cover.1410810247.git.milosz@adfin.com>
-	<x49sijrxt1f.fsf@segfault.boston.devel.redhat.com>
-Date: Tue, 16 Sep 2014 16:34:33 -0400
-Message-ID: <CANP1eJF_LjNVeD838D-H=005jtGTvGY=h5wPZBHfT6Z9iuKK_g@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/7] Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140916111331.14303381@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff,
+On Tue 16-09-14 11:13:31, Steven Rostedt wrote:
+> On Tue, 16 Sep 2014 16:42:52 +0200
+> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+> 
+> > commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+> > the string "[sched_delayed] " before the actual message.
+> > However it doesn't take into account the KERN_* prefix of the message,
+> > that now ends up in the middle of the output:
+> > 
+> >  [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
+> > 
+> > Fix this by just getting rid of the "[sched_delayed] " scnprintf().
+> 
+> I prefer the "[sched_delayed]" output. It lets us know that the output
+> did not come out immediately, which is important sometimes during
+> debugging. Otherwise it can confuse people, as printk is suppose to be
+> a blocking write.
+  This is a common misconception about printk. It isn't a blocking write
+for ten years or more. If there happens to be someone else printing to
+console, the difference between printk() and printk_deferred() is
+marginal - it used to be bigger when scheduler had its own buffer but these
+days message is inserted in the kernel ring buffer immediately. That's why
+I don't think the prefix is useful anymore.
 
-Which git repository do the man pages live in?
+> Can we instead fix the bug instead of nuking the output? That is, move
+> the KERN_* prefix before the "[sched_delayed]" message? I don't think
+> it would be that hard. If you want, I'll write that patch (probably
+> take me 20 minutes at most), but I'm just coming back from medical
+> leave so I prefer not to.
+  Glad to see you back! I'm not opposed to moving the prefix but it doesn't
+seem worth the effort...
 
-- Milosz
+								Honza
 
-On Tue, Sep 16, 2014 at 3:30 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> writes:
->
->> This patcheset introduces an ability to perform a non-blocking read from
->> regular files in buffered IO mode. This works by only for those filesystems
->> that have data in the page cache.
->>
->> It does this by introducing new syscalls new syscalls readv2/writev2 and
->> preadv2/pwritev2. These new syscalls behave like the network sendmsg, recvmsg
->> syscalls that accept an extra flag argument (O_NONBLOCK).
->>
->> It's a very common patern today (samba, libuv, etc..) use a large threadpool to
->> perform buffered IO operations. They submit the work form another thread
->> that performs network IO and epoll or other threads that perform CPU work. This
->> leads to increased latency for processing, esp. in the case of data that's
->> already cached in the page cache.
->>
->> With the new interface the applications will now be able to fetch the data in
->> their network / cpu bound thread(s) and only defer to a threadpool if it's not
->> there. In our own application (VLDB) we've observed a decrease in latency for
->> "fast" request by avoiding unnecessary queuing and having to swap out current
->> tasks in IO bound work threads.
->>
->> I have co-developed these changes with Christoph Hellwig, a whole lot of his
->> fixes went into the first patch in the series (were squashed with his
->> approval).
->>
->> I am going to post the perf report in a reply-to to this RFC.
->
-> You can send the performance data along with the patch series, no need to
-> separate it off in a reply.
->
-> One additional patch I'd like to see is a man page update.  That would
-> help clarify exactly what you're trying to accomplish.
->
-> I look forward to v2!
->
-> Cheers,
-> Jeff
-
-
-
+> > Acked-by: Jan Kara <jack@suse.cz>
+> > Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+> > 
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> > index 1ce770687ea8..f85994b58934 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+> >  	 * The printf needs to come first; we need the syslog
+> >  	 * prefix which might be passed-in as a parameter.
+> >  	 */
+> > -	if (in_sched)
+> > -		text_len = scnprintf(text, sizeof(textbuf),
+> > -				     KERN_WARNING "[sched_delayed] ");
+> > -
+> > -	text_len += vscnprintf(text + text_len,
+> > -			       sizeof(textbuf) - text_len, fmt, args);
+> > +	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+> >  
+> >  	/* mark and strip a trailing newline */
+> >  	if (text_len && text[text_len-1] == '\n') {
+> 
 -- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
-
-p: 646-253-9055
-e: milosz@adfin.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
