@@ -1,319 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaIPLAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:00:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43728 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761AbaIPLAO (ORCPT
+	id S1753454AbaIPLDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:03:52 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33172 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaIPLDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:00:14 -0400
-Date: Tue, 16 Sep 2014 03:58:38 -0700
-From: tip-bot for Igor Mammedov <tipbot@zytor.com>
-Message-ID: <tip-ce4b1b16502b182368cda20a61de2995762c8bcc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        imammedo@redhat.com, torvalds@linux-foundation.org,
-        boris.ostrovsky@oracle.com, peterz@infradead.org, bp@alien8.de,
-        toshi.kani@hp.com, akpm@linux-foundation.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        imammedo@redhat.com, boris.ostrovsky@oracle.com,
-        torvalds@linux-foundation.org, peterz@infradead.org, toshi.kani@hp.com,
-        bp@alien8.de, akpm@linux-foundation.org, tglx@linutronix.de
-In-Reply-To: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
-References: <1403266991-12233-1-git-send-email-imammedo@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] x86/smpboot:
-  Initialize secondary CPU only if master CPU will wait for it
-Git-Commit-ID: ce4b1b16502b182368cda20a61de2995762c8bcc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 16 Sep 2014 07:03:50 -0400
+Date: Tue, 16 Sep 2014 12:03:21 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Will Deacon <Will.Deacon@arm.com>, "olof@lixom.net" <olof@lixom.net>,
+        Sonny Rao <sonnyrao@chromium.org>, Mark Rutland <Mark.Rutland@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clocksource: arch_timer: Allow the device tree to
+ specify the physical timer
+Message-ID: <20140916110321.GD27273@arm.com>
+References: <5411D528.4050605@arm.com>
+ <CAD=FV=XMmizxJFPj0FEhJ7Gk4ZcQaUJDxf_Qq5kGKSvxDFVmzg@mail.gmail.com>
+ <5411DA67.2040402@arm.com>
+ <CAD=FV=UQfo4J3P4wGjOhQZQ5KXKgYAdjPsi1ykKZxQw-FwJz8w@mail.gmail.com>
+ <5411DF5D.8060906@arm.com>
+ <5412DC48.7030708@codeaurora.org>
+ <5412E3BB.9030800@arm.com>
+ <54134291.3040700@codeaurora.org>
+ <20140915111055.GD1577@arm.com>
+ <54174CFF.7050504@codeaurora.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <54174CFF.7050504@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce4b1b16502b182368cda20a61de2995762c8bcc
-Gitweb:     http://git.kernel.org/tip/ce4b1b16502b182368cda20a61de2995762c8bcc
-Author:     Igor Mammedov <imammedo@redhat.com>
-AuthorDate: Fri, 20 Jun 2014 14:23:11 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 16 Sep 2014 11:11:32 +0200
+On Mon, Sep 15, 2014 at 09:33:03PM +0100, Stephen Boyd wrote:
+> On 09/15/14 04:10, Catalin Marinas wrote:
+> > On Fri, Sep 12, 2014 at 07:59:29PM +0100, Stephen Boyd wrote:
+> >> On 09/12/14 05:14, Marc Zyngier wrote:
+> >>> We surely can handle the UNDEF and do something there. We just can't do
+> >>> it the way Doug described it above.
+> >> I suggested doing that for something else a while ago and Will and Dave
+> >> we're not thrilled[1]. The suggestion back then was to use DT to
+> >> indicate what mode the kernel is running in.
+> >>
+> >> [1]
+> >> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-June/105321.html
+> > I think the context was slightly different. As I re-read the thread, it
+> > seems that the discussion was around whether to use some SMC interface
+> > or not based on whether the kernel is running secure or non-secure. The
+> > argument made by Will was to actually specify the type of the firmware
+> > SMC interface in the DT and use it in the kernel (and probably assume
+> > the kernel is running in secure mode if no smc interface is specified in
+> > the DT; you could have both though, running in secure mode and also
+> > having firmware).
+> >
+> > In this arch timer case, we need to work around a firmware bug (or
+> > feature as 32-bit ARM kernels never required CNTVOFF initialisation by
+> > firmware, no matter how small such firmware is). We don't expect a
+> > specific SMC call to initialise CNTVOFF, so we can't describe it in the
+> > DT.
+> 
+> Agreed, we can't described SMC calls that don't exist. From my
+> perspective it's just another part of the cpu boot sequence that needs
+> to be handled in the kernel, so describing the requirement via the
+> cpu-boot method seems appropriate. It seems like we're making it harder
+> than it should be by handling the undef when we could have slightly
+> different SMP boot code (and suspend/resume code) depending on the boot
+> method property.
 
-x86/smpboot: Initialize secondary CPU only if master CPU will wait for it
+For 32-bit ARM SoCs, I think you can describe this via some specific
+enable-method property. What I don't like though is the multitude of
+enable methods (trying to reduce them on arm64) and the fact that
+registers like CNTVOFF are rather architecture than SoC specific.
 
-Hang is observed on virtual machines during CPU hotplug,
-especially in big guests with many CPUs. (It reproducible
-more often if host is over-committed).
-
-It happens because master CPU gives up waiting on
-secondary CPU and allows it to run wild. As result
-AP causes locking or crashing system. For example
-as described here:
-
-  https://lkml.org/lkml/2014/3/6/257
-
-If master CPU have sent STARTUP IPI successfully,
-and AP signalled to master CPU that it's ready
-to start initialization, make master CPU wait
-indefinitely till AP is onlined.
-
-To ensure that AP won't ever run wild, make it
-wait at early startup till master CPU confirms its
-intention to wait for AP. If AP doesn't respond in 10
-seconds, the master CPU will timeout and cancel
-AP onlining.
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Toshi Kani <toshi.kani@hp.com>
-Tested-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: xen-devel@lists.xenproject.org
-Link: http://lkml.kernel.org/r/1403266991-12233-1-git-send-email-imammedo@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/common.c | 29 ++++++++-----
- arch/x86/kernel/smpboot.c    | 98 ++++++++++++++------------------------------
- arch/x86/xen/smp.c           |  2 +
- 3 files changed, 50 insertions(+), 79 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index e4ab2b4..426cfed 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1266,6 +1266,19 @@ static void dbg_restore_debug_regs(void)
- #define dbg_restore_debug_regs()
- #endif /* ! CONFIG_KGDB */
- 
-+static void wait_for_master_cpu(int cpu)
-+{
-+#ifdef CONFIG_SMP
-+	/*
-+	 * wait for ACK from master CPU before continuing
-+	 * with AP initialization
-+	 */
-+	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+		cpu_relax();
-+#endif
-+}
-+
- /*
-  * cpu_init() initializes state that is per-CPU. Some data is already
-  * initialized (naturally) in the bootstrap process, such as the GDT
-@@ -1281,16 +1294,17 @@ void cpu_init(void)
- 	struct task_struct *me;
- 	struct tss_struct *t;
- 	unsigned long v;
--	int cpu;
-+	int cpu = stack_smp_processor_id();
- 	int i;
- 
-+	wait_for_master_cpu(cpu);
-+
- 	/*
- 	 * Load microcode on this cpu if a valid microcode is available.
- 	 * This is early microcode loading procedure.
- 	 */
- 	load_ucode_ap();
- 
--	cpu = stack_smp_processor_id();
- 	t = &per_cpu(init_tss, cpu);
- 	oist = &per_cpu(orig_ist, cpu);
- 
-@@ -1302,9 +1316,6 @@ void cpu_init(void)
- 
- 	me = current;
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
--		panic("CPU#%d already initialized!\n", cpu);
--
- 	pr_debug("Initializing CPU#%d\n", cpu);
- 
- 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
-@@ -1381,13 +1392,9 @@ void cpu_init(void)
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
- 	struct thread_struct *thread = &curr->thread;
- 
--	show_ucode_info_early();
-+	wait_for_master_cpu(cpu);
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
--		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
--		for (;;)
--			local_irq_enable();
--	}
-+	show_ucode_info_early();
- 
- 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 2d872e0..735c420 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -111,7 +111,6 @@ atomic_t init_deasserted;
- static void smp_callin(void)
- {
- 	int cpuid, phys_id;
--	unsigned long timeout;
- 
- 	/*
- 	 * If waken up by an INIT in an 82489DX configuration
-@@ -130,37 +129,6 @@ static void smp_callin(void)
- 	 * (This works even if the APIC is not enabled.)
- 	 */
- 	phys_id = read_apic_id();
--	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
--		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
--					phys_id, cpuid);
--	}
--	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
--
--	/*
--	 * STARTUP IPIs are fragile beasts as they might sometimes
--	 * trigger some glue motherboard logic. Complete APIC bus
--	 * silence for 1 second, this overestimates the time the
--	 * boot CPU is spending to send the up to 2 STARTUP IPIs
--	 * by a factor of two. This should be enough.
--	 */
--
--	/*
--	 * Waiting 2s total for startup (udelay is not yet working)
--	 */
--	timeout = jiffies + 2*HZ;
--	while (time_before(jiffies, timeout)) {
--		/*
--		 * Has the boot CPU finished it's STARTUP sequence?
--		 */
--		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
--			break;
--		cpu_relax();
--	}
--
--	if (!time_before(jiffies, timeout)) {
--		panic("%s: CPU%d started up but did not get a callout!\n",
--		      __func__, cpuid);
--	}
- 
- 	/*
- 	 * the boot CPU has finished the init stage and is spinning
-@@ -753,8 +721,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	unsigned long start_ip = real_mode_header->trampoline_start;
- 
- 	unsigned long boot_error = 0;
--	int timeout;
- 	int cpu0_nmi_registered = 0;
-+	unsigned long timeout;
- 
- 	/* Just in case we booted with a single CPU. */
- 	alternatives_enable_smp();
-@@ -802,6 +770,15 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	}
- 
- 	/*
-+	 * AP might wait on cpu_callout_mask in cpu_init() with
-+	 * cpu_initialized_mask set if previous attempt to online
-+	 * it timed-out. Clear cpu_initialized_mask so that after
-+	 * INIT/SIPI it could start with a clean state.
-+	 */
-+	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-+	smp_mb();
-+
-+	/*
- 	 * Wake up a CPU in difference cases:
- 	 * - Use the method in the APIC driver if it's defined
- 	 * Otherwise,
-@@ -815,53 +792,38 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 
- 	if (!boot_error) {
- 		/*
--		 * allow APs to start initializing.
-+		 * Wait 10s total for a response from AP
- 		 */
--		pr_debug("Before Callout %d\n", cpu);
--		cpumask_set_cpu(cpu, cpu_callout_mask);
--		pr_debug("After Callout %d\n", cpu);
-+		boot_error = -1;
-+		timeout = jiffies + 10*HZ;
-+		while (time_before(jiffies, timeout)) {
-+			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
-+				/*
-+				 * Tell AP to proceed with initialization
-+				 */
-+				cpumask_set_cpu(cpu, cpu_callout_mask);
-+				boot_error = 0;
-+				break;
-+			}
-+			udelay(100);
-+			schedule();
-+		}
-+	}
- 
-+	if (!boot_error) {
- 		/*
--		 * Wait 5s total for a response
-+		 * Wait till AP completes initial initialization
- 		 */
--		for (timeout = 0; timeout < 50000; timeout++) {
--			if (cpumask_test_cpu(cpu, cpu_callin_mask))
--				break;	/* It has booted */
--			udelay(100);
-+		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
- 			/*
- 			 * Allow other tasks to run while we wait for the
- 			 * AP to come online. This also gives a chance
- 			 * for the MTRR work(triggered by the AP coming online)
- 			 * to be completed in the stop machine context.
- 			 */
-+			udelay(100);
- 			schedule();
- 		}
--
--		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
--			print_cpu_msr(&cpu_data(cpu));
--			pr_debug("CPU%d: has booted.\n", cpu);
--		} else {
--			boot_error = 1;
--			if (*trampoline_status == 0xA5A5A5A5)
--				/* trampoline started but...? */
--				pr_err("CPU%d: Stuck ??\n", cpu);
--			else
--				/* trampoline code not run */
--				pr_err("CPU%d: Not responding\n", cpu);
--			if (apic->inquire_remote_apic)
--				apic->inquire_remote_apic(apicid);
--		}
--	}
--
--	if (boot_error) {
--		/* Try to put things back the way they were before ... */
--		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
--
--		/* was set by do_boot_cpu() */
--		cpumask_clear_cpu(cpu, cpu_callout_mask);
--
--		/* was set by cpu_init() */
--		cpumask_clear_cpu(cpu, cpu_initialized_mask);
- 	}
- 
- 	/* mark "stuck" area as not stuck */
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 7005974..3631e71 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -360,6 +360,8 @@ cpu_initialize_context(unsigned int cpu, struct task_struct *idle)
- 	struct desc_struct *gdt;
- 	unsigned long gdt_mfn;
- 
-+	/* used to tell cpu_init() that it can proceed with initialization */
-+	cpumask_set_cpu(cpu, cpu_callout_mask);
- 	if (cpumask_test_and_set_cpu(cpu, xen_cpu_initialized_map))
- 		return 0;
- 
+-- 
+Catalin
