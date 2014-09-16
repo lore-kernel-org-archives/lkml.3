@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaIPOli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:41:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38146 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754334AbaIPOlg (ORCPT
+	id S1754523AbaIPOm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:42:56 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:52081 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753873AbaIPOmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:41:36 -0400
-Date: Tue, 16 Sep 2014 07:40:47 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Pavel Shilovsky <pshilovsky@samba.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Steve French <smfrench@gmail.com>
-Subject: Re: [PATCH 3.14 103/114] CIFS: Fix directory rename error
-Message-ID: <20140916144047.GA17246@kroah.com>
-References: <20140915192641.428509513@linuxfoundation.org>
- <20140915192644.639672453@linuxfoundation.org>
- <CAKywueRDo_LSsnKvJVCEVngDQgnZcvLNRpT1ZPgpF=16g4QB1g@mail.gmail.com>
+	Tue, 16 Sep 2014 10:42:54 -0400
+Date: Tue, 16 Sep 2014 16:42:52 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jan Kara <jack@suse.cz>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140916144252.GB32118@x4>
+References: <20140914050905.GA296@x4>
+ <20140914055450.GB296@x4>
+ <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
+ <20140915163740.GA12408@x4>
+ <20140916105547.GA1205@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKywueRDo_LSsnKvJVCEVngDQgnZcvLNRpT1ZPgpF=16g4QB1g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140916105547.GA1205@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 09:17:33AM +0400, Pavel Shilovsky wrote:
-> 2014-09-15 23:26 GMT+04:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> > 3.14-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: Pavel Shilovsky <pshilovsky@samba.org>
-> >
-> > commit a07d322059db66b84c9eb4f98959df468e88b34b upstream.
-> >
-> > CIFS servers process nlink counts differently for files and directories.
-> > In cifs_rename() if we the request fails on the existing target, we
-> > try to remove it through cifs_unlink() but this is not what we want
-> > to do for directories. As the result the following sequence of commands
-> >
-> > mkdir {1,2}; mv -T 1 2; rmdir {1,2}; mkdir {1,2}; echo foo > 2/bar
-> >
-> > and XFS test generic/023 fail with -ENOENT error. That's why the second
-> > mkdir reuses the existing inode (target inode of the mv -T command) with
-> > S_DEAD flag.
-> >
-> > Fix this by checking whether the target is directory or not and
-> > calling cifs_rmdir() rather than cifs_unlink() for directories.
-> >
-> > Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-> > Signed-off-by: Steve French <smfrench@gmail.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > ---
-> >  fs/cifs/inode.c |    5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> >
-> > --- a/fs/cifs/inode.c
-> > +++ b/fs/cifs/inode.c
-> > @@ -1706,7 +1706,10 @@ cifs_rename(struct inode *source_dir, st
-> >  unlink_target:
-> >         /* Try unlinking the target dentry if it's not negative */
-> >         if (target_dentry->d_inode && (rc == -EACCES || rc == -EEXIST)) {
-> > -               tmprc = cifs_unlink(target_dir, target_dentry);
-> > +               if (d_is_dir(target_dentry))
-> > +                       tmprc = cifs_rmdir(target_dir, target_dentry);
-> > +               else
-> > +                       tmprc = cifs_unlink(target_dir, target_dentry);
-> >                 if (tmprc)
-> >                         goto cifs_rename_exit;
-> >                 rc = cifs_do_rename(xid, source_dentry, from_name,
-> >
-> >
-> 
-> Does the next stable-3.14.y have d_is_dir()? v3.14.18 doesn't compile this one.
+commit 458df9fd hardcodes printk_deferred() to KERN_WARNING and inserts
+the string "[sched_delayed] " before the actual message.
+However it doesn't take into account the KERN_* prefix of the message,
+that now ends up in the middle of the output:
 
-It does, look in the patch prior to this one in the queue.
+ [sched_delayed] ^a4CE: hpet increased min_delta_ns to 20115 nsec
 
-thanks,
+Fix this by just getting rid of the "[sched_delayed] " scnprintf().
 
-greg k-h
+Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 1ce770687ea8..f85994b58934 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1680,12 +1680,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	 * The printf needs to come first; we need the syslog
+ 	 * prefix which might be passed-in as a parameter.
+ 	 */
+-	if (in_sched)
+-		text_len = scnprintf(text, sizeof(textbuf),
+-				     KERN_WARNING "[sched_delayed] ");
+-
+-	text_len += vscnprintf(text + text_len,
+-			       sizeof(textbuf) - text_len, fmt, args);
++	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+ 
+ 	/* mark and strip a trailing newline */
+ 	if (text_len && text[text_len-1] == '\n') {
+-- 
+Markus
