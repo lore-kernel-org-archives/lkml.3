@@ -1,128 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaIPVpr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:45:47 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:37938 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaIPVpq (ORCPT
+	id S1753997AbaIPVqA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:46:00 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:34060 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944AbaIPVp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:45:46 -0400
-From: minyard@acm.org
-To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, Corey Minyard <cminyard@mvista.com>
-Subject: [PATCH] mips: Save all registers when saving the frame
-Date: Tue, 16 Sep 2014 16:45:25 -0500
-Message-Id: <1410903925-10744-1-git-send-email-minyard@acm.org>
-X-Mailer: git-send-email 1.8.3.1
+	Tue, 16 Sep 2014 17:45:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410886335.28990.393.camel@misato.fc.hp.com>
+References: <1410367910-6026-1-git-send-email-toshi.kani@hp.com>
+	<1410367910-6026-7-git-send-email-toshi.kani@hp.com>
+	<CALCETrVnHg0X=R23qyiPtxYs3knHaXq65L0Jw_1oY4=gX5kpXQ@mail.gmail.com>
+	<1410379933.28990.287.camel@misato.fc.hp.com>
+	<CALCETrUh20-2PX_KN2KWO085n=5XJpOnPysmCGbk7bufaD3Mhw@mail.gmail.com>
+	<1410384895.28990.312.camel@misato.fc.hp.com>
+	<1410815951.28990.384.camel@misato.fc.hp.com>
+	<CALCETrXMiSpMMi-4P8FTMeH_0J+6eNj0RAVJDhZYQOZub1jUOA@mail.gmail.com>
+	<1410886335.28990.393.camel@misato.fc.hp.com>
+Date: Wed, 17 Sep 2014 00:45:57 +0300
+Message-ID: <CACTTzNbP23WAxDFMyJ+hbOGt-8S1_ZCUs2KxKObz1XVHOfJGaw@mail.gmail.com>
+Subject: Re: [PATCH v2 6/6] x86, pat: Update documentation for WT changes
+From: Yigal Korman <yigal@plexistor.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Juergen Gross <jgross@suse.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Corey Minyard <cminyard@mvista.com>
+Perhaps your patch is still valid in the context of this patch:
+https://lkml.org/lkml/2014/9/9/612
+Part of the reason for creating it was the fact that ioremap is using
+a fake virtual address mapping.
+So I think we can still use set_memory_wt for memory created with
+add_persistent_memory.
+What do you think?
 
-The MIPS frame save code was just saving a few registers, enough to
-do a backtrace if every function set up a frame.  However, this is
-not working if you are using DWARF unwinding, because most of the
-registers are wrong.  This was causing kdump backtraces to be short
-or bogus.
+Also, a thought: maybe the driver that will be managing the memory
+added by add_persistent_memory should be responsible for resolving
+aliasing issues.
 
-So save all the registers.
+Thanks,
+Yigal
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
----
- arch/mips/include/asm/stacktrace.h | 64 +++++++++++++++++++++++++++++---------
- 1 file changed, 50 insertions(+), 14 deletions(-)
-
-diff --git a/arch/mips/include/asm/stacktrace.h b/arch/mips/include/asm/stacktrace.h
-index 780ee2c..05a2195 100644
---- a/arch/mips/include/asm/stacktrace.h
-+++ b/arch/mips/include/asm/stacktrace.h
-@@ -2,6 +2,8 @@
- #define _ASM_STACKTRACE_H
- 
- #include <asm/ptrace.h>
-+#include <asm/asm.h>
-+#include <linux/stringify.h>
- 
- #ifdef CONFIG_KALLSYMS
- extern int raw_show_trace;
-@@ -20,6 +22,14 @@ static inline unsigned long unwind_stack(struct task_struct *task,
- }
- #endif
- 
-+#define STR_PTR_LA    __stringify(PTR_LA)
-+#define STR_LONG_S    __stringify(LONG_S)
-+#define STR_LONG_L    __stringify(LONG_L)
-+#define STR_LONGSIZE  __stringify(LONGSIZE)
-+
-+#define STORE_ONE_REG(r) \
-+    STR_LONG_S   " $" __stringify(r)",("STR_LONGSIZE"*"__stringify(r)")(%1)\n\t"
-+
- static __always_inline void prepare_frametrace(struct pt_regs *regs)
- {
- #ifndef CONFIG_KALLSYMS
-@@ -32,21 +42,47 @@ static __always_inline void prepare_frametrace(struct pt_regs *regs)
- 	__asm__ __volatile__(
- 		".set push\n\t"
- 		".set noat\n\t"
--#ifdef CONFIG_64BIT
--		"1: dla $1, 1b\n\t"
--		"sd $1, %0\n\t"
--		"sd $29, %1\n\t"
--		"sd $31, %2\n\t"
--#else
--		"1: la $1, 1b\n\t"
--		"sw $1, %0\n\t"
--		"sw $29, %1\n\t"
--		"sw $31, %2\n\t"
--#endif
-+		/* Store $1 so we can use it */
-+		STR_LONG_S " $1,"STR_LONGSIZE"(%1)\n\t"
-+		/* Store the PC */
-+		"1: " STR_PTR_LA " $1, 1b\n\t"
-+		STR_LONG_S " $1,%0\n\t"
-+		STORE_ONE_REG(2)
-+		STORE_ONE_REG(3)
-+		STORE_ONE_REG(4)
-+		STORE_ONE_REG(5)
-+		STORE_ONE_REG(6)
-+		STORE_ONE_REG(7)
-+		STORE_ONE_REG(8)
-+		STORE_ONE_REG(9)
-+		STORE_ONE_REG(10)
-+		STORE_ONE_REG(11)
-+		STORE_ONE_REG(12)
-+		STORE_ONE_REG(13)
-+		STORE_ONE_REG(14)
-+		STORE_ONE_REG(15)
-+		STORE_ONE_REG(16)
-+		STORE_ONE_REG(17)
-+		STORE_ONE_REG(18)
-+		STORE_ONE_REG(19)
-+		STORE_ONE_REG(20)
-+		STORE_ONE_REG(21)
-+		STORE_ONE_REG(22)
-+		STORE_ONE_REG(23)
-+		STORE_ONE_REG(24)
-+		STORE_ONE_REG(25)
-+		STORE_ONE_REG(26)
-+		STORE_ONE_REG(27)
-+		STORE_ONE_REG(28)
-+		STORE_ONE_REG(29)
-+		STORE_ONE_REG(30)
-+		STORE_ONE_REG(31)
-+		/* Restore $1 */
-+		STR_LONG_L " $1,(%1)\n\t"
- 		".set pop\n\t"
--		: "=m" (regs->cp0_epc),
--		"=m" (regs->regs[29]), "=m" (regs->regs[31])
--		: : "memory");
-+		: "=m" (regs->cp0_epc)
-+		: "r" (regs->regs)
-+		: "memory");
- }
- 
- #endif /* _ASM_STACKTRACE_H */
--- 
-1.8.3.1
-
+On Tue, Sep 16, 2014 at 7:52 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Mon, 2014-09-15 at 18:22 -0700, Andy Lutomirski wrote:
+>> On Mon, Sep 15, 2014 at 2:19 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> > On Wed, 2014-09-10 at 15:34 -0600, Toshi Kani wrote:
+>> >> On Wed, 2014-09-10 at 13:29 -0700, Andy Lutomirski wrote:
+>> >> > On Wed, Sep 10, 2014 at 1:12 PM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> >> > > On Wed, 2014-09-10 at 11:30 -0700, Andy Lutomirski wrote:
+>> >> > >> On Wed, Sep 10, 2014 at 9:51 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+>> >> > >> > +Drivers may map the entire NV-DIMM range with ioremap_cache and then change
+>> >> > >> > +a specific range to wt with set_memory_wt.
+>> >> > >>
+>> >> > >> That's mighty specific :)
+>> >> > >
+>> >> > > How about below?
+>> >> > >
+>> >> > > Drivers may use set_memory_wt to set WT type for cached reserve ranges.
+>> >> >
+>> >> > Do they have to be cached?
+>> >>
+>> >> Yes, set_memory_xyz only supports WB->type->WB transition.
+>> >>
+>> >> > How about:
+>> >> >
+>> >> > Drivers may call set_memory_wt on ioremapped ranges.  In this case,
+>> >> > there is no need to change the memory type back before calling
+>> >> > iounmap.
+>> >> >
+>> >> > (Or only on cached ioremapped ranges if that is, in fact, the case.)
+>> >>
+>> >> Sounds good.  Yes, I will use cashed ioremapped ranges.
+>> >
+>> > Well, testing "no need to change the memory type back before calling
+>> > iounmap" turns out to be a good test case.  I realized that
+>> > set_memory_xyz only works properly for RAM.  There are two problems for
+>> > using this interface for ioremapped ranges.
+>> >
+>> > 1) set_memory_xyz calls reserve_memtype() with __pa(addr).  However,
+>> > __pa() translates the addr into a fake physical address when it is an
+>> > ioremapped address.
+>> >
+>> > 2) reserve_memtype() does not work for set_memory_xyz.  For RAM, the WB
+>> > state is managed untracked.  Hence, WB->new->WB is not considered as a
+>> > conflict.  For ioremapped ranges, WB is tracked in the same way as other
+>> > cache types.  Hence, WB->new is considered as a conflict.
+>> >
+>> > In my previous testing, 2) was undetected since 1) led using a fake
+>> > physical address which was not tracked for WB.  This made ioremapped
+>> > ranges worked just like RAM. :-(
+>> >
+>> > Anyway, 1) can be fixed by using slow_virt_to_phys() instead of __pa().
+>> > set_memory_xyz is already slow, but this makes it even slower, though.
+>> >
+>> > For 2), WB has to be continuously tracked in order to detect aliasing,
+>> > ex. ioremap_cache and ioremap to a same address.  So, I think
+>> > reserve_memtype() needs the following changes:
+>> >  - Add a new arg to see if an operation is to create a new mapping or to
+>> > change cache attribute.
+>> >  - Track overlapping maps so that cache type change to an overlapping
+>> > range can be detected and failed.
+>> >
+>> > This level of changes requires a separate set of patches if we pursue to
+>> > support ioremapped ranges.  So, I am considering to take one of the two
+>> > options below.
+>> >
+>> > A) Drop the patch for set_memory_wt.
+>> >
+>> > B) Keep the patch for set_memory_wt, but document that it fails with
+>> > -EINVAL and its use is for RAM only.
+>> >
+>>
+>> I vote A.  I see no great reason to add code that can't be used.  Once
+>> someone needs this ability, they can add it :)
+>
+> Agreed.  I will drop the patch for now.  Since _PGMT_WB does not seem to
+> be used for tracking WB, we might be able to use this bit for WT.  But I
+> need to look at the code more carefully for sure.
+>
+>> It's too bad that ioremap is called ioremap and not iomap.  Otherwise
+>> the natural solution would be to add a different function call
+>> ioremap_wt that's like set_memory_wt but for ioremap ranges.  Calling
+>> it ioreremap_wt sounds kind of disgusting :)
+>
+> :)
+>
+> Thanks,
+> -Toshi
+>
