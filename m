@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaIPXl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 19:41:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48396 "EHLO mx2.suse.de"
+	id S1754716AbaIPXle (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 19:41:34 -0400
+Received: from jambon.ath.cx ([212.129.4.85]:38528 "EHLO jambon.ath.cx"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268AbaIPXlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 19:41:24 -0400
-Date: Wed, 17 Sep 2014 09:41:13 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
-Message-ID: <20140917094113.0cb07cf1@notabene.brown>
-In-Reply-To: <20140916074741.1de870c5@tlielax.poochiereds.net>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-	<20140916074741.1de870c5@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.10.1-123-gae895c (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1753186AbaIPXlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 19:41:32 -0400
+Date: Wed, 17 Sep 2014 01:41:30 +0200
+From: Junien Fridrick <linux.kernel@junien.fridrick.net>
+To: Aleksei Besogonov <alex.besogonov@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Run a script with cap_net_bind_service - mission impossible.
+Message-ID: <20140916234130.GA12369@jambon.ath.cx>
+References: <loom.20140915T145605-849@post.gmane.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <loom.20140915T145605-849@post.gmane.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Sep 15, 2014 at 01:07:03PM +0000, Aleksei Besogonov wrote:
+> Hi!
 
-On Tue, 16 Sep 2014 07:47:41 -0400 Jeff Layton <jeff.layton@primarydata.com>
-wrote:
+Hi,
 
+> 
+> It seems that it's totally impossible to start a script with
+> cap_net_bind_service capability and as a non-root user without modifying
+> system-wide settings.
+> 
+> I've trawled the Net for a solution that should be exceedingly simple. I
+> want to run a daemon under a non-privileged account AND allow it to bind to
+> 'secure' ports (443, 589 and 53). So far I found the following non-solutions:
+> 
+> - Use iptables to redirect ports. Doesn't work with local traffic.
 
-> Also, we call things like invalidate_complete_page2 from the cache
-> invalidation code. Will we end up with potential problems now that we
-> have a stronger possibility that a page might not be freeable when it
-> calls releasepage? (no idea on this -- I'm just spitballing)
->=20
+Unless I'm missing something, you can use iptables to redirect ports even for
+local traffic : you need to use the OUTPUT chain. For example, if I run :
+# iptables -t nat -I OUTPUT -p tcp -d 192.168.0.1 --dport 1245 -j REDIRECT --to-port 1246
 
-Answering just this part here:
- invalidate_complete_page2() is only called immediately after a call to
-do_launder_page().
-For nfs, that means nfs_launder_page() was called, which calls nfs_wb_page()
-which in turn calls
-		ret =3D nfs_commit_inode(inode, FLUSH_SYNC);
+and then from the same machine, run :
+$ nc -v 192.168.0.1 1245
 
-so the inode is fully committed when invalidate_complete_page2 is called, so
-nfs_release_page will succeed.
+The connection will be redirected to port 1246. Doesn't that answer your use
+case ?
 
-So there shouldn't be a problem there.
-
-Thanks,
-NeilBrown
-
---Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBVBjKmTnsnt1WYoG5AQIKoxAAwHYOT2px8v/27OkcGivaLkX0QeRC/v7N
-DGFYWzkLZCJQTk8ubsU8qTaMiYBsCHBfxMh7RxIQ66IQ4YOis9/3BiMTFtA81eQL
-sm8TK64e4jBSPrTSwevJ4GUGlJBF/xWZTfYKCGjzaGDo3I/G+WB6fTj2YJDulWnk
-xgoDy1s23yrvdKJpiC3av9hnvnFAYv4d/sv2axOQGzKDfMn62f8vApPLpqphoq+1
-Zone0nWEKTZbDxS0vhf+cN5wDkXtITyjd3WViocfx/QgGPDSZRTvauIXaSmsxYmC
-x4jB2n9bnyAI/ifetUjQwt7WbXu61gmI2Tzkny+hZQBTtng/N3S3UBQlCDfJRszD
-Gn9juNyfO2NbUJb3z1SxUtPo/liHECOzxt/4qmWgVxRs0BQjcY3WdMejOK19llBO
-brBixSxRyNE9c60upOeS3/7kosQSIQttz0KOP0p+/iNmva7h7i5/tgXGpM79vLmn
-DTCCQtU/bNnNaTkUgviSZgm68TrmE6HTHJ4JWdKKgDqDFeb0XJaKqd6yS8zmm7lk
-l3ChbGiK2ul66xNgFkFfBv1QXozpz9lGfvujoESnMrvWTCYbREWg8mVNEIxyhe2K
-3WWlQhEMF5OklFyBUCuQKq+xnNr5O+EiHPboA4wl1PVGRP79pILQ1vbBFdOg/FPD
-3fd8+iJf7nc=
-=Lclc
------END PGP SIGNATURE-----
-
---Sig_/PeO.vTXB5CZ=.Tnfg/xaxQv--
+> - Use an HTTP proxy server (yeah, and also a DNS proxy server).
+> - Set cap_net_bind_service capability bit on the script interpreter (so
+> it'll break during upgrades). 
+> - Fuck you, run it under the root user. With several permutations like:
+>   * Dropping caps after opening sockets (can't do this)
+>   * Dropping all caps before starting the interpreter (fucks up the file
+> ownership)
+> 
+> I've tried without any luck various permutations of capsh like: capsh
+> --keep=1 --secbits=5 --user=cyberax --caps=cap_net_bind_service+eip -- -c
+> 'nc -l 443'
+> 
+> So is it possible at all?
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
