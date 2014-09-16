@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaIPH37 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 03:29:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1423 "EHLO mga09.intel.com"
+	id S1753336AbaIPH34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 03:29:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16618 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014AbaIPH3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752870AbaIPH3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Sep 2014 03:29:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,533,1406617200"; 
-   d="scan'208";a="573703689"
-Message-ID: <1410852405.7023.48.camel@linux.intel.com>
+   d="scan'208";a="477798043"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "sebastian@breakpoint.cc" <sebastian@breakpoint.cc>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "gnurou@gmail.com" <gnurou@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "dvhart@linux.intel.com" <dvhart@linux.intel.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>
 Subject: Re: [PATCH 4/4 v4] GPIO: gpio-dwapb: Suspend & Resume PM enabling
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Weike Chen <alvin.chen@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Tue, 16 Sep 2014 10:26:45 +0300
-In-Reply-To: <1410859335-11080-5-git-send-email-alvin.chen@intel.com>
+Thread-Topic: [PATCH 4/4 v4] GPIO: gpio-dwapb: Suspend & Resume PM enabling
+Thread-Index: AQHP0U23/+uxq9SP7kqT9UolCDPFE5wDS0OA
+Date: Tue, 16 Sep 2014 07:24:57 +0000
+Message-ID: <1410852297.7023.46.camel@intel.com>
 References: <1410859335-11080-1-git-send-email-alvin.chen@intel.com>
 	 <1410859335-11080-5-git-send-email-alvin.chen@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.5-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1410859335-11080-5-git-send-email-alvin.chen@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.168]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A53B6F9743788A468B1B9A594C0BB768@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s8G7VIY5025728
 
 On Tue, 2014-09-16 at 02:22 -0700, Weike Chen wrote:
 > This patch enables suspend and resume mode for the power management, and
@@ -212,8 +222,17 @@ No need to have parentheses here. Check the code below as well.
 >  	.probe		= dwapb_gpio_probe,
 
 
-
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Andy Shevchenko <andriy.shevchenko@intel.com>
 Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
 
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
