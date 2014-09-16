@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbaIPVhl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 17:37:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41374 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbaIPVhj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 17:37:39 -0400
-Date: Tue, 16 Sep 2014 14:37:39 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] scsi patch queue tree updated
-Message-ID: <20140916213739.GA19111@infradead.org>
-References: <20140708134003.GA7790@infradead.org>
- <20140801122042.GA10771@infradead.org>
- <20140915225818.GA11869@infradead.org>
+	id S1753752AbaIPVhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 17:37:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27556 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392AbaIPVhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 17:37:52 -0400
+Date: Tue, 16 Sep 2014 17:37:18 -0400
+From: Kyle McMartin <kyle@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: will.deacon@arm.com, catalin.marinas@arm.com,
+        linux-arm-kernel@lists.infradead.org, rusty@rustcorp.com.au
+Subject: [PATCH] aarch64: filter $x from kallsyms
+Message-ID: <20140916213718.GR22012@redacted.bos.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140915225818.GA11869@infradead.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 03:58:18PM -0700, Christoph Hellwig wrote:
-> I've pushed two updates to the core-for-3.17 branch of
-> 
->     git://git.infradead.org/users/hch/scsi-queue.git
-> 
-> which should go to Linus before the next rc.
-> 
-> One is a regression fix for drivers using block layer tagging when
-> not using blk-mq introduced in the blk-mq series, and the other
-> fixes a potential buffer overrun in the iscsi initiator.
-> 
-> Updates of the for-3.18 trees will follow soon.
+Similar to ARM, AArch64 is generating $x and $d syms... which isn't
+terribly helpful when looking at %pF output and the like. Filter those
+out in kallsyms, modpost and when looking at module symbols.
 
-core-for-3.17 has grown another fix from Daniel for bidi support.
+Seems simplest since none of these check EM_ARM anyway, to just add it
+to the strchr used, rather than trying to make things overly
+complicated.
 
-core-for-3.18 has got the autopm fix to balance the calls and thus
-	handle LUNs without attached ULD
+initcall_debug improves:
+dmesg_before.txt: initcall $x+0x0/0x154 [sg] returned 0 after 26331 usecs
+dmesg_after.txt: initcall init_sg+0x0/0x154 [sg] returned 0 after 15461 usecs
 
-drivers-for-3.18 has the megaraid, mpt and arcmsr updates as well as a
-	bnx fix
+Signed-off-by: Kyle McMartin <kyle@redhat.com>
+
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3388,7 +3388,7 @@ static inline int is_arm_mapping_symbol(const char *str)
+ {
+ 	if (str[0] == '.' && str[1] == 'L')
+ 		return true;
+-	return str[0] == '$' && strchr("atd", str[1])
++	return str[0] == '$' && strchr("axtd", str[1])
+ 	       && (str[2] == '\0' || str[2] == '.');
+ }
+ 
+--- a/scripts/kallsyms.c
++++ b/scripts/kallsyms.c
+@@ -84,7 +84,7 @@ static void usage(void)
+  */
+ static inline int is_arm_mapping_symbol(const char *str)
+ {
+-	return str[0] == '$' && strchr("atd", str[1])
++	return str[0] == '$' && strchr("axtd", str[1])
+ 	       && (str[2] == '\0' || str[2] == '.');
+ }
+ 
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1146,7 +1146,7 @@ static Elf_Sym *find_elf_symbol(struct elf_info *elf, Elf64_Sword addr,
+ 
+ static inline int is_arm_mapping_symbol(const char *str)
+ {
+-	return str[0] == '$' && strchr("atd", str[1])
++	return str[0] == '$' && strchr("axtd", str[1])
+ 	       && (str[2] == '\0' || str[2] == '.');
+ }
+ 
