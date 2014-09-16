@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaIPOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 10:05:57 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46453 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752945AbaIPOFz (ORCPT
+	id S1754125AbaIPOJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 10:09:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35167 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169AbaIPOJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 10:05:55 -0400
-Date: Tue, 16 Sep 2014 16:05:51 +0200
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, balbi@ti.com, p.zabel@pengutronix.de,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 07/12] usb: chipidea: add a usb2 driver for ci13xxx
-Message-ID: <20140916140551.GE4869@kwain>
-References: <1410777378-12726-1-git-send-email-antoine.tenart@free-electrons.com>
- <1410777378-12726-8-git-send-email-antoine.tenart@free-electrons.com>
- <20140916005129.GC3379@peterchendt>
- <20140916133841.GA4869@kwain>
+	Tue, 16 Sep 2014 10:09:51 -0400
+Message-ID: <5418449C.7060808@pengutronix.de>
+Date: Tue, 16 Sep 2014 16:09:32 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140916133841.GA4869@kwain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "Christopher R. Baker" <cbaker@rec.ri.cmu.edu>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: can: usb: peak_usb: pcan_usb_core.c:  Cleaning up
+ missing null-terminate in conjunction with strncpy
+References: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1410715898-15904-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 03:38:41PM +0200, Antoine Tenart wrote:
-> On Tue, Sep 16, 2014 at 08:51:30AM +0800, Peter Chen wrote:
-> > On Mon, Sep 15, 2014 at 12:36:13PM +0200, Antoine Tenart wrote:
-> > > Add a USB2 ChipIdea driver for ci13xxx, with optional PHY, clock
-> > > and DMA mask, to support USB2 ChipIdea controllers that don't need
-> > > specific functions.
-> > > 
-> > > Tested on the Marvell Berlin SoCs USB controllers.
-> > > 
-> > > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> > > ---
-> > >  drivers/usb/chipidea/Makefile       |   1 +
-> > >  drivers/usb/chipidea/ci_hdrc_usb2.c | 137 ++++++++++++++++++++++++++++++++++++
-> > >  2 files changed, 138 insertions(+)
-> > >  create mode 100644 drivers/usb/chipidea/ci_hdrc_usb2.c
-> > > 
-> > 
-> > compile error:
-> > 
-> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c: In function 'ci_hdrc_usb2_dt_probe':
-> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c:30:2: error: implicit declaration of function 'of_phy_get' [-Werror=implicit-function-declaration]
-> > /home/peter/work/projects/usb/drivers/usb/chipidea/ci_hdrc_usb2.c:30:16: warning: assignment makes pointer from integer without a cast [enabled by default]
-> 
-> Did you apply the series introducing the support for the generic PHY
-> framework in the USB subsystem first? One of the patches includes
-> 'linux/phy/phy.h' in 'linux/usb/otg.h'. That's why I did not encounter
-> this error.
-> 
-> Anyway, you're right and 'linux/phy/phy.h' should be explicitly included
-> here.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Let me know if you want me to quickly cook up a new version fixing this.
+On 09/14/2014 07:31 PM, Rickard Strandqvist wrote:
+> Replacing strncpy with strlcpy to avoid strings that lacks null termina=
+te.
+>=20
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital=
+=2Ese>
+> ---
+>  drivers/net/can/usb/peak_usb/pcan_usb_core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/net/can/usb/peak_usb/pcan_usb_core.c b/drivers/net=
+/can/usb/peak_usb/pcan_usb_core.c
+> index 644e6ab..d4fe8ac 100644
+> --- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+> +++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+> @@ -830,7 +830,7 @@ static void peak_usb_disconnect(struct usb_interfac=
+e *intf)
+>  		char name[IFNAMSIZ];
+> =20
+>  		dev->state &=3D ~PCAN_USB_STATE_CONNECTED;
+> -		strncpy(name, netdev->name, IFNAMSIZ);
+> +		strlcpy(name, netdev->name, IFNAMSIZ);
+> =20
+>  		unregister_netdev(netdev);
+>  		free_candev(netdev);
+>=20
 
-Antoine
+What about removing the dev_info(), the name array and the str?cpy()
+completely?
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlQYRJwACgkQjTAFq1RaXHNFVgCfTa+BDlMUpQkqqLbrm+yAxnKg
+0xEAn0XC/whypEq/c1aDdTX0NPFJY/Vu
+=yOFv
+-----END PGP SIGNATURE-----
+
+--uAgvDBGiaJiASEu6KDPo4wcV8jQiumRKC--
