@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053AbaIPFcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 01:32:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53234 "EHLO mx2.suse.de"
+	id S1753166AbaIPFcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 01:32:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53244 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbaIPFca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 01:32:30 -0400
+	id S1753028AbaIPFcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 01:32:39 -0400
 From: NeilBrown <neilb@suse.de>
 To: Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Trond Myklebust <trond.myklebust@primarydata.com>,
         Ingo Molnar <mingo@redhat.com>
-Date: Tue, 16 Sep 2014 15:31:34 +1000
-Subject: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
+Date: Tue, 16 Sep 2014 15:31:35 +1000
+Subject: [PATCH 1/4] SCHED: add some "wait..on_bit...timeout()" interfaces.
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jeff Layton <jeff.layton@primarydata.com>
-Message-ID: <20140916051911.22257.24658.stgit@notabene.brown>
+Message-ID: <20140916053134.22257.28841.stgit@notabene.brown>
+In-Reply-To: <20140916051911.22257.24658.stgit@notabene.brown>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,67 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because nfs_release_page() submits a 'COMMIT' nfs request and waits
-for it to complete, and does this during memory reclaim, it is
-susceptible to deadlocks if memory allocation happens anywhere in
-sending the COMMIT message.  If the NFS server is on the same host
-(i.e. loop-back NFS), then any memory allocations in the NFS server
-can also cause deadlocks.
+In commit c1221321b7c25b53204447cff9949a6d5a7ddddc
+   sched: Allow wait_on_bit_action() functions to support a timeout
 
-nfs_release_page() already has some code to avoid deadlocks in some
-circumstances, but these are not sufficient for loopback NFS.
+I suggested that a "wait_on_bit_timeout()" interface would not meet my
+need.  This isn't true - I was just over-engineering.
 
-This patch set changes the approach to deadlock avoidance.  Rather
-than detecting cases that could deadlock and avoiding the COMMIT, it
-always tries the COMMIT, but only waits a short time (1 second).
-This avoid any deadlock possibility at the expense of not waiting
-longer than 1 second even if no deadlock is pending.
+Including a 'private' field in wait_bit_key instead of a focused
+"timeout" field was just premature generalization.  If some other
+use is ever found, it can be generalized or added later.
 
-nfs_release_page() does not *need* to wait longer - all callers that
-matter handle a failure gracefully - they move on to other pages.
+So this patch renames "private" to "timeout" with a meaning "stop
+waiting when "jiffies" reaches or passes "timeout",
+and adds two of the many possible wait..bit..timeout() interfaces:
 
-This set:
- - adds some "_timeout()" functions to "wait_on_bit".  Only a
-   wait_on_page version is actually used.
- - exports page wake_up support.  NFS knows that the COMMIT is complete
-   when PG_private is clear.  So nfs_release_page will use
-   wait_on_page_bit_killable_timeout to wait for the bit to clear,
-   and needs access to wake_up_page()
- - changes nfs_release_page() to use
-    wait_on_page_bit_killable_timeout()
- - removes the other deadlock avoidance mechanisms from
-   nfs_release_page, so that PF_FSTRANS is again only used
-   by XFS.
+wait_on_page_bit_killable_timeout(), which is the one I want to use,
+and out_of_line_wait_on_bit_timeout() which is a reasonably general
+example.  Others can be added as needed.
 
-As such, it needs buy-in from sched people, mm people, and NFS people.
-Assuming I get that buy-in, suggests for how these patches can flow
-into mainline would be appreciated ... I daren't hope they can all go
-in through one tree....
-
-Thanks,
-NeilBrown
-
-
+Signed-off-by: NeilBrown <neilb@suse.de>
 ---
+ include/linux/pagemap.h |    2 ++
+ include/linux/wait.h    |    5 ++++-
+ kernel/sched/wait.c     |   36 ++++++++++++++++++++++++++++++++++++
+ mm/filemap.c            |   13 +++++++++++++
+ 4 files changed, 55 insertions(+), 1 deletion(-)
 
-NeilBrown (4):
-      SCHED: add some "wait..on_bit...timeout()" interfaces.
-      MM: export page_wakeup functions
-      NFS: avoid deadlocks with loop-back mounted NFS filesystems.
-      NFS/SUNRPC: Remove other deadlock-avoidance mechanisms in nfs_release_page()
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 3df8c7db7a4e..87f9e4230d3a 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -502,6 +502,8 @@ static inline int lock_page_or_retry(struct page *page, struct mm_struct *mm,
+ extern void wait_on_page_bit(struct page *page, int bit_nr);
+ 
+ extern int wait_on_page_bit_killable(struct page *page, int bit_nr);
++extern int wait_on_page_bit_killable_timeout(struct page *page,
++					     int bit_nr, unsigned long timeout);
+ 
+ static inline int wait_on_page_locked_killable(struct page *page)
+ {
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 6fb1ba5f9b2f..80115bf88671 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -25,7 +25,7 @@ struct wait_bit_key {
+ 	void			*flags;
+ 	int			bit_nr;
+ #define WAIT_ATOMIC_T_BIT_NR	-1
+-	unsigned long		private;
++	unsigned long		timeout;
+ };
+ 
+ struct wait_bit_queue {
+@@ -154,6 +154,7 @@ int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, wait_bit_ac
+ void wake_up_bit(void *, int);
+ void wake_up_atomic_t(atomic_t *);
+ int out_of_line_wait_on_bit(void *, int, wait_bit_action_f *, unsigned);
++int out_of_line_wait_on_bit_timeout(void *, int, wait_bit_action_f *, unsigned, unsigned long);
+ int out_of_line_wait_on_bit_lock(void *, int, wait_bit_action_f *, unsigned);
+ int out_of_line_wait_on_atomic_t(atomic_t *, int (*)(atomic_t *), unsigned);
+ wait_queue_head_t *bit_waitqueue(void *, int);
+@@ -859,6 +860,8 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
+ 
+ extern int bit_wait(struct wait_bit_key *);
+ extern int bit_wait_io(struct wait_bit_key *);
++extern int bit_wait_timeout(struct wait_bit_key *);
++extern int bit_wait_io_timeout(struct wait_bit_key *);
+ 
+ /**
+  * wait_on_bit - wait for a bit to be cleared
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index 15cab1a4f84e..380678b3cba4 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -343,6 +343,18 @@ int __sched out_of_line_wait_on_bit(void *word, int bit,
+ }
+ EXPORT_SYMBOL(out_of_line_wait_on_bit);
+ 
++int __sched out_of_line_wait_on_bit_timeout(
++	void *word, int bit, wait_bit_action_f *action,
++	unsigned mode, unsigned long timeout)
++{
++	wait_queue_head_t *wq = bit_waitqueue(word, bit);
++	DEFINE_WAIT_BIT(wait, word, bit);
++
++	wait.key.timeout = jiffies + timeout;
++	return __wait_on_bit(wq, &wait, action, mode);
++}
++EXPORT_SYMBOL(out_of_line_wait_on_bit_timeout);
++
+ int __sched
+ __wait_on_bit_lock(wait_queue_head_t *wq, struct wait_bit_queue *q,
+ 			wait_bit_action_f *action, unsigned mode)
+@@ -520,3 +532,27 @@ __sched int bit_wait_io(struct wait_bit_key *word)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(bit_wait_io);
++
++__sched int bit_wait_timeout(struct wait_bit_key *word)
++{
++	unsigned long now = ACCESS_ONCE(jiffies);
++	if (signal_pending_state(current->state, current))
++		return 1;
++	if (time_after_eq(now, word->timeout))
++		return -EAGAIN;
++	schedule_timeout(word->timeout - now);
++	return 0;
++}
++EXPORT_SYMBOL(bit_wait_timeout);
++
++__sched int bit_wait_io_timeout(struct wait_bit_key *word)
++{
++	unsigned long now = ACCESS_ONCE(jiffies);
++	if (signal_pending_state(current->state, current))
++		return 1;
++	if (time_after_eq(now, word->timeout))
++		return -EAGAIN;
++	io_schedule_timeout(word->timeout - now);
++	return 0;
++}
++EXPORT_SYMBOL(bit_wait_io_timeout);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 90effcdf948d..4a19c084bdb1 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -703,6 +703,19 @@ int wait_on_page_bit_killable(struct page *page, int bit_nr)
+ 			     bit_wait_io, TASK_KILLABLE);
+ }
+ 
++int wait_on_page_bit_killable_timeout(struct page *page,
++				       int bit_nr, unsigned long timeout)
++{
++	DEFINE_WAIT_BIT(wait, &page->flags, bit_nr);
++
++	wait.key.timeout = jiffies + timeout;
++	if (!test_bit(bit_nr, &page->flags))
++		return 0;
++	return __wait_on_bit(page_waitqueue(page), &wait,
++			     bit_wait_io_timeout, TASK_KILLABLE);
++}
++EXPORT_SYMBOL(wait_on_page_bit_killable_timeout);
++
+ /**
+  * add_page_wait_queue - Add an arbitrary waiter to a page's wait queue
+  * @page: Page defining the wait queue of interest
 
-
- fs/nfs/file.c                   |   22 ++++++++++++----------
- fs/nfs/write.c                  |    2 ++
- include/linux/pagemap.h         |   12 ++++++++++--
- include/linux/wait.h            |    5 ++++-
- kernel/sched/wait.c             |   36 ++++++++++++++++++++++++++++++++++++
- mm/filemap.c                    |   21 +++++++++++++++------
- net/sunrpc/sched.c              |    2 --
- net/sunrpc/xprtrdma/transport.c |    2 --
- net/sunrpc/xprtsock.c           |   10 ----------
- 9 files changed, 79 insertions(+), 33 deletions(-)
-
--- 
-Signature
 
