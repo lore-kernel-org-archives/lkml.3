@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941AbaIPLrq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:47:46 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:52269 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaIPLro (ORCPT
+	id S1753998AbaIPLsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:48:10 -0400
+Received: from smtp105.ord1c.emailsrvr.com ([108.166.43.105]:36118 "EHLO
+	smtp105.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753944AbaIPLsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:47:44 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 16 Sep 2014 07:47:41 -0400
-To: NeilBrown <neilb@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+	Tue, 16 Sep 2014 07:48:07 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        davidb@codeaurora.org, afaerber@suse.de
+Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Jeff Layton <jeff.layton@primarydata.com>
-Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
-Message-ID: <20140916074741.1de870c5@tlielax.poochiereds.net>
-In-Reply-To: <20140916051911.22257.24658.stgit@notabene.brown>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH] ARM: dts: qcom: Add I2C dt node for MSM8974 and DB8074 board
+Date: Tue, 16 Sep 2014 17:15:38 +0530
+Message-Id: <1410867938-6254-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Sep 2014 15:31:34 +1000
-NeilBrown <neilb@suse.de> wrote:
+Add support for i2c controller on the DB8074 board.
+It also adds necessary DT support for i2c eeprom which is present on
+DB8074 board.
 
-> Because nfs_release_page() submits a 'COMMIT' nfs request and waits
-> for it to complete, and does this during memory reclaim, it is
-> susceptible to deadlocks if memory allocation happens anywhere in
-> sending the COMMIT message.  If the NFS server is on the same host
-> (i.e. loop-back NFS), then any memory allocations in the NFS server
-> can also cause deadlocks.
-> 
-> nfs_release_page() already has some code to avoid deadlocks in some
-> circumstances, but these are not sufficient for loopback NFS.
-> 
-> This patch set changes the approach to deadlock avoidance.  Rather
-> than detecting cases that could deadlock and avoiding the COMMIT, it
-> always tries the COMMIT, but only waits a short time (1 second).
-> This avoid any deadlock possibility at the expense of not waiting
-> longer than 1 second even if no deadlock is pending.
-> 
-> nfs_release_page() does not *need* to wait longer - all callers that
-> matter handle a failure gracefully - they move on to other pages.
-> 
-> This set:
->  - adds some "_timeout()" functions to "wait_on_bit".  Only a
->    wait_on_page version is actually used.
->  - exports page wake_up support.  NFS knows that the COMMIT is complete
->    when PG_private is clear.  So nfs_release_page will use
->    wait_on_page_bit_killable_timeout to wait for the bit to clear,
->    and needs access to wake_up_page()
->  - changes nfs_release_page() to use
->     wait_on_page_bit_killable_timeout()
->  - removes the other deadlock avoidance mechanisms from
->    nfs_release_page, so that PF_FSTRANS is again only used
->    by XFS.
-> 
-> As such, it needs buy-in from sched people, mm people, and NFS people.
-> Assuming I get that buy-in, suggests for how these patches can flow
-> into mainline would be appreciated ... I daren't hope they can all go
-> in through one tree....
-> 
-> Thanks,
-> NeilBrown
-> 
-> 
-> ---
-> 
-> NeilBrown (4):
->       SCHED: add some "wait..on_bit...timeout()" interfaces.
->       MM: export page_wakeup functions
->       NFS: avoid deadlocks with loop-back mounted NFS filesystems.
->       NFS/SUNRPC: Remove other deadlock-avoidance mechanisms in nfs_release_page()
-> 
-> 
->  fs/nfs/file.c                   |   22 ++++++++++++----------
->  fs/nfs/write.c                  |    2 ++
->  include/linux/pagemap.h         |   12 ++++++++++--
->  include/linux/wait.h            |    5 ++++-
->  kernel/sched/wait.c             |   36 ++++++++++++++++++++++++++++++++++++
->  mm/filemap.c                    |   21 +++++++++++++++------
->  net/sunrpc/sched.c              |    2 --
->  net/sunrpc/xprtrdma/transport.c |    2 --
->  net/sunrpc/xprtsock.c           |   10 ----------
->  9 files changed, 79 insertions(+), 33 deletions(-)
-> 
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+ arch/arm/boot/dts/qcom-apq8074-dragonboard.dts |   21 +++++++++++++++++++++
+ arch/arm/boot/dts/qcom-msm8974.dtsi            |   15 +++++++++++++--
+ 2 files changed, 34 insertions(+), 2 deletions(-)
 
-On balance, I like the NFS parts of this set -- particular the fact
-that we get rid of the PF_FSTRANS abortion, and simplify the code quite
-a bit. My only real concern is that you could end up stalling in this
-code in situations where you really can't release the page.
-
-For instance, suppose you're trying to reconnect the socket to the
-server (a'la xs_tcp_setup_socket). The VM is low on memory and tries to
-release a page that needs that socket in order to issue a COMMIT. That
-situation is going to end up with the page unable to be released, but
-you'll still wait 1s before returning. If the VM tries to release a
-bunch of pages like this, then those waits could add up.
-
-Also, we call things like invalidate_complete_page2 from the cache
-invalidation code. Will we end up with potential problems now that we
-have a stronger possibility that a page might not be freeable when it
-calls releasepage? (no idea on this -- I'm just spitballing)
-
+diff --git a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+index b4dfb01..4737049 100644
+--- a/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
++++ b/arch/arm/boot/dts/qcom-apq8074-dragonboard.dts
+@@ -22,6 +22,13 @@
+ 
+ 
+ 		pinctrl@fd510000 {
++			i2c11_pins: i2c11 {
++				mux {
++					pins = "gpio83", "gpio84";
++					function = "blsp_i2c11";
++				};
++			};
++
+ 			spi8_default: spi8_default {
+ 				mosi {
+ 					pins = "gpio45";
+@@ -41,5 +48,19 @@
+ 				};
+ 			};
+ 		};
++
++		i2c@f9967000 {
++			status = "okay";
++			clock-frequency = <200000>;
++			pinctrl-0 = <&i2c11_pins>;
++			pinctrl-names = "default";
++
++			eeprom: eeprom@52 {
++				compatible = "atmel,24c128";
++				reg = <0x52>;
++				pagesize = <32>;
++				read-only;
++			};
++		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/qcom-msm8974.dtsi b/arch/arm/boot/dts/qcom-msm8974.dtsi
+index 69dca2a..e265ec1 100644
+--- a/arch/arm/boot/dts/qcom-msm8974.dtsi
++++ b/arch/arm/boot/dts/qcom-msm8974.dtsi
+@@ -1,8 +1,8 @@
+ /dts-v1/;
+ 
+-#include "skeleton.dtsi"
+-
++#include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/clock/qcom,gcc-msm8974.h>
++#include "skeleton.dtsi"
+ 
+ / {
+ 	model = "Qualcomm MSM8974";
+@@ -236,5 +236,16 @@
+ 			#interrupt-cells = <2>;
+ 			interrupts = <0 208 0>;
+ 		};
++
++		blsp_i2c11: i2c@f9967000 {
++			status = "disable";
++			compatible = "qcom,i2c-qup-v2.1.1";
++			reg = <0xf9967000 0x1000>;
++			interrupts = <0 105 IRQ_TYPE_NONE>;
++			clocks = <&gcc GCC_BLSP2_QUP5_I2C_APPS_CLK>, <&gcc GCC_BLSP2_AHB_CLK>;
++			clock-names = "core", "iface";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
+ 	};
+ };
 -- 
-Jeff Layton <jlayton@primarydata.com>
+1.7.9.5
+
