@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaIPTRP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 15:17:15 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57271 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840AbaIPTRN (ORCPT
+	id S1755139AbaIPTRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 15:17:47 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:43453 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105AbaIPTRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 15:17:13 -0400
-Date: Tue, 16 Sep 2014 15:17:11 -0400 (EDT)
-Message-Id: <20140916.151711.203074982751372582.davem@davemloft.net>
-To: ast@plumgrid.com
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, luto@amacapital.net,
-        dborkman@redhat.com, hannes@stressinduktion.org, chema@google.com,
-        edumazet@google.com, a.p.zijlstra@chello.nl, pablo@netfilter.org,
-        hpa@zytor.com, akpm@linux-foundation.org, keescook@chromium.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v12 net-next 04/11] bpf: expand BPF syscall with
- program load/unload
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1410808721-27493-5-git-send-email-ast@plumgrid.com>
-References: <1410808721-27493-1-git-send-email-ast@plumgrid.com>
-	<1410808721-27493-5-git-send-email-ast@plumgrid.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 16 Sep 2014 12:17:13 -0700 (PDT)
+	Tue, 16 Sep 2014 15:17:45 -0400
+Date: Tue, 16 Sep 2014 21:17:40 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] printk: git rid of [sched_delayed] message for
+ printk_deferred
+Message-ID: <20140916191740.GA24243@x4>
+References: <20140914050905.GA296@x4>
+ <20140914055450.GB296@x4>
+ <CAMuHMdUmqvN3GZzfjjHc5W2Dxgx2b0gzVHFUR8P8yUs5iFt_tA@mail.gmail.com>
+ <20140915163740.GA12408@x4>
+ <20140916105547.GA1205@quack.suse.cz>
+ <20140916144252.GB32118@x4>
+ <20140916111331.14303381@gandalf.local.home>
+ <20140916152046.GC32118@x4>
+ <20140916151415.4c646cbc@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140916151415.4c646cbc@gandalf.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Mon, 15 Sep 2014 12:18:34 -0700
+On 2014.09.16 at 15:14 -0400, Steven Rostedt wrote:
+> On Tue, 16 Sep 2014 17:20:46 +0200
+> Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+> 
+> > On 2014.09.16 at 11:13 -0400, Steven Rostedt wrote
+> > I'll leave it to you. This is just a cosmetic issue, so there's no need
+> > to fix this immediately.
+> > 
+> 
+> Actually the fix is much simpler (I had to wait for the drugs to wear
+> off before I noticed this ;-):
 
-> @@ -121,6 +132,21 @@ union bpf_attr {
->  			void __user *next_key;
->  		};
->  	};
-> +
-> +	struct { /* anonymous struct used by BPF_PROG_LOAD command */
-> +		__u32 prog_type;	/* one of enum bpf_prog_type */
-> +		__u32 insn_cnt;
-> +		const struct bpf_insn __user *insns;
-> +		const char __user *license;
-> +	};
-> +};
+Well, the list is not complete:
 
-Again, these need syscall compat handling.  You may want to redesign
-the types so that perhaps no compat layer translations will be needed.
+ linux % git grep printk_deferred
+...
+kernel/time/clockevents.c:              printk_deferred(KERN_WARNING
+kernel/time/clockevents.c:      printk_deferred(KERN_WARNING
+kernel/time/ntp.c:              printk_deferred(KERN_ERR
+kernel/time/ntp.c:              printk_deferred(KERN_WARNING
+kernel/time/ntp.c:              printk_deferred(KERN_WARNING
+kernel/time/ntp.c:              printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
+kernel/time/timekeeping.c:              printk_deferred(KERN_WARNING
+
+-- 
+Markus
