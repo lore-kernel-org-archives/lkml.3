@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343AbaIPITZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 04:19:25 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:52199 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752144AbaIPITW (ORCPT
+	id S1753245AbaIPIbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 04:31:17 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:55803 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741AbaIPIbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 04:19:22 -0400
+	Tue, 16 Sep 2014 04:31:15 -0400
+Date: Tue, 16 Sep 2014 10:31:09 +0200
+From: Michele Curti <michele.curti@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: x86@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/vdso: use NULL instead of zero
+Message-ID: <20140916083109.GA802@powerline.azcom-win.it>
+References: <20140915143939.GA1953@powerline.azcom-win.it>
+ <20140916065732.GA19849@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <5411CA4F.7040006@parallels.com>
-References: <20140821160304.11005.15166.stgit@localhost.localdomain>
-	<20140821160916.11005.37344.stgit@localhost.localdomain>
-	<CAJfpegsWoaqR1vQRq8QpYdwUX9Ace9XTe77eOkOUy2VyHUeEdQ@mail.gmail.com>
-	<5411CA4F.7040006@parallels.com>
-Date: Tue, 16 Sep 2014 10:19:21 +0200
-Message-ID: <CAJfpegs3v9EVzoPMgX9_JV+-Y3qy7oWD8tceSi+tnmo=_b=a7A@mail.gmail.com>
-Subject: Re: [PATCH 5/6] fuse: fix synchronous case of fuse_file_put()
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Anand Avati <avati@gluster.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140916065732.GA19849@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 11, 2014 at 6:14 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
 
-> I really need your help to proceed with this patch. Could you please explain
-> what those places are where we should allow interruption.
->
-> BTW, as for "just an optimization", I've recently noticed that __fput()
-> calls locks_remove_file(). So guarantees provided by the patch-set are on
-> the same level as flock(2) behaviour.
+x86/vdso: use NULL instead of zero in patch_vdso32()
 
-SIGKILL trumps that.  At least that's what I think, and that's what
-NFS currently does as well, AFAICS.
+Signed-off-by: Michele Curti <michele.curti@gmail.com>
 
->
->>
->> Also fuse really should distinguish fatal and non-fatal interruptions
->> and handle them accordingly...
->
->
-> And elaborate on this concern, please.
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 1ad1026..a4647bc 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -34,7 +34,7 @@ static unsigned vdsox32_size;
+ void __init patch_vdso32(void *vdso, size_t len)
+ {
+ 	Elf32_Ehdr *hdr = vdso;
+-	Elf32_Shdr *sechdrs, *alt_sec = 0;
++	Elf32_Shdr *sechdrs, *alt_sec = NULL;
+ 	char *secstrings;
+ 	void *alt_data;
+ 	int i;
+-- 
+2.1.0
 
-Requests have two states where they stay for any significant amount of
-time: PENDING (queued to userspace) and SENT (in userspace).
+Regards,
+Michele
 
-Currently we do the following for interrupted requests:
-
-PENDING:
-   - non-fatal signal: do nothing
-   - fatal signal: dequeue and return -EINTR, unless force is set
-
-SENT:
-   - send INTERRUPT request to userspace
-
-This is fine, but fatal interrupts should be able to abort SENT and
-forced requests as well without having to wait for the userspace
-reply.  This is what I was referring to.
-
-This would not be difficult, were it not for i_mutex and
-s_vfs_rename_mutex being held by some operations.   For correctness,
-we can't release these while a reply is not received, since the
-locking expecations of the userspace filesystem would not be met.
-This can be solved by adding shadow locks to fuse that we hold onto
-even after the request is interrupted.
-
-Thanks,
-Miklos
