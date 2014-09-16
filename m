@@ -1,126 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaIPQzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 12:55:35 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:63836 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031AbaIPQzd (ORCPT
+	id S1754806AbaIPQzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 12:55:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43203 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbaIPQzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 12:55:33 -0400
+	Tue, 16 Sep 2014 12:55:49 -0400
+Message-ID: <54186B89.8050505@linutronix.de>
+Date: Tue, 16 Sep 2014 18:55:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<54184078.4070505@redhat.com>
-	<CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
-Date: Tue, 16 Sep 2014 09:55:32 -0700
-Message-ID: <CAJu=L597w-DNGV_7t9k36eh9R=JgnkUHFKwXUL2WVaMmEW5FNw@mail.gmail.com>
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, balbi@ti.com, gregkh@linuxfoundation.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
+ for AM33xx
+References: <1410377411-26656-1-git-send-email-bigeasy@linutronix.de> <1410377411-26656-10-git-send-email-bigeasy@linutronix.de> <20140911111721.GB17476@xps8300> <54118AAB.2010205@linutronix.de> <5411967A.6090406@hurleysoftware.com> <54119AAA.9080907@linutronix.de> <5411B33F.10405@hurleysoftware.com> <54171B85.5060209@linutronix.de>
+In-Reply-To: <54171B85.5060209@linutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 9:52 AM, Andres Lagar-Cavilla
-<andreslc@google.com> wrote:
+On 09/15/2014 07:01 PM, Sebastian Andrzej Siewior wrote:
+> On 09/11/2014 04:35 PM, Peter Hurley wrote:
+>> I do need to find out if omap hardware sets UART_MSR_DCTS when auto CTS
+>> is on. Would you mind running the debug patch below with HW flow control on?
+> 
+> I didn't forget about this. However I told minicom to use hardware flow
+> control (and I see the driver set the HW bit) but I haven't seen that
+> uart_handle_cts_change() has been invoked at all. I'm going to check
+> two other boards and report then.
 
-Apologies to all. Resend as lists rejected my gmail-formatted version.
-Now on plain text. Won't happen again.
+No, I don't get into this at all function. So I connected my am335x-evm
+with beagle board xm because both of them have an old fashion UART
+connector (instead those uart-to-usb). Both configured with HW-Flow and
+I haven't seen the function invoked but I saw "port->icount.overrun"
+being incremented. This shouldn't happen. So I am a little puzzled here…
 
-> On Tue, Sep 16, 2014 at 6:51 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
->>
->> Il 15/09/2014 22:11, Andres Lagar-Cavilla ha scritto:
->> > +     if (!locked) {
->> > +             BUG_ON(npages != -EBUSY);
->>
->> VM_BUG_ON perhaps?
->
-> Sure.
->
->>
->> > @@ -1177,9 +1210,15 @@ static int hva_to_pfn_slow(unsigned long addr,
->> > bool *async, bool write_fault,
->> >               npages = get_user_page_nowait(current, current->mm,
->> >                                             addr, write_fault, page);
->> >               up_read(&current->mm->mmap_sem);
->> > -     } else
->> > -             npages = get_user_pages_fast(addr, 1, write_fault,
->> > -                                          page);
->> > +     } else {
->> > +             /*
->> > +              * By now we have tried gup_fast, and possible async_pf,
->> > and we
->> > +              * are certainly not atomic. Time to retry the gup,
->> > allowing
->> > +              * mmap semaphore to be relinquished in the case of IO.
->> > +              */
->> > +             npages = kvm_get_user_page_retry(current, current->mm,
->> > addr,
->> > +                                              write_fault, page);
->>
->> This is a separate logical change.  Was this:
->>
->>         down_read(&mm->mmap_sem);
->>         npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
->>         up_read(&mm->mmap_sem);
->>
->> the intention rather than get_user_pages_fast?
->
->
-> Nope. The intention was to pass FAULT_FLAG_RETRY to the vma fault handler
-> (without _NOWAIT). And once you do that, if you come back without holding
-> the mmap sem, you need to call yet again.
->
-> By that point in the call chain I felt comfortable dropping the _fast. All
-> paths that get there have already tried _fast (and some have tried _NOWAIT).
->
->>
->> I think a first patch should introduce kvm_get_user_page_retry ("Retry a
->> fault after a gup with FOLL_NOWAIT.") and the second would add
->> FOLL_TRIED ("This properly relinquishes mmap semaphore if the
->> filemap/swap has to wait on page lock (and retries the gup to completion
->> after that").
->
->
-> That's not what FOLL_TRIED does. The relinquishing of mmap semaphore is done
-> by this patch minus the FOLL_TRIED bits. FOLL_TRIED will let the fault
-> handler (e.g. filemap) know that we've been there and waited on the IO
-> already, so in the common case we won't need to redo the IO.
->
-> Have a look at how FAULT_FLAG_TRIED is used in e.g. arch/x86/mm/fault.c.
->
->>
->>
->> Apart from this, the patch looks good.  The mm/ parts are minimal, so I
->> think it's best to merge it through the KVM tree with someone's Acked-by.
->
->
-> Thanks!
-> Andres
->
->>
->>
->> Paolo
->
->
->
->
-> --
-> Andres Lagar-Cavilla | Google Cloud Platform | andreslc@google.com |
-> 647-778-4380
+>> Regards,
+>> Peter Hurley
+> 
 
-
-
--- 
-Andres Lagar-Cavilla | Google Cloud Platform | andreslc@google.com |
-647-778-4380
+Sebastian
