@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbaIPSBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:01:20 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:40531 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405AbaIPSBS (ORCPT
+	id S1754680AbaIPSEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:04:36 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:57605 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751013AbaIPSEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:01:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-Date: Tue, 16 Sep 2014 20:01:17 +0200
-Message-ID: <CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Sep 2014 14:04:35 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkMOAF97GFRXQAMM/2dsb2JhbABggw2BKrQQBQFvmxiBFBcBeYRgI4EaN4hCAbw3hXyIa2QdhDUFnQqVRYFpHIFbOy+BBoFEAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: tgraf@suug.ch, davem@davemloft.net, Fabian Frederick <fabf@skynet.be>
+Subject: [PATCH 1/1] lib: rhashtable: remove second linux/log2.h inclusion
+Date: Tue, 16 Sep 2014 20:04:18 +0200
+Message-Id: <1410890658-31144-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 September 2014 03:39,  <micky_ching@realsil.com.cn> wrote:
-> From: Roger Tseng <rogerable@realtek.com>
->
-> Some platform have both UEFI driver and MFD/mmc driver, if entering
-> linux while card in the slot, the card power is already on, and rtsx-mmc
-> driver have no chance to make card power off. This will lead UHSI card
-> failed to enter UHSI mode.
->
-> It is hard to control the UEFI driver leaving state, so we power off the
-> card power during probe.
->
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mmc/host/rtsx_pci_sdmmc.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> index dfde4a2..57b0796 100644
-> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> @@ -1341,8 +1341,13 @@ static int rtsx_pci_sdmmc_drv_probe(struct platform_device *pdev)
->         host->pcr = pcr;
->         host->mmc = mmc;
->         host->pdev = pdev;
-> -       host->power_state = SDMMC_POWER_OFF;
->         INIT_WORK(&host->work, sd_request);
-> +       sd_power_off(host);
-> +       /*
-> +        * ref: SD spec 3.01: 6.4.1.2 Power On or Power Cycle
-> +        */
-> +       usleep_range(1000, 2000);
-> +
+linux/log2.h was included twice.
 
-This won't work in cases were you power off eMMC cards, unless you can
-do a full power cycle - cut both VCC and VCCQ. Can you?
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ lib/rhashtable.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-There are also another option you might want to use,
-MMC_CAP2_NO_PRESCAN_POWERUP. But again, it must only be used for those
-hosts that you are able to do a full power cycle for.
+diff --git a/lib/rhashtable.c b/lib/rhashtable.c
+index a2c7881..7b36e4d 100644
+--- a/lib/rhashtable.c
++++ b/lib/rhashtable.c
+@@ -23,7 +23,6 @@
+ #include <linux/hash.h>
+ #include <linux/random.h>
+ #include <linux/rhashtable.h>
+-#include <linux/log2.h>
+ 
+ #define HASH_DEFAULT_SIZE	64UL
+ #define HASH_MIN_SIZE		4UL
+-- 
+2.1.0
 
-Kind regards
-Uffe
-
->         platform_set_drvdata(pdev, host);
->         pcr->slots[RTSX_SD_CARD].p_dev = pdev;
->         pcr->slots[RTSX_SD_CARD].card_event = rtsx_pci_sdmmc_card_event;
-> --
-> 1.7.9.5
->
