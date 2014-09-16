@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999AbaIPSmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 14:42:20 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:61482 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843AbaIPSmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 14:42:18 -0400
+	id S1755041AbaIPSmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 14:42:23 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:36339 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755008AbaIPSmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 14:42:21 -0400
+Message-ID: <5418848B.3000807@osg.samsung.com>
+Date: Tue, 16 Sep 2014 12:42:19 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <54188179.7010705@redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<54184078.4070505@redhat.com>
-	<CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
-	<54188179.7010705@redhat.com>
-Date: Tue, 16 Sep 2014 11:42:17 -0700
-Message-ID: <CAJu=L58z-=_KkZXpEiPjDUup8GpH7079HH39csmvgUxGkvXy0A@mail.gmail.com>
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/71] 3.10.55-stable review
+References: <20140915192638.702282534@linuxfoundation.org>
+In-Reply-To: <20140915192638.702282534@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 11:29 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Il 16/09/2014 18:52, Andres Lagar-Cavilla ha scritto:
->> Was this:
->>
->>         down_read(&mm->mmap_sem);
->>         npages = get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
->>         up_read(&mm->mmap_sem);
->>
->> the intention rather than get_user_pages_fast?
->
-> I meant the intention of the original author, not yours.
+On 09/15/2014 01:25 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.55 release.
+> There are 71 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Wed Sep 17 19:26:27 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.55-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Yes, in all likelihood. I hope!
+Compiled and booted on my test system. No dmesg regressions.
 
->
->> By that point in the call chain I felt comfortable dropping the _fast.
->> All paths that get there have already tried _fast (and some have tried
->> _NOWAIT).
->
-> Yes, understood.
->
->>     I think a first patch should introduce kvm_get_user_page_retry ("Retry a
->>     fault after a gup with FOLL_NOWAIT.") and the second would add
->>     FOLL_TRIED ("This properly relinquishes mmap semaphore if the
->>     filemap/swap has to wait on page lock (and retries the gup to completion
->>     after that").
->>
->> That's not what FOLL_TRIED does. The relinquishing of mmap semaphore is
->> done by this patch minus the FOLL_TRIED bits. FOLL_TRIED will let the
->> fault handler (e.g. filemap) know that we've been there and waited on
->> the IO already, so in the common case we won't need to redo the IO.
->
-> Yes, that's not what FOLL_TRIED does.  But it's the difference between
-> get_user_pages and kvm_get_user_page_retry, right?
+-- Shuah
 
-Unfortunately get_user_pages does not expose the param (int
-*nonblocking) that __gup will use to set FAULT_FLAG_ALLOW_RETRY. So
-that's one difference. The second difference is that kvm_gup_retry
-will call two times if necessary (the second without _RETRY but with
-_TRIED).
 
-Thanks
-Andres
->
-> Paolo
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
