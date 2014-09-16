@@ -1,146 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760684AbaIPAXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Sep 2014 20:23:46 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:37076 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757093AbaIPAXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Sep 2014 20:23:43 -0400
-Date: Tue, 16 Sep 2014 09:23:33 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mark Brown <broonie@linaro.org>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Nishanth Menon <nm@ti.com>, Rob Herring <robh@kernel.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PM / OPP: Remove ARCH_HAS_OPP completely
-Message-ID: <20140916002333.GI9847@verge.net.au>
-References: <1406551632.5397.17.camel@x220>
- <1410511111.31130.4.camel@x220>
- <20140916000916.GD9847@verge.net.au>
+	id S1760704AbaIPAYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Sep 2014 20:24:40 -0400
+Received: from ozlabs.org ([103.22.144.67]:42904 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754935AbaIPAYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Sep 2014 20:24:38 -0400
+Date: Tue, 16 Sep 2014 10:24:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anish Bhatt <anish@chelsio.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-ID: <20140916102428.5d1a3367@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140916000916.GD9847@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/xpxdLrFlrwCQlt5dXD5+dnh"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 09:09:17AM +0900, Simon Horman wrote:
-> On Fri, Sep 12, 2014 at 10:38:31AM +0200, Paul Bolle wrote:
-> > The Kconfig symbol ARCH_HAS_OPP became redundant in v3.16: commit
-> > 049d595a4db3 ("PM / OPP: Make OPP invisible to users in Kconfig")
-> > removed the only dependency that used it. Setting it had no effect
-> > anymore.
-> > 
-> > So commit 78c5e0bb145d ("PM / OPP: Remove ARCH_HAS_OPP") removed it. For
-> > some reason that commit did not remove all select statements for that
-> > symbol. These statements are useless. Remove them too.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Done on top of next-20140912. Tested with git grep only!
-> 
-> Hi Paul,
-> 
-> could you break the shmobile portion out into a separate patch
-> for me to take through my renesas tree?
-> 
-> I am concerned that taking those changes via a different
-> route will result in conflicts as arch/arm/mach-shmobile/Kconfig
-> is often updated.
+--Sig_/xpxdLrFlrwCQlt5dXD5+dnh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Of course the above comment is redundant if Rafael
-has already taken this patch.
+Hi all,
 
-> 
-> >  arch/arm/mach-omap2/Kconfig    | 5 -----
-> >  arch/arm/mach-shmobile/Kconfig | 1 -
-> >  drivers/devfreq/Kconfig        | 1 -
-> >  3 files changed, 7 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-> > index 5b103099626d..f138bd33a463 100644
-> > --- a/arch/arm/mach-omap2/Kconfig
-> > +++ b/arch/arm/mach-omap2/Kconfig
-> > @@ -22,7 +22,6 @@ config ARCH_OMAP4
-> >  	bool "TI OMAP4"
-> >  	depends on ARCH_MULTI_V7
-> >  	select ARCH_OMAP2PLUS
-> > -	select ARCH_HAS_OPP
-> >  	select ARCH_NEEDS_CPU_IDLE_COUPLED if SMP
-> >  	select ARM_CPU_SUSPEND if PM
-> >  	select ARM_ERRATA_720789
-> > @@ -41,7 +40,6 @@ config SOC_OMAP5
-> >  	bool "TI OMAP5"
-> >  	depends on ARCH_MULTI_V7
-> >  	select ARCH_OMAP2PLUS
-> > -	select ARCH_HAS_OPP
-> >  	select ARM_CPU_SUSPEND if PM
-> >  	select ARM_GIC
-> >  	select HAVE_ARM_SCU if SMP
-> > @@ -53,14 +51,12 @@ config SOC_AM33XX
-> >  	bool "TI AM33XX"
-> >  	depends on ARCH_MULTI_V7
-> >  	select ARCH_OMAP2PLUS
-> > -	select ARCH_HAS_OPP
-> >  	select ARM_CPU_SUSPEND if PM
-> >  
-> >  config SOC_AM43XX
-> >  	bool "TI AM43x"
-> >  	depends on ARCH_MULTI_V7
-> >  	select ARCH_OMAP2PLUS
-> > -	select ARCH_HAS_OPP
-> >  	select ARM_GIC
-> >  	select MACH_OMAP_GENERIC
-> >  	select MIGHT_HAVE_CACHE_L2X0
-> > @@ -69,7 +65,6 @@ config SOC_DRA7XX
-> >  	bool "TI DRA7XX"
-> >  	depends on ARCH_MULTI_V7
-> >  	select ARCH_OMAP2PLUS
-> > -	select ARCH_HAS_OPP
-> >  	select ARM_CPU_SUSPEND if PM
-> >  	select ARM_GIC
-> >  	select HAVE_ARM_ARCH_TIMER
-> > diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-> > index 21f457b56c01..f59019dd986e 100644
-> > --- a/arch/arm/mach-shmobile/Kconfig
-> > +++ b/arch/arm/mach-shmobile/Kconfig
-> > @@ -36,7 +36,6 @@ menuconfig ARCH_SHMOBILE_MULTI
-> >  	select NO_IOPORT_MAP
-> >  	select PINCTRL
-> >  	select ARCH_REQUIRE_GPIOLIB
-> > -	select ARCH_HAS_OPP
-> >  
-> >  if ARCH_SHMOBILE_MULTI
-> >  
-> > diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-> > index 3dced0a9eae3..2227e9bf3884 100644
-> > --- a/drivers/devfreq/Kconfig
-> > +++ b/drivers/devfreq/Kconfig
-> > @@ -80,7 +80,6 @@ config ARM_EXYNOS4_BUS_DEVFREQ
-> >  config ARM_EXYNOS5_BUS_DEVFREQ
-> >  	bool "ARM Exynos5250 Bus DEVFREQ Driver"
-> >  	depends on SOC_EXYNOS5250
-> > -	select ARCH_HAS_OPP
-> >  	select DEVFREQ_GOV_SIMPLE_ONDEMAND
-> >  	select PM_OPP
-> >  	help
-> > -- 
-> > 1.9.3
-> > 
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+After merging the net tree, today's linux-next build
+(powerpc ppc64_defconfig) failed like this:
+
+warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
+& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
+ has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
+40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
+unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
+BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
+NET_VENDOR_IBM)
+warning: (SCSI_FC_ATTRS) selects SCSI_NETLINK which has unmet direct depend=
+encies (NET)
+warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
+ && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
+nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (SCSI_FC_ATTRS) selects SCSI_NETLINK which has unmet direct depend=
+encies (NET)
+warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
+40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
+unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
+& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
+ has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
+BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
+NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
+ && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
+nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+drivers/built-in.o: In function `.scsi_nl_rcv_msg':
+scsi_netlink.c:(.text+0x16455c): undefined reference to `.netlink_ack'
+scsi_netlink.c:(.text+0x16456c): undefined reference to `.skb_pull'
+scsi_netlink.c:(.text+0x1645e0): undefined reference to `.netlink_capable'
+drivers/built-in.o: In function `.scsi_netlink_init':
+(.text+0x16471c): undefined reference to `.__netlink_kernel_create'
+drivers/built-in.o: In function `.scsi_netlink_exit':
+(.text+0x16477c): undefined reference to `.netlink_kernel_release'
+drivers/built-in.o: In function `.fc_host_post_event':
+(.text+0x16ac1c): undefined reference to `.__alloc_skb'
+drivers/built-in.o: In function `.fc_host_post_event':
+(.text+0x16ac60): undefined reference to `.__nlmsg_put'
+drivers/built-in.o: In function `.fc_host_post_event':
+(.text+0x16ace0): undefined reference to `.netlink_broadcast'
+drivers/built-in.o: In function `.fc_host_post_event':
+(.text+0x16ad24): undefined reference to `.kfree_skb'
+drivers/built-in.o: In function `.fc_host_post_vendor_event':
+(.text+0x16ae48): undefined reference to `.__alloc_skb'
+drivers/built-in.o: In function `.fc_host_post_vendor_event':
+(.text+0x16ae90): undefined reference to `.__nlmsg_put'
+drivers/built-in.o: In function `.fc_host_post_vendor_event':
+(.text+0x16af1c): undefined reference to `.netlink_broadcast'
+drivers/built-in.o: In function `.fc_host_post_vendor_event':
+(.text+0x16af84): undefined reference to `.kfree_skb'
+drivers/built-in.o:(.toc+0x0): undefined reference to `init_net'
+
+Presumably caused by commit 5d6be6a5d486 ("scsi_netlink : Make
+SCSI_NETLINK dependent on NET instead of selecting NET").
+
+I used the version of the net tree from next-20140915 (i.e. up to
+commit 9e07a422383c ("Merge branch 'bridge_vlan_filtering'")) for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/xpxdLrFlrwCQlt5dXD5+dnh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUF4NDAAoJEMDTa8Ir7ZwVMQkP/2nJOBJ41gGiyc1Krt4mxpPv
+QtpScVav2BmHxHOr9ihAcs2AV76nOiSy1Qeu6CMseQdpeQfZ+41KCPxwO0np4smE
+yqyi+LyJ/dW0+YfoJfV8kjYgyLV+0Gt2Y9lx3qEoFJOyAtQVJeszS2YwG5uWwvVT
+8mpClp97U8n7lM2ZEcqI65FpR1IOAkMi7Iv0TuByyYWlv+FPJG+uWCnQ5TBuDryc
+MWP5mYlA6W5ut9yfnz2DWRngZJ38Vdknx7grWPROUL6bmpWzDriurpfNj7IDHd8g
+Hco/CJ4yTqQDqIDQs1axq2jNpBfTk0WpDckCtUIputFisq0J1QJ1I5Qm53Dx3AnD
+iiacATNKx8gWGHVaVUb5jOYw5twWSDuCg2C4pR4PGNuYPbgbB90alzs/GGfKu0Bq
+7IK8F/PnhCZhnUU0vcs1nUj2E95F1gQxHcpKBUTyfvwd4PPHmtXAWoVR7Ds8Tl/R
+LXSMAgiHU9D/l5YELsLmAdUN7qv249Z6ubAbvgEP+LfAnyrPNkdPLmHDMQIP4E2V
+00X3Ydf6Pr2q4GmpOzQm0DXspEiuH8zhPiu8/hYTXPFd9rROBs6+Pg8q+NrJsJsv
+qaM0uXXvqdEoIivpkF++20I/irfrnOGH7ppcapmMk8Omr2+/Fm7DAco08PqSsRDH
+dTOkiyYX1bg34NtnyUFC
+=v8Zm
+-----END PGP SIGNATURE-----
+
+--Sig_/xpxdLrFlrwCQlt5dXD5+dnh--
