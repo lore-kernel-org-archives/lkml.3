@@ -1,117 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaIPM7x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 08:59:53 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:45553 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaIPM7l (ORCPT
+	id S1754161AbaIPNAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 09:00:33 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22432 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895AbaIPM7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 08:59:41 -0400
-Date: Tue, 16 Sep 2014 08:59:41 -0400 (EDT)
-From: Bob Peterson <rpeterso@redhat.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1798564920.23378380.1410872381622.JavaMail.zimbra@redhat.com>
-In-Reply-To: <1501522376.20961158.1410449372237.JavaMail.zimbra@redhat.com>
-Subject: [PATCH][try5] fs: if block_map clears buffer_holesize bit skip hole
- size from b_size
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.6]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF32 (Linux)/8.0.6_GA_5922)
-Thread-Topic: if block_map clears buffer_holesize bit skip hole size from b_size
-Thread-Index: 9ncowILXcLR7esL4QZ0HKZeBhsoQUA==
+	Tue, 16 Sep 2014 08:59:37 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-b4-541834359383
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v5 1/4] PM / Runtime: Add getter for quering the IRQ safe option
+Date: Tue, 16 Sep 2014 14:59:17 +0200
+Message-id: <1410872360-27029-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
+References: <1410872360-27029-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xK7qmJhIhBidvmllsnLGe1WL61AuM
+	Fqun/mW1OPBnB6PF6xeGFmeb3rBbLJk8n9Vi1pS9TBYL25awWFzeNYfN4nPvEUaL25d5LdYe
+	uctu8e5lhMXdU0fZLN7emc5iceb0JVaLCb8vsFkcXxtu8bJvP4uDiEdLcw+bx+YVWh6L97xk
+	8rhzbQ+bx5I3h1g9tlxtZ/GYffcHo0ffllWMHitWf2f3+LxJzmPv598sAdxRXDYpqTmZZalF
+	+nYJXBk7fs9lLbgoWLHo8nz2BsZ7fF2MnBwSAiYS/3vusULYYhIX7q1n62Lk4hASWMoo8e9n
+	MzuE08ck0fFhGgtIFZuAscTm5UvAqkQEjrBIPLv3BMxhFjjKKDG99y0TSJWwQIDEgmuXGUFs
+	FgFVifbf85hBbF4Bd4n24x1MEPvkJE4emwy2m1PAQ+L63mtgNUJANTenTmCewMi7gJFhFaNo
+	amlyQXFSeq6hXnFibnFpXrpecn7uJkZIPHzZwbj4mNUhRgEORiUe3ox/4iFCrIllxZW5hxgl
+	OJiVRHg9NCVChHhTEiurUovy44tKc1KLDzEycXBKNTBOm/VXMuboTMNJaxTPT+aL2pTr3jO9
+	aIZlYKpqgm/Rat9i7y2C557uP7n0geuhkBj/mfGzyvI0LV493lly/Uhjn2y8sua5ied+eIcK
+	TD+xp9b56btlF4QiqsPOTt4SbfPoCav+bbZ/jvWNUcuCLkqa7BDcnZ15+JpffU2CmVfV5FPT
+	zh6pfhqrxFKckWioxVxUnAgAjl5JQ2UCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add a simple getter pm_runtime_is_irq_safe() for quering whether runtime
+PM IRQ safe was set or not.
 
-I've previously sent this patch to linux-fsdevel (and Viro) and gotten
-little to no response, so I thought I'd send it here.
+Various bus drivers implementing runtime PM may use choose to suspend
+differently based on IRQ safeness status of child driver (e.g. do not
+unprepare the clock if IRQ safe is not set).
 
-The problem:
-If you do a fiemap operation on a very large sparse file, it can take
-an extremely long amount of time (we're talking days here) because
-function __generic_block_fiemap does a block-for-block search when it
-encounters a hole.
-
-The solution:
-Allow the underlying file system to return the hole size so that function
-__generic_block_fiemap can quickly skip the hole. This will be followed
-by another patch to GFS2 that takes advantage of this new flag to speed
-up its fiemap on sparse files. Other file systems can do the same as they
-see fit. For GFS2, the time it takes to skip a 1PB hole in a sparse file
-goes from several days to milliseconds.
-
-Patch description:
-
-This patch changes function __generic_block_fiemap so that it sets a new
-buffer_holesize bit. The new bit signals to the underlying file system
-to return a hole size from its block_map function (if possible) in the
-event that a hole is encountered at the requested block. If the block_map
-function encounters a hole, and clears buffer_holesize, fiemap takes the
-returned b_size to be the size of the hole, in bytes. It then skips the
-hole and moves to the next block. This may be repeated several times
-in a row, especially for large holes, due to possible limitations of the
-fs-specific block_map function. This is still much faster than trying
-each block individually when large holes are encountered. If the
-block_map function does not clear buffer_holesize, the request for
-holesize has been ignored, and it falls back to today's method of doing a
-block-by-block search for the next valid block.
-
-Regards,
-
-Bob Peterson
-Red Hat File Systems
-
-Signed-off-by: Bob Peterson <rpeterso@redhat.com> 
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- fs/ioctl.c                  | 7 ++++++-
- include/linux/buffer_head.h | 2 ++
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ Documentation/power/runtime_pm.txt | 4 ++++
+ include/linux/pm_runtime.h         | 6 ++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 8ac3fad..ae63b1f 100644
---- a/fs/ioctl.c
-+++ b/fs/ioctl.c
-@@ -291,13 +291,18 @@ int __generic_block_fiemap(struct inode *inode,
- 		memset(&map_bh, 0, sizeof(struct buffer_head));
- 		map_bh.b_size = len;
+diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
+index f32ce5419573..397b81593142 100644
+--- a/Documentation/power/runtime_pm.txt
++++ b/Documentation/power/runtime_pm.txt
+@@ -468,6 +468,10 @@ drivers/base/power/runtime.c and include/linux/pm_runtime.h:
+     - set the power.irq_safe flag for the device, causing the runtime-PM
+       callbacks to be invoked with interrupts off
  
-+		set_buffer_holesize(&map_bh); /* return hole size if able */
- 		ret = get_block(inode, start_blk, &map_bh, 0);
- 		if (ret)
- 			break;
++  bool pm_runtime_is_irq_safe(struct device *dev);
++    - return true if power.irq_safe flag was set for the device, causing
++      the runtime-PM callbacks to be invoked with interrupts off
++
+   void pm_runtime_mark_last_busy(struct device *dev);
+     - set the power.last_busy field to the current time
  
- 		/* HOLE */
- 		if (!buffer_mapped(&map_bh)) {
--			start_blk++;
-+			if (buffer_holesize(&map_bh)) /* holesize ignored */
-+				start_blk++;
-+			else
-+				start_blk += logical_to_blk(inode,
-+							    map_bh.b_size);
+diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+index 367f49b9a1c9..44d74f0f182e 100644
+--- a/include/linux/pm_runtime.h
++++ b/include/linux/pm_runtime.h
+@@ -128,6 +128,11 @@ static inline void pm_runtime_mark_last_busy(struct device *dev)
+ 	ACCESS_ONCE(dev->power.last_busy) = jiffies;
+ }
  
- 			/*
- 			 * We want to handle the case where there is an
-diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-index 324329c..b8ce396 100644
---- a/include/linux/buffer_head.h
-+++ b/include/linux/buffer_head.h
-@@ -37,6 +37,7 @@ enum bh_state_bits {
- 	BH_Meta,	/* Buffer contains metadata */
- 	BH_Prio,	/* Buffer should be submitted with REQ_PRIO */
- 	BH_Defer_Completion, /* Defer AIO completion to workqueue */
-+	BH_Holesize,    /* Return hole size (and clear) if possible */
++static inline bool pm_runtime_is_irq_safe(struct device *dev)
++{
++	return dev->power.irq_safe;
++}
++
+ #else /* !CONFIG_PM_RUNTIME */
  
- 	BH_PrivateStart,/* not a state bit, but the first bit available
- 			 * for private allocation by other entities
-@@ -128,6 +129,7 @@ BUFFER_FNS(Boundary, boundary)
- BUFFER_FNS(Write_EIO, write_io_error)
- BUFFER_FNS(Unwritten, unwritten)
- BUFFER_FNS(Meta, meta)
-+BUFFER_FNS(Holesize, holesize)
- BUFFER_FNS(Prio, prio)
- BUFFER_FNS(Defer_Completion, defer_completion)
+ static inline int __pm_runtime_idle(struct device *dev, int rpmflags)
+@@ -167,6 +172,7 @@ static inline bool pm_runtime_enabled(struct device *dev) { return false; }
  
+ static inline void pm_runtime_no_callbacks(struct device *dev) {}
+ static inline void pm_runtime_irq_safe(struct device *dev) {}
++static inline bool pm_runtime_is_irq_safe(struct device *dev) { return false; }
+ 
+ static inline bool pm_runtime_callbacks_present(struct device *dev) { return false; }
+ static inline void pm_runtime_mark_last_busy(struct device *dev) {}
+-- 
+1.9.1
+
