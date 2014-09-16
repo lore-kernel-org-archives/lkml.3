@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858AbaIPLik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 07:38:40 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:59220 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaIPLij (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 07:38:39 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH] kvm: Make init_rmode_tss() return 0 on success.
-Date: Tue, 16 Sep 2014 13:38:25 +0200
-Message-Id: <1410867505-5941-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753536AbaIPLnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 07:43:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53291 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752824AbaIPLnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 07:43:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,534,1406617200"; 
+   d="scan'208";a="603517414"
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Subject: [PATCH] regmap: cache: Do not fail silently from regcache_sync calls
+Date: Tue, 16 Sep 2014 14:04:14 +0300
+Message-Id: <1410865454-30102-1-git-send-email-jarkko.nikula@linux.intel.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In init_rmode_tss(), there two variables indicating the return
-value, r and ret, and it return 0 on error, 1 on success. The function
-is only called by vmx_set_tss_addr(), and r is redundant.
+Call stack of regcache_sync calls may not emit any error message even if
+operation was cancelled due an error in I/O driver. One such a silent error
+is for instance if I2C bus driver doesn't receive ACK from the I2C device
+and returns -EREMOTEIO.
 
-This patch removes the redundant variable, by making init_rmode_tss()
-return 0 on success, -errno on failure.
+Since many users of regcache_sync() don't check and print the error there is
+no any indication that HW registers are potentially out of sync.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 ---
- arch/x86/kvm/vmx.c |   13 +++----------
- 1 files changed, 3 insertions(+), 10 deletions(-)
+I noticed this silent failure when doing commit f4821e8e8e95
+("ASoC: rt5640: Do not allow regmap to use bulk read-write operations") but
+forgot to send a patch. I was thinking should the error prints be in lower
+level, e.g. _regmap_raw_write, but maybe it's good to have sync errors
+printed explicitly?
+---
+ drivers/base/regmap/regcache.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 41bbddb..1e6b493 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3930,7 +3930,7 @@ static int init_rmode_tss(struct kvm *kvm)
- {
- 	gfn_t fn;
- 	u16 data = 0;
--	int r, idx, ret = 0;
-+	int idx, r;
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index 5617da6dc898..f1280dc356d0 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -269,8 +269,11 @@ static int regcache_default_sync(struct regmap *map, unsigned int min,
+ 		map->cache_bypass = 1;
+ 		ret = _regmap_write(map, reg, val);
+ 		map->cache_bypass = 0;
+-		if (ret)
++		if (ret) {
++			dev_err(map->dev, "Unable to sync register %#x. %d\n",
++				reg, ret);
+ 			return ret;
++		}
+ 		dev_dbg(map->dev, "Synced register %#x, value %#x\n", reg, val);
+ 	}
  
- 	idx = srcu_read_lock(&kvm->srcu);
- 	fn = kvm->arch.tss_addr >> PAGE_SHIFT;
-@@ -3952,13 +3952,9 @@ static int init_rmode_tss(struct kvm *kvm)
- 	r = kvm_write_guest_page(kvm, fn, &data,
- 				 RMODE_TSS_SIZE - 2 * PAGE_SIZE - 1,
- 				 sizeof(u8));
--	if (r < 0)
--		goto out;
--
--	ret = 1;
- out:
- 	srcu_read_unlock(&kvm->srcu, idx);
--	return ret;
-+	return r;
- }
+@@ -615,8 +618,11 @@ static int regcache_sync_block_single(struct regmap *map, void *block,
+ 		ret = _regmap_write(map, regtmp, val);
  
- static int init_rmode_identity_map(struct kvm *kvm)
-@@ -4750,10 +4746,7 @@ static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr)
- 	if (ret)
- 		return ret;
- 	kvm->arch.tss_addr = addr;
--	if (!init_rmode_tss(kvm))
--		return  -ENOMEM;
--
--	return 0;
-+	return init_rmode_tss(kvm);
- }
+ 		map->cache_bypass = 0;
+-		if (ret != 0)
++		if (ret != 0) {
++			dev_err(map->dev, "Unable to sync register %#x. %d\n",
++				regtmp, ret);
+ 			return ret;
++		}
+ 		dev_dbg(map->dev, "Synced register %#x, value %#x\n",
+ 			regtmp, val);
+ 	}
+@@ -641,6 +647,9 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
+ 	map->cache_bypass = 1;
  
- static bool rmode_exception(struct kvm_vcpu *vcpu, int vec)
+ 	ret = _regmap_raw_write(map, base, *data, count * val_bytes);
++	if (ret)
++		dev_err(map->dev, "Unable to sync registers %#x-%#x. %d\n",
++			base, cur - map->reg_stride, ret);
+ 
+ 	map->cache_bypass = 0;
+ 
 -- 
-1.7.1
+2.1.0
 
