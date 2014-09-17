@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaIQNKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:10:40 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36856 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831AbaIQNKi (ORCPT
+	id S1755417AbaIQNPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:15:00 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:52531 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215AbaIQNO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:10:38 -0400
-Date: Wed, 17 Sep 2014 06:10:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, dvhart@linux.intel.com,
-        fweisbec@gmail.com, oleg@redhat.com, bobby.prani@gmail.com,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH RFC tip/core/rcu] Eliminate deadlock between CPU hotplug
- and expedited grace periods
-Message-ID: <20140917131013.GU4723@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140828194745.GA3761@linux.vnet.ibm.com>
- <5419342E.60602@intel.com>
+	Wed, 17 Sep 2014 09:14:58 -0400
+Date: Wed, 17 Sep 2014 08:14:42 -0500
+From: Clark Williams <clark.williams@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: unify boost and kthread priorities
+Message-ID: <20140917081442.60425e2d@sluggy>
+In-Reply-To: <20140916204156.GP4723@linux.vnet.ibm.com>
+References: <20140915100524.2cd80d2e@sluggy>
+	<20140916204156.GP4723@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5419342E.60602@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091713-1344-0000-0000-0000044564CA
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/_cOrZgs4LzXCFGqytEPX_Qy"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 03:11:42PM +0800, Lan Tianyu wrote:
-> On 2014年08月29日 03:47, Paul E. McKenney wrote:
-> > Currently, the expedited grace-period primitives do get_online_cpus().
-> > This greatly simplifies their implementation, but means that calls to
-> > them holding locks that are acquired by CPU-hotplug notifiers (to say
-> > nothing of calls to these primitives from CPU-hotplug notifiers) can
-> > deadlock.  But this is starting to become inconvenient:
-> > https://lkml.org/lkml/2014/8/5/754
-> > 
-> > This commit avoids the deadlock and retains the simplicity by creating
-> > a try_get_online_cpus(), which returns false if the get_online_cpus()
-> > reference count could not immediately be incremented.  If a call to
-> > try_get_online_cpus() returns true, the expedited primitives operate
-> > as before.  If a call returns false, the expedited primitives fall back
-> > to normal grace-period operations.  This falling back of course results
-> > in increased grace-period latency, but only during times when CPU
-> > hotplug operations are actually in flight.  The effect should therefore
-> > be negligible during normal operation.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Josh Triplett <josh@joshtriplett.org>
-> > Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> > Cc: Lan Tianyu <tianyu.lan@intel.com>
-> 
-> Hi Paul:
-> 	What's the status of the patch? Will you push it? Thanks.
+--Sig_/_cOrZgs4LzXCFGqytEPX_Qy
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-By default, it would go into 3.19.  Do you need it earlier?
+On Tue, 16 Sep 2014 13:41:56 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-							Thanx, Paul
+> On Mon, Sep 15, 2014 at 10:05:24AM -0500, Clark Williams wrote:
+> > Paul,
+> >=20
+> > Here's the result of our conversation Friday, regarding the per-CPU and
+> > boost priorities:
+> >=20
+> > Rename CONFIG_RCU_BOOST_PRIO to CONFIG_RCU_KTHREAD_PRIO and use this
+> > value for both the per-CPU kthreads (rcuc/N) and the rcu boosting
+> > threads (rcub/n).
+> >=20
+> > Also, create the module_parameter rcutree.kthread_prio to be used on
+> > the kernel command line at boot to set a new value
+> > (rcutree.kthread_prio=3DN).
+> >=20
+> > Signed-off-by: Clark Williams <clark.williams@gmail.com>
+>=20
+> Thank you, Clark!
+>=20
+> I queued this, porting to rcu/dev, which resulted in the following
+> patch.  Please check this to make sure it still reflects your intent.
+> In the meantime, I will start testing.
+>=20
+> 							Thanx, Paul
 
+Yes, looks right (and you fixed that I didn't have it all under
+RCU_BOOST).=20
+
+Thanks,
+Clark
+
+--Sig_/_cOrZgs4LzXCFGqytEPX_Qy
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUGYlLAAoJEEersVlSw9Nz3kEQAJ53xCpJf50nj4+JdQMMh+NR
+RuJZyTIh6Mtjlp5g4AVb0ShGhRWst/QcgzewTtLvr6bsmzXmkA6uXxUPRCHrFTst
+gA3iZCZYT6Tt6oVPfRUSawqu2KTM0AxsqmMesA9a0Z4c67G1TdmtNnpCX7Uq/uJ7
+P1o8nI7bnqzDr9mEVVVkeApLWfYIQuDe/oDYk+7JPZ4Es9GUNG0TkfyRy86EFNQv
+Pfg52wVu0fcLrHw4j1YvVt/8qBG/OgynmhB0W9xfioLzgsRquOhzYsNNYHdJ+vXb
+KNgKN+QP8XNJec5dxk7HLvEYcx62oPX4Wj8GL2Q24CgQ8cuI76znkJrXMFG5mQKo
+cuYhb6XPOjHhUN7Sf+bkoYgllBGTKZ2QY/yYxVlUMC26xkzxJI6xsikBnUXM0msu
+ARcAaLT7Y8oHc3vKBfS/D+qa2gNok3QFdttZ53yWmDTvqDXCENuE3jNAb2i+Xglq
+7NraOQN/oUvyJ2veuEOOF5R/qnX3SgO7g9L6MsXv57oJ+r6Wpzi8JelLNPv0WO1q
+tlEy6KJISnTnrmpwFRlh+jqrQTTuN7qezjkd5YN3/5477gbidIsub/vZUky4RQcl
+2fkzJoIzxaesdBWzjwcwSlBEVScK2LMyAr9Sj+UDIoz9qy1cpWg+cQwlMGiXVrYN
+IzowTH+vj7nvemjGb/kc
+=ynbl
+-----END PGP SIGNATURE-----
+
+--Sig_/_cOrZgs4LzXCFGqytEPX_Qy--
