@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaIQSbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:31:37 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48490 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755631AbaIQSbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:31:36 -0400
-Date: Wed, 17 Sep 2014 11:30:43 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Shengjiu Wang <shengjiu.wang@freescale.com>
-Cc: timur@tabi.org, nicoleotsuka@gmail.com, Li.Xiubo@freescale.com,
-        lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, mpa@pengutronix.de,
-        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140917183043.GR7960@sirena.org.uk>
-References: <5dc0f13cdb62904ae0f104f9112faec672adea6f.1410833402.git.shengjiu.wang@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SorlIzCW0DSU55cr"
-Content-Disposition: inline
-In-Reply-To: <5dc0f13cdb62904ae0f104f9112faec672adea6f.1410833402.git.shengjiu.wang@freescale.com>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V4] ASoC: fsl_ssi: refine ipg clock usage in this module
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1756357AbaIQSe2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:34:28 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60304 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132AbaIQSeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 14:34:25 -0400
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
+        Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
+        Paul Mackerras <paulus@samba.org>
+Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 3/4] perf Documentation: sysfs events/ interfaces
+Date: Wed, 17 Sep 2014 11:33:06 -0700
+Message-Id: <1410978787-7375-4-git-send-email-sukadev@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410978787-7375-1-git-send-email-sukadev@linux.vnet.ibm.com>
+References: <1410978787-7375-1-git-send-email-sukadev@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091718-7182-0000-0000-0000007A25E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
---SorlIzCW0DSU55cr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Add documentation for the <event>, <event>.scale, and <event>.unit
+files in sysfs.
 
-On Tue, Sep 16, 2014 at 10:13:16AM +0800, Shengjiu Wang wrote:
-> Check if ipg clock is in clock-names property, then we can move the
-> ipg clock enable and disable operation to startup and shutdown, that
-> is only enable ipg clock when ssi is working and keep clock is disabled
-> when ssi is in idle.
-> But when the checking is failed, remain the clock control as before.
+<event>.scale and <event>.unit were undocumented.
+<event> was previously documented only for specific powerpc pmu events.
 
-Applied, thanks.
+CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+CC: Haren Myneni <hbabu@us.ibm.com>
+CC: Cody P Schafer <dev@codyps.com>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ .../testing/sysfs-bus-event_source-devices-events  |   60 ++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
---SorlIzCW0DSU55cr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 7b40a3c..a5226f0 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -599,3 +599,63 @@ Description:	POWER-systems specific performance monitoring events
+ 		Further, multiple terms like 'event=0xNNNN' can be specified
+ 		and separated with comma. All available terms are defined in
+ 		the /sys/bus/event_source/devices/<dev>/format file.
++
++What: /sys/bus/event_source/devices/<pmu>/events/<event>
++Date: 2014/02/24
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++Description:	Per-pmu performance monitoring events specific to the running system
++
++		Each file (except for some of those with a '.' in them, '.unit'
++		and '.scale') in the 'events' directory describes a single
++		performance monitoring event supported by the <pmu>. The name
++		of the file is the name of the event.
++
++		File contents:
++
++			<term>[=<value>][,<term>[=<value>]]...
++
++		Where <term> is one of the terms listed under
++		/sys/bus/event_source/devices/<pmu>/format/ and <value> is
++		a number is base-16 format with a '0x' prefix (lowercase only).
++		If a <term> is specified alone (without an assigned value), it
++		is implied that 0x1 is assigned to that <term>.
++
++		Examples (each of these lines would be in a seperate file):
++
++			event=0x2abc
++			event=0x423,inv,cmask=0x3
++			domain=0x1,offset=0x8,starting_index=0xffff
++
++		Each of the assignments indicates a value to be assigned to a
++		particular set of bits (as defined by the format file
++		corresponding to the <term>) in the perf_event structure passed
++		to the perf_open syscall.
++
++What: /sys/bus/event_source/devices/<pmu>/events/<event>.unit
++Date: 2014/02/24
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++Description:	Perf event units
++
++		A string specifying the English plural numerical unit that <event>
++		(once multiplied by <event>.scale) represents.
++
++		Example:
++
++			Joules
++
++What: /sys/bus/event_source/devices/<pmu>/events/<event>.scale
++Date: 2014/02/24
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++Description:	Perf event scaling factors
++
++		A string representing a floating point value expressed in
++		scientific notation to be multiplied by the event count
++		recieved from the kernel to match the unit specified in the
++		<event>.unit file.
++
++		Example:
++
++			2.3283064365386962890625e-10
++
++		This is provided to avoid performing floating point arithmetic
++		in the kernel.
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUGdNOAAoJECTWi3JdVIfQMDYH/RwLDNitdtxPsO8VST2UHb0E
-IGx1uWvA+yJTVbJguO5NPuUWasSEgAzjBWPOxhsNNPOeKVut+LM1G633uZmLGlI+
-nqSwjIYmrH1SWBy9Inw0sfJMgcvbZ1i2jfTHb8Fpkc3GgKQb95Hy6nTz+2PqxINu
-x2hrVCpsf/1IjHcE56G47bLpXEHuyfqwRN1XxCbmX4Y8U+avQ/PPUVwW0f14s/Zm
-VMvTZveqoLGg9V53TaCGXv/7JF9StICmZG3rEzmhIG7SXyOfUPwSYNvqaUY03g8L
-Lr/dtHZ419yjLHXJICj4NbV+823G3f4iAPpZYk7+NWGEO/TZV70FzgBb3ziXi3Y=
-=G/8g
------END PGP SIGNATURE-----
-
---SorlIzCW0DSU55cr--
