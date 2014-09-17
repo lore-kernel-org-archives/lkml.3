@@ -1,67 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaIQJWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:22:55 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:47529 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013AbaIQJWw (ORCPT
+	id S1755070AbaIQJYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:24:49 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:40265 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915AbaIQJYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:22:52 -0400
-Date: Wed, 17 Sep 2014 17:22:12 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: behanw@converseincode.com
-Cc: agk@redhat.com, clm@fb.com, davem@davemloft.net, dm-devel@redhat.com,
-        fabf@skynet.be, jbacik@fb.com, snitzer@redhat.com,
-        tadeusz.struk@intel.com, akpm@linux-foundation.org,
-        bruce.w.allan@intel.com, d.kasatkin@samsung.com,
-        james.l.morris@oracle.com, john.griffin@intel.com,
-        linux-btrfs@vger.kernel.org, linux-crypto@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-ima-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-security-module@vger.kernel.org,
-        neilb@suse.de, qat-linux@intel.com, serge@hallyn.com,
-        thomas.lendacky@amd.com, zohar@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH v3 01/12] crypto: LLVMLinux: Add macro to remove use of
- VLAIS in crypto code
-Message-ID: <20140917092212.GA1213@gondor.apana.org.au>
-References: <1410766234-1634-1-git-send-email-behanw@converseincode.com>
- <1410766234-1634-2-git-send-email-behanw@converseincode.com>
+	Wed, 17 Sep 2014 05:24:48 -0400
+Message-ID: <5419535C.9060802@imgtec.com>
+Date: Wed, 17 Sep 2014 10:24:44 +0100
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410766234-1634-2-git-send-email-behanw@converseincode.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+CC: Jeffrey Deans <jeffrey.deans@imgtec.com>,
+        Markos Chandras <markos.chandras@imgtec.com>,
+        Paul Burton <paul.burton@imgtec.com>,
+        "Jonas Gorski" <jogo@openwrt.org>, John Crispin <blogic@openwrt.org>,
+        David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/24] irqchip: mips-gic: Use separate edge/level irq_chips
+References: <1410825087-5497-1-git-send-email-abrestic@chromium.org> <1410825087-5497-21-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1410825087-5497-21-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 15, 2014 at 12:30:23AM -0700, behanw@converseincode.com wrote:
-> From: Behan Webster <behanw@converseincode.com>
-> 
-> Add a macro which replaces the use of a Variable Length Array In Struct (VLAIS)
-> with a C99 compliant equivalent. This macro instead allocates the appropriate
-> amount of memory using an char array.
-> 
-> The new code can be compiled with both gcc and clang.
-> 
-> struct shash_desc contains a flexible array member member ctx declared with
-> CRYPTO_MINALIGN_ATTR, so sizeof(struct shash_desc) aligns the beginning
-> of the array declared after struct shash_desc with long long.
-> 
-> No trailing padding is required because it is not a struct type that can
-> be used in an array.
-> 
-> The CRYPTO_MINALIGN_ATTR is required so that desc is aligned with long long
-> as would be the case for a struct containing a member with
-> CRYPTO_MINALIGN_ATTR.
-> 
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
+On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
+> GIC edge-triggered interrupts must be acknowledged by clearing the edge
+> detector via a write to GIC_SH_WEDGE.  Create a separate edge-triggered
+> irq_chip with the appropriate irq_ack() callback.  This also allows us
+> to get rid of gic_irq_flags.
+>
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>   arch/mips/include/asm/gic.h    |  1 -
+>   drivers/irqchip/irq-mips-gic.c | 38 ++++++++++++++++++++++++--------------
+>   2 files changed, 24 insertions(+), 15 deletions(-)
+>
+> diff --git a/arch/mips/include/asm/gic.h b/arch/mips/include/asm/gic.h
+> index 8d1e457..f245395 100644
+> --- a/arch/mips/include/asm/gic.h
+> +++ b/arch/mips/include/asm/gic.h
+> @@ -345,7 +345,6 @@
+>   extern unsigned int gic_present;
+>   extern unsigned int gic_frequency;
+>   extern unsigned long _gic_base;
+> -extern unsigned int gic_irq_flags[];
+>   extern unsigned int gic_cpu_pin;
+>   
+>   extern void gic_init(unsigned long gic_base_addr,
+> diff --git a/drivers/irqchip/irq-mips-gic.c b/drivers/irqchip/irq-mips-gic.c
+> index c9ba102..6682a4e 100644
+> --- a/drivers/irqchip/irq-mips-gic.c
+> +++ b/drivers/irqchip/irq-mips-gic.c
+> @@ -24,7 +24,6 @@
+>   unsigned int gic_frequency;
+>   unsigned int gic_present;
+>   unsigned long _gic_base;
+> -unsigned int gic_irq_flags[GIC_NUM_INTRS];
+>   unsigned int gic_cpu_pin;
+>   
+>   struct gic_pcpu_mask {
+> @@ -44,6 +43,7 @@ static struct gic_pending_regs pending_regs[NR_CPUS];
+>   static struct gic_intrmask_regs intrmask_regs[NR_CPUS];
+>   static struct irq_domain *gic_irq_domain;
+>   static int gic_shared_intrs;
+> +static struct irq_chip gic_level_irq_controller, gic_edge_irq_controller;
+>   
+>   static void __gic_irq_dispatch(void);
+>   
+> @@ -228,11 +228,7 @@ static void gic_ack_irq(struct irq_data *d)
+>   {
+>   	unsigned int irq = d->hwirq;
+>   
+> -	GIC_CLR_INTR_MASK(irq);
+> -
+> -	/* Clear edge detector */
+> -	if (gic_irq_flags[irq] & GIC_TRIG_EDGE)
+> -		GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), irq);
+> +	GICWRITE(GIC_REG(SHARED, GIC_SH_WEDGE), irq);
+>   }
+>   
+>   static int gic_set_type(struct irq_data *d, unsigned int type)
+> @@ -275,11 +271,13 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
+>   	}
+>   
+>   	if (is_edge) {
+> -		gic_irq_flags[irq] |= GIC_TRIG_EDGE;
+> -		__irq_set_handler_locked(d->irq, handle_edge_irq);
+> +		__irq_set_chip_handler_name_locked(d->irq,
+> +						   &gic_edge_irq_controller,
+> +						   handle_edge_irq, NULL);
+>   	} else {
+> -		gic_irq_flags[irq] &= ~GIC_TRIG_EDGE;
+> -		__irq_set_handler_locked(d->irq, handle_level_irq);
+> +		__irq_set_chip_handler_name_locked(d->irq,
+> +						   &gic_level_irq_controller,
+> +						   handle_level_irq, NULL);
+>   	}
+>   
+>   	return 0;
+> @@ -318,11 +316,23 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *cpumask,
+>   }
+>   #endif
+>   
+> -static struct irq_chip gic_irq_controller = {
+> +static struct irq_chip gic_level_irq_controller = {
+> +	.name			=	"MIPS GIC",
+> +	.irq_ack		=	gic_mask_irq,
+> +	.irq_mask		=	gic_mask_irq,
+> +	.irq_mask_ack		=	gic_mask_irq,
+> +	.irq_unmask		=	gic_unmask_irq,
+> +	.irq_eoi		=	gic_unmask_irq,
+> +	.irq_set_type		=	gic_set_type,
+> +#ifdef CONFIG_SMP
+> +	.irq_set_affinity	=	gic_set_affinity,
+> +#endif
+> +};
+> +
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+I don't think there's a need to provide irq_ack, irq_mask_ack and 
+irq_eoi here.
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> +static struct irq_chip gic_edge_irq_controller = {
+>   	.name			=	"MIPS GIC",
+>   	.irq_ack		=	gic_ack_irq,
+>   	.irq_mask		=	gic_mask_irq,
+> -	.irq_mask_ack		=	gic_ack_irq,
+>   	.irq_unmask		=	gic_unmask_irq,
+>   	.irq_eoi		=	gic_unmask_irq,
+>   	.irq_set_type		=	gic_set_type,
+
+irq_eoi can be removed from here as well.
+
+Qais
+
+> @@ -433,7 +443,6 @@ static void __init gic_basic_init(int numvpes)
+>   		GIC_SET_POLARITY(i, GIC_POL_POS);
+>   		GIC_SET_TRIGGER(i, GIC_TRIG_LEVEL);
+>   		GIC_CLR_INTR_MASK(i);
+> -		gic_irq_flags[i] = 0;
+>   	}
+>   
+>   	vpe_local_setup(numvpes);
+> @@ -442,7 +451,8 @@ static void __init gic_basic_init(int numvpes)
+>   static int gic_irq_domain_map(struct irq_domain *d, unsigned int virq,
+>   			      irq_hw_number_t hw)
+>   {
+> -	irq_set_chip_and_handler(virq, &gic_irq_controller, handle_level_irq);
+> +	irq_set_chip_and_handler(virq, &gic_level_irq_controller,
+> +				 handle_level_irq);
+>   
+>   	GICWRITE(GIC_REG_ADDR(SHARED, GIC_SH_MAP_TO_PIN(hw)),
+>   		 GIC_MAP_TO_PIN_MSK | gic_cpu_pin);
+
