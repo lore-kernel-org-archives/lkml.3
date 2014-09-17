@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991AbaIQQJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:09:05 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:43301 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748AbaIQQJB (ORCPT
+	id S1756022AbaIQQKF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:10:05 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:45339 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688AbaIQQKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:09:01 -0400
+	Wed, 17 Sep 2014 12:10:03 -0400
+Date: Wed, 17 Sep 2014 09:09:58 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Zhong <zyw@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, Sonny Rao <sonnyrao@chromium.org>,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: RK808: Add register caching
+Message-ID: <20140917160958.GI30918@lee--X1>
+References: <1410303964-6943-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <54192F66.8020200@redhat.com>
-References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
-	<1410914370-29883-8-git-send-email-ast@plumgrid.com>
-	<54192F66.8020200@redhat.com>
-Date: Wed, 17 Sep 2014 09:08:58 -0700
-Message-ID: <CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
-Subject: Re: [PATCH v13 net-next 07/11] bpf: verifier (add ability to receive
- verification log)
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410303964-6943-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 11:51 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
->>
->>   /* last field in 'union bpf_attr' used by this command */
->> -#define        BPF_PROG_LOAD_LAST_FIELD license
->> +#define        BPF_PROG_LOAD_LAST_FIELD log_buf
->
->
-> I was looking to find a use case for this item, but couldn't find anything,
-> so
-> this seems to be dead code?
+On Tue, 09 Sep 2014, Doug Anderson wrote:
 
-See CHECK_ATTR() macro and comment next to it in patch #1
+> Let's define the voltatile registers (those that can't be cached) and
+> enable caching.  The rk808 is accessed almost constantly with cpufreq
+> so this is really nice.
+> 
+> As measured by ftrace:
+>   before this change: cpu0_set_target() => ~2200us
+>   after this change:  cpu0_set_target() =>  ~500us
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mfd/rk808.c | 30 ++++++++++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
 
-> Was it, so that each time you extend an uapi structure like above that you
-> would
-> only access the structure up to BPF_PROG_LOAD_LAST_FIELD? That might not
-> work for
-> old binaries using this ABI running on newer kernels where there are
-> different
-> expectations of what BPF_PROG_LOAD_LAST_FIELD has been at the time of
-> compilation.
+Applied with Chris' Reviewed-by.
 
-exactly the opposite.
-CHECK_ATTR() is checking that all fields beyond last for given
-command are zero, so we can extend bpf_attr with new fields
-added after last.
-Transition from patch 4 to patch 7 and the hunk you quoted are
-demonstrating exactly that. Say, userspace was compiled
-with bpf_attr as defined in patch 4 and it populated fields all the way
-till 'license', and kernel is compiled with patch 7. Kernel does:
-union bpf_attr attr = {};
-/* copy attributes from user space, may be less than sizeof(bpf_attr) */
-copy_from_user(&attr, uattr, size)
-so newer fields (all the way till log_buf) stay zero and kernel
-behavior is the same as it was in patch 4.
-So older user space works as-is with newer kernel.
-Another example:
-say, we want to add another flag to lookup() method added in patch 3,
-we just add another 'flags' field after 'value' field and adjust:
--#define BPF_MAP_LOOKUP_ELEM_LAST_FIELD value
-+#define BPF_MAP_LOOKUP_ELEM_LAST_FIELD flags
-Older user apps stay binary compatible with newer kernel.
-Does this explain things?
+> diff --git a/drivers/mfd/rk808.c b/drivers/mfd/rk808.c
+> index 0324422..bd02150 100644
+> --- a/drivers/mfd/rk808.c
+> +++ b/drivers/mfd/rk808.c
+> @@ -29,10 +29,40 @@ struct rk808_reg_data {
+>  	int value;
+>  };
+>  
+> +static bool rk808_is_volatile_reg(struct device *dev, unsigned int reg)
+> +{
+> +	/*
+> +	 * Notes:
+> +	 * - Technically the ROUND_30s bit makes RTC_CTRL_REG volatile, but
+> +	 *   we don't use that feature.  It's better to cache.
+> +	 * - It's unlikely we care that RK808_DEVCTRL_REG is volatile since
+> +	 *   bits are cleared in case when we shutoff anyway, but better safe.
+> +	 */
+> +
+> +	switch (reg) {
+> +	case RK808_SECONDS_REG ... RK808_WEEKS_REG:
+> +	case RK808_RTC_STATUS_REG:
+> +	case RK808_VB_MON_REG:
+> +	case RK808_THERMAL_REG:
+> +	case RK808_DCDC_UV_STS_REG:
+> +	case RK808_LDO_UV_STS_REG:
+> +	case RK808_DCDC_PG_REG:
+> +	case RK808_LDO_PG_REG:
+> +	case RK808_DEVCTRL_REG:
+> +	case RK808_INT_STS_REG1:
+> +	case RK808_INT_STS_REG2:
+> +		return true;
+> +	}
+> +
+> +	return false;
+> +}
+> +
+>  static const struct regmap_config rk808_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  	.max_register = RK808_IO_POL_REG,
+> +	.cache_type = REGCACHE_RBTREE,
+> +	.volatile_reg = rk808_is_volatile_reg,
+>  };
+>  
+>  static struct resource rtc_resources[] = {
 
->> +
->> +       /* grab the mutex to protect few globals used by verifier */
->> +       mutex_lock(&bpf_verifier_lock);
->
->
-> So only because of the verifier error log (which are global vars here) we
-> now have to hold a eBPF-related mutex lock each time when attaching a
-> program?
-
-correct.
-it's done on purpose to simplify verifier code.
-User app is blocked in bpf syscall until verifier checks the program.
-Not a big deal. I don't expect a lot of concurrent program loading.
-If it somehow becomes an issue, when can fix it, but for now I think
-less lines of verifier code is definitely a better trade off.
-
-> Also, if you really have to do the verifier error log, can't we spare
-> ourself
-> most part of the textifying parts if you would encode the verifier log into
-> a
-> normal structure array with eBPF specific error codes and then do all this
-> pretty printing in user space? Why is that impossible? I really think it's
-> odd.
-
-I thought I explained this already...
-verifier log is not at all "an array of specific error codes".
-verifier is printing the trace and state of what it's seeing
-while analyzing the program. Very branchy program may
-generate a trace log several times larger than program size.
-pretty text is the most convenient way to pass it to user.
-Theoretically we can come with some obscure log format for
-this internal verifier state, but what do we get ? only additional
-complexity. This obscure format will change just as text will
-change, because verifier will evolve. If you're looking for a way
-to fix this output into ABI, it's not possible. Verifier will
-become more advanced in the future and it's trace whether
-in text or in obscure encoded structs will change.
-Therefore text is much simpler option.
-Also consider the learning curve for somebody planning
-to add new features to verifier. This trace log is a perfect way
-to understand how verifier is working. Try simple program
-with multiple branches and see what kind of log is dumped.
-
-Another example:
-To make verifier easier to review, in this patch set I didn't
-include 'state pruning optimization' patch. That patch
-will change the trace log, because it changes the way
-verifier is working. If we had to introduce struct
-encoding of trace log, it would need to be changed already.
-So pretty text is the simplest and most convenient way.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
