@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497AbaIQM2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:28:04 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:42917 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaIQM2D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:28:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410821984-11160-1-git-send-email-bobby.prani@gmail.com>
-References: <1410821984-11160-1-git-send-email-bobby.prani@gmail.com>
-Date: Wed, 17 Sep 2014 14:28:00 +0200
-Message-ID: <CANq1E4Q_KfDamkCMatGFYCQ0VPfc6tbd7sWT_z_qDeboiNzgNw@mail.gmail.com>
-Subject: Re: [PATCH] selftests/memfd: Run test on all architectures
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Shuah Khan <shuahkh@osg.samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Phong Tran <tranmanphong@gmail.com>,
-        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1755502AbaIQM3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:29:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51939 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754653AbaIQM3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 08:29:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,540,1406617200"; 
+   d="scan'208";a="478113981"
+From: Loic Poulain <loic.poulain@intel.com>
+To: mathias.nyman@linux.intel.com, heikki.krogerus@linux.intel.com,
+        mika.westerberg@intel.com, samuel.ortiz@intel.com
+Cc: linux-kernel@vger.kernel.org, Loic Poulain <loic.poulain@intel.com>
+Subject: [PATCH] pinctrl: baytrail: Clear DIRECT_IRQ bit
+Date: Wed, 17 Sep 2014 14:30:35 +0200
+Message-Id: <1410957035-13965-1-git-send-email-loic.poulain@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Direct Irq En bit can be initialized to a bad value.
+This bit has to be cleared for io access mode.
 
-On Tue, Sep 16, 2014 at 12:59 AM, Pranith Kumar <bobby.prani@gmail.com> wrote:
-> Remove the dependence on x86 to run the memfd test. Verfied on 32-bit powerpc.
->
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+---
+ drivers/pinctrl/pinctrl-baytrail.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Now that most archs have __NR_memfd_create, this is:
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 975572e..94902f7 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -44,6 +44,7 @@
+ 
+ /* BYT_CONF0_REG register bits */
+ #define BYT_IODEN		BIT(31)
++#define BYT_DIRECT_IRQ		BIT(27)
+ #define BYT_TRIG_NEG		BIT(26)
+ #define BYT_TRIG_POS		BIT(25)
+ #define BYT_TRIG_LVL		BIT(24)
+@@ -232,7 +233,7 @@ static int byt_irq_type(struct irq_data *d, unsigned type)
+ 	/* For level trigges the BYT_TRIG_POS and BYT_TRIG_NEG bits
+ 	 * are used to indicate high and low level triggering
+ 	 */
+-	value &= ~(BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
++	value &= ~(BYT_DIRECT_IRQ | BYT_TRIG_POS | BYT_TRIG_NEG | BYT_TRIG_LVL);
+ 
+ 	switch (type) {
+ 	case IRQ_TYPE_LEVEL_HIGH:
+-- 
+1.8.3.2
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
-> ---
->  tools/testing/selftests/memfd/Makefile | 21 ---------------------
->  1 file changed, 21 deletions(-)
->
-> diff --git a/tools/testing/selftests/memfd/Makefile b/tools/testing/selftests/memfd/Makefile
-> index ad4ab01..b80cd10 100644
-> --- a/tools/testing/selftests/memfd/Makefile
-> +++ b/tools/testing/selftests/memfd/Makefile
-> @@ -1,38 +1,17 @@
-> -uname_M := $(shell uname -m 2>/dev/null || echo not)
-> -ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
-> -ifeq ($(ARCH),i386)
-> -       ARCH := x86
-> -endif
-> -ifeq ($(ARCH),x86_64)
-> -       ARCH := x86
-> -endif
-> -
->  CFLAGS += -D_FILE_OFFSET_BITS=64
-> -CFLAGS += -I../../../../arch/x86/include/generated/uapi/
-> -CFLAGS += -I../../../../arch/x86/include/uapi/
->  CFLAGS += -I../../../../include/uapi/
->  CFLAGS += -I../../../../include/
->
->  all:
-> -ifeq ($(ARCH),x86)
->         gcc $(CFLAGS) memfd_test.c -o memfd_test
-> -else
-> -       echo "Not an x86 target, can't build memfd selftest"
-> -endif
->
->  run_tests: all
-> -ifeq ($(ARCH),x86)
->         gcc $(CFLAGS) memfd_test.c -o memfd_test
-> -endif
->         @./memfd_test || echo "memfd_test: [FAIL]"
->
->  build_fuse:
-> -ifeq ($(ARCH),x86)
->         gcc $(CFLAGS) fuse_mnt.c `pkg-config fuse --cflags --libs` -o fuse_mnt
->         gcc $(CFLAGS) fuse_test.c -o fuse_test
-> -else
-> -       echo "Not an x86 target, can't build memfd selftest"
-> -endif
->
->  run_fuse: build_fuse
->         @./run_fuse_test.sh || echo "fuse_test: [FAIL]"
-> --
-> 2.1.0
->
