@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaIQATe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:19:34 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:62746 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382AbaIQATc (ORCPT
+	id S1754557AbaIQAVa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:21:30 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:58645 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039AbaIQAV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:19:32 -0400
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Tue, 16 Sep 2014 20:19:29 -0400
-To: NeilBrown <neilb@suse.de>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Remove possible deadlocks in nfs_release_page()
-Message-ID: <20140916201929.2e355cae@tlielax.poochiereds.net>
-In-Reply-To: <20140917094113.0cb07cf1@notabene.brown>
-References: <20140916051911.22257.24658.stgit@notabene.brown>
-	<20140916074741.1de870c5@tlielax.poochiereds.net>
-	<20140917094113.0cb07cf1@notabene.brown>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Tue, 16 Sep 2014 20:21:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/Ys0zqew17SC2TGhq3/B+BHp"; protocol="application/pgp-signature"
+In-Reply-To: <8738brhzoc.fsf@tassilo.jf.intel.com>
+References: <1410912351-31273-1-git-send-email-rlarocque@google.com>
+	<8738brhzoc.fsf@tassilo.jf.intel.com>
+Date: Tue, 16 Sep 2014 17:21:27 -0700
+Message-ID: <CABgu+=Na7A5amf_=QACrkgAAccf_VUaZMPJtzXb4K3D0FEasBw@mail.gmail.com>
+Subject: Re: [PATCH] x86/vdso: Add prctl to set per-process VDSO load
+From: Richard Larocque <rlarocque@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-api@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Ys0zqew17SC2TGhq3/B+BHp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 16, 2014 at 5:13 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> Richard Larocque <rlarocque@google.com> writes:
+>
+> Perhaps I'm missing something, but how do you modify the AUX vector
+> for the children?
+>
+>> +config VDSO_DISABLE_PRCTL
+>> +     depends on X86
+>> +     bool "prctl to disable VDSO loading"
+>> +     ---help---
+>> +       Enabling this option adds support for prctl calls that
+>> +       set and retrieve a per-process flag to disable VDSO loading on
+>> +       exec() for this process and all of its children.
+>
+> I don't think it makes any sense to have a config for a simple
+> feature like this. Just do it unconditionally.
+>
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-On Wed, 17 Sep 2014 09:41:13 +1000
-NeilBrown <neilb@suse.de> wrote:
+The AUX vector issue is a mistake on my part.
 
-> On Tue, 16 Sep 2014 07:47:41 -0400 Jeff Layton <jeff.layton@primarydata.c=
-om>
-> wrote:
->=20
->=20
-> > Also, we call things like invalidate_complete_page2 from the cache
-> > invalidation code. Will we end up with potential problems now that we
-> > have a stronger possibility that a page might not be freeable when it
-> > calls releasepage? (no idea on this -- I'm just spitballing)
-> >=20
->=20
-> Answering just this part here:
->  invalidate_complete_page2() is only called immediately after a call to
-> do_launder_page().
-> For nfs, that means nfs_launder_page() was called, which calls nfs_wb_pag=
-e()
-> which in turn calls
-> 		ret =3D nfs_commit_inode(inode, FLUSH_SYNC);
->=20
-> so the inode is fully committed when invalidate_complete_page2 is called,=
- so
-> nfs_release_page will succeed.
->=20
-> So there shouldn't be a problem there.
->=20
+Speaking of mistakes, the IDs in the commit message do not match those
+in the patch itself.  That needs to be fixed, too.
 
-Yep, Trond pointed that out today when we were discussing it. Thanks
-for confirming it here though...
+Point taken about the config.  I'll remove it in the next version of the patch.
 
---=20
-Jeff Layton <jlayton@primarydata.com>
-
---Sig_/Ys0zqew17SC2TGhq3/B+BHp
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUGNORAAoJEAAOaEEZVoIVdxsP/iWsCXblcW/GyBvM33IWf/8D
-kMkX5kZKlL8qzpDI8zXssrw8f84LzwgPcWqawn9NyfGjhGcTUyWgUU3CbhGjHUWO
-3Sfd1xWToc3gm75ZQQCcNSk5PhVAaProerx4c7U/G+rp4zaHylSjGCEqFhxQuw2Y
-sbHwewFwSq+68zcTR8U/wfZuqGl8pC2L4mz4WCmjA8lGNsLlrtC0V7Y16wgAFhSa
-iN5L7GWght21Mdzd8DJUdTTeG0wuU07VsWuc2eE5Xt6LYOMv3343ZFoAWbRtwOYA
-xuxe6t/C/Rw9lBPcyYlIAYEkgZm0UWjLE0iFbfChrLlqo2BEXt/IWnGRLSzcO+yM
-GAGVnqOK5wTdHKpXtIRiAFFbRVcKEcU8YDOaGRSWBw0DTx9aSgJFtzb/U756FAJq
-qQ7t1E/7N6GwsuwHtF2U3pNOdHI1VdmbkEU0KqAvOe8KJZkBLe2O+61gAYxBeT1h
-Ok8BzUyWphBK1/SSEzNtY7ERgjq5kxUhrmt7uttwKOqs9pf5yD7m4KAGDg0kbbbC
-bTKs+e1K5oM6OR09cu7LxRdrdV06FaMIH7x2DjCFn5ycoEGXdn5NjMwktgl+kmal
-tslpZ2HeyF87WoRKkvaQ+VvZ4PKOBpHG6osTTj9cseQlaDZuf+HxIOzKSMSVSRil
-TSB4k0+FfSv77ie7p1jq
-=cwpv
------END PGP SIGNATURE-----
-
---Sig_/Ys0zqew17SC2TGhq3/B+BHp--
+Thanks for the feedback.
