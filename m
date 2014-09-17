@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356AbaIQVuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:50:24 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:58803 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906AbaIQVsZ (ORCPT
+	id S932068AbaIQVzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:55:09 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:32207 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755953AbaIQVzG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:48:25 -0400
-From: Frans Klaver <fransklaver@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Frans Klaver <fransklaver@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] eeepc-laptop: use DEVICE_ATTR* to instantiate device_attributes
-Date: Wed, 17 Sep 2014 23:47:21 +0200
-Message-Id: <1410990447-3210-4-git-send-email-fransklaver@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
-References: <1410990447-3210-1-git-send-email-fransklaver@gmail.com>
+	Wed, 17 Sep 2014 17:55:06 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: blk-mq timeout handling fixes
+Thread-Topic: blk-mq timeout handling fixes
+Thread-Index: AQHPz6vDys5MtkP7e0KOy6GRYKCHipwF2/Hw
+Date: Wed, 17 Sep 2014 21:53:50 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958C86C8E@G9W0745.americas.hpqcorp.net>
+References: <1410651613-1993-1-git-send-email-hch@lst.de>
+In-Reply-To: <1410651613-1993-1-git-send-email-hch@lst.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device attributes are instantiated manually, while we have DEVICE_ATTR*
-macros available to do much of the work for us. Let's use them.
 
-Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@lst.de]
+> Sent: Saturday, 13 September, 2014 6:40 PM
+> To: Jens Axboe
+> Cc: Elliott, Robert (Server Storage); linux-scsi@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: blk-mq timeout handling fixes
+> 
+> This series fixes various issues with timeout handling that Robert
+> ran into when testing scsi-mq heavily.  He tested an earlier version,
+> and couldn't reproduce the issues anymore, although the series changed
+> quite significantly since and should probably be retested.
+> 
+> In summary we not only start the blk-mq timer inside the drivers
+> ->queue_rq method after the request has been fully setup, and we
+> also tell the drivers if we're timing out a reserved (internal)
+> request or a real one.  Many drivers including will need to handle
+> those internal ones differently, e.g. for scsi-mq we don't even
+> have a scsi command structure allocated for the reserved commands.
+
+I have rerun a variety of tests on:
+* Jens' for-next tree that went into 3.17rc5
+* plus this series
+* plus two patches for infinite recursion on flushes from 
+  Ming and then Christoph
+
+and have not been able to trigger the scsi_times_out req->special
+NULL pointer dereference that prompted this series.
+
+Testing includes:
+* concurrent heavy workload generators:
+  * fio high iodepth direct 512 byte random reads (> 1M IOPS)
+  * programs generating large bursts of paged writes
+    * mkfs.ext4 (followed by e2fsck)
+    * mkfs.xfs (followed by xfs_check)
+    * ddpt
+  * watch -n 0 sync to generate flushes
+* scsi_logging_level MLCOMPLETE set to 0 or 1
+  * scsi_lib.c patched to put all the ACTION_FAIL messages
+    under level 1 so they can be squelched (massive error 
+    prints cause more timeouts themselves)
+* 4 hpsa and 16 mpt3sas devices (all made from SAS SSDs)
+  * lockless hpsa driver
+* injecting errors
+  * device removal
+  * device generating infinite errors
+  * device generating a brief number of errors
+
+The filesystems don't always recover properly, but nothing in 
+the block or scsi midlayers crashed.
+
+So, you may add this to the series:
+Tested-by: Robert Elliott <elliott@hp.com>
+
 ---
- drivers/platform/x86/eeepc-laptop.c | 34 ++++------------------------------
- 1 file changed, 4 insertions(+), 30 deletions(-)
+Rob Elliott    HP Server Storage
 
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index 0094449..db26f78 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -308,13 +308,7 @@ static ssize_t show_sys_acpi(struct device *dev, int cm, char *buf)
- 	{								\
- 		return store_sys_acpi(dev, _cm, buf, count);		\
- 	}								\
--	static struct device_attribute dev_attr_##_name = {		\
--		.attr = {						\
--			.name = __stringify(_name),			\
--			.mode = _mode },				\
--		.show   = _name##_show,					\
--		.store  = _name##_store,				\
--	}
-+	static DEVICE_ATTR(_name, _mode, _name##_show, _name##_store)
- 
- EEEPC_CREATE_DEVICE_ATTR(camera, 0644, CM_ASL_CAMERA);
- EEEPC_CREATE_DEVICE_ATTR(cardr, 0644, CM_ASL_CARDREADER);
-@@ -420,29 +414,9 @@ static ssize_t cpufv_disabled_store(struct device *dev,
- }
- 
- 
--static struct device_attribute dev_attr_cpufv = {
--	.attr = {
--		.name = "cpufv",
--		.mode = 0644 },
--	.show   = cpufv_show,
--	.store  = cpufv_store
--};
--
--static struct device_attribute dev_attr_available_cpufv = {
--	.attr = {
--		.name = "available_cpufv",
--		.mode = 0444 },
--	.show   = available_cpufv_show
--};
--
--static struct device_attribute dev_attr_cpufv_disabled = {
--	.attr = {
--		.name = "cpufv_disabled",
--		.mode = 0644 },
--	.show   = cpufv_disabled_show,
--	.store  = cpufv_disabled_store
--};
--
-+static DEVICE_ATTR_RW(cpufv);
-+static DEVICE_ATTR_RO(available_cpufv);
-+static DEVICE_ATTR_RW(cpufv_disabled);
- 
- static struct attribute *platform_attributes[] = {
- 	&dev_attr_camera.attr,
--- 
-2.1.0
+
+
 
