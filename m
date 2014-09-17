@@ -1,394 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154AbaIQSvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:51:49 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60692 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755881AbaIQSvs (ORCPT
+	id S1756288AbaIQSwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:52:22 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:55799 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755881AbaIQSwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:51:48 -0400
-Date: Wed, 17 Sep 2014 19:51:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Thompson <daniel.thompson@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH 3.17-rc4 v7 4/6] irqchip: gic: Add support for IPI FIQ
-Message-ID: <20140917185138.GX12361@n2100.arm.linux.org.uk>
-References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org> <1410970218-28847-5-git-send-email-daniel.thompson@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410970218-28847-5-git-send-email-daniel.thompson@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 17 Sep 2014 14:52:21 -0400
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
+        Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
+        Paul Mackerras <paulus@samba.org>
+Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
+        <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v3 00/10] Add support for parameterized events from sysfs
+Date: Wed, 17 Sep 2014 11:51:53 -0700
+Message-Id: <1410979923-7722-1-git-send-email-sukadev@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14091718-3532-0000-0000-000004B8A804
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 09:10:16AM -0700, Daniel Thompson wrote:
-> This patch provides support for arm's newly added IPI FIQ. It works
-> by placing all interrupt sources *except* IPI FIQ in group 1 and
-> then flips a configuration bit in the GIC such that group 1
-> interrupts use IRQ and group 0 interrupts use FIQ.
-> 
-> All GIC hardware except GICv1-without-TrustZone support provides a means
-> to group exceptions into group 0 and group 1. However the hardware
-> functionality is unavailable to the kernel when a secure monitor is
-> present because access to the grouping registers are prohibited outside
-> "secure world" (a feature that allows grouping to be used to allow
-> hardware peripherals to send interrupts into the secure world). However
-> when grouping is not available we can rely on the GIC's RAZ/WI semantics
-> and avoid conditional code.
+What this patchset does:
 
-I've been chasing a bug with this on the Versatile Express CT9x4.  It
-seems that the GIC there is a GICv1, with secure extensions.  It seems
-to support interrupt grouping.
+ - the first patch (override sysfs in tools/perf via SYSFS_PATH) was sent out
+   previously, but needed a resend anyhow. Having it is useful for testing the
+   later changes to tools/perf.
+ - the second patch is a bugfix to the powerpc hv-24x7 code which was
+   previously sent out, which is a good idea to have when testing these patches
+   on POWER8 hardware.
 
-However, setting SPIs to group 1, with the control registers enabling
-both group 0 and group 1 (such that both groups are treated as IRQs)
-results in no SPIs being delivered to the kernel.  In other words,
-setting GIC_DIST_IGROUP for SPIs, and setting both GIC_CPU_CTRL and
-GIC_DIST_CTRL to 3.
+ - document perf sysfs and the changes to add parameterized events
+   - semi-notably: removes the growing list of specific POWER cpu events and
+     begins documenting them generically, much like the docs for
+     /sys/modules/MODULENAME do for modules.
+ - tools/perf changes to support parameterized events
+ - export some parameterized events from the powerpc pmus hv_24x7 and hv_gpci
 
-This is rather worrying, because we seem to have a GIC which for all
-intents and purposes appears to be compatible with what we want to do,
-appears to conform with the GIC architecture specifications, but doesn't
-actually work.
+Description of "event parameters" from the documentation patch:
 
-I suspect that running the Versatile Express CT9x4 in non-secure mode
-wouldn't work (because in non-secure mode, the GIC only allows access
-to group 1 interrupts.)
+    Event parameters are a basic way for partial events to be specified in
+    sysfs with per-event names given to the fields that need to be filled in
+    when using a particular event.
 
-I've added Will and Mark to this to see whether they have any comment.
+    It is intended for supporting cases where the single 'cpu' parameter is
+    insufficient. For example, POWER 8 has events for physical
+    sockets/cores/cpus that are accessible from with virtual machines. To
+    keep using the single 'cpu' parameter we'd need to perform a mapping
+    between Linux's cpus and the physical machine's cpus (in this case
+    Linux is running under a hypervisor). This isn't possible because
+    bindings between our cpus and physical cpus may not be fixed, and we
+    probably won't have a "cpu" on each physical cpu.
 
-> gic_raise_softirq() also needs changing to make it safe to call from
-> FIQ. This is due to its use by wake_up_klogd() during console_unlock().
-> 
-> Tested on Freescale i.MX6 (quad A9, GICv1-with-TrustZone running in
-> secure mode).
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> ---
->  arch/arm/kernel/traps.c         |   5 +-
->  drivers/irqchip/irq-gic.c       | 162 ++++++++++++++++++++++++++++++++++++++--
->  include/linux/irqchip/arm-gic.h |   3 +
->  3 files changed, 162 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-> index 439138d..92c4ea1 100644
-> --- a/arch/arm/kernel/traps.c
-> +++ b/arch/arm/kernel/traps.c
-> @@ -26,6 +26,7 @@
->  #include <linux/init.h>
->  #include <linux/sched.h>
->  #include <linux/irq.h>
-> +#include <linux/irqchip/arm-gic.h>
->  
->  #include <linux/atomic.h>
->  #include <asm/cacheflush.h>
-> @@ -479,7 +480,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
->  
->  	nmi_enter();
->  
-> -	/* nop. FIQ handlers for special arch/arm features can be added here. */
-> +#ifdef CONFIG_ARM_GIC
-> +	gic_handle_fiq_ipi();
-> +#endif
->  
->  	nmi_exit();
->  
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 4b959e6..05b5d62 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -39,8 +39,10 @@
->  #include <linux/slab.h>
->  #include <linux/irqchip/chained_irq.h>
->  #include <linux/irqchip/arm-gic.h>
-> +#include <linux/ratelimit.h>
->  
->  #include <asm/cputype.h>
-> +#include <asm/fiq.h>
->  #include <asm/irq.h>
->  #include <asm/exception.h>
->  #include <asm/smp_plat.h>
-> @@ -48,6 +50,10 @@
->  #include "irq-gic-common.h"
->  #include "irqchip.h"
->  
-> +#ifndef SMP_IPI_FIQ_MASK
-> +#define SMP_IPI_FIQ_MASK 0
-> +#endif
-> +
->  union gic_base {
->  	void __iomem *common_base;
->  	void __percpu * __iomem *percpu_base;
-> @@ -71,6 +77,8 @@ struct gic_chip_data {
->  };
->  
->  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
-> +/* A fiq-safe spinlock must only be locked when the FIQ is masked */
-> +static DEFINE_RAW_SPINLOCK(fiq_safe_migration_lock);
->  
->  /*
->   * The GIC mapping of CPU interfaces does not necessarily match
-> @@ -325,6 +333,94 @@ static struct irq_chip gic_chip = {
->  	.irq_set_wake		= gic_set_wake,
->  };
->  
-> +/*
-> + * Shift an interrupt between Group 0 and Group 1.
-> + *
-> + * In addition to changing the group we also modify the priority to
-> + * match what "ARM strongly recommends" for a system where no Group 1
-> + * interrupt must ever preempt a Group 0 interrupt.
-> + *
-> + * If is safe to call this function on systems which do not support
-> + * grouping (it will have no effect).
-> + */
-> +static void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
-> +				int group)
-> +{
-> +	unsigned int grp_reg = hwirq / 32 * 4;
-> +	u32 grp_mask = BIT(hwirq % 32);
-> +	u32 grp_val;
-> +
-> +	unsigned int pri_reg = (hwirq / 4) * 4;
-> +	u32 pri_mask = BIT(7 + ((hwirq % 4) * 8));
-> +	u32 pri_val;
-> +
-> +	/*
-> +	 * Systems which do not support grouping will have no bits
-> +	 * set in IGROUP[0] (and all systems which do will have set bits).
-> +	 */
-> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + 0);
-> +	if (!grp_val)
-> +		return;
-> +
-> +	raw_spin_lock(&irq_controller_lock);
-> +
-> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-> +	pri_val = readl_relaxed(base + GIC_DIST_PRI + pri_reg);
-> +
-> +	if (group) {
-> +		grp_val |= grp_mask;
-> +		pri_val |= pri_mask;
-> +	} else {
-> +		grp_val &= ~grp_mask;
-> +		pri_val &= ~pri_mask;
-> +	}
-> +
-> +	writel_relaxed(grp_val, base + GIC_DIST_IGROUP + grp_reg);
-> +	writel_relaxed(pri_val, base + GIC_DIST_PRI + pri_reg);
-> +
-> +	raw_spin_unlock(&irq_controller_lock);
-> +}
-> +
-> +/*
-> + * Test which group an interrupt belongs to.
-> + *
-> + * Returns 0 if the controller does not support grouping.
-> + */
-> +static int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
-> +{
-> +	unsigned int grp_reg = hwirq / 32 * 4;
-> +	u32 grp_val;
-> +
-> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
-> +
-> +	return (grp_val >> (hwirq % 32)) & 1;
-> +}
-> +
-> +/*
-> + * Fully acknowledge (both ack and eoi) any outstanding FIQ-based IPI,
-> + * otherwise do nothing.
-> + */
-> +void gic_handle_fiq_ipi(void)
-> +{
-> +	struct gic_chip_data *gic = &gic_data[0];
-> +	void __iomem *cpu_base = gic_data_cpu_base(gic);
-> +	unsigned long irqstat, irqnr;
-> +
-> +	if (WARN_ON(!in_nmi()))
-> +		return;
-> +
-> +	while ((1u << readl_relaxed(cpu_base + GIC_CPU_HIGHPRI)) &
-> +	       SMP_IPI_FIQ_MASK) {
-> +		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
-> +		writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
-> +
-> +		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
-> +		WARN_RATELIMIT(irqnr > 16,
-> +			       "Unexpected irqnr %lu (bad prioritization?)\n",
-> +			       irqnr);
-> +	}
-> +}
-> +
->  void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
->  {
->  	if (gic_nr >= MAX_GIC_NR)
-> @@ -373,7 +469,18 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
->  
->  	gic_dist_config(base, gic_irqs, NULL);
->  
-> -	writel_relaxed(1, base + GIC_DIST_CTRL);
-> +	/*
-> +	 * Set all global interrupts to be group 1 (this register is
-> +	 * RAZ/WI if not accessible in current mode)
-> +	 */
-> +	for (i = 32; i < gic_irqs; i += 32)
-> +		writel_relaxed(0xffffffff, base + GIC_DIST_IGROUP + i * 4 / 32);
-> +
-> +	/*
-> +	 * Set EnableGrp1/EnableGrp0 (bit 1 and 0) or EnableGrp (bit 0 only,
-> +	 * bit 1 ignored)
-> +	 */
-> +	writel_relaxed(3, base + GIC_DIST_CTRL);
->  }
->  
->  static void gic_cpu_init(struct gic_chip_data *gic)
-> @@ -382,6 +489,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  	void __iomem *base = gic_data_cpu_base(gic);
->  	unsigned int cpu_mask, cpu = smp_processor_id();
->  	int i;
-> +	unsigned long secure_irqs, secure_irq;
->  
->  	/*
->  	 * Get what the GIC says our CPU mask is.
-> @@ -400,8 +508,27 @@ static void gic_cpu_init(struct gic_chip_data *gic)
->  
->  	gic_cpu_config(dist_base, NULL);
->  
-> +	/*
-> +	 * Set any PPI and SGI interrupts not set in SMP_IPI_FIQ_MASK
-> +	 * to be group 1 (this register is RAZ/WI if not accessible)
-> +	 */
-> +	writel_relaxed(~SMP_IPI_FIQ_MASK, dist_base + GIC_DIST_IGROUP + 0);
-> +
-> +	/*
-> +	 * Update the priority of any resulting group0 interrupts.
-> +	 */
-> +	secure_irqs = ~readl_relaxed(dist_base + GIC_DIST_IGROUP + 0);
-> +	for_each_set_bit(secure_irq, &secure_irqs, 16)
-> +		gic_set_group_irq(dist_base, i, 0);
-> +
->  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, base + GIC_CPU_CTRL);
-> +
-> +	/* The bottom most bit will be set for all GIC variants (and is
-> +	 * called Enable or EnableGrp0 depending on operating mode). The
-> +	 * remaining four bits (CBPR, FIQEn, AckCtl and EnableGrp1) are
-> +	 * RAZ/WI if not accessible.
-> +	 */
-> +	writel_relaxed(0x1f, base + GIC_CPU_CTRL);
->  }
->  
->  void gic_cpu_if_down(void)
-> @@ -485,7 +612,7 @@ static void gic_dist_restore(unsigned int gic_nr)
->  		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
->  			dist_base + GIC_DIST_ENABLE_SET + i * 4);
->  
-> -	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
-> +	writel_relaxed(3, dist_base + GIC_DIST_CTRL);
->  }
->  
->  static void gic_cpu_save(unsigned int gic_nr)
-> @@ -542,7 +669,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
->  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
->  
->  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
-> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
-> +	writel_relaxed(0x1f, cpu_base + GIC_CPU_CTRL);
->  }
->  
->  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
-> @@ -604,8 +731,19 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  {
->  	int cpu;
->  	unsigned long flags, map = 0;
-> +	unsigned long softint;
->  
-> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
-> +	/*
-> +	 * The locking in this function ensures we don't use stale cpu mappings
-> +	 * and thus we never route an IPI to the wrong physical core during a
-> +	 * big.LITTLE switch. The switch code takes both of these locks meaning
-> +	 * we can choose whichever lock is safe to use from our current calling
-> +	 * context.
-> +	 */
-> +	if (in_nmi())
-> +		raw_spin_lock(&fiq_safe_migration_lock);
-> +	else
-> +		raw_spin_lock_irqsave(&irq_controller_lock, flags);
->  
->  	/* Convert our logical CPU mask into a physical one. */
->  	for_each_cpu(cpu, mask)
-> @@ -618,7 +756,15 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
->  	dmb(ishst);
->  
->  	/* this always happens on GIC0 */
-> -	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
-> +	softint = map << 16 | irq;
-> +	if (gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
-> +		softint |= 0x8000;
-> +	writel_relaxed(softint,
-> +		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
-> +
-> +	if (in_nmi())
-> +		raw_spin_unlock(&fiq_safe_migration_lock);
-> +	else
->  
->  	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
->  }
-> @@ -668,7 +814,7 @@ int gic_get_cpu_id(unsigned int cpu)
->   * Migrate all peripheral interrupts with a target matching the current CPU
->   * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
->   * is also updated.  Targets to other CPU interfaces are unchanged.
-> - * This must be called with IRQs locally disabled.
-> + * This must be called with IRQ and FIQ locally disabled.
->   */
->  void gic_migrate_target(unsigned int new_cpu_id)
->  {
-> @@ -690,6 +836,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  	ror_val = (cur_cpu_id - new_cpu_id) & 31;
->  
->  	raw_spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&fiq_safe_migration_lock);
->  
->  	/* Update the target interface for this logical CPU */
->  	gic_cpu_map[cpu] = 1 << new_cpu_id;
-> @@ -709,6 +856,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
->  		}
->  	}
->  
-> +	raw_spin_unlock(&fiq_safe_migration_lock);
->  	raw_spin_unlock(&irq_controller_lock);
->  
->  	/*
-> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
-> index 45e2d8c..52a5676 100644
-> --- a/include/linux/irqchip/arm-gic.h
-> +++ b/include/linux/irqchip/arm-gic.h
-> @@ -101,5 +101,8 @@ static inline void __init register_routable_domain_ops
->  {
->  	gic_routable_irq_domain_ops = ops;
->  }
-> +
-> +void gic_handle_fiq_ipi(void);
-> +
->  #endif /* __ASSEMBLY */
->  #endif
-> -- 
-> 1.9.3
-> 
+Description of the sysfs contents when events are parameterized (copied from an
+included patch):
+
+	Examples:
+
+		domain=0x1,offset=0x8,starting_index=phys_cpu
+
+	In the case of the last example, a value replacing "phys_cpu"
+	would need to be provided by the user selecting the particular
+	event. This is refered to as "event parameterization". All
+	non-numerical values indicate an event parameter.
+
+Notes on how perf-list displays parameterized events (and how to use them,
+again culled from an included patch):
+
+	PARAMETERIZED EVENTS
+	--------------------
+
+	Some pmu events listed by 'perf-list' will be displayed with '?' in
+	them. For example:
+
+	  hv_gpci/dtbp_ptitc,phys_processor_idx=?/
+
+	This means that when provided as an event, a value for
+	phys_processor_idx must also be supplied. For example:
+
+	  perf stat -e 'hv_gpci/dtbp_ptitc,phys_processor_idx=0x2/' ...
+
+Changelog[v3]
+	- [Jiri Olsa] Changed the event parameters are specified. If
+	  event file specifes 'param=val' make the usage 'param=123'
+	  rather than 'val=123'. (patch 1,2/10)
+	- Shortened event names using "PHYS" and "VCPU" (patch 4/10)
+	- Print help message if invalid parameter is specified or required
+	  parameter is missing.
+	- Moved 3 patches that are unrelated to parametrized events into
+	  a separate patchset.
+	- Reordered patches so code changes come first.
+Changelog[v2]
+	- [Joe Perches, David Laight] Use beNN_to_cpu() instead of guessing
+	  the size from type.
+	- Use kmem_cache_free() to free page allocated with kmem_cache_alloc().
+	- Rebase to recent kernel
+
+*** BLURB HERE ***
+
+Cody P Schafer (10):
+  tools/perf: support parsing parameterized events
+  tools/perf: extend format_alias() to include event parameters
+  perf: provide sysfs_show for struct perf_pmu_events_attr
+  powerpc/perf/hv-24x7: parse catalog and populate sysfs with events
+  perf: add PMU_EVENT_ATTR_STRING() helper
+  powerpc/perf/{hv-gpci,hv-common}: generate requests with counters
+    annotated
+  powerpc/perf/hv-gpci: add the remaining gpci requests
+  perf Documentation: add event parameters
+  tools/perf: Document parameterized and symbolic events
+  powerpc/perf/hv-24x7: Document sysfs event description entries
+
+ .../testing/sysfs-bus-event_source-devices-events  |    6 +
+ .../testing/sysfs-bus-event_source-devices-hv_24x7 |   22 +
+ arch/powerpc/perf/hv-24x7-catalog.h                |   25 +
+ arch/powerpc/perf/hv-24x7-domains.h                |   28 +
+ arch/powerpc/perf/hv-24x7.c                        |  787 +++++++++++++++++++-
+ arch/powerpc/perf/hv-24x7.h                        |   12 +-
+ arch/powerpc/perf/hv-common.c                      |   10 +-
+ arch/powerpc/perf/hv-gpci-requests.h               |  262 +++++++
+ arch/powerpc/perf/hv-gpci.c                        |    8 +
+ arch/powerpc/perf/hv-gpci.h                        |   37 +-
+ arch/powerpc/perf/req-gen/_begin.h                 |   13 +
+ arch/powerpc/perf/req-gen/_clear.h                 |    5 +
+ arch/powerpc/perf/req-gen/_end.h                   |    4 +
+ arch/powerpc/perf/req-gen/_request-begin.h         |   15 +
+ arch/powerpc/perf/req-gen/_request-end.h           |    8 +
+ arch/powerpc/perf/req-gen/perf.h                   |  155 ++++
+ include/linux/perf_event.h                         |   10 +
+ kernel/events/core.c                               |    8 +
+ tools/perf/Documentation/perf-list.txt             |   13 +
+ tools/perf/Documentation/perf-record.txt           |   12 +
+ tools/perf/Documentation/perf-stat.txt             |   20 +-
+ tools/perf/util/parse-events.h                     |    1 +
+ tools/perf/util/pmu.c                              |   90 ++-
+ 23 files changed, 1491 insertions(+), 60 deletions(-)
+ create mode 100644 arch/powerpc/perf/hv-24x7-domains.h
+ create mode 100644 arch/powerpc/perf/hv-gpci-requests.h
+ create mode 100644 arch/powerpc/perf/req-gen/_begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_clear.h
+ create mode 100644 arch/powerpc/perf/req-gen/_end.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-begin.h
+ create mode 100644 arch/powerpc/perf/req-gen/_request-end.h
+ create mode 100644 arch/powerpc/perf/req-gen/perf.h
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.7.9.5
+
