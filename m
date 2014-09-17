@@ -1,104 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbaIQQit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:38:49 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:44190 "EHLO mailhub1.si.c-s.fr"
+	id S1756241AbaIQQh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:37:28 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:44152 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756223AbaIQQh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:37:29 -0400
+	id S1756223AbaIQQhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:37:25 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>,
         scottwood@freescale.com
-Subject: [PATCH v3 21/21] powerpc/8xx: Invalidate non present TLB as early as possible
-Message-Id: <20140917163701.2CD071AB04A@localhost.localdomain>
-Date: Wed, 17 Sep 2014 18:37:01 +0200 (CEST)
+Subject: [PATCH v3 17/21] powerpc/8xx: set PTE bit 22 off TLBmiss
+Message-Id: <20140917163700.6AF941AB042@localhost.localdomain>
+Date: Wed, 17 Sep 2014 18:37:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-8xx sometimes need to load a invalid/non-present TLBs in
-it DTLB asm handler.
-
-These must be invalidated separaly as linux mm doesn't.
-    
-Commit 5efab4a02c89c252fb4cce097aafde5f8208dbfe was invalidating them in
-arch/powerpc/mm/fault.c. 
-This patch does the invalidation earlier in order to free the TLB as soon as
-possible. This also has the advantage of removing some 8xx specific code from
-fault.c
+No need to re-set this bit at each TLB miss. Let's set it in the PTE.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
+Changes in v2:
+- None
+
 Changes in v3:
-- New
+- Removed PPC405 related macro from PPC8xx specific code
+- PTE_NONE_MASK doesn't need PAGE_ACCESSED in Linux 2.6
 
- linux/arch/powerpc/kernel/head_8xx.S | 15 ++++++++++-----
- linux/arch/powerpc/mm/fault.c        |  7 -------
- 2 files changed, 10 insertions(+), 12 deletions(-)
+ arch/powerpc/include/asm/pgtable-ppc32.h | 20 ++++++++++++++++++++
+ arch/powerpc/include/asm/pte-8xx.h       |  7 +++++--
+ arch/powerpc/kernel/head_8xx.S           | 10 ++--------
+ 3 files changed, 27 insertions(+), 10 deletions(-)
 
-diff --git a/linux/arch/powerpc/kernel/head_8xx.S b/linux/arch/powerpc/kernel/head_8xx.S
-index 3e8e341..3b96862 100644
---- a/linux/arch/powerpc/kernel/head_8xx.S
-+++ b/linux/arch/powerpc/kernel/head_8xx.S
-@@ -473,7 +473,10 @@ InstructionTLBError1:
- 	EXCEPTION_PROLOG_2
- 	mr	r4,r12
- 	mr	r5,r9
--	EXC_XFER_LITE(0x1300, handle_page_fault)
-+	andis.	r10,r5,0x4000
-+	beq+	1f
-+	tlbie	r4
-+1:	EXC_XFER_LITE(0x1300, handle_page_fault)
+diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+index 47edde8..35a9b44 100644
+--- a/arch/powerpc/include/asm/pgtable-ppc32.h
++++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+@@ -172,6 +172,25 @@ static inline unsigned long pte_update(pte_t *p,
+ #ifdef PTE_ATOMIC_UPDATES
+ 	unsigned long old, tmp;
  
- /* This is the data TLB error on the MPC8xx.  This could be due to
-  * many reasons, including a dirty update to a pte.  We bail out to
-@@ -489,11 +492,13 @@ DataTLBError:
- DARFixed:/* Return from dcbx instruction bug workaround */
- 	EXCEPTION_PROLOG_1
- 	EXCEPTION_PROLOG_2
--	mfspr	r10,SPRN_DSISR
--	stw	r10,_DSISR(r11)
--	mr	r5,r10
-+	mfspr	r5,SPRN_DSISR
-+	stw	r5,_DSISR(r11)
- 	mfspr	r4,SPRN_DAR
--	li	r10,RPN_PATTERN
-+	andis.	r10,r5,0x4000
-+	beq+	1f
-+	tlbie	r4
-+1:	li	r10,RPN_PATTERN
- 	mtspr	SPRN_DAR,r10	/* Tag DAR, to be used in DTLB Error */
- 	EXC_XFER_LITE(0x1400, handle_page_fault)
++#ifdef CONFIG_PPC_8xx
++	unsigned long tmp2;
++
++	__asm__ __volatile__("\
++1:	lwarx	%0,0,%4\n\
++	andc	%1,%0,%5\n\
++	or	%1,%1,%6\n\
++	/* 0x200 == Extended encoding, bit 22 */ \
++	/* Bit 22 has to be 1 if neither _PAGE_USER nor _PAGE_RW are set */ \
++	rlwimi	%1,%1,32-2,0x200\n /* get _PAGE_USER */ \
++	rlwinm	%3,%1,32-1,0x200\n /* get _PAGE_RW */ \
++	or	%1,%3,%1\n\
++	xori	%1,%1,0x200\n"
++"	stwcx.	%1,0,%4\n\
++	bne-	1b"
++	: "=&r" (old), "=&r" (tmp), "=m" (*p), "=&r" (tmp2)
++	: "r" (p), "r" (clr), "r" (set), "m" (*p)
++	: "cc" );
++#else /* CONFIG_PPC_8xx */
+ 	__asm__ __volatile__("\
+ 1:	lwarx	%0,0,%3\n\
+ 	andc	%1,%0,%4\n\
+@@ -182,6 +201,7 @@ static inline unsigned long pte_update(pte_t *p,
+ 	: "=&r" (old), "=&r" (tmp), "=m" (*p)
+ 	: "r" (p), "r" (clr), "r" (set), "m" (*p)
+ 	: "cc" );
++#endif /* CONFIG_PPC_8xx */
+ #else /* PTE_ATOMIC_UPDATES */
+ 	unsigned long old = pte_val(*p);
+ 	*p = __pte((old & ~clr) | set);
+diff --git a/arch/powerpc/include/asm/pte-8xx.h b/arch/powerpc/include/asm/pte-8xx.h
+index d44826e..daa4616 100644
+--- a/arch/powerpc/include/asm/pte-8xx.h
++++ b/arch/powerpc/include/asm/pte-8xx.h
+@@ -48,19 +48,22 @@
+  */
+ #define _PAGE_RW	0x0400	/* lsb PP bits, inverted in HW */
+ #define _PAGE_USER	0x0800	/* msb PP bits */
++/* set when neither _PAGE_USER nor _PAGE_RW are set */
++#define _PAGE_KNLRO	0x0200
  
-diff --git a/linux/arch/powerpc/mm/fault.c b/linux/arch/powerpc/mm/fault.c
-index adc084b..6f4f731 100644
---- a/linux/arch/powerpc/mm/fault.c
-+++ b/linux/arch/powerpc/mm/fault.c
-@@ -43,7 +43,6 @@
- #include <asm/tlbflush.h>
- #include <asm/siginfo.h>
- #include <asm/debug.h>
--#include <mm/mmu_decl.h>
+ #define _PMD_PRESENT	0x0001
+ #define _PMD_BAD	0x0ff0
+ #define _PMD_PAGE_MASK	0x000c
+ #define _PMD_PAGE_8M	0x000c
  
- #include "icswx.h"
+-#define _PTE_NONE_MASK _PAGE_ACCESSED
++#define _PTE_NONE_MASK _PAGE_KNLRO
  
-@@ -368,12 +367,6 @@ good_area:
- 		goto bad_area;
- #endif /* CONFIG_6xx */
- #if defined(CONFIG_8xx)
--	/* 8xx sometimes need to load a invalid/non-present TLBs.
--	 * These must be invalidated separately as linux mm don't.
--	 */
--	if (error_code & 0x40000000) /* no translation? */
--		_tlbil_va(address, 0, 0, 0);
--
-         /* The MPC8xx seems to always set 0x80000000, which is
-          * "undefined".  Of those that can be set, this is the only
-          * one which seems bad.
+ /* Until my rework is finished, 8xx still needs atomic PTE updates */
+ #define PTE_ATOMIC_UPDATES	1
+ 
+ /* We need to add _PAGE_SHARED to kernel pages */
+-#define _PAGE_KERNEL_RO	(_PAGE_SHARED)
++#define _PAGE_KERNEL_RO	(_PAGE_SHARED | _PAGE_KNLRO)
++#define _PAGE_KERNEL_ROX	(_PAGE_EXEC | _PAGE_KNLRO)
+ #define _PAGE_KERNEL_RW	(_PAGE_DIRTY | _PAGE_RW | _PAGE_HWWRITE)
+ 
+ #endif /* __KERNEL__ */
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index a7af26e..48d3de8 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -445,14 +445,8 @@ DataStoreTLBMiss:
+ 	and	r11, r11, r10
+ 	rlwimi	r10, r11, 0, _PAGE_PRESENT
+ #endif
+-	/* Honour kernel RO, User NA */
+-	/* 0x200 == Extended encoding, bit 22 */
+-	rlwimi	r10, r10, 32-2, 0x200 /* Copy USER to bit 22, 0x200 */
+-	/* r11 =  (r10 & _PAGE_RW) >> 1 */
+-	rlwinm	r11, r10, 32-1, 0x200
+-	or	r10, r11, r10
+-	/* invert RW and 0x200 bits */
+-	xori	r10, r10, _PAGE_RW | 0x200
++	/* invert RW */
++	xori	r10, r10, _PAGE_RW
+ 
+ 	/* The Linux PTE won't go exactly into the MMU TLB.
+ 	 * Software indicator bits 22 and 28 must be clear.
 -- 
 2.1.0
 
