@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434AbaIQQtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:49:32 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:49898 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393AbaIQQt3 (ORCPT
+	id S1756551AbaIQQtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:49:40 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46316 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446AbaIQQth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:49:29 -0400
-Date: Wed, 17 Sep 2014 09:49:25 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: ssbi: promote the driver to subsys level
-Message-ID: <20140917164925.GO30918@lee--X1>
-References: <1410915594-15599-1-git-send-email-srinivas.kandagatla@linaro.org>
- <20140917160305.GH30918@lee--X1>
- <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com>
+	Wed, 17 Sep 2014 12:49:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAD=FV=VsSg5QLbdhgb4vV1+boeWaksCGj4MfGnCQnyhQR6Dr5A@mail.gmail.com>
+References: <1409216559-22402-1-git-send-email-cw00.choi@samsung.com>
+	<1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
+	<CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
+	<CAD8Lp47M8jHLrQAdYUn6NZn2Ety_02E6HPzPDUX3uGLVqf1riw@mail.gmail.com>
+	<CABxcv==CBbaY_GVgmWe5QzJdhMipyx5TpZ4_3oKLzkyiGPOBrw@mail.gmail.com>
+	<CAD=FV=VsSg5QLbdhgb4vV1+boeWaksCGj4MfGnCQnyhQR6Dr5A@mail.gmail.com>
+Date: Wed, 17 Sep 2014 10:49:35 -0600
+Message-ID: <CAD8Lp45LyE6AuGgC7xKyFiniF2K4v_G1X-=QARrJ1DqLYRy3Lg@mail.gmail.com>
+Subject: Re: [PATCHv3 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
+From: Daniel Drake <drake@endlessm.com>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Javier Martinez Canillas <javier@dowhile0.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+On Tue, Sep 16, 2014 at 4:15 PM, Doug Anderson <dianders@chromium.org> wrote:
+> NOTE: I don't think that the builtin RTC is terribly important for any
+> exynos-based Chromebooks that I'm aware of.  We rely on the RTC that's
+> part of the Maxim PMIC itself and pretty much ignore the one built-in
+> to the exynos.  I think there are some cases it was used (as a
+> fallback wakeup source in certain test scripts), but nothing very
+> important.
 
-> On 17 Sep 2014 09:03, "Lee Jones" <lee.jones@linaro.org> wrote:
-> >
-> > On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
-> >
-> > > This patch promtes the driver to be at subsystem level as this driver
-> > > will be used by gpio controller drivers which inturn are used by many
-> > > platform drivers.
-> >
-> > Any reason why you're not using -EPROBE?
-> >
-> EPROBE is possible but it's going to add few more cycles to boot time.
-> 
-> As this driver is a very basic driver on which other drivers depend
-> ensuring the sequence would improve the boot time.
+That's not true for all hardware though, at least the board I'm
+working on now has the SoC RTC as battery-backed and the PMIC one with
+no battery. So in this case at least, the interesting RTC is the SoC
+one.
 
-We only tend to promote drivers' init level as a last resort.  If
--EPROBE_DEFER is possible, please use that instead.
-
-> > > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> > > ---
-> > >  drivers/mfd/ssbi.c | 7 ++++++-
-> > >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > >
-> > > diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
-> > > index b78942e..4fbe02e 100644
-> > > --- a/drivers/mfd/ssbi.c
-> > > +++ b/drivers/mfd/ssbi.c
-> > > @@ -331,7 +331,12 @@ static struct platform_driver ssbi_driver = {
-> > >               .of_match_table = ssbi_match_table,
-> > >       },
-> > >  };
-> > > -module_platform_driver(ssbi_driver);
-> > > +
-> > > +static int ssbi_init(void)
-> > > +{
-> > > +     return platform_driver_register(&ssbi_driver);
-> > > +}
-> > > +subsys_initcall(ssbi_init);
-> > >
-> > >  MODULE_LICENSE("GPL v2");
-> > >  MODULE_VERSION("1.0");
-> >
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Daniel
