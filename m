@@ -1,149 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952AbaIQUxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:53:44 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:35506 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755801AbaIQUxm (ORCPT
+	id S1756963AbaIQUzc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:55:32 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:39416 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162AbaIQUzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:53:42 -0400
+	Wed, 17 Sep 2014 16:55:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <5419F0D4.9090107@infradead.org>
-References: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com>
- <5419F007.9070509@infradead.org> <5419F0D4.9090107@infradead.org>
-From: Steve French <smfrench@gmail.com>
-Date: Wed, 17 Sep 2014 15:53:21 -0500
-Message-ID: <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com>
-Subject: Re: match_token weird behavior
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <54198BDE.8000509@codeaurora.org>
+References: <1410901756-20694-1-git-send-email-cov@codeaurora.org>
+ <5418AA80.4090102@codeaurora.org> <54198BDE.8000509@codeaurora.org>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Wed, 17 Sep 2014 13:55:10 -0700
+X-Google-Sender-Auth: IEGCj9XIZScMDKOkFz5A3UW1rHA
+Message-ID: <CAPz6YkUFbvUiTJmtxxpdWQ_Qg_no05AKWfUsVHkTkT+nvXmb1g@mail.gmail.com>
+Subject: Re: [RFC] arm: Handle starting up in secure mode
+To: Christopher Covington <cov@codeaurora.org>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For additional information the strings that are being matched against are:
-
-#define SMB1_VERSION_STRING    "1.0"
-#define SMB20_VERSION_STRING    "2.0"
-#define SMB21_VERSION_STRING    "2.1"
-#define SMB30_VERSION_STRING    "3.0"
-#define SMB302_VERSION_STRING    "3.02"
-#define SMB31_VERSION_STRING    "3.1"
-
-
-The matching works as expected, e,g. specifying 3.0 gets matched to
-Smb_30, before and/after adding the sixth element to the match_table_t
-- except that unmatched items (picking a dialect that doesn't exist
-like "5.1") matches to Smb_21 where it used to fall through to the
-default (error) case.
-
-It got me a little worried that there MAX_OPT_ARGS is 3 and I am
-getting the third element in the case of the error.
-
-Looking at other examples in the kernel were strange e.g. ext4/super.c has this
-
-        /*
-         * Initialize args struct so we know whether arg was
-         * found; some options take optional arguments.
-         */
-        args[0].to = args[0].from = NULL;
-        token = match_token(p, tokens, args);
-        (and then passes args down to a large helper function handle_mount_opt)
-
-Initializing args didn't seem to help in the cifs case
-
-On Wed, Sep 17, 2014 at 3:36 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 09/17/14 13:33, Randy Dunlap wrote:
->> On 09/17/14 11:20, Steve French wrote:
->>> Noticing something very strange with match_token.   I had five strings
->>> I need to compare a version string (protocol dialect eg. "2.1" or
->>> "3.0") against, to find which it matches (if any), but adding one to
->>> the list (now checking for one of six strings instead of five) causes
->>> the error case to always default to element 3 (in my example looks as
->>> if it matched to the 2.1 string) instead of the error case.
+On Wed, Sep 17, 2014 at 6:25 AM, Christopher Covington
+<cov@codeaurora.org> wrote:
+> On 09/16/2014 05:24 PM, Christopher Covington wrote:
+>> On 09/16/2014 05:09 PM, Christopher Covington wrote:
+>>> ARM Linux currently has the most features available to it in hypervisor
+>>> (HYP) mode, so switch to it when possible. This can also ensure proper
+>>> reset of newer registers such as CNTVOFF.
 >>>
->>> enum smb_version {
->>>     Smb_1 = 1,
->>>     Smb_20,
->>>     Smb_21,
->>>     Smb_30,
->>>     Smb_302,
->>> };
->>>
->>> static const match_table_t cifs_smb_version_tokens = {
->>>     { Smb_1, SMB1_VERSION_STRING },
->>>     { Smb_20, SMB20_VERSION_STRING},
->>>     { Smb_21, SMB21_VERSION_STRING },
->>>     { Smb_30, SMB30_VERSION_STRING },
->>>     { Smb_302, SMB302_VERSION_STRING },
->>> };
->>>
+>>> The permissions on the Non-Secure Access Control Register (NSACR) are
+>>> used to probe what the security setting currently is when in supervisor
+>>> (SVC) mode.
 >>
->> You don't tell us what the actual string values are, but I'm guessing that
->> SMB302_VERSION_STRING is a subset (same in first N characters) of SMB30_VERSION_STRING. ??
->>
->> In that case I think that match_token() will return a ptr to SMB_30 instead of to
->> SMB_302 when the input is "3.02" (matches "3.0" due to the kernel's implementation
->> of strcmp() stopping at the end of string1 (where string1 is "3.0" in this case).
+>> Sorry, this doesn't work yet. I was misinterpreting my test results. For what
+>> it's worth, my testing and development methodology is to run it after hacked
+>> up versions of the semihosting bootwrapper on the simulator that corresponds
+>> to rtsm_ve-aemv8a.dtb (AEM VE FVP these days?) and examine the instruction traces.
 >
-> Oops, it seems that I got the strcmp() parameters reversed.  Sorry about that.
-> Feel free to disregard my ramblings.
+> Looks like the real problem was that I was hacking up the bootwrapper
+> incorrectly--my start-in-secure-mode bootwrapper variant wasn't setting up the
+> GIC for non-secure access. With that changed, I've tested the following
+> variations using the Image file in a single core configuration.
 >
->>
->> If that is all correct, then could your return value be off by 1?
->>
->>>
->>> When I add one entry to the lists above (going from 5 to 6 elements),
->>> and then add one additional case for it to the switch statement, an
->>> attempt to provide an unrecognized string (e.g. if I specify an illegal
->>> dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
->>> third element (Smb_21) instead of "default" in the code snippet below.
->>> Is match_token broken? Can match token only handle tables with 5
->>> elements or fewer? Is there a replacement for it for this kind of thing
->>> (matching a string versus which from among a list of valid strings)
->>> other than match_token?  Is match_token just broken?
->>>
->>>     substring_t args[MAX_OPT_ARGS];
->>>
->>>     switch (match_token(value, cifs_smb_version_tokens, args)) {
->>>     case Smb_1:
->>>         vol->ops = &smb1_operations;
->>>         vol->vals = &smb1_values;
->>>         break;
->>>     case Smb_20:
->>>         vol->ops = &smb20_operations;
->>>         vol->vals = &smb20_values;
->>>         break;
->>>     case Smb_21:
->>>         vol->ops = &smb21_operations;
->>>         vol->vals = &smb21_values;
->>>         break;
->>>     case Smb_30:
->>>         vol->ops = &smb30_operations;
->>>         vol->vals = &smb30_values;
->>>         break;
->>>     case Smb_302:
->>>         vol->ops = &smb30_operations; /* currently identical with 3.0 */
->>>         vol->vals = &smb302_values;
->>>         break;
->>>     default:
->>>         cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
->>>         return 1;
->>>
->>
->>
+> Start in non-secure SVC with non-secure access to GIC configured.
 >
+> Start in secure SVC with non-secure access to GIC configured.
+
+I tried this on my rk3288 which boots in secure SVC mode, but I must
+be missing the GIC configuration for non-secure access because I get a
+message like this:
+[    0.000000] GIC CPU mask not found - kernel will fail to boot.
+[    0.000000] GIC CPU mask not found - kernel will fail to boot.
+....
+and then it hangs here:
+[    0.116871] CPU0: thread -1, cpu 0, socket 5, mpidr 80000500
+[    0.123274] Setting up static identity map for 0x5e3bf8 - 0x5e3c50
+
+So I need to figure out how to enable non-secure access to the GIC work.
+
+> Start in secure SVC with non-secure access to GIC configured and hypervisor
+> support disabled in the model (-C cluster.has_el2=0). This required setting
+> the VBAR again in non-secure SVC but with that fix it seems to work. I'll
+> include this change in v2.
+>
+> I have not been able to start up the bootwrapper with secure monitor support
+> disabled in the model (-C cluster.has_el3=0) because of faults during GIC
+> configuration.
+>
+> So, any thoughts on the code? I have some questions.
+>
+> What initialization am I missing?
+>
+> What's the right ifdefery? I'm thinking a CONFIG_ARM_SEC_EXT that is
+> independent of CONFIG_ARM_VIRT_EXT.
+>
+> Are there folks who want to run Linux in secure mode? Would documenting in
+> Kconfig that they can do this by leaving CONFIG_ARM_SEC_EXT undefined be
+> sufficient support for this?
+
+We currently tend to run Linux in Secure SVC mode, and this has worked
+fine for a long time, and I think this is because these chips have
+reset defaults that allow us to access everything in secure mode, but
+I don't know if we'd need to suddenly deal with having to configure
+everything to also handle non-secure mode as well.
+
+I our hope here is that if you know you're starting in secure svc mode
+on armv7a, and have virtualization extensions, the kernel could
+"elevate" itself to hyp mode, without too much work, but it looks like
+on (at least) rk3288 we need to do something to the GIC at a
+minimum.
+
+>
+> Is it fine or bad to leave the CPU in undefined mode when one of the extension
+> or privileged operations fails? It's only for maybe a dozen instructions until
+> safe_svcmode_maskall.
+>
+> How should CPU mode recording be handled? Should the CONFIG_ARM_SEC_EXT code
+> set __boot_cpu_mode with an extra bit specifying the security setting and then
+> the CONFIG_ARM_VIRT_EXT code set-if-unset?
+>
+> What should the secure monitor stub leave behind? Right now it's different
+> than the hypervisor stub: put the address of the code you want run in monitor
+> mode into r4, make the secure monitor call, and make sure your code makes an
+> exception return when finished.
+>
+> Whatever is left behind, I think it should allow the GIC driver to enable
+> non-secure access to the hardware if Linux was booted in secure mode.
+>
+> If this code can be evolved and tested to the point where it's mergeable, then
+> Linux can finally interact intelligently with the features introduced by the
+> security extensions and only has to depend on firmware and bootloaders getting
+> the implementation defined aspects of a system right, taking care of the
+> architectually specified stuff itself when sufficiently privileged. Among
+> other things, this should lead towards the bootwrapper no longer being
+> required to boot Linux on ARM's virtual platforms, which would make my life
+> easier.
+
+This would be great for us, because we tend to have our firmware do
+the bare minimum possible, and this would allow people running
+upstream kernels on ChromeOS systems to easily use virtualization if
+they wish.
+
+>
+> Thanks,
+> Christopher
 >
 > --
-> ~Randy
-
-
-
--- 
-Thanks,
-
-Steve
+> Employee of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by the Linux Foundation.
