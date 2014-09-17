@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750993AbaIQEAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:00:24 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:52458 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbaIQEAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:00:20 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <0e417d5ead785d637fc98657559a3346>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, dmitry.torokhov@gmail.com,
-        addy.ke@rock-chips.com, zyf@rock-chips.com, cjf@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v5 2/4] dt-bindings: document Rockchip thermal
-Date: Wed, 17 Sep 2014 11:59:11 +0800
-Message-Id: <1410926353-15674-3-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410926353-15674-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1410926353-15674-1-git-send-email-caesar.wang@rock-chips.com>
+	id S1751578AbaIQEBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:01:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10083 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751509AbaIQEBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 00:01:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,538,1406617200"; 
+   d="scan'208";a="574219004"
+Message-ID: <5419078B.3050305@linux.intel.com>
+Date: Wed, 17 Sep 2014 12:01:15 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "David E. Box" <david.e.box@linux.intel.com>
+CC: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
+        sjg@chromium.org, laurent.pinchart+renesas@ideasonboard.com,
+        u.kleine-koenig@pengutronix.de, boris.brezillon@free-electrons.com,
+        maxime.coquelin@st.com, max.schwarz@online.de, schwidefsky@de.ibm.com,
+        iivanov@mm-sol.com, jacob.jun.pan@linux.intel.com,
+        soren.brinkmann@xilinx.com, bjorn.andersson@sonymobile.com,
+        andrew@lunn.ch, skuribay@pobox.com, christian.ruppert@abilis.com,
+        Romain.Baeriswyl@abilis.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c-designware: Intel BayTrail PMIC I2C bus support
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com> <20140916094449.GZ10854@lahna.fi.intel.com>
+In-Reply-To: <20140916094449.GZ10854@lahna.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+On 2014/9/16 17:44, Mika Westerberg wrote:
+> On Fri, Sep 12, 2014 at 10:36:07AM -0700, David E. Box wrote:
+>> This patch implements an I2C bus sharing mechanism between the host and platform
+>> hardware on select Intel BayTrail SoC platforms using the XPower AXP288 PMIC.
+>>
+>> On these platforms access to the PMIC must be shared with platform hardware. The
+>> hardware unit assumes full control of the I2C bus and the host must request
+>> access through a special semaphore. Hardware control of the bus also makes it
+>> necessary to disable runtime pm to avoid interfering with hardware transactions.
+> 
+> Is this because we need to access the PMIC from host as well? I mean
+> from some PMIC driver (which driver btw)?
+> 
+> Otherwise it would be best to just detect _SEM and return -ENODEV.
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- .../bindings/thermal/rockchip-thermal.txt          | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+On some Baytrail platform, one I2C port is shared between CPU and Punit,
+and Punit access is out the control of CPU, so
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-new file mode 100644
-index 0000000..6fc8bc3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-@@ -0,0 +1,41 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
-+
-+Required properties:
-+- compatible: "rockchip,rk3288-tsadc"
-+- reg: physical base address of the controller and length of memory mapped
-+       region.
-+- interrupts: The interrupt number to the cpu. The interrupt specifier format
-+	      depends on the interrupt controller.
-+- clocks: Must contain an entry for each entry in clock-names.
-+- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+	       the peripheral clock.
-+- num-trips:  number of total trip points, this is required, set it 0 if none,
-+  	      if greater than 0, the following properties must be defined;
-+- tripN-temp: temperature of trip point N, should be in ascending order;
-+- tripN-type: type of trip point N, should be one of "active" "passive" "hot"
-+	      "critical";
-+- tripN-cdev-num: number of the cooling devices which can be bound to trip
-+		  point N, this is required if trip point N is defined, set it 0 if none,
-+		  otherwise the following cooling device names must be defined;
-+- tripN-cdev-nameM: name of the No. M cooling device of trip point N;
-+
-+Example:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+
-+	num-trips = <2>;
-+
-+	trip0-temp = <80>;
-+	trip0-type = "passive";
-+	trip0-cdev-num = <1>;
-+	trip0-cdev-name0 = "thermal-cpufreq-0";
-+
-+	trip1-temp = <100>;
-+	trip1-type = "critical";
-+	trip1-cdev-num = <1>;
-+	trip1-cdev-name0 = "thermal-cpufreq-0";
-+};
--- 
-1.9.1
+1. need to keep this shared I2C port always enabled, that is, no runtime
+pm, in case Punit wants to access it.
 
+2. need the semaphore mechanism to access i2c.
+
+> 
+>>
+>> Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+>> ---
+>>  drivers/i2c/busses/Kconfig                  |  10 +++
+>>  drivers/i2c/busses/Makefile                 |   1 +
+>>  drivers/i2c/busses/i2c-designware-core.h    |  14 ++++
+>>  drivers/i2c/busses/i2c-designware-platdrv.c |  78 +++++++++++++++++++--
+>>  drivers/i2c/busses/i2c-shared-controller.c  | 101 ++++++++++++++++++++++++++++
+>>  5 files changed, 200 insertions(+), 4 deletions(-)
+>>  create mode 100644 drivers/i2c/busses/i2c-shared-controller.c
+>>
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 2ac87fa..672ef23 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -441,6 +441,16 @@ config I2C_DESIGNWARE_PCI
+>>  	  This driver can also be built as a module.  If so, the module
+>>  	  will be called i2c-designware-pci.
+>>  
+>> +config I2C_SHARED_CONTROLLER
+>> +	tristate "Intel Baytrail PMIC shared I2C bus support"
+>> +	depends on ACPI
+>> +	select IOSF_MBI
+>> +	select I2C_DESIGNWARE_CORE
+>> +	help
+>> +	  This driver enables shared access to the PMIC I2C bus on select Intel
+>> +	  BayTrail platforms using the XPower AXP288 PMIC. This driver is
+>> +	  required for host access to the PMIC on these platforms.
+> 
+> Can't we detect this runtime in the i2c-designware-platdrv.c code so
+> that you look (in the ACPI part of the driver) for _SEM and in that case
+> change the xfer function behaviour a bit to return -EBUSY or whatever?
+> 
+> Without this horrible #ifdeffery.
+
+not necessary to have #ifdef, really.
+
+Thanks,
+-Aubrey
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
