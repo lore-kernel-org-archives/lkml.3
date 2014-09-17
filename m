@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaIQV3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:29:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57987 "EHLO mail.kernel.org"
+	id S932295AbaIQV3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:29:54 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57901 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127AbaIQVZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:25:04 -0400
+	id S1757089AbaIQVYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:24:44 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
+Cc: linux-kernel@vger.kernel.org, Anton Blanchard <anton@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/20] perf tools: Let a user specify a PMU event without any config terms
-Date: Wed, 17 Sep 2014 18:24:10 -0300
-Message-Id: <1410989063-14207-8-git-send-email-acme@kernel.org>
+Subject: [PATCH 02/20] perf tools powerpc: Fix build issue when DWARF support is disabled
+Date: Wed, 17 Sep 2014 18:24:05 -0300
+Message-Id: <1410989063-14207-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
 References: <1410989063-14207-1-git-send-email-acme@kernel.org>
@@ -25,89 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-This enables a PMU event to be specified in the form:
+The powerpc skip callchain code uses DWARF, so we must disable it if
+DWARF is disabled.
 
-	pmu//
-
-which is effectively the same as:
-
-	pmu/config=0/
-
-This patch is a precursor to defining default config for a PMU.
-
-Further explanation extracted from lkml thread:
-
-Imagine that the 'tsc' term did not exist.
-
-Intel PT trace data would not contain TSC packets, and the decoder would
-not know how to decode them.
-
-Then imagine that a new version of the hardware adds 'tsc'.
-
-It is such a useful feature that we want it by default, but older
-versions of the tools don't know how to decode it, so the kernel cannot
-turn it on by default.
-
-It is similar to why the kernel does not select perf_event_attr.mmap2 by
-default.
-
-The kernel doesn't know whether the tool supports it.
-
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1408129739-17368-6-git-send-email-adrian.hunter@intel.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20140825182506.2be6512d@kryten
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-events.c |  6 ++++++
- tools/perf/util/parse-events.y | 10 ++++++++++
- 2 files changed, 16 insertions(+)
+ tools/perf/arch/powerpc/Makefile |  2 +-
+ tools/perf/config/Makefile       | 10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index e34c81a0bcf3..e75628813968 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -645,6 +645,12 @@ int parse_events_add_pmu(struct list_head *list, int *idx,
+diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
+index b92219b1900d..6f7782bea5dd 100644
+--- a/tools/perf/arch/powerpc/Makefile
++++ b/tools/perf/arch/powerpc/Makefile
+@@ -1,6 +1,6 @@
+ ifndef NO_DWARF
+ PERF_HAVE_DWARF_REGS := 1
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
++LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+ endif
+ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
+-LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/skip-callchain-idx.o
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 75d4c237b03d..98c9fd174e98 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -48,10 +48,6 @@ ifneq ($(ARCH),$(filter $(ARCH),x86 arm))
+   NO_LIBDW_DWARF_UNWIND := 1
+ endif
  
- 	memset(&attr, 0, sizeof(attr));
+-ifeq ($(ARCH),powerpc)
+-  CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
+-endif
+-
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
+@@ -378,6 +374,12 @@ ifndef NO_LIBELF
+   endif # NO_DWARF
+ endif # NO_LIBELF
  
-+	if (!head_config) {
-+		attr.type = pmu->type;
-+		evsel = __add_event(list, idx, &attr, NULL, pmu->cpus);
-+		return evsel ? 0 : -ENOMEM;
-+	}
++ifeq ($(ARCH),powerpc)
++  ifndef NO_DWARF
++    CFLAGS += -DHAVE_SKIP_CALLCHAIN_IDX
++  endif
++endif
 +
- 	if (perf_pmu__check_alias(pmu, head_config, &unit, &scale))
- 		return -EINVAL;
- 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 0bc87ba46bf3..55fab6ad609a 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -210,6 +210,16 @@ PE_NAME '/' event_config '/'
- 	parse_events__free_terms($3);
- 	$$ = list;
- }
-+|
-+PE_NAME '/' '/'
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *list;
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
-+	$$ = list;
-+}
- 
- value_sym:
- PE_VALUE_SYM_HW
+ ifndef NO_LIBUNWIND
+   ifneq ($(feature-libunwind), 1)
+     msg := $(warning No libunwind found. Please install libunwind-dev[el] >= 1.1 and/or set LIBUNWIND_DIR);
 -- 
 1.9.3
 
