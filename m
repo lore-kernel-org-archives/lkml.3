@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950AbaIQQRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:17:48 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:35881 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868AbaIQQRn (ORCPT
+	id S1756045AbaIQQSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:18:21 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58641 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755908AbaIQQSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:17:43 -0400
+	Wed, 17 Sep 2014 12:18:20 -0400
+Date: Wed, 17 Sep 2014 17:17:38 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Michal Simek <monstr@monstr.eu>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] devicetree: cadence_ttc: Document binding for timer
+ width
+Message-ID: <20140917161737.GA7983@leverpostej>
+References: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-In-Reply-To: <54193542.6080101@redhat.com>
-References: <1410325808-3657-1-git-send-email-ast@plumgrid.com>
-	<1410325808-3657-13-git-send-email-ast@plumgrid.com>
-	<54103776.3080706@redhat.com>
-	<CAMEtUuzEQu30WiYprRcDBogJxxrDeNhvn=kF+z8cVvhR-vjTQg@mail.gmail.com>
-	<54193542.6080101@redhat.com>
-Date: Wed, 17 Sep 2014 09:17:41 -0700
-Message-ID: <CAMEtUuzaCEX9RKDBMnQBZSHdTjjidp81myfSVVi4qQqtSGgtmw@mail.gmail.com>
-Subject: Re: [PATCH v11 net-next 12/12] bpf: mini eBPF library, test stubs and
- verifier testsuite
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Daniel Borkmann <dborkman@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3537996136ec435ea660da869102d0a019214979.1410964243.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:16 AM, Daniel Borkmann <dborkman@redhat.com> wrote:
->
->
-> That actually still doesn't answer my question why the test stub
-> cannot live in lib/test_bpf where we have our actual testing
-> framework for eBPF/BPF, also since you exactly only build test_stub.c
-> when TEST_BPF is enabled which is the Kconfig for lib/test_bpf.
+On Wed, Sep 17, 2014 at 03:30:49PM +0100, Michal Simek wrote:
+> From: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> 
+> Modern TTC implementations can extend the timer width to 32 bit. This
+> feature is not self identifying so the driver needs to be made aware
+> via device tree.
+> 
+> Signed-off-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+> 
+>  Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt b/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
+> index 993695c659e1..5439976eca6b 100644
+> --- a/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
+> +++ b/Documentation/devicetree/bindings/timer/cadence,ttc-timer.txt
+> @@ -6,6 +6,9 @@ Required properties:
+>  - interrupts : A list of 3 interrupts; one per timer channel.
+>  - clocks: phandle to the source clock
+> 
+> +Optional properties:
+> +- timer-width: Bit width of the timer. Either 16 or 32 (default 16).
 
-multiple reasons:
-1.
-lib/test_bpf.c is a module, whereas test_stub.c is kernel builtin.
+Are we expecting TTC implementations with widths other than 16 or 32?
 
-2.
-I wasn't sure that reusing CONFIG_TEST_BPF for this
-purpose was a good idea. May be it's better to introduce
-CONFIG_BPF_VERIFIER_TEST_STUBS or something.
+This looks sane to me, but we might be able to just have a 32-bit-timer
+property if we don't expect arbitrary widths.
 
-3.
-kernel/bpf/test_stubs.c can be removed once real tracing
-or socket use case is in.
+Mark.
