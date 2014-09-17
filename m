@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743AbaIQInO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:43:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22434 "EHLO mga02.intel.com"
+	id S1755046AbaIQInr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:43:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40970 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842AbaIQInI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:43:08 -0400
+	id S1753739AbaIQInp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:43:45 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
-   d="scan'208";a="604050313"
-Message-ID: <1410943355.28850.92.camel@sauron.fi.intel.com>
-Subject: Re: [RFC] Don'd hold work_sem while calling worker functions
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="387287373"
+Message-ID: <1410943421.28850.93.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBI: Fix possible deadlock in erase_worker()
 From: Artem Bityutskiy <dedekind1@gmail.com>
 Reply-To: dedekind1@gmail.com
 To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 17 Sep 2014 11:42:35 +0300
-In-Reply-To: <1410873998-2955-1-git-send-email-richard@nod.at>
-References: <1410873998-2955-1-git-send-email-richard@nod.at>
+Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Wed, 17 Sep 2014 11:43:41 +0300
+In-Reply-To: <541948E3.3080602@nod.at>
+References: <1410853702-11616-1-git-send-email-richard@nod.at>
+	 <1410942507.28850.78.camel@sauron.fi.intel.com> <541948E3.3080602@nod.at>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
@@ -26,55 +29,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-16 at 15:26 +0200, Richard Weinberger wrote:
-> I fail to see why we need work_sem while wrk->func() is executed.
-> Artem, do you have an idea?
+On Wed, 2014-09-17 at 10:40 +0200, Richard Weinberger wrote:
+> /*
+>  * nested locking. NOTE: rwsems are not allowed to recurse
+>  * (which occurs if the same task tries to acquire the same
+>  * lock instance multiple times), but multiple locks of the
+>  * same lock class might be taken, if the order of the locks
+>  * is always the same. This ordering rule can be expressed
+>  * to lockdep via the _nested() APIs, but enumerating the
+>  * subclasses that are used. (If the nesting relationship is
+>  * static then another method for expressing nested locking is
+>  * the explicit definition of lock class keys and the use of
+>  * lockdep_set_class() at lock initialization time.
+>  * See Documentation/lockdep-design.txt for more details.)
+>  */
 > 
-> Having the wear_leveling_worker() called without work_sem held
-> would simplify the fastmap code too. I'm currently reworking some
-> of it's code and I'm in locking hell. 8-)
+> In this case the same task is taking the same lock multiple times,
+> which is not allowed according to rwsem.h.
 
-Well, the best way for getting clue about the meaning of an R/W
-semaphore with an unlimited amount of read-takers I found for myself is
-to focus on the write-takers. Read-takers are non-interesting, because
-they can race freely.
-
-So let's check write-takers.
-
-There are 2 of them - one in your code, one in the one I wrote many
-years ago.
-
-"Mine" is in 'ubi_wl_flush()':
-
-        down_write(&ubi->work_sem);
-        up_write(&ubi->work_sem);
-
-And the only reason it is there is to make sure that flush() really
-flushes the queue, and when 'ubi_wl_flush()' returns, you may be sure
-that all the in-flight works were finished.
-
-There are other ways to achieve this, but I probably found using the R/W
-semaphore to be the easiest. Indeed, just make all the works have it in
-read mode, and when you have to wait for all the in-flight works to
-complete, you take it in write mode - easy.
-
-IOW, this is a bit of an unusual use of R/W semaphores.
-
-HTH.
-
-P.S. Generally, if you have a trouble with a lock, start with checking
-the place where it is defined, I tried to document locks there briefly.
-And there may be pices of useful comments elsewhere. This should be true
-for both UBI and UBIFS. So just a general hint.
-
-For 'work_sem' you'd need to check ubi.h. But unfortunately, the comment
-there is not helpful, and even has a typo which makes it confusing.
-
-While on it, would you refine the comment and say something like:
-
-work_sem: used to wait for all the scheduled works to finish and prevent
-new works from being submitted
-
+Yes, this part was missed, thanks.
 
 -- 
 Best Regards,
