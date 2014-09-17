@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855AbaIQJft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 05:35:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45354 "EHLO mga09.intel.com"
+	id S1754917AbaIQJgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 05:36:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54784 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938AbaIQJfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 05:35:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
-   d="scan'208";a="574328081"
-Message-ID: <1410946526.28850.120.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBI: Fix possible deadlock in erase_worker()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Wed, 17 Sep 2014 12:35:26 +0300
-In-Reply-To: <1410853702-11616-1-git-send-email-richard@nod.at>
-References: <1410853702-11616-1-git-send-email-richard@nod.at>
+	id S1753561AbaIQJgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 05:36:47 -0400
+Message-ID: <1410946476.9389.32.camel@linux-t7sj.site>
+Subject: Re: [PATCH v3] locking/rwsem: Avoid double checking before try
+ acquiring write lock
+From: Davidlohr Bueso <dbueso@suse.de>
+To: Jason Low <jason.low2@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Chegu Vinod <chegu_vinod@hp.com>
+Date: Wed, 17 Sep 2014 11:34:37 +0200
+In-Reply-To: <1410913017.2447.22.camel@j-VirtualBox>
+References: <1410913017.2447.22.camel@j-VirtualBox>
+Organization: SUSE Labs
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-16 at 09:48 +0200, Richard Weinberger wrote:
-> If sync_erase() failes with EINTR, ENOMEM, EAGAIN or
-> EBUSY erase_worker() re-schedules the failed work.
-> This will lead to a deadlock because erase_worker() is called
-> with work_sem held in read mode. And schedule_erase() will take
-> this lock again.
+On Tue, 2014-09-16 at 17:16 -0700, Jason Low wrote:
+> Commit 9b0fc9c09f1b checks for if there are known active lockers
+> in order to avoid write trylocking using expensive cmpxchg() when
+> it likely wouldn't get the lock.
 
-There is this code snippet:
+Ah, I remember you had this one in your queue for some time :)
 
-        ubi_err("failed to erase PEB %d, error %d", pnum, err);
-        kfree(wl_wrk);
+> However, a subsequent patch was added such that we directly
+> check for sem->count == RWSEM_WAITING_BIAS right before trying
+> that cmpxchg(). Thus, commit 9b0fc9c09f1b now just adds overhead.
+> This patch modifies it so that we only do a check for if
+> count == RWSEM_WAITING_BIAS.
+> 
+> Also, add a comment on why we do an "extra check" of count
+> before the cmpxchg().
 
-        if (err == -EINTR || err == -ENOMEM || err == -EAGAIN ||
-            err == -EBUSY) {
-                int err1;
+heh, so people don't try to remove the "redundant" check!
 
-                /* Re-schedule the LEB for erasure */
-                err1 = schedule_erase(ubi, e, vol_id, lnum, 0);
-                if (err1) {
-                        err = err1;
-                        goto out_ro;
-                }
-                return err;
-        }
+> Cc: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Tim Chen <tim.c.chen@linux.intel.com>
 
-How about move 'kfree(wl_wrk)' down, and execute
+Acked-by: Davidlohr Bueso <dave@stgolabs.net>
 
-        __schedule_ubi_work(ubi, wl_wrk)
-
-inside the 'if' clause instead? The fix would seem to be more elegant
-then.
-
-Hmm?
-
--- 
-Best Regards,
-Artem Bityutskiy
+> Signed-off-by: Jason Low <jason.low2@hp.com>
 
