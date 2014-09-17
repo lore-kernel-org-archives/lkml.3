@@ -1,114 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855AbaIQU7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:59:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54603 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831AbaIQU7N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:59:13 -0400
-Date: Wed, 17 Sep 2014 13:58:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] serial: cadence: Add generic earlycon support
-Message-ID: <20140917205823.GA23595@kroah.com>
-References: <58f2c9cf267e64f5d7566920844fb2db251e77d2.1410345777.git.michal.simek@xilinx.com>
- <5419905A.6030701@monstr.eu>
+	id S1756948AbaIQU7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:59:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:56909 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756739AbaIQU7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 16:59:41 -0400
+Date: Wed, 17 Sep 2014 17:59:34 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-perf-user@vger.kernel.org, david lerner <dlernerdroid@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH perf/core 1/2] perf probe: Do not access kallsyms when
+ analyzing user binaries
+Message-ID: <20140917205934.GD2770@kernel.org>
+References: <20140917084054.3722.73975.stgit@kbuild-f20.novalocal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5419905A.6030701@monstr.eu>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140917084054.3722.73975.stgit@kbuild-f20.novalocal>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 03:44:58PM +0200, Michal Simek wrote:
-> Hi Greg,
-> 
-> On 09/10/2014 12:43 PM, Michal Simek wrote:
-> > Add earlycon support for the cadence serial port.
-> > This is based on recent patches:
-> > "tty/serial: pl011: add generic earlycon support"
-> > (sha1: 0d3c673e7881e691991b2a4745bd4f149603baa2)
-> > "tty/serial: add arm/arm64 semihosting earlycon"
-> > (sha1: d50d7269ebcb438afa346cdffce0f4e2a1b9e831)
-> > 
-> > Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> > ---
-> > 
-> >  Documentation/kernel-parameters.txt |  6 ++++++
-> >  drivers/tty/serial/Kconfig          |  1 +
-> >  drivers/tty/serial/xilinx_uartps.c  | 19 +++++++++++++++++++
-> >  3 files changed, 26 insertions(+)
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index a8eb6afce6a4..97055dc43167 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -921,6 +921,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> > 
-> >  	earlycon=	[KNL] Output early console device and options.
-> > 
-> > +		cdns,<addr>
-> > +			Start an early, polled-mode console on a cadence serial
-> > +			port at the specified address. The cadence serial port
-> > +			must already be setup and configured. Options are not
-> > +			yet supported.
-> > +
-> >  		uart[8250],io,<addr>[,options]
-> >  		uart[8250],mmio,<addr>[,options]
-> >  		uart[8250],mmio32,<addr>[,options]
-> > diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> > index b4d61e6bf28c..72fd2b6e2241 100644
-> > --- a/drivers/tty/serial/Kconfig
-> > +++ b/drivers/tty/serial/Kconfig
-> > @@ -1411,6 +1411,7 @@ config SERIAL_XILINX_PS_UART_CONSOLE
-> >  	bool "Cadence UART console support"
-> >  	depends on SERIAL_XILINX_PS_UART=y
-> >  	select SERIAL_CORE_CONSOLE
-> > +	select SERIAL_EARLYCON
-> >  	help
-> >  	  Enable a Cadence UART port to be the system console.
-> > 
-> > diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
-> > index 01951d27cc03..675f3fe068f6 100644
-> > --- a/drivers/tty/serial/xilinx_uartps.c
-> > +++ b/drivers/tty/serial/xilinx_uartps.c
-> > @@ -1051,6 +1051,25 @@ static void cdns_uart_console_putchar(struct uart_port *port, int ch)
-> >  	cdns_uart_writel(ch, CDNS_UART_FIFO_OFFSET);
-> >  }
-> > 
-> > +static void cdns_early_write(struct console *con, const char *s, unsigned n)
-> > +{
-> > +	struct earlycon_device *dev = con->data;
-> > +
-> > +	uart_console_write(&dev->port, s, n, cdns_uart_console_putchar);
-> > +}
-> > +
-> > +static int __init cdns_early_console_setup(struct earlycon_device *device,
-> > +					   const char *opt)
-> > +{
-> > +	if (!device->port.membase)
-> > +		return -ENODEV;
-> > +
-> > +	device->con->write = cdns_early_write;
-> > +
-> > +	return 0;
-> > +}
-> > +EARLYCON_DECLARE(cdns, cdns_early_console_setup);
-> > +
-> >  /**
-> >   * cdns_uart_console_write - perform write operation
-> >   * @co: Console handle
-> > --
-> > 1.8.2.3
-> > 
-> 
-> Any problem with this patch?
+Em Wed, Sep 17, 2014 at 08:40:54AM +0000, Masami Hiramatsu escreveu:
+> Do not access kallsyms to show available variables and
+> show source lines in user binaries.
+> This behavior always requires the root privilege when
+> sysctl sets kernel.kptr_restrict=1, but we don't need
+> it just for analyzing user binaries.
 
-Don't know, it's in my todo queue which is really long at the moment...
+> +++ b/tools/perf/util/probe-event.c
+> @@ -697,11 +697,11 @@ end:
+>  	return ret;
+>  }
+>  
+> -int show_line_range(struct line_range *lr, const char *module)
+> +int show_line_range(struct line_range *lr, const char *module, bool user)
+>  {
+
+make -C tools/perf build-test fails for the static build on:
+
+acme@linux-goap:~/git/linux> cat /etc/os-release
+NAME=openSUSE
+VERSION="12.3 (Dartmouth)"
+VERSION_ID="12.3"
+PRETTY_NAME="openSUSE 12.3 (Dartmouth) (i586)"
+ID=opensuse
+ANSI_COLOR="0;32"
+CPE_NAME="cpe:/o:opensuse:opensuse:12.3"
+acme@linux-goap:~/git/linux> 
+
+util/probe-event.c:824:5: error: conflicting types for 'show_line_range'
+In file included from util/probe-event.c:45:0:
+util/probe-event.h:131:12: note: previous declaration of
+'show_line_range' was here
+make[3]: *** [util/probe-event.o] Error 1
+make[2]: *** [all] Error 2
+  test: test -x ./perf
+make[1]: *** [make_static] Error 1
+make: *** [build-test] Error 2
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+acme@linux-goap:~/git/linux>
+
+And on:
+
+acme@ubuntu13:~/git/linux$ cat /etc/os-release 
+NAME="Ubuntu"
+VERSION="13.10, Saucy Salamander"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 13.10"
+VERSION_ID="13.10"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+acme@ubuntu13:~/git/linux$ 
+
+  CC       util/probe-event.o
+util/probe-event.c:824:5: error: conflicting types for ‘show_line_range’
+ int show_line_range(struct line_range *lr __maybe_unused,
+     ^
+In file included from util/probe-event.c:45:0:
+util/probe-event.h:131:12: note: previous declaration of
+‘show_line_range’ was here
+ extern int show_line_range(struct line_range *lr, const char *module,
+            ^
+make[3]: *** [util/probe-event.o] Error 1
+make[3]: *** Waiting for unfinished jobs....
+make[2]: *** [all] Error 2
+  test: test -x ./perf
+make[1]: *** [make_static] Error 1
+make: *** [build-test] Error 2
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+
+---------------------------------------------------------------------
+
+Probably because I had not installed needed DWARF support libraries and
+you forgot to update this:
+
+int show_line_range(struct line_range *lr __maybe_unused,
+                    const char *module __maybe_unused)
+{
+        pr_warning("Debuginfo-analysis is not supported.\n");
+        return -ENOSYS;
+}
+
+
+Fixing it up by adding the missing 'bool user'.
+
+- Arnaldo
