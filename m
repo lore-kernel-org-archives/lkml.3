@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828AbaIQUNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:13:55 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:37844 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153AbaIQUNx (ORCPT
+	id S1756851AbaIQUOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:14:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47260 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085AbaIQUOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:13:53 -0400
-Date: Wed, 17 Sep 2014 13:13:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Caesar Wang <caesar.wang@rock-chips.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Zhang Rui <rui.zhang@intel.com>, edubezval@gmail.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        Dmitry Torokhov <dtor@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        zyf <zyf@rock-chips.com>,
-        =?utf-8?B?6ZmI5riQ6aOe?= <cjf@rock-chips.com>
-Subject: Re: [PATCH v5 2/4] dt-bindings: document Rockchip thermal
-Message-ID: <20140917201347.GD25297@core.coreip.homeip.net>
-References: <1410926353-15674-1-git-send-email-caesar.wang@rock-chips.com>
- <1410926353-15674-3-git-send-email-caesar.wang@rock-chips.com>
- <CAD=FV=Vq4zSBv-=OxHD4sGbAgLh_ebe29PR6RU_sQe4XspsPsw@mail.gmail.com>
+	Wed, 17 Sep 2014 16:14:43 -0400
+Date: Wed, 17 Sep 2014 13:14:36 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Frans Klaver <fransklaver@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] eeepc-laptop: simplify parse_arg()
+Message-ID: <20140917201435.GA8615@vmdeb7>
+References: <20140906021757.GA9197@vmdeb7>
+ <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410252608.22255.5.camel@x220>
+ <20140910033304.GB39541@vmdeb7>
+ <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+ <20140910164916.GA48285@vmdeb7>
+ <1410379520.11097.18.camel@x220>
+ <20140911223739.GB18425@vmdeb7>
+ <20140916234543.GA22408@vmdeb7>
+ <1410980571.10248.6.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=Vq4zSBv-=OxHD4sGbAgLh_ebe29PR6RU_sQe4XspsPsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410980571.10248.6.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 12:48:16PM -0700, Doug Anderson wrote:
-> Caesar,
+On Wed, Sep 17, 2014 at 09:02:51PM +0200, Paul Bolle wrote:
+> parse_arg() has three possible return values:
+>     -EINVAL if sscanf(), in short, fails;
+>     zero if "count" is zero; and
+>     "count" in all other cases
 > 
-> On Tue, Sep 16, 2014 at 8:59 PM, Caesar Wang <caesar.wang@rock-chips.com> wrote:
-> > This add the necessary binding documentation for the thermal
-> > found on Rockchip SoCs
-> >
-> > Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> > Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> > ---
-> >  .../bindings/thermal/rockchip-thermal.txt          | 41 ++++++++++++++++++++++
-> >  1 file changed, 41 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> >
-> > diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > new file mode 100644
-> > index 0000000..6fc8bc3
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-> > @@ -0,0 +1,41 @@
-> > +* Temperature Sensor ADC (TSADC) on rockchip SoCs
-> > +
-> > +Required properties:
-> > +- compatible: "rockchip,rk3288-tsadc"
-> > +- reg: physical base address of the controller and length of memory mapped
-> > +       region.
-> > +- interrupts: The interrupt number to the cpu. The interrupt specifier format
-> > +             depends on the interrupt controller.
-> > +- clocks: Must contain an entry for each entry in clock-names.
-> > +- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-> > +              the peripheral clock.
-> > +- num-trips:  number of total trip points, this is required, set it 0 if none,
-> > +             if greater than 0, the following properties must be defined;
+> But "count" will never be zero. See, parse_arg() is called by the
+> various store functions. And the callchain of these functions starts
+> with sysfs_kf_write(). And that function checks for a zero "count". So
+> we can stop checking for a zero "count", drop the "count" argument
+> entirely, and transform parse_arg() into a function that returns zero on
+> success or a negative error. That, in turn, allows to make those store
+> functions just return "count" on success. The net effect is that the
+> code becomes a bit easier to understand.
 > 
-> nit: there is whitespace damage (space before tab) on the line before
-> this one.  It's more obvious in the patch you uploaded to gerrit which
-> highlights this in red:
+> A nice side effect is that this GCC warning is silenced too:
+>     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+>     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>       int rv, value;
 > 
-> https://chromium-review.googlesource.com/#/c/213967/5/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> Which is, of course, the reason to have a look at parse_arg().
 > 
-> Did you run your patches through checkpatch before submitting?
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Still build tested only, but now on top of v3.17-rc5. Has Frans tested
+> writing zero length values to these sysfs files?
+> 
+> v3: store_sys_acpi() again returns -EIO if set_acpi() fails.
+> 
+> v2: let store_sys_acpi() return whatever error set_acpi() returns
+> instead of remapping it to EIO. The new line about that in the commit
+> explanation is silly, but I couldn't come up with a better explanation.
 
-FWIW vim users like me can put the following in their .vimrc file to
-have whitespace damage visible right away:
-
-:highlight RedundantSpaces ctermbg=red guibg=red
-:match RedundantSpaces /\s\+$\| \+\ze\t/
-
-Thanks.
+Queued, thanks.
 
 -- 
-Dmitry
+Darren Hart
+Intel Open Source Technology Center
