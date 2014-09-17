@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaIQDop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 23:44:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56059 "EHLO mga02.intel.com"
+	id S1754768AbaIQDru (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 23:47:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:58661 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320AbaIQDoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 23:44:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,538,1406617200"; 
-   d="scan'208";a="574215164"
-Message-ID: <541903A9.7090301@linux.intel.com>
-Date: Wed, 17 Sep 2014 11:44:41 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753886AbaIQDrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 23:47:48 -0400
+Date: Wed, 17 Sep 2014 13:47:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
+Message-ID: <20140917134740.32dae50b@canb.auug.org.au>
+In-Reply-To: <20140909124306.2d5a0d76@canb.auug.org.au>
+References: <20140909124306.2d5a0d76@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Martin Kelly <martin@martingkelly.com>, x86@kernel.org, mingo@redhat.com
-CC: vishwesh.m.rudramuni@intel.com, joe@perches.com, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org, Martin Kelly <martkell@amazon.com>
-Subject: Re: [PATCH v2] x86/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
-References: <1410914975-23285-1-git-send-email-martin@martingkelly.com> <5418ED4A.2030607@linux.intel.com> <5418FDEC.40201@martingkelly.com>
-In-Reply-To: <5418FDEC.40201@martingkelly.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/rpL3zsI5C.XEYuJq/0jx+ep"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/9/17 11:20, Martin Kelly wrote:
-> On 09/16/2014 07:09 PM, Li, Aubrey wrote:
->>
->> Thanks to take care of this warning. How about this version?
->>
->> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
->> index 0c424a6..cd91b57 100644
->> --- a/arch/x86/kernel/pmc_atom.c
->> +++ b/arch/x86/kernel/pmc_atom.c
->> @@ -240,7 +240,7 @@ err:
->>  static int pmc_setup_dev(struct pci_dev *pdev)
->>  {
->>  	struct pmc_dev *pmc = &pmc_device;
->> -	int ret;
->> +	int ret = 0;
->>  
->>  	/* Obtain ACPI base address */
->>  	pci_read_config_dword(pdev, ACPI_BASE_ADDR_OFFSET, &acpi_base_addr);
->> @@ -269,7 +269,7 @@ static int pmc_setup_dev(struct pci_dev *pdev)
->>  		return ret;
->>  	}
->>  #endif /* CONFIG_DEBUG_FS */
->> -	return 0;
->> +	return ret;
->>  }
->>  
->>  /*
->>
->> Thanks,
->> -Aubrey
->>
-> 
-> Thanks for the suggestion, Aubrey. Although that version would also work, it still has inline #ifdef, which is harder to read and goes against general Linux conventions:
+--Sig_/rpL3zsI5C.XEYuJq/0jx+ep
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Why do you want to call pmc_dbgfs_register() anyway even if
-CONFIG_DEBUG_FS=n?
+Hi all,
 
-Thanks,
--Aubrey
+On Tue, 9 Sep 2014 12:43:06 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the v4l-dvb tree, today's linux-next build (x86_64 allmodco=
+nfig)
+> failed like this:
+>=20
+> ERROR: "omap_stop_dma" [drivers/media/platform/soc_camera/omap1_camera.ko=
+] undefined!
+> ERROR: "omap_start_dma" [drivers/media/platform/soc_camera/omap1_camera.k=
+o] undefined!
+> ERROR: "omap_dma_link_lch" [drivers/media/platform/soc_camera/omap1_camer=
+a.ko] undefined!
+> ERROR: "omap_set_dma_dest_burst_mode" [drivers/media/platform/soc_camera/=
+omap1_camera.ko] undefined!
+> ERROR: "omap_set_dma_src_params" [drivers/media/platform/soc_camera/omap1=
+_camera.ko] undefined!
+> ERROR: "omap_request_dma" [drivers/media/platform/soc_camera/omap1_camera=
+.ko] undefined!
+> ERROR: "omap_set_dma_transfer_params" [drivers/media/platform/soc_camera/=
+omap1_camera.ko] undefined!
+> ERROR: "omap_set_dma_dest_params" [drivers/media/platform/soc_camera/omap=
+1_camera.ko] undefined!
+> ERROR: "omap_free_dma" [drivers/media/platform/soc_camera/omap1_camera.ko=
+] undefined!
+> ERROR: "__bad_ndelay" [drivers/media/platform/s5p-jpeg/s5p-jpeg.ko] undef=
+ined!
+> ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_display.ko] undef=
+ined!
+> ERROR: "vpif_lock" [drivers/media/platform/davinci/vpif_capture.ko] undef=
+ined!
 
-> 
-> https://www.kernel.org/doc/Documentation/SubmittingPatches
-> (section 2, "#ifdefs are ugly")
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+Still getting these ...
 
+> I have used the v4l-dvb tree from next-20140908 for today.
+
+So this still applies.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/rpL3zsI5C.XEYuJq/0jx+ep
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUGQRhAAoJEMDTa8Ir7ZwVeN0QAJatBYn5HBWmet/x+Zr+rzK7
+o2zt8krLEgcNZDCW2YdTHsMMNdxXZg2j8CqC1WK3VmFn2t/ZzXPH3N0HzjMHlz+n
+bewnkiIsAjH0TxL0SAW7GCgGlvU4nvGqv54Hr8v83qCEZXB0JILNehzT5CFdlS5e
++pVX91uRyP/CTndNY0k97SNcl2cz+QaqNZB9CLITWF/6X+7lR5CckcTzlBuAdhrQ
+6G6ioRa0dNeSEztpwzXjBRQxTEbzWl+iKLfrixGrk5XkQ1zF4GcZPMBnnwoPC10S
+JxgNxhb47kE/P9/bWd2pZDCgKcYbTnDYtKfd6L/c9/zCsMybNK1NXfmDtEaBtZPy
+UUWjh+M6sLPnrS5b/3aGhbbNncIZdKEFjtvSBviQMWgYw7MCCkIS39Zap/wnSYpo
+eIM+HBkDa7UzOxfScJOrFcv7N3R3+0iXTBnLljwGKpR7GaXRCKYRvzEU0pOrw8Jr
+in+NP33f6cguZ/qjpYd8Uq0WB/S7YqknlNY0aN+F5uxSId1SEGDDItcC+4PKrpIU
+FlWANX/uRiR0LWqBimUhw2P/fC78KbyN9am+fNZJCptRHYEBr5VnA4I6255n2BUn
+KMnwyNJEQZ4iUdyCjEouEJi6A3E+oPh5udsGRTwBYFdFQI0RLCRkKY1R+cgDcr8m
+zs+b/ApNiP/Nx3GPikS7
+=3WBV
+-----END PGP SIGNATURE-----
+
+--Sig_/rpL3zsI5C.XEYuJq/0jx+ep--
