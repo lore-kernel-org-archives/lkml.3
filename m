@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaIQMSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:18:34 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60142 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754653AbaIQMSd (ORCPT
+	id S1755446AbaIQMTw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:19:52 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:38929 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639AbaIQMTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:18:33 -0400
-Date: Wed, 17 Sep 2014 13:18:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: hw_breakpoint: Trap undef instruction exceptions
-	on wake-up
-Message-ID: <20140917121820.GR12361@n2100.arm.linux.org.uk>
-References: <1410955036-1956-1-git-send-email-geert+renesas@glider.be>
+	Wed, 17 Sep 2014 08:19:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1410955036-1956-1-git-send-email-geert+renesas@glider.be>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAFp+6iE07b=juik2Ms4WEzzBw0FxPnAgbxtdqVGBBYZQ7fk5zA@mail.gmail.com>
+References: <1410857409-24767-1-git-send-email-gautam.vivek@samsung.com>
+	<CAD=FV=U4rPsfGkTcSY3OYHPgCFOccaHTjG1qC6WAekOEV09Q7A@mail.gmail.com>
+	<01ce01cfd270$3b3d31b0$b1b79510$@kernel.org>
+	<CAFp+6iE07b=juik2Ms4WEzzBw0FxPnAgbxtdqVGBBYZQ7fk5zA@mail.gmail.com>
+Date: Wed, 17 Sep 2014 17:49:49 +0530
+X-Google-Sender-Auth: _HnnHZXXQfp6N17VffEGYtXgJB8
+Message-ID: <CAFp+6iFCe_dagT55U=PLQYFkZEAC=UAwu4WEBngbBE+DPh1DGg@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: DTS: correct the capability string for mmc0
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Kukjin Kim <kgene@kernel.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Kevin Hilman <khilman@linaro.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 01:57:16PM +0200, Geert Uytterhoeven wrote:
-> If power area D4, which contains the Coresight-ETM hardware block, is
-> powered down on R-Mobile A1 (r8a7740), the kernel crashes when
-> suspending from s2ram with:
-> 
->     Internal error: Oops - undefined instruction: 0 [#1] ARM
-> 
-> This happens because dbg_cpu_pm_notify() calls reset_ctrl_regs(), which
-> can't access the debug registers as the debug module is powered down.
-> 
-> Protect the call to reset_ctrl_regs() by an undefined instruction hook,
-> like was done in commit 0d352e3d006c9589 ("ARM: hw_breakpoint: trap
-> undef instruction exceptions in reset_ctrl_regs") for another caller.
+On Wed, Sep 17, 2014 at 5:43 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Hi Kukjin,
+>
+>
+> On Wed, Sep 17, 2014 at 5:39 PM, Kukjin Kim <kgene@kernel.org> wrote:
+>> Doug Anderson wrote:
+>>>
+>>> Vivek,
+>>>
+>> Hi,
+>>
+>>> On Tue, Sep 16, 2014 at 1:50 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>>> > From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>>> >
+>>> > MMC capability for HS200 is parsed in mmc/core/host.c as
+>>> > dts string "mmc-hs200-1_8v".
+>>> >
+>>> > This patch corrects the dts string for Exynos5420 based peach-pit
+>>> > and Exynos5800 based peach-pi boards.
+>>> >
+>>> > Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>>
+>> In this case, Vivek's sign is required here.
+>
+> Ok, i will resend it with my Signed-off.
+>
+>>
+>>> > ---
+>>> >
+>>> > Hi Kukjin,
+>>> >
+>>> > As commented by Doug earlier for this patch, the two patches required
+>>> >   -- mmc: dw_mmc: Make sure we don't get stuck when we get an error
+>>> >   -- mmc: dw_mmc: change to use recommended reset procedure
+>>> > are now merged in upstream.
+>>> > So you can go ahead and pick this change.
+>>> >
+>>> >  arch/arm/boot/dts/exynos5420-peach-pit.dts |    2 +-
+>>> >  arch/arm/boot/dts/exynos5800-peach-pi.dts  |    2 +-
+>>> >  2 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>>
+>> Thanks, I will take this patch once Vivek replies his sign on this patch.
 
-I'd prefer a better solution to this (such as tracking whether the ETM
-block is powered down).  This feels very much like a hack than a good
-solution.
+As suggested, giving  my signed-off here:
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 
-Also, the undefined instruction hook was not supposed to be used in this
-way - certainly *not* dynamically like this.  While the lookup of the
-undef handler is done in a safe atomic way, calling the resulting
-function is outside of the locks.
+
+
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
