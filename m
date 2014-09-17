@@ -1,144 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366AbaIQK2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:28:21 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:56083 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558AbaIQK2R (ORCPT
+	id S1754568AbaIQKdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:33:13 -0400
+Received: from smtp113.ord1c.emailsrvr.com ([108.166.43.113]:35075 "EHLO
+	smtp113.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751564AbaIQKdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:28:17 -0400
-X-ASG-Debug-ID: 1410949694-0759e7612910bb80002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Wed, 17 Sep 2014 12:28:12 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>, <tony@atomide.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-Message-ID: <20140917102812.GA20438@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH 09/16] tty: serial: 8250_dma: Add a TX trigger workaround
- for AM33xx
-References: <5411967A.6090406@hurleysoftware.com>
- <54119AAA.9080907@linutronix.de>
- <20140911151114.GD28458@ci00147.xsens-tech.local>
- <5411C810.7070906@linutronix.de>
- <2cf997d9-e7de-465b-915d-3a0a5e7b95f7@email.android.com>
- <54129F6C.7040508@linutronix.de>
- <20140912094010.GE28458@ci00147.xsens-tech.local>
- <5412C21A.8020203@linutronix.de>
- <20140912102816.GF28458@ci00147.xsens-tech.local>
- <541716DC.9020904@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <541716DC.9020904@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.160]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1410949694
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.9577
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	Wed, 17 Sep 2014 06:33:11 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+To: galak@codeaurora.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        davidb@codeaurora.org, afaerber@suse.de
+Cc: linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Kiran Padwal <kiran.padwal@smartplayin.com>
+Subject: [PATCH v4] ARM: DT: apq8064: Add i2c device nodes
+Date: Wed, 17 Sep 2014 16:00:25 +0530
+Message-Id: <1410949825-7631-1-git-send-email-kiran.padwal@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds i2c pinctrl DT node for IFC6410 board.
+It also adds necessary DT support for i2c eeprom which is present on
+IFC6410.
 
-Yesterday's testing was a bit messy. So here goes again.
+Tested on IFC6410 board.
 
-On Mon, Sep 15, 2014 at 06:42:04PM +0200, Sebastian Andrzej Siewior wrote:
-> On 09/12/2014 12:28 PM, Frans Klaver wrote:
-> > port config is 115200 8N1. I don't recall doing anything special. I
-> > boot, login, less file and get a lock.
-> 
-> So I booted my mini Debian 7.6 (basic system + openssh) on my beagle
-> bone black which is:
-> 
-> [    0.000000] AM335X ES2.0 (neon )
+Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
+---
+Changes since v3:
+ - Removed pinctrl DT node.
 
-Mine's the same.
+Changes since v2:
+ - Renamed pinmux i2c subnode "i2c1_pinmux" to "i2c1".
+ - Removed labes of node.
+ - Used canonical value as "okay" instead of "ok".
+ - Used macros.
 
-> configured a console, login, invoked "less file". The file was shown, I
-> hit on the space key so less shows me more of the file. No lock-up.
-> I tried booting via NFS and MMC. I tried various files with less.
-> 
-> My dot config is here
-> 	https://breakpoint.cc/config-am335x-bb.txt.xz
-> 
-> If there is nothing specific to the file you do less on I have no idea
-> what else it could if it is not the config.
+Changes since v1:
+ - Renamed pinmux phandle "qcom_pinmux" to "tlmm_pinmux".
+ - Updated pinmux interrupt.
 
-It could be environmental. I have three test cases right now. Two of
-them on the beagle bone black, the third on our custom am335x based
-platform.
+ arch/arm/boot/dts/qcom-apq8064-ifc6410.dts |   27 ++++++++++++++++++
+ arch/arm/boot/dts/qcom-apq8064.dtsi        |   42 ++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+)
 
-- All test cases run the same kernel built from uart_v10-pre1.
-- For the black, the board, dtb, and u-boot environment are equal for
-  the test cases.
+diff --git a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+index 90db8af..3573cd7 100644
+--- a/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
++++ b/arch/arm/boot/dts/qcom-apq8064-ifc6410.dts
+@@ -5,6 +5,33 @@
+ 	compatible = "qcom,apq8064-ifc6410", "qcom,apq8064";
+ 
+ 	soc {
++		pinctrl@800000 {
++			i2c1_pins: i2c1 {
++				mux {
++					pins = "gpio20", "gpio21";
++					function = "gsbi1";
++				};
++			};
++		};
++
++		gsbi@12440000 {
++			status = "okay";
++			qcom,mode = <GSBI_PROT_I2C>;
++
++			i2c@12460000 {
++				status = "okay";
++				clock-frequency = <200000>;
++				pinctrl-0 = <&i2c1_pins>;
++				pinctrl-names = "default";
++
++				eeprom: eeprom@52 {
++					compatible = "atmel,24c128";
++					reg = <0x52>;
++					pagesize = <32>;
++				};
++			};
++		};
++
+ 		gsbi@16600000 {
+ 			status = "ok";
+ 			qcom,mode = <GSBI_PROT_I2C_UART>;
+diff --git a/arch/arm/boot/dts/qcom-apq8064.dtsi b/arch/arm/boot/dts/qcom-apq8064.dtsi
+index b1e476a..fddaeb7 100644
+--- a/arch/arm/boot/dts/qcom-apq8064.dtsi
++++ b/arch/arm/boot/dts/qcom-apq8064.dtsi
+@@ -156,6 +156,48 @@
+ 			regulator;
+ 		};
+ 
++		gsbi1: gsbi@12440000 {
++			status = "disabled";
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12440000 0x100>;
++			clocks = <&gcc GSBI1_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			i2c1: i2c@12460000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x12460000 0x1000>;
++				interrupts = <0 194 IRQ_TYPE_NONE>;
++				clocks = <&gcc GSBI1_QUP_CLK>, <&gcc GSBI1_H_CLK>;
++				clock-names = "core", "iface";
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		gsbi2: gsbi@12480000 {
++			status = "disabled";
++			compatible = "qcom,gsbi-v1.0.0";
++			reg = <0x12480000 0x100>;
++			clocks = <&gcc GSBI2_H_CLK>;
++			clock-names = "iface";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++
++			i2c2: i2c@124a0000 {
++				compatible = "qcom,i2c-qup-v1.1.1";
++				reg = <0x124a0000 0x1000>;
++				interrupts = <0 196 IRQ_TYPE_NONE>;
++				clocks = <&gcc GSBI2_QUP_CLK>, <&gcc GSBI2_H_CLK>;
++				clock-names = "core", "iface";
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
+ 		gsbi7: gsbi@16600000 {
+ 			status = "disabled";
+ 			compatible = "qcom,gsbi-v1.0.0";
+-- 
+1.7.9.5
 
-- Bone Black: Debian 7.5
-  Login, "less file" doesn't lock up. Scrolling down looks sensible.
-  Scrolling up leaves me with a crooked display, provided the minicom
-  window is more than 24 lines high. Condensed example:
-
-  Normal less looks like:
-  
-	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-	eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-	minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-	aliquip ex ea commodo consequat. Duis aute irure dolor in
-	:
-
-  While after scrolling up it looks like
-
-	minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-	aliquip ex ea commodo consequat. Duis aute irure dolor in
-	:
-
-	Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-	eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-
-  vi works sensibly, but only occupies part of the total screen estate
-  in minicom. After quitting, minicom doesn't use the rest of the screen
-  estate anymore.
-
-  After running vi, less doesn't show the weird scrolling behavior
-  anymore, since the console has just been limited to 24x80.
-
-- Bone Black: Yocto poky, core-image-minimal
-  Login, "less file" locks up, doesn't show anything. I can exit using
-  Ctrl-C.
-
-  vi runs normally, only occupies part of the total screen estate in
-  minicom. After quitting, a weird character shows up (typically I see
-  ÿ there), but minicom can use the rest of the screen estate again.
-  If we disregard the odd character, this is much like the behavior we
-  have on the omap-serial driver.
-
-- Custom board: Yocto poky, custom image
-  Login, "less file" locks up, showing only "ÿ" in the top left corner
-  of the screen. Can get out of there by having something dumped through
-  /dev/kmsg.
-
-  vi: see "Bone Black: Yocto poky, core-image-minimal"
-
-Having it summed up like this, I think we're back at ncurses and its
-interaction with the serial driver.
-
-Hope this helps. Thanks for your effort so far,
-Frans
