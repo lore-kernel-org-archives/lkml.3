@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaIQIla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:41:30 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44361 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905AbaIQIlZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:41:25 -0400
-Date: Wed, 17 Sep 2014 14:11:12 +0530
-From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "Gautham R. Shenoy" <ego@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, "Srivatsa S. Bhat" <srivatsa@mit.edu>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] ACPI / cpuidle: fix deadlock between cpuidle_lock and
- cpu_hotplug.lock
-Message-ID: <20140917084112.GC31806@in.ibm.com>
-Reply-To: ego@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1409031404110.12309@pobox.suse.cz>
- <alpine.LNX.2.00.1409031503140.12309@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1409031503140.12309@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091708-8236-0000-0000-00000576A67F
+	id S1754743AbaIQInO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:43:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22434 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751842AbaIQInI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:43:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
+   d="scan'208";a="604050313"
+Message-ID: <1410943355.28850.92.camel@sauron.fi.intel.com>
+Subject: Re: [RFC] Don'd hold work_sem while calling worker functions
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Wed, 17 Sep 2014 11:42:35 +0300
+In-Reply-To: <1410873998-2955-1-git-send-email-richard@nod.at>
+References: <1410873998-2955-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Tue, 2014-09-16 at 15:26 +0200, Richard Weinberger wrote:
+> I fail to see why we need work_sem while wrk->func() is executed.
+> Artem, do you have an idea?
+> 
+> Having the wear_leveling_worker() called without work_sem held
+> would simplify the fastmap code too. I'm currently reworking some
+> of it's code and I'm in locking hell. 8-)
 
-On Wed, Sep 03, 2014 at 03:04:28PM +0200, Jiri Kosina wrote:
-> There is a following AB-BA dependency between cpu_hotplug.lock and 
-> cpuidle_lock:
-> 
-> 1) cpu_hotplug.lock -> cpuidle_lock
-> enable_nonboot_cpus()
->  _cpu_up()
->   cpu_hotplug_being()
->    LOCK(cpu_hotplug.lock)
->  cpu_notify()
->   ...
->   acpi_processor_hotplug()
->    cpuidle_pause_and_lock()
->     LOCK(cpuidle_lock)
-> 
-> 2) cpuidle_lock -> cpu_hotplug.lock
-> acpi_os_execute_deferred() workqueue
->  ...
->  acpi_processor_cst_has_changed()
->   cpuidle_pause_and_lock()
->    LOCK(cpuidle_lock)
->   get_online_cpus()
->    LOCK(cpu_hotplug.lock)
-> 
-> Fix this by reversing the order acpi_processor_cst_has_changed() does 
-> thigs -- let it first execute the protection against CPU hotplug by 
-> calling get_online_cpus() and obtain the cpuidle lock only after that (and 
-> perform the symmentric change when allowing CPUs hotplug again and 
-> dropping cpuidle lock).
-> 
-> Spotted by lockdep.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Well, the best way for getting clue about the meaning of an R/W
+semaphore with an unlimited amount of read-takers I found for myself is
+to focus on the write-takers. Read-takers are non-interesting, because
+they can race freely.
 
-Looks good to me.
-Reviewed-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+So let's check write-takers.
 
-> ---
->  drivers/acpi/processor_idle.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-> index 3dca36d..17f9ec5 100644
-> --- a/drivers/acpi/processor_idle.c
-> +++ b/drivers/acpi/processor_idle.c
-> @@ -1071,9 +1071,9 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
-> 
->  	if (pr->id == 0 && cpuidle_get_driver() == &acpi_idle_driver) {
-> 
-> -		cpuidle_pause_and_lock();
->  		/* Protect against cpu-hotplug */
->  		get_online_cpus();
-> +		cpuidle_pause_and_lock();
-> 
->  		/* Disable all cpuidle devices */
->  		for_each_online_cpu(cpu) {
-> @@ -1100,8 +1100,8 @@ int acpi_processor_cst_has_changed(struct acpi_processor *pr)
->  				cpuidle_enable_device(dev);
->  			}
->  		}
-> -		put_online_cpus();
->  		cpuidle_resume_and_unlock();
-> +		put_online_cpus();
->  	}
-> 
->  	return 0;
-> -- 
-> Jiri Kosina
-> SUSE Labs
-> 
+There are 2 of them - one in your code, one in the one I wrote many
+years ago.
+
+"Mine" is in 'ubi_wl_flush()':
+
+        down_write(&ubi->work_sem);
+        up_write(&ubi->work_sem);
+
+And the only reason it is there is to make sure that flush() really
+flushes the queue, and when 'ubi_wl_flush()' returns, you may be sure
+that all the in-flight works were finished.
+
+There are other ways to achieve this, but I probably found using the R/W
+semaphore to be the easiest. Indeed, just make all the works have it in
+read mode, and when you have to wait for all the in-flight works to
+complete, you take it in write mode - easy.
+
+IOW, this is a bit of an unusual use of R/W semaphores.
+
+HTH.
+
+P.S. Generally, if you have a trouble with a lock, start with checking
+the place where it is defined, I tried to document locks there briefly.
+And there may be pices of useful comments elsewhere. This should be true
+for both UBI and UBIFS. So just a general hint.
+
+For 'work_sem' you'd need to check ubi.h. But unfortunately, the comment
+there is not helpful, and even has a typo which makes it confusing.
+
+While on it, would you refine the comment and say something like:
+
+work_sem: used to wait for all the scheduled works to finish and prevent
+new works from being submitted
+
+
+-- 
+Best Regards,
+Artem Bityutskiy
 
