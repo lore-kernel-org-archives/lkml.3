@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875AbaIQUew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:34:52 -0400
-Received: from mail-bl2on0124.outbound.protection.outlook.com ([65.55.169.124]:12319
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756460AbaIQUev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:34:51 -0400
-X-Greylist: delayed 13140 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Sep 2014 16:34:50 EDT
-Message-ID: <1410986079.24184.534.camel@snotra.buserror.net>
-Subject: Re: [PATCH v3 00/21] powerpc/8xx: Optimise MMU TLB handling and add
- support of 16k pages
-From: Scott Wood <scottwood@freescale.com>
-To: christophe leroy <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Wed, 17 Sep 2014 15:34:39 -0500
-In-Reply-To: <5419F017.8010603@c-s.fr>
-References: <20140917163656.E09D81AB026@localhost.localdomain>
-	 <1410972043.24184.532.camel@snotra.buserror.net> <5419F017.8010603@c-s.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S1756896AbaIQUfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:35:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39743 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162AbaIQUfU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 16:35:20 -0400
+Date: Wed, 17 Sep 2014 13:35:10 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        Frans Klaver <fransklaver@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] eeepc-laptop: simplify parse_arg()
+Message-ID: <20140917203510.GA12682@vmdeb7>
+References: <20140906021757.GA9197@vmdeb7>
+ <7288841.ayNsq2yeGO@vostro.rjw.lan>
+ <1410252608.22255.5.camel@x220>
+ <20140910033304.GB39541@vmdeb7>
+ <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
+ <20140910164916.GA48285@vmdeb7>
+ <1410379520.11097.18.camel@x220>
+ <20140911223739.GB18425@vmdeb7>
+ <20140916234543.GA22408@vmdeb7>
+ <1410980571.10248.6.camel@x220>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [2601:2:5800:3f7:6969:ddc5:bfaf:5d2e]
-X-ClientProxiedBy: BN3PR09CA0001.namprd09.prod.outlook.com (25.160.111.139) To
- BY2PR0301MB0726.namprd03.prod.outlook.com (25.160.63.16)
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;UriScan:;
-X-Forefront-PRVS: 0337AFFE9A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(377424004)(189002)(199003)(479174003)(24454002)(83322001)(106356001)(110136001)(76176999)(83072002)(92566001)(92726001)(19580405001)(47776003)(85852003)(101416001)(64706001)(102836001)(95666004)(105586002)(33646002)(104166001)(97736003)(23676002)(86362001)(50226001)(21056001)(79102003)(62966002)(89996001)(31966008)(77982003)(103116003)(87286001)(87976001)(46102003)(77156001)(74662003)(80022003)(4396001)(77096002)(99396002)(88136002)(90102001)(50466002)(76482002)(81542003)(74502003)(20776003)(107046002)(93916002)(42186005)(85306004)(81342003)(50986999)(99106002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0726;H:[IPv6:2601:2:5800:3f7:6969:ddc5:bfaf:5d2e];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1410980571.10248.6.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-17 at 22:33 +0200, christophe leroy wrote:
-> Le 17/09/2014 18:40, Scott Wood a écrit :
-> > On Wed, 2014-09-17 at 18:36 +0200, Christophe Leroy wrote:
-> >> This patchset:
-> >> 1) provides several MMU TLB handling optimisation on MPC8xx.
-> >> 2) adds support of 16k pages on MPC8xx.
-> >> All changes have been successfully tested on a custom board equipped with MPC885
-> >>
-> >> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> >> Tested-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> > I've already applied patches 1, 2, 4, 5, 6, 9, and 10 from the previous
-> > patchset -- have they changed?
-> >
-> > -Scott
-> >
-> No, only 3, 7, 17 are changed, and 20,21 are new.
-> I didn't notice you already applied some. How should I then proceed now 
-> for the remaining ones ? Submit a new set ?
+On Wed, Sep 17, 2014 at 09:02:51PM +0200, Paul Bolle wrote:
+> parse_arg() has three possible return values:
+>     -EINVAL if sscanf(), in short, fails;
+>     zero if "count" is zero; and
+>     "count" in all other cases
 > 
+> But "count" will never be zero. See, parse_arg() is called by the
+> various store functions. And the callchain of these functions starts
+> with sysfs_kf_write(). And that function checks for a zero "count". So
+> we can stop checking for a zero "count", drop the "count" argument
+> entirely, and transform parse_arg() into a function that returns zero on
+> success or a negative error. That, in turn, allows to make those store
+> functions just return "count" on success. The net effect is that the
+> code becomes a bit easier to understand.
+> 
+> A nice side effect is that this GCC warning is silenced too:
+>     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
+>     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>       int rv, value;
+> 
+> Which is, of course, the reason to have a look at parse_arg().
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Still build tested only, but now on top of v3.17-rc5. Has Frans tested
+> writing zero length values to these sysfs files?
 
-No, I'll just skip the ones I've already applied.
+Frans, can you confirm testing when you get a chance please?
 
--Scott
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
