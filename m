@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaIQLfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 07:35:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40605 "EHLO mx1.redhat.com"
+	id S1754900AbaIQLlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 07:41:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199AbaIQLfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 07:35:13 -0400
-Date: Wed, 17 Sep 2014 13:35:00 +0200
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-Message-ID: <20140917113458.GA1462@potion.brq.redhat.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
- <54184078.4070505@redhat.com>
- <20140916205110.GA1273@potion.brq.redhat.com>
- <CAJu=L59f6ODMDOiKEGGSGg+0RhYw3FDy5D7AJcCOrHD5xL_iwQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJu=L59f6ODMDOiKEGGSGg+0RhYw3FDy5D7AJcCOrHD5xL_iwQ@mail.gmail.com>
+	id S1754048AbaIQLk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 07:40:58 -0400
+From: Aaron Tomlin <atomlin@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: viro@zeniv.linux.org.uk, david@fromorbit.com, atomlin@redhat.com,
+        oleg@redhat.com, bmr@redhat.com, jcastillo@redhat.com,
+        mguzik@redhat.com, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] fs: Use a seperate wq for do_sync_work() to avoid a potential deadlock
+Date: Wed, 17 Sep 2014 12:39:02 +0100
+Message-Id: <1410953942-32144-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Repost for lists, the last mail was eaten by a security troll.]
+Since do_sync_work() is a deferred function it can block indefinitely by
+design. At present do_sync_work() is added to the global system_wq.
+As such a deadlock is theoretically possible between sys_unmount() and
+sync_filesystems():
 
-2014-09-16 14:01-0700, Andres Lagar-Cavilla:
-> On Tue, Sep 16, 2014 at 1:51 PM, Radim Krčmář <rkrcmar@redhat.com>
-> wrote:
-> > 2014-09-15 13:11-0700, Andres Lagar-Cavilla:
-> >> +int kvm_get_user_page_retry(struct task_struct *tsk, struct
-> >> mm_struct *mm,
-> >
-> > The suffix '_retry' is not best suited for this.
-> > On first reading, I imagined we will be retrying something from
-> > before,
-> > possibly calling it in a loop, but we are actually doing the first
-> > and
-> > last try in one call.
->
-> We are doing ... the second and third in most scenarios. async_pf did
-> the first with _NOWAIT. We call this from the async pf retrier, or if
-> async pf couldn't be notified to the guest.
+  * The current work fn on the system_wq (do_sync_work()) is blocked
+    waiting to aquire a sb's s_umount for reading.
 
-I was thinking more about what the function does, not how we currently
-use it -- nothing prevents us from using it as first somewhere -- but
-yeah, even comments would be off then.
+  * The "umount" task is the current owner of the s_umount in
+    question but is waiting for do_sync_work() to continue.
+    Thus we hit a deadlock situation.
 
-> >> Apart from this, the patch looks good.  The mm/ parts are minimal,
-> >> so
-> >> I
-> >> think it's best to merge it through the KVM tree with someone's
-> >> Acked-by.
-> >
-> > I would prefer to have the last hunk in a separate patch, but still,
-> >
-> > Acked-by: Radim Krčmář <rkrcmar@redhat.com>
->
-> Awesome, thanks much.
->
-> I'll recut with the VM_BUG_ON from Paolo and your Ack. LMK if anything
-> else from this email should go into the recut.
+This patch introduces a separate workqueue for do_sync_work() to avoid a
+the described deadlock.
 
-Ah, sorry, I'm not maintaining mm ... what I meant was
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+Reviewed-by: Alexander Viro <viro@zeniv.linux.org.uk>
+---
+ fs/sync.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+diff --git a/fs/sync.c b/fs/sync.c
+index bdc729d..df455d0 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -15,6 +15,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/quotaops.h>
+ #include <linux/backing-dev.h>
++#include <linux/kthread.h>
+ #include "internal.h"
+ 
+ #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
+@@ -114,7 +115,7 @@ SYSCALL_DEFINE0(sync)
+ 	return 0;
+ }
+ 
+-static void do_sync_work(struct work_struct *work)
++static int do_sync_work(void *dummy)
+ {
+ 	int nowait = 0;
+ 
+@@ -129,18 +130,12 @@ static void do_sync_work(struct work_struct *work)
+ 	iterate_supers(sync_fs_one_sb, &nowait);
+ 	iterate_bdevs(fdatawrite_one_bdev, NULL);
+ 	printk("Emergency Sync complete\n");
+-	kfree(work);
++	return 0;
+ }
+ 
+ void emergency_sync(void)
+ {
+-	struct work_struct *work;
+-
+-	work = kmalloc(sizeof(*work), GFP_ATOMIC);
+-	if (work) {
+-		INIT_WORK(work, do_sync_work);
+-		schedule_work(work);
+-	}
++	kthread_run(do_sync_work, NULL, "sync_work_thread");
+ }
+ 
+ /*
+-- 
+1.9.3
 
-and I had to leave before I could find a good apology for
-VM_WARN_ON_ONCE(), so if you are replacing BUG_ON, you might want to
-look at that one as well.
