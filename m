@@ -1,230 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970AbaIQSth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:49:37 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:52136 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703AbaIQStf (ORCPT
+	id S1756154AbaIQSvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:51:49 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60692 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755881AbaIQSvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:49:35 -0400
-Message-ID: <5419D7BD.30003@linaro.org>
-Date: Wed, 17 Sep 2014 11:49:33 -0700
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 17 Sep 2014 14:51:48 -0400
+Date: Wed, 17 Sep 2014 19:51:38 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH 3.17-rc4 v7 4/6] irqchip: gic: Add support for IPI FIQ
+Message-ID: <20140917185138.GX12361@n2100.arm.linux.org.uk>
+References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org> <1410970218-28847-5-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Tero Kristo <t-kristo@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Keerthy <j-keerthy@ti.com>,
-        =?UTF-8?B?QmVu?= =?UTF-8?B?b8OudCBDb3Vzc29u?= 
-	<bcousson@baylibre.com>
-Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
-References: <1408716154-26101-1-git-send-email-nm@ti.com> <1408716154-26101-9-git-send-email-nm@ti.com>
-In-Reply-To: <1408716154-26101-9-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410970218-28847-5-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/22/2014 07:02 AM, Nishanth Menon wrote:
-> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
->
-> Add OMAP5/DRA74/72 CPUIDLE support.
->
-> This patch adds MPUSS low power states in cpuidle.
->
->          C1 - CPU0 WFI + CPU1 WFI + MPU ON
->          C2 - CPU0 RET + CPU1 RET + MPU CSWR
->
-> Tested on DRA74/72-EVM for C1 and C2 states.
->
-> NOTE: DRA7 does not do voltage scaling as part of retention transition
-> and has Mercury which speeds up transition paths - Latency numbers are
-> based on measurements done by toggling GPIOs.
->
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> [ j-keerthy@ti.com rework on 3.14]
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> [nm@ti.com: updates based on profiling, OMAP5 squashed]
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+On Wed, Sep 17, 2014 at 09:10:16AM -0700, Daniel Thompson wrote:
+> This patch provides support for arm's newly added IPI FIQ. It works
+> by placing all interrupt sources *except* IPI FIQ in group 1 and
+> then flips a configuration bit in the GIC such that group 1
+> interrupts use IRQ and group 0 interrupts use FIQ.
+> 
+> All GIC hardware except GICv1-without-TrustZone support provides a means
+> to group exceptions into group 0 and group 1. However the hardware
+> functionality is unavailable to the kernel when a secure monitor is
+> present because access to the grouping registers are prohibited outside
+> "secure world" (a feature that allows grouping to be used to allow
+> hardware peripherals to send interrupts into the secure world). However
+> when grouping is not available we can rely on the GIC's RAZ/WI semantics
+> and avoid conditional code.
+
+I've been chasing a bug with this on the Versatile Express CT9x4.  It
+seems that the GIC there is a GICv1, with secure extensions.  It seems
+to support interrupt grouping.
+
+However, setting SPIs to group 1, with the control registers enabling
+both group 0 and group 1 (such that both groups are treated as IRQs)
+results in no SPIs being delivered to the kernel.  In other words,
+setting GIC_DIST_IGROUP for SPIs, and setting both GIC_CPU_CTRL and
+GIC_DIST_CTRL to 3.
+
+This is rather worrying, because we seem to have a GIC which for all
+intents and purposes appears to be compatible with what we want to do,
+appears to conform with the GIC architecture specifications, but doesn't
+actually work.
+
+I suspect that running the Versatile Express CT9x4 in non-secure mode
+wouldn't work (because in non-secure mode, the GIC only allows access
+to group 1 interrupts.)
+
+I've added Will and Mark to this to see whether they have any comment.
+
+> gic_raise_softirq() also needs changing to make it safe to call from
+> FIQ. This is due to its use by wake_up_klogd() during console_unlock().
+> 
+> Tested on Freescale i.MX6 (quad A9, GICv1-with-TrustZone running in
+> secure mode).
+> 
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Jason Cooper <jason@lakedaemon.net>
 > ---
->   arch/arm/mach-omap2/cpuidle44xx.c |   82 ++++++++++++++++++++++++++++++++++++-
->   arch/arm/mach-omap2/pm44xx.c      |    2 +-
->   2 files changed, 82 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
-> index 2498ab0..8ad4f44 100644
-> --- a/arch/arm/mach-omap2/cpuidle44xx.c
-> +++ b/arch/arm/mach-omap2/cpuidle44xx.c
-> @@ -22,6 +22,7 @@
->   #include "common.h"
->   #include "pm.h"
->   #include "prm.h"
-> +#include "soc.h"
->   #include "clockdomain.h"
->
->   #define MAX_CPUS	2
-> @@ -31,6 +32,7 @@ struct idle_statedata {
->   	u32 cpu_state;
->   	u32 mpu_logic_state;
->   	u32 mpu_state;
-> +	u32 mpu_state_vote;
->   };
->
->   static struct idle_statedata omap4_idle_data[] = {
-> @@ -51,12 +53,26 @@ static struct idle_statedata omap4_idle_data[] = {
->   	},
->   };
->
-> +static struct idle_statedata dra7_idle_data[] = {
-> +	{
-> +		.cpu_state = PWRDM_POWER_ON,
-> +		.mpu_state = PWRDM_POWER_ON,
-> +		.mpu_logic_state = PWRDM_POWER_ON,
-> +	},
-> +	{
-> +		.cpu_state = PWRDM_POWER_RET,
-> +		.mpu_state = PWRDM_POWER_RET,
-> +		.mpu_logic_state = PWRDM_POWER_RET,
-> +	},
-> +};
+>  arch/arm/kernel/traps.c         |   5 +-
+>  drivers/irqchip/irq-gic.c       | 162 ++++++++++++++++++++++++++++++++++++++--
+>  include/linux/irqchip/arm-gic.h |   3 +
+>  3 files changed, 162 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+> index 439138d..92c4ea1 100644
+> --- a/arch/arm/kernel/traps.c
+> +++ b/arch/arm/kernel/traps.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/init.h>
+>  #include <linux/sched.h>
+>  #include <linux/irq.h>
+> +#include <linux/irqchip/arm-gic.h>
+>  
+>  #include <linux/atomic.h>
+>  #include <asm/cacheflush.h>
+> @@ -479,7 +480,9 @@ asmlinkage void __exception_irq_entry handle_fiq_as_nmi(struct pt_regs *regs)
+>  
+>  	nmi_enter();
+>  
+> -	/* nop. FIQ handlers for special arch/arm features can be added here. */
+> +#ifdef CONFIG_ARM_GIC
+> +	gic_handle_fiq_ipi();
+> +#endif
+>  
+>  	nmi_exit();
+>  
+> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+> index 4b959e6..05b5d62 100644
+> --- a/drivers/irqchip/irq-gic.c
+> +++ b/drivers/irqchip/irq-gic.c
+> @@ -39,8 +39,10 @@
+>  #include <linux/slab.h>
+>  #include <linux/irqchip/chained_irq.h>
+>  #include <linux/irqchip/arm-gic.h>
+> +#include <linux/ratelimit.h>
+>  
+>  #include <asm/cputype.h>
+> +#include <asm/fiq.h>
+>  #include <asm/irq.h>
+>  #include <asm/exception.h>
+>  #include <asm/smp_plat.h>
+> @@ -48,6 +50,10 @@
+>  #include "irq-gic-common.h"
+>  #include "irqchip.h"
+>  
+> +#ifndef SMP_IPI_FIQ_MASK
+> +#define SMP_IPI_FIQ_MASK 0
+> +#endif
 > +
->   static struct powerdomain *mpu_pd, *cpu_pd[MAX_CPUS];
->   static struct clockdomain *cpu_clkdm[MAX_CPUS];
->
->   static atomic_t abort_barrier;
->   static bool cpu_done[MAX_CPUS];
->   static struct idle_statedata *state_ptr = &omap4_idle_data[0];
-> +static DEFINE_RAW_SPINLOCK(mpu_lock);
->
->   /* Private functions */
->
-> @@ -78,6 +94,32 @@ static int omap_enter_idle_simple(struct cpuidle_device *dev,
->   	return index;
->   }
->
-> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
-> +			       struct cpuidle_driver *drv,
-> +			       int index)
+>  union gic_base {
+>  	void __iomem *common_base;
+>  	void __percpu * __iomem *percpu_base;
+> @@ -71,6 +77,8 @@ struct gic_chip_data {
+>  };
+>  
+>  static DEFINE_RAW_SPINLOCK(irq_controller_lock);
+> +/* A fiq-safe spinlock must only be locked when the FIQ is masked */
+> +static DEFINE_RAW_SPINLOCK(fiq_safe_migration_lock);
+>  
+>  /*
+>   * The GIC mapping of CPU interfaces does not necessarily match
+> @@ -325,6 +333,94 @@ static struct irq_chip gic_chip = {
+>  	.irq_set_wake		= gic_set_wake,
+>  };
+>  
+> +/*
+> + * Shift an interrupt between Group 0 and Group 1.
+> + *
+> + * In addition to changing the group we also modify the priority to
+> + * match what "ARM strongly recommends" for a system where no Group 1
+> + * interrupt must ever preempt a Group 0 interrupt.
+> + *
+> + * If is safe to call this function on systems which do not support
+> + * grouping (it will have no effect).
+> + */
+> +static void gic_set_group_irq(void __iomem *base, unsigned int hwirq,
+> +				int group)
 > +{
-> +	struct idle_statedata *cx = state_ptr + index;
-> +	unsigned long flag;
+> +	unsigned int grp_reg = hwirq / 32 * 4;
+> +	u32 grp_mask = BIT(hwirq % 32);
+> +	u32 grp_val;
 > +
-> +	raw_spin_lock_irqsave(&mpu_lock, flag);
-
-Why do you need this spin_lock_irqsave ? Aren't the local irqs already 
-disabled ?
-
-> +	cx->mpu_state_vote++;
-> +	if (cx->mpu_state_vote == num_online_cpus()) {
-> +		pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
-> +		omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
+> +	unsigned int pri_reg = (hwirq / 4) * 4;
+> +	u32 pri_mask = BIT(7 + ((hwirq % 4) * 8));
+> +	u32 pri_val;
+> +
+> +	/*
+> +	 * Systems which do not support grouping will have no bits
+> +	 * set in IGROUP[0] (and all systems which do will have set bits).
+> +	 */
+> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + 0);
+> +	if (!grp_val)
+> +		return;
+> +
+> +	raw_spin_lock(&irq_controller_lock);
+> +
+> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
+> +	pri_val = readl_relaxed(base + GIC_DIST_PRI + pri_reg);
+> +
+> +	if (group) {
+> +		grp_val |= grp_mask;
+> +		pri_val |= pri_mask;
+> +	} else {
+> +		grp_val &= ~grp_mask;
+> +		pri_val &= ~pri_mask;
 > +	}
-> +	raw_spin_unlock_irqrestore(&mpu_lock, flag);
 > +
-> +	omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+> +	writel_relaxed(grp_val, base + GIC_DIST_IGROUP + grp_reg);
+> +	writel_relaxed(pri_val, base + GIC_DIST_PRI + pri_reg);
 > +
-> +	raw_spin_lock_irqsave(&mpu_lock, flag);
-> +	if (cx->mpu_state_vote == num_online_cpus())
-> +		omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
-> +	cx->mpu_state_vote--;
-> +	raw_spin_unlock_irqrestore(&mpu_lock, flag);
-
-I am not sure that will work. What happens if a cpu exits idle and then 
-re-enter idle immediately ?
-
-Could you try a long run of this little program:
-
-https://git.linaro.org/power/pm-qa.git/blob/HEAD:/cpuidle/cpuidle_killer.c
-
-> +	return index;
+> +	raw_spin_unlock(&irq_controller_lock);
 > +}
 > +
->   static int omap_enter_idle_coupled(struct cpuidle_device *dev,
->   			struct cpuidle_driver *drv,
->   			int index)
-> @@ -224,6 +266,34 @@ static struct cpuidle_driver omap4_idle_driver = {
->   	.safe_state_index = 0,
->   };
->
-> +static struct cpuidle_driver dra7_idle_driver = {
-> +	.name				= "dra7_idle",
-> +	.owner				= THIS_MODULE,
-> +	.states = {
-> +		{
-> +			/* C1 - CPU0 ON + CPU1 ON + MPU ON */
-> +			.exit_latency = 2 + 2,
-> +			.target_residency = 5,
-> +			.flags = CPUIDLE_FLAG_TIME_VALID,
-> +			.enter = omap_enter_idle_simple,
-> +			.name = "C1",
-> +			.desc = "CPUx WFI, MPUSS ON"
-> +		},
-> +		{
-> +			/* C2 - CPU0 RET + CPU1 RET + MPU CSWR */
-> +			.exit_latency = 48 + 60,
-> +			.target_residency = 100,
-> +			.flags = CPUIDLE_FLAG_TIME_VALID
-> +					| CPUIDLE_FLAG_TIMER_STOP,
-> +			.enter = omap_enter_idle_smp,
-> +			.name = "C2",
-> +			.desc = "CPUx CSWR, MPUSS CSWR",
-> +		},
-> +	},
-> +	.state_count = ARRAY_SIZE(dra7_idle_data),
-> +	.safe_state_index = 0,
-> +};
+> +/*
+> + * Test which group an interrupt belongs to.
+> + *
+> + * Returns 0 if the controller does not support grouping.
+> + */
+> +static int gic_get_group_irq(void __iomem *base, unsigned int hwirq)
+> +{
+> +	unsigned int grp_reg = hwirq / 32 * 4;
+> +	u32 grp_val;
 > +
->   /* Public functions */
->
->   /**
-> @@ -234,6 +304,16 @@ static struct cpuidle_driver omap4_idle_driver = {
->    */
->   int __init omap4_idle_init(void)
->   {
-> +	struct cpuidle_driver *idle_driver;
+> +	grp_val = readl_relaxed(base + GIC_DIST_IGROUP + grp_reg);
 > +
-> +	if (soc_is_dra7xx() || soc_is_omap54xx()) {
-> +		state_ptr = &dra7_idle_data[0];
-> +		idle_driver = &dra7_idle_driver;
-> +	} else {
-> +		state_ptr = &omap4_idle_data[0];
-> +		idle_driver = &omap4_idle_driver;
+> +	return (grp_val >> (hwirq % 32)) & 1;
+> +}
+> +
+> +/*
+> + * Fully acknowledge (both ack and eoi) any outstanding FIQ-based IPI,
+> + * otherwise do nothing.
+> + */
+> +void gic_handle_fiq_ipi(void)
+> +{
+> +	struct gic_chip_data *gic = &gic_data[0];
+> +	void __iomem *cpu_base = gic_data_cpu_base(gic);
+> +	unsigned long irqstat, irqnr;
+> +
+> +	if (WARN_ON(!in_nmi()))
+> +		return;
+> +
+> +	while ((1u << readl_relaxed(cpu_base + GIC_CPU_HIGHPRI)) &
+> +	       SMP_IPI_FIQ_MASK) {
+> +		irqstat = readl_relaxed(cpu_base + GIC_CPU_INTACK);
+> +		writel_relaxed(irqstat, cpu_base + GIC_CPU_EOI);
+> +
+> +		irqnr = irqstat & GICC_IAR_INT_ID_MASK;
+> +		WARN_RATELIMIT(irqnr > 16,
+> +			       "Unexpected irqnr %lu (bad prioritization?)\n",
+> +			       irqnr);
 > +	}
+> +}
 > +
->   	mpu_pd = pwrdm_lookup("mpu_pwrdm");
->   	cpu_pd[0] = pwrdm_lookup("cpu0_pwrdm");
->   	cpu_pd[1] = pwrdm_lookup("cpu1_pwrdm");
-> @@ -248,5 +328,5 @@ int __init omap4_idle_init(void)
->   	/* Configure the broadcast timer on each cpu */
->   	on_each_cpu(omap_setup_broadcast_timer, NULL, 1);
->
-> -	return cpuidle_register(&omap4_idle_driver, cpu_online_mask);
-> +	return cpuidle_register(idle_driver, cpu_online_mask);
->   }
-> diff --git a/arch/arm/mach-omap2/pm44xx.c b/arch/arm/mach-omap2/pm44xx.c
-> index c063833..1d22162 100644
-> --- a/arch/arm/mach-omap2/pm44xx.c
-> +++ b/arch/arm/mach-omap2/pm44xx.c
-> @@ -293,7 +293,7 @@ int __init omap4_pm_init(void)
->   	/* Overwrite the default cpu_do_idle() */
->   	arm_pm_idle = omap_default_idle;
->
-> -	if (cpu_is_omap44xx())
-> +	if (cpu_is_omap44xx() || soc_is_dra7xx() || soc_is_omap54xx())
->   		omap4_idle_init();
->
->   err2:
->
-
+>  void __init gic_cascade_irq(unsigned int gic_nr, unsigned int irq)
+>  {
+>  	if (gic_nr >= MAX_GIC_NR)
+> @@ -373,7 +469,18 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
+>  
+>  	gic_dist_config(base, gic_irqs, NULL);
+>  
+> -	writel_relaxed(1, base + GIC_DIST_CTRL);
+> +	/*
+> +	 * Set all global interrupts to be group 1 (this register is
+> +	 * RAZ/WI if not accessible in current mode)
+> +	 */
+> +	for (i = 32; i < gic_irqs; i += 32)
+> +		writel_relaxed(0xffffffff, base + GIC_DIST_IGROUP + i * 4 / 32);
+> +
+> +	/*
+> +	 * Set EnableGrp1/EnableGrp0 (bit 1 and 0) or EnableGrp (bit 0 only,
+> +	 * bit 1 ignored)
+> +	 */
+> +	writel_relaxed(3, base + GIC_DIST_CTRL);
+>  }
+>  
+>  static void gic_cpu_init(struct gic_chip_data *gic)
+> @@ -382,6 +489,7 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  	void __iomem *base = gic_data_cpu_base(gic);
+>  	unsigned int cpu_mask, cpu = smp_processor_id();
+>  	int i;
+> +	unsigned long secure_irqs, secure_irq;
+>  
+>  	/*
+>  	 * Get what the GIC says our CPU mask is.
+> @@ -400,8 +508,27 @@ static void gic_cpu_init(struct gic_chip_data *gic)
+>  
+>  	gic_cpu_config(dist_base, NULL);
+>  
+> +	/*
+> +	 * Set any PPI and SGI interrupts not set in SMP_IPI_FIQ_MASK
+> +	 * to be group 1 (this register is RAZ/WI if not accessible)
+> +	 */
+> +	writel_relaxed(~SMP_IPI_FIQ_MASK, dist_base + GIC_DIST_IGROUP + 0);
+> +
+> +	/*
+> +	 * Update the priority of any resulting group0 interrupts.
+> +	 */
+> +	secure_irqs = ~readl_relaxed(dist_base + GIC_DIST_IGROUP + 0);
+> +	for_each_set_bit(secure_irq, &secure_irqs, 16)
+> +		gic_set_group_irq(dist_base, i, 0);
+> +
+>  	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, base + GIC_CPU_CTRL);
+> +
+> +	/* The bottom most bit will be set for all GIC variants (and is
+> +	 * called Enable or EnableGrp0 depending on operating mode). The
+> +	 * remaining four bits (CBPR, FIQEn, AckCtl and EnableGrp1) are
+> +	 * RAZ/WI if not accessible.
+> +	 */
+> +	writel_relaxed(0x1f, base + GIC_CPU_CTRL);
+>  }
+>  
+>  void gic_cpu_if_down(void)
+> @@ -485,7 +612,7 @@ static void gic_dist_restore(unsigned int gic_nr)
+>  		writel_relaxed(gic_data[gic_nr].saved_spi_enable[i],
+>  			dist_base + GIC_DIST_ENABLE_SET + i * 4);
+>  
+> -	writel_relaxed(1, dist_base + GIC_DIST_CTRL);
+> +	writel_relaxed(3, dist_base + GIC_DIST_CTRL);
+>  }
+>  
+>  static void gic_cpu_save(unsigned int gic_nr)
+> @@ -542,7 +669,7 @@ static void gic_cpu_restore(unsigned int gic_nr)
+>  		writel_relaxed(0xa0a0a0a0, dist_base + GIC_DIST_PRI + i * 4);
+>  
+>  	writel_relaxed(0xf0, cpu_base + GIC_CPU_PRIMASK);
+> -	writel_relaxed(1, cpu_base + GIC_CPU_CTRL);
+> +	writel_relaxed(0x1f, cpu_base + GIC_CPU_CTRL);
+>  }
+>  
+>  static int gic_notifier(struct notifier_block *self, unsigned long cmd,	void *v)
+> @@ -604,8 +731,19 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>  {
+>  	int cpu;
+>  	unsigned long flags, map = 0;
+> +	unsigned long softint;
+>  
+> -	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+> +	/*
+> +	 * The locking in this function ensures we don't use stale cpu mappings
+> +	 * and thus we never route an IPI to the wrong physical core during a
+> +	 * big.LITTLE switch. The switch code takes both of these locks meaning
+> +	 * we can choose whichever lock is safe to use from our current calling
+> +	 * context.
+> +	 */
+> +	if (in_nmi())
+> +		raw_spin_lock(&fiq_safe_migration_lock);
+> +	else
+> +		raw_spin_lock_irqsave(&irq_controller_lock, flags);
+>  
+>  	/* Convert our logical CPU mask into a physical one. */
+>  	for_each_cpu(cpu, mask)
+> @@ -618,7 +756,15 @@ static void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
+>  	dmb(ishst);
+>  
+>  	/* this always happens on GIC0 */
+> -	writel_relaxed(map << 16 | irq, gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+> +	softint = map << 16 | irq;
+> +	if (gic_get_group_irq(gic_data_dist_base(&gic_data[0]), irq))
+> +		softint |= 0x8000;
+> +	writel_relaxed(softint,
+> +		       gic_data_dist_base(&gic_data[0]) + GIC_DIST_SOFTINT);
+> +
+> +	if (in_nmi())
+> +		raw_spin_unlock(&fiq_safe_migration_lock);
+> +	else
+>  
+>  	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+>  }
+> @@ -668,7 +814,7 @@ int gic_get_cpu_id(unsigned int cpu)
+>   * Migrate all peripheral interrupts with a target matching the current CPU
+>   * to the interface corresponding to @new_cpu_id.  The CPU interface mapping
+>   * is also updated.  Targets to other CPU interfaces are unchanged.
+> - * This must be called with IRQs locally disabled.
+> + * This must be called with IRQ and FIQ locally disabled.
+>   */
+>  void gic_migrate_target(unsigned int new_cpu_id)
+>  {
+> @@ -690,6 +836,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
+>  	ror_val = (cur_cpu_id - new_cpu_id) & 31;
+>  
+>  	raw_spin_lock(&irq_controller_lock);
+> +	raw_spin_lock(&fiq_safe_migration_lock);
+>  
+>  	/* Update the target interface for this logical CPU */
+>  	gic_cpu_map[cpu] = 1 << new_cpu_id;
+> @@ -709,6 +856,7 @@ void gic_migrate_target(unsigned int new_cpu_id)
+>  		}
+>  	}
+>  
+> +	raw_spin_unlock(&fiq_safe_migration_lock);
+>  	raw_spin_unlock(&irq_controller_lock);
+>  
+>  	/*
+> diff --git a/include/linux/irqchip/arm-gic.h b/include/linux/irqchip/arm-gic.h
+> index 45e2d8c..52a5676 100644
+> --- a/include/linux/irqchip/arm-gic.h
+> +++ b/include/linux/irqchip/arm-gic.h
+> @@ -101,5 +101,8 @@ static inline void __init register_routable_domain_ops
+>  {
+>  	gic_routable_irq_domain_ops = ops;
+>  }
+> +
+> +void gic_handle_fiq_ipi(void);
+> +
+>  #endif /* __ASSEMBLY */
+>  #endif
+> -- 
+> 1.9.3
+> 
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
