@@ -1,137 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767AbaIQSQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:16:27 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:42270 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561AbaIQSQZ (ORCPT
+	id S1755930AbaIQSQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:16:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55332 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755834AbaIQSQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:16:25 -0400
+	Wed, 17 Sep 2014 14:16:49 -0400
+Date: Wed, 17 Sep 2014 20:16:44 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Huang Shijie <shijie8@gmail.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Huang Shijie <shijie.huang@intel.com>,
+        Mike Voytovich <mvoytovich@paypal.com>, linux-kernel@vger.kernel.org,
+        Huang Shijie <b32955@freescale.com>, linux-mtd@lists.infradead.org,
+        Roy Lee <roylee@paypal.com>, David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20140917201644.43df2cd7@bbrezillon>
+In-Reply-To: <20140917152609.GA2111@localhost.localdomain>
+References: <20140911120928.GA1585@localhost.localdomain>
+	<20140911143616.3ebb025a@bbrezillon>
+	<20140911142511.GA2543@localhost.localdomain>
+	<20140911163847.5e2f85c7@bbrezillon>
+	<20140912004550.GB26904@shldeISGChi005.sh.intel.com>
+	<20140912143050.014ad4c3@bbrezillon>
+	<20140913153622.GA10132@localhost.localdomain>
+	<20140913173841.GA18093@brian-ubuntu>
+	<20140915144259.GA1947@localhost.localdomain>
+	<20140915221210.5d9871fb@bbrezillon>
+	<20140917152609.GA2111@localhost.localdomain>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1410959280-29662-3-git-send-email-zyw@rock-chips.com>
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
-	<1410959280-29662-3-git-send-email-zyw@rock-chips.com>
-Date: Wed, 17 Sep 2014 11:16:23 -0700
-X-Google-Sender-Auth: 7ETNLbHCW64dO2ln96KVrZ8oFgU
-Message-ID: <CAD=FV=WCQ4oU1O9JcZ9SuwWJ7g+GLsUiE=wmQQoWvL41o24eWg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] dt-bindings: add devicetree bindings for st-pwm regulator
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+Hi Huang,
 
-On Wed, Sep 17, 2014 at 6:08 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> Document the st-pwm regulator
->
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
->
-> ---
->
->  .../devicetree/bindings/regulator/st-pwm.txt       |   35 ++++++++++++++++++++
->  1 file changed, 35 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/regulator/st-pwm.txt
->
-> diff --git a/Documentation/devicetree/bindings/regulator/st-pwm.txt b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-> new file mode 100644
-> index 0000000..38fec1d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/st-pwm.txt
-> @@ -0,0 +1,35 @@
-> +st pwm regulator bindings
-> +
-> +Required properties:
-> +  - compatible: "pwm-regulator"
+On Wed, 17 Sep 2014 23:26:11 +0800
+Huang Shijie <shijie8@gmail.com> wrote:
 
-This compatible string doesn't include "st,b2105-pwm-regulator".
+> On Mon, Sep 15, 2014 at 10:12:10PM +0200, Boris BREZILLON wrote:
+> > On Mon, 15 Sep 2014 22:43:02 +0800
+> > Huang Shijie <shijie8@gmail.com> wrote:
+> > 
+> > > On Sat, Sep 13, 2014 at 10:38:41AM -0700, Brian Norris wrote:
+> > > > On Sat, Sep 13, 2014 at 11:36:24PM +0800, Huang Shijie wrote:
+> > > > > On Fri, Sep 12, 2014 at 02:30:50PM +0200, Boris BREZILLON wrote:
+> > > > > > This test validates what's returned by ecc_strength file in sysfs
+> > > > > > (which in turn is specified by the NAND controller when initializing
+> > > > > > the NAND chip).
+> > > > > > 
+> > > > > > Doing this should not imply knowing the ECC algorithm in use in the
+> > > > > > NAND controller or the layout used to store data on NAND.
+> > > > > the difficulty is that the ECC parity area can be not byte aligned.
+> > > > 
+> > > > Is there a problem with just rounding up to the nearest byte alignment
+> > > > and ignoring the few bits that are wasted?
+> > > 
+> > > I feel a little confused with the two hooks.
+> > > 
+> > > does the ecc->write_page_raw need to write the ECC parity data?
+> > 
+> > Depending on the oob_required argument, it might be allowed to
+> > overwrite the ECC bytes even if this implies breaking page reliability
+> > (which is exactly what's expected).
+> > 
+> > When using raw write with with oob write option the writer should take
+> > care of regenerating ECC bytes (which you said was impossible in GPMI
+> > case) or copying them from a previous raw read.
+> Thanks for the explanation.
+> 
+> If we do not write the OOB, should we write the ECC bytes?
 
-Should be something like:
+No we shouldn't, and if you take a look at my new proposal you'll see
+that I always write ECC bytes even when oob_required is not required,
+but this is not a problem because in this case the nand_base code has
+already set the oob area to 0xff and, if I'm correct, writing 0xff is
+just like leaving the area unwritten.
 
-  - compatible: Should be "pwm-regulator" to get voltage table / regulator
-    period from the device tree.  Deprecated: if "st,b2105-pwm-regulator" then
-    voltage table and regulator will be handled by the driver.
+Of course leaving the ECC bytes to 0xff after a page erase will
+certainly trigger ECC errors when reading the page back in normal mode,
+but this is the MTD user responsibility to know what he's doing.
 
-Assuming that everyone is OK calling "st,b2105-pwm-regulator" the
-deprecated way of doing things.
+> The hooks should comment clearly about how to implement them :(
 
+Absolutely, and if we all agree on the expected behavior, I'll be happy
+to document it ;-).
 
-> +  - pwms: OF device-tree PWM specification (see PWM binding pwm.txt)
-> +  - voltage-table: voltage and duty table, include 2 merbers in each set of
-> +    brackets, first one is voltage(unit: uv), the next is duty(unit: percent)
-> +  - pwm-reg-period: duration (in nanoseconds) of one cycle
+> 
+> > 
+> > Here is a real example of what one could test with raw write + oob:
+> > 1) read a page in raw mode
+> > 2) flip some bits in the generated ECC bytes (or what you references as
+> >    parity data) (this case can actually happen in real life)
+> > 3) write the modified page in raw mode
+> > 4) read back the same page in normal and check that ECC correction still
+> >    works as expected
+> the nandbiterr test mode does the test as above.
+> But i think the multi-writes to the same page should occur only for the
+> SLC nand.
 
-The voltage-table and pwm-reg-period should not be required if we're
-using "st,b2105-pwm-regulator".  If someone lists both
-"st,b2105-pwm-regulator" and "pwm-regulator" then I'd assume that
-you'd allow them to override via the device tree but fallback to the
-old hardcoded values.
+I already have a patch for that :-):
 
+http://code.bulix.org/f69wuu-87021
 
-> +
-> +Any property defined as part of the core regulator binding defined in
-> +regulator.txt can also be used.
-> +
-> +Example:
-> +       pwm_regulator {
-> +                compatible = "st,b2105-pwm-regulator;
-> +                pwms = <&pwm1 0 1000000 0>;
-> +
-> +               voltage-table = <1114000 0>,
-> +                               <1095000 10>,
-> +                               <1076000 20>,
-> +                               <1056000 30>,
-> +                               <1036000 40>,
-> +                               <1016000 50>;
-> +
-> +               pwm-reg-period = <8448>;
-> +               regulators {
-> +                       vdd_logic: pwm-regulator {
-> +                               regulator-always-on;
-> +                               regulator-boot-on;
-> +                               regulator-min-microvolt = <1016000>;
-> +                               regulator-max-microvolt = <1114000>;
-> +                               regulator-name = "vdd_logic";
-> +                       };
-> +               };
+This patch is erasing the NAND block between each bitflip insertion so
+that it can work on MLC nandflashes too.
+Anyway, IMHO this nandbiterrs testsuite should be implemented in a
+user-space tool (which could be part of mtd-utils) because we already
+have all the primitives we need to do it from there (ioctls to access
+NAND chips in raw mode).
 
-I _think_ that the "regulators" subnode and the "pwm-regulator"
-subnode are not needed at all and should be removed.  Other instances
-of devices that are "just" regulators don't have it (like
-fixed-regulator, gpio-regulator, etc).
+> 
+> I will read your new patch set carefully in this weekend.
 
-I think your final example should be:
+Thanks.
 
-+       vdd_logic: pwm-regulator {
-+                compatible = "pwm-regulator;
-+                pwms = <&pwm1 0 1000000 0>;
-+
-+               voltage-table = <1114000 0>,
-+                               <1095000 10>,
-+                               <1076000 20>,
-+                               <1056000 30>,
-+                               <1036000 40>,
-+                               <1016000 50>;
-+
-+               pwm-reg-period = <8448>;
-+
-+               regulator-always-on;
-+               regulator-boot-on;
-+               regulator-min-microvolt = <1016000>;
-+               regulator-max-microvolt = <1114000>;
-+               regulator-name = "vdd_logic";
-+       };
+Boris
 
--Doug
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
