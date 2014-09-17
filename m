@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231AbaIQMYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:24:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55152 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbaIQMYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:24:31 -0400
-Date: Wed, 17 Sep 2014 14:24:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Martin Kelly <martin@martingkelly.com>
-Cc: x86@kernel.org, mingo@redhat.com, vishwesh.m.rudramuni@intel.com,
-        joe@perches.com, hpa@linux.intel.com, aubrey.li@linux.intel.com,
-        linux-kernel@vger.kernel.org, Martin Kelly <martkell@amazon.com>
-Subject: Re: [PATCH v2] x86/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
-Message-ID: <20140917122427.GB2704@gmail.com>
-References: <1410914975-23285-1-git-send-email-martin@martingkelly.com>
-MIME-Version: 1.0
+	id S1755478AbaIQMYz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:24:55 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:45282 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755346AbaIQMYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 08:24:53 -0400
+Date: Wed, 17 Sep 2014 08:24:48 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Milosz Tanski <milosz@adfin.com>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
+Message-ID: <20140917122448.GR24821@kvack.org>
+References: <cover.1410810247.git.milosz@adfin.com> <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com> <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com> <CANP1eJF3Kxj+yOndLLS749bEy6=MmSJ1iBpPn6JPbKN3h3q87g@mail.gmail.com> <20140916214254.GK4322@dastard>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1410914975-23285-1-git-send-email-martin@martingkelly.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140916214254.GK4322@dastard>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Martin Kelly <martin@martingkelly.com> wrote:
-
-> When compiling with CONFIG_DEBUG_FS=n, gcc emits an unused variable
-> warning for pmc_atom.c because "ret" is used only within the
-> CONFIG_DEBUG_FS block. This patch adds a dummy #ifdef for
-> pmc_dbgfs_register when CONFIG_DEBUG_FS=n to simplify the code and
-> remove the warning.
+On Wed, Sep 17, 2014 at 07:42:54AM +1000, Dave Chinner wrote:
+> [Please don't top post!]
 > 
-> Signed-off-by: Martin Kelly <martkell@amazon.com>
-> ---
-> Changes in v2:
->   - Implemented Ingo Molnar's suggestion to #ifdef the function rather
->     than the lines.
-> ---
->  arch/x86/kernel/pmc_atom.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
+> On Tue, Sep 16, 2014 at 03:45:52PM -0400, Milosz Tanski wrote:
+> > On Tue, Sep 16, 2014 at 3:27 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> > > Christoph Hellwig <milosz@adfin.com> writes:
+> > >
+> > > Hrm, you're not Christoph...
+> >
+> > I am not Christoph, we collaborated and he sent me this patch.
 > 
-> diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-> index 0c424a6..d06527a 100644
-> --- a/arch/x86/kernel/pmc_atom.c
-> +++ b/arch/x86/kernel/pmc_atom.c
-> @@ -235,6 +235,11 @@ err:
->  	pmc_dbgfs_unregister(pmc);
->  	return -ENODEV;
->  }
-> +#else
-> +static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
-> +{
-> +	return 0;
-> +}
->  #endif /* CONFIG_DEBUG_FS */
+> You're missing Jeff's point - have a look at the name and email
+> adress the mail appears to be from. It's completely mangled - forged
+> if you will and Linus had a major rant about doing exactly this to
+> patch sereies recently.  There is a perfectly acceptible way of
+> crediting who the patch is from correctly without resorting to games
+> like this.
 
-Ok, that part is good.
+Linus flamed me for that a few weeks ago.  The problem is that if one 
+uses "git format-patch" to prepare a series of emails to post, that it 
+users the patch's author for the From: entry.  I think that is a bug 
+in git since multiple people have encountered this issue.  It's not 
+like git doesn't know what one's email address is....
 
->  
->  static int pmc_setup_dev(struct pci_dev *pdev)
-> @@ -262,13 +267,11 @@ static int pmc_setup_dev(struct pci_dev *pdev)
->  	/* PMC hardware registers setup */
->  	pmc_hw_reg_setup(pmc);
->  
-> -#ifdef CONFIG_DEBUG_FS
->  	ret = pmc_dbgfs_register(pmc, pdev);
->  	if (ret) {
->  		iounmap(pmc->regmap);
->  		return ret;
->  	}
-> -#endif /* CONFIG_DEBUG_FS */
->  	return 0;
->  }
+		-ben
 
-Just to paint the bike shed a bit, this could be further 
-simplified to something like:
+> Also, this patch doesn't have a description or a valid SOB on it....
+> 
+> Please read Documentation/SubmittingPatches so you get the format of
+> the patches correct for V2. ;)
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-aio' in
+> the body to majordomo@kvack.org.  For more info on Linux AIO,
+> see: http://www.kvack.org/aio/
+> Don't email: <a href=mailto:"aart@kvack.org">aart@kvack.org</a>
 
-	...
-
-  	ret = pmc_dbgfs_register(pmc, pdev);
-  	if (ret)
-  		iounmap(pmc->regmap);
-
-  	return ret;
-
-and then your patch will be perfect! :-)
-
-Thanks,
-
-	Ingo
+-- 
+"Thought is the essence of where you are now."
