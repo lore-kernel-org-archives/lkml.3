@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050AbaIQNye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 09:54:34 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:49166 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530AbaIQNyc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 09:54:32 -0400
+	id S1755628AbaIQN4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 09:56:14 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:45391 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755287AbaIQN4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 09:56:13 -0400
+Date: Wed, 17 Sep 2014 09:56:11 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
+        Milosz Tanski <milosz@adfin.com>, Jeff Moyer <jmoyer@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 7/7] check for O_NONBLOCK in all read_iter instances
+Message-ID: <20140917135611.GT24821@kvack.org>
+References: <cover.1410810247.git.milosz@adfin.com> <c31364dee619b2c813c84437561569441fd5fd61.1410810247.git.milosz@adfin.com> <x49wq93xt5e.fsf@segfault.boston.devel.redhat.com> <CANP1eJF3Kxj+yOndLLS749bEy6=MmSJ1iBpPn6JPbKN3h3q87g@mail.gmail.com> <20140916214254.GK4322@dastard> <20140917122448.GR24821@kvack.org> <20140917134702.GB10720@thunk.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 1/1] bluetooth: Check for SCO type before setting  retransmission effort
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1410938010-6181-1-git-send-email-bernhard.thaler@r-it.at>
-Date: Wed, 17 Sep 2014 06:55:26 -0700
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8B07B86E-19D4-49E2-B471-DAF31C8D4F34@holtmann.org>
-References: <1410938010-6181-1-git-send-email-bernhard.thaler@r-it.at>
-To: Bernhard Thaler <bernhard.thaler@r-it.at>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Disposition: inline
+In-Reply-To: <20140917134702.GB10720@thunk.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bernhard,
-
-> SCO connection cannot be setup to devices that do not support retransmission.
-> Patch based on http://permalink.gmane.org/gmane.linux.bluez.kernel/7779 and
-> adapted for this kernel version.
-> Code changed to check SCO/eSCO type before setting retransmission effort 
-> and max. latency. The purpose of the patch is to support older devices not
-> capable of eSCO.
+On Wed, Sep 17, 2014 at 09:47:02AM -0400, Theodore Ts'o wrote:
+...
+> % git version
+> git version 2.1.0
 > 
-> Tested on Blackberry 655+ headset which does not support retransmission.
-> Credits go to Alexander Sommerhuber.
-> 
-> Signed-off-by: Bernhard Thaler <bernhard.thaler@r-it.at>
-> ---
-> net/bluetooth/hci_conn.c |   39 ++++++++++++++++++++++-----------------
-> 1 file changed, 22 insertions(+), 17 deletions(-)
-> 
-> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-> index faff624..093abcc 100644
-> --- a/net/bluetooth/hci_conn.c
-> +++ b/net/bluetooth/hci_conn.c
-> @@ -186,26 +186,31 @@ bool hci_setup_sync(struct hci_conn *conn, __u16 handle)
-> 	cp.rx_bandwidth   = cpu_to_le32(0x00001f40);
-> 	cp.voice_setting  = cpu_to_le16(conn->setting);
-> 
-> -	switch (conn->setting & SCO_AIRMODE_MASK) {
-> -	case SCO_AIRMODE_TRANSP:
-> -		if (conn->attempt > ARRAY_SIZE(sco_param_wideband))
-> -			return false;
-> -		cp.retrans_effort = 0x02;
-> -		param = &sco_param_wideband[conn->attempt - 1];
-> -		break;
-> -	case SCO_AIRMODE_CVSD:
-> -		if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-> +	if (!(conn->link->features[0][3] & LMP_ESCO)) {
+> Perhaps you and other people are using your own scripts, and not using
+> git send-email?
 
-so we have something that is called lmp_esco_capable.
+That would be because none of my systems have git 2.1.0 on them.  Fedora 
+(and EPEL) appear to still be back on git 1.9.3 which does not have git 
+send-email.  Until that command is more widely propagated, I expect we'll 
+see people making this mistake every once in a while.
 
-> +		cp.retrans_effort = 0xff;
-> +		cp.pkt_type = __cpu_to_le16(conn->pkt_type);
-> +		cp.max_latency = __cpu_to_le16(0xffff);
-
-Anyway, I do not thing this is the right approach. I think what we should do is just reject a connection attempt for transparent eSCO connections (since we only use them for wideband speech anyway) when connecting to a device that has no eSCO support.
-
-> +	} else {
-> +		switch (conn->setting & SCO_AIRMODE_MASK) {
-> +		case SCO_AIRMODE_TRANSP:
-> +			if (conn->attempt > ARRAY_SIZE(sco_param_wideband))
-> +				return false;
-> +			cp.retrans_effort = 0x02;
-> +			param = &sco_param_wideband[conn->attempt - 1];
-> +			break;
-> +		case SCO_AIRMODE_CVSD:
-> +			if (conn->attempt > ARRAY_SIZE(sco_param_cvsd))
-> +				return false;
-> +			cp.retrans_effort = 0x01;
-> +			param = &sco_param_cvsd[conn->attempt - 1];
-> +			break;
-
-For CVSD based attempts, we should start with non eSCO parameter settings if we know that the remote side can not support eSCO.
-
-The reason is that you still need to follow through with defined parameter sets from the HFP profile.
-
-Regards
-
-Marcel
-
+		-ben
+-- 
+"Thought is the essence of where you are now."
