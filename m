@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbaIQIxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:53:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54220 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754094AbaIQIxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:53:16 -0400
-Date: Wed, 17 Sep 2014 10:53:12 +0200
-From: Joerg Roedel <jroedel@suse.de>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Joerg Roedel <joro@8bytes.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 04/13 v2] iommu/arm-smmu: Convert to iommu_capable() API
- function function
-Message-ID: <20140917085312.GE2533@suse.de>
-References: <1409914384-21191-1-git-send-email-joro@8bytes.org>
- <1409914384-21191-5-git-send-email-joro@8bytes.org>
- <20140908165136.GW26030@arm.com>
+	id S1755208AbaIQIxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:53:49 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58169 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905AbaIQIxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:53:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140908165136.GW26030@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1410923262-4771-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1410923262-4771-1-git-send-email-jonghwa3.lee@samsung.com>
+Date: Wed, 17 Sep 2014 14:38:44 +0545
+X-Google-Sender-Auth: coF3YhrX5axhAoqff_Bmcwk_PAc
+Message-ID: <CAGm_ybjMaLHPALp519fe=UdMy1DeJbcxUxJN+hcPecttY7A_tQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH] arm: exynos: Allow rtc alarm and tick wakeup irq
+ for exynos3250.
+From: Vikas Sajjan <vikas.sajjan@samsung.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Hi,
 
-On Mon, Sep 08, 2014 at 05:51:36PM +0100, Will Deacon wrote:
-> Hi Joerg,
-> 
-> [adding devicetree for the last paragraph]
-> 
-> On Fri, Sep 05, 2014 at 11:52:56AM +0100, Joerg Roedel wrote:
-> > From: Joerg Roedel <jroedel@suse.de>
-> > 
-> > Cc: Will Deacon <will.deacon@arm.com>
-> > Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> > ---
-> >  drivers/iommu/arm-smmu.c | 35 ++++++++++++++++++++++++++---------
-> >  1 file changed, 26 insertions(+), 9 deletions(-)
+On Wed, Sep 17, 2014 at 8:52 AM, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
+> Add rtc alarm and tick irq to wakeup sources in exynos3250.
+>
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> Acked-by : Chanwoo choi <cw00.choi@samsung.com>
+> ---
+>  arch/arm/mach-exynos/pm.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-exynos/pm.c b/arch/arm/mach-exynos/pm.c
+> index fa7218a..d78dcf9 100644
+> --- a/arch/arm/mach-exynos/pm.c
+> +++ b/arch/arm/mach-exynos/pm.c
+> @@ -66,6 +66,12 @@ static struct sleep_save exynos_core_save[] = {
+>
+>  static u32 exynos_irqwake_intmask = 0xffffffff;
+>
+> +static const struct exynos_wkup_irq exynos3250_wkup_irq[] = {
+> +       { 105, BIT(1) }, /* RTC alarm */
+> +       { 106, BIT(2) }, /* RTC tick */
+> +       { /* sentinel */ },
+> +};
+> +
+>  static const struct exynos_wkup_irq exynos4_wkup_irq[] = {
+>         { 76, BIT(1) }, /* RTC alarm */
+>         { 77, BIT(2) }, /* RTC tick */
+> @@ -81,9 +87,10 @@ static const struct exynos_wkup_irq exynos5250_wkup_irq[] = {
+>  static int exynos_irq_set_wake(struct irq_data *data, unsigned int state)
+>  {
+>         const struct exynos_wkup_irq *wkup_irq;
+> -
+>         if (soc_is_exynos5250())
+>                 wkup_irq = exynos5250_wkup_irq;
+> +       else if (soc_is_exynos3250())
+> +               wkup_irq = exynos3250_wkup_irq;
 
-Okay, so here is the updated patch:
 
->From b5d895980849ba1a46a5250cd4cc5f3f9f28235d Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <jroedel@suse.de>
-Date: Fri, 5 Sep 2014 10:49:34 +0200
-Subject: [PATCH 04/13] iommu/arm-smmu: Convert to iommu_capable() API function
+Don't add anymore soc_is_exynosxxx() checks, please rebase on [1],
+which refactors the pm.c to use DT based lookup.
 
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
----
- drivers/iommu/arm-smmu.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+[1] http://www.spinics.net/lists/arm-kernel/msg355266.html
 
-diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
-index a83cc2a..f5cacf4 100644
---- a/drivers/iommu/arm-smmu.c
-+++ b/drivers/iommu/arm-smmu.c
-@@ -1526,20 +1526,20 @@ static phys_addr_t arm_smmu_iova_to_phys(struct iommu_domain *domain,
- 	return __pfn_to_phys(pte_pfn(pte)) | (iova & ~PAGE_MASK);
- }
- 
--static int arm_smmu_domain_has_cap(struct iommu_domain *domain,
--				   unsigned long cap)
-+static bool arm_smmu_capable(enum iommu_cap cap)
- {
--	struct arm_smmu_domain *smmu_domain = domain->priv;
--	struct arm_smmu_device *smmu = smmu_domain->smmu;
--	u32 features = smmu ? smmu->features : 0;
--
- 	switch (cap) {
- 	case IOMMU_CAP_CACHE_COHERENCY:
--		return features & ARM_SMMU_FEAT_COHERENT_WALK;
-+		/*
-+		 * Return false here until we have a way to find out whether the
-+		 * SMMUs in the system a coherently connected and able to force
-+		 * DMA coherency.
-+		 */
-+		return false;
- 	case IOMMU_CAP_INTR_REMAP:
--		return 1; /* MSIs are just memory writes */
-+		return true; /* MSIs are just memory writes */
- 	default:
--		return 0;
-+		return false;
- 	}
- }
- 
-@@ -1609,6 +1609,7 @@ static void arm_smmu_remove_device(struct device *dev)
- }
- 
- static const struct iommu_ops arm_smmu_ops = {
-+	.capable	= arm_smmu_capable,
- 	.domain_init	= arm_smmu_domain_init,
- 	.domain_destroy	= arm_smmu_domain_destroy,
- 	.attach_dev	= arm_smmu_attach_dev,
-@@ -1616,7 +1617,6 @@ static const struct iommu_ops arm_smmu_ops = {
- 	.map		= arm_smmu_map,
- 	.unmap		= arm_smmu_unmap,
- 	.iova_to_phys	= arm_smmu_iova_to_phys,
--	.domain_has_cap	= arm_smmu_domain_has_cap,
- 	.add_device	= arm_smmu_add_device,
- 	.remove_device	= arm_smmu_remove_device,
- 	.pgsize_bitmap	= (SECTION_SIZE |
--- 
-1.8.4.5
 
+
+>         else
+>                 wkup_irq = exynos4_wkup_irq;
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
