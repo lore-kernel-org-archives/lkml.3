@@ -1,124 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbaIQIY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:24:28 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39837 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329AbaIQIYY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:24:24 -0400
-From: Sanchayan Maity <maitysanchayan@gmail.com>
-To: shawn.guo@freescale.com
-Cc: stefan@agner.ch, B38611@freescale.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        jic23@kernel.org, linux-iio@vger.kernel.org,
-        Sanchayan Maity <maitysanchayan@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=202/2=5D=20ARM=3A=20imx=3A=20vf610-adc=3A=20Add=20temperature=20sensor=20support?=
-Date: Wed, 17 Sep 2014 13:53:17 +0530
-Message-Id: <0cd6b1bdf146a0c9024a804742078ce77a38e184.1410873422.git.maitysanchayan@gmail.com>
+	id S1754736AbaIQI0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:26:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28461 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751854AbaIQI03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:26:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
+   d="scan'208";a="600839233"
+From: Weike Chen <alvin.chen@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
+Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Alvin Chen <alvin.chen@intel.com>
+Subject: [PATCH 0/4 v5] The Designware GPIO Supporting
+Date: Wed, 17 Sep 2014 09:18:38 -0700
+Message-Id: <1410970722-8579-1-git-send-email-alvin.chen@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1410873422.git.maitysanchayan@gmail.com>
-References: <cover.1410873422.git.maitysanchayan@gmail.com>
-In-Reply-To: <cover.1410873422.git.maitysanchayan@gmail.com>
-References: <cover.1410873422.git.maitysanchayan@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vybrid ADC module includes a temperature sensor which
-is connected to channel number 26. This patch adds
-support for the sensor. The raw value is read and the
-temperature calculated in degree Celsius which is
-returned using the IIO_CHAN_INFO_PROCESSED option.
+Hi,
+These patches are for Intel Quark X1000 designware GPIO supporting. The first
+patch enables the Synopsys DesignWare APB GPIO driver to support the MFD device.
+And the Quark designware GPIO controller is registered as MFD device,
+because Quark exports a single PCI device with both GPIO and I2C functions.
+It is about reviewing the GPIO changes in gpio-dwapb, and in near future,
+the Quark I2C driver and the MFD driver that binds these GPIO & I2C
+functions will be sent subsequently. The second patch replaces all
+'readl&writel' with 'dwapb_read'&'dwapb_write. The third patch enables the gpio
+'debounce' feature. And the fourth patch enables the power management.
 
-Signed-off-by: Sanchayan Maity <maitysanchayan@gmail.com>
 ---
- drivers/iio/adc/vf610_adc.c |   34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+v5:
+ [PATCH 1/4]
+ * Remove 'pp->irq = 0' since the memory is already set to '0'.
+ [PATCH 2/4]
+ * No changes.
+ [PATCH 3/4]
+ * Correct the 'Reviewed-by'.
+ * Use inline helper for 'container_of'.
+ * Other minor fixes.
+ [PATCH 4/4]
+ * Allocate PM context in 'probe' if 'PM_SLEEP' is enabled.
+ * Other minor fixes.
 
-diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
-index 44799eb5..aa682aa 100644
---- a/drivers/iio/adc/vf610_adc.c
-+++ b/drivers/iio/adc/vf610_adc.c
-@@ -91,7 +91,7 @@
- #define VF610_ADC_CAL			0x80
- 
- /* Other field define */
--#define VF610_ADC_ADCHC(x)		((x) & 0xF)
-+#define VF610_ADC_ADCHC(x)		((x) & 0x1F)
- #define VF610_ADC_AIEN			(0x1 << 7)
- #define VF610_ADC_CONV_DISABLE		0x1F
- #define VF610_ADC_HS_COCO0		0x1
-@@ -137,7 +137,7 @@ struct vf610_adc {
- 	struct clk *clk;
- 
- 	u32 vref_uv;
--	u32 value;
-+	int value;
- 	struct regulator *vref;
- 	struct vf610_adc_feature adc_feature;
- 
-@@ -153,6 +153,15 @@ struct vf610_adc {
- 				BIT(IIO_CHAN_INFO_SAMP_FREQ),	\
- }
- 
-+#define VF610_ADC_TEMPERATURE_CHAN(_idx, _chan_type) {		\
-+	.type = (_chan_type),					\
-+	.indexed = 1,							\
-+	.channel = (_idx),						\
-+	.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),		\
-+	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) |	\
-+				BIT(IIO_CHAN_INFO_SAMP_FREQ),	\
-+}
-+
- static const struct iio_chan_spec vf610_adc_iio_channels[] = {
- 	VF610_ADC_CHAN(0, IIO_VOLTAGE),
- 	VF610_ADC_CHAN(1, IIO_VOLTAGE),
-@@ -170,6 +179,7 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
- 	VF610_ADC_CHAN(13, IIO_VOLTAGE),
- 	VF610_ADC_CHAN(14, IIO_VOLTAGE),
- 	VF610_ADC_CHAN(15, IIO_VOLTAGE),
-+	VF610_ADC_TEMPERATURE_CHAN(26, IIO_TEMP),
- 	/* sentinel */
- };
- 
-@@ -451,6 +461,7 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
- 
- 	switch (mask) {
- 	case IIO_CHAN_INFO_RAW:
-+	case IIO_CHAN_INFO_PROCESSED:
- 		mutex_lock(&indio_dev->mlock);
- 		reinit_completion(&info->completion);
- 
-@@ -468,7 +479,24 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
- 			return ret;
- 		}
- 
--		*val = info->value;
-+		switch (chan->type)	{
-+		case IIO_VOLTAGE:
-+			*val = info->value;
-+			break;
-+		case IIO_TEMP:
-+			/*
-+			* Calculate in degree celsius times 1000
-+			* Using sensor slope of 1.84 mV/°C and
-+			* V at 25°C of 696mv
-+			*/
-+			info->value -= 864;
-+			info->value = 25000 - info->value * 1000000 / 1840;
-+			*val = info->value;
-+			break;
-+		default:
-+			break;
-+		}
-+
- 		mutex_unlock(&indio_dev->mlock);
- 		return IIO_VAL_INT;
- 
+v4:
+ [PATCH 1/4]
+ * Use 'unsigned int i' instead of 'int i' in 'probe'.
+ [PATCH 2/4]
+ * No changes.
+ [PATCH 3/4]
+ * No changes.
+ [PATCH 4/4]
+ * No changes.
+
+v3:
+ Split [PATCH 2/3] into two patches [PATCH 2/4] and [PATCH 3/4],
+ and now inlucde 4 patches.
+
+ [PATCH 1/4]
+ * Use 'is_pdata_alloc' instead of 'is_of'.
+ * Allocate 'pdata' by 'kmalloc/kfree' instead of 'devm_*' for OF.
+ * Use 'IS_ENABLED(CONFIG_OF_GPIO)' instead of '#ifdef CONFIG_OF_GPIO'.
+ * A couple of other minor changes.
+ [PATCH 2/4]
+ * New patch splitted from the original [PATCH 2/3]
+ * Use 'dwapb_read/write' instead of readl&writel.
+ [PATCH 3/4]
+ * Move 'dwapb_read/write' defination to new patch [PATCH 2/4].
+ * Only port A support 'debounce' now.
+ [PATCH 4/4]
+ * The original patch [PATCH 3/3]
+ * Use 'struct dwapb_context' instead of 'struct gpio_saved_regs'.
+ * Allocate and save context dynamically by per port.
+
+v2:
+ [PATCH 1/3]
+ * Fixed a bug to set the base gpio number to '-1' for the OF flow.
+ * Set device node for each gpio chip for the OF flow.
+ * Change the name of 'struct dwapb_gpio_platform_data' to
+   'struct dwapb_platform_data'.
+ * Change the name of 'struct dwapb_gpio_port_property' to
+   'struct dwapb_port_property'.
+ * Access pdata directly in 'probe' instead of accesing it
+   by 'struct dwapb_gpio'.
+ * Free 'pdata' at the end of 'probe' if it is OF case to save memory.
+ * Improve the interrupt handler.
+ * Move 'irq_set_handler_data' together with 'irq_set_chained_hanlder'.
+ * Remove unncessary comments.
+ [PATCH 2/3]
+ * Change all 'readl'&'writel' to 'dwapb_read'&'dwapb_write'.
+ [PATCH 3/3]
+ * Change the name for 'struct gpio_saved_regs' to 'struct dwapb_context'.
+ * Save the registers for all ports according to the port index.
+ * Change '#if defined' to '#ifdef'.
+
+Weike Chen (4):
+  GPIO: gpio-dwapb: Enable platform driver binding to MFD driver
+  GPIO: gpio-dwapb: Change readl&writel to dwapb_read&dwapb_write
+  GPIO: gpio-dwapb: Support Debounce
+  GPIO: gpio-dwapb: Suspend & Resume PM enabling
+
+ drivers/gpio/Kconfig                     |    1 -
+ drivers/gpio/gpio-dwapb.c                |  410 +++++++++++++++++++++++++-----
+ include/linux/platform_data/gpio-dwapb.h |   32 +++
+ 3 files changed, 374 insertions(+), 69 deletions(-)
+ create mode 100644 include/linux/platform_data/gpio-dwapb.h
+
 -- 
 1.7.9.5
 
