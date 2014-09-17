@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165AbaIQQzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:55:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45827 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678AbaIQQzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:55:36 -0400
-Date: Wed, 17 Sep 2014 18:55:30 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Nishanth Menon <nm@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/2] Documentation: devicetree: mfd: twl4030-power:
- Use the standard 'ti,system-power-controller' to mark power control
-Message-ID: <20140917165529.GA24699@earth.universe>
-References: <1410957252-764-1-git-send-email-nm@ti.com>
- <1410957252-764-2-git-send-email-nm@ti.com>
- <20140917154400.GE30918@lee--X1>
+	id S1756057AbaIQQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:58:37 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:37676 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232AbaIQQ6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:58:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <20140917154400.GE30918@lee--X1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54193BB2.8010500@redhat.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+	<54184078.4070505@redhat.com>
+	<CAJu=L5_w+u6komiZB6RE1+9H5MiL+8RJBy_GYO6CmjqkhaG5Zg@mail.gmail.com>
+	<54188179.7010705@redhat.com>
+	<CAJu=L58z-=_KkZXpEiPjDUup8GpH7079HH39csmvgUxGkvXy0A@mail.gmail.com>
+	<54193BB2.8010500@redhat.com>
+Date: Wed, 17 Sep 2014 09:58:32 -0700
+Message-ID: <CAJu=L5-_1ZDyhnMTFePRCyECr1rVLeMqR6dCDK1m6baR7J7gpw@mail.gmail.com>
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 17, 2014 at 12:43 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> Il 16/09/2014 20:42, Andres Lagar-Cavilla ha scritto:
+>> On Tue, Sep 16, 2014 at 11:29 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>>>>     I think a first patch should introduce kvm_get_user_page_retry ("Retry a
+>>>>     fault after a gup with FOLL_NOWAIT.") and the second would add
+>>>>     FOLL_TRIED ("This properly relinquishes mmap semaphore if the
+>>>>     filemap/swap has to wait on page lock (and retries the gup to completion
+>>>>     after that").
+>>>>
+>>>> That's not what FOLL_TRIED does. The relinquishing of mmap semaphore is
+>>>> done by this patch minus the FOLL_TRIED bits. FOLL_TRIED will let the
+>>>> fault handler (e.g. filemap) know that we've been there and waited on
+>>>> the IO already, so in the common case we won't need to redo the IO.
+>>>
+>>> Yes, that's not what FOLL_TRIED does.  But it's the difference between
+>>> get_user_pages and kvm_get_user_page_retry, right?
+>>
+>> Unfortunately get_user_pages does not expose the param (int
+>> *nonblocking) that __gup will use to set FAULT_FLAG_ALLOW_RETRY. So
+>> that's one difference. The second difference is that kvm_gup_retry
+>> will call two times if necessary (the second without _RETRY but with
+>> _TRIED).
+>
+> Yeah, that's how it is in your patch.  I can see that.
+>
+> What I'm saying is that your patch is two changes in one:
+>
+> 1) do not use gup_fast in hva_to_pfn_slow, instead use gup as in
+> async_pf_execute.  This change can already introduce a function called
+> kvm_get_user_page_retry, and can already use it in async_pf_execute and
+> hva_to_pfn_slow
+>
+> 2) introduce the two-phase RETRY + TRIED mechanism in
+> kvm_get_user_page_retry, so that the mmap semaphore is relinquished
+> properly if the filemap or swap has to wait on the page lock.
+>
+> I would prefer to split it in two patches.  Is it clearer now?
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Understood. So in patch 1, would kvm_gup_retry be ... just a wrapper
+around gup? That looks thin to me, and the naming of the function will
+not be accurate. Plus, considering Radim's suggestion that the naming
+is not optimal.
 
-On Wed, Sep 17, 2014 at 08:44:00AM -0700, Lee Jones wrote:
-> On Wed, 17 Sep 2014, Nishanth Menon wrote:
-> > ti,system-power-controller is more or less the standard way of
-> > indicating that the PMIC is the system wide power controller and hence
-> > may be used to switch off the system. Almost ALL TI PMIC drivers and
-> > many Maxim PMIC drivers follow the same style.
-> >=20
-> > So support 'ti,system-power-controller' in addition to the usual
-> > 'ti,use_poweroff' to indicate that the PMIC instance has control for
-> > switching off the system.
-> >=20
-> > Signed-off-by: Nishanth Menon <nm@ti.com>
-> > ---
-> >=20
-> > V2: picked up documentation suggestion from Sebastien
->=20
-> It would be good to get Sebastian's Ack.
+I can have patch 1 just s/gup_fast/gup (one liner), and then patch 2
+do the rest of the work.
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
+Andres
+>
+> Paolo
 
-[...]
 
-> > +- ti,system-power-controller: This indicates that TWL4030 is the
-> > +  power supply master of the system. With this flag, the chip will
-> > +  initiates an ACTIVE-to-OFF or SLEEP-to-OFF transition when the
-> > +  system poweroffs.
 
-One minor thing: While the documentation is updated you may want to
-fix the typo "will initiates" to "will initiate" (or just drop the
-"will").
-
--- Sebastian
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUGb0BAAoJENju1/PIO/qarXYP/3COxHZgxiuoxt2x4BPugsOA
-gyuR3HWunXDARYAnhjIKIBvUKqFxbPzai2qdR6dinNu9q704mYtwcBL5WP+xZtbK
-zl/d4GVQ5QOQG7GUQ1s5E/YPoAXEA6TbgWnurrzdzRQOyROLyBlj87DTS4AryFf6
-8OFOvZr8HdQJOTwY2VsrtxLYI8tFJAwnfXlAZofcmlXUYxEwlnXql2wt+mdn1DcU
-/tnLHlCcsgOoJXwLEGcbbYVxoxfPb10vb2+pBy40K22HCT+KYv3GAh4iiv6iS1M7
-qAA16HXp06FyfPnAIwuqvD77M8eL9ItVCp8acT7+DiHVV4EkM+D2njOcV3kgp+fP
-40pFs4AS+obHAJUQc5sJ5s4FNH2raQiRpjgim8i8V2yJ+rehqeLZm2Dyh/45dQJ8
-CnV8BBqvTYLQV4OQ8VVNSqtj1jpA4YrpNvYrqfXGd5ovZU6ZAE7rZhWnfuNgX3XX
-CNmTnmhG+VO51uCEA3LpVjIVXlNvSUjbVExs7GjsNFVVchMdPjwji9JAlCBSH/yk
-L9x2BQRZgNgQbO2oMkLZo9Fat5AkW9t8q/yO7zmxq5tXiyxsWMFBAxFJHBNq772E
-edjvelZpXgQ2e8xty2HT3/FfKpNgz1Y0yWwM/aKOwVWbzcV84q0enlnO89QvhscT
-5jfaY2E7epONARknfmJk
-=/DFi
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+-- 
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
