@@ -1,161 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060AbaIQQK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:10:28 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:37193 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755751AbaIQQKW (ORCPT
+	id S1756103AbaIQQLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:11:07 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:48030 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756058AbaIQQK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:10:22 -0400
+	Wed, 17 Sep 2014 12:10:28 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, patches@linaro.org,
         linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH 3.17-rc4 v7 0/6] arm: Implement arch_trigger_all_cpu_backtrace
-Date: Wed, 17 Sep 2014 09:10:12 -0700
-Message-Id: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.17-rc4 v7 5/6] ARM: add basic support for on-demand backtrace of other CPUs
+Date: Wed, 17 Sep 2014 09:10:17 -0700
+Message-Id: <1410970218-28847-6-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
+References: <1410970218-28847-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset implements arch_trigger_all_cpu_backtrace for arm.
+Add basic infrastructure for triggering a backtrace of other CPUs
+via an IPI, preferably at FIQ level.  It is intended that this shall
+be used for cases where we have detected that something has already
+failed in the kernel.
 
-Non-maskable signalling relies on the kernel being able to access FIQ
-and therefore, for devices that implement TrustZone, it will work only on
-systems that boot the kernel in secure mode.
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/include/asm/irq.h |  5 ++++
+ arch/arm/kernel/smp.c      | 62 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 67 insertions(+)
 
-Tested on Freescale iMX.6 (both via SysRq-l and by deliberately locking
-up the kernel with CONFIG_DEBUG_SPINLOCK=y).
-
-Changes since v6:
-
-* Re-arranged code within the patch series to fix a regression introduced midway
-  through the series and corrected by a later patch (testing by Olof's
-  autobuilder). Tested offending patch in isolation using defconfig
-  identified by the autobuilder.
-
-Changes since v5:
-
-* Renamed svc_entry's call_trace argument to just trace (example code
-  from Russell King).
-
-* Fixed mismatched ENDPROC() in __fiq_abt (example code from Russell
-  King).
-
-* Modified usr_entry to optionall avoid calling into the trace code and
-  used this in FIQ entry from usr path. Modified corresponding exit code to
-  avoid calling into trace code and the scheduler (example code from
-  Russell King).
-
-* Ensured the default FIQ register state is restored when the default
-  FIQ handler is reinstalled (example code from Russell King).
-
-* Renamed no_fiq_insn to dfl_fiq_insn to reflect the effect of adopting
-  a default FIQ handler.
-
-* Re-instated fiq_safe_migration_lock and associated logic in
-  gic_raise_softirq(). gic_raise_softirq() is called by wake_up_klogd()
-  in the console unlock logic.
-
-Changes since v4:
-
-* Rebased on 3.17-rc4.
-
-* Removed a spurious line from the final "glue it together" patch
-  that broke the build.
-
-Changes since v3:
-
-* Replaced push/pop with stmfd/ldmfd respectively (review of Nicolas
-  Pitre).
-
-* Really fix bad pt_regs pointer generation in __fiq_abt.
-
-* Remove fiq_safe_migration_lock and associated logic in
-  gic_raise_softirq() (review of Russell King)
-
-* Restructured to introduce the default FIQ handler first, before the
-  new features (review of Russell King).
-
-Changes since v2:
-
-* Removed redundant header guards from arch/arm64/include/asm/fiq.h
-  (review of Catalin Marinas).
-
-* Moved svc_exit_via_fiq macro to entry-header.S (review of Nicolas
-  Pitre).
-
-Changes since v1:
-
-* Restructured to sit nicely on a similar FYI patchset from Russell
-  King. It now effectively replaces the work in progress final patch
-  with something much more complete.
-
-* Implemented (and tested) a Thumb-2 implementation of svc_exit_via_fiq
-  (review of Nicolas Pitre)
-
-* Dropped the GIC group 0 workaround patch. The issue of FIQ interrupts
-  being acknowledged by the IRQ handler does still exist but should be
-  harmless because the IRQ handler will still wind up calling
-  ipi_cpu_backtrace().
-
-* Removed any dependency on CONFIG_FIQ; all cpu backtrace effectively
-  becomes a platform feature (although the use of non-maskable
-  interrupts to implement it is best effort rather than guaranteed).
-
-* Better comments highlighting usage of RAZ/WI registers (and parts of
-  registers) in the GIC code.
-
-Changes *before* v1:
-
-* This patchset is a hugely cut-down successor to "[PATCH v11 00/19]
-  arm: KGDB NMI/FIQ support". Thanks to Thomas Gleixner for suggesting
-  the new structure. For historic details see:
-        https://lkml.org/lkml/2014/9/2/227
-
-* Fix bug in __fiq_abt (no longer passes a bad struct pt_regs value).
-  In fixing this we also remove the useless indirection previously
-  found in the fiq_handler macro.
-
-* Make default fiq handler "always on" by migrating from fiq.c to
-  traps.c and replace do_unexp_fiq with the new handler (review
-  of Russell King).
-
-* Add arm64 version of fiq.h (review of Russell King)
-
-* Removed conditional branching and code from irq-gic.c, this is
-  replaced by much simpler code that relies on the GIC specification's
-  heavy use of read-as-zero/write-ignored (review of Russell King)
-
-
-Daniel Thompson (5):
-  arm: fiq: Replace default FIQ handler
-  arm64: Introduce dummy version of asm/fiq.h
-  irqchip: gic: Add support for IPI FIQ
-  ARM: add basic support for on-demand backtrace of other CPUs
-  arm: smp: Handle ipi_cpu_backtrace() using FIQ (if available)
-
-Russell King (1):
-  ARM: remove unused do_unexp_fiq() function
-
- arch/arm/include/asm/irq.h      |   5 ++
- arch/arm/include/asm/smp.h      |   3 +
- arch/arm/kernel/entry-armv.S    |  98 +++++++++++++++++++++---
- arch/arm/kernel/entry-header.S  |  47 ++++++++++++
- arch/arm/kernel/fiq.c           |  17 ++++-
- arch/arm/kernel/setup.c         |   8 +-
- arch/arm/kernel/smp.c           |  64 ++++++++++++++++
- arch/arm/kernel/traps.c         |  32 +++++++-
- arch/arm64/include/asm/fiq.h    |   8 ++
- drivers/irqchip/irq-gic.c       | 162 ++++++++++++++++++++++++++++++++++++++--
- include/linux/irqchip/arm-gic.h |   3 +
- 11 files changed, 421 insertions(+), 26 deletions(-)
- create mode 100644 arch/arm64/include/asm/fiq.h
-
---
+diff --git a/arch/arm/include/asm/irq.h b/arch/arm/include/asm/irq.h
+index 53c15de..be1d07d 100644
+--- a/arch/arm/include/asm/irq.h
++++ b/arch/arm/include/asm/irq.h
+@@ -35,6 +35,11 @@ extern void (*handle_arch_irq)(struct pt_regs *);
+ extern void set_handle_irq(void (*handle_irq)(struct pt_regs *));
+ #endif
+ 
++#ifdef CONFIG_SMP
++extern void arch_trigger_all_cpu_backtrace(bool);
++#define arch_trigger_all_cpu_backtrace(x) arch_trigger_all_cpu_backtrace(x)
++#endif
++
+ #endif
+ 
+ #endif
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 9388a3d..94959f9 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -72,8 +72,12 @@ enum ipi_msg_type {
+ 	IPI_CPU_STOP,
+ 	IPI_IRQ_WORK,
+ 	IPI_COMPLETION,
++	IPI_CPU_BACKTRACE,
+ };
+ 
++/* For reliability, we're prepared to waste bits here. */
++static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
++
+ static DECLARE_COMPLETION(cpu_running);
+ 
+ static struct smp_operations smp_ops;
+@@ -539,6 +543,21 @@ static void ipi_cpu_stop(unsigned int cpu)
+ 		cpu_relax();
+ }
+ 
++static void ipi_cpu_backtrace(struct pt_regs *regs)
++{
++	int cpu = smp_processor_id();
++
++	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
++		static arch_spinlock_t lock = __ARCH_SPIN_LOCK_UNLOCKED;
++
++		arch_spin_lock(&lock);
++		printk(KERN_WARNING "FIQ backtrace for cpu %d\n", cpu);
++		show_regs(regs);
++		arch_spin_unlock(&lock);
++		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++	}
++}
++
+ static DEFINE_PER_CPU(struct completion *, cpu_completion);
+ 
+ int register_ipi_completion(struct completion *completion, int cpu)
+@@ -618,6 +637,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
+ 		irq_exit();
+ 		break;
+ 
++	case IPI_CPU_BACKTRACE:
++		irq_enter();
++		ipi_cpu_backtrace(regs);
++		irq_exit();
++		break;
++
+ 	default:
+ 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
+ 		       cpu, ipinr);
+@@ -712,3 +737,40 @@ static int __init register_cpufreq_notifier(void)
+ core_initcall(register_cpufreq_notifier);
+ 
+ #endif
++
++void arch_trigger_all_cpu_backtrace(bool include_self)
++{
++	static unsigned long backtrace_flag;
++	int i, cpu = get_cpu();
++
++	if (test_and_set_bit(0, &backtrace_flag)) {
++		/*
++		 * If there is already a trigger_all_cpu_backtrace() in progress
++		 * (backtrace_flag == 1), don't output double cpu dump infos.
++		 */
++		put_cpu();
++		return;
++	}
++
++	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
++	if (!include_self)
++		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
++
++	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
++		pr_info("Sending FIQ to %s CPUs:\n",
++			(include_self ? "all" : "other"));
++		smp_cross_call(to_cpumask(backtrace_mask), IPI_CPU_BACKTRACE);
++	}
++
++	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
++	for (i = 0; i < 10 * 1000; i++) {
++		if (cpumask_empty(to_cpumask(backtrace_mask)))
++			break;
++
++		mdelay(1);
++	}
++
++	clear_bit(0, &backtrace_flag);
++	smp_mb__after_atomic();
++	put_cpu();
++}
+-- 
 1.9.3
 
