@@ -1,119 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756299AbaIQT3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:29:06 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:48866 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954AbaIQT3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:29:03 -0400
+	id S1756617AbaIQTa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:30:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756006AbaIQTaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 15:30:55 -0400
+Message-ID: <5419E122.9060404@redhat.com>
+Date: Wed, 17 Sep 2014 15:29:38 -0400
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <54195036.2010409@realsil.com.cn>
-References: <1410485999-10939-1-git-send-email-micky_ching@realsil.com.cn>
-	<CAPDyKFqcbK9OuQXbegignwiS7rz3L8resQ7Jfc8WvqXEKTcWVA@mail.gmail.com>
-	<54195036.2010409@realsil.com.cn>
-Date: Wed, 17 Sep 2014 21:29:01 +0200
-Message-ID: <CAPDyKFrbMaDxU3VkhMO63+tLRMipKPqGvYC5cT2PTeVU1CTTQg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: add card power off during probe
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
+        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Marc Zyngier <marc.zyngier@arm.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
+References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org> <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org> <20140917014410.GC31214@srcf.ucam.org> <4416582.iOjLNrLDZE@vostro.rjw.lan> <20140917192259.GA18980@srcf.ucam.org>
+In-Reply-To: <20140917192259.GA18980@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 September 2014 11:11, micky <micky_ching@realsil.com.cn> wrote:
-> On 09/17/2014 02:01 AM, Ulf Hansson wrote:
->>
->> On 12 September 2014 03:39,  <micky_ching@realsil.com.cn> wrote:
->>>
->>> From: Roger Tseng <rogerable@realtek.com>
->>>
->>> Some platform have both UEFI driver and MFD/mmc driver, if entering
->>> linux while card in the slot, the card power is already on, and rtsx-mmc
->>> driver have no chance to make card power off. This will lead UHSI card
->>> failed to enter UHSI mode.
->>>
->>> It is hard to control the UEFI driver leaving state, so we power off the
->>> card power during probe.
->>>
->>> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
->>> ---
->>>   drivers/mmc/host/rtsx_pci_sdmmc.c |    7 ++++++-
->>>   1 file changed, 6 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c
->>> b/drivers/mmc/host/rtsx_pci_sdmmc.c
->>> index dfde4a2..57b0796 100644
->>> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
->>> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
->>> @@ -1341,8 +1341,13 @@ static int rtsx_pci_sdmmc_drv_probe(struct
->>> platform_device *pdev)
->>>          host->pcr = pcr;
->>>          host->mmc = mmc;
->>>          host->pdev = pdev;
->>> -       host->power_state = SDMMC_POWER_OFF;
->>>          INIT_WORK(&host->work, sd_request);
->>> +       sd_power_off(host);
->>> +       /*
->>> +        * ref: SD spec 3.01: 6.4.1.2 Power On or Power Cycle
->>> +        */
->>> +       usleep_range(1000, 2000);
->>> +
->>
->> This won't work in cases were you power off eMMC cards, unless you can
->> do a full power cycle - cut both VCC and VCCQ. Can you?
->
-> Hi Uffe,
->
-> VCCQ will poweroff at the same time.
+On 09/17/2014 03:22 PM, Matthew Garrett wrote:
+> On Wed, Sep 17, 2014 at 09:37:42PM +0200, Rafael J. Wysocki wrote:
+> 
+>> There are no implied IP issues with using the information there I know of and
+>> if there's any fine print anywhere that may suggest so, please let me know.
+> 
+> Using the information should be fine, but my understanding of the UEFI 
+> forum rules is that any submissions to UEFI specs must be from UEFI 
+> forum members - there are concerns around accidentally including 
+> patented material. The easy way around this is just for the bindings to 
+> be managed outside UEFI.
 
-In that case, don't forget to enable MMC_CAP2_FULL_PWR_CYCLE.
+I've raised this with Dong in person this morning and I'll ask him to
+followup on UEFI policy.
 
->
-> if MMC_CAP2_NO_PRESCAN_POWERUP enable, will call mmc_power_off() at start,
-> then it will check ios.power_mode, but the state is MMC_POWER_OFF and just
-> return.
+Jon.
 
-Uhh, that's right! So, I wonder why we invokes mmc_power_off() from
-that path at all.
-
-Hmm, I think we should change the behavior in mmc_start_host(), like below:
-1) Add a "MMC_POWER_UNDEFINED" state which is what the power state
-should be assigned to at allocation.
-2 ) From mmc_start_host(), invoke mmc_power_off() when
-MMC_CAP2_NO_PRESCAN_POWERUP and MMC_CAP2_FULL_PWR_CYCLE is set.
-
-Would that work?
-
-Kind regards
-Uffe
-
-> Best Regards.
-> micky.
->
->> There are also another option you might want to use,
->> MMC_CAP2_NO_PRESCAN_POWERUP. But again, it must only be used for those
->> hosts that you are able to do a full power cycle for.
->>
->> Kind regards
->> Uffe
->>
->>>          platform_set_drvdata(pdev, host);
->>>          pcr->slots[RTSX_SD_CARD].p_dev = pdev;
->>>          pcr->slots[RTSX_SD_CARD].card_event = rtsx_pci_sdmmc_card_event;
->>> --
->>> 1.7.9.5
->>>
->> .
->>
->
