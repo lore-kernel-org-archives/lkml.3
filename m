@@ -1,149 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaIQOVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 10:21:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60878 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755376AbaIQOVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 10:21:01 -0400
-Message-ID: <541998CB.4000409@suse.com>
-Date: Wed, 17 Sep 2014 16:20:59 +0200
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1755669AbaIQOWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 10:22:33 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:52470 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755402AbaIQOWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 10:22:31 -0400
+Message-ID: <54199923.9010201@kernel.dk>
+Date: Wed, 17 Sep 2014 08:22:27 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, jbeulich@suse.com
-Subject: Re: [Xen-devel] [PATCH V2 3/3] xen: eliminate scalability issues
- from initial mapping setup
-References: <1410927157-15069-1-git-send-email-jgross@suse.com> <1410927157-15069-4-git-send-email-jgross@suse.com> <54199589.9040703@citrix.com>
-In-Reply-To: <54199589.9040703@citrix.com>
+To: Ming Lei <tom.leiming@gmail.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: blk-mq crash under KVM in multiqueue block code (with virtio-blk
+ and ext4)
+References: <541178D6.6010303@de.ibm.com>	<CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>	<541352ED.7030800@de.ibm.com>	<54193F4F.9060508@de.ibm.com>	<20140917140034.10125d00@thinkpad-w530> <20140917215226.426f6ce7@tom-ThinkPad-T410>
+In-Reply-To: <20140917215226.426f6ce7@tom-ThinkPad-T410>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2014 04:07 PM, David Vrabel wrote:
-> On 17/09/14 05:12, Juergen Gross wrote:
->> Direct Xen to place the initial P->M table outside of the initial
->> mapping, as otherwise the 1G (implementation) / 2G (theoretical)
->> restriction on the size of the initial mapping limits the amount
->> of memory a domain can be handed initially.
+On 2014-09-17 07:52, Ming Lei wrote:
+> On Wed, 17 Sep 2014 14:00:34 +0200
+> David Hildenbrand <dahi@linux.vnet.ibm.com> wrote:
+>
+>>>>>> Does anyone have an idea?
+>>>>>> The request itself is completely filled with cc
+>>>>>
+>>>>> That is very weird, the 'rq' is got from hctx->tags,  and rq should be
+>>>>> valid, and rq->q shouldn't have been changed even though it was
+>>>>> double free or double allocation.
+>>>>>
+>>>>>> I am currently asking myself if blk_mq_map_request should protect against softirq here but I cant say for sure,as I have never looked into that code before.
+>>>>>
+>>>>> No, it needn't the protection.
+>>>>>
+>>>>> Thanks,
+>>>>>
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe kvm" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>
 >>
->> As the initial P->M table is copied rather early during boot to
->> domain private memory and it's initial virtual mapping is dropped,
->> the easiest way to avoid virtual address conflicts with other
->> addresses in the kernel is to use a user address area for the
->> virtual address of the initial P->M table. This allows us to just
->> throw away the page tables of the initial mapping after the copy
->> without having to care about address invalidation.
+>> Digging through the code, I think I found a possible cause:
+>>
+>> tags->rqs[..] is not initialized with zeroes (via alloc_pages_node in
+>> blk-mq.c:blk_mq_init_rq_map()).
 >
-> This needs an additional paragraph like:
+> Yes, it may cause problem when the request is allocated at the 1st time,
+> and timeout handler may comes just after the allocation and before its
+> initialization, then oops triggered because of garbage data in the request.
 >
->    "This does not increase the amount of memory the guest can use.  This
-> is still limited to 512 GiB by the 3-level p2m."
+> --
+>  From ffd0824b7b686074c2d5d70bc4e6bba3ba56a30c Mon Sep 17 00:00:00 2001
+> From: Ming Lei <ming.lei@canonical.com>
+> Date: Wed, 17 Sep 2014 21:00:34 +0800
+> Subject: [PATCH] blk-mq: initialize request before the 1st allocation
 >
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -1198,6 +1198,76 @@ static void __init xen_cleanhighmap(unsigned long vaddr,
-> [...]
->> +/*
->> + * Since it is well isolated we can (and since it is perhaps large we should)
->> + * also free the page tables mapping the initial P->M table.
->> + */
->> +static void __init xen_cleanmfnmap(unsigned long vaddr)
->> +{
->> +	unsigned long va = vaddr & PMD_MASK;
->> +	unsigned long pa;
->> +	pgd_t *pgd = pgd_offset_k(va);
->> +	pud_t *pud_page = pud_offset(pgd, 0);
->> +	pud_t *pud;
->> +	pmd_t *pmd;
->> +	pte_t *pte;
->> +	unsigned int i;
->> +
->> +	set_pgd(pgd, __pgd(0));
->> +	do {
->> +		pud = pud_page + pud_index(va);
->> +		if (pud_none(*pud)) {
->> +			va += PUD_SIZE;
->> +		} else if (pud_large(*pud)) {
->> +			pa = pud_val(*pud) & PHYSICAL_PAGE_MASK;
->> +			xen_free_ro_pages(pa, PUD_SIZE);
->> +			va += PUD_SIZE;
+> Otherwise the request can be accessed from timeout handler
+> just after its 1st allocation from tag pool and before
+> initialization in blk_mq_rq_ctx_init(), so cause oops since
+> the request is filled up with garbage data.
 >
-> Are you missing a ClearPagePinned(..) here?
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>   block/blk-mq.c |   10 ++++++++++
+>   1 file changed, 10 insertions(+)
+>
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 4aac826..d24673f 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -514,6 +514,10 @@ struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
+>   {
+>   	struct request *rq = tags->rqs[tag];
+>
+> +	/* uninitialized request */
+> +	if (!rq->q || rq->tag == -1)
+> +		return rq;
+> +
+>   	if (!is_flush_request(rq, tag))
+>   		return rq;
+>
+> @@ -1401,6 +1405,12 @@ static struct blk_mq_tags *blk_mq_init_rq_map(struct blk_mq_tag_set *set,
+>   		left -= to_do * rq_size;
+>   		for (j = 0; j < to_do; j++) {
+>   			tags->rqs[i] = p;
+> +
+> +			/* Avoiding early access from timeout handler */
+> +			tags->rqs[i]->tag = -1;
+> +			tags->rqs[i]->q = NULL;
+> +			tags->rqs[i]->cmd_flags = 0;
+> +
+>   			if (set->ops->init_request) {
+>   				if (set->ops->init_request(set->driver_data,
+>   						tags->rqs[i], hctx_idx, i,
 
-Probably, yes.
+Another way would be to ensure that the timeout handler doesn't touch 
+hw_ctx or tag_sets that aren't fully initialized yet. But I think this 
+is safer/cleaner.
 
->
->> +		} else {
->> +			pmd = pmd_offset(pud, va);
->> +			if (pmd_large(*pmd)) {
->> +				pa = pmd_val(*pmd) & PHYSICAL_PAGE_MASK;
->> +				xen_free_ro_pages(pa, PMD_SIZE);
->> +			} else if (!pmd_none(*pmd)) {
->> +				pte = pte_offset_kernel(pmd, va);
->> +				for (i = 0; i < PTRS_PER_PTE; ++i) {
->> +					if (pte_none(pte[i]))
->> +						break;
->> +					pa = pte_pfn(pte[i]) << PAGE_SHIFT;
->> +					xen_free_ro_pages(pa, PAGE_SIZE);
->> +				}
->
->> +				pa = __pa(pte) & PHYSICAL_PAGE_MASK;
->> +				ClearPagePinned(virt_to_page(__va(pa)));
->> +				xen_free_ro_pages(pa, PAGE_SIZE);
->
-> Put this into a helper function?  It's used here...
+-- 
+Jens Axboe
 
-Good idea.
-
->
->> +			}
->> +			va += PMD_SIZE;
->> +			if (pmd_index(va))
->> +				continue;
->> +			pa = __pa(pmd) & PHYSICAL_PAGE_MASK;
->> +			ClearPagePinned(virt_to_page(__va(pa)));
->> +			xen_free_ro_pages(pa, PAGE_SIZE);
->
-> ...and here...
->
->> +		}
->> +
->> +	} while (pud_index(va) || pmd_index(va));
->> +	pa = __pa(pud_page) & PHYSICAL_PAGE_MASK;
->> +	ClearPagePinned(virt_to_page(__va(pa)));
->> +	xen_free_ro_pages(pa, PAGE_SIZE);
->
-> ... and here.
->
->> @@ -1529,6 +1604,22 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->>   #else /* CONFIG_X86_64 */
->>   static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
->>   {
->> +	unsigned long pfn;
->> +
->> +	if (xen_feature(XENFEAT_writable_page_tables) ||
->> +	    xen_feature(XENFEAT_auto_translated_physmap) ||
->> +	    xen_start_info->mfn_list >= __START_KERNEL_map)
->> +		return pte;
->> +
->> +	/*
->> +	 * Pages belonging to the initial p2m list mapped outside the default
->> +	 * address range must be mapped read-only.
->
-> Why?  I didn't think was anything special about these MFNs.
-
-The hypervisor complained when I did otherwise. I think the main reason
-is that the hypervisor will set up some more page tables to be able to
-map then mfn_list outside the "normal" address range. They are located
-in the range starting at xen_start_info->first_p2m_pfn (otherwise the
-info in first_p2m_pfn and nr_p2m_frames wouldn't be needed).
-
-And page tables must be mapped read-only.
-
-
-Juergen
