@@ -1,224 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbaIQBDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:03:53 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:43168 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506AbaIQBDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:03:51 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-ABS-CHECKED: 4
-X-KSVirus-check: 0
-X-RL-SENDER: kever.yang@rock-chips.com
-X-FST-TO: linux-arm-kernel@lists.infradead.org
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: kever.yang@rock-chips.com
-X-UNIQUE-TAG: <fa97635576c013b48fd42a016846d3b7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-Message-ID: <5418DDE9.1000603@rock-chips.com>
-Date: Wed, 17 Sep 2014 09:03:37 +0800
-From: Kever Yang <kever.yang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754466AbaIQBFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:05:10 -0400
+Received: from ozlabs.org ([103.22.144.67]:40092 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752970AbaIQBFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 21:05:08 -0400
+Date: Wed, 17 Sep 2014 11:04:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anish Bhatt <anish@chelsio.com>
+Subject: linux-next: build failure after merge of the net tree
+Message-ID: <20140917110454.399a7841@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Sonny Rao <sonnyrao@chromium.org>
-CC: huangtao@rock-chips.com, Addy Ke <addy.ke@rock-chips.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Douglas Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-rockchip@lists.infradead.org, Jianqun Xu <xjq@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, hj@rock-chips.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/3] ARM: rockchip: add basic smp support for rk3288
-References: <1410864271-9277-1-git-send-email-kever.yang@rock-chips.com> <1410864271-9277-3-git-send-email-kever.yang@rock-chips.com> <CAPz6YkVqhO6kJtySB7MrCYzVLgjViKLO3c_HgS_NVxt3-=SJew@mail.gmail.com>
-In-Reply-To: <CAPz6YkVqhO6kJtySB7MrCYzVLgjViKLO3c_HgS_NVxt3-=SJew@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/zx=4EZDC=iQqMnuJaLKP/RQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sonny,
+--Sig_/zx=4EZDC=iQqMnuJaLKP/RQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 09/17/2014 04:17 AM, Sonny Rao wrote:
-> On Tue, Sep 16, 2014 at 3:44 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
->> This patch add basic rk3288 smp support, cpu 1~3 are in wfe state
->> when get into kernel.
->>
->> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
->> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->> ---
->>
->> Changes in v2:
->> - use rk3288_boot_secondary instead ofsmp_boot_secondary
->> - discards the power domain operation
->> - handle the per cpu starup when actived by 'sev'
->>
->>   arch/arm/mach-rockchip/core.h    |  1 +
->>   arch/arm/mach-rockchip/headsmp.S | 14 +++++++++
->>   arch/arm/mach-rockchip/platsmp.c | 63 ++++++++++++++++++++++++++++++++++++----
->>   3 files changed, 72 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/arm/mach-rockchip/core.h b/arch/arm/mach-rockchip/core.h
->> index 39bca96..13de05a 100644
->> --- a/arch/arm/mach-rockchip/core.h
->> +++ b/arch/arm/mach-rockchip/core.h
->> @@ -18,3 +18,4 @@ extern char rockchip_secondary_trampoline_end;
->>
->>   extern unsigned long rockchip_boot_fn;
->>   extern void rockchip_secondary_startup(void);
->> +extern void rk3288_secondary_startup(void);
->> diff --git a/arch/arm/mach-rockchip/headsmp.S b/arch/arm/mach-rockchip/headsmp.S
->> index 73206e3..bacdb56 100644
->> --- a/arch/arm/mach-rockchip/headsmp.S
->> +++ b/arch/arm/mach-rockchip/headsmp.S
->> @@ -20,6 +20,20 @@ ENTRY(rockchip_secondary_startup)
->>          b       secondary_startup
->>   ENDPROC(rockchip_secondary_startup)
->>
->> +ENTRY(rk3288_secondary_startup)
->> +       mrc p15, 0, r0, c0, c0, 5
->> +       mov r2, #3
->> +       and r0, r0, r2
->> +       ldr r1, =0xff700000
->> +       ldr r1, [r1]
->> +       cmp r0, r1
->> +       beq 2f
->> +       ldr r2, =0xfffd0000
->> +       mov pc, r2
->> +2:
->> +       b       secondary_startup
->> +ENDPROC(rk3288_secondary_startup)
-> Comments on what's going on here would be nice.
-I will do that in next version.
-> It looks like what you're doing is checking to see whether this CPU is
-> the one that is supposed to wake up or not, but looking at sram
-> (written by the C code below), and this isn't the correct CPU then go
-> back to boot rom?  Since we read in int-mem from the device-tree it
-> would also probably be good to make that ldr r1, 0xff700000 reference
-> the sram_base_addr variable rather than hard coding here.
-I don't like the hard coding either, but I don't know how to get the
-physical base of sram and bootrom address in the assemble code.
->
->> +
->>   ENTRY(rockchip_secondary_trampoline)
->>          ldr     pc, 1f
->>   ENDPROC(rockchip_secondary_trampoline)
->> diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
->> index 189684f..022a01d 100644
->> --- a/arch/arm/mach-rockchip/platsmp.c
->> +++ b/arch/arm/mach-rockchip/platsmp.c
->> @@ -60,7 +60,7 @@ static void pmu_set_power_domain(int pd, bool on)
->>    * Handling of CPU cores
->>    */
->>
->> -static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
->> +static int __cpuinit rk3066_boot_secondary(unsigned int cpu,
->>                                               struct task_struct *idle)
->>   {
->>          if (!sram_base_addr || !pmu_base_addr) {
->> @@ -80,6 +80,28 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
->>          return 0;
->>   }
->>
->> +static int __cpuinit rk3288_boot_secondary(unsigned int cpu,
->> +                                            struct task_struct *idle)
->> +{
->> +       if (!sram_base_addr) {
->> +               pr_err("%s: sram missing for cpu boot\n", __func__);
->> +               return -ENXIO;
->> +       }
->> +
->> +       if (cpu >= ncores) {
->> +               pr_err("%s: cpu %d outside maximum number of cpus %d\n",
->> +                                                       __func__, cpu, ncores);
->> +               return -ENXIO;
->> +       }
->> +       /* start the core */
->> +       writel(virt_to_phys(rk3288_secondary_startup), sram_base_addr + 8);
->> +       writel(0xDEADBEAF, sram_base_addr + 4);
->> +       writel(cpu, sram_base_addr + 0);
-> I guess the boot rom is looking for 0xDEADBEEF here at sram_base_addr
-> + 4, but the cpu itself will be looking at sram_base_addr + 0.
-> Again, might be good to somehow document what the protocol is.
->
->> +       dsb_sev();
->> +
->> +       return 0;
->> +}
->> +
->>   /**
->>    * rockchip_smp_prepare_sram - populate necessary sram block
->>    * Starting cores execute the code residing at the start of the on-chip sram
->> @@ -125,7 +147,7 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
->>          return 0;
->>   }
->>
->> -static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
->> +static void __init rk3066_smp_prepare_cpus(unsigned int max_cpus)
->>   {
->>          struct device_node *node;
->>          unsigned int i;
->> @@ -194,12 +216,41 @@ static void rockchip_cpu_die(unsigned int cpu)
->>   }
->>   #endif
->>
->> -static struct smp_operations rockchip_smp_ops __initdata = {
->> -       .smp_prepare_cpus       = rockchip_smp_prepare_cpus,
->> -       .smp_boot_secondary     = rockchip_boot_secondary,
->> +static void __init rk3288_smp_prepare_cpus(unsigned int max_cpus)
->> +{
->> +       struct device_node *node;
->> +
->> +       node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-smp-sram");
->> +       if (!node) {
->> +               pr_err("%s: could not find sram dt node\n", __func__);
->> +               return;
->> +       }
->> +
->> +       sram_base_addr = of_iomap(node, 0);
->> +       if (!sram_base_addr) {
->> +               pr_err("%s: could not map pmu registers\n", __func__);
->> +               return;
->> +       }
->> +
->> +       ncores = 4;
->> +}
->> +
->> +static struct smp_operations rockchip3066_smp_ops __initdata = {
->> +       .smp_prepare_cpus       = rk3066_smp_prepare_cpus,
->> +       .smp_boot_secondary     = rk3066_boot_secondary,
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +       .cpu_kill               = rockchip_cpu_kill,
->> +       .cpu_die                = rockchip_cpu_die,
->> +#endif
->> +};
->> +CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip3066_smp_ops);
->> +
->> +static struct smp_operations rockchip3288_smp_ops __initdata = {
->> +       .smp_prepare_cpus       = rk3288_smp_prepare_cpus,
->> +       .smp_boot_secondary     = rk3288_boot_secondary,
->>   #ifdef CONFIG_HOTPLUG_CPU
->>          .cpu_kill               = rockchip_cpu_kill,
->>          .cpu_die                = rockchip_cpu_die,
->>   #endif
->>   };
->> -CPU_METHOD_OF_DECLARE(rk3066_smp, "rockchip,rk3066-smp", &rockchip_smp_ops);
->> +CPU_METHOD_OF_DECLARE(rk3288_smp, "rockchip,rk3288-smp", &rockchip3288_smp_ops);
->> --
->> 1.9.1
->>
-> _______________________________________________
-> Linux-rockchip mailing list
-> Linux-rockchip@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-rockchip
->
->
->
+Hi all,
 
+After merging the net tree, today's linux-next build (powerpc ppc64_defconf=
+ig)
+failed like this:
 
+warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
+& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
+ has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
+40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
+unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
+BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
+NET_VENDOR_IBM)
+warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCSI_=
+BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has u=
+nmet direct dependencies (SCSI && NET)
+warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
+ && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
+nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCSI_=
+BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has u=
+nmet direct dependencies (SCSI && NET)
+warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
+40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
+unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
+& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
+ has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
+BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
+NET_VENDOR_IBM)
+warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
+ && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
+nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
+drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_event':
+drivers/scsi/scsi_transport_fc.c:543:7: error: 'scsi_nl_sock' undeclared (f=
+irst use in this function)
+  if (!scsi_nl_sock) {
+       ^
+drivers/scsi/scsi_transport_fc.c:543:7: note: each undeclared identifier is=
+ reported only once for each function it appears in
+drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_vendor_event':
+drivers/scsi/scsi_transport_fc.c:611:7: error: 'scsi_nl_sock' undeclared (f=
+irst use in this function)
+  if (!scsi_nl_sock) {
+       ^
+
+This is a bit different to yesterday's failure but I assume it is still
+related to commit 5d6be6a5d486 ("scsi_netlink : Make SCSI_NETLINK
+dependent on NET instead of selecting NET").
+
+I used the net tree from next-20140915 again today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/zx=4EZDC=iQqMnuJaLKP/RQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUGN5BAAoJEMDTa8Ir7ZwVs9AP/3CUdAa8BmdQDdkkoVbdoXsk
+40X/dl/60zmZWes14vLjFWlVwFGb0OF6QNpJn4ApA9yAL52vnMdVHB4Lil9iJfGQ
+NI8vdu1WaG/UrercogpbXf+2TKoofKA+UBUxYTB/bkH0w5l6AmZ4pecZg+f9Jhvf
+aasq/99WKd70uvWaQaig6mrbzyIq18zCfvIH5RnLag+R6qFzDcEtAwg98qnuSoOx
+fe/wI+tAg4vgP79jmLb+lmbezCiXqc4Xa+RvVDHxpBkVWCAQw1w/74E6ErEtNDtV
+8c3cJYKC0Q3DnFU1pJcezUa5rvXzSzHtmGXEf3ikfwgGaeQge406uf988/cDg4qD
+Qhl1BA99SPsng78baMNLPMTQor3hVLKSA4AX913p/TgaYneJOXntd/etI2SmCBT2
+dgZ4W3TKWpywxLlsG9mStWVm6nN+m4kuryvm4Ki2bS9qzon4AJcebLYvifve6YeZ
+r5AXooIW7nAFXrqDw0xuEliQCguRsN0cHmdOK2M5EGqB5lHMThBLHS13Rfu+2Fpb
+kEK+qYse0g6F20ub+edlYucljReY+9xT/VYF4ss1/snVdBIe8SzBxdCSRPdViRIp
+CUO5PQS4urFc385RQfYOQN8trbDpYgcynxsK4B4aG5kUTEKaMIo9pTUVLA86phTw
+bmww7ECKL2/L2oD2ySN0
+=aTww
+-----END PGP SIGNATURE-----
+
+--Sig_/zx=4EZDC=iQqMnuJaLKP/RQ--
