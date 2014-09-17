@@ -1,263 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076AbaIQVBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:01:38 -0400
-Received: from relay.parallels.com ([195.214.232.42]:44198 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756625AbaIQVBg (ORCPT
+	id S932104AbaIQVGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:06:02 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51805 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031AbaIQVGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:01:36 -0400
-Date: Thu, 18 Sep 2014 01:01:22 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Jan Kara <jack@suse.cz>
-CC: Heinrich Schuchardt <xypron.debian@gmx.de>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "John McCutchan" <john@johnmccutchan.com>,
-        Robert Love <rlove@rlove.org>, Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Pavel Emelyanov" <xemul@parallels.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH] fs: don't remove inotify watchers from alive inode-s
-Message-ID: <20140917210122.GA31893@paralelels.com>
-References: <1410177716-3965-1-git-send-email-avagin@openvz.org>
- <20140909012712.GV7996@ZenIV.linux.org.uk>
- <20140909085439.GB25034@quack.suse.cz>
- <20140910094318.GA19472@paralelels.com>
- <54146D8D.9090708@gmx.de>
- <20140916211211.GG1205@quack.suse.cz>
+	Wed, 17 Sep 2014 17:06:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ftEhullJWpWg/VHq"
-Content-Disposition: inline
-In-Reply-To: <20140916211211.GG1205@quack.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.24.24.254]
+In-Reply-To: <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com>
+References: <CAH2r5mvTP1oGNoetuSkPdirBb1UDH6fiNCVjs_gJNKeJ1Dz5sA@mail.gmail.com>
+ <5419F007.9070509@infradead.org> <5419F0D4.9090107@infradead.org> <CAH2r5muWCr9VLdQLGr+u-grdk=q+DfgdrRQU2dn2A37yLTAieA@mail.gmail.com>
+From: Steve French <smfrench@gmail.com>
+Date: Wed, 17 Sep 2014 16:05:39 -0500
+Message-ID: <CAH2r5muvhC6ww_U8o4mN119ptnNsuT+mcSmfaFbP7DqV0ZQpiw@mail.gmail.com>
+Subject: Re: match_token weird behavior
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-cifs@vger.kernel.org" <linux-cifs@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
+Looking at more examples, some of which are much larger match tables
+maybe it has to do with how the final entry is defined.  In this
+example the NULL match is explicitly stated.
 
-On Tue, Sep 16, 2014 at 11:12:11PM +0200, Jan Kara wrote:
-> On Sat 13-09-14 18:15:09, Heinrich Schuchardt wrote:
-> > On Tue 09-09-14 02:27:12, Al Viro wrote:
-> > http://lkml.org/lkml/2014/9/8/762
-> > > I agree that it changes user-visible ABI and I agree the behavior
-> > > isn't really specified in the manpage.
-> > 
-> > Shouldn't we start with putting the expected behavior into the
-> > manpage before patching the code? I am missing a patch for
-> > man7/inotify.7.
->   Good idea. Thanks for bringing this up. And ideally we should write it
-> down before settling for a solution to this problem. Because when thinking
-> about it again, some details of the behavior are still vague.
-> 
-> > On Mon, Sep 08, 2014 at 04:01:56PM +0400, Andrey Vagin wrote:
-> > http://lkml.org/lkml/2014/9/8/219
-> > >
-> > > 	fd = inotify_init1(IN_NONBLOCK);
-> > > 	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-> > > 	link(path, path_link);
-> > >
-> > > 	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
-> > >
-> > > 	unlink(path);
-> > > 	unlink(path_link);
-> > >
-> > > 	printf(" --- unlink\n");
-> > > 	read_evetns(fd);
-> > >
-> > > 	close(deleted);
-> > > 	printf(" --- close\n");
-> > > 	read_evetns(fd);
-> > >
-> > > Without this patch:
-> > >   --- unlink
-> > > 4	(IN_ATTRIB)
-> > > 400	(IN_DELETE_SELF)
-> > > 8000	(IN_IGNORED)
-> > >   --- close
-> > > FAIL
-> > >
-> > > With this patch:
-> > >   --- unlink
-> > > 4	(IN_ATTRIB)
-> > > 400	(IN_DELETE_SELF)
-> > >   --- close
-> > > 8	(IN_CLOSE_WRITE)
-> > > 400	(IN_DELETE_SELF)
-> > > 8000	(IN_IGNORED)
-> > > PASS
-> > 
-> > Shouldn't the second IN_DELETE_SELF occur before
-> > --- close ?
-> > Why is IN_CLOSE_WRITE created?
->   So I would like events to be generated until the watched inode really
-> gets deleted. This way simple (non-hardlinked) file behaves and that's what
-> seems "natural". In this light generating IN_CLOSE_WRITE is what we want to
-> do.
-> 
-> Generation of IN_DELETE_SELF is less obvious I think. Do we want to
-> generate IN_DELETE_SELF for each hardlink to the inode that gets removed? I
-> don't think so (this actually would be too visible user API change IMHO).
-> To match the single link case I think we want to generate IN_DELETE_SELF
-> when the last link to the file is removed. But then generating it twice
-> like we would do with the above patch is wrong... Opinions?
+static const match_table_t cifs_secflavor_tokens = {
+    { Opt_sec_krb5, "krb5" },
+    { Opt_sec_krb5i, "krb5i" },
+    { Opt_sec_krb5p, "krb5p" },
+    { Opt_sec_ntlmsspi, "ntlmsspi" },
+    { Opt_sec_ntlmssp, "ntlmssp" },
+    { Opt_ntlm, "ntlm" },
+    { Opt_sec_ntlmi, "ntlmi" },
+    { Opt_sec_ntlmv2, "nontlm" },
+    { Opt_sec_ntlmv2, "ntlmv2" },
+    { Opt_sec_ntlmv2i, "ntlmv2i" },
+    { Opt_sec_lanman, "lanman" },
+    { Opt_sec_none, "none" },
 
-I think you are right. Could you look at the attached patch? Pay your
-attention to the description. This patch removes differences of
-behaviours for two equivalent cases. And the resulting behavior is equal
-for one of these case.
+    { Opt_sec_err, NULL }
+};
 
-If it looks good for you, I will send this patch together with the patch
-for the man page.
+On Wed, Sep 17, 2014 at 3:53 PM, Steve French <smfrench@gmail.com> wrote:
+> For additional information the strings that are being matched against are:
+>
+> #define SMB1_VERSION_STRING    "1.0"
+> #define SMB20_VERSION_STRING    "2.0"
+> #define SMB21_VERSION_STRING    "2.1"
+> #define SMB30_VERSION_STRING    "3.0"
+> #define SMB302_VERSION_STRING    "3.02"
+> #define SMB31_VERSION_STRING    "3.1"
+>
+>
+> The matching works as expected, e,g. specifying 3.0 gets matched to
+> Smb_30, before and/after adding the sixth element to the match_table_t
+> - except that unmatched items (picking a dialect that doesn't exist
+> like "5.1") matches to Smb_21 where it used to fall through to the
+> default (error) case.
+>
+> It got me a little worried that there MAX_OPT_ARGS is 3 and I am
+> getting the third element in the case of the error.
+>
+> Looking at other examples in the kernel were strange e.g. ext4/super.c has this
+>
+>         /*
+>          * Initialize args struct so we know whether arg was
+>          * found; some options take optional arguments.
+>          */
+>         args[0].to = args[0].from = NULL;
+>         token = match_token(p, tokens, args);
+>         (and then passes args down to a large helper function handle_mount_opt)
+>
+> Initializing args didn't seem to help in the cifs case
+>
+> On Wed, Sep 17, 2014 at 3:36 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
+>> On 09/17/14 13:33, Randy Dunlap wrote:
+>>> On 09/17/14 11:20, Steve French wrote:
+>>>> Noticing something very strange with match_token.   I had five strings
+>>>> I need to compare a version string (protocol dialect eg. "2.1" or
+>>>> "3.0") against, to find which it matches (if any), but adding one to
+>>>> the list (now checking for one of six strings instead of five) causes
+>>>> the error case to always default to element 3 (in my example looks as
+>>>> if it matched to the 2.1 string) instead of the error case.
+>>>>
+>>>> enum smb_version {
+>>>>     Smb_1 = 1,
+>>>>     Smb_20,
+>>>>     Smb_21,
+>>>>     Smb_30,
+>>>>     Smb_302,
+>>>> };
+>>>>
+>>>> static const match_table_t cifs_smb_version_tokens = {
+>>>>     { Smb_1, SMB1_VERSION_STRING },
+>>>>     { Smb_20, SMB20_VERSION_STRING},
+>>>>     { Smb_21, SMB21_VERSION_STRING },
+>>>>     { Smb_30, SMB30_VERSION_STRING },
+>>>>     { Smb_302, SMB302_VERSION_STRING },
+>>>> };
+>>>>
+>>>
+>>> You don't tell us what the actual string values are, but I'm guessing that
+>>> SMB302_VERSION_STRING is a subset (same in first N characters) of SMB30_VERSION_STRING. ??
+>>>
+>>> In that case I think that match_token() will return a ptr to SMB_30 instead of to
+>>> SMB_302 when the input is "3.02" (matches "3.0" due to the kernel's implementation
+>>> of strcmp() stopping at the end of string1 (where string1 is "3.0" in this case).
+>>
+>> Oops, it seems that I got the strcmp() parameters reversed.  Sorry about that.
+>> Feel free to disregard my ramblings.
+>>
+>>>
+>>> If that is all correct, then could your return value be off by 1?
+>>>
+>>>>
+>>>> When I add one entry to the lists above (going from 5 to 6 elements),
+>>>> and then add one additional case for it to the switch statement, an
+>>>> attempt to provide an unrecognized string (e.g. if I specify an illegal
+>>>> dialect string like "9" instead of "3.0" or "2.1" etc) will now match the
+>>>> third element (Smb_21) instead of "default" in the code snippet below.
+>>>> Is match_token broken? Can match token only handle tables with 5
+>>>> elements or fewer? Is there a replacement for it for this kind of thing
+>>>> (matching a string versus which from among a list of valid strings)
+>>>> other than match_token?  Is match_token just broken?
+>>>>
+>>>>     substring_t args[MAX_OPT_ARGS];
+>>>>
+>>>>     switch (match_token(value, cifs_smb_version_tokens, args)) {
+>>>>     case Smb_1:
+>>>>         vol->ops = &smb1_operations;
+>>>>         vol->vals = &smb1_values;
+>>>>         break;
+>>>>     case Smb_20:
+>>>>         vol->ops = &smb20_operations;
+>>>>         vol->vals = &smb20_values;
+>>>>         break;
+>>>>     case Smb_21:
+>>>>         vol->ops = &smb21_operations;
+>>>>         vol->vals = &smb21_values;
+>>>>         break;
+>>>>     case Smb_30:
+>>>>         vol->ops = &smb30_operations;
+>>>>         vol->vals = &smb30_values;
+>>>>         break;
+>>>>     case Smb_302:
+>>>>         vol->ops = &smb30_operations; /* currently identical with 3.0 */
+>>>>         vol->vals = &smb302_values;
+>>>>         break;
+>>>>     default:
+>>>>         cifs_dbg(VFS, "Unknown vers= option specified: %s\n", value);
+>>>>         return 1;
+>>>>
+>>>
+>>>
+>>
+>>
+>> --
+>> ~Randy
+>
+>
+>
+> --
+> Thanks,
+>
+> Steve
 
-Thank you and Heinrich for the comments and advices.
 
-Thanks,
-Andrey
-> 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
 
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: attachment;
-	filename="0001-fs-don-t-remove-inotify-watchers-from-alive-inode-s-.patch"
-
->From c7a79bccca1aac70f5e50fb145942b932eca79ba Mon Sep 17 00:00:00 2001
-From: Andrey Vagin <avagin@openvz.org>
-Date: Sat, 6 Sep 2014 08:35:24 +0400
-Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s (v2)
-
-Currently watchers are removed in dentry_iput(), if n_link is zero.  But
-other detries can be linked with this inode.
-
-For example if we create two hard links, open the first one and set an
-inotify watcher on one of them.  Then if we remove the opened file and
-then another file, the inotify watcher will be removed. But we will have
-the alive file descriptor, which allows us to generate more events.
-
-And here is another behaviour, if files are removed in another order.
-The watcher will not be removed and we will keep getting inotify events
-for that inode.
-
-This patch removes difference of behaviours for these cases. Watchers
-are removed, only if nlink is zero and i_dentry list is empty. The
-resulting behaviour is the same with what has been described in the
-second case.
-
-Look at a following example:
-
-	fd = inotify_init1(IN_NONBLOCK);
-	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-	link(path, path_link);
-
-	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
-
-	unlink(path);
-	unlink(path_link);
-
-	printf(" --- unlink path, path_link\n");
-	read_evetns(fd);
-
-	close(deleted);
-	printf(" --- close\n");
-	read_evetns(fd);
-	printf(" --- end\n");
-
-We expect to get the same set of events for this case and for the
-case, when files are deleted in another order. But now we get the
-different set of events.
-
-Without this patch:
-The first case, when "path" is deleted before "path_link"
- --- unlink path, path_link
-4	(IN_ATTRIB)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- close
- --- end
-
-and for the case, when "path_link" is deleted before "path"
- --- unlink path_link, path
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
-
-With this patch we have the same output for both cases:
- --- unlink
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
-PASS
-
-v2: generate IN_DELETE_SELF when the last link to the file is removed
-
-Cc: Jan Kara <jack@suse.cz>
-Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/dcache.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 7a5b514..3a0e3bc 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	if (inode) {
- 		dentry->d_inode = NULL;
- 		hlist_del_init(&dentry->d_alias);
-+		last_dentry = hlist_empty(&inode->i_dentry);
- 		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&inode->i_lock);
--		if (!inode->i_nlink)
-+		if (!inode->i_nlink && last_dentry)
- 			fsnotify_inoderemove(inode);
- 		if (dentry->d_op && dentry->d_op->d_iput)
- 			dentry->d_op->d_iput(dentry, inode);
-@@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	__d_clear_type(dentry);
- 	dentry->d_inode = NULL;
- 	hlist_del_init(&dentry->d_alias);
- 	dentry_rcuwalk_barrier(dentry);
-+	last_dentry = hlist_empty(&inode->i_dentry);
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&inode->i_lock);
--	if (!inode->i_nlink)
-+	if (!inode->i_nlink && last_dentry)
- 		fsnotify_inoderemove(inode);
- 	if (dentry->d_op && dentry->d_op->d_iput)
- 		dentry->d_op->d_iput(dentry, inode);
 -- 
-1.9.3
+Thanks,
 
-
---ftEhullJWpWg/VHq--
+Steve
