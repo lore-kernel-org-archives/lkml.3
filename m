@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaIQCnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 22:43:25 -0400
-Received: from mga14.intel.com ([192.55.52.115]:64550 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753796AbaIQCnX convert rfc822-to-8bit (ORCPT
+	id S1754966AbaIQCrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 22:47:32 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:8817 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021AbaIQCr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 22:43:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,537,1406617200"; 
-   d="scan'208";a="592385081"
-From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-To: David Miller <davem@davemloft.net>
-CC: "peppe.cavallaro@st.com" <peppe.cavallaro@st.com>,
-        "rayagond@vayavyalabs.com" <rayagond@vayavyalabs.com>,
-        "vbridgers2013@gmail.com" <vbridgers2013@gmail.com>,
-        "srinivas.kandagatla@st.com" <srinivas.kandagatla@st.com>,
-        "wens@csie.org" <wens@csie.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>
-Subject: RE: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Topic: [PATCH v2 3/4] net: stmmac: add support for Intel Quark X1000
-Thread-Index: AQHPztbom04Iz4URhUOKiyu70+M/jZwB2NUwgAHEYYCAAP0oIA==
-Date: Wed, 17 Sep 2014 02:41:39 +0000
-Message-ID: <F54AEECA5E2B9541821D670476DAE19C2B7E9DCA@PGSMSX102.gar.corp.intel.com>
-References: <07ca9d2c89cf4f01037c98e3314dd035e4d2ee34.1410416224.git.hock.leong.kweh@intel.com>
-	<20140912.181423.1831537443587796533.davem@davemloft.net>
-	<F54AEECA5E2B9541821D670476DAE19C2B7E99A7@PGSMSX102.gar.corp.intel.com>
- <20140916.150037.1715537913178712290.davem@davemloft.net>
-In-Reply-To: <20140916.150037.1715537913178712290.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 16 Sep 2014 22:47:29 -0400
+X-AuditID: cbfee68f-f797f6d000001173-98-5418f63f1f61
+From: Jonghwa Lee <jonghwa3.lee@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>
+Subject: [PATCH RESEND 0/2] Update smb347 charger driver.
+Date: Wed, 17 Sep 2014 11:47:22 +0900
+Message-id: <1410922044-4170-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsWyRsSkWNf+m0SIwclfvBYHt2paTHryntli
+	4srJzBadZ58wW1zeNYfN4nPvEUaLu6eOslmc3l3iwOExof8To8fOWXfZPTav0PLYtKqTzaNv
+	yypGjxWrv7N7fN4kF8AexWWTkpqTWZZapG+XwJUxp3Evc8F1lornG1sYGxjvMHcxcnJICJhI
+	3L9zlgXCFpO4cG89WxcjF4eQwFJGidP/H7LCFB1oms0IkVjEKLHo1Wsop41JYvLp12BVbAI6
+	Ev/33WQHsUUEFCQ29z5jBSliFljMKPH01AuwfcIClhIP9iwB28cioCpxYt0usGZeAXeJr00H
+	gWo4gNYpSMyZZAPSKyEwmV3iRtdCRoh6AYlvkw+xQNTISmw6APWCpMTBFTdYJjAKLmBkWMUo
+	mlqQXFCclF5krFecmFtcmpeul5yfu4kRGNCn/z3r38F494D1IUYBDkYlHt4NlyVChFgTy4or
+	cw8xmgJtmMgsJZqcD4ybvJJ4Q2MzIwtTE1NjI3NLMyVx3oVSP4OFBNITS1KzU1MLUovii0pz
+	UosPMTJxcEo1MK6+vzWxid0ofV2YSKdca/3i2KnRrWUiS4O3nqt6G692RWXXh46EO+br5GbZ
+	9d8PP6u4S3ZLNJdgivupdwWLq665xWiGbI7l9Jupffu758Yy7sypPznaHkzjbbMpffbvavsn
+	vac7Hsrl6zQKvhW94H24rf5wy7djL4T2cWe/7xX+Zzb3rn9FsRJLcUaioRZzUXEiAAs+iclj	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFIsWRmVeSWpSXmKPExsVy+t9jAV37bxIhBv+XsFsc3KppMenJe2aL
+	iSsnM1t0nn3CbHF51xw2i8+9Rxgt7p46ymZxeneJA4fHhP5PjB47Z91l99i8Qstj06pONo++
+	LasYPVas/s7u8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5i
+	bqqtkotPgK5bZg7QTUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjDmN
+	e5kLrrNUPN/YwtjAeIe5i5GTQ0LAROJA02xGCFtM4sK99WxdjFwcQgKLGCUWvXrNCOG0MUlM
+	Pv2aFaSKTUBH4v++m+wgtoiAgsTm3mesIEXMAosZJZ6eegE2VljAUuLBniUsIDaLgKrEiXW7
+	wJp5BdwlvjYdBKrhAFqnIDFnks0ERu4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLj
+	5Zn0DsZVDRaHGAU4GJV4eDdclggRYk0sK67MPcQowcGsJMIrcg8oxJuSWFmVWpQfX1Sak1p8
+	iNEUaPlEZinR5HxgLOeVxBsam5gZWRqZG1oYGZsrifMebLUOFBJITyxJzU5NLUgtgulj4uCU
+	amCcmrHd8dMcc+GTZRPO7K558cJlb6aZ79nM5wm3jfhFlE7Gn5Jaq6NdwyNwR1wpPW97fGL3
+	xhM3M48r75Iq0/6ebd+S5ZC5dqVl/Z5k4Vs1C0+3Kv38/XGN5aJCn8JD4pY22jLRfzlW6J4I
+	rt+wW/9sfslXgRenEuV2XVhWWdsSleA+6Uzb7r1KLMUZiYZazEXFiQDQsImjrQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Wednesday, September 17, 2014 3:01 AM
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
-> Date: Mon, 15 Sep 2014 12:42:03 +0000
-> 
-> > The only things to differentiate them is PCI BUS DEVICE FUNCTION
-> > (Bus:Dev:Func) number which are fix numbers 00:20:6 for port 1 and
-> > 00:20:7 for port 2 stated in Quark X1000 datasheet.
-> 
-> Match on the PCI device class, which must be
-> PCI_CLASS_NETWORK_ETHERNET or similar.
-> 
-> The pci_device_id used for probing supports matching on this directly.
-> .
+This patch set updates smb347 driver to support dt-binding and smb358 chip.
 
-Hi David,
+Jonghwa Lee (2):
+  power: smb347-charger: Support devicetree binding for smb347 driver.
+  power: smb347-charger: Support Summit SMB358 charger IC.
 
-Thanks for the pointer. I did a quickly checking on the class number to see if
-I could use it for differentiation the ports number. Whereas I found them 
-both have the same class number as well. Below shows the "lspci" dump to 
-all the PCI devices on Quark X1000 Galileo board (Ethernet controllers are
-00:14.6 and 00:14.7). Very unfortunately we are unlikely to use the class 
-number as well as pci_device_id for the differentiation.
-Thanks.
+ .../bindings/power_supply/smb347_charger.txt       |   58 +++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ drivers/power/smb347-charger.c                     |  242 +++++++++++++-------
+ 3 files changed, 214 insertions(+), 87 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/smb347_charger.txt
 
-root@quark:~# lspci -m
-00:00.0 "Class 0600" "8086" "0958" "8086" "095e"
-00:14.0 "Class 0805" "8086" "08a7" "8086" "08a7"
-00:14.1 "Class 0700" "8086" "0936" "8086" "0936"
-00:14.2 "Class 0c03" "8086" "0939" "8086" "0939"
-00:14.3 "Class 0c03" "8086" "0939" "8086" "0939"
-00:14.4 "Class 0c03" "8086" "093a" "8086" "093a"
-00:14.5 "Class 0700" "8086" "0936" "8086" "0936"
-00:14.6 "Class 0200" "8086" "0937" "8086" "0937"
-00:14.7 "Class 0200" "8086" "0937" "8086" "0937"
-00:15.0 "Class 0c80" "8086" "0935" "8086" "0935"
-00:15.1 "Class 0c80" "8086" "0935" "8086" "0935"
-00:15.2 "Class 0c80" "8086" "0934" "8086" "0934"
-00:17.0 "Class 0604" "8086" "11c3" "8086" "11c3"
-00:17.1 "Class 0604" "8086" "11c4" "8086" "11c4"
-00:1f.0 "Class 0601" "8086" "095e" "8086" "095e"
-root@quark:~# lspci -k
-00:00.0 Class 0600: 8086:0958 iosf_mbi_pci
-00:14.0 Class 0805: 8086:08a7 sdhci-pci
-00:14.1 Class 0700: 8086:0936 serial
-00:14.2 Class 0c03: 8086:0939
-00:14.3 Class 0c03: 8086:0939 ehci-pci
-00:14.4 Class 0c03: 8086:093a ohci-pci
-00:14.5 Class 0700: 8086:0936 serial
-00:14.6 Class 0200: 8086:0937 stmmaceth
-00:14.7 Class 0200: 8086:0937
-00:15.0 Class 0c80: 8086:0935
-00:15.1 Class 0c80: 8086:0935
-00:15.2 Class 0c80: 8086:0934
-00:17.0 Class 0604: 8086:11c3 pcieport
-00:17.1 Class 0604: 8086:11c4 pcieport
-00:1f.0 Class 0601: 8086:095e
-root@quark:~#
-
-
-Regards,
-Wilson
+-- 
+1.7.9.5
 
