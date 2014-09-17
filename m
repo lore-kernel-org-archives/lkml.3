@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366AbaIQRED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755827AbaIQRD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:03:57 -0400
-Message-ID: <5419BED8.5020309@redhat.com>
-Date: Wed, 17 Sep 2014 19:03:20 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-CC: "David S. Miller" <davem@davemloft.net>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1755959AbaIQRIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:08:48 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:56717 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755587AbaIQRIq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 13:08:46 -0400
+Date: Wed, 17 Sep 2014 20:08:42 +0300
+From: Gleb Natapov <gleb@kernel.org>
+To: Andres Lagar-Cavilla <andreslc@google.com>
+Cc: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
         Andy Lutomirski <luto@amacapital.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v13 net-next 07/11] bpf: verifier (add ability to receive
- verification log)
-References: <1410914370-29883-1-git-send-email-ast@plumgrid.com> <1410914370-29883-8-git-send-email-ast@plumgrid.com> <54192F66.8020200@redhat.com> <CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
-In-Reply-To: <CAMEtUuxK68ZoJ-izjLoygv0f+rLtPmMLUUq1=BJ+_ZBGfynkdA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+Message-ID: <20140917170841.GG26540@minantech.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+ <20140917102635.GA30733@minantech.com>
+ <20140917112713.GB1273@potion.brq.redhat.com>
+ <20140917114214.GB30733@minantech.com>
+ <CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/17/2014 06:08 PM, Alexei Starovoitov wrote:
-> On Tue, Sep 16, 2014 at 11:51 PM, Daniel Borkmann <dborkman@redhat.com> wrote:
->>>
->>>    /* last field in 'union bpf_attr' used by this command */
->>> -#define        BPF_PROG_LOAD_LAST_FIELD license
->>> +#define        BPF_PROG_LOAD_LAST_FIELD log_buf
->>
->> I was looking to find a use case for this item, but couldn't find anything,
->> so
->> this seems to be dead code?
->
-> See CHECK_ATTR() macro and comment next to it in patch #1
->
->> Was it, so that each time you extend an uapi structure like above that you
->> would
->> only access the structure up to BPF_PROG_LOAD_LAST_FIELD? That might not
->> work for
->> old binaries using this ABI running on newer kernels where there are
->> different
->> expectations of what BPF_PROG_LOAD_LAST_FIELD has been at the time of
->> compilation.
->
-> exactly the opposite.
-> CHECK_ATTR() is checking that all fields beyond last for given
-> command are zero, so we can extend bpf_attr with new fields
-> added after last.
-> Transition from patch 4 to patch 7 and the hunk you quoted are
-> demonstrating exactly that. Say, userspace was compiled
-> with bpf_attr as defined in patch 4 and it populated fields all the way
-> till 'license', and kernel is compiled with patch 7. Kernel does:
-> union bpf_attr attr = {};
-> /* copy attributes from user space, may be less than sizeof(bpf_attr) */
-> copy_from_user(&attr, uattr, size)
-> so newer fields (all the way till log_buf) stay zero and kernel
-> behavior is the same as it was in patch 4.
-> So older user space works as-is with newer kernel.
+On Wed, Sep 17, 2014 at 10:00:32AM -0700, Andres Lagar-Cavilla wrote:
+> On Wed, Sep 17, 2014 at 4:42 AM, Gleb Natapov <gleb@kernel.org> wrote:
+> > On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
+> >> 2014-09-17 13:26+0300, Gleb Natapov:
+> >> > For async_pf_execute() you do not need to even retry. Next guest's page fault
+> >> > will retry it for you.
+> >>
+> >> Wouldn't that be a waste of vmentries?
+> > This is how it will work with or without this second gup. Page is not
+> > mapped into a shadow page table on this path, it happens on a next fault.
+> 
+> The point is that the gup in the async pf completion from the work
+> queue will not relinquish the mmap semaphore. And it most definitely
+> should, given that we are likely looking at swap/filemap.
+> 
+I get this point and the patch looks good in general, but my point is
+that when _retry() is called from async_pf_execute() second gup is not
+needed. In the original code gup is called to do IO and nothing else.
+In your patch this is accomplished by the first gup already, so you
+can skip second gup if pagep == nullptr.
 
-Ok, I see. Lets say, since the introduction of this syscall you have
-added a couple of features and thus extended union bpf_attr where it
-grew in size over time.
-
-You built your shiny new binary on that uapi setting, and later on
-decide to run it on an older kernel. What will happen is that in your
-bpf syscall handler you will return with -EINVAL on that kernel right
-away since the size of union bpf_attr is greater.
-
-That would mean over time when new features will get added, applications
-that want to make sure to run on _all_ kernels where the bpf syscall is
-available have to make sure to either use the _initial_ version of
-union bpf_attr in order to not get an -EINVAL, or worse they have
-to probe though a syscall different versions of union bpf_attr if they
-wish to make use of a particular feature until they do not get an -EINVAL
-anymore.
-
-I guess that might be problematic for an application developer that
-wants to ship its application across different distributions usually
-running different kernels. At least those people might then consider
-holding a private copy of the _initial_ version of union bpf_attr in
-their own source code, but it's not pleasant I guess.
-
-I know you seem to have the constraint to run on NET-less systems, but
-netlink could partially resolve that in the sense that it would allow
-to at least load an eBPF program with initial feature set. Couldn't
-there be some mechanism to make this interaction more pleasant? E.g.
-in BPF extensions we can ask the kernel up to what extension it
-supports and accordingly adapt to it up front. I know it's just a
-/trivial/ example but have you thought about something on that kind for
-the syscall?
+--
+			Gleb.
