@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaIQBbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:31:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43607 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbaIQBbi (ORCPT
+	id S1754431AbaIQBcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:32:45 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:58586 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018AbaIQBco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:31:38 -0400
-X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Sep 2014 21:31:37 EDT
-Date: Wed, 17 Sep 2014 02:31:14 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>, Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v4 05/18] ARM64 / ACPI: Introduce sleep-arm.c
-Message-ID: <20140917013114.GB31214@srcf.ucam.org>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-6-git-send-email-hanjun.guo@linaro.org>
- <20140912145102.GB5532@arm.com>
- <20140912151850.GB9234@xora-haswell.xora.org.uk>
- <20140912154903.GE5532@arm.com>
+	Tue, 16 Sep 2014 21:32:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140912154903.GE5532@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20140917111017.499eb3a9@notabene.brown>
+References: <20140916051911.22257.24658.stgit@notabene.brown>
+	<20140916053135.22257.46476.stgit@notabene.brown>
+	<CAHQdGtQbFtLFEpzgqoMoLiG7-Y0FdFiZdpS4dgkT7hsCnqMiPA@mail.gmail.com>
+	<20140917111017.499eb3a9@notabene.brown>
+Date: Tue, 16 Sep 2014 21:32:43 -0400
+Message-ID: <CAHQdGtST5nEE-Wh99vKLNPsOHc_pSgau4om7dWr+GhfLauFBnA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] NFS/SUNRPC: Remove other deadlock-avoidance
+ mechanisms in nfs_release_page()
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Devel FS Linux <linux-fsdevel@vger.kernel.org>, linux-mm@kvack.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jeff Layton <jeff.layton@primarydata.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 12, 2014 at 04:49:03PM +0100, Catalin Marinas wrote:
+On Tue, Sep 16, 2014 at 9:10 PM, NeilBrown <neilb@suse.de> wrote:
+>
+> However ... something else occurs to me.  We could use the bdi congestion
+> markers to guide the timeout.
+> When the wait for PG_private times out, or when a connection re-establishment
+> is required (and maybe other similar times) we could set_bdi_congested().
+> Then in nfs_release_page() we could completely avoid the wait if
+> bdi_write_congested().
+>
+> The congestion setting should encourage vmscan away from the filesystem so it
+> won't keep calling nfs_release_page() which is a bonus.
+>
+> Setting bdi_congestion from the RPC layer might be awkward from a layering
+> perspective, but probably isn't necessary.
+>
+> Would the following allay your concerns?  The change to
+> nfs_inode_remove_request ensures that any congestion is removed when a
+> 'commit' completes.
+>
+> We certainly could keep the PF_FSTRANS setting in the SUNRPC layer - that was
+> why it was a separate patch.  It would be nice to find a uniform solution
+> though.
+>
+> Thanks,
+> NeilBrown
+>
+>
+>
+> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+> index 5949ca37cd18..bc674ad250ce 100644
+> --- a/fs/nfs/file.c
+> +++ b/fs/nfs/file.c
+> @@ -477,10 +477,15 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
+>          * benefit that someone else can worry about the freezer.
+>          */
+>         if (mapping) {
+> +               struct nfs_server *nfss = NFS_SERVER(mapping->host);
+>                 nfs_commit_inode(mapping->host, 0);
+> -               if ((gfp & __GFP_WAIT))
+> +               if ((gfp & __GFP_WAIT) &&
+> +                   !bdi_write_congested(&nfss->backing_dev_info))
+>                         wait_on_page_bit_killable_timeout(page, PG_private,
+>                                                           HZ);
+> +               if (PagePrivate(page))
+> +                       set_bdi_congested(&nfss->backing_dev_info,
+> +                                         BLK_RW_ASYNC);
+>         }
+>         /* If PagePrivate() is set, then the page is not freeable */
+>         if (PagePrivate(page))
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index 700e7a865e6d..3ab122e92c9d 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -726,6 +726,7 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+>         struct inode *inode = req->wb_context->dentry->d_inode;
+>         struct nfs_inode *nfsi = NFS_I(inode);
+>         struct nfs_page *head;
+> +       struct nfs_server *nfss = NFS_SERVER(inode);
+>
+>         if (nfs_page_group_sync_on_bit(req, PG_REMOVE)) {
+>                 head = req->wb_head;
+> @@ -742,6 +743,9 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+>                 spin_unlock(&inode->i_lock);
+>         }
+>
+> +       if (atomic_long_read(&nfss->writeback) < NFS_CONGESTION_OFF_THRESH)
+> +               clear_bdi_congested(&nfss->backing_dev_info, BLK_RW_ASYNC);
 
-> Now, for x86, do we need acpi_sleep_init() when CONFIG_ACPI_SLEEP is
-> off? If not, we could simply add a dummy acpi_sleep_init() function when
-> !ACPI_SLEEP and don't enable the config option for arm64.
+Hmm.... We already have this equivalent functionality in
+nfs_end_page_writeback(), so adding it to nfs_inode_remove_request()
+is just causing duplication as far as the stable writeback path is
+concerned. How about adding it to nfs_commit_release_pages() instead?
 
-The !ACPI_SLEEP case still uses the ACPI code for powering the system 
-down. I'd recommend adding a new CONFIG_ACPI_POWER_OFF option, wrapping 
-the remaining code in sleep.c and disabling that on ARM.
+Otherwise, yes, the above does indeed look at if it has merit. Have
+you got a good test?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Trond Myklebust
+
+Linux NFS client maintainer, PrimaryData
+
+trond.myklebust@primarydata.com
