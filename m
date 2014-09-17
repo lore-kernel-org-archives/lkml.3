@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389AbaIQSw1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:52:27 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:45090 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756295AbaIQSwX (ORCPT
+	id S1756488AbaIQSwb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:52:31 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:46338 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756296AbaIQSw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:52:23 -0400
+	Wed, 17 Sep 2014 14:52:29 -0400
 From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
         Jiri Olsa <jolsa@redhat.com>, peterz@infradead.org, eranian@google.com,
@@ -14,169 +14,233 @@ To: Arnaldo Carvalho de Melo <acme@kernel.org>, ak@linux.intel.com,
 Cc: dev@codyps.com, Michael Ellerman <michaele@au1.ibm.com>,
         Anshuman Khandual <khandual@linux.vnet.ibm.com>, hbabu@us.ibm.com,
         <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v3 01/10] tools/perf: support parsing parameterized events
-Date: Wed, 17 Sep 2014 11:51:54 -0700
-Message-Id: <1410979923-7722-2-git-send-email-sukadev@linux.vnet.ibm.com>
+Subject: [PATCH v3 07/10] powerpc/perf/hv-gpci: add the remaining gpci requests
+Date: Wed, 17 Sep 2014 11:52:00 -0700
+Message-Id: <1410979923-7722-8-git-send-email-sukadev@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1410979923-7722-1-git-send-email-sukadev@linux.vnet.ibm.com>
 References: <1410979923-7722-1-git-send-email-sukadev@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14091718-6688-0000-0000-000004E321D4
+x-cbid: 14091718-1542-0000-0000-000004E3CB44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Enable event specification like:
+Add the remaining gpci requests that contain counters suitable for use
+by perf. Omit those that don't contain any counters (but note their
+ommision).
 
-	pmu/event_name,param1=0x1,param2=0x4/
-
-Assuming that
-
-	/sys/bus/event_source/devices/pmu/events/event_name
-
-Contains something like
-
-	param2=foo,bar=1,param1=baz
-
-Changelog[v6]:
-	[Jiri Olsa] If the sysfs event file specifies 'param=val', make the
-	usage 'hv_24x7/event,param=123/' rather than 'hv_24x7/event,val=123/'.
-	[Sukadev Bhattiprolu] If verbose option is set, print help message
-	if a required parameter is missing or invalid parameter is specified.
-
-
+CC: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 CC: Haren Myneni <hbabu@us.ibm.com>
 CC: Cody P Schafer <dev@codyps.com>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- tools/perf/util/parse-events.h |    1 +
- tools/perf/util/pmu.c          |   64 +++++++++++++++++++++++++++++++++-------
- 2 files changed, 54 insertions(+), 11 deletions(-)
+ arch/powerpc/perf/hv-gpci-requests.h |  183 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 183 insertions(+)
 
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index df094b4..9d7d2d5 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -59,6 +59,7 @@ struct parse_events_term {
- 	int type_val;
- 	int type_term;
- 	struct list_head list;
-+	bool used;
- };
+diff --git a/arch/powerpc/perf/hv-gpci-requests.h b/arch/powerpc/perf/hv-gpci-requests.h
+index 0dfc4d9..a908b08 100644
+--- a/arch/powerpc/perf/hv-gpci-requests.h
++++ b/arch/powerpc/perf/hv-gpci-requests.h
+@@ -65,6 +65,33 @@ REQUEST(__count(0,	8,	processor_time_in_timebase_cycles)
+ )
+ #include I(REQUEST_END)
  
- struct parse_events_evlist {
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 9bf5827..8c7c4a1 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -504,30 +504,67 @@ static __u64 pmu_format_value(unsigned long *format, __u64 value)
- }
- 
- /*
-+ * Term is a string term, and might be a param-term. Try to look up it's value
-+ * in the remaining terms.
-+ * - We have a term like "base-or-format-term=param-term",
-+ * - We need to find the value supplied for "param-term" (with param-term named
-+ *   in a config string) later on in the term list.
-+ */
-+static int pmu_resolve_param_term(struct parse_events_term *term,
-+				  struct list_head *head_terms,
-+				  __u64 *value)
-+{
-+	struct parse_events_term *t;
-+
-+	list_for_each_entry(t, head_terms, list) {
-+		if (t->type_val == PARSE_EVENTS__TERM_TYPE_NUM) {
-+			if (!strcmp(t->config, term->config)) {
-+				t->used = true;
-+				*value = t->val.num;
-+				return 0;
-+			}
-+		}
-+	}
-+
-+	if (verbose)
-+		printf("Required parameter '%s' not specified\n", term->config);
-+
-+	return -1;
-+}
++#define REQUEST_NAME entitled_capped_uncapped_donated_idle_timebase_by_partition
++#define REQUEST_NUM 0x20
++#define REQUEST_IDX_KIND sibling_part_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	8,	partition_id)
++	__count(0x8,	8,	entitled_cycles)
++	__count(0x10,	8,	consumed_capped_cycles)
++	__count(0x18,	8,	consumed_uncapped_cycles)
++	__count(0x20,	8,	cycles_donated)
++	__count(0x28,	8,	purr_idle_cycles)
++)
++#include I(REQUEST_END)
 +
 +/*
-  * Setup one of config[12] attr members based on the
-  * user input data - term parameter.
-  */
- static int pmu_config_term(struct list_head *formats,
- 			   struct perf_event_attr *attr,
--			   struct parse_events_term *term)
-+			   struct parse_events_term *term,
-+			   struct list_head *head_terms)
- {
- 	struct perf_pmu_format *format;
- 	__u64 *vp;
-+	__u64 val;
++ * Not avaliable for counter_info_version >= 0x8, use
++ * run_instruction_cycles_by_partition(0x100) instead.
++ */
++#define REQUEST_NAME run_instructions_run_cycles_by_partition
++#define REQUEST_NUM 0x30
++#define REQUEST_IDX_KIND sibling_part_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	8,	partition_id)
++	__count(0x8,	8,	instructions_completed)
++	__count(0x10,	8,	cycles)
++)
++#include I(REQUEST_END)
 +
+ #define REQUEST_NAME system_performance_capabilities
+ #define REQUEST_NUM 0x40
+ #define REQUEST_IDX_KIND M1
+@@ -75,5 +102,161 @@ REQUEST(__field(0,	1,	perf_collect_privileged)
+ )
+ #include I(REQUEST_END)
+ 
++#define REQUEST_NAME processor_bus_utilization_abc_links
++#define REQUEST_NUM 0x50
++#define REQUEST_IDX_KIND hw_chip_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	total_link_cycles)
++	__count(0x18,	8,	idle_cycles_for_a_link)
++	__count(0x20,	8,	idle_cycles_for_b_link)
++	__count(0x28,	8,	idle_cycles_for_c_link)
++	__array(0x30,	0x20,	reserved2)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME processor_bus_utilization_wxyz_links
++#define REQUEST_NUM 0x60
++#define REQUEST_IDX_KIND hw_chip_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	total_link_cycles)
++	__count(0x18,	8,	idle_cycles_for_w_link)
++	__count(0x20,	8,	idle_cycles_for_x_link)
++	__count(0x28,	8,	idle_cycles_for_y_link)
++	__count(0x30,	8,	idle_cycles_for_z_link)
++	__array(0x38,	0x28,	reserved2)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME processor_bus_utilization_gx_links
++#define REQUEST_NUM 0x70
++#define REQUEST_IDX_KIND hw_chip_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	gx0_in_address_cycles)
++	__count(0x18,	8,	gx0_in_data_cycles)
++	__count(0x20,	8,	gx0_in_retries)
++	__count(0x28,	8,	gx0_in_bus_cycles)
++	__count(0x30,	8,	gx0_in_cycles_total)
++	__count(0x38,	8,	gx0_out_address_cycles)
++	__count(0x40,	8,	gx0_out_data_cycles)
++	__count(0x48,	8,	gx0_out_retries)
++	__count(0x50,	8,	gx0_out_bus_cycles)
++	__count(0x58,	8,	gx0_out_cycles_total)
++	__count(0x60,	8,	gx1_in_address_cycles)
++	__count(0x68,	8,	gx1_in_data_cycles)
++	__count(0x70,	8,	gx1_in_retries)
++	__count(0x78,	8,	gx1_in_bus_cycles)
++	__count(0x80,	8,	gx1_in_cycles_total)
++	__count(0x88,	8,	gx1_out_address_cycles)
++	__count(0x90,	8,	gx1_out_data_cycles)
++	__count(0x98,	8,	gx1_out_retries)
++	__count(0xA0,	8,	gx1_out_bus_cycles)
++	__count(0xA8,	8,	gx1_out_cycles_total)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME processor_bus_utilization_mc_links
++#define REQUEST_NUM 0x80
++#define REQUEST_IDX_KIND hw_chip_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	hw_chip_id)
++	__array(0x4,	0xC,	reserved1)
++	__count(0x10,	8,	mc0_frames)
++	__count(0x18,	8,	mc0_reads)
++	__count(0x20,	8,	mc0_write)
++	__count(0x28,	8,	mc0_total_cycles)
++	__count(0x30,	8,	mc1_frames)
++	__count(0x38,	8,	mc1_reads)
++	__count(0x40,	8,	mc1_writes)
++	__count(0x48,	8,	mc1_total_cycles)
++)
++#include I(REQUEST_END)
++
++/* Processor_config (0x90) skipped, no counters */
++/* Current_processor_frequency (0x91) skipped, no counters */
++
++#define REQUEST_NAME processor_core_utilization
++#define REQUEST_NUM 0x94
++#define REQUEST_IDX_KIND phys_processor_idx
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	4,	phys_processor_idx)
++	__field(0x4,	4,	hw_processor_id)
++	__count(0x8,	8,	cycles_across_any_thread)
++	__count(0x10,	8,	timebase_at_collection)
++	__count(0x18,	8,	purr_cycles)
++	__count(0x20,	8,	sum_of_cycles_across_all_threads)
++	__count(0x28,	8,	instructions_completed)
++)
++#include I(REQUEST_END)
++
++/* Processor_core_power_mode (0x95) skipped, no counters */
++/* Affinity_domain_information_by_virtual_processor (0xA0) skipped,
++ *	no counters */
++/* Affinity_domain_information_by_domain (0xB0) skipped, no counters */
++/* Affinity_domain_information_by_partition (0xB1) skipped, no counters */
++/* Physical_memory_info (0xC0) skipped, no counters */
++/* Processor_bus_topology (0xD0) skipped, no counters */
++
++#define REQUEST_NAME partition_hypervisor_queuing_times
++#define REQUEST_NUM 0xE0
++#define REQUEST_IDX_KIND partition_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	2, partition_id)
++	__array(0x2,	6, reserved1)
++	__count(0x8,	8, time_waiting_for_entitlement)
++	__count(0x10,	8, times_waited_for_entitlement)
++	__count(0x18,	8, time_waiting_for_phys_processor)
++	__count(0x20,	8, times_waited_for_phys_processor)
++	__count(0x28,	8, dispatches_on_home_core)
++	__count(0x30,	8, dispatches_on_home_primary_affinity_domain)
++	__count(0x38,	8, dispatches_on_home_secondary_affinity_domain)
++	__count(0x40,	8, dispatches_off_home_secondary_affinity_domain)
++	__count(0x48,	8, dispatches_on_dedicated_processor_donating_cycles)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME system_hypervisor_times
++#define REQUEST_NUM 0xF0
++#define REQUEST_IDX_KIND M1
++#include I(REQUEST_BEGIN)
++REQUEST(__count(0,	8,	time_spent_to_dispatch_virtual_processors)
++	__count(0x8,	8,	time_spent_processing_virtual_processor_timers)
++	__count(0x10,	8,	time_spent_managing_partitions_over_entitlement)
++	__count(0x18,	8,	time_spent_on_system_managment)
++)
++#include I(REQUEST_END)
++
++#define REQUEST_NAME system_tlbie_count_and_time
++#define REQUEST_NUM 0xF4
++#define REQUEST_IDX_KIND M1
++#include I(REQUEST_BEGIN)
++REQUEST(__count(0,	8,	tlbie_instructions_issued)
 +	/*
-+	 * If this is a parameter we've already used for parameterized-eval,
-+	 * skip it in normal eval.
++	 * FIXME: The spec says the offset here is 0x10, which I suspect
++	 *	  is wrong.
 +	 */
-+	if (term->used)
-+		return 0;
- 
- 	/*
--	 * Support only for hardcoded and numnerial terms.
- 	 * Hardcoded terms should be already in, so nothing
- 	 * to be done for them.
- 	 */
- 	if (parse_events__is_hardcoded_term(term))
- 		return 0;
- 
--	if (term->type_val != PARSE_EVENTS__TERM_TYPE_NUM)
--		return -EINVAL;
--
- 	format = pmu_find_format(formats, term->config);
--	if (!format)
-+	if (!format) {
-+		if (verbose)
-+			printf("Invalid event/parameter '%s'\n", term->config);
- 		return -EINVAL;
-+	}
- 
- 	switch (format->value) {
- 	case PERF_PMU_FORMAT_VALUE_CONFIG:
-@@ -544,11 +581,16 @@ static int pmu_config_term(struct list_head *formats,
- 	}
- 
- 	/*
--	 * XXX If we ever decide to go with string values for
--	 * non-hardcoded terms, here's the place to translate
--	 * them into value.
-+	 * Either directly use a numeric term, or try to translate string terms
-+	 * using event parameters.
- 	 */
--	*vp |= pmu_format_value(format->bits, term->val.num);
-+	if (term->type_val == PARSE_EVENTS__TERM_TYPE_NUM)
-+		val = term->val.num;
-+	else
-+		if (pmu_resolve_param_term(term, head_terms, &val))
-+			return -EINVAL;
++	__count(0x8,	8,	time_spent_issuing_tlbies)
++)
++#include I(REQUEST_END)
 +
-+	*vp |= pmu_format_value(format->bits, val);
- 	return 0;
- }
- 
-@@ -559,7 +601,7 @@ int perf_pmu__config_terms(struct list_head *formats,
- 	struct parse_events_term *term;
- 
- 	list_for_each_entry(term, head_terms, list)
--		if (pmu_config_term(formats, attr, term))
-+		if (pmu_config_term(formats, attr, term, head_terms))
- 			return -EINVAL;
- 
- 	return 0;
++#define REQUEST_NAME partition_instruction_count_and_time
++#define REQUEST_NUM 0x100
++#define REQUEST_IDX_KIND partition_id
++#include I(REQUEST_BEGIN)
++REQUEST(__field(0,	2,	partition_id)
++	__array(0x2,	0x6,	reserved1)
++	__count(0x8,	8,	instructions_performed)
++	__count(0x10,	8,	time_collected)
++)
++#include I(REQUEST_END)
++
++/* set_mmcrh (0x80001000) skipped, no counters */
++/* retrieve_hpmcx (0x80002000) skipped, no counters */
++
+ #undef M1
+ #include "req-gen/_end.h"
 -- 
 1.7.9.5
 
