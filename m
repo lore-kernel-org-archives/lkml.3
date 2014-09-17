@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaIQKzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 06:55:16 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:11313 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751564AbaIQKzO (ORCPT
+	id S1755149AbaIQK4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 06:56:48 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:47898 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754118AbaIQK4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 06:55:14 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-9.tower-38.messagelabs.com!1410951278!12623533!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.3; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 17 Sep 2014 12:54:39 +0200
-Date: Wed, 17 Sep 2014 12:54:33 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: Re: [PATCH v3] tty: serial: men_z135_uart: Fix driver for changes in
- hardware
-Message-ID: <20140917105432.GA17369@jtlinux>
-References: <1410845068-2954-1-git-send-email-johannes.thumshirn@men.de>
+	Wed, 17 Sep 2014 06:56:46 -0400
+Message-ID: <541968D8.2060609@ahsoftware.de>
+Date: Wed, 17 Sep 2014 12:56:24 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1410845068-2954-1-git-send-email-johannes.thumshirn@men.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+To: Robin Gong <b38343@freescale.com>
+CC: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fugang.duan@freescale.com
+Subject: Re: [PATCH v2] ARM: dts: imx6dl: disable dma support for spi on i.mx6dl
+References: <1410327012-31185-1-git-send-email-b38343@freescale.com> <5416D26A.4080707@ahsoftware.de> <20140916035204.GB20800@Robin-OptiPlex-780> <541805E3.6080003@ahsoftware.de> <20140917085106.GB6369@Robin-OptiPlex-780>
+In-Reply-To: <20140917085106.GB6369@Robin-OptiPlex-780>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 07:24:28AM +0200, Johannes Thumshirn wrote:
-> 16z135 IP Core has changed so the driver needs to be updated to respect
-> these changes. The following changes have been made:
->
-> * Don't invert the 16z135 modem status register when reading.
-> * Add module parameter to configure the (baud rate dependent) RX timeout.
->   Character timeout in seconds = (timeout_reg * baud_reg * 4)/freq_reg.
-> * Enable the handling of UART core's automatic flow control feature.
->   When AFE is active disable generation of modem status IRQs.
-> * Rework the handling of IRQs to be conform with newer FPGA versions and
->   take precautions not to miss an interrupt because of the destructive read
->   of the IIR register.
-> * Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not
->   stat_reg[7:0]
->
-> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-> ---
-> Changes to v1:
-> Incorporated comments of Jiri Slaby:
->
-> * Timeout value is documented in module parameter description
-> * rx_timeout variable is uint
-> * Changed IRQ handled variable to bool
-> * Changed if statement for RDA or CTI IRQ
->
-> Changes to v2:
-> Correct men_z135_handle_modem_status(), MSR is stat_reg[15:8] not stat_reg[7:0]
+Am 17.09.2014 10:51, schrieb Robin Gong:
+> On Tue, Sep 16, 2014 at 11:41:55AM +0200, Alexander Holler wrote:
+>> Am 16.09.2014 05:52, schrieb Robin Gong:
+>>> On Mon, Sep 15, 2014 at 01:50:02PM +0200, Alexander Holler wrote:
+>>>> Am 10.09.2014 07:30, schrieb Robin Gong:
+>>>>> There is one weird data in rxfifo after one full rx/tx transfer
+>>>>> done sometimes. It looks a design issue and hard to workaround
+>>>>> totally, so disable dma functhion here. And will re-enable it
+>>>>> once the root cause found.
+>>>>
+>>>> Hmm, I experience problems with DMA too but on uart3. I'm using the same
+>>>> workaround for the uart (I've just commented out the dma entries in the DT).
+>>>> The problem manifests itself here such, that brcm_patchram_plus
+>>>> hangs while uploading the firmware to a BCM4330 connected at uart3
+>>>> (reproducible).
 
-We've found a bug in this patch during our tests so please do not en-queue it yet.
+(...)
 
-Sorry for the inconvenience.
+> Yes, we just have fixed the BT issue over high speed UART last month. Suggest
+> you trying our patches based on v3.10.
 
-Thanks,
-Johannes
+Thanks for the pointer. Will look if I will find these patches.
+
+Regards,
+
+Alexander Holler
+
