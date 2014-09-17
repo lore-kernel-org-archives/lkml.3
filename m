@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaIQEBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 00:01:44 -0400
-Received: from regular1.263xmail.com ([211.150.99.130]:53923 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaIQEAW (ORCPT
+	id S1751868AbaIQEE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 00:04:27 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:62543 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaIQEE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 00:00:22 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <52bd69c8c9f1530371c42701e413e265>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, huangtao@rock-chips.com, cf@rock-chips.com,
-        dianders@chromium.org, dtor@chromium.org, dmitry.torokhov@gmail.com,
-        addy.ke@rock-chips.com, zyf@rock-chips.com, cjf@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v5 3/4] ARM: dts: add main Thermal info to rk3288
-Date: Wed, 17 Sep 2014 11:59:12 +0800
-Message-Id: <1410926353-15674-4-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410926353-15674-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1410926353-15674-1-git-send-email-caesar.wang@rock-chips.com>
+	Wed, 17 Sep 2014 00:04:26 -0400
+Message-ID: <54190846.9060601@martingkelly.com>
+Date: Tue, 16 Sep 2014 21:04:22 -0700
+From: Martin Kelly <martin@martingkelly.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>, x86@kernel.org, mingo@redhat.com
+CC: vishwesh.m.rudramuni@intel.com, joe@perches.com, hpa@linux.intel.com,
+        linux-kernel@vger.kernel.org, Martin Kelly <martkell@amazon.com>
+Subject: Re: [PATCH v2] x86/pmc_atom: Fix warning when CONFIG_DEBUG_FS=n
+References: <1410914975-23285-1-git-send-email-martin@martingkelly.com> <5418ED4A.2030607@linux.intel.com> <5418FDEC.40201@martingkelly.com> <541903A9.7090301@linux.intel.com>
+In-Reply-To: <541903A9.7090301@linux.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- arch/arm/boot/dts/rk3288.dtsi | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+On 09/16/2014 08:44 PM, Li, Aubrey wrote:
+> 
+> Why do you want to call pmc_dbgfs_register() anyway even if
+> CONFIG_DEBUG_FS=n?
+> 
+> Thanks,
+> -Aubrey
+> 
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 36be7bb..ba7ad94 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -215,6 +215,17 @@
- 		status = "disabled";
- 	};
- 
-+	tsadc: tsadc@ff280000 {
-+		compatible = "rockchip,rk3288-tsadc";
-+		reg = <0xff280000 0x100>;
-+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+		clock-names = "tsadc", "apb_pclk";
-+		pinctrl-names = "default";
-+		pinctrl-1 = <&otp_out>;
-+		status = "disabled";
-+	};
-+
- 	usb_host0_ehci: usb@ff500000 {
- 		compatible = "generic-ehci";
- 		reg = <0xff500000 0x100>;
-@@ -611,5 +622,12 @@
- 				rockchip,pins = <5 15 3 &pcfg_pull_none>;
- 			};
- 		};
-+
-+		tsadc {
-+			otp_out: otp-out {
-+				rockchip,pins = <0 10 RK_FUNC_1 &pcfg_pull_up>;
-+			};
-+		};
-+
- 	};
- };
--- 
-1.9.1
+The compiler will optimize away the call when CONFIG_DEBUG_FS=n, as the function body is just "return 0". Since the line following the call is "if (ret)" and since ret will always be 0, the compiler will likely optimize away the branch as well.
 
+The reasoning for doing it this way is that it gives you a uniform code flow, which is easier to follow and reason about than having to think about branching #ifdefs sprinkled throughout the functions. The link I pasted gives full detail, but here's a snippet from Linus:
 
+"Code cluttered with ifdefs is difficult to read and maintain.  Don't do
+it.  Instead, put your ifdefs in a header, and conditionally define
+'static inline' functions, or macros, which are used in the code.
+Let the compiler optimize away the "no-op" case."
+
+https://www.kernel.org/doc/Documentation/SubmittingPatches
+(section 2.2, "#ifdefs are ugly")
+
+In addition, Ingo Molnar suggested that I revise the patch in this way.
+
+Thanks,
+Martin
