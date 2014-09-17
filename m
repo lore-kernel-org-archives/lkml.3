@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259AbaIQV0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 17:26:54 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:34221 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115AbaIQV0w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 17:26:52 -0400
-Date: Wed, 17 Sep 2014 14:26:47 -0700
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Tao Huang <huangtao@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        zhangqing <zhangqing@rock-chips.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regulator: st-pwm: get voltage and duty table from
- dts
-Message-ID: <20140917212647.GR30918@lee--X1>
-References: <1410959280-29662-1-git-send-email-zyw@rock-chips.com>
- <1410959280-29662-2-git-send-email-zyw@rock-chips.com>
- <CAD=FV=XpwK+HzybKMck8KJ6VDYt3h5LHXtkU=RCa4DUX0t-MGg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=XpwK+HzybKMck8KJ6VDYt3h5LHXtkU=RCa4DUX0t-MGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757269AbaIQV11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 17:27:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58213 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756882AbaIQVZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 17:25:35 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Chanho Park <chanho61.park@samsung.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 15/20] perf tools: define _DEFAULT_SOURCE for glibc_2.20
+Date: Wed, 17 Sep 2014 18:24:18 -0300
+Message-Id: <1410989063-14207-16-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1410989063-14207-1-git-send-email-acme@kernel.org>
+References: <1410989063-14207-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Sep 2014, Doug Anderson wrote:
-> On Wed, Sep 17, 2014 at 6:07 AM, Chris Zhong <zyw@rock-chips.com> wrote:
-> > Get voltage & duty table from device tree might be better, other platforms can also use this
-> > driver without any modify.
-> >
-> > Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> 
-> Why didn't you CC Lee Jones on your patches?  He's the author of the
-> driver and should certainly be involved in reviewing your patches.
-> 
-> CCed him now.
+From: Chanho Park <chanho61.park@samsung.com>
 
-Thanks Doug.
+_BSD_SOURCE was deprecated in favour of _DEFAULT_SOURCE since glibc
+2.20[1]. To avoid build warning on glibc2.20, _DEFAULT_SOURCE should
+also be defined.
 
-> >  drivers/regulator/Kconfig  |    1 -
-> >  drivers/regulator/st-pwm.c |   80 +++++++++++++++++++++++---------------------
-> >  2 files changed, 42 insertions(+), 39 deletions(-)
-> >
-> > diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> > index fb32bab..06a9632 100644
-> > --- a/drivers/regulator/Kconfig
-> > +++ b/drivers/regulator/Kconfig
-> > @@ -495,7 +495,6 @@ config REGULATOR_S5M8767
-> >
-> >  config REGULATOR_ST_PWM
-> >         tristate "STMicroelectronics PWM voltage regulator"
+[1]: https://sourceware.org/glibc/wiki/Release/2.20
 
-It's okay to generify the driver and remove references to ST.
+Signed-off-by: Chanho Park <chanho61.park@samsung.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1410487817-13403-1-git-send-email-chanho61.park@samsung.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/util.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-> > -       depends on ARCH_STI
-> 
-> Seems like you should add some wording saying that this driver is also
-> useful for other PWM-based voltage regulators.
-
-In the commit message yes, I wouldn't worry about doing that here.
-
-> >         help
-> >          This driver supports ST's PWM controlled voltage regulators.
-> >
-> > diff --git a/drivers/regulator/st-pwm.c b/drivers/regulator/st-pwm.c
-> > index 5ea78df..877381b 100644
-> > --- a/drivers/regulator/st-pwm.c
-> > +++ b/drivers/regulator/st-pwm.c
-
-In order to avoid confusion to future users, rename the file too.
-
-[...]
-
-> > -static const struct regulator_desc b2105_desc = {
-> > +static struct regulator_desc b2105_desc = {
-> >         .name           = "b2105-pwm-regulator",
-
-Generify.
-
-> >         .ops            = &st_pwm_regulator_voltage_ops,
-> >         .type           = REGULATOR_VOLTAGE,
-> >         .owner          = THIS_MODULE,
-> > -       .n_voltages     = ARRAY_SIZE(b2105_duty_cycle_table),
-> >         .supply_name    = "pwm",
-> >  };
-> >
-> > -static const struct st_pwm_regulator_pdata b2105_info = {
-> > -       .desc             = &b2105_desc,
-> > -       .duty_cycle_table = b2105_duty_cycle_table,
-> > -};
-> > -
-> >  static const struct of_device_id st_pwm_of_match[] = {
-> > -       { .compatible = "st,b2105-pwm-regulator", .data = &b2105_info, },
-> > +       { .compatible = "st,b2105-pwm-regulator" },
-
-Remove and replace with "pwm-regulator".
-
-As we're no longer matching, you can move this down to the bottom.
-
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 6ad2b5e3d5bb..80bfdaa0e2a4 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -39,6 +39,8 @@
+ 
+ #define _ALL_SOURCE 1
+ #define _BSD_SOURCE 1
++/* glibc 2.20 deprecates _BSD_SOURCE in favour of _DEFAULT_SOURCE */
++#define _DEFAULT_SOURCE 1
+ #define HAS_BOOL
+ 
+ #include <unistd.h>
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.3
+
