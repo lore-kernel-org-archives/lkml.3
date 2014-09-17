@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851AbaIQUOp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:14:45 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47260 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085AbaIQUOn (ORCPT
+	id S1756866AbaIQUQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:16:15 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:60170 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391AbaIQUQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 16:14:43 -0400
-Date: Wed, 17 Sep 2014 13:14:36 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        Frans Klaver <fransklaver@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] eeepc-laptop: simplify parse_arg()
-Message-ID: <20140917201435.GA8615@vmdeb7>
-References: <20140906021757.GA9197@vmdeb7>
- <7288841.ayNsq2yeGO@vostro.rjw.lan>
- <1410252608.22255.5.camel@x220>
- <20140910033304.GB39541@vmdeb7>
- <CAH6sp9NtLDG4AvpTF7KzxwxVhrj8ZzNLugwoU5=YrLp65AptQQ@mail.gmail.com>
- <20140910164916.GA48285@vmdeb7>
- <1410379520.11097.18.camel@x220>
- <20140911223739.GB18425@vmdeb7>
- <20140916234543.GA22408@vmdeb7>
- <1410980571.10248.6.camel@x220>
+	Wed, 17 Sep 2014 16:16:13 -0400
+Message-ID: <5419EC19.9050100@kernel.dk>
+Date: Wed, 17 Sep 2014 14:16:25 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1410980571.10248.6.camel@x220>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>
+CC: Christian Borntraeger <borntraeger@de.ibm.com>,
+        rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, KVM list <kvm@vger.kernel.org>,
+        Virtualization List <virtualization@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: blk-mq crash under KVM in multiqueue block code (with virtio-blk
+ and ext4)
+References: <541178D6.6010303@de.ibm.com>	<CACVXFVO7Oo9GeagPhejngfoeySxOP4EqWz_GN6kYv2956-Wtxg@mail.gmail.com>	<541352ED.7030800@de.ibm.com>	<54193F4F.9060508@de.ibm.com>	<20140917140034.10125d00@thinkpad-w530>	<20140917215226.426f6ce7@tom-ThinkPad-T410>	<54199923.9010201@kernel.dk>	<CACVXFVPh3SSp3V7hHJaPnp-koyh7n7hqf+Ugv9CMg2gO_8MwXg@mail.gmail.com> <20140917210954.6e622fb5@thinkpad-w530>
+In-Reply-To: <20140917210954.6e622fb5@thinkpad-w530>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 09:02:51PM +0200, Paul Bolle wrote:
-> parse_arg() has three possible return values:
->     -EINVAL if sscanf(), in short, fails;
->     zero if "count" is zero; and
->     "count" in all other cases
+On 09/17/2014 01:09 PM, David Hildenbrand wrote:
+>>> 0. That should already be sufficient to hinder blk_mq_tag_to_rq and the calling
+>>> method to do the wrong thing.
+>>
+>> Yes, clearing rq->cmd_flags should be enough.
+>>
+>> And looks better to move rq initialization to __blk_mq_free_request()
+>> too, otherwise timeout still may see old cmd_flags and rq->q before
+>> rq's new initialization.
 > 
-> But "count" will never be zero. See, parse_arg() is called by the
-> various store functions. And the callchain of these functions starts
-> with sysfs_kf_write(). And that function checks for a zero "count". So
-> we can stop checking for a zero "count", drop the "count" argument
-> entirely, and transform parse_arg() into a function that returns zero on
-> success or a negative error. That, in turn, allows to make those store
-> functions just return "count" on success. The net effect is that the
-> code becomes a bit easier to understand.
-> 
-> A nice side effect is that this GCC warning is silenced too:
->     drivers/platform/x86/eeepc-laptop.c: In function ‘store_sys_acpi’:
->     drivers/platform/x86/eeepc-laptop.c:279:10: warning: ‘value’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->       int rv, value;
-> 
-> Which is, of course, the reason to have a look at parse_arg().
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Still build tested only, but now on top of v3.17-rc5. Has Frans tested
-> writing zero length values to these sysfs files?
-> 
-> v3: store_sys_acpi() again returns -EIO if set_acpi() fails.
-> 
-> v2: let store_sys_acpi() return whatever error set_acpi() returns
-> instead of remapping it to EIO. The new line about that in the commit
-> explanation is silly, but I couldn't come up with a better explanation.
+> Yes, __blk_mq_free_request() should also reset at least rq->cmd_flags, and I
+> think we can remove the initialization from  __blk_mq_alloc_request().
 
-Queued, thanks.
+And then we come full circle, that's how the code originally started out
+(and it is the saner way to do things). So yes, I'd greatly applaud that.
+
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
+Jens Axboe
+
