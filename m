@@ -1,134 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993AbaIQUAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 16:00:50 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:49403 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756865AbaIQT7i (ORCPT
+	id S1756974AbaIQUAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:00:49 -0400
+Received: from mail-ig0-f201.google.com ([209.85.213.201]:45871 "EHLO
+	mail-ig0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869AbaIQT7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:59:38 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linux-foundation.org, arnd@arndb.de
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 1/5] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-Date: Wed, 17 Sep 2014 13:48:37 -0600
-Message-Id: <1410983321-15162-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1410983321-15162-1-git-send-email-toshi.kani@hp.com>
-References: <1410983321-15162-1-git-send-email-toshi.kani@hp.com>
+	Wed, 17 Sep 2014 15:59:39 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v4 7/9] ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
+Date: Wed, 17 Sep 2014 12:59:28 -0700
+Message-Id: <1410983970-7043-8-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1410983970-7043-1-git-send-email-abrestic@chromium.org>
+References: <1410983970-7043-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets WT to the PA7 slot in the PAT MSR when the processor
-is not affected by the PAT errata.  The PA7 slot is chosen to further
-minimize the risk of using the PAT bit as the PA3 slot is UC and is
-not currently used.
+Add nodes for the Tegra XUSB mailbox and Tegra xHCI controller and
+add the PHY mailbox channel to the XUSB padctl node.
 
-The following Intel processors are affected by the PAT errata.
-
-   errata               cpuid
-   ----------------------------------------------------
-   Pentium 2, A52       family 0x6, model 0x5
-   Pentium 3, E27       family 0x6, model 0x7, 0x8
-   Pentium 3 Xenon, G26 family 0x6, model 0x7, 0x8, 0xa
-   Pentium M, Y26       family 0x6, model 0x9
-   Pentium M 90nm, X9   family 0x6, model 0xd
-   Pentium 4, N46       family 0xf, model 0x0
-
-Instead of making sharp boundary checks, this patch makes conservative
-checks to exclude all Pentium 2, 3, M and 4 family processors.  For
-such processors, _PAGE_CACHE_MODE_WT is redirected to UC- per the
-default setup in __cachemode2pte_tbl[].
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
- arch/x86/mm/pat.c |   64 +++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 49 insertions(+), 15 deletions(-)
+No changes from v3.
+Changes from v2:
+ - Dropped channel specifier from mailbox bindings.
+ - Added mbox-names properties.
+Changes from v1:
+ - Updated to use common mailbox bindings.
+ - Added remaining clocks/resets.
+---
+ arch/arm/boot/dts/tegra124.dtsi | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index ff31851..db687c3 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -133,6 +133,7 @@ void pat_init(void)
- {
- 	u64 pat;
- 	bool boot_cpu = !boot_pat_state;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
+diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
+index 03916ef..89afd45 100644
+--- a/arch/arm/boot/dts/tegra124.dtsi
++++ b/arch/arm/boot/dts/tegra124.dtsi
+@@ -495,11 +495,52 @@
+ 		status = "disabled";
+ 	};
  
- 	if (!pat_enabled)
- 		return;
-@@ -153,21 +154,54 @@ void pat_init(void)
- 		}
- 	}
++	usb@0,70090000 {
++		compatible = "nvidia,tegra124-xhci";
++		reg = <0x0 0x70090000 0x0 0x8000>,
++		      <0x0 0x70098000 0x0 0x1000>,
++		      <0x0 0x70099000 0x0 0x1000>;
++		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
++			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
++			 <&tegra_car TEGRA124_CLK_CLK_M>,
++			 <&tegra_car TEGRA124_CLK_PLL_E>;
++		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
++			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
++			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
++			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
++		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
++			 <&tegra_car 143>;
++		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
++		status = "disabled";
++	};
++
++	xusb_mbox: mailbox@0,70098000 {
++		compatible = "nvidia,tegra124-xusb-mbox";
++		reg = <0x0 0x70098000 0x0 0x1000>;
++		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
++
++		#mbox-cells = <0>;
++	};
++
+ 	padctl: padctl@0,7009f000 {
+ 		compatible = "nvidia,tegra124-xusb-padctl";
+ 		reg = <0x0 0x7009f000 0x0 0x1000>;
+ 		resets = <&tegra_car 142>;
+ 		reset-names = "padctl";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
  
--	/* Set PWT to Write-Combining. All other bits stay the same */
--	/*
--	 * PTE encoding used in Linux:
--	 *      PAT
--	 *      |PCD
--	 *      ||PWT
--	 *      |||
--	 *      000 WB		_PAGE_CACHE_WB
--	 *      001 WC		_PAGE_CACHE_WC
--	 *      010 UC-		_PAGE_CACHE_UC_MINUS
--	 *      011 UC		_PAGE_CACHE_UC
--	 * PAT bit unused
--	 */
--	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
--	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
-+	    (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
-+	     ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
-+		/*
-+		 * PAT support with the lower four entries. Intel Pentium 2,
-+		 * 3, M, and 4 are affected by PAT errata, which makes the
-+		 * upper four entries unusable.  We do not use the upper four
-+		 * entries for all the affected processor families for safe.
-+		 *
-+		 *  PTE encoding used in Linux:
-+		 *      PAT
-+		 *      |PCD
-+		 *      ||PWT  PAT
-+		 *      |||    slot
-+		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-+		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-+		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-+		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-+		 * PAT bit unused
-+		 *
-+		 * NOTE: When WT or WP is used, it is redirected to UC- per
-+		 * the default setup in __cachemode2pte_tbl[].
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	} else {
-+		/*
-+		 * PAT full support. WT is set to slot 7, which minimizes
-+		 * the risk of using the PAT bit as slot 3 is UC and is
-+		 * currently unused. Slot 4 should remain as reserved.
-+		 *
-+		 *  PTE encoding used in Linux:
-+		 *      PAT
-+		 *      |PCD
-+		 *      ||PWT  PAT
-+		 *      |||    slot
-+		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-+		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-+		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-+		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-+		 *      100    4    <reserved>
-+		 *      101    5    <reserved>
-+		 *      110    6    <reserved>
-+		 *      111    7    WT : _PAGE_CACHE_MODE_WT
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
-+	}
- 
- 	/* Boot CPU check */
- 	if (!boot_pat_state)
+ 		#phy-cells = <1>;
+ 	};
+-- 
+2.1.0.rc2.206.gedb03e5
+
