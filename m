@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466AbaIQBFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 21:05:10 -0400
-Received: from ozlabs.org ([103.22.144.67]:40092 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970AbaIQBFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 21:05:08 -0400
-Date: Wed, 17 Sep 2014 11:04:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anish Bhatt <anish@chelsio.com>
-Subject: linux-next: build failure after merge of the net tree
-Message-ID: <20140917110454.399a7841@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1754583AbaIQBJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 21:09:26 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51314 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaIQBJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Sep 2014 21:09:25 -0400
+Date: Tue, 16 Sep 2014 18:09:23 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Chanho Min <chanho.min@lge.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Michael Opdenacker <michael@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: timer-sp: ensure interrupt is cleared at
+ sp804_clockevents_init
+Message-ID: <20140917010923.GB10233@codeaurora.org>
+References: <1410914571-8388-1-git-send-email-chanho.min@lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/zx=4EZDC=iQqMnuJaLKP/RQ"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410914571-8388-1-git-send-email-chanho.min@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zx=4EZDC=iQqMnuJaLKP/RQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 09/17, Chanho Min wrote:
+> When sp804 is registerd as clock event device, it may not be added to
 
-Hi all,
+s/registerd/registered/
 
-After merging the net tree, today's linux-next build (powerpc ppc64_defconf=
-ig)
-failed like this:
+> tick device if the higher rated device is already registerd. In this case,
 
-warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
-& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
- has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
-40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
-unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
-BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
-NET_VENDOR_IBM)
-warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCSI_=
-BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has u=
-nmet direct dependencies (SCSI && NET)
-warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
- && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
-nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (LIBFC && SCSI_IBMVFC && SCSI_QLA_FC && SCSI_LPFC && ZFCP && SCSI_=
-BFA_FC && SCSI_CHELSIO_FCOE && FUSION_FC) selects SCSI_FC_ATTRS which has u=
-nmet direct dependencies (SCSI && NET)
-warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 4=
-40GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has =
-unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER &=
-& 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which=
- has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects I=
-BM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && =
-NET_VENDOR_IBM)
-warning: (PPC_CELL_NATIVE && AKEBONO && 440EPX && 440GRX && 440GX && 440SPe=
- && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has u=
-nmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM)
-drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_event':
-drivers/scsi/scsi_transport_fc.c:543:7: error: 'scsi_nl_sock' undeclared (f=
-irst use in this function)
-  if (!scsi_nl_sock) {
-       ^
-drivers/scsi/scsi_transport_fc.c:543:7: note: each undeclared identifier is=
- reported only once for each function it appears in
-drivers/scsi/scsi_transport_fc.c: In function 'fc_host_post_vendor_event':
-drivers/scsi/scsi_transport_fc.c:611:7: error: 'scsi_nl_sock' undeclared (f=
-irst use in this function)
-  if (!scsi_nl_sock) {
-       ^
+s/registerd/registered/
 
-This is a bit different to yesterday's failure but I assume it is still
-related to commit 5d6be6a5d486 ("scsi_netlink : Make SCSI_NETLINK
-dependent on NET instead of selecting NET").
+> for uncertan reason, inetrrupt is occured without event_handler it cause
 
-I used the net tree from next-20140915 again today.
+s/inetrrupt/interrupt/
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> kernel panic. So Interrupt should be cleared before clockevent is registered.
+> 
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
+> ---
+>  arch/arm/common/timer-sp.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
+> index fd6bff0..b658873 100644
+> --- a/arch/arm/common/timer-sp.c
+> +++ b/arch/arm/common/timer-sp.c
+> @@ -205,6 +205,8 @@ void __init __sp804_clockevents_init(void __iomem *base, unsigned int irq, struc
+>  
+>  	writel(0, base + TIMER_CTRL);
+>  
+> +	/* Ensure interrupt is cleared */
+> +	writel(1, clkevt_base + TIMER_INTCLR);
+>  	setup_irq(irq, &sp804_timer_irq);
+>  	clockevents_config_and_register(evt, rate, 0xf, 0xffffffff);
 
---Sig_/zx=4EZDC=iQqMnuJaLKP/RQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Or just flip the order of clockevents_config_and_register() and
+setup_irq()? We've done this in other clockevents drivers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUGN5BAAoJEMDTa8Ir7ZwVs9AP/3CUdAa8BmdQDdkkoVbdoXsk
-40X/dl/60zmZWes14vLjFWlVwFGb0OF6QNpJn4ApA9yAL52vnMdVHB4Lil9iJfGQ
-NI8vdu1WaG/UrercogpbXf+2TKoofKA+UBUxYTB/bkH0w5l6AmZ4pecZg+f9Jhvf
-aasq/99WKd70uvWaQaig6mrbzyIq18zCfvIH5RnLag+R6qFzDcEtAwg98qnuSoOx
-fe/wI+tAg4vgP79jmLb+lmbezCiXqc4Xa+RvVDHxpBkVWCAQw1w/74E6ErEtNDtV
-8c3cJYKC0Q3DnFU1pJcezUa5rvXzSzHtmGXEf3ikfwgGaeQge406uf988/cDg4qD
-Qhl1BA99SPsng78baMNLPMTQor3hVLKSA4AX913p/TgaYneJOXntd/etI2SmCBT2
-dgZ4W3TKWpywxLlsG9mStWVm6nN+m4kuryvm4Ki2bS9qzon4AJcebLYvifve6YeZ
-r5AXooIW7nAFXrqDw0xuEliQCguRsN0cHmdOK2M5EGqB5lHMThBLHS13Rfu+2Fpb
-kEK+qYse0g6F20ub+edlYucljReY+9xT/VYF4ss1/snVdBIe8SzBxdCSRPdViRIp
-CUO5PQS4urFc385RQfYOQN8trbDpYgcynxsK4B4aG5kUTEKaMIo9pTUVLA86phTw
-bmww7ECKL2/L2oD2ySN0
-=aTww
------END PGP SIGNATURE-----
-
---Sig_/zx=4EZDC=iQqMnuJaLKP/RQ--
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
