@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811AbaIQT7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:59:43 -0400
-Received: from mail-pd0-f201.google.com ([209.85.192.201]:54953 "EHLO
-	mail-pd0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836AbaIQT7g (ORCPT
+	id S1757030AbaIQUAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 16:00:53 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:52460 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756858AbaIQT7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:59:36 -0400
+	Wed, 17 Sep 2014 15:59:37 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
@@ -25,9 +25,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH v4 3/9] of: Update Tegra XUSB pad controller binding for USB
-Date: Wed, 17 Sep 2014 12:59:24 -0700
-Message-Id: <1410983970-7043-4-git-send-email-abrestic@chromium.org>
+Subject: [PATCH v4 5/9] of: Add NVIDIA Tegra xHCI controller binding
+Date: Wed, 17 Sep 2014 12:59:26 -0700
+Message-Id: <1410983970-7043-6-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1410983970-7043-1-git-send-email-abrestic@chromium.org>
 References: <1410983970-7043-1-git-send-email-abrestic@chromium.org>
@@ -35,169 +35,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new bindings used for USB support by the Tegra XUSB pad controller.
-This includes additional PHY types, USB-specific pinconfig properties, etc.
+Add device-tree binding documentation for the xHCI controller present
+on Tegra124 and later SoCs.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
+No changes from v3.
 Changes from v2:
- - Added nvidia,otg-hs-curr-level-offset property.
- - Dropped "-otg" from VBUS supplies.
  - Added mbox-names property.
- - Removed extra whitespace.
 Changes from v1:
  - Updated to use common mailbox bindings.
- - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
-   binding.
- - Add #defines for the padctl lanes.
+ - Added remaining XUSB-related clocks and resets.
+ - Updated list of power supplies to be more accurate wrt to the hardware.
 ---
- .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 56 ++++++++++++++++++++--
- include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   | 20 ++++++++
- 2 files changed, 72 insertions(+), 4 deletions(-)
+ .../bindings/usb/nvidia,tegra124-xhci.txt          | 104 +++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-index 2f9c0bd..4a1b9475 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-@@ -21,6 +21,18 @@ Required properties:
-   - padctl
- - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
-   See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
-+- mboxes: Must contain an entry for the XUSB mailbox channel.
-+  See ../mailbox/mailbox.txt for details.
-+- mbox-names: Must include the following entries:
-+  - xusb
+diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+new file mode 100644
+index 0000000..51a7751
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+@@ -0,0 +1,104 @@
++NVIDIA Tegra xHCI controller
++============================
++
++The Tegra xHCI controller supports both USB2 and USB3 interfaces exposed
++by the Tegra XUSB pad controller.
++
++Required properties:
++--------------------
++ - compatible: Should be "nvidia,tegra124-xhci".
++ - reg: Address and length of the register sets.  There should be three
++   entries in the following order: xHCI host registers, FPCI registers, and
++   IPFS registers.
++ - interrupts: xHCI host interrupt.
++ - clocks: Must contain an entry for each entry in clock-names.
++   See ../clock/clock-bindings.txt for details.
++ - clock-names: Must include the following entries:
++    - xusb_host
++    - xusb_host_src
++    - xusb_dev
++    - xusb_dev_src
++    - xusb_falcon_src
++    - xusb_ss
++    - xusb_ss_src
++    - xusb_ss_div2
++    - xusb_hs_src
++    - xusb_fs_src
++    - pll_u_480m
++    - clk_m
++    - pll_e
++ - resets: Must contain an entry for each entry in reset-names.
++   See ../reset/reset.txt for details.
++ - reset-names: Must include the following entries:
++   - xusb_host
++   - xusb_dev
++   - xusb_ss
++   - xusb
++   Note that xusb_dev is the shared reset for xusb_dev and xusb_dev_src and
++   that xusb is the shared reset for xusb_{ss,hs,fs,falcon,host}_src.
++ - mboxes: Must contain an entry for the XUSB mailbox channel.
++   See ../mailbox/mailbox.txt for details.
++ - mbox-names: Must include the following entries:
++   - xusb
 +
 +Optional properties:
-+-------------------
-+- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
-+- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
-+- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
-+  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
-+  of valid values.
- 
- Lane muxing:
- ------------
-@@ -50,6 +62,17 @@ Optional properties:
-   pin or group should be assigned to. Valid values for function names are
-   listed below.
- - nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
-+- nvidia,usb2-port-num: USB2 port (0, 1, or 2) to which the lane is mapped.
-+- nvidia,hsic-strobe-trim: HSIC strobe trimmer value.
-+- nvidia,hsic-rx-strobe-trim: HSIC RX strobe trimmer value.
-+- nvidia,hsic-rx-data-trim: HSIC RX data trimmer value.
-+- nvidia,hsic-tx-rtune-n: HSIC TX RTUNEN value.
-+- nvidia,hsic-tx-rtune-p: HSIC TX RTUNEP value.
-+- nvidia,hsic-tx-slew-n: HSIC TX SLEWN value.
-+- nvidia,hsic-tx-slew-p: HSIC TX SLEWP value.
-+- nvidia,hsic-auto-term: Enables HSIC AUTO_TERM. (0: no, 1: yes)
-+- nvidia,otg-hs-curr-level-offset: Offset to be applied to the pad's fused
-+  HS_CURR_LEVEL value.
- 
- Note that not all of these properties are valid for all lanes. Lanes can be
- divided into three groups:
-@@ -58,18 +81,21 @@ divided into three groups:
- 
-     Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
- 
--    The nvidia,iddq property does not apply to this group.
-+    The nvidia,otg-hs-curr-level-offset property only applies.
- 
-   - ulpi-0, hsic-0, hsic-1:
- 
-     Valid functions for this group are: "snps", "xusb".
- 
--    The nvidia,iddq property does not apply to this group.
-+    The nvidia,hsic-* properties apply only to the pins hsic-{0,1} when
-+    the function is xusb.
- 
-   - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
- 
-     Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
- 
-+    The nvidia,usb2-port-num property only applies and is required when
-+    the function is usb3.
- 
- Example:
- ========
-@@ -82,6 +108,8 @@ SoC file extract:
- 		reg = <0x0 0x7009f000 0x0 0x1000>;
- 		resets = <&tegra_car 142>;
- 		reset-names = "padctl";
++--------------------
++ - phys: Must contain an entry for each entry in phy-names.
++   See ../phy/phy-bindings.txt for details.
++ - phy-names: Should include an entry for each PHY used by the controller.
++   May be a subset of the following:
++    - utmi-{0,1,2}
++    - hsic-{0,1}
++    - usb3-{0,1}
++ - avddio-pex-supply: PCIe/USB3 analog logic power supply.  Must supply 1.05V.
++ - dvddio-pex-supply: PCIe/USB3 digital logic power supply.  Must supply 1.05V.
++ - avdd-usb-supply: USB controller power supply.  Must supply 3.3V.
++ - avdd-pll-utmip-supply: UTMI PLL power supply.  Must supply 1.8V.
++ - avdd-pll-erefe-supply: PLLE reference PLL power supply.  Must supply 1.05V.
++ - avdd-pex-pll-supply: PCIe/USB3 PLL power supply.  Must supply 1.05V.
++ - hvdd-pex-supply: High-voltage PCIe/USB3 power supply.  Must supply 3.3V.
++ - hvdd-pex-plle-supply: High-voltage PLLE power supply.  Must supply 3.3V.
++
++Example:
++--------
++	usb@0,70090000 {
++		compatible = "nvidia,tegra124-xhci";
++		reg = <0x0 0x70090000 0x0 0x8000>,
++		      <0x0 0x70098000 0x0 0x1000>,
++		      <0x0 0x70099000 0x0 0x1000>;
++		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
++			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
++			 <&tegra_car TEGRA124_CLK_CLK_M>,
++			 <&tegra_car TEGRA124_CLK_PLL_E>;
++		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
++			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
++			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
++			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
++		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
++			 <&tegra_car 143>;
++		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
 +		mboxes = <&xusb_mbox>;
 +		mbox-names = "xusb";
- 
- 		#phy-cells = <1>;
- 	};
-@@ -100,15 +128,35 @@ Board file extract:
- 
- 	...
- 
-+	usb@0,70090000 {
-+		...
-+
-+		phys = <&padctl 5>, <&padctl 6>, <&padctl 7>;
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
 +		phy-names = "utmi-1", "utmi-2", "usb3-0";
-+
-+		...
-+	}
-+
-+	...
-+
- 	padctl: padctl@0,7009f000 {
- 		pinctrl-0 = <&padctl_default>;
- 		pinctrl-names = "default";
- 
-+		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
-+		vbus-2-supply = <&vdd_usb3_vbus>;
-+
- 		padctl_default: pinmux {
--			usb3 {
--				nvidia,lanes = "pcie-0", "pcie-1";
-+			otg {
-+				nvidia,lanes = "otg-1", "otg-2";
-+				nvidia,function = "xusb";
-+			};
-+
-+			usb3p0 {
-+				nvidia,lanes = "pcie-0";
- 				nvidia,function = "usb3";
- 				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <2>;
- 			};
- 
- 			pcie {
-diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-index 914d56d..17b1aab 100644
---- a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-+++ b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-@@ -3,5 +3,25 @@
- 
- #define TEGRA_XUSB_PADCTL_PCIE 0
- #define TEGRA_XUSB_PADCTL_SATA 1
-+#define TEGRA_XUSB_PADCTL_USB3_P0 2
-+#define TEGRA_XUSB_PADCTL_USB3_P1 3
-+#define TEGRA_XUSB_PADCTL_UTMI_P0 4
-+#define TEGRA_XUSB_PADCTL_UTMI_P1 5
-+#define TEGRA_XUSB_PADCTL_UTMI_P2 6
-+#define TEGRA_XUSB_PADCTL_HSIC_P0 7
-+#define TEGRA_XUSB_PADCTL_HSIC_P1 8
-+
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_0   0
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_1   1
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_2   2
-+#define TEGRA_XUSB_PADCTL_PIN_ULPI_0  3
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_0  4
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_1  5
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_0  6
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_1  7
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_2  8
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_3  9
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_4 10
-+#define TEGRA_XUSB_PADCTL_PIN_SATA_0 11
- 
- #endif /* _DT_BINDINGS_PINCTRL_TEGRA_XUSB_H */
++		avddio-pex-supply = <&vdd_1v05_run>;
++		dvddio-pex-supply = <&vdd_1v05_run>;
++		avdd-usb-supply = <&vdd_3v3_lp0>;
++		avdd-pll-utmip-supply = <&vddio_1v8>;
++		avdd-pll-erefe-supply = <&avdd_1v05_run>;
++		avdd-pex-pll-supply = <&vdd_1v05_run>;
++		hvdd-pex-supply = <&vdd_3v3_lp0>;
++		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
++	};
 -- 
 2.1.0.rc2.206.gedb03e5
 
