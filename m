@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565AbaIQSg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:36:26 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48522 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849AbaIQSgY (ORCPT
+	id S1756276AbaIQSiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:38:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:53095 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656AbaIQSiO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:36:24 -0400
-Date: Wed, 17 Sep 2014 11:36:00 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Andy Gross <agross@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kevin Hilman <khilman@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 17 Sep 2014 14:38:14 -0400
+Date: Wed, 17 Sep 2014 11:38:09 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Azael Avalos <coproscefalo@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Message-ID: <20140917183600.GT7960@sirena.org.uk>
-References: <1409029109-28769-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1409029109-28769-2-git-send-email-bjorn.andersson@sonymobile.com>
- <20140826072727.GB9574@lee--X1>
- <20140917161554.GJ30918@lee--X1>
- <20140917181939.GG10179@sonymobile.com>
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 3/5] toshiba_acpi: Add accelerometer input polled device
+Message-ID: <20140917183809.GA7517@vmdeb7>
+References: <1409937247-2525-1-git-send-email-coproscefalo@gmail.com>
+ <1409937247-2525-4-git-send-email-coproscefalo@gmail.com>
+ <20140906024253.GB11389@vmdeb7>
+ <CAGdLNWGhdQU3Fpud9Zgvx3AQ5Lb=WdEkJb_wWTb1hJoHxXPXpQ@mail.gmail.com>
+ <20140909000429.GB5835@vmdeb7>
+ <10ee37dc-4645-48c4-9155-89b60b38f4cf@email.android.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qAWpXEdoCCy57CK7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140917181939.GG10179@sonymobile.com>
-X-Cookie: Many pages make a thick book.
+In-Reply-To: <10ee37dc-4645-48c4-9155-89b60b38f4cf@email.android.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v6 1/3] mfd: devicetree: bindings: Add Qualcomm RPM DT
- binding
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Sep 17, 2014 at 05:36:31PM +0100, Jonathan Cameron wrote:
+> 
+> 
+> On September 9, 2014 1:04:30 AM GMT+01:00, Darren Hart <dvhart@infradead.org> wrote:
+> >On Fri, Sep 05, 2014 at 11:04:18PM -0600, Azael Avalos wrote:
+> >> Hi there,
+> >> 
+> >> 2014-09-05 20:42 GMT-06:00 Darren Hart <dvhart@infradead.org>:
+> >> > On Fri, Sep 05, 2014 at 11:14:05AM -0600, Azael Avalos wrote:
+> >> >> The accelerometer sensor is very sensitive, and having userspace
+> >> >> poll the sysfs position entry is not very battery friendly.
+> >> >>
+> >> >> This patch removes the sysfs entry and instead, it creates an
+> >> >> input polled device (joystick) for the built-in accelerometer.
+> >> >
+> >> > Hrm, while sysfs details can change across kernel versions, usually
+> >due to
+> >> > driver core changes, we try to keep them as consistent as possible
+> >so as not to
+> >> > break userspace.
+> >> >
+> >> > That said, if we are going to try and come up with a better model
+> >for
+> >> > representing an accelerometer, wouldn't treating it as an IIO
+> >device be the more
+> >> > logical approach?
+> >> 
+> >> Yes of course, but the actual accelerometer device (sensor?) is not
+> >> really exposed,
+> >> only certain "functions" it provides, and they are divided across two
+> >> different ACPI devices,
+> >> TOS620A exposes the protection, and the TOS1900 (and et. al.) only
+> >> exposes the axes.
+> >
+> >As I understand it, IIO defines an interface to a device, a standard
+> >sysfs set
+> >of properties. I should think we could provide the appropriate
+> >callbacks even
+> >for a partially implemented (or a pair of) accelerometer.
+> >
+> >Jonathan, what are your thoughts here. Is such a "device" (ACPI
+> >accessors to
+> >axis and threshold) a candidate for IIO, or is this input polled device
+> >more
+> >appropriate?
+> Absolutely fine in IIO.
+> 
+> Sorry I took so long to reply. Read the title and expected more detailed issue so queued
+>  it up for when I had more time. Oops.
+> 
+> Only slight gotcha is that there is some debate over the iio timer trigger
+>  configuration interface which would be equivalent of a polled input device.
+> 
+> Hence it hasn't merged yet.
+> Comes down to how these are instantiated. Lars-Peter Clausen is planning a configfs
+>  proposal rather than how we do the user space trigger creation currently.
+> 
+> A user space trigger would work but then you loose lack of hitting sysfs files.
 
---qAWpXEdoCCy57CK7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks Jonathan,
 
-On Wed, Sep 17, 2014 at 11:19:40AM -0700, Bjorn Andersson wrote:
+Azael, please follow-up with the IIO folks and if you want to modify the
+interface, please do so via IIO so it uses a consistent interface and we can
+eliminate these custom sysfs files.
 
-> The regulator driver have a strong dependency on the mfd driver, but Kconfig
-> will make sure it's not selectable until the two parts merges again, so it
-> should be fine. But I guess it's up to Mark?
+Thanks,
 
-Yes, that's the normal approach.  I'd have applied it but a lot of the
-early discussion seemed to be about the register I/O interface.
-
---qAWpXEdoCCy57CK7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUGdSPAAoJECTWi3JdVIfQrs8H/jAAOz2hwR9v9oCGfy6P1N8h
-zSNLAamZTQFrAo7km54+1kAxmhLQBpEeUNra6z/WYCuv9G6FkGSbIS74YDRx+jRV
-Sm1O2vr8ejFm0ERCosivnlicmA1x76b6/Kd2rsbmPVGOn+WcmqPCmKKbZHWwTRtl
-Fd6/08r1bd25S89Tz9QlAfEoEicqAz1UIXVs9LxAaw9Tnh+9/eGzdLk8nhczYJiA
-ciw9uP0DEvbQks4gkg+yFWFLlSFkyY6WJDI8yGXeHJ9oPnUFX6C3dH2kF3L14Rav
-p1YNwG99C+yEOuLPFq4hPIJFmQr904xO2lVKwu5MDN0jp3bcdoKe4QTy4S0h4Ss=
-=U6zP
------END PGP SIGNATURE-----
-
---qAWpXEdoCCy57CK7--
+-- 
+Darren Hart
+Intel Open Source Technology Center
