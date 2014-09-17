@@ -1,140 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596AbaIQR51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:57:27 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33855 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527AbaIQR5Z (ORCPT
+	id S1756650AbaIQR5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:57:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55216 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756524AbaIQR5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:57:25 -0400
-Date: Wed, 17 Sep 2014 18:57:41 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "bsegall@google.com" <bsegall@google.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH] sched: Update task group load contributions during
- active load-balancing
-Message-ID: <20140917175741.GA9854@e103034-lin>
-References: <1410826030-26301-1-git-send-email-morten.rasmussen@arm.com>
- <xm26sijrqwv9.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	Wed, 17 Sep 2014 13:57:33 -0400
+Date: Wed, 17 Sep 2014 19:57:27 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Johan Hovold <jhovold@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 9/9] mfd: syscon: add Atmel GPBR DT bindings
+ documention
+Message-ID: <20140917195727.1c75a062@bbrezillon>
+In-Reply-To: <20140917163405.GM30918@lee--X1>
+References: <1410441525-25258-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1410441525-25258-10-git-send-email-boris.brezillon@free-electrons.com>
+	<20140917163405.GM30918@lee--X1>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xm26sijrqwv9.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 16, 2014 at 06:49:14PM +0100, bsegall@google.com wrote:
-> Morten Rasmussen <morten.rasmussen@arm.com> writes:
+Hi Lee,
+
+On Wed, 17 Sep 2014 09:34:05 -0700
+Lee Jones <lee.jones@linaro.org> wrote:
+
+> On Thu, 11 Sep 2014, Boris BREZILLON wrote:
 > 
-> > Task group load-contributions are not updated when tasks belonging to
-> > task groups are migrated by active load-balancing. If no other task
-> > belonging to the same task group is already queued at the destination
-> > cpu the group sched_entity will be enqueued with load_avg_contrib=0.
-> > Hence, weighted_cpuload() won't reflect the newly added load.
-> >
-> > The load may remain invisible until the next tick, when the sched_entity
-> > load_avg_contrib and task group contributions are reevaluated.
-> >
-> > The enqueue loop
-> >
-> > 	for_each_entity(se) {
-> > 	   enqueue_entity(cfs_rq,se)
-> > 	      ...
-> > 	      enqueue_entity_load_avg(cfs_rq,se)
-> > 	         ...
-> > 	         update_entity_load_avg(se)
-> > 		    ...
-> > 		    __update_entity_load_avg_contrib(se)
-> > 		    ...
-> > 		 ...
-> > 	         update_cfs_rq_blocked_load(cfs_rq)
-> > 		    ...
-> > 		    __update_cfs_rq_tg_load_contrib(cfs_rq)
-> > 		    ...
-> > 	}
-> >
-> > currently skips __update_entity_load_avg_contrib() and
-> > __update_cfs_rq_tg_load_contrib() for group entities for active
-> > load-balance migrations. The former updates the sched_entity
-> > load_avg_contrib, and the latter updates the task group contribution
-> > which is needed by the former. They must both be called to ensure that
-> > load doesn't temporarily disappear.
-> >
-> > cc: Paul Turner <pjt@google.com>
-> > cc: Ben Segall <bsegall@google.com>
-> >
-> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> > The GPBR block provides a set of battery-backed registers that can be used
+> > to save data which need to be kept when the system is powered down and
+> > VDD-core is maintained by an external battery.
+> > 
+> > A typical usage is the RTT block (when used as an RTC) which needs one of
+> > those registers to save the current time.
+> > 
+> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 > > ---
-> >  kernel/sched/fair.c |    7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index be9e97b..2b6e2eb 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -2521,7 +2521,8 @@ static inline void update_entity_load_avg(struct sched_entity *se,
-> >  	else
-> >  		now = cfs_rq_clock_task(group_cfs_rq(se));
-> >  
-> > -	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
-> > +	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq) &&
-> > +							entity_is_task(se))
-> >  		return;
-> >  
-> >  	contrib_delta = __update_entity_load_avg_contrib(se);
-> > @@ -2609,6 +2610,10 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-> >  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
-> >  	/* we force update consideration on load-balancer moves */
-> >  	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+> >  Documentation/devicetree/bindings/mfd/atmel,gpbr.txt | 15 +++++++++++++++
+> >  1 file changed, 15 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+> > new file mode 100644
+> > index 0000000..a285695
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/atmel,gpbr.txt
+> > @@ -0,0 +1,15 @@
+> > +* Device tree bindings for Atmel GPBR (General Purpose Backup Registers)
 > > +
-> > +	/* We force update group contributions on load-balancer moves */
-> > +	if (wakeup && !entity_is_task(se))
-> > +		__update_cfs_rq_tg_load_contrib(cfs_rq, 0);
-> >  }
-> >  
-> >  /*
+> > +The GPBR are a set of battery-backed registers.
+> > +
+> > +Required properties:
+> > +- compatible:		"atmel,at91sam9260-gpbr", "syscon"
+> > +- reg:			contains offset/length value of the GPBR memory
+> > +			region.
+> > +
+> > +Example:
+> > +
+> > +gpbr: gpbr@fffffd50 {
 > 
-> It should probably be clearer that what this actually means is that we
-> always update tg_load_contrib for any group-of-group (which is weird),
+> Is something referencing this node via phandle?  If not, please remove
+> the label.
 
-Would it not only update groups entities if they aren't already on a
-runqueue? I'm clearly missing something.
+Yes, the rtt device is referencing it in its atmel,rtt-rtc-time-reg
+property (see patch 8 of this series).
 
-> so that we update the entire tree on load-balancer moves (which is
-> sensible and what we care about, because it determines each se.load_avg_contrib).
-> 
-> Wouldn't we need this on dequeue as well?
+Best Regards,
 
-Yes. The problem is there too I think. It is not as visible though. If
-the last task of a particular group is migrated away from a cpu, the
-group entities will be dequeued and we should be fine. However, if there
-are other tasks left in the group or any parent group the load of that
-group will be off, I think. I need to verify that.
+Boris
 
-> 
-> I believe the reason for both of these ratelimits was performance on
-> sleep/wake (where blocked_load_avg means tg_load_contrib should not have
-> changed), it would be good to know how much this hurts. Given the
-> fast-exit in __update_cfs_rq_tg_load_contrib, it seems like it might be
-> fine, but the group-entity __update_entity_load_avg_contrib is less
-> free when div_u64 is expensive, and is currently only called 1/ms.
-
-Right. Is there a suitable group scheduling benchmark I can use to test
-this?
-
-> 
-> It seems like it would be a bit of a mess to force an update of the
-> entire path in migrate, but it would certainly dodge the performance
-> concerns if they wind up being an issue. (I suppose we could have
-> ENQUEUE/DEQUEUE_MIGRATE or something...)
-
-Yes, I had the same thought. We might have to do something like that
-anyway to fix the dequeue path. It seems less straightforward to fix,
-but I need to take a closer look.
-
-Morten
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
