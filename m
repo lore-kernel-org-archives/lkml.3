@@ -1,51 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaIQAnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Sep 2014 20:43:05 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:54377 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047AbaIQAnD (ORCPT
+	id S1755334AbaIQAnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Sep 2014 20:43:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:60080 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439AbaIQAjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Sep 2014 20:43:03 -0400
-X-Original-SENDERIP: 10.178.36.63
-X-Original-MAILFROM: chanho.min@lge.com
-From: Chanho Min <chanho.min@lge.com>
-To: Russell King <linux@arm.linux.org.uk>, Stephen Boyd <sboyd@codeaurora.org>,
-        Michael Opdenacker <michael@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Chanho Min <chanho.min@lge.com>
-Subject: [PATCH] ARM: timer-sp: ensure interrupt is cleared at sp804_clockevents_init
-Date: Wed, 17 Sep 2014 09:42:51 +0900
-Message-Id: <1410914571-8388-1-git-send-email-chanho.min@lge.com>
+	Tue, 16 Sep 2014 20:39:55 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chema Gonzalez <chema@google.com>, Eric Dumazet <edumazet@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v13 net-next 03/11] bpf: add lookup/update/delete/iterate methods to BPF maps
+Date: Tue, 16 Sep 2014 17:39:22 -0700
+Message-Id: <1410914370-29883-4-git-send-email-ast@plumgrid.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
+References: <1410914370-29883-1-git-send-email-ast@plumgrid.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When sp804 is registerd as clock event device, it may not be added to
-tick device if the higher rated device is already registerd. In this case,
-for uncertan reason, inetrrupt is occured without event_handler it cause
-kernel panic. So Interrupt should be cleared before clockevent is registered.
+'maps' is a generic storage of different types for sharing data between kernel
+and userspace.
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
+The maps are accessed from user space via BPF syscall, which has commands:
+
+- create a map with given type and attributes
+  fd = bpf(BPF_MAP_CREATE, union bpf_attr *attr, u32 size)
+  returns fd or negative error
+
+- lookup key in a given map referenced by fd
+  err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
+  using attr->map_fd, attr->key, attr->value
+  returns zero and stores found elem into value or negative error
+
+- create or update key/value pair in a given map
+  err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
+  using attr->map_fd, attr->key, attr->value
+  returns zero or negative error
+
+- find and delete element by key in a given map
+  err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
+  using attr->map_fd, attr->key
+
+- iterate map elements (based on input key return next_key)
+  err = bpf(BPF_MAP_GET_NEXT_KEY, union bpf_attr *attr, u32 size)
+  using attr->map_fd, attr->key, attr->next_key
+
+- close(fd) deletes the map
+
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 ---
- arch/arm/common/timer-sp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/bpf.h      |    8 ++
+ include/uapi/linux/bpf.h |   38 ++++++++
+ kernel/bpf/syscall.c     |  235 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 281 insertions(+)
 
-diff --git a/arch/arm/common/timer-sp.c b/arch/arm/common/timer-sp.c
-index fd6bff0..b658873 100644
---- a/arch/arm/common/timer-sp.c
-+++ b/arch/arm/common/timer-sp.c
-@@ -205,6 +205,8 @@ void __init __sp804_clockevents_init(void __iomem *base, unsigned int irq, struc
+diff --git a/include/linux/bpf.h b/include/linux/bpf.h
+index 48014a71f0fe..2887f3f9da59 100644
+--- a/include/linux/bpf.h
++++ b/include/linux/bpf.h
+@@ -9,6 +9,7 @@
  
- 	writel(0, base + TIMER_CTRL);
+ #include <uapi/linux/bpf.h>
+ #include <linux/workqueue.h>
++#include <linux/file.h>
  
-+	/* Ensure interrupt is cleared */
-+	writel(1, clkevt_base + TIMER_INTCLR);
- 	setup_irq(irq, &sp804_timer_irq);
- 	clockevents_config_and_register(evt, rate, 0xf, 0xffffffff);
+ struct bpf_map;
+ 
+@@ -17,6 +18,12 @@ struct bpf_map_ops {
+ 	/* funcs callable from userspace (via syscall) */
+ 	struct bpf_map *(*map_alloc)(union bpf_attr *attr);
+ 	void (*map_free)(struct bpf_map *);
++	int (*map_get_next_key)(struct bpf_map *map, void *key, void *next_key);
++
++	/* funcs callable from userspace and from eBPF programs */
++	void *(*map_lookup_elem)(struct bpf_map *map, void *key);
++	int (*map_update_elem)(struct bpf_map *map, void *key, void *value);
++	int (*map_delete_elem)(struct bpf_map *map, void *key);
+ };
+ 
+ struct bpf_map {
+@@ -37,5 +44,6 @@ struct bpf_map_type_list {
+ 
+ void bpf_register_map_type(struct bpf_map_type_list *tl);
+ void bpf_map_put(struct bpf_map *map);
++struct bpf_map *bpf_map_get(struct fd f);
+ 
+ #endif /* _LINUX_BPF_H */
+diff --git a/include/uapi/linux/bpf.h b/include/uapi/linux/bpf.h
+index f58a10f9670c..395cabd2ca0a 100644
+--- a/include/uapi/linux/bpf.h
++++ b/include/uapi/linux/bpf.h
+@@ -70,6 +70,35 @@ enum bpf_cmd {
+ 	 * map is deleted when fd is closed
+ 	 */
+ 	BPF_MAP_CREATE,
++
++	/* lookup key in a given map
++	 * err = bpf(BPF_MAP_LOOKUP_ELEM, union bpf_attr *attr, u32 size)
++	 * Using attr->map_fd, attr->key, attr->value
++	 * returns zero and stores found elem into value
++	 * or negative error
++	 */
++	BPF_MAP_LOOKUP_ELEM,
++
++	/* create or update key/value pair in a given map
++	 * err = bpf(BPF_MAP_UPDATE_ELEM, union bpf_attr *attr, u32 size)
++	 * Using attr->map_fd, attr->key, attr->value
++	 * returns zero or negative error
++	 */
++	BPF_MAP_UPDATE_ELEM,
++
++	/* find and delete elem by key in a given map
++	 * err = bpf(BPF_MAP_DELETE_ELEM, union bpf_attr *attr, u32 size)
++	 * Using attr->map_fd, attr->key
++	 * returns zero or negative error
++	 */
++	BPF_MAP_DELETE_ELEM,
++
++	/* lookup key in a given map and return next key
++	 * err = bpf(BPF_MAP_GET_NEXT_KEY, union bpf_attr *attr, u32 size)
++	 * Using attr->map_fd, attr->key, attr->next_key
++	 * returns zero and stores next key or negative error
++	 */
++	BPF_MAP_GET_NEXT_KEY,
+ };
+ 
+ enum bpf_map_type {
+@@ -83,6 +112,15 @@ union bpf_attr {
+ 		__u32	value_size;	/* size of value in bytes */
+ 		__u32	max_entries;	/* max number of entries in a map */
+ 	};
++
++	struct { /* anonymous struct used by BPF_MAP_*_ELEM commands */
++		__u32		map_fd;
++		__aligned_u64	key;
++		union {
++			__aligned_u64 value;
++			__aligned_u64 next_key;
++		};
++	};
+ } __attribute__((aligned(8)));
+ 
+ #endif /* _UAPI__LINUX_BPF_H__ */
+diff --git a/kernel/bpf/syscall.c b/kernel/bpf/syscall.c
+index 328a45a6d038..d2d6491c21b5 100644
+--- a/kernel/bpf/syscall.c
++++ b/kernel/bpf/syscall.c
+@@ -13,6 +13,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/slab.h>
+ #include <linux/anon_inodes.h>
++#include <linux/file.h>
+ 
+ static LIST_HEAD(bpf_map_types);
+ 
+@@ -111,6 +112,228 @@ free_map:
+ 	return err;
  }
+ 
++/* if error is returned, fd is released.
++ * On success caller should complete fd access with matching fdput()
++ */
++struct bpf_map *bpf_map_get(struct fd f)
++{
++	struct bpf_map *map;
++
++	if (!f.file)
++		return ERR_PTR(-EBADF);
++
++	if (f.file->f_op != &bpf_map_fops) {
++		fdput(f);
++		return ERR_PTR(-EINVAL);
++	}
++
++	map = f.file->private_data;
++
++	return map;
++}
++
++/* helper to convert user pointers passed inside __aligned_u64 fields */
++static void __user *u64_to_ptr(__u64 val)
++{
++	return (void __user *) (unsigned long) val;
++}
++
++/* last field in 'union bpf_attr' used by this command */
++#define BPF_MAP_LOOKUP_ELEM_LAST_FIELD value
++
++static int map_lookup_elem(union bpf_attr *attr)
++{
++	void __user *ukey = u64_to_ptr(attr->key);
++	void __user *uvalue = u64_to_ptr(attr->value);
++	int ufd = attr->map_fd;
++	struct fd f = fdget(ufd);
++	struct bpf_map *map;
++	void *key, *value;
++	int err;
++
++	if (CHECK_ATTR(BPF_MAP_LOOKUP_ELEM))
++		return -EINVAL;
++
++	map = bpf_map_get(f);
++	if (IS_ERR(map))
++		return PTR_ERR(map);
++
++	err = -ENOMEM;
++	key = kmalloc(map->key_size, GFP_USER);
++	if (!key)
++		goto err_put;
++
++	err = -EFAULT;
++	if (copy_from_user(key, ukey, map->key_size) != 0)
++		goto free_key;
++
++	err = -ESRCH;
++	rcu_read_lock();
++	value = map->ops->map_lookup_elem(map, key);
++	if (!value)
++		goto err_unlock;
++
++	err = -EFAULT;
++	if (copy_to_user(uvalue, value, map->value_size) != 0)
++		goto err_unlock;
++
++	err = 0;
++
++err_unlock:
++	rcu_read_unlock();
++free_key:
++	kfree(key);
++err_put:
++	fdput(f);
++	return err;
++}
++
++#define BPF_MAP_UPDATE_ELEM_LAST_FIELD value
++
++static int map_update_elem(union bpf_attr *attr)
++{
++	void __user *ukey = u64_to_ptr(attr->key);
++	void __user *uvalue = u64_to_ptr(attr->value);
++	int ufd = attr->map_fd;
++	struct fd f = fdget(ufd);
++	struct bpf_map *map;
++	void *key, *value;
++	int err;
++
++	if (CHECK_ATTR(BPF_MAP_UPDATE_ELEM))
++		return -EINVAL;
++
++	map = bpf_map_get(f);
++	if (IS_ERR(map))
++		return PTR_ERR(map);
++
++	err = -ENOMEM;
++	key = kmalloc(map->key_size, GFP_USER);
++	if (!key)
++		goto err_put;
++
++	err = -EFAULT;
++	if (copy_from_user(key, ukey, map->key_size) != 0)
++		goto free_key;
++
++	err = -ENOMEM;
++	value = kmalloc(map->value_size, GFP_USER);
++	if (!value)
++		goto free_key;
++
++	err = -EFAULT;
++	if (copy_from_user(value, uvalue, map->value_size) != 0)
++		goto free_value;
++
++	/* eBPF program that use maps are running under rcu_read_lock(),
++	 * therefore all map accessors rely on this fact, so do the same here
++	 */
++	rcu_read_lock();
++	err = map->ops->map_update_elem(map, key, value);
++	rcu_read_unlock();
++
++free_value:
++	kfree(value);
++free_key:
++	kfree(key);
++err_put:
++	fdput(f);
++	return err;
++}
++
++#define BPF_MAP_DELETE_ELEM_LAST_FIELD key
++
++static int map_delete_elem(union bpf_attr *attr)
++{
++	void __user *ukey = u64_to_ptr(attr->key);
++	int ufd = attr->map_fd;
++	struct fd f = fdget(ufd);
++	struct bpf_map *map;
++	void *key;
++	int err;
++
++	if (CHECK_ATTR(BPF_MAP_DELETE_ELEM))
++		return -EINVAL;
++
++	map = bpf_map_get(f);
++	if (IS_ERR(map))
++		return PTR_ERR(map);
++
++	err = -ENOMEM;
++	key = kmalloc(map->key_size, GFP_USER);
++	if (!key)
++		goto err_put;
++
++	err = -EFAULT;
++	if (copy_from_user(key, ukey, map->key_size) != 0)
++		goto free_key;
++
++	rcu_read_lock();
++	err = map->ops->map_delete_elem(map, key);
++	rcu_read_unlock();
++
++free_key:
++	kfree(key);
++err_put:
++	fdput(f);
++	return err;
++}
++
++/* last field in 'union bpf_attr' used by this command */
++#define BPF_MAP_GET_NEXT_KEY_LAST_FIELD next_key
++
++static int map_get_next_key(union bpf_attr *attr)
++{
++	void __user *ukey = u64_to_ptr(attr->key);
++	void __user *unext_key = u64_to_ptr(attr->next_key);
++	int ufd = attr->map_fd;
++	struct fd f = fdget(ufd);
++	struct bpf_map *map;
++	void *key, *next_key;
++	int err;
++
++	if (CHECK_ATTR(BPF_MAP_GET_NEXT_KEY))
++		return -EINVAL;
++
++	map = bpf_map_get(f);
++	if (IS_ERR(map))
++		return PTR_ERR(map);
++
++	err = -ENOMEM;
++	key = kmalloc(map->key_size, GFP_USER);
++	if (!key)
++		goto err_put;
++
++	err = -EFAULT;
++	if (copy_from_user(key, ukey, map->key_size) != 0)
++		goto free_key;
++
++	err = -ENOMEM;
++	next_key = kmalloc(map->key_size, GFP_USER);
++	if (!next_key)
++		goto free_key;
++
++	rcu_read_lock();
++	err = map->ops->map_get_next_key(map, key, next_key);
++	rcu_read_unlock();
++	if (err)
++		goto free_next_key;
++
++	err = -EFAULT;
++	if (copy_to_user(unext_key, next_key, map->key_size) != 0)
++		goto free_next_key;
++
++	err = 0;
++
++free_next_key:
++	kfree(next_key);
++free_key:
++	kfree(key);
++err_put:
++	fdput(f);
++	return err;
++}
++
+ SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, size)
+ {
+ 	union bpf_attr attr = {};
+@@ -135,6 +358,18 @@ SYSCALL_DEFINE3(bpf, int, cmd, union bpf_attr __user *, uattr, unsigned int, siz
+ 	case BPF_MAP_CREATE:
+ 		err = map_create(&attr);
+ 		break;
++	case BPF_MAP_LOOKUP_ELEM:
++		err = map_lookup_elem(&attr);
++		break;
++	case BPF_MAP_UPDATE_ELEM:
++		err = map_update_elem(&attr);
++		break;
++	case BPF_MAP_DELETE_ELEM:
++		err = map_delete_elem(&attr);
++		break;
++	case BPF_MAP_GET_NEXT_KEY:
++		err = map_get_next_key(&attr);
++		break;
+ 	default:
+ 		err = -EINVAL;
+ 		break;
 -- 
 1.7.9.5
 
