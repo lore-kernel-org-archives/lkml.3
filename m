@@ -1,136 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961AbaIQI0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:26:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28461 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759AbaIQI0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:26:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,539,1406617200"; 
-   d="scan'208";a="600839280"
-From: Weike Chen <alvin.chen@intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, atull <atull@opensource.altera.com>
-Cc: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Boon Leong Ong <boon.leong.ong@intel.com>,
-        Hock Leong Kweh <hock.leong.kweh@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Alvin Chen <alvin.chen@intel.com>
-Subject: [PATCH 2/4 v5] GPIO: gpio-dwapb: Change readl&writel to dwapb_read&dwapb_write
-Date: Wed, 17 Sep 2014 09:18:40 -0700
-Message-Id: <1410970722-8579-3-git-send-email-alvin.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1410970722-8579-1-git-send-email-alvin.chen@intel.com>
-References: <1410970722-8579-1-git-send-email-alvin.chen@intel.com>
+	id S1755080AbaIQI0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:26:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24285 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759AbaIQI0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:26:48 -0400
+Date: Wed, 17 Sep 2014 11:26:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kieron Browne <kieron.browne@gmail.com>
+Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        gregkh@linuxfoundation.org, linux-wireless@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] staging: rtl8723au: fix sparse incorrect type
+ assignment warnings
+Message-ID: <20140917082627.GH17875@mwanda>
+References: <1410906489-26671-1-git-send-email-kieron.browne@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410906489-26671-1-git-send-email-kieron.browne@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces 'readl&writel' with 'dwapb_read&dwapb_write'.
+On Tue, Sep 16, 2014 at 11:28:09PM +0100, Kieron Browne wrote:
+> Use cpu_to_le16 to cast int for assignment to __le16 members
+> 
 
-Reviewed-by: Shevchenko, Andriy <andriy.shevchenko@intel.com>
-Signed-off-by: Weike Chen <alvin.chen@intel.com>
----
- drivers/gpio/gpio-dwapb.c |   37 +++++++++++++++++++++++++++----------
- 1 file changed, 27 insertions(+), 10 deletions(-)
+"cast" is the wrong word.  It's really doing a byte swap.  It fixes a
+bug on big endian systems.
 
-diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
-index 27466b5..551eaf7 100644
---- a/drivers/gpio/gpio-dwapb.c
-+++ b/drivers/gpio/gpio-dwapb.c
-@@ -64,6 +64,23 @@ struct dwapb_gpio {
- 	struct irq_domain	*domain;
- };
- 
-+static inline u32 dwapb_read(struct dwapb_gpio *gpio, unsigned int offset)
-+{
-+	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
-+	void __iomem *reg_base	= gpio->regs;
-+
-+	return bgc->read_reg(reg_base + offset);
-+}
-+
-+static inline void dwapb_write(struct dwapb_gpio *gpio, unsigned int offset,
-+			       u32 val)
-+{
-+	struct bgpio_chip *bgc	= &gpio->ports[0].bgc;
-+	void __iomem *reg_base	= gpio->regs;
-+
-+	bgc->write_reg(reg_base + offset, val);
-+}
-+
- static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
- {
- 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
-@@ -76,14 +93,14 @@ static int dwapb_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
- 
- static void dwapb_toggle_trigger(struct dwapb_gpio *gpio, unsigned int offs)
- {
--	u32 v = readl(gpio->regs + GPIO_INT_POLARITY);
-+	u32 v = dwapb_read(gpio, GPIO_INT_POLARITY);
- 
- 	if (gpio_get_value(gpio->ports[0].bgc.gc.base + offs))
- 		v &= ~BIT(offs);
- 	else
- 		v |= BIT(offs);
- 
--	writel(v, gpio->regs + GPIO_INT_POLARITY);
-+	dwapb_write(gpio, GPIO_INT_POLARITY, v);
- }
- 
- static u32 dwapb_do_irq(struct dwapb_gpio *gpio)
-@@ -126,9 +143,9 @@ static void dwapb_irq_enable(struct irq_data *d)
- 	u32 val;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	val = readl(gpio->regs + GPIO_INTEN);
-+	val = dwapb_read(gpio, GPIO_INTEN);
- 	val |= BIT(d->hwirq);
--	writel(val, gpio->regs + GPIO_INTEN);
-+	dwapb_write(gpio, GPIO_INTEN, val);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
- 
-@@ -141,9 +158,9 @@ static void dwapb_irq_disable(struct irq_data *d)
- 	u32 val;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	val = readl(gpio->regs + GPIO_INTEN);
-+	val = dwapb_read(gpio, GPIO_INTEN);
- 	val &= ~BIT(d->hwirq);
--	writel(val, gpio->regs + GPIO_INTEN);
-+	dwapb_write(gpio, GPIO_INTEN, val);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- }
- 
-@@ -183,8 +200,8 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
- 		return -EINVAL;
- 
- 	spin_lock_irqsave(&bgc->lock, flags);
--	level = readl(gpio->regs + GPIO_INTTYPE_LEVEL);
--	polarity = readl(gpio->regs + GPIO_INT_POLARITY);
-+	level = dwapb_read(gpio, GPIO_INTTYPE_LEVEL);
-+	polarity = dwapb_read(gpio, GPIO_INT_POLARITY);
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_BOTH:
-@@ -211,8 +228,8 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
- 
- 	irq_setup_alt_chip(d, type);
- 
--	writel(level, gpio->regs + GPIO_INTTYPE_LEVEL);
--	writel(polarity, gpio->regs + GPIO_INT_POLARITY);
-+	dwapb_write(gpio, GPIO_INTTYPE_LEVEL, level);
-+	dwapb_write(gpio, GPIO_INT_POLARITY, polarity);
- 	spin_unlock_irqrestore(&bgc->lock, flags);
- 
- 	return 0;
--- 
-1.7.9.5
+But the patch is ok and matches how the other rtl drivers do it.
+
+regards,
+dan carpenter
 
