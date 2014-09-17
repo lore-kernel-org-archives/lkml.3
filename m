@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482AbaIQRlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:41:09 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60465 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756104AbaIQRlH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:41:07 -0400
+	id S1756532AbaIQRlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:41:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756499AbaIQRlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 13:41:22 -0400
+Date: Wed, 17 Sep 2014 19:38:40 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Fabian Frederick <fabf@skynet.be>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Roland McGrath <roland@hack.frob.com>
+Subject: Re: [PATCH 1/1 linux-next] ptrace: remove linux/compat.h inclusion
+	under CONFIG_COMPAT
+Message-ID: <20140917173840.GB19308@redhat.com>
+References: <1410896530-18082-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
-In-Reply-To: <20140917172137.GH26540@minantech.com>
-References: <1410811885-17267-1-git-send-email-andreslc@google.com>
-	<20140917102635.GA30733@minantech.com>
-	<20140917112713.GB1273@potion.brq.redhat.com>
-	<20140917114214.GB30733@minantech.com>
-	<CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
-	<20140917170841.GG26540@minantech.com>
-	<CAJu=L599fJABew7Oe6Bmp40VzMXY9wnE7P=c1xFaa+cU_KSoMw@mail.gmail.com>
-	<20140917172137.GH26540@minantech.com>
-Date: Wed, 17 Sep 2014 10:41:06 -0700
-Message-ID: <CAJu=L58jz9j5FWN_MfGU3uQexJOvfdwvqfjhsnqOocLLxG9enA@mail.gmail.com>
-Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
-From: Andres Lagar-Cavilla <andreslc@google.com>
-To: Gleb Natapov <gleb@kernel.org>
-Cc: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1410896530-18082-1-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 10:21 AM, Gleb Natapov <gleb@kernel.org> wrote:
-> On Wed, Sep 17, 2014 at 10:13:45AM -0700, Andres Lagar-Cavilla wrote:
->> On Wed, Sep 17, 2014 at 10:08 AM, Gleb Natapov <gleb@kernel.org> wrote:
->> > On Wed, Sep 17, 2014 at 10:00:32AM -0700, Andres Lagar-Cavilla wrote:
->> >> On Wed, Sep 17, 2014 at 4:42 AM, Gleb Natapov <gleb@kernel.org> wrote:
->> >> > On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
->> >> >> 2014-09-17 13:26+0300, Gleb Natapov:
->> >> >> > For async_pf_execute() you do not need to even retry. Next guest's page fault
->> >> >> > will retry it for you.
->> >> >>
->> >> >> Wouldn't that be a waste of vmentries?
->> >> > This is how it will work with or without this second gup. Page is not
->> >> > mapped into a shadow page table on this path, it happens on a next fault.
->> >>
->> >> The point is that the gup in the async pf completion from the work
->> >> queue will not relinquish the mmap semaphore. And it most definitely
->> >> should, given that we are likely looking at swap/filemap.
->> >>
->> > I get this point and the patch looks good in general, but my point is
->> > that when _retry() is called from async_pf_execute() second gup is not
->> > needed. In the original code gup is called to do IO and nothing else.
->> > In your patch this is accomplished by the first gup already, so you
->> > can skip second gup if pagep == nullptr.
->>
->> I see. However, if this function were to be used elsewhere in the
->> future, then the "if pagep == NULL don't retry" semantics may not
->> match the new caller's intention. Would you prefer an explicit flag?
->>
-> We can add explicit flag whenever such caller will be added, if ever.
-
-Ok. Patch forthcoming.
-
-Paolo, I'm not sure the split will buy anything, because the first
-patch will be a one-liner (no point in the new kvm_gup_something
-function if the impl won't match the intended semantics of the
-function). But if you push back, I'll cut a v3.
-
-Thanks all,
-Andres
+On 09/16, Fabian Frederick wrote:
 >
-> --
->                         Gleb.
+> Commit 84c751bd4aeb
+> ("ptrace: add ability to retrieve signals without removing from a queue (v4)")
+> includes <linux/compat.h> globally in ptrace.c
+>
+> This patch removes inclusion under if defined CONFIG_COMPAT.
+>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
+Hopefully Andrew can take this patch.
 
--- 
-Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
+> ---
+>  kernel/ptrace.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 54e7522..d4f8e3e 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -1094,7 +1094,6 @@ int generic_ptrace_pokedata(struct task_struct *tsk, unsigned long addr,
+>  }
+>  
+>  #if defined CONFIG_COMPAT
+> -#include <linux/compat.h>
+>  
+>  int compat_ptrace_request(struct task_struct *child, compat_long_t request,
+>  			  compat_ulong_t addr, compat_ulong_t data)
+> -- 
+> 2.1.0
+> 
+
