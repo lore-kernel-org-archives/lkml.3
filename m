@@ -1,177 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293AbaIQRkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 13:40:06 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:58346 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982AbaIQRkE (ORCPT
+	id S1756482AbaIQRlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 13:41:09 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60465 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104AbaIQRlH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 13:40:04 -0400
+	Wed, 17 Sep 2014 13:41:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <54195975.1010209@imgtec.com>
-References: <1410825087-5497-1-git-send-email-abrestic@chromium.org>
-	<1410825087-5497-22-git-send-email-abrestic@chromium.org>
-	<54195975.1010209@imgtec.com>
-Date: Wed, 17 Sep 2014 10:40:02 -0700
-X-Google-Sender-Auth: 23Y8LOLMb5TtCUbOUG-4AZ-IQ8c
-Message-ID: <CAL1qeaFt5ZBauD38WMPB7WLkOqkTgtfO-gLKo3of7C_V-53eLA@mail.gmail.com>
-Subject: Re: [PATCH 21/24] irqchip: mips-gic: Support local interrupts
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jeffrey Deans <jeffrey.deans@imgtec.com>,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        Paul Burton <paul.burton@imgtec.com>, Jonas Gorski <jogo@openwrt.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140917172137.GH26540@minantech.com>
+References: <1410811885-17267-1-git-send-email-andreslc@google.com>
+	<20140917102635.GA30733@minantech.com>
+	<20140917112713.GB1273@potion.brq.redhat.com>
+	<20140917114214.GB30733@minantech.com>
+	<CAJu=L58O147YQJyODD8MFtdvQ6+TSG6gi6qGySgH3EigP32MrQ@mail.gmail.com>
+	<20140917170841.GG26540@minantech.com>
+	<CAJu=L599fJABew7Oe6Bmp40VzMXY9wnE7P=c1xFaa+cU_KSoMw@mail.gmail.com>
+	<20140917172137.GH26540@minantech.com>
+Date: Wed, 17 Sep 2014 10:41:06 -0700
+Message-ID: <CAJu=L58jz9j5FWN_MfGU3uQexJOvfdwvqfjhsnqOocLLxG9enA@mail.gmail.com>
+Subject: Re: [PATCH] kvm: Faults which trigger IO release the mmap_sem
+From: Andres Lagar-Cavilla <andreslc@google.com>
+To: Gleb Natapov <gleb@kernel.org>
+Cc: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 2:50 AM, Qais Yousef <qais.yousef@imgtec.com> wrote:
-> On 09/16/2014 12:51 AM, Andrew Bresticker wrote:
+On Wed, Sep 17, 2014 at 10:21 AM, Gleb Natapov <gleb@kernel.org> wrote:
+> On Wed, Sep 17, 2014 at 10:13:45AM -0700, Andres Lagar-Cavilla wrote:
+>> On Wed, Sep 17, 2014 at 10:08 AM, Gleb Natapov <gleb@kernel.org> wrote:
+>> > On Wed, Sep 17, 2014 at 10:00:32AM -0700, Andres Lagar-Cavilla wrote:
+>> >> On Wed, Sep 17, 2014 at 4:42 AM, Gleb Natapov <gleb@kernel.org> wrote:
+>> >> > On Wed, Sep 17, 2014 at 01:27:14PM +0200, Radim Krčmář wrote:
+>> >> >> 2014-09-17 13:26+0300, Gleb Natapov:
+>> >> >> > For async_pf_execute() you do not need to even retry. Next guest's page fault
+>> >> >> > will retry it for you.
+>> >> >>
+>> >> >> Wouldn't that be a waste of vmentries?
+>> >> > This is how it will work with or without this second gup. Page is not
+>> >> > mapped into a shadow page table on this path, it happens on a next fault.
+>> >>
+>> >> The point is that the gup in the async pf completion from the work
+>> >> queue will not relinquish the mmap semaphore. And it most definitely
+>> >> should, given that we are likely looking at swap/filemap.
+>> >>
+>> > I get this point and the patch looks good in general, but my point is
+>> > that when _retry() is called from async_pf_execute() second gup is not
+>> > needed. In the original code gup is called to do IO and nothing else.
+>> > In your patch this is accomplished by the first gup already, so you
+>> > can skip second gup if pagep == nullptr.
 >>
->> The MIPS GIC supports 7 local interrupts, 2 of which are the GIC
->> local watchdog and count/compare timer.  The remainder are CPU
->> interrupts which may optionally be re-routed through the GIC.
->> GIC hardware IRQs 0-6 are now used for local interrupts while
->> hardware IRQs 7+ are used for external (shared) interrupts.
+>> I see. However, if this function were to be used elsewhere in the
+>> future, then the "if pagep == NULL don't retry" semantics may not
+>> match the new caller's intention. Would you prefer an explicit flag?
 >>
->> Note that the 5 CPU interrupts may not be re-routable through
->> the GIC.  In that case mapping will fail and the vectors reported
->> in C0_IntCtl should be used instead.  gic_get_c0_compare_int() and
->> gic_get_c0_perfcount_int() will return the correct IRQ number to
->> use for the C0 timer and perfcounter interrupts based on the
->> routability of those interrupts through the GIC.
->>
->> Malta, SEAD-3, and the GIC clockevent driver have been updated
->> to use local interrupts and the R4K clockevent driver has been
->> updated to poll for C0 timer interrupts through the GIC when
->> the GIC is present.
->>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> We can add explicit flag whenever such caller will be added, if ever.
 
->> diff --git a/arch/mips/include/asm/mips-boards/maltaint.h
->> b/arch/mips/include/asm/mips-boards/maltaint.h
->> index bdd6f39..38b06a0 100644
->> --- a/arch/mips/include/asm/mips-boards/maltaint.h
->> +++ b/arch/mips/include/asm/mips-boards/maltaint.h
->> @@ -10,6 +10,8 @@
->>   #ifndef _MIPS_MALTAINT_H
->>   #define _MIPS_MALTAINT_H
->>   +#include <asm/gic.h>
->> +
+Ok. Patch forthcoming.
+
+Paolo, I'm not sure the split will buy anything, because the first
+patch will be a one-liner (no point in the new kvm_gup_something
+function if the impl won't match the intended semantics of the
+function). But if you push back, I'll cut a v3.
+
+Thanks all,
+Andres
 >
->
-> nit: I think gic.h should be split to driver/irqchip/irq-mips-gic.h for
-> private definitions and include/linux/irqchip/irq-mips-gic.h for
-> exported/public definitions.
+> --
+>                         Gleb.
 
-Yup, I was planning on doing this in the next series :).  Malta and
-the clockevent/clocksource driver need to get cleaned up first though,
-so that they don't have to use the private register definitions.
 
->> diff --git a/drivers/irqchip/irq-mips-gic.c
->> b/drivers/irqchip/irq-mips-gic.c
->> index 6682a4e..3abe310 100644
->> --- a/drivers/irqchip/irq-mips-gic.c
->> +++ b/drivers/irqchip/irq-mips-gic.c
 
->> @@ -95,12 +96,39 @@ cycle_t gic_read_compare(void)
->>   }
->>   #endif
->>   +static bool gic_local_irq_is_routable(int intr)
->> +{
->> +       u32 vpe_ctl;
->> +
->> +       /* All local interrupts are routable in EIC mode. */
->> +       if (cpu_has_veic)
->> +               return true;
->> +
->> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_CTL), vpe_ctl);
->> +       switch (intr) {
->> +       case GIC_LOCAL_INT_TIMER:
->> +               return vpe_ctl & GIC_VPE_CTL_TIMER_RTBL_MSK;
->> +       case GIC_LOCAL_INT_PERFCTR:
->> +               return vpe_ctl & GIC_VPE_CTL_PERFCNT_RTBL_MSK;
->> +       case GIC_LOCAL_INT_FDC:
->> +               return vpe_ctl & GIC_VPE_CTL_FDC_RTBL_MSK;
->> +       case GIC_LOCAL_INT_SWINT0:
->> +       case GIC_LOCAL_INT_SWINT1:
->> +               /*
->> +                * SWINT{0,1} are not routable in non-EIC mode, regardless
->> +                * of the setting of SWINT_ROUTABLE.
->> +                */
->> +               return false;
->
->
-> Hmm AFAIK they are routable. Actually from hard reset they're automatically
-> routed to vpe0 pin 0 which caught me a number of times when trying to use
-> software interrupt on hardware that has GIC. When setting software interrupt
-> I was seeing pin 0 going high too and thought it's a hardware bug for a
-> while.
-
-Interesting, the interAptiv User's Manual I have, in section 9.4.7.1,
-says: "Note that Software Interrupts from the VPE are routed
-internally by the CPU in vectored interrupt mode, and are only routed
-through the GIC when the GIC is in EIC mode, regardless of the
-GIC_VPEi_CTL register."  IIRC, there's a similar statement in the
-proAptiv manual as well.  I didn't play with the SWINT bits myself, so
-I wouldn't be surprised if that's wrong :).
-
-> I think all local interrupts should be masked at GIC initialisation except
-> for timer interrupt. I was preparing a set of patches for GIC but you beat
-> me into it :)
-
-If SWINT gets routed both through the GIC and directly to the CPU,
-then that's probably the best thing to do.  I suspect we'll also want
-to leave the performance counter interrupt unmasked too, since,
-unfortunately, both the HW perf event driver and oprofile do not use
-the percpu IRQ API.
-
->> @@ -341,12 +342,54 @@ static struct irq_chip gic_edge_irq_controller = {
->>   #endif
->>   };
->>   +static unsigned int gic_get_local_int(void)
->> +{
->> +       unsigned long pending, masked;
->> +
->> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_PEND), pending);
->> +       GICREAD(GIC_REG(VPE_LOCAL, GIC_VPE_MASK), masked);
->> +
->> +       bitmap_and(&pending, &pending, &masked, GIC_NUM_LOCAL_INTRS);
->> +
->> +       return find_first_bit(&pending, GIC_NUM_LOCAL_INTRS);
->> +}
->> +
->> +static void gic_mask_local_irq(struct irq_data *d)
->> +{
->> +       int intr = GIC_HWIRQ_TO_LOCAL(d->hwirq);
->> +
->> +       GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_RMASK), 1 << intr);
->> +}
->> +
->> +static void gic_unmask_local_irq(struct irq_data *d)
->> +{
->> +       int intr = GIC_HWIRQ_TO_LOCAL(d->hwirq);
->> +
->> +       GICWRITE(GIC_REG(VPE_LOCAL, GIC_VPE_SMASK), 1 << intr);
->> +}
->> +
->> +static struct irq_chip gic_local_irq_controller = {
->> +       .name                   =       "MIPS GIC Local",
->> +       .irq_ack                =       gic_mask_local_irq,
->> +       .irq_mask               =       gic_mask_local_irq,
->> +       .irq_mask_ack           =       gic_mask_local_irq,
->> +       .irq_unmask             =       gic_unmask_local_irq,
->> +       .irq_eoi                =       gic_unmask_local_irq,
->> +};
->> +
->
->
-> again I don't think irq_ack, irq_mask_ack and irq_eoi are needed.
-
-Yup, will do.
+-- 
+Andres Lagar-Cavilla | Google Kernel Team | andreslc@google.com
