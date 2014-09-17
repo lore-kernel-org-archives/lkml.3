@@ -1,138 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472AbaIQMyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 08:54:47 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:59483 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754510AbaIQMy2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 08:54:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ah0FAPqDGVSERCAB/2dsb2JhbABggw2BKtByAYEVFgEBeIQEAQUnUhBRVxmIPrd6hkWPSwcWhDUFhh+FGp1+iRmDYWmCSgEBAQ
-X-IPAS-Result: Ah0FAPqDGVSERCAB/2dsb2JhbABggw2BKtByAYEVFgEBeIQEAQUnUhBRVxmIPrd6hkWPSwcWhDUFhh+FGp1+iRmDYWmCSgEBAQ
-X-IronPort-AV: E=Sophos;i="5.04,540,1406581200"; 
-   d="scan'208";a="122640362"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: bp@alien8.de
-Cc: mingo@kernel.org, nadav.amit@gmail.com, pbonzini@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, Nadav Amit <namit@cs.technion.ac.il>
-Subject: [RESEND PATCH 3/3] KVM: x86: Using cpuid structs in KVM
-Date: Wed, 17 Sep 2014 15:54:14 +0300
-Message-Id: <1410958454-7501-4-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
-References: <20140917124501.GC5358@nazgul.tnic>
- <1410958454-7501-1-git-send-email-namit@cs.technion.ac.il>
+	id S1755537AbaIQMzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 08:55:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36169 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755252AbaIQMzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 08:55:37 -0400
+Date: Wed, 17 Sep 2014 14:55:26 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, hpa@linux.intel.com, ak@linux.intel.com,
+        Alex Chiang <achiang@hp.com>, Borislav Petkov <bp@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>, Mike Travis <travis@sgi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH] x86: Consider multiple nodes in a single socket to be
+ "sane"
+Message-ID: <20140917125526.GA5463@nazgul.tnic>
+References: <20140915222641.D640BD8A@viggo.jf.intel.com>
+ <20140916032920.GH2840@worktop.localdomain>
+ <5417F228.9060301@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5417F228.9060301@sr71.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using cpuid structs in KVM to eliminate cryptic code with many bit operations.
-The code does not introduce functional changes.
+On Tue, Sep 16, 2014 at 01:17:44AM -0700, Dave Hansen wrote:
+> >> This also fixes sysfs because CPUs with the same 'physical_package_id'
+> >> in /sys/devices/system/cpu/cpu*/topology/ are not listed together
+> >> in the same 'core_siblings_list'.  This violates a statement from
+> >> Documentation/ABI/testing/sysfs-devices-system-cpu:
+> >>
+> >> 	core_siblings: internal kernel map of cpu#'s hardware threads
+> >> 	within the same physical_package_id.
+> >>
+> >> 	core_siblings_list: human-readable list of the logical CPU
+> >> 	numbers within the same physical_package_id as cpu#.
+> > 
+> > No that statement is wrong; it assumes physical_package_id is a good
+> > identifier for nodes. Clearly this is no longer true.
+> 
+> I went back and re-read the text around there.  I don't see any mention
+> of nodes or NUMA.  It's just talking about the topology within the CPU
+> from what I can tell.
+> 
+> Good thing it's just in "Documentation/ABI/testing/" I guess.
+> 
+> Either way, are you saying that a core's "physical_package_id" should
+> depend on what BIOS options get set, and that different cores in the
+> same physical package should have different "physical_package_id"s?
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
- arch/x86/kvm/cpuid.c | 36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+This sounds misleading to me. If I would have to explain how I
+understand physical_package_id, I'd say it is the physical piece of
+silicon containing the core. Which is consistent with what Peter says
+that using it to identify NUMA nodes is wrong.
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 38a0afe..a7479ab 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -18,6 +18,7 @@
- #include <linux/uaccess.h>
- #include <asm/user.h>
- #include <asm/xsave.h>
-+#include <asm/cpuid_def.h>
- #include "cpuid.h"
- #include "lapic.h"
- #include "mmu.h"
-@@ -357,16 +358,18 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	}
- 	/* function 4 has additional index. */
- 	case 4: {
--		int i, cache_type;
-+		int i;
- 
- 		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
- 		/* read more entries until cache_type is zero */
- 		for (i = 1; ; ++i) {
-+			union cpuid4_eax eax;
-+
- 			if (*nent >= maxnent)
- 				goto out;
- 
--			cache_type = entry[i - 1].eax & 0x1f;
--			if (!cache_type)
-+			eax.full = entry[i - 1].eax;
-+			if (!eax.split.cache_type)
- 				break;
- 			do_cpuid_1_ent(&entry[i], function, i);
- 			entry[i].flags |=
-@@ -423,16 +426,18 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	}
- 	/* function 0xb has additional index. */
- 	case 0xb: {
--		int i, level_type;
-+		int i;
- 
- 		entry->flags |= KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
- 		/* read more entries until level_type is zero */
- 		for (i = 1; ; ++i) {
-+			union cpuid11_ecx ecx;
-+
- 			if (*nent >= maxnent)
- 				goto out;
- 
--			level_type = entry[i - 1].ecx & 0xff00;
--			if (!level_type)
-+			ecx.full = entry[i - 1].ecx;
-+			if (!ecx.split.level_type)
- 				break;
- 			do_cpuid_1_ent(&entry[i], function, i);
- 			entry[i].flags |=
-@@ -505,13 +510,13 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 		entry->eax = entry->ebx = entry->ecx = 0;
- 		break;
- 	case 0x80000008: {
--		unsigned g_phys_as = (entry->eax >> 16) & 0xff;
--		unsigned virt_as = max((entry->eax >> 8) & 0xff, 48U);
--		unsigned phys_as = entry->eax & 0xff;
-+		union cpuid_8_8_eax eax;
- 
--		if (!g_phys_as)
--			g_phys_as = phys_as;
--		entry->eax = g_phys_as | (virt_as << 8);
-+		eax.full = entry->eax;
-+		eax.split.virt_as = max_t(int, eax.split.virt_as, 48);
-+		if (!eax.split.guest_phys_as)
-+			eax.split.guest_phys_as = eax.split.phys_as;
-+		entry->eax = eax.full;
- 		entry->ebx = entry->edx = 0;
- 		break;
- 	}
-@@ -724,13 +729,16 @@ EXPORT_SYMBOL_GPL(kvm_find_cpuid_entry);
- int cpuid_maxphyaddr(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_cpuid_entry2 *best;
-+	union cpuid_8_8_eax eax;
- 
- 	best = kvm_find_cpuid_entry(vcpu, 0x80000000, 0);
- 	if (!best || best->eax < 0x80000008)
- 		goto not_found;
- 	best = kvm_find_cpuid_entry(vcpu, 0x80000008, 0);
--	if (best)
--		return best->eax & 0xff;
-+	if (best) {
-+		eax.full = best->eax;
-+		return eax.split.phys_as;
-+	}
- not_found:
- 	return 36;
- }
+Btw, I'm trying to get on an AMD MCM box to dump those fields but it is
+kinda hard currently. Will report back once I have something...
+
 -- 
-1.9.1
-
+Regards/Gruss,
+    Boris.
+--
