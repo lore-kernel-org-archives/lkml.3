@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaIQIjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 04:39:43 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:39171 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaIQIjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 04:39:40 -0400
+	id S1754740AbaIQIkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 04:40:09 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081AbaIQIkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 04:40:06 -0400
+Message-ID: <541948E3.3080602@nod.at>
+Date: Wed, 17 Sep 2014 10:40:03 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-X-Originating-IP: [95.23.61.81]
-In-Reply-To: <CAD=FV=VsSg5QLbdhgb4vV1+boeWaksCGj4MfGnCQnyhQR6Dr5A@mail.gmail.com>
-References: <1409216559-22402-1-git-send-email-cw00.choi@samsung.com>
-	<1409216559-22402-5-git-send-email-cw00.choi@samsung.com>
-	<CABxcv=ku9fjFfzyXZEnCGpTrWQ0pN+5mLWay90jXBhkFeWb7sg@mail.gmail.com>
-	<CAD8Lp47M8jHLrQAdYUn6NZn2Ety_02E6HPzPDUX3uGLVqf1riw@mail.gmail.com>
-	<CABxcv==CBbaY_GVgmWe5QzJdhMipyx5TpZ4_3oKLzkyiGPOBrw@mail.gmail.com>
-	<CAD=FV=VsSg5QLbdhgb4vV1+boeWaksCGj4MfGnCQnyhQR6Dr5A@mail.gmail.com>
-Date: Wed, 17 Sep 2014 10:39:39 +0200
-Message-ID: <CABxcv=m2XbqDTskHD0U3h+o7kXH51KVySs7tVBGpyozLmzUqkw@mail.gmail.com>
-Subject: Re: [PATCHv3 4/5] rtc: s3c: Add support for RTC of Exynos3250 SoC
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Daniel Drake <drake@endlessm.com>, Chanwoo Choi <cw00.choi@samsung.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, rtc-linux@googlegroups.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
+To: dedekind1@gmail.com
+CC: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] UBI: Fix possible deadlock in erase_worker()
+References: <1410853702-11616-1-git-send-email-richard@nod.at> <1410942507.28850.78.camel@sauron.fi.intel.com>
+In-Reply-To: <1410942507.28850.78.camel@sauron.fi.intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Doug,
+Am 17.09.2014 10:28, schrieb Artem Bityutskiy:
+> On Tue, 2014-09-16 at 09:48 +0200, Richard Weinberger wrote:
+>> If sync_erase() failes with EINTR, ENOMEM, EAGAIN or
+>> EBUSY erase_worker() re-schedules the failed work.
+>> This will lead to a deadlock because erase_worker() is called
+>> with work_sem held in read mode. And schedule_erase() will take
+>> this lock again.
+> 
+> IIRC, the assumption was that the R/W semaphore may be taken in read
+> mode many times, so it wouldn't hurt to do:
+> 
+> down_read()
+> down_read()
+> up_read()
+> up_read()
 
-On Wed, Sep 17, 2014 at 12:15 AM, Doug Anderson <dianders@chromium.org> wrote:
->
-> I think you can turn off CONFIG_COMMON_CLK_MAX77686 and then this
-> clock will be left at whatever the bootloader set it to, right?  Then
-> there will be no auto-disabling by the CCF and the RTC will work.
+Hmm, are you sure that this is legal?
 
-Yes, that's how Daniel was working around the issue.
+Quoting rwsem.h:
+/*
+ * nested locking. NOTE: rwsems are not allowed to recurse
+ * (which occurs if the same task tries to acquire the same
+ * lock instance multiple times), but multiple locks of the
+ * same lock class might be taken, if the order of the locks
+ * is always the same. This ordering rule can be expressed
+ * to lockdep via the _nested() APIs, but enumerating the
+ * subclasses that are used. (If the nesting relationship is
+ * static then another method for expressing nested locking is
+ * the explicit definition of lock class keys and the use of
+ * lockdep_set_class() at lock initialization time.
+ * See Documentation/lockdep-design.txt for more details.)
+ */
 
-> That's one argument for making the clock "optional".
->
+In this case the same task is taking the same lock multiple times,
+which is not allowed according to rwsem.h.
 
-Indeed.
-
-> NOTE: I don't think that the builtin RTC is terribly important for any
-> exynos-based Chromebooks that I'm aware of.  We rely on the RTC that's
-> part of the Maxim PMIC itself and pretty much ignore the one built-in
-> to the exynos.  I think there are some cases it was used (as a
-> fallback wakeup source in certain test scripts), but nothing very
-> important.
->
-
-Ok, I'll post the patch I shared before that makes the rtc to claim
-the max77802 32kHz clock as "rtc_src" anyways since that is the right
-thing to do even if the "rtc_src" ends being optional due DT backward
-compat.
-
-> -Doug
-
-Best regards,
-Javier
+Thanks,
+//richard
