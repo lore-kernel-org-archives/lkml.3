@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632AbaIQTBD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 15:01:03 -0400
+	id S1756467AbaIQTAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 15:00:55 -0400
 Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:5946 "EHLO
 	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756507AbaIQTA7 (ORCPT
+	by vger.kernel.org with ESMTP id S1755786AbaIQTAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 15:00:59 -0400
+	Wed, 17 Sep 2014 15:00:52 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtgNAL/ZGVRXQCIg/2dsb2JhbABhgw22FQUBcAGbFwGBFhcBeYQEAQUnLyMQUTkeGYhCAb9nGIYJiW4HhEsFhh+WbYwyiRaCG4FFOy+CSgEBAQ
+X-IronPort-Anti-Spam-Result: AtgNAL/ZGVRXQCIg/2dsb2JhbABhgw22FQUBcAGbFwGBFhcBeYQEAQUnLyMQUTkeGYhCAb9nGIYJiW4HFoQ1BZ0MjDKJFoIbgUU7L4JKAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: daniel.vetter@intel.com, Fabian Frederick <fabf@skynet.be>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: [PATCH 5/6] video: fbdev: pxafb.c: use container_of to resolve pxafb_info/layer from fb_info
-Date: Wed, 17 Sep 2014 21:00:18 +0200
-Message-Id: <1410980419-5326-6-git-send-email-fabf@skynet.be>
+Subject: [PATCH 2/6] video: fbdev: sa1100fb.c: use container_of to resolve sa1100fb_info from fb_info
+Date: Wed, 17 Sep 2014 21:00:15 +0200
+Message-Id: <1410980419-5326-3-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1410980419-5326-1-git-send-email-fabf@skynet.be>
 References: <1410980419-5326-1-git-send-email-fabf@skynet.be>
@@ -29,105 +29,75 @@ Use container_of instead of casting first structure member.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
-ARM-PXA cross-compiled but untested.
+ARM/SA1100 cross-compiled but untested.
 
- drivers/video/fbdev/pxafb.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/video/fbdev/sa1100fb.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/fbdev/pxafb.c b/drivers/video/fbdev/pxafb.c
-index 1ecd9ce..a5acca8 100644
---- a/drivers/video/fbdev/pxafb.c
-+++ b/drivers/video/fbdev/pxafb.c
-@@ -138,7 +138,7 @@ static int
- pxafb_setpalettereg(u_int regno, u_int red, u_int green, u_int blue,
+diff --git a/drivers/video/fbdev/sa1100fb.c b/drivers/video/fbdev/sa1100fb.c
+index 580c444e..9690216 100644
+--- a/drivers/video/fbdev/sa1100fb.c
++++ b/drivers/video/fbdev/sa1100fb.c
+@@ -268,7 +268,8 @@ static int
+ sa1100fb_setpalettereg(u_int regno, u_int red, u_int green, u_int blue,
  		       u_int trans, struct fb_info *info)
  {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
- 	u_int val;
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
+ 	u_int val, ret = 1;
  
- 	if (regno >= fbi->palette_size)
-@@ -183,7 +183,7 @@ static int
- pxafb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+ 	if (regno < fbi->palette_size) {
+@@ -289,7 +290,8 @@ static int
+ sa1100fb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
  		   u_int trans, struct fb_info *info)
  {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
  	unsigned int val;
  	int ret = 1;
  
-@@ -456,7 +456,7 @@ static int pxafb_adjust_timing(struct pxafb_info *fbi,
-  */
- static int pxafb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+@@ -366,7 +368,8 @@ static inline unsigned int sa1100fb_display_dma_period(struct fb_var_screeninfo
+ static int
+ sa1100fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
  {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
- 	struct pxafb_mach_info *inf = dev_get_platdata(fbi->dev);
- 	int err;
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
+ 	int rgbidx;
  
-@@ -494,7 +494,7 @@ static int pxafb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
+ 	if (var->xres < MIN_XRES)
+@@ -433,7 +436,8 @@ static void sa1100fb_set_visual(struct sa1100fb_info *fbi, u32 visual)
   */
- static int pxafb_set_par(struct fb_info *info)
+ static int sa1100fb_set_par(struct fb_info *info)
  {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
  	struct fb_var_screeninfo *var = &info->var;
+ 	unsigned long palette_mem_size;
  
- 	if (var->bits_per_pixel >= 16)
-@@ -533,7 +533,7 @@ static int pxafb_set_par(struct fb_info *info)
- static int pxafb_pan_display(struct fb_var_screeninfo *var,
- 			     struct fb_info *info)
- {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
- 	struct fb_var_screeninfo newvar;
- 	int dma = DMA_MAX + DMA_BASE;
- 
-@@ -566,7 +566,7 @@ static int pxafb_pan_display(struct fb_var_screeninfo *var,
+@@ -526,7 +530,8 @@ sa1100fb_set_cmap(struct fb_cmap *cmap, int kspc, int con,
   */
- static int pxafb_blank(int blank, struct fb_info *info)
+ static int sa1100fb_blank(int blank, struct fb_info *info)
  {
--	struct pxafb_info *fbi = (struct pxafb_info *)info;
-+	struct pxafb_info *fbi = container_of(info, struct pxafb_info, fb);
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
  	int i;
  
- 	switch (blank) {
-@@ -725,7 +725,7 @@ static struct pxafb_layer_ops ofb_ops[] = {
- 
- static int overlayfb_open(struct fb_info *info, int user)
+ 	dev_dbg(fbi->dev, "sa1100fb_blank: blank=%d\n", blank);
+@@ -555,7 +560,8 @@ static int sa1100fb_blank(int blank, struct fb_info *info)
+ static int sa1100fb_mmap(struct fb_info *info,
+ 			 struct vm_area_struct *vma)
  {
--	struct pxafb_layer *ofb = (struct pxafb_layer *)info;
-+	struct pxafb_layer *ofb = container_of(info, struct pxafb_layer, fb);
+-	struct sa1100fb_info *fbi = (struct sa1100fb_info *)info;
++	struct sa1100fb_info *fbi =
++		container_of(info, struct sa1100fb_info, fb);
+ 	unsigned long off = vma->vm_pgoff << PAGE_SHIFT;
  
- 	/* no support for framebuffer console on overlay */
- 	if (user == 0)
-@@ -743,7 +743,7 @@ static int overlayfb_open(struct fb_info *info, int user)
- 
- static int overlayfb_release(struct fb_info *info, int user)
- {
--	struct pxafb_layer *ofb = (struct pxafb_layer*) info;
-+	struct pxafb_layer *ofb = container_of(info, struct pxafb_layer, fb);
- 
- 	if (ofb->usage == 1) {
- 		ofb->ops->disable(ofb);
-@@ -760,7 +760,7 @@ static int overlayfb_release(struct fb_info *info, int user)
- static int overlayfb_check_var(struct fb_var_screeninfo *var,
- 			       struct fb_info *info)
- {
--	struct pxafb_layer *ofb = (struct pxafb_layer *)info;
-+	struct pxafb_layer *ofb = container_of(info, struct pxafb_layer, fb);
- 	struct fb_var_screeninfo *base_var = &ofb->fbi->fb.var;
- 	int xpos, ypos, pfor, bpp;
- 
-@@ -836,7 +836,7 @@ static int overlayfb_check_video_memory(struct pxafb_layer *ofb)
- 
- static int overlayfb_set_par(struct fb_info *info)
- {
--	struct pxafb_layer *ofb = (struct pxafb_layer *)info;
-+	struct pxafb_layer *ofb = container_of(info, struct pxafb_layer, fb);
- 	struct fb_var_screeninfo *var = &info->var;
- 	int xpos, ypos, pfor, bpp, ret;
- 
+ 	if (off < info->fix.smem_len) {
 -- 
 2.1.0
 
