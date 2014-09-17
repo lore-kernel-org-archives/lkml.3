@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936AbaIQQFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:05:14 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:56297 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215AbaIQQFM (ORCPT
+	id S1755955AbaIQQFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:05:30 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:54266 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698AbaIQQFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:05:12 -0400
-Date: Wed, 17 Sep 2014 09:05:08 -0700
-From: Graeme Gregory <graeme.gregory@linaro.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linaro-acpi@lists.linaro.org,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Lv Zheng <lv.zheng@intel.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Robert Moore <robert.moore@intel.com>, linux-acpi@vger.kernel.org,
-        Charles.Garcia-Tobin@arm.com, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Marc Zyngier <marc.zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v4 18/18] Documentation: ACPI for ARM64
-Message-ID: <20140917160508.GA2464@xora-yoga-13>
-References: <1410530416-30200-1-git-send-email-hanjun.guo@linaro.org>
- <1410530416-30200-19-git-send-email-hanjun.guo@linaro.org>
- <20140917014410.GC31214@srcf.ucam.org>
+	Wed, 17 Sep 2014 12:05:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140917014410.GC31214@srcf.ucam.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140917154327.GA12190@thunk.org>
+References: <cover.1410810247.git.milosz@adfin.com>
+	<057d758976db2fcce58e394abaa0d55e48cdeec1.1410810247.git.milosz@adfin.com>
+	<20140917154327.GA12190@thunk.org>
+Date: Wed, 17 Sep 2014 12:05:23 -0400
+Message-ID: <CANP1eJFQv51E7yfXw70ONxkjhOVatV6ERwgaY6Srv9-6VcDrjQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] Define new syscalls readv2,preadv2,writev2,pwritev2
+From: Milosz Tanski <milosz@adfin.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Milosz Tanski <milosz@adfin.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-aio@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 17, 2014 at 02:44:10AM +0100, Matthew Garrett wrote:
-> On Fri, Sep 12, 2014 at 10:00:16PM +0800, Hanjun Guo wrote:
-> 
-> > +Common _DSD bindings should be submitted to ASWG to be included in the
-> > +document :-
-> > +
-> > +http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-> 
-> How are individuals/companies who aren't UEFI members supposed to do 
-> this? Aren't there IP issues involved in taking submissions from 
-> non-members?
-> 
+Theodore,
 
-This section needs to be changed anyway, it comes out of a
-misunderstanding I had of the _DSD spec.
+I might be missing understanding something, but... I already omitted
+read2 and write2 which can be implemented in userspace by libc (as you
+pointed out). In the case of readv vs. preadv there's an extra
+positional argument (file offset) and preadv version doesn't change
+the file location. I didn't want to overload the meaning of preadv2 to
+take a special negative offset value that uses the current file
+position but also changes the file position.
 
-It sounds like from the discussions in other threads that ARM64 should
-be following x86 and re-using DT bindings here. In which case there is
-not need to submit things to UEFI organisation.
+As a counter point to my view point, Christop also brought the same
+thing as you did.
 
-What I got a little lost in has there been a formal decision about DT
-bindings in _DSD?
+- Milosz
 
-Graeme
+On Wed, Sep 17, 2014 at 11:43 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Mon, Sep 15, 2014 at 04:20:37PM -0400, Milosz Tanski wrote:
+>> New syscalls with an extra flag argument. For now all flags except for 0 are
+>> not supported.
+>
+> This may fall in the category of bike-shedding, and so I apologize in
+> advance, but I wonder if we really need readv2 and writev2 as new
+> syscalls.  What if we just added preadv2 and pwritev2, and implemented
+> readv2 and writev2 as libc wrappers where which had the vector
+> allocated as an automatic stack variable?  Is the extra user memory
+> access really going to be that noticeable?
+>
+> Cheers,
+>
+>                                        - Ted
 
+
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
