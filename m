@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367AbaIQQtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:49:17 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48192 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201AbaIQQtN (ORCPT
+	id S1756434AbaIQQtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:49:32 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:49898 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393AbaIQQt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:49:13 -0400
-Date: Wed, 17 Sep 2014 09:49:06 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org
-Message-ID: <20140917164906.GK7960@sirena.org.uk>
-References: <2443447.AFyh6VXdN9@diego>
+	Wed, 17 Sep 2014 12:49:29 -0400
+Date: Wed, 17 Sep 2014 09:49:25 -0700
+From: Lee Jones <lee.jones@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: ssbi: promote the driver to subsys level
+Message-ID: <20140917164925.GO30918@lee--X1>
+References: <1410915594-15599-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <20140917160305.GH30918@lee--X1>
+ <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kJESre7KIk3SwaPI"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <2443447.AFyh6VXdN9@diego>
-X-Cookie: Many pages make a thick book.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 70.35.38.154
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: fan53555: fix wrong cast in probe
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGkH4DOPHQWBVZgiLZugcoTZNJiS-ar8KNvq96W5UmX8C6GCTg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
 
---kJESre7KIk3SwaPI
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 17 Sep 2014 09:03, "Lee Jones" <lee.jones@linaro.org> wrote:
+> >
+> > On Wed, 17 Sep 2014, Srinivas Kandagatla wrote:
+> >
+> > > This patch promtes the driver to be at subsystem level as this driver
+> > > will be used by gpio controller drivers which inturn are used by many
+> > > platform drivers.
+> >
+> > Any reason why you're not using -EPROBE?
+> >
+> EPROBE is possible but it's going to add few more cycles to boot time.
+> 
+> As this driver is a very basic driver on which other drivers depend
+> ensuring the sequence would improve the boot time.
 
-On Wed, Sep 17, 2014 at 01:21:48PM +0200, Heiko St=FCbner wrote:
-> The vendor-id gathered from the dt match-data was cast to int but assigned
-> to an unsigned long, producing warnings on at least sparc, like
+We only tend to promote drivers' init level as a last resort.  If
+-EPROBE_DEFER is possible, please use that instead.
 
-Applied, thanks.
+> > > Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> > > ---
+> > >  drivers/mfd/ssbi.c | 7 ++++++-
+> > >  1 file changed, 6 insertions(+), 1 deletion(-)
+> > >
+> > > diff --git a/drivers/mfd/ssbi.c b/drivers/mfd/ssbi.c
+> > > index b78942e..4fbe02e 100644
+> > > --- a/drivers/mfd/ssbi.c
+> > > +++ b/drivers/mfd/ssbi.c
+> > > @@ -331,7 +331,12 @@ static struct platform_driver ssbi_driver = {
+> > >               .of_match_table = ssbi_match_table,
+> > >       },
+> > >  };
+> > > -module_platform_driver(ssbi_driver);
+> > > +
+> > > +static int ssbi_init(void)
+> > > +{
+> > > +     return platform_driver_register(&ssbi_driver);
+> > > +}
+> > > +subsys_initcall(ssbi_init);
+> > >
+> > >  MODULE_LICENSE("GPL v2");
+> > >  MODULE_VERSION("1.0");
+> >
 
---kJESre7KIk3SwaPI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUGbuBAAoJECTWi3JdVIfQ2kIH/0bep5+zjjZ42pd+oApwbdmk
-bOTIyLQuxji0VFvs54rH7G0l1HbiWM1w0JklDS1XEh6jkDxGtaCP0j5fAvX1BRwe
-9nLIvVPZaQ/2m4R8/eqI/8z3V92Zd03RKd68VTd73xB6vevh57t0UnCR23z95Gsi
-4tT3RNcJNJQoekI6ikZ2JZGu+mO1Jo8EeJ3wZ/D4Xk3xED7seV1FHzaKR0LEPpF5
-XHELFYEXkPRu4ley7ui5jKjcmGCXW0OAy/xKuJDWCeOB6/38odmHrA2+98BpmcEW
-XLykieXRwNTbx3CKpjfbiWna3kcU6ZxXp5SFmRcllFYBwkY2Ckd6YTj6zz0VsGc=
-=N4iG
------END PGP SIGNATURE-----
-
---kJESre7KIk3SwaPI--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
