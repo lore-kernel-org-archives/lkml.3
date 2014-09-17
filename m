@@ -1,173 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112AbaIQSnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 14:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755699AbaIQSno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 14:43:44 -0400
-Date: Wed, 17 Sep 2014 14:43:30 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: =?utf-8?B?6IOh5YmR6Ziz?= <hujyang@gmail.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        hujianyang <hujianyang@huawei.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        eparis@redhat.com, jlayton@redhat.com
-Subject: Re: [PATCH] audit: vfs: fix audit records error when write to a file
-Message-ID: <20140917184330.GO4462@madcap2.tricolour.ca>
-References: <54095E79.9010306@huawei.com>
- <20140905065013.21111541@tlielax.poochiereds.net>
- <CABMCRV897Vc26C_yG7YUzUgDEfKEPkDYGS7GmBTOGmdR2c=-Kg@mail.gmail.com>
+	id S1756163AbaIQSpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 14:45:14 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33876 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755786AbaIQSpM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 14:45:12 -0400
+Date: Wed, 17 Sep 2014 19:45:27 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+Subject: Re: [PATCH v5 11/12] sched: replace capacity_factor by utilization
+Message-ID: <20140917184527.GB9854@e103034-lin>
+References: <1409051215-16788-1-git-send-email-vincent.guittot@linaro.org>
+ <1409051215-16788-12-git-send-email-vincent.guittot@linaro.org>
+ <20140911161517.GA3190@worktop.ger.corp.intel.com>
+ <CAKfTPtDFuzxzGBKi_n6v_F8FUkQ84MW+dQBX4WNXo-o54mksGA@mail.gmail.com>
+ <20140914194156.GC2832@worktop.localdomain>
+ <20140915114229.GB3037@worktop.localdomain>
+ <alpine.LFD.2.11.1409151451540.8647@knanqh.ubzr>
+ <20140915200159.GE2840@worktop.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABMCRV897Vc26C_yG7YUzUgDEfKEPkDYGS7GmBTOGmdR2c=-Kg@mail.gmail.com>
+In-Reply-To: <20140915200159.GE2840@worktop.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/09/05, 胡剑阳 wrote:
-> Hi Jeff,
-
-Hello gentlemen,
-
-> I don't know if we can keep audit_inode() in do_last(). I've tried
-> this but found
-> the only way to enable both write() and create() is moving it to lookup_open().
-> I know this is not good, but I think we have no choice.
+On Mon, Sep 15, 2014 at 09:01:59PM +0100, Peter Zijlstra wrote:
+> On Mon, Sep 15, 2014 at 03:07:44PM -0400, Nicolas Pitre wrote:
+> > On Mon, 15 Sep 2014, Peter Zijlstra wrote:
 > 
-> The current patch really miss the ROFS condition as you said. How about
-> moving audit_inode() to the beginning of the O_CREAT case in lookup_open()?
-> That's my mistake. After this, it seems no creating records will be missing.
+> > Let's suppose a task running on a 1GHz CPU producing a load of 100.
+> > 
+> > The same task on a 100MHz CPU would produce a load of 1000 because that 
+> > CPU is 10x slower.  So to properly evaluate the load of a task when 
+> > moving it around, we want to normalize its load based on the CPU 
+> > performance.  In this case the correction factor would be 0.1.
+> > 
+> > Given those normalized loads, we need to scale CPU capacity as well.  If 
+> > the 1GHz CPU can handle 50 of those tasks it has a capacity of 5000.
+> > 
+> > In theory the 100MHz CPU could handle only 5 of those tasks, meaning it 
+> > has a normalized capacity of 500, but only if the load metric is already 
+> > normalized as well.
+> > 
+> > Or am I completely missing the point here?
 > 
-> I would like to change this and resend a new patch. I'm worry about if we miss
-> something. Before I do this, do you have any suggestions? Or do you have a
-> better way to keep audit_inode() in do_last()?
+> So I was thinking of the usage as per the next patch; where we decide if
+> a cpu is 'full' or not based on the utilization measure. For this
+> measure we're not interested in inter CPU relations at all, and any use
+> of capacity scaling simply doesn't make sense.
 
-Could you add me to your Cc: list on this thread, please?  I'm
-interested in the outcome...  Thanks!
+Right. You don't need to scale capacity to determine whether a cpu is
+full or not if you don't have DVFS, but I don't think it hurts if it is
+done right. We need the scaling to figure out how much capacity is
+available.
 
-> Thank you~!
-> 
-> Hu
-> 
-> 2014-09-05 18:50 GMT+08:00 Jeff Layton <jeff.layton@primarydata.com>:
-> > On Fri, 5 Sep 2014 14:55:53 +0800
-> > hujianyang <hujianyang@huawei.com> wrote:
-> >
-> >> commit 33e2208acfc1
-> >>
-> >> audit: vfs: fix audit_inode call in O_CREAT case of do_last
-> >>
-> >> fix a regression in auditing of open(..., O_CREAT) syscalls but
-> >> import a new problem which lead the records of write operation
-> >> confusion.
-> >>
-> >> This error can be reproduced by these steps:
-> >>
-> >>       touch /etc/test
-> >>       echo "-w /etc/test" >>/etc/audit/audit.rules
-> >>       /etc/init.d/auditd restart
-> >>
-> >>       echo "abc" >> /etc/test
-> >>
-> >> audit_name records are:
-> >>
-> >> type=PATH msg=audit(1409764556.196:67): item=0 name="/etc/" inode=5097 dev=00:01 mode=040755 ouid=0 ogid=0 rdev=00:00 nametype=PARENT
-> >> type=PATH msg=audit(1409764556.196:67): item=1 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-> >> type=PATH msg=audit(1409764556.196:67): item=2 name=(null) inode=23161 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-> >>
-> >> but if we revert commit 33e2208acfc1, records are correct:
-> >>
-> >> type=PATH msg=audit(1409763058.192:219): item=0 name="/etc/test" inode=1275 dev=00:01 mode=0100644 ouid=0 ogid=0 rdev=00:00 nametype=NORMAL
-> >>
-> >> We shouldn't leave audit_inode(.., LOOKUP_PARENT) in O_CREAT case
-> >> of do_last() because this branch don't really know if vfs need to
-> >> create a new file. There is no need to do vfs_create() if we open
-> >> an existing file with O_CREAT flag and write to it. But this
-> >> audit_inode() in O_CREAT case will record a msg as we create a new
-> >> file and confuse the records of write.
-> >>
-> >> This patch moves the audit for create operation to where a file
-> >> really need to be created, the O_CREAT case in lookup_open().
-> >> We have to add the pointer of struct filename as a parameter of
-> >> lookup_open(). By doing this, the records of both create and write
-> >> are correct.
-> >>
-> >> Signed-off-by: hujianyang <hujianyang@huawei.com>
-> >> ---
-> >>  fs/namei.c | 9 ++++++---
-> >>  1 file changed, 6 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/fs/namei.c b/fs/namei.c
-> >> index a996bb4..0bc7734 100644
-> >> --- a/fs/namei.c
-> >> +++ b/fs/namei.c
-> >> @@ -2808,7 +2808,8 @@ looked_up:
-> >>  static int lookup_open(struct nameidata *nd, struct path *path,
-> >>                       struct file *file,
-> >>                       const struct open_flags *op,
-> >> -                     bool got_write, int *opened)
-> >> +                     bool got_write, int *opened,
-> >> +                     struct filename *name)
-> >>  {
-> >>       struct dentry *dir = nd->path.dentry;
-> >>       struct inode *dir_inode = dir->d_inode;
-> >> @@ -2854,6 +2855,9 @@ static int lookup_open(struct nameidata *nd, struct path *path,
-> >>                       error = -EROFS;
-> >>                       goto out_dput;
-> >>               }
-> >> +
-> >> +             audit_inode(name, dir, LOOKUP_PARENT);
-> >> +
-> >>               *opened |= FILE_CREATED;
-> >>               error = security_path_mknod(&nd->path, dentry, mode, 0);
-> >>               if (error)
-> >> @@ -2926,7 +2930,6 @@ static int do_last(struct nameidata *nd, struct path *path,
-> >>               if (error)
-> >>                       return error;
-> >>
-> >> -             audit_inode(name, dir, LOOKUP_PARENT);
-> >>               error = -EISDIR;
-> >>               /* trailing slashes? */
-> >>               if (nd->last.name[nd->last.len])
-> >> @@ -2945,7 +2948,7 @@ retry_lookup:
-> >>                */
-> >>       }
-> >>       mutex_lock(&dir->d_inode->i_mutex);
-> >> -     error = lookup_open(nd, path, file, op, got_write, opened);
-> >> +     error = lookup_open(nd, path, file, op, got_write, opened, name);
-> >>       mutex_unlock(&dir->d_inode->i_mutex);
-> >>
-> >>       if (error <= 0) {
-> >
-> > I'm not sure about this. Won't this cause us to miss creating audit
-> > records in some error conditions?
-> >
-> > For instance, if you end up not being able to create the file due to
-> > the fs being read-only, then I think this patch would make you miss the
-> > audit record for the parent.
-> >
-> > Might it be better to not plumb an extra pointer into lookup_open and
-> > just move the audit_inode calls around do_last in the appropriate
-> > places instead?
-> >
-> > --
-> > Jeff Layton <jlayton@primarydata.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+> But I think you asking this question shows a 'bigger' problem in that
+> the Changelogs are entirely failing at describing the actual problem and
+> proposed solution. Because if that were clear, I don't think we would be
+> having this particular discussion.
 
-- RGB
+Yes, the bigger problem of scaling things with DVFS and taking
+big.LITTLE into account is not addressed in this patch set. This is the
+scale-invariance problem that we discussed at Ksummit.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+I will send a few patches shortly that provides the usage
+scale-invariance. The last bit missing is then to scale capacity too (in
+the right places), such that we can determine whether as cpu is full or
+not, and how much spare capacity it has by comparing scale usage
+(utilization) with scaled capacity. Like in Nico's example above.
+
+Morten
