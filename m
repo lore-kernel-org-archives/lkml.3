@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957AbaIQQJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 12:09:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34547 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347AbaIQQI7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 12:08:59 -0400
-Message-ID: <1410970133.15235.29.camel@fourier>
-Subject: Re: [PATCH 3.13 120/187] ext4: fix ext4_discard_allocated_blocks()
- if we can't allocate the pa struct
-From: Kamal Mostafa <kamal@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, "Theodore Ts'o" <tytso@mit.edu>
-Date: Wed, 17 Sep 2014 09:08:53 -0700
-In-Reply-To: <1410952405.3040.98.camel@decadent.org.uk>
-References: <1410818997-9432-1-git-send-email-kamal@canonical.com>
-	 <1410818997-9432-121-git-send-email-kamal@canonical.com>
-	 <1410952405.3040.98.camel@decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756012AbaIQQJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 12:09:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755985AbaIQQJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 12:09:05 -0400
+Date: Wed, 17 Sep 2014 17:17:55 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-pci@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH v2 2/3] PCI/MSI/Armada-370-xp: Remove
+ arch_msi_check_device()
+Message-ID: <20140917161754.GG8793@agordeev.usersys.redhat.com>
+References: <cover.1410078503.git.agordeev@redhat.com>
+ <9f3497a0f478f3ee7d4a16b9a4221d4377e5863d.1410078503.git.agordeev@redhat.com>
+ <20140917155554.GE16945@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140917155554.GE16945@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-09-17 at 12:13 +0100, Ben Hutchings wrote:
-> On Mon, 2014-09-15 at 15:08 -0700, Kamal Mostafa wrote:
-> > 3.13.11.7 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Theodore Ts'o <tytso@mit.edu>
-> > 
-> > commit 86f0afd463215fc3e58020493482faa4ac3a4d69 upstream.
-> > 
-> > If there is a failure while allocating the preallocation structure, a
-> > number of blocks can end up getting marked in the in-memory buddy
-> > bitmap, and then not getting released.  This can result in the
-> > following corruption getting reported by the kernel:
-> > 
-> > EXT4-fs error (device sda3): ext4_mb_generate_buddy:758: group 1126,
-> > 12793 clusters in bitmap, 12729 in gd
-> > 
-> > In that case, we need to release the blocks using mb_free_blocks().
-> > 
-> > Tested: fs smoke test; also demonstrated that with injected errors,
-> > 	the file system is no longer getting corrupted
-> > 
-> > Google-Bug-Id: 16657874
-> > 
-> > Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> [...]
+On Wed, Sep 17, 2014 at 11:55:54AM -0400, Jason Cooper wrote:
+> Now that ThomasP has had a chance to test, please adjust the subject
+> line to 'irqchip: armada-370-xp: M...' and
+
+Hi Bjorn,
+
+Do you want me to resend the patch?
+
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
 > 
-> You need to apply commit c99d1e6e83b0 ("ext4: fix BUG_ON in
-> mb_free_blocks()") along with this.
+> thx,
 > 
-> Ben.
-> 
+> Jason.
 
-Ok, that's now queued up for 3.13.11.7 also.  Thanks again, Ben.
-
- -Kamal
-
-
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
