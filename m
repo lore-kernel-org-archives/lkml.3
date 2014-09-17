@@ -1,417 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaIQXNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Sep 2014 19:13:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48599 "EHLO mga11.intel.com"
+	id S1753067AbaIQXUq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Sep 2014 19:20:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57288 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaIQXN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Sep 2014 19:13:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,542,1406617200"; 
-   d="scan'208";a="601297600"
-Date: Wed, 17 Sep 2014 16:13:22 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Fugang Duan <B38611@freescale.com>, Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v4 2/3] iio/adc: add support for axp288 adc
-Message-ID: <20140917161322.7cc7e061@ultegra>
-In-Reply-To: <541A0910.90806@gmx.de>
-References: <1410912715-25903-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1410912715-25903-3-git-send-email-jacob.jun.pan@linux.intel.com>
-	<541A0910.90806@gmx.de>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1751149AbaIQXUo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Sep 2014 19:20:44 -0400
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, "Menon, Nishanth" <nm@ti.com>,
+        Tony Lindgren <tony@atomide.com>, "Kristo, Tero" <t-kristo@ti.com>,
+        "Paul Walmsley" <paul@pwsan.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "J, KEERTHY" <j-keerthy@ti.com>,
+        =?iso-8859-1?Q?Beno=EEt_Cousson?= <bcousson@baylibre.com>
+Subject: RE: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
+Thread-Topic: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
+Thread-Index: AQHPvhG8IMkGuPSFcU+pa0gvRTGwoZwFd+aAgAClgO4=
+Date: Wed, 17 Sep 2014 23:20:09 +0000
+Message-ID: <448912EABC71F84BBCADFD3C67C4BE52CAC748@DBDE04.ent.ti.com>
+References: <1408716154-26101-1-git-send-email-nm@ti.com>
+ <1408716154-26101-9-git-send-email-nm@ti.com>,<5419D7BD.30003@linaro.org>
+In-Reply-To: <5419D7BD.30003@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.56]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014 00:20:00 +0200
-Hartmut Knaack <knaack.h@gmx.de> wrote:
+Sorry for the format. Emailing from webmail.
+________________________________________
+From: Daniel Lezcano [daniel.lezcano@linaro.org]
+Sent: Wednesday, September 17, 2014 2:49 PM
+To: Menon, Nishanth; Shilimkar, Santosh; Tony Lindgren; Kristo, Tero; Paul Walmsley
+Cc: Kevin Hilman; linux-arm-kernel@lists.infradead.org; linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; J, KEERTHY; Benoît Cousson
+Subject: Re: [PATCH 08/10] ARM: OMAP5/DRA7: PM: cpuidle MPU CSWR support
 
-> Jacob Pan schrieb, Am 17.09.2014 02:11:
-> > Platform driver for X-Powers AXP288 ADC, which is a sub-device of
-> > the customized AXP288 PMIC for Intel Baytrail-CR platforms. GPADC
-> > device enumerates as one of the MFD cell devices. It uses IIO
-> > infrastructure to communicate with userspace and consumer drivers.
-> > 
-> > Usages of ADC channels include battery charging and thermal sensors.
-> > 
-> You are progressing, but still a few issues left. One thing is
-> indentation in some places (I feel like being pretty annoying about
-> this), others are commented in line.
-I don't see the indentation issue, perhaps it is the difference in the
-editors we use?
+On 08/22/2014 07:02 AM, Nishanth Menon wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>
+> Add OMAP5/DRA74/72 CPUIDLE support.
+>
+> This patch adds MPUSS low power states in cpuidle.
+>
+>          C1 - CPU0 WFI + CPU1 WFI + MPU ON
+>          C2 - CPU0 RET + CPU1 RET + MPU CSWR
+>
+> Tested on DRA74/72-EVM for C1 and C2 states.
+>
+> NOTE: DRA7 does not do voltage scaling as part of retention transition
+> and has Mercury which speeds up transition paths - Latency numbers are
+> based on measurements done by toggling GPIOs.
+>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> [ j-keerthy@ti.com rework on 3.14]
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
+> [nm@ti.com: updates based on profiling, OMAP5 squashed]
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>   arch/arm/mach-omap2/cpuidle44xx.c |   82 ++++++++++++++++++++++++++++++++++++-
+>   arch/arm/mach-omap2/pm44xx.c      |    2 +-
+>   2 files changed, 82 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/cpuidle44xx.c b/arch/arm/mach-omap2/cpuidle44xx.c
+> index 2498ab0..8ad4f44 100644
+> --- a/arch/arm/mach-omap2/cpuidle44xx.c
+> +++ b/arch/arm/mach-omap2/cpuidle44xx.c
+> @@ -22,6 +22,7 @@
+>   #include "common.h"
+>   #include "pm.h"
+>   #include "prm.h"
+> +#include "soc.h"
+>   #include "clockdomain.h"
+>
+>   #define MAX_CPUS    2
+> @@ -31,6 +32,7 @@ struct idle_statedata {
+>       u32 cpu_state;
+>       u32 mpu_logic_state;
+>       u32 mpu_state;
+> +     u32 mpu_state_vote;
+>   };
+>
+>   static struct idle_statedata omap4_idle_data[] = {
+> @@ -51,12 +53,26 @@ static struct idle_statedata omap4_idle_data[] = {
+>       },
+>   };
+>
+> +static struct idle_statedata dra7_idle_data[] = {
+> +     {
+> +             .cpu_state = PWRDM_POWER_ON,
+> +             .mpu_state = PWRDM_POWER_ON,
+> +             .mpu_logic_state = PWRDM_POWER_ON,
+> +     },
+> +     {
+> +             .cpu_state = PWRDM_POWER_RET,
+> +             .mpu_state = PWRDM_POWER_RET,
+> +             .mpu_logic_state = PWRDM_POWER_RET,
+> +     },
+> +};
+> +
+>   static struct powerdomain *mpu_pd, *cpu_pd[MAX_CPUS];
+>   static struct clockdomain *cpu_clkdm[MAX_CPUS];
+>
+>   static atomic_t abort_barrier;
+>   static bool cpu_done[MAX_CPUS];
+>   static struct idle_statedata *state_ptr = &omap4_idle_data[0];
+> +static DEFINE_RAW_SPINLOCK(mpu_lock);
+>
+>   /* Private functions */
+>
+> @@ -78,6 +94,32 @@ static int omap_enter_idle_simple(struct cpuidle_device *dev,
+>       return index;
+>   }
+>
+> +static int omap_enter_idle_smp(struct cpuidle_device *dev,
+> +                            struct cpuidle_driver *drv,
+> +                            int index)
+> +{
+> +     struct idle_statedata *cx = state_ptr + index;
+> +     unsigned long flag;
+> +
+> +     raw_spin_lock_irqsave(&mpu_lock, flag);
 
-> > Based on initial work by:
-> > Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-> > 
-> > Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> > ---
-> >  drivers/iio/adc/Kconfig      |   8 ++
-> >  drivers/iio/adc/Makefile     |   1 +
-> >  drivers/iio/adc/axp288_adc.c | 254
-> > +++++++++++++++++++++++++++++++++++++++++++ 3 files changed, 263
-> > insertions(+) create mode 100644 drivers/iio/adc/axp288_adc.c
-> > 
-> > diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
-> > index 11b048a..db2681b 100644
-> > --- a/drivers/iio/adc/Kconfig
-> > +++ b/drivers/iio/adc/Kconfig
-> > @@ -127,6 +127,14 @@ config AT91_ADC
-> >  	help
-> >  	  Say yes here to build support for Atmel AT91 ADC.
-> >  
-> > +config AXP288_ADC
-> > +	tristate "X-Powers AXP288 ADC driver"
-> > +	depends on MFD_AXP20X
-> > +	help
-> > +	  Say yes here to have support for X-Powers power
-> > management IC (PMIC) ADC
-> > +	  device. Depending on platform configuration, this
-> > general purpose ADC can
-> > +	  be used for sampling sensors such as thermal resistors.
-> > +
-> >  config EXYNOS_ADC
-> >  	tristate "Exynos ADC driver support"
-> >  	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
-> > diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
-> > index ad81b51..19640f9 100644
-> > --- a/drivers/iio/adc/Makefile
-> > +++ b/drivers/iio/adc/Makefile
-> > @@ -14,6 +14,7 @@ obj-$(CONFIG_AD7793) += ad7793.o
-> >  obj-$(CONFIG_AD7887) += ad7887.o
-> >  obj-$(CONFIG_AD799X) += ad799x.o
-> >  obj-$(CONFIG_AT91_ADC) += at91_adc.o
-> > +obj-$(CONFIG_AXP288_ADC) += axp288_adc.o
-> >  obj-$(CONFIG_EXYNOS_ADC) += exynos_adc.o
-> >  obj-$(CONFIG_LP8788_ADC) += lp8788_adc.o
-> >  obj-$(CONFIG_MAX1027) += max1027.o
-> > diff --git a/drivers/iio/adc/axp288_adc.c
-> > b/drivers/iio/adc/axp288_adc.c new file mode 100644
-> > index 0000000..333c624
-> > --- /dev/null
-> > +++ b/drivers/iio/adc/axp288_adc.c
-> > @@ -0,0 +1,254 @@
-> > +/*
-> > + * axp288_adc.c - X-Powers AXP288 PMIC ADC Driver
-> > + *
-> > + * Copyright (C) 2014 Intel Corporation
-> > + *
-> > + *
-> > ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > + *
-> > + * This program is free software; you can redistribute it and/or
-> > modify
-> > + * it under the terms of the GNU General Public License as
-> > published by
-> > + * the Free Software Foundation; version 2 of the License.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See
-> > the GNU
-> > + * General Public License for more details.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/device.h>
-> > +#include <linux/regmap.h>
-> > +#include <linux/mfd/axp20x.h>
-> > +#include <linux/platform_device.h>
-> > +
-> > +#include <linux/iio/iio.h>
-> > +#include <linux/iio/machine.h>
-> > +#include <linux/iio/driver.h>
-> > +
-> > +#define AXP288_ADC_EN_MASK		0xF1
-> > +#define AXP288_ADC_TS_PIN_GPADC		0xF2
-> > +#define AXP288_ADC_TS_PIN_ON		0xF3
-> > +
-> > +enum axp288_adc_id {
-> > +	AXP288_ADC_TS,
-> > +	AXP288_ADC_PMIC,
-> > +	AXP288_ADC_GP,
-> > +	AXP288_ADC_BATT_CHRG_I,
-> > +	AXP288_ADC_BATT_DISCHRG_I,
-> > +	AXP288_ADC_BATT_V,
-> > +	AXP288_ADC_NR_CHAN,
-> > +};
-> > +
-> > +struct axp288_adc_info {
-> > +	int irq;
-> > +	struct device *dev;
-> > +	struct regmap *regmap;
-> > +};
-> > +
-> > +static const struct iio_chan_spec const axp288_adc_channels[] = {
-> > +	{
-> > +		.indexed = 1,
-> > +		.type = IIO_TEMP,
-> > +		.channel = 0,
-> > +		.address = AXP288_TS_ADC_H,
-> > +		.datasheet_name = "CH0",
-> > +	}, {
-> > +		.indexed = 1,
-> > +		.type = IIO_TEMP,
-> > +		.channel = 1,
-> > +		.address = AXP288_PMIC_ADC_H,
-> > +		.datasheet_name = "CH1",
-> > +	}, {
-> > +		.indexed = 1,
-> > +		.type = IIO_TEMP,
-> > +		.channel = 2,
-> > +		.address = AXP288_GP_ADC_H,
-> > +		.datasheet_name = "CH2",
-> > +	}, {
-> > +		.indexed = 1,
-> > +		.type = IIO_CURRENT,
-> > +		.channel = 3,
-> > +		.address = AXP20X_BATT_CHRG_I_H,
-> > +		.datasheet_name = "CH3",
-> > +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> > +	}, {
-> > +		.indexed = 1,
-> > +		.type = IIO_CURRENT,
-> > +		.channel = 4,
-> > +		.address = AXP20X_BATT_DISCHRG_I_H,
-> > +		.datasheet_name = "CH4",
-> > +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> > +	}, {
-> > +		.indexed = 1,
-> > +		.type = IIO_VOLTAGE,
-> > +		.channel = 5,
-> > +		.address = AXP20X_BATT_V_H,
-> > +		.datasheet_name = "CH5",
-> > +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> > +	},
-> > +};
-> > +
-> > +#define AXP288_ADC_MAP(_adc_channel_label,
-> > _consumer_dev_name,	\
-> > +		_consumer_channel)				\
-> > +	{							\
-> > +		.adc_channel_label = _adc_channel_label,	\
-> > +		.consumer_dev_name = _consumer_dev_name,	\
-> > +		.consumer_channel =
-> > _consumer_channel,		\
-> > +	}
-> > +
-> > +/* for consumer drivers */
-> > +static struct iio_map axp288_adc_default_maps[] = {
-> > +	AXP288_ADC_MAP("TS_PIN", "axp288-batt",
-> > "axp288-batt-temp"),
-> > +	AXP288_ADC_MAP("PMIC_TEMP", "axp288-pmic",
-> > "axp288-pmic-temp"),
-> > +	AXP288_ADC_MAP("GPADC", "axp288-gpadc",
-> > "axp288-system-temp"),
-> > +	AXP288_ADC_MAP("BATT_CHG_I", "axp288-chrg",
-> > "axp288-chrg-curr"),
-> > +	AXP288_ADC_MAP("BATT_DISCHRG_I", "axp288-chrg",
-> > "axp288-chrg-d-curr"),
-> > +	AXP288_ADC_MAP("BATT_V", "axp288-batt",
-> > "axp288-batt-volt"),
-> > +	{},
-> > +};
-> > +
-> > +static int axp288_adc_read_raw(struct iio_dev *indio_dev,
-> > +			struct iio_chan_spec const *chan,
-> > +			int *val, int *val2, long mask)
-> > +{
-> > +	int ret;
-> > +	struct axp288_adc_info *info = iio_priv(indio_dev);
-> > +	u8 buf[2];
-> You could use __be16 instead. Then you just need to use
-> be16_to_cpu(), shift 4 bits to the right and mask the result with
-> 0xFF.
-> > +
-> > +	mutex_lock(&indio_dev->mlock);
-> > +	switch (mask) {
-> > +	case IIO_CHAN_INFO_RAW:
-> > +		/* special case for GPADC sample */
-> > +		if (chan->address == AXP288_GP_ADC_H) {
-> > +			ret = regmap_write(info->regmap,
-> > AXP288_ADC_TS_PIN_CTRL,
-> > +					AXP288_ADC_TS_PIN_GPADC);
-> > +			if (ret) {
-> > +				dev_err(&indio_dev->dev, "GPADC
-> > mode\n");
-> > +				mutex_unlock(&indio_dev->mlock);
-> > +				return ret;
-> You may even just goto the mutex_unlock at the end of the function.
-> Would safe a few bytes here in the source - up to you. More
-> interesting is, if the error message is required, as you don't have
-> one below, when switching to TS_PIN_ON.
-i don't have preference, the previous reviews don't like goto.
-> > +			}
-> > +		}
-> > +	case IIO_CHAN_INFO_PROCESSED:
-> > +		ret = regmap_bulk_read(info->regmap,
-> > chan->address, buf, 2);
-> > +		if (ret) {
-> > +			dev_err(&indio_dev->dev, "sample raw data
-> > failed\n");
-> > +			break;
-> > +		}
-> > +		*val = (buf[0] << 4) + ((buf[1] >> 4) & 0x0F);
-> > +		ret = IIO_VAL_INT;
-> > +		break;
-> > +	default:
-> > +		ret = -EINVAL;
-> > +	}
-> > +
-> > +	if (mask == IIO_CHAN_INFO_RAW && chan->address ==
-> > AXP288_GP_ADC_H)
-> > +		ret = regmap_write(info->regmap,
-> > AXP288_ADC_TS_PIN_CTRL,
-> > +			AXP288_ADC_TS_PIN_ON);
-> > +
-> > +	mutex_unlock(&indio_dev->mlock);
-> > +
-> > +	return ret;
-> > +}
-> > +
-> > +static int axp288_adc_enable(struct regmap *regmap, bool enable)
-> > +{
-> > +	unsigned int pin_on, adc_en;
-> > +
-> > +	if (enable) {
-> > +		pin_on = AXP288_ADC_TS_PIN_ON;
-> > +		adc_en = AXP288_ADC_EN_MASK;
-> > +	} else {
-> > +		pin_on = ~AXP288_ADC_TS_PIN_ON;
-> > +		adc_en = ~AXP288_ADC_EN_MASK;
-> > +	}
-> > +	if (regmap_write(regmap, AXP288_ADC_TS_PIN_CTRL, pin_on))
-> > +		return -EIO;
-> > +
-> > +	return regmap_write(regmap, AXP20X_ADC_EN1,
-> > ~AXP288_ADC_EN_MASK);
-> So, what's the deal about the variable adc_en?
-well, I am trying to be consistent with the data sheet. in axp202
-datasheet, register 82h is named "ADC Enable 1". In axp288 datasheet,
-the same register 82h is named ADC Enable. I am going with adc_en1 to
-better scale for more "ADC Enable X".
-> > +}
-> > +
-> > +static const struct iio_info axp288_adc_iio_info = {
-> > +	.read_raw = &axp288_adc_read_raw,
-> > +	.driver_module = THIS_MODULE,
-> > +};
-> > +
-> > +static int axp288_adc_probe(struct platform_device *pdev)
-> > +{
-> > +	int ret;
-> > +	struct axp288_adc_info *info;
-> > +	struct iio_dev *indio_dev;
-> > +	struct axp20x_dev *axp20x =
-> > dev_get_drvdata(pdev->dev.parent); +
-> > +	indio_dev = devm_iio_device_alloc(&pdev->dev,
-> > sizeof(*info));
-> > +	if (!indio_dev)
-> > +		return -ENOMEM;
-> > +
-> > +	info = iio_priv(indio_dev);
-> > +	info->irq = platform_get_irq(pdev, 0);
-> > +	if (info->irq < 0) {
-> > +		dev_err(&pdev->dev, "no irq resource?\n");
-> > +		return info->irq;
-> > +	}
-> > +	platform_set_drvdata(pdev, indio_dev);
-> > +	info->regmap = axp20x->regmap;
-> > +	ret = axp288_adc_enable(axp20x->regmap, true);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "Unable to enable ADC
-> > device\n");
-> > +		return ret;
-> > +	}
-> > +
-> > +	indio_dev->dev.parent = &pdev->dev;
-> > +	indio_dev->name = pdev->name;
-> > +	indio_dev->channels = axp288_adc_channels;
-> > +	indio_dev->num_channels = ARRAY_SIZE(axp288_adc_channels);
-> > +	indio_dev->info = &axp288_adc_iio_info;
-> > +	indio_dev->modes = INDIO_DIRECT_MODE;
-> > +	ret = iio_map_array_register(indio_dev,
-> > axp288_adc_default_maps);
-> > +	if (ret < 0)
-> > +		goto err_disable_dev;
-> > +
-> > +	ret = iio_device_register(indio_dev);
-> > +	if (ret < 0) {
-> > +		dev_err(&pdev->dev, "unable to register iio
-> > device\n");
-> > +		goto err_array_unregister;
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +err_array_unregister:
-> > +	iio_map_array_unregister(indio_dev);
-> > +err_disable_dev:
-> > +	ret = axp288_adc_enable(axp20x->regmap, false);
-> Don't set ret here. We want to return the error code from the
-> function that failed above.
-> > +
-good point. thanks for the review.
+Why do you need this spin_lock_irqsave ? Aren't the local irqs already
+disabled ?
 
-> > +	return ret;
-> > +}
-> > +
-> > +static int axp288_adc_remove(struct platform_device *pdev)
-> > +{
-> > +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-> > +	struct axp20x_dev *axp20x =
-> > dev_get_drvdata(pdev->dev.parent); +
-> > +	if (axp288_adc_enable(axp20x->regmap, false))
-> > +		dev_err(&pdev->dev, "Unable to disable ADC
-> > device\n");
-> > +	iio_device_unregister(indio_dev);
-> > +	iio_map_array_unregister(indio_dev);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static struct platform_driver axp288_adc_driver = {
-> > +	.probe = axp288_adc_probe,
-> > +	.remove = axp288_adc_remove,
-> > +	.driver = {
-> > +		.name = "axp288_adc",
-> > +		.owner = THIS_MODULE,
-> > +	},
-> > +};
-> > +
-> > +module_platform_driver(axp288_adc_driver);
-> > +
-> > +MODULE_AUTHOR("Jacob Pan <jacob.jun.pan@linux.intel.com>");
-> > +MODULE_DESCRIPTION("X-Powers AXP288 ADC Driver");
-> > +MODULE_LICENSE("GPL");
-> > 
-> 
+[Santosh] Actually at one point of time before the idle consolidation the local
+irq disable was inside the idle drivers. Now with that moved to core layer,
+I think plain spin_lock/unlock() should work.
 
-[Jacob Pan]
+> +     cx->mpu_state_vote++;
+> +     if (cx->mpu_state_vote == num_online_cpus()) {
+> +             pwrdm_set_logic_retst(mpu_pd, cx->mpu_logic_state);
+> +             omap_set_pwrdm_state(mpu_pd, cx->mpu_state);
+> +     }
+> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+> +
+> +     omap4_enter_lowpower(dev->cpu, cx->cpu_state);
+> +
+> +     raw_spin_lock_irqsave(&mpu_lock, flag);
+> +     if (cx->mpu_state_vote == num_online_cpus())
+> +             omap_set_pwrdm_state(mpu_pd, PWRDM_POWER_ON);
+> +     cx->mpu_state_vote--;
+> +     raw_spin_unlock_irqrestore(&mpu_lock, flag);
+
+I am not sure that will work. What happens if a cpu exits idle and then
+re-enter idle immediately ?
+
+[Santosh] It works and that case is already taken care. CPU exist the idle and then votes
+out for cluster state and if it reenters with the right targeted state, the cluster state would
+be picked.
+
+
+Could you try a long run of this little program:
+
+https://git.linaro.org/power/pm-qa.git/blob/HEAD:/cpuidle/cpuidle_killer.c
+
+[Santosh] I am sure there will not be any issue with the long run test case here.
+Lets see if Nishant sees anything otherwise
+
+Regards,
+Santosh
